@@ -9,36 +9,35 @@ background:#0f172a;
 color:white;
 font-family:Arial;
 text-align:center;
-padding-top:50px;
-}
-
-#chatbox{
-width:80%;
-max-width:500px;
-margin:auto;
-background:#1e293b;
-padding:20px;
-border-radius:10px;
-}
-
-input{
-width:70%;
-padding:10px;
-border:none;
-border-radius:6px;
+padding-top:80px;
 }
 
 button{
-padding:10px 15px;
+padding:12px 25px;
+font-size:18px;
 border:none;
+border-radius:8px;
 background:#22c55e;
 color:white;
-border-radius:6px;
+cursor:pointer;
+}
+
+#chat{
+display:none;
+margin-top:30px;
+}
+
+input{
+padding:10px;
+width:60%;
 }
 
 #messages{
 margin-top:20px;
 text-align:left;
+width:60%;
+margin-left:auto;
+margin-right:auto;
 }
 </style>
 </head>
@@ -46,17 +45,23 @@ text-align:left;
 <body>
 
 <h1>Datta AI</h1>
+<p>Your AI assistant for learning and technology</p>
 
-<div id="chatbox">
+<button onclick="startChat()">Start Chat</button>
 
-<div id="messages"></div>
-
+<div id="chat">
+<br>
 <input id="userInput" placeholder="Ask something...">
 <button onclick="send()">Send</button>
 
+<div id="messages"></div>
 </div>
 
 <script>
+
+function startChat(){
+document.getElementById("chat").style.display="block";
+}
 
 function send(){
 
@@ -65,7 +70,6 @@ let input=document.getElementById("userInput").value;
 let messages=document.getElementById("messages");
 
 messages.innerHTML += "<p><b>You:</b> "+input+"</p>";
-
 messages.innerHTML += "<p><b>Datta AI:</b> Thinking...</p>";
 
 }
