@@ -6,62 +6,83 @@
 <style>
 
 body{
-background:#0f172a;
+background:#0b1a33;
 color:white;
 font-family:Arial;
 text-align:center;
-padding-top:60px;
+}
+
+.container{
+width:90%;
+max-width:600px;
+margin:auto;
+margin-top:40px;
+}
+
+#messages{
+background:#0f2345;
+padding:20px;
+border-radius:10px;
+text-align:left;
+min-height:200px;
 }
 
 input{
+width:70%;
 padding:10px;
-width:60%;
 border-radius:6px;
 border:none;
+margin-top:10px;
 }
 
 button{
 padding:10px 20px;
 border:none;
-border-radius:6px;
-background:#22c55e;
+background:#16a34a;
 color:white;
+border-radius:6px;
 cursor:pointer;
 }
 
-#messages{
-margin-top:30px;
-width:60%;
-margin-left:auto;
-margin-right:auto;
-text-align:left;
-}
-
 </style>
-
 </head>
 
+
 <body>
+
+<div class="container">
 
 <h1>Datta AI</h1>
 <p>Your AI assistant for learning and technology</p>
 
-<input id="userInput" placeholder="Ask something...">
+<div id="messages"></div>
+
+<input id="userInput" placeholder="Ask something..." />
 <button onclick="send()">Send</button>
 
-<div id="messages"></div>
+</div>
+
 
 <script>
 
 async function send(){
 
-let input=document.getElementById("userInput").value;
+let input = document.getElementById("userInput").value;
 
-let messages=document.getElementById("messages");
+if(input.trim()===""){
+return;
+}
+
+let messages = document.getElementById("messages");
 
 messages.innerHTML += "<p><b>You:</b> "+input+"</p>";
 
-messages.innerHTML += "<p id='thinking'><b>Datta AI:</b> Thinking...</p>";
+let thinkingMsg = document.createElement("p");
+thinkingMsg.innerHTML = "<b>Datta AI:</b> Thinking...";
+messages.appendChild(thinkingMsg);
+
+
+try{
 
 const response = await fetch(
 "https://datta-ai-server.onrender.com/chat",
@@ -70,15 +91,21 @@ method:"POST",
 headers:{
 "Content-Type":"application/json"
 },
-body:JSON.stringify({
-message:input
-})
+body:JSON.stringify({message:input})
 });
 
 const data = await response.json();
 
-document.getElementById("thinking").innerHTML =
-"<b>Datta AI:</b> "+data.reply;
+thinkingMsg.innerHTML = "<b>Datta AI:</b> "+data.reply;
+
+}
+catch(error){
+
+thinkingMsg.innerHTML = "<b>Datta AI:</b> Server error";
+
+}
+
+document.getElementById("userInput").value="";
 
 }
 
