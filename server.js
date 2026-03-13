@@ -6,47 +6,55 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req,res)=>{
-res.send("Datta AI server running");
+app.get("/", (req, res) => {
+  res.send("Datta AI server running");
 });
 
-app.post("/chat", async (req,res)=>{
+app.post("/chat", (req, res) => {
 
-const message = req.body.message;
+  let message = req.body.message || "";
+  message = message.toLowerCase().trim();
 
-try{
+  let reply = "I don't understand yet. Ask something else.";
 
-const response = await fetch("https://api.deepseek.com/chat/completions",{
-method:"POST",
-headers:{
-"Content-Type":"application/json",
-"Authorization":"Bearer YOUR_DEEPSEEK_API_KEY"
-},
-body:JSON.stringify({
-model:"deepseek-chat",
-messages:[
-{role:"system",content:"You are Datta AI, a helpful assistant."},
-{role:"user",content:message}
-]
-})
-});
+  // greeting
+  if (message === "hi" || message === "hello") {
+    reply = "Hello! How can I help you?";
+  }
 
-const data = await response.json();
+  // identity
+  else if (message === "who are you") {
+    reply = "I am Datta AI, your assistant.";
+  }
 
-const reply = data.choices[0].message.content;
+  // activity
+  else if (message === "what are you doing") {
+    reply = "I am talking with you right now.";
+  }
 
-res.json({reply:reply});
+  // machine learning question
+  else if (message === "what is machine learning") {
+    reply =
+      "Machine learning is a branch of artificial intelligence where computers learn patterns from data instead of being explicitly programmed.";
+  }
 
-}catch(error){
+  // power question
+  else if (message === "what is power") {
+    reply =
+      "In physics, power is the rate at which work is done or energy is transferred.";
+  }
 
-res.json({reply:"Server error"});
+  // fallback
+  else {
+    reply = "You said: " + message;
+  }
 
-}
+  res.json({ reply: reply });
 
 });
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT,()=>{
-console.log("Server running");
+app.listen(PORT, () => {
+  console.log("Server running on port " + PORT);
 });
