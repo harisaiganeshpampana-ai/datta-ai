@@ -10,65 +10,43 @@ app.get("/", (req,res)=>{
 res.send("Datta AI server running");
 });
 
-app.post("/chat",(req,res)=>{
+app.post("/chat", async (req,res)=>{
 
-let message = req.body.message.toLowerCase();
-let reply = "I don't understand yet. Ask something else.";
+const message = req.body.message;
 
-/* greetings */
+try{
 
-if(message.includes("hi") || message.includes("hello")){
-reply = "Hello! How can I help you?";
-}
+const response = await fetch("https://api.deepseek.com/chat/completions",{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer YOUR_DEEPSEEK_API_KEY"
+},
+body:JSON.stringify({
+model:"deepseek-chat",
+messages:[
+{role:"system",content:"You are Datta AI, a helpful assistant."},
+{role:"user",content:message}
+]
+})
+});
 
-/* identity */
+const data = await response.json();
 
-else if(message.includes("who are you")){
-reply = "I am Datta AI, your assistant.";
-}
-
-/* activity */
-
-else if(message.includes("what are you doing")){
-reply = "I am talking with you right now.";
-}
-
-/* help */
-
-else if(message.includes("help")){
-reply = "You can ask me about technology, coding, or general questions.";
-}
-
-/* thanks */
-
-else if(message.includes("thank")){
-reply = "You're welcome!";
-}
-
-/* yes */
-
-else if(message.includes("yes")){
-reply = "Okay. What would you like to ask next?";
-}
-
-/* bye */
-
-else if(message.includes("bye")){
-reply = "Goodbye! See you later.";
-}
-
-/* fallback */
-
-else{
-reply = "You said: " + message;
-}
+const reply = data.choices[0].message.content;
 
 res.json({reply:reply});
+
+}catch(error){
+
+res.json({reply:"Server error"});
+
+}
 
 });
 
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT,()=>{
-console.log("Server running on port " + PORT);
+console.log("Server running");
 });
