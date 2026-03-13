@@ -9,39 +9,68 @@ background:#0f172a;
 color:white;
 font-family:Arial;
 text-align:center;
-padding-top:120px;
+padding-top:50px;
 }
 
-h1{
-font-size:50px;
+#chatbox{
+width:80%;
+max-width:500px;
+margin:auto;
+background:#1e293b;
+padding:20px;
+border-radius:10px;
 }
 
-p{
-font-size:20px;
-color:#cbd5f5;
+input{
+width:70%;
+padding:10px;
+border:none;
+border-radius:6px;
 }
 
 button{
-padding:14px 30px;
-font-size:18px;
+padding:10px 15px;
 border:none;
-border-radius:8px;
 background:#22c55e;
 color:white;
-cursor:pointer;
+border-radius:6px;
+}
+
+#messages{
+margin-top:20px;
+text-align:left;
 }
 </style>
-
 </head>
 
 <body>
 
 <h1>Datta AI</h1>
 
-<p>Your AI assistant for learning and technology</p>
+<div id="chatbox">
 
-<button>Start Chat</button>
+<div id="messages"></div>
+
+<input id="userInput" placeholder="Ask something...">
+<button onclick="send()">Send</button>
+
+</div>
+
+<script>
+
+function send(){
+
+let input=document.getElementById("userInput").value;
+
+let messages=document.getElementById("messages");
+
+messages.innerHTML += "<p><b>You:</b> "+input+"</p>";
+
+messages.innerHTML += "<p><b>Datta AI:</b> Thinking...</p>";
+
+}
+
+</script>
 
 </body>
-
 </html>
