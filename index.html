@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
 <title>Datta AI</title>
 
 <style>
@@ -26,7 +25,6 @@ border-radius:10px;
 text-align:left;
 min-height:200px;
 margin-bottom:10px;
-overflow:auto;
 }
 
 input{
@@ -56,13 +54,13 @@ cursor:pointer;
 <div id="messages"></div>
 
 <input id="userInput" placeholder="Ask something..." />
-<button onclick="sendMessage()">Send</button>
+<button onclick="send()">Send</button>
 
 </div>
 
 <script>
 
-async function sendMessage(){
+async function send(){
 
 const inputBox = document.getElementById("userInput");
 const text = inputBox.value.trim();
@@ -71,19 +69,18 @@ if(!text) return;
 const messages = document.getElementById("messages");
 
 /* USER MESSAGE */
-const userRow = document.createElement("div");
-userRow.innerHTML = "<b>You:</b> " + text;
-messages.appendChild(userRow);
+
+const user = document.createElement("p");
+user.innerHTML = "<b>You:</b> " + text;
+messages.appendChild(user);
 
 /* AI PLACEHOLDER */
-const aiRow = document.createElement("div");
-aiRow.innerHTML = "<b>Datta AI:</b> Thinking...";
-messages.appendChild(aiRow);
 
-inputBox.value = "";
+const ai = document.createElement("p");
+ai.innerHTML = "<b>Datta AI:</b> Thinking...";
+messages.appendChild(ai);
 
-/* FORCE SCROLL */
-messages.scrollTop = messages.scrollHeight;
+inputBox.value="";
 
 try{
 
@@ -100,12 +97,11 @@ body:JSON.stringify({message:text})
 
 const data = await res.json();
 
-/* UPDATE ONLY THIS MESSAGE */
-aiRow.innerHTML = "<b>Datta AI:</b> " + data.reply;
+ai.innerHTML = "<b>Datta AI:</b> " + data.reply;
 
-}catch(e){
+}catch(err){
 
-aiRow.innerHTML = "<b>Datta AI:</b> Server error";
+ai.innerHTML = "<b>Datta AI:</b> Server error";
 
 }
 
