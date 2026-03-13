@@ -4,7 +4,6 @@
 <title>Datta AI</title>
 
 <style>
-
 body{
 background:#0b1a33;
 color:white;
@@ -25,6 +24,7 @@ padding:20px;
 border-radius:10px;
 text-align:left;
 min-height:200px;
+margin-bottom:10px;
 }
 
 input{
@@ -32,7 +32,6 @@ width:70%;
 padding:10px;
 border-radius:6px;
 border:none;
-margin-top:10px;
 }
 
 button{
@@ -43,7 +42,6 @@ color:white;
 border-radius:6px;
 cursor:pointer;
 }
-
 </style>
 </head>
 
@@ -57,57 +55,52 @@ cursor:pointer;
 <div id="messages"></div>
 
 <input id="userInput" placeholder="Ask something..." />
-<button onclick="send()">Send</button>
+<button onclick="sendMessage()">Send</button>
 
 </div>
 
 <script>
 
-async function send(){
+async function sendMessage(){
 
-let inputBox = document.getElementById("userInput");
-let input = inputBox.value.trim();
+const input = document.getElementById("userInput");
+const text = input.value.trim();
 
-if(!input) return;
+if(text === "") return;
 
-let messages = document.getElementById("messages");
+const messages = document.getElementById("messages");
 
 /* USER MESSAGE */
 
-let userRow = document.createElement("div");
-userRow.innerHTML = "<p><b>You:</b> "+input+"</p>";
-messages.appendChild(userRow);
+const userMsg = document.createElement("p");
+userMsg.innerHTML = "<b>You:</b> " + text;
+messages.appendChild(userMsg);
 
-/* AI MESSAGE PLACEHOLDER */
+/* AI PLACEHOLDER */
 
-let aiRow = document.createElement("div");
-aiRow.innerHTML = "<p><b>Datta AI:</b> Thinking...</p>";
-messages.appendChild(aiRow);
+const aiMsg = document.createElement("p");
+aiMsg.innerHTML = "<b>Datta AI:</b> Thinking...";
+messages.appendChild(aiMsg);
 
-inputBox.value="";
+input.value = "";
 
 try{
 
-const response = await fetch(
-"https://datta-ai-server.onrender.com/chat",
-{
+const res = await fetch("https://datta-ai-server.onrender.com/chat",{
 method:"POST",
 headers:{
 "Content-Type":"application/json"
 },
-body:JSON.stringify({message:input})
-}
-);
+body:JSON.stringify({message:text})
+});
 
-const data = await response.json();
+const data = await res.json();
 
-/* UPDATE ONLY THIS ROW */
-
-aiRow.innerHTML = "<p><b>Datta AI:</b> "+data.reply+"</p>";
+aiMsg.innerHTML = "<b>Datta AI:</b> " + data.reply;
 
 }catch(err){
 
-aiRow.innerHTML = "<p><b>Datta AI:</b> Server error</p>";
+aiMsg.innerHTML = "<b>Datta AI:</b> Server error";
 
 }
 
