@@ -6,52 +6,47 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send("Datta AI server running");
+app.get("/", (req,res)=>{
+res.send("Datta AI server running");
 });
 
-app.post("/chat", (req, res) => {
+app.post("/chat", async (req,res)=>{
 
-  let message = req.body.message;
+const message = req.body.message;
 
-  if(!message){
-    return res.json({reply:"No message received"});
-  }
+try{
 
-  message = message.toLowerCase().trim();
+const response = await fetch("https://api.deepseek.com/chat/completions",{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"Authorization":"sk-bc9d7ff1b9e64b19a444481b3ba5171c"
+},
+body:JSON.stringify({
+model:"deepseek-chat",
+messages:[
+{role:"system",content:"You are Datta AI, a helpful assistant."},
+{role:"user",content:message}
+]
+})
+});
 
-  let reply = "I don't understand yet.";
+const data = await response.json();
 
-  if(message === "hi" || message === "hello"){
-    reply = "Hello! How can I help you?";
-  }
+const reply = data.choices[0].message.content;
 
-  else if(message === "who are you"){
-    reply = "I am Datta AI, your assistant.";
-  }
+res.json({reply});
 
-  else if(message === "what are you doing"){
-    reply = "I am talking with you right now.";
-  }
+}catch(error){
 
-  else if(message === "what is machine learning"){
-    reply = "Machine learning is a branch of AI where computers learn patterns from data.";
-  }
+res.json({reply:"AI server error"});
 
-  else if(message === "what is power"){
-    reply = "Power is the rate at which work is done.";
-  }
-
-  else{
-    reply = "You said: " + message;
-  }
-
-  res.json({reply: reply});
+}
 
 });
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
+app.listen(PORT,()=>{
+console.log("Server running on port " + PORT);
 });
