@@ -12,44 +12,41 @@ app.get("/", (req, res) => {
 
 app.post("/chat", (req, res) => {
 
-  let message = req.body.message || "";
+  let message = req.body.message;
+
+  if(!message){
+    return res.json({reply:"No message received"});
+  }
+
   message = message.toLowerCase().trim();
 
-  let reply = "I don't understand yet. Ask something else.";
+  let reply = "I don't understand yet.";
 
-  // greeting
-  if (message === "hi" || message === "hello") {
+  if(message === "hi" || message === "hello"){
     reply = "Hello! How can I help you?";
   }
 
-  // identity
-  else if (message === "who are you") {
+  else if(message === "who are you"){
     reply = "I am Datta AI, your assistant.";
   }
 
-  // activity
-  else if (message === "what are you doing") {
+  else if(message === "what are you doing"){
     reply = "I am talking with you right now.";
   }
 
-  // machine learning question
-  else if (message === "what is machine learning") {
-    reply =
-      "Machine learning is a branch of artificial intelligence where computers learn patterns from data instead of being explicitly programmed.";
+  else if(message === "what is machine learning"){
+    reply = "Machine learning is a branch of AI where computers learn patterns from data.";
   }
 
-  // power question
-  else if (message === "what is power") {
-    reply =
-      "In physics, power is the rate at which work is done or energy is transferred.";
+  else if(message === "what is power"){
+    reply = "Power is the rate at which work is done.";
   }
 
-  // fallback
-  else {
+  else{
     reply = "You said: " + message;
   }
 
-  res.json({ reply: reply });
+  res.json({reply: reply});
 
 });
 
