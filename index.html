@@ -1,7 +1,8 @@
 <!DOCTYPE html><html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Datta AI</title><style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Datta AI</title><style>
 
 body{
 margin:0;
@@ -61,7 +62,7 @@ border-radius:5px;
 background:#1e1e1e;
 }
 
-/* MAIN AREA */
+/* MAIN */
 
 .main{
 flex:1;
@@ -153,14 +154,11 @@ width:100%;
 
 .loader{
 margin:15px 0;
-display:flex;
-align-items:center;
-gap:10px;
 }
 
 .spin{
-width:28px;
-height:28px;
+width:24px;
+height:24px;
 border:3px solid #2ecc71;
 border-top:3px solid transparent;
 border-radius:50%;
@@ -175,14 +173,84 @@ animation:spin 1s linear infinite;
 </style></head><body><!-- SIDEBAR --><div class="sidebar"><div class="logo">
 <img src="logo.jpeg">
 Datta AI
-</div><button class="newchat" onclick="location.reload()">+ New Chat</button>
+</div><button class="newchat" onclick="newChat()">+ New Chat</button>
 
-<div class="history">
-<div>Casual greeting</div>
-<div>Clarification Request</div>
-</div></div><!-- MAIN --><div class="main"><div id="start" class="start"><input id="startInput" placeholder="Ask anything"></div><div id="chat" class="chat" style="display:none;"></div><div id="inputArea" class="inputArea"><div class="inputWrap"><input id="message" placeholder="Ask anything"><button class="send" onclick="send()">➤</button>
+<div class="history"></div></div><!-- MAIN --><div class="main"><div id="start" class="start">
+<input id="startInput" placeholder="Ask anything">
+</div><div id="chat" class="chat" style="display:none;"></div><div id="inputArea" class="inputArea"><div class="inputWrap"><input id="message" placeholder="Ask anything"><button class="send" onclick="send()">➤</button>
 
 </div></div></div><script>
+
+/* CHAT STORAGE */
+
+let chats = JSON.parse(localStorage.getItem("dattaChats")) || []
+let currentChat = []
+
+/* LOAD SIDEBAR */
+
+function loadSidebar(){
+
+const history = document.querySelector(".history")
+
+history.innerHTML=""
+
+chats.forEach((chat,index)=>{
+
+let div=document.createElement("div")
+
+div.innerText = chat[0].message.substring(0,40)
+
+div.onclick=()=>openChat(index)
+
+history.appendChild(div)
+
+})
+
+}
+
+/* OPEN OLD CHAT */
+
+function openChat(index){
+
+currentChat = chats[index]
+
+const chat=document.getElementById("chat")
+
+chat.innerHTML=""
+
+document.getElementById("start").style.display="none"
+chat.style.display="block"
+document.getElementById("inputArea").style.display="block"
+
+currentChat.forEach(m=>{
+
+if(m.role==="user"){
+chat.innerHTML+=`<div class="user">${m.message}</div>`
+}else{
+chat.innerHTML+=`<div class="ai">${m.message}</div>`
+}
+
+})
+
+}
+
+/* NEW CHAT */
+
+function newChat(){
+
+currentChat=[]
+
+document.getElementById("chat").innerHTML=""
+
+}
+
+/* SAVE CHATS */
+
+function saveChats(){
+
+localStorage.setItem("dattaChats", JSON.stringify(chats))
+
+}
 
 /* ENTER KEY */
 
@@ -209,6 +277,8 @@ send()
 
 })
 
+/* SEND MESSAGE */
+
 async function send(){
 
 const start=document.getElementById("start")
@@ -233,9 +303,9 @@ chat.innerHTML += `<div class="user">${text}</div>`
 msgInput.value=""
 startInput.value=""
 
-/* loader */
+/* LOADER */
 
-chat.innerHTML += `
+chat.innerHTML+=`
 <div class="loader" id="load">
 <div class="spin"></div>
 </div>
@@ -259,6 +329,25 @@ document.getElementById("load").remove()
 
 chat.innerHTML += `<div class="ai">${data.reply}</div>`
 
+/* SAVE CHAT */
+
+currentChat.push({
+role:"user",
+message:text
+})
+
+currentChat.push({
+role:"ai",
+message:data.reply
+})
+
+if(!chats.includes(currentChat)){
+chats.push(currentChat)
+}
+
+saveChats()
+loadSidebar()
+
 chat.scrollTop=chat.scrollHeight
 
 }catch{
@@ -268,6 +357,10 @@ document.getElementById("load").innerText="Server error"
 }
 
 }
+
+/* LOAD CHATS ON START */
+
+loadSidebar()
 
 </script></body>
 </html>
