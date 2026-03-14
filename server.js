@@ -6,9 +6,13 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
+/* SERVER STATUS */
+
 app.get("/", (req,res)=>{
 res.send("Datta AI server running")
 })
+
+/* CHAT API */
 
 app.post("/chat", async (req,res)=>{
 
@@ -28,10 +32,22 @@ headers:{
 },
 body:JSON.stringify({
 model:"deepseek/deepseek-chat",
+
+/* LIMIT RESPONSE SIZE */
+
+max_tokens:120,
+
 messages:[
-{role:"system",content:"You are Datta AI, a helpful assistant."},
-{role:"user",content:userMessage}
+{
+role:"system",
+content:"You are Datta AI, a helpful assistant. Always answer in 2 or 3 short sentences. Keep responses simple and concise."
+},
+{
+role:"user",
+content:userMessage
+}
 ]
+
 })
 })
 
@@ -41,15 +57,19 @@ const reply = data.choices[0].message.content
 
 res.json({reply})
 
-}catch(err){
+}catch(error){
 
-console.log(err)
+console.log(error)
 
-res.json({reply:"AI server error"})
+res.json({
+reply:"AI server error"
+})
 
 }
 
 })
+
+/* START SERVER */
 
 const PORT = process.env.PORT || 3000
 
