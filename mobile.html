@@ -17,8 +17,38 @@ font-family:Arial;
 background:#1e1e1e;
 color:white;
 height:100vh;
+overflow:hidden;
 display:flex;
 flex-direction:column;
+}
+
+/* INTRO ANIMATION */
+
+#intro{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:#1e1e1e;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+z-index:999;
+animation:fadeout 1s ease 2s forwards;
+}
+
+#intro img{
+width:90px;
+margin-bottom:10px;
+}
+
+@keyframes fadeout{
+to{
+opacity:0;
+visibility:hidden;
+}
 }
 
 /* HEADER */
@@ -27,16 +57,50 @@ flex-direction:column;
 height:60px;
 display:flex;
 align-items:center;
-justify-content:center;
 border-bottom:1px solid #333;
+padding:0 10px;
+}
+
+.menu{
+font-size:22px;
+cursor:pointer;
+margin-right:10px;
 }
 
 .header img{
 width:22px;
-margin-right:8px;
+margin-right:6px;
 }
 
-/* CHAT AREA */
+/* SIDEBAR */
+
+.sidebar{
+position:fixed;
+top:0;
+left:-240px;
+width:240px;
+height:100%;
+background:#111;
+padding:15px;
+transition:0.3s;
+z-index:1000;
+}
+
+.sidebar.open{
+left:0;
+}
+
+.sidebar button{
+width:100%;
+padding:10px;
+margin-bottom:10px;
+background:#222;
+border:none;
+color:white;
+border-radius:6px;
+}
+
+/* CHAT */
 
 #chatbox{
 flex:1;
@@ -65,7 +129,7 @@ border-radius:12px;
 max-width:80%;
 }
 
-/* INPUT BAR */
+/* INPUT */
 
 .input{
 height:70px;
@@ -101,25 +165,116 @@ margin-left:8px;
 
 <body>
 
-<div class="header">
+<!-- INTRO -->
+
+<div id="intro">
 <img src="logo.jpeg">
-<b>Datta AI</b>
+<h2>Datta AI</h2>
 </div>
+
+<!-- SIDEBAR -->
+
+<div class="sidebar" id="sidebar">
+
+<button onclick="newChat()">+ New Chat</button>
+
+<div id="history"></div>
+
+</div>
+
+<!-- HEADER -->
+
+<div class="header">
+
+<div class="menu" onclick="toggleMenu()">☰</div>
+
+<img src="logo.jpeg">
+
+<b>Datta AI</b>
+
+</div>
+
+<!-- CHAT -->
 
 <div id="chatbox"></div>
 
+<!-- INPUT -->
+
 <div class="input">
+
 <input id="msg" placeholder="Ask anything...">
+
 <button class="send" onclick="send()">➤</button>
+
 </div>
 
 <script>
+
+/* ENTER SEND */
 
 document.getElementById("msg").addEventListener("keypress",function(e){
 if(e.key==="Enter"){
 send()
 }
 })
+
+/* SIDEBAR */
+
+function toggleMenu(){
+document.getElementById("sidebar").classList.toggle("open")
+}
+
+/* STORAGE */
+
+let chats=JSON.parse(localStorage.getItem("dattaChats"))||{}
+let current=null
+
+function save(){
+localStorage.setItem("dattaChats",JSON.stringify(chats))
+}
+
+/* SIDEBAR LIST */
+
+function render(){
+
+const box=document.getElementById("history")
+box.innerHTML=""
+
+for(const id in chats){
+
+const btn=document.createElement("button")
+btn.innerText=chats[id].title
+btn.onclick=()=>load(id)
+
+box.appendChild(btn)
+
+}
+
+}
+
+/* NEW CHAT */
+
+function newChat(){
+current=null
+document.getElementById("chatbox").innerHTML=""
+}
+
+/* LOAD */
+
+function load(id){
+
+current=id
+
+const chat=document.getElementById("chatbox")
+chat.innerHTML=""
+
+chats[id].messages.forEach(m=>{
+chat.innerHTML+=`<div class="${m.role}">${m.text}</div>`
+})
+
+}
+
+/* SEND MESSAGE */
 
 async function send(){
 
@@ -136,9 +291,25 @@ chat.innerHTML+=`<div class="user">${message}</div>`
 
 input.value=""
 
-const id="t"+Date.now()
+if(!current){
 
-chat.innerHTML+=`<div class="ai" id="${id}">Datta AI is thinking...</div>`
+current=Date.now()
+
+chats[current]={
+title:message.substring(0,40),
+messages:[]
+}
+
+}
+
+chats[current].messages.push({role:"user",text:message})
+
+save()
+render()
+
+const thinking="t"+Date.now()
+
+chat.innerHTML+=`<div class="ai" id="${thinking}">Datta AI is thinking...</div>`
 
 chat.scrollTop=chat.scrollHeight
 
@@ -152,19 +323,25 @@ body:JSON.stringify({message})
 
 const data=await res.json()
 
-document.getElementById(id).remove()
+document.getElementById(thinking).remove()
 
 chat.innerHTML+=`<div class="ai">${data.reply}</div>`
+
+chats[current].messages.push({role:"ai",text:data.reply})
+
+save()
 
 chat.scrollTop=chat.scrollHeight
 
 }catch{
 
-document.getElementById(id).innerText="Server error"
+document.getElementById(thinking).innerText="Server error"
 
 }
 
 }
+
+render()
 
 </script>
 
