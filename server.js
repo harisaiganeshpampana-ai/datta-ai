@@ -12,7 +12,9 @@ app.get("/", (req, res) => {
 });
 
 app.post("/chat", async (req, res) => {
+
   try {
+
     const message = req.body.message;
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -24,37 +26,42 @@ app.post("/chat", async (req, res) => {
         "X-Title": "Datta AI"
       },
       body: JSON.stringify({
-        model: "deepseek/deepseek-chat",
+        model: "openai/gpt-3.5-turbo",
         messages: [
-          { role: "user", content: message }
-        ]
+          {
+            role: "system",
+            content:
+              "You are Datta AI. Answer in short and clear sentences. Maximum 2-3 sentences unless the user asks for details. Do not use markdown symbols like *, #, or bullet points. Reply in plain text."
+          },
+          {
+            role: "user",
+            content: message
+          }
+        ],
+        max_tokens: 120
       })
     });
 
     const data = await response.json();
-
-    console.log("AI RESPONSE:", data);
-
-    if (!data.choices || !data.choices[0]) {
-      return res.json({
-        reply: "AI provider returned an error"
-      });
-    }
 
     res.json({
       reply: data.choices[0].message.content
     });
 
   } catch (error) {
-    console.error("SERVER ERROR:", error);
+
+    console.log(error);
 
     res.json({
       reply: "AI server error"
     });
+
   }
+
 });
 
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-  console.log("Server running on port", PORT);
+  console.log("Server running");
 });
