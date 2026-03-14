@@ -15,15 +15,41 @@ background:#1e1e1e;
 color:white;
 display:flex;
 height:100vh;
+overflow:hidden;
 }
 
+/* SIDEBAR */
+
 .sidebar{
-width:230px;
+width:220px;
 background:#111;
 padding:15px;
 border-right:1px solid #333;
-overflow-y:auto;
+display:flex;
+flex-direction:column;
 }
+
+/* LOGO */
+
+.logo{
+display:flex;
+align-items:center;
+gap:8px;
+margin-bottom:15px;
+}
+
+.logo img{
+width:22px;
+height:22px;
+border-radius:4px;
+}
+
+.logo span{
+font-size:18px;
+font-weight:bold;
+}
+
+/* BUTTONS */
 
 .sidebar button{
 width:100%;
@@ -34,11 +60,19 @@ color:white;
 border:none;
 cursor:pointer;
 text-align:left;
+border-radius:6px;
 }
 
 .sidebar button:hover{
 background:#333;
 }
+
+#chatHistory{
+flex:1;
+overflow-y:auto;
+}
+
+/* MAIN AREA */
 
 .main{
 flex:1;
@@ -46,11 +80,15 @@ display:flex;
 flex-direction:column;
 }
 
+/* HEADER */
+
 .header{
 text-align:center;
 padding:10px;
 border-bottom:1px solid #333;
 }
+
+/* CHAT */
 
 #chatbox{
 flex:1;
@@ -58,8 +96,10 @@ overflow-y:auto;
 padding:20px;
 display:flex;
 flex-direction:column;
-gap:10px;
+gap:12px;
 }
+
+/* MESSAGE BUBBLES */
 
 .user{
 align-self:flex-end;
@@ -76,6 +116,8 @@ padding:10px 14px;
 border-radius:10px;
 max-width:70%;
 }
+
+/* INPUT */
 
 .input-area{
 display:flex;
@@ -107,6 +149,8 @@ border-radius:6px;
 
 <body>
 
+<!-- SIDEBAR -->
+
 <div class="sidebar">
 
 <div class="logo">
@@ -122,6 +166,7 @@ border-radius:6px;
 
 </div>
 
+<!-- MAIN -->
 
 <div class="main">
 
@@ -142,10 +187,7 @@ border-radius:6px;
 
 <script>
 
-/* CLEAR BROKEN DATA */
-if(localStorage.getItem("dattaChats") === "undefined"){
-localStorage.removeItem("dattaChats");
-}
+/* LOAD CHATS */
 
 let chats = JSON.parse(localStorage.getItem("dattaChats")) || {};
 let currentChat = null;
@@ -164,8 +206,6 @@ const history=document.getElementById("chatHistory");
 history.innerHTML="";
 
 for(const id in chats){
-
-if(!chats[id].title) continue;
 
 const btn=document.createElement("button");
 
@@ -249,9 +289,13 @@ text:message
 saveChats();
 renderSidebar();
 
+/* THINKING MESSAGE */
+
 const thinkingId="t"+Date.now();
 
 chatbox.innerHTML+=`<div class="ai" id="${thinkingId}">Datta AI is thinking...</div>`;
+
+chatbox.scrollTop=chatbox.scrollHeight;
 
 try{
 
