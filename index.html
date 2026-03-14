@@ -181,7 +181,7 @@ Datta AI
 
 </div></div></div><script>
 
-/* CHAT STORAGE */
+/* STORAGE */
 
 let chats = JSON.parse(localStorage.getItem("dattaChats")) || []
 let currentChat = []
@@ -238,17 +238,23 @@ chat.innerHTML+=`<div class="ai">${m.message}</div>`
 
 function newChat(){
 
+if(currentChat.length>0){
+
+chats.push(currentChat)
+
+localStorage.setItem("dattaChats", JSON.stringify(chats))
+
+loadSidebar()
+
+}
+
 currentChat=[]
 
 document.getElementById("chat").innerHTML=""
 
-}
+document.getElementById("start").style.display="flex"
 
-/* SAVE CHATS */
-
-function saveChats(){
-
-localStorage.setItem("dattaChats", JSON.stringify(chats))
+document.getElementById("inputArea").style.display="none"
 
 }
 
@@ -329,8 +335,6 @@ document.getElementById("load").remove()
 
 chat.innerHTML += `<div class="ai">${data.reply}</div>`
 
-/* SAVE CHAT */
-
 currentChat.push({
 role:"user",
 message:text
@@ -340,13 +344,6 @@ currentChat.push({
 role:"ai",
 message:data.reply
 })
-
-if(!chats.includes(currentChat)){
-chats.push(currentChat)
-}
-
-saveChats()
-loadSidebar()
 
 chat.scrollTop=chat.scrollHeight
 
@@ -358,7 +355,7 @@ document.getElementById("load").innerText="Server error"
 
 }
 
-/* LOAD CHATS ON START */
+/* STARTUP */
 
 loadSidebar()
 
