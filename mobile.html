@@ -52,11 +52,11 @@ padding-bottom:120px;
 overflow-y:auto;
 display:flex;
 flex-direction:column;
-gap:10px;
-height:calc(100vh - 140px);
+gap:14px;
+height:calc(100dvh - 140px);
 }
 
-/* MESSAGES */
+/* USER MESSAGE */
 
 .user{
 background:#00a67e;
@@ -64,14 +64,19 @@ padding:10px 14px;
 border-radius:14px;
 align-self:flex-end;
 max-width:80%;
+color:white;
 }
 
+/* AI MESSAGE (NO BACKGROUND NOW) */
+
 .ai{
-background:#333;
-padding:10px 14px;
-border-radius:14px;
+background:transparent;
+padding:4px 0;
+border-radius:0;
 align-self:flex-start;
-max-width:80%;
+max-width:85%;
+color:#e5e5e5;
+line-height:1.6;
 }
 
 /* INPUT BAR */
