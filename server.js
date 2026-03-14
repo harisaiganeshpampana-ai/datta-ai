@@ -4,8 +4,8 @@ const bodyParser = require("body-parser")
 
 const app = express()
 
-app.use(cors())                // allow requests from your website
-app.use(bodyParser.json())     // read JSON from frontend
+app.use(cors())
+app.use(bodyParser.json())
 
 app.get("/", (req,res)=>{
 res.send("Datta AI server running")
@@ -21,9 +21,7 @@ if(!userMessage){
 return res.json({reply:"No message received"})
 }
 
-/* simple AI response (replace later with OpenAI if needed) */
-
-let reply = ""
+let reply=""
 
 if(userMessage.toLowerCase().includes("hello")){
 reply="Hello! How can I assist you today?"
@@ -37,8 +35,7 @@ reply="You said: " + userMessage
 
 res.json({reply})
 
-}
-catch(err){
+}catch(err){
 
 console.error(err)
 res.status(500).json({reply:"Server error"})
@@ -49,6 +46,6 @@ res.status(500).json({reply:"Server error"})
 
 const PORT = process.env.PORT || 3000
 
-app.listen(PORT, ()=>{
-console.log("Server running on port " + PORT)
+app.listen(PORT,()=>{
+console.log("Server running on port "+PORT)
 })
