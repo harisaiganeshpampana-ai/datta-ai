@@ -1,79 +1,54 @@
-import express from "express";
-import fetch from "node-fetch";
-import cors from "cors";
+const express = require("express")
+const cors = require("cors")
+const bodyParser = require("body-parser")
 
-const app = express();
+const app = express()
 
-app.use(cors());
-app.use(express.json());
+app.use(cors())                // allow requests from your website
+app.use(bodyParser.json())     // read JSON from frontend
 
-let chatHistory = [
-  {
-    role: "system",
-    content:
-      "You are Datta AI. Answer clearly and briefly. Maximum 2-3 sentences unless the user asks for details."
-  }
-];
+app.get("/", (req,res)=>{
+res.send("Datta AI server running")
+})
 
-app.get("/", (req, res) => {
-  res.send("Datta AI server running");
-});
+app.post("/chat", async (req,res)=>{
 
-app.post("/chat", async (req, res) => {
+try{
 
-  try {
+const userMessage = req.body.message
 
-    const message = req.body.message;
+if(!userMessage){
+return res.json({reply:"No message received"})
+}
 
-    // Add user message to history
-    chatHistory.push({
-      role: "user",
-      content: message
-    });
+/* simple AI response (replace later with OpenAI if needed) */
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "HTTP-Referer": "https://datta-ai.vercel.app",
-        "X-Title": "Datta AI"
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-3.5-turbo",
-        messages: chatHistory,
-        max_tokens: 120
-      })
-    });
+let reply = ""
 
-    const data = await response.json();
+if(userMessage.toLowerCase().includes("hello")){
+reply="Hello! How can I assist you today?"
+}
+else if(userMessage.toLowerCase().includes("who are you")){
+reply="I am Datta AI, your assistant."
+}
+else{
+reply="You said: " + userMessage
+}
 
-    const reply = data.choices[0].message.content;
+res.json({reply})
 
-    // Add AI reply to history
-    chatHistory.push({
-      role: "assistant",
-      content: reply
-    });
+}
+catch(err){
 
-    res.json({
-      reply: reply
-    });
+console.error(err)
+res.status(500).json({reply:"Server error"})
 
-  } catch (error) {
+}
 
-    console.log(error);
+})
 
-    res.json({
-      reply: "AI server error"
-    });
+const PORT = process.env.PORT || 3000
 
-  }
-
-});
-
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log("Server running");
-});
+app.listen(PORT, ()=>{
+console.log("Server running on port " + PORT)
+})
