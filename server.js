@@ -25,7 +25,7 @@ headers:{
 "X-Title":"Datta AI"
 },
 body:JSON.stringify({
-model:"model: "deepseek/deepseek-chat"",
+model:"model: "mistralai/mistral-7b-instruct",
 messages:[
 {role:"user",content:message}
 ]
