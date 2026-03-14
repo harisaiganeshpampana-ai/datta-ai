@@ -3,26 +3,25 @@
 <head>
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <title>Datta AI</title>
 
 <style>
 
 *{
-box-sizing:border-box;
 margin:0;
 padding:0;
+box-sizing:border-box;
 }
 
 body{
-font-family:Arial, sans-serif;
+font-family:Arial;
 background:#1e1e1e;
 color:white;
 height:100vh;
 display:flex;
 flex-direction:column;
-overflow:hidden;
 }
 
 /* HEADER */
@@ -47,65 +46,56 @@ margin-right:8px;
 flex:1;
 overflow-y:auto;
 padding:20px;
-padding-bottom:90px;
-display:flex;
-flex-direction:column;
-gap:12px;
 }
 
-/* MESSAGE BUBBLES */
+/* MESSAGE */
 
 .user{
-align-self:flex-end;
 background:#00a67e;
 padding:10px 14px;
 border-radius:14px;
+margin:8px 0;
+align-self:flex-end;
 max-width:80%;
 }
 
 .ai{
-align-self:flex-start;
 background:#333;
 padding:10px 14px;
 border-radius:14px;
+margin:8px 0;
+align-self:flex-start;
 max-width:80%;
 }
 
 /* INPUT AREA */
 
 .input-area{
-position:fixed;
-bottom:0;
-left:0;
-right:0;
+height:70px;
 display:flex;
 padding:10px;
-border-top:1px solid #333;
 background:#1e1e1e;
+border-top:1px solid #333;
 }
-
-/* INPUT */
 
 #msg{
 flex:1;
 padding:12px;
 border:none;
-border-radius:20px;
+border-radius:25px;
 font-size:16px;
 outline:none;
 }
 
-/* SEND BUTTON */
-
 .send{
 width:45px;
 height:45px;
+margin-left:8px;
+border:none;
 border-radius:50%;
 background:#00a67e;
-border:none;
 color:white;
 font-size:18px;
-margin-left:8px;
 cursor:pointer;
 }
 
@@ -145,8 +135,6 @@ let message=input.value.trim()
 
 if(!message) return
 
-message=message.charAt(0).toUpperCase()+message.slice(1)
-
 const chat=document.getElementById("chatbox")
 
 chat.innerHTML+=`<div class="user">${message}</div>`
@@ -161,9 +149,7 @@ try{
 
 const res=await fetch("https://datta-ai-server.onrender.com/chat",{
 method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
+headers:{"Content-Type":"application/json"},
 body:JSON.stringify({message})
 })
 
