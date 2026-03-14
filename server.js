@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req,res)=>{
-  res.send("Datta AI server running");
+res.send("Datta AI server running");
 });
 
 app.post("/chat", async (req,res)=>{
@@ -20,8 +20,8 @@ const response = await fetch("https://openrouter.ai/api/v1/chat/completions",{
 method:"POST",
 headers:{
 "Content-Type":"application/json",
-"Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-"HTTP-Referer":"https://datta-ai",
+"Authorization":`Bearer ${process.env.OPENROUTER_API_KEY}`,
+"HTTP-Referer":"https://datta-ai.vercel.app",
 "X-Title":"Datta AI"
 },
 body:JSON.stringify({
@@ -33,8 +33,6 @@ messages:[
 });
 
 const data = await response.json();
-
-console.log(data);
 
 res.json({
 reply:data.choices[0].message.content
