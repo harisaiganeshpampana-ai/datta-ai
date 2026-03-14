@@ -1,100 +1,51 @@
-const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
-const fetch = require("node-fetch");
+const express = require("express")
+const cors = require("cors")
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+const app = express()
 
-const PORT = process.env.PORT || 10000;
+app.use(cors())
+app.use(express.json())
 
-/* MONGODB CONNECTION */
-
-mongoose.connect(process.env.MONGO_URL)
-.then(()=>{
-    console.log("MongoDB connected");
+app.get("/", (req,res)=>{
+res.send("Datta AI server running")
 })
-.catch(err=>{
-    console.log("MongoDB error:",err);
-});
-
-/* CHAT SCHEMA */
-
-const chatSchema = new mongoose.Schema({
-  question:String,
-  answer:String,
-  time:Date
-});
-
-const Chat = mongoose.model("Chat",chatSchema);
-
-/* SERVER STATUS */
-
-app.get("/",(req,res)=>{
-  res.send("Datta AI server running");
-});
-
-/* CHAT API */
 
 app.post("/chat", async (req,res)=>{
 
-  try{
+try{
 
-    const userMessage = req.body.message;
+const userMessage = req.body.message
 
-    const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions",{
-      method:"POST",
-      headers:{
-        "Authorization":`Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type":"application/json"
-      },
-      body:JSON.stringify({
-        model:"deepseek/deepseek-chat",
-        messages:[
-          {role:"user",content:userMessage}
-        ]
-      })
-    });
+const response = await fetch("https://openrouter.ai/api/v1/chat/completions",{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer " + process.env.OPENROUTER_API_KEY
+},
+body:JSON.stringify({
+model:"deepseek/deepseek-chat",
+messages:[
+{role:"user",content:userMessage}
+]
+})
+})
 
-    const data = await aiResponse.json();
+const data = await response.json()
 
-    const answer = data.choices[0].message.content;
+const reply = data.choices[0].message.content
 
-    /* SAVE TO DATABASE */
+res.json({reply:reply})
 
-    await Chat.create({
-      question:userMessage,
-      answer:answer,
-      time:new Date()
-    });
+}catch(e){
 
-    res.json({reply:answer});
+res.json({reply:"Server error"})
 
-  }catch(error){
+}
 
-    console.log(error);
+})
 
-    res.json({
-      reply:"Error contacting AI"
-    });
-
-  }
-
-});
-
-/* GET CHAT HISTORY */
-
-app.get("/history", async (req,res)=>{
-
-  const chats = await Chat.find().sort({time:-1}).limit(20);
-
-  res.json(chats);
-
-});
-
-/* START SERVER */
+const PORT = process.env.PORT || 10000
 
 app.listen(PORT,()=>{
-  console.log("Datta AI server running on port",PORT);
-});
+console.log("Datta AI server running")
+})
