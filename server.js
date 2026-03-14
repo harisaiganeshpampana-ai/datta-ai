@@ -16,11 +16,11 @@ const message = req.body.message;
 
 try{
 
-const response = await fetch("https://api.deepseek.com/chat/completions",{
+const response = await fetch("https://api.deepseek.com/v1/chat/completions",{
 method:"POST",
 headers:{
 "Content-Type":"application/json",
-"Authorization":"Bearer sk-bc9d7ff1b9e64b19a444481b3ba5171c"
+"Authorization":`Bearer ${process.env.DEEPSEEK_API_KEY}`
 },
 body:JSON.stringify({
 model:"deepseek-chat",
