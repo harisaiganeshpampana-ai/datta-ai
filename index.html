@@ -3,7 +3,6 @@
 <head>
 
 <title>Datta AI</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -43,7 +42,6 @@ animation:logoIntro 1.6s ease;
 
 #splash h1{
 font-size:32px;
-letter-spacing:2px;
 }
 
 @keyframes logoIntro{
@@ -69,6 +67,7 @@ padding:15px;
 border-right:1px solid #333;
 display:flex;
 flex-direction:column;
+transition:transform .3s ease;
 }
 
 .logo{
@@ -81,7 +80,6 @@ margin-bottom:15px;
 .logo img{
 width:22px;
 height:22px;
-border-radius:4px;
 }
 
 .logo span{
@@ -97,7 +95,6 @@ background:#222;
 color:white;
 border:none;
 cursor:pointer;
-text-align:left;
 border-radius:6px;
 }
 
@@ -118,11 +115,32 @@ display:flex;
 flex-direction:column;
 }
 
+/* HEADER */
+
 .header{
-text-align:center;
-padding:10px;
+display:flex;
+align-items:center;
+justify-content:center;
 border-bottom:1px solid #333;
+padding:10px;
+position:relative;
 }
+
+.menu-btn{
+position:absolute;
+left:10px;
+background:none;
+border:none;
+color:white;
+font-size:22px;
+cursor:pointer;
+}
+
+.title{
+text-align:center;
+}
+
+/* CHAT */
 
 #chatbox{
 flex:1;
@@ -183,57 +201,27 @@ align-items:center;
 justify-content:center;
 }
 
-/* MOBILE RESPONSIVE */
+/* MOBILE */
 
-@media screen and (max-width:768px){
-
-body{
-flex-direction:column;
-height:100vh;
-}
+@media (max-width:768px){
 
 .sidebar{
-width:100%;
-border-right:none;
-border-bottom:1px solid #333;
-flex-direction:row;
-overflow-x:auto;
-gap:8px;
+position:fixed;
+left:0;
+top:0;
+height:100%;
+transform:translateX(-100%);
+z-index:1000;
 }
 
-.sidebar button{
-min-width:120px;
-}
-
-#chatHistory{
-display:flex;
-gap:6px;
-}
-
-.main{
-flex:1;
-}
-
-#chatbox{
-padding:12px;
-}
-
-.input-area{
-padding:10px;
-}
-
-#message{
-font-size:14px;
-}
-
-.send-btn{
-width:40px;
-height:40px;
+.sidebar.open{
+transform:translateX(0);
 }
 
 }
 
 </style>
+
 </head>
 
 <body>
@@ -263,8 +251,14 @@ height:40px;
 <div class="main">
 
 <div class="header">
+
+<button class="menu-btn" onclick="toggleMenu()">☰</button>
+
+<div class="title">
 <h2>Datta AI</h2>
 <p>Ask anything</p>
+</div>
+
 </div>
 
 <div id="chatbox"></div>
@@ -280,6 +274,8 @@ height:40px;
 
 <script>
 
+/* ENTER SEND */
+
 document.getElementById("message").addEventListener("keypress",function(e){
 if(e.key==="Enter"){
 e.preventDefault();
@@ -287,12 +283,26 @@ sendMessage();
 }
 });
 
+/* SIDEBAR TOGGLE */
+
+function toggleMenu(){
+
+const sidebar=document.querySelector(".sidebar");
+
+sidebar.classList.toggle("open");
+
+}
+
+/* STORAGE */
+
 let chats=JSON.parse(localStorage.getItem("dattaChats"))||{};
 let currentChat=null;
 
 function saveChats(){
 localStorage.setItem("dattaChats",JSON.stringify(chats));
 }
+
+/* SIDEBAR */
 
 function renderSidebar(){
 
@@ -311,10 +321,14 @@ history.appendChild(btn);
 
 }
 
+/* NEW CHAT */
+
 function newChat(){
 currentChat=null;
 document.getElementById("chatbox").innerHTML="";
 }
+
+/* LOAD CHAT */
 
 function loadChat(id){
 
@@ -328,6 +342,8 @@ chatbox.innerHTML+=`<div class="${m.role}">${m.text}</div>`;
 });
 
 }
+
+/* TYPING EFFECT */
 
 function typeText(el,text,speed=15){
 
@@ -344,6 +360,8 @@ setTimeout(typing,speed);
 typing();
 
 }
+
+/* SEND */
 
 async function sendMessage(){
 
@@ -417,6 +435,8 @@ document.getElementById(thinkingId).innerText="Server error";
 }
 
 }
+
+/* SPLASH */
 
 setTimeout(()=>{
 
