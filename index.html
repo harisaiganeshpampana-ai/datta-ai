@@ -3,7 +3,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Datta AI</title><style>
-
 body{
 margin:0;
 font-family:Arial;
@@ -70,31 +69,6 @@ display:flex;
 flex-direction:column;
 }
 
-/* CHAT */
-
-.chat{
-flex:1;
-overflow:auto;
-padding:40px;
-max-width:900px;
-margin:auto;
-width:100%;
-}
-
-/* USER MESSAGE */
-
-.user{
-text-align:right;
-margin:14px 0;
-}
-
-/* AI MESSAGE */
-
-.ai{
-margin:14px 0;
-line-height:1.6;
-}
-
 /* START SCREEN */
 
 .start{
@@ -103,6 +77,17 @@ display:flex;
 align-items:center;
 justify-content:center;
 flex-direction:column;
+text-align:center;
+}
+
+.start img{
+width:70px;
+margin-bottom:10px;
+}
+
+.start h2{
+margin:10px 0;
+font-weight:500;
 }
 
 .start input{
@@ -115,12 +100,41 @@ background:#1e1e1e;
 color:white;
 }
 
-/* INPUT AREA */
+/* CHAT */
+
+.chat{
+flex:1;
+overflow:auto;
+padding:40px;
+max-width:900px;
+margin:auto;
+width:100%;
+display:none;
+}
+
+.user{
+text-align:right;
+margin:14px 0;
+}
+
+.ai{
+margin:14px 0;
+line-height:1.6;
+}
+
+/* INPUT */
 
 .inputArea{
 display:none;
 padding:15px;
 border-top:1px solid #222;
+}
+
+.inputWrap{
+display:flex;
+max-width:900px;
+margin:auto;
+width:100%;
 }
 
 #message{
@@ -143,15 +157,6 @@ margin-left:10px;
 cursor:pointer;
 }
 
-.inputWrap{
-display:flex;
-max-width:900px;
-margin:auto;
-width:100%;
-}
-
-/* LOADER */
-
 .loader{
 margin:15px 0;
 }
@@ -169,36 +174,50 @@ animation:spin 1s linear infinite;
 0%{transform:rotate(0deg)}
 100%{transform:rotate(360deg)}
 }
-
-</style></head><body><!-- SIDEBAR --><div class="sidebar"><div class="logo">
+</style></head><body><div class="sidebar"><div class="logo">
 <img src="logo.jpeg">
 Datta AI
 </div><button class="newchat" onclick="newChat()">+ New Chat</button>
 
-<div class="history"></div></div><!-- MAIN --><div class="main"><div id="start" class="start">
+<div class="history"></div></div><div class="main"><div id="start" class="start">
+<img src="logo.jpeg">
+<h2 id="welcome"></h2>
 <input id="startInput" placeholder="Ask anything">
-</div><div id="chat" class="chat" style="display:none;"></div><div id="inputArea" class="inputArea"><div class="inputWrap"><input id="message" placeholder="Ask anything"><button class="send" onclick="send()">➤</button>
+</div><div id="chat" class="chat"></div><div id="inputArea" class="inputArea">
+<div class="inputWrap">
+<input id="message" placeholder="Ask anything">
+<button class="send" onclick="send()">➤</button>
+</div>
+</div></div><script>
 
-</div></div></div><script>
+/* USER NAME */
 
-/* STORAGE */
+let username = localStorage.getItem("dattaUser")
+
+if(!username){
+username = prompt("Enter your name")
+localStorage.setItem("dattaUser", username)
+}
+
+document.getElementById("welcome").innerText = "Hi " + username + ", how can I help you?"
+
+/* CHAT STORAGE */
 
 let chats = JSON.parse(localStorage.getItem("dattaChats")) || []
-let currentChat = []
+let currentChat = null
 
-/* LOAD SIDEBAR */
+/* SIDEBAR */
 
 function loadSidebar(){
 
-const history = document.querySelector(".history")
-
+const history=document.querySelector(".history")
 history.innerHTML=""
 
 chats.forEach((chat,index)=>{
 
 let div=document.createElement("div")
 
-div.innerText = chat[0].message.substring(0,40)
+div.innerText=chat.title
 
 div.onclick=()=>openChat(index)
 
@@ -208,21 +227,20 @@ history.appendChild(div)
 
 }
 
-/* OPEN OLD CHAT */
+/* OPEN CHAT */
 
 function openChat(index){
 
-currentChat = chats[index]
+currentChat=chats[index]
 
 const chat=document.getElementById("chat")
-
 chat.innerHTML=""
 
 document.getElementById("start").style.display="none"
 chat.style.display="block"
 document.getElementById("inputArea").style.display="block"
 
-currentChat.forEach(m=>{
+currentChat.messages.forEach(m=>{
 
 if(m.role==="user"){
 chat.innerHTML+=`<div class="user">${m.message}</div>`
@@ -238,22 +256,14 @@ chat.innerHTML+=`<div class="ai">${m.message}</div>`
 
 function newChat(){
 
-if(currentChat.length>0){
-
-chats.push(currentChat)
-
-localStorage.setItem("dattaChats", JSON.stringify(chats))
-
-loadSidebar()
-
+currentChat={
+title:"New Chat",
+messages:[]
 }
 
-currentChat=[]
-
 document.getElementById("chat").innerHTML=""
-
 document.getElementById("start").style.display="flex"
-
+document.getElementById("chat").style.display="none"
 document.getElementById("inputArea").style.display="none"
 
 }
@@ -265,85 +275,72 @@ document.addEventListener("keypress",function(e){
 if(e.key==="Enter"){
 
 if(document.activeElement.id==="startInput"){
-
-document.getElementById("message").value =
-document.getElementById("startInput").value
-
+document.getElementById("message").value=document.getElementById("startInput").value
 send()
-
 }
 
 else if(document.activeElement.id==="message"){
-
 send()
-
 }
 
 }
 
 })
 
-/* SEND MESSAGE */
+/* SEND */
 
 async function send(){
 
-const start=document.getElementById("start")
 const chat=document.getElementById("chat")
-const inputArea=document.getElementById("inputArea")
+const start=document.getElementById("start")
 
 const msgInput=document.getElementById("message")
 const startInput=document.getElementById("startInput")
 
 let text = msgInput.value || startInput.value
-
 text=text.trim()
 
 if(!text) return
 
 start.style.display="none"
 chat.style.display="block"
-inputArea.style.display="block"
+document.getElementById("inputArea").style.display="block"
 
-chat.innerHTML += `<div class="user">${text}</div>`
+chat.innerHTML+=`<div class="user">${text}</div>`
 
 msgInput.value=""
 startInput.value=""
 
-/* LOADER */
-
-chat.innerHTML+=`
-<div class="loader" id="load">
-<div class="spin"></div>
-</div>
-`
-
-chat.scrollTop=chat.scrollHeight
+chat.innerHTML+=`<div id="load" class="loader"><div class="spin"></div></div>`
 
 try{
 
-const res = await fetch(
-"https://datta-ai-server.onrender.com/chat",
-{
+const res=await fetch("https://datta-ai-server.onrender.com/chat",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({message:text})
 })
 
-const data = await res.json()
+const data=await res.json()
 
 document.getElementById("load").remove()
 
-chat.innerHTML += `<div class="ai">${data.reply}</div>`
+chat.innerHTML+=`<div class="ai">${data.reply}</div>`
 
-currentChat.push({
-role:"user",
-message:text
-})
+if(!currentChat){
+currentChat={
+title:text.substring(0,30),
+messages:[]
+}
+chats.push(currentChat)
+}
 
-currentChat.push({
-role:"ai",
-message:data.reply
-})
+currentChat.messages.push({role:"user",message:text})
+currentChat.messages.push({role:"ai",message:data.reply})
+
+localStorage.setItem("dattaChats",JSON.stringify(chats))
+
+loadSidebar()
 
 chat.scrollTop=chat.scrollHeight
 
@@ -355,7 +352,7 @@ document.getElementById("load").innerText="Server error"
 
 }
 
-/* STARTUP */
+/* START */
 
 loadSidebar()
 
