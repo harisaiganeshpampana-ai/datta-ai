@@ -15,10 +15,10 @@ app.post("/chat", async (req,res)=>{
 
 try{
 
-const userMessage = req.body.message
+const userMessage = req.body?.message
 
 if(!userMessage){
-return res.json({reply:"No message received"})
+return res.json({reply:"Message missing"})
 }
 
 let reply=""
