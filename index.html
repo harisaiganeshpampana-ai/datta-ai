@@ -3,6 +3,7 @@
 <head>
 
 <title>Datta AI</title>
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -43,18 +44,12 @@ animation:logoIntro 1.6s ease;
 #splash h1{
 font-size:32px;
 letter-spacing:2px;
-animation:textFade 1.8s ease;
 }
 
 @keyframes logoIntro{
 0%{opacity:0;transform:scale(.6);}
 60%{opacity:1;transform:scale(1.05);}
 100%{transform:scale(1);}
-}
-
-@keyframes textFade{
-0%{opacity:0;transform:translateY(20px);}
-100%{opacity:1;transform:translateY(0);}
 }
 
 /* APP */
@@ -68,7 +63,7 @@ height:100%;
 /* SIDEBAR */
 
 .sidebar{
-width:220px;
+width:230px;
 background:#111;
 padding:15px;
 border-right:1px solid #333;
@@ -174,8 +169,6 @@ font-size:16px;
 text-transform:capitalize;
 }
 
-/* SEND BUTTON */
-
 .send-btn{
 width:46px;
 height:46px;
@@ -188,6 +181,56 @@ font-size:20px;
 display:flex;
 align-items:center;
 justify-content:center;
+}
+
+/* MOBILE RESPONSIVE */
+
+@media screen and (max-width:768px){
+
+body{
+flex-direction:column;
+height:100vh;
+}
+
+.sidebar{
+width:100%;
+border-right:none;
+border-bottom:1px solid #333;
+flex-direction:row;
+overflow-x:auto;
+gap:8px;
+}
+
+.sidebar button{
+min-width:120px;
+}
+
+#chatHistory{
+display:flex;
+gap:6px;
+}
+
+.main{
+flex:1;
+}
+
+#chatbox{
+padding:12px;
+}
+
+.input-area{
+padding:10px;
+}
+
+#message{
+font-size:14px;
+}
+
+.send-btn{
+width:40px;
+height:40px;
+}
+
 }
 
 </style>
@@ -232,11 +275,10 @@ justify-content:center;
 </div>
 
 </div>
+
 </div>
 
 <script>
-
-/* ENTER SEND */
 
 document.getElementById("message").addEventListener("keypress",function(e){
 if(e.key==="Enter"){
@@ -245,16 +287,12 @@ sendMessage();
 }
 });
 
-/* STORAGE */
-
 let chats=JSON.parse(localStorage.getItem("dattaChats"))||{};
 let currentChat=null;
 
 function saveChats(){
 localStorage.setItem("dattaChats",JSON.stringify(chats));
 }
-
-/* SIDEBAR */
 
 function renderSidebar(){
 
@@ -273,14 +311,10 @@ history.appendChild(btn);
 
 }
 
-/* NEW CHAT */
-
 function newChat(){
 currentChat=null;
 document.getElementById("chatbox").innerHTML="";
 }
-
-/* LOAD */
 
 function loadChat(id){
 
@@ -295,30 +329,21 @@ chatbox.innerHTML+=`<div class="${m.role}">${m.text}</div>`;
 
 }
 
-/* TYPING EFFECT */
-
 function typeText(el,text,speed=15){
 
 let i=0;
 
 function typing(){
-
 if(i<text.length){
-
 el.innerHTML+=text.charAt(i);
 i++;
-
 setTimeout(typing,speed);
-
 }
-
 }
 
 typing();
 
 }
-
-/* SEND */
 
 async function sendMessage(){
 
@@ -327,8 +352,6 @@ let message=input.value.trim();
 
 if(!message) return;
 
-/* CAPITALIZE FIRST LETTER */
-
 message=message.charAt(0).toUpperCase()+message.slice(1);
 
 const chatbox=document.getElementById("chatbox");
@@ -336,8 +359,6 @@ const chatbox=document.getElementById("chatbox");
 chatbox.innerHTML+=`<div class="user">${message}</div>`;
 
 input.value="";
-
-/* CREATE CHAT */
 
 if(!currentChat){
 
@@ -350,8 +371,6 @@ messages:[]
 
 }
 
-/* SAVE USER */
-
 chats[currentChat].messages.push({
 role:"user",
 text:message
@@ -359,8 +378,6 @@ text:message
 
 saveChats();
 renderSidebar();
-
-/* THINKING */
 
 const thinkingId="t"+Date.now();
 
@@ -386,16 +403,12 @@ chatbox.appendChild(aiDiv);
 
 typeText(aiDiv,data.reply);
 
-/* SAVE AI */
-
 chats[currentChat].messages.push({
 role:"ai",
 text:data.reply
 });
 
 saveChats();
-
-chatbox.scrollTop=chatbox.scrollHeight;
 
 }catch{
 
@@ -404,8 +417,6 @@ document.getElementById(thinkingId).innerText="Server error";
 }
 
 }
-
-/* SPLASH */
 
 setTimeout(()=>{
 
