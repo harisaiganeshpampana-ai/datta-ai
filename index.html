@@ -1,198 +1,22 @@
-<!DOCTYPE html>
-<html>
-<head>
-
-<title>Datta AI</title>
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-
-body{
-margin:0;
-font-family:Arial;
-background:#1e1e1e;
-color:white;
-display:flex;
-height:100vh;
-}
-
-/* SIDEBAR */
-
-.sidebar{
-width:220px;
-background:#111;
-padding:15px;
-border-right:1px solid #333;
-overflow-y:auto;
-}
-
-.sidebar h2{
-margin-top:0;
-}
-
-.sidebar button{
-width:100%;
-padding:10px;
-margin-bottom:10px;
-background:#222;
-color:white;
-border:none;
-cursor:pointer;
-}
-
-/* MAIN */
-
-.main{
-flex:1;
-display:flex;
-flex-direction:column;
-}
-
-/* HEADER */
-
-.header{
-text-align:center;
-padding:10px;
-border-bottom:1px solid #333;
-}
-
-/* CHAT AREA */
-
-#chatbox{
-flex:1;
-overflow-y:auto;
-padding:20px;
-display:flex;
-flex-direction:column;
-gap:10px;
-}
-
-/* MESSAGE BUBBLES */
-
-.user{
-align-self:flex-end;
-background:#00a67e;
-padding:10px 14px;
-border-radius:10px;
-max-width:70%;
-}
-
-.ai{
-align-self:flex-start;
-background:#333;
-padding:10px 14px;
-border-radius:10px;
-max-width:70%;
-}
-
-/* INPUT */
-
-.input-area{
-display:flex;
-padding:15px;
-gap:10px;
-border-top:1px solid #333;
-}
-
-#message{
-flex:1;
-padding:12px;
-border-radius:6px;
-border:none;
-font-size:16px;
-}
-
-.send-btn{
-padding:12px 18px;
-background:#00a67e;
-border:none;
-color:white;
-cursor:pointer;
-border-radius:6px;
-}
-
-</style>
-
-</head>
-
-
-<body>
-
-<div class="sidebar">
-
-<h2>Datta AI</h2>
-
-<button onclick="createNewChat()">+ New Chat</button>
-
-<hr>
-
-<div id="chatHistory"></div>
-
-</div>
-
-
-<div class="main">
-
-<div class="header">
-<h2>Datta AI</h2>
-<p>Ask anything</p>
-</div>
-
-<div id="chatbox"></div>
-
-<div class="input-area">
-<input id="message" placeholder="Ask something...">
-<button class="send-btn" onclick="sendMessage()">Send</button>
-</div>
-
-</div>
-
-
 <script>
-
-/* CHAT STORAGE */
 
 let chats = JSON.parse(localStorage.getItem("dattaChats")) || {};
 let currentChat = null;
 
-/* CREATE NEW CHAT */
-
-function createNewChat(){
-
-currentChat = Date.now();
-
-chats[currentChat] = [];
-
-saveChats();
-
-renderSidebar();
-
-document.getElementById("chatbox").innerHTML="";
-
-}
-
-/* SAVE */
-
 function saveChats(){
-
 localStorage.setItem("dattaChats", JSON.stringify(chats));
-
 }
-
-/* SIDEBAR */
 
 function renderSidebar(){
 
 const history = document.getElementById("chatHistory");
-
 history.innerHTML="";
 
 for(const id in chats){
 
 const btn = document.createElement("button");
 
-btn.innerText = "Chat " + id;
+btn.innerText = chats[id].title || "New Chat";
 
 btn.onclick = () => loadChat(id);
 
@@ -202,51 +26,68 @@ history.appendChild(btn);
 
 }
 
-/* LOAD CHAT */
+function createNewChat(){
+
+currentChat = Date.now();
+
+chats[currentChat] = {
+title:"",
+messages:[]
+};
+
+saveChats();
+renderSidebar();
+
+document.getElementById("chatbox").innerHTML="";
+
+}
 
 function loadChat(id){
 
 currentChat = id;
 
 const chatbox = document.getElementById("chatbox");
-
 chatbox.innerHTML="";
 
-chats[id].forEach(m => {
-
+chats[id].messages.forEach(m=>{
 chatbox.innerHTML += `<div class="${m.role}">${m.text}</div>`;
-
 });
 
 }
 
-/* SEND MESSAGE */
-
 async function sendMessage(){
 
 const input = document.getElementById("message");
-
 const chatbox = document.getElementById("chatbox");
 
-const message = input.value;
-
-if(message.trim() === "") return;
-
-chatbox.innerHTML += `<div class="user">${message}</div>`;
+const message = input.value.trim();
+if(!message) return;
 
 if(!currentChat) createNewChat();
 
-chats[currentChat].push({role:"user", text:message});
+chatbox.innerHTML += `<div class="user">${message}</div>`;
 
 input.value="";
 
+if(chats[currentChat].messages.length === 0){
+
+chats[currentChat].title = message.substring(0,40);
+
+}
+
+chats[currentChat].messages.push({
+role:"user",
+text:message
+});
+
+saveChats();
+renderSidebar();
+
 chatbox.scrollTop = chatbox.scrollHeight;
 
-const thinkingId = "t" + Date.now();
+const thinkingId = "t"+Date.now();
 
 chatbox.innerHTML += `<div class="ai" id="${thinkingId}">Datta AI is thinking...</div>`;
-
-chatbox.scrollTop = chatbox.scrollHeight;
 
 try{
 
@@ -262,11 +103,12 @@ document.getElementById(thinkingId).remove();
 
 chatbox.innerHTML += `<div class="ai">${data.reply}</div>`;
 
-chats[currentChat].push({role:"ai", text:data.reply});
+chats[currentChat].messages.push({
+role:"ai",
+text:data.reply
+});
 
 saveChats();
-
-renderSidebar();
 
 chatbox.scrollTop = chatbox.scrollHeight;
 
@@ -278,11 +120,6 @@ document.getElementById(thinkingId).innerText="Server error";
 
 }
 
-/* INITIAL */
-
 renderSidebar();
 
 </script>
-
-</body>
-</html>
