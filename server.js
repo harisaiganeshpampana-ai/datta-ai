@@ -1,78 +1,100 @@
-const express = require("express")
-const cors = require("cors")
+const express = require("express");
+const cors = require("cors");
+const mongoose = require("mongoose");
+const fetch = require("node-fetch");
 
-const app = express()
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-app.use(cors())
-app.use(express.json())
+const PORT = process.env.PORT || 10000;
+
+/* MONGODB CONNECTION */
+
+mongoose.connect(process.env.MONGO_URL)
+.then(()=>{
+    console.log("MongoDB connected");
+})
+.catch(err=>{
+    console.log("MongoDB error:",err);
+});
+
+/* CHAT SCHEMA */
+
+const chatSchema = new mongoose.Schema({
+  question:String,
+  answer:String,
+  time:Date
+});
+
+const Chat = mongoose.model("Chat",chatSchema);
 
 /* SERVER STATUS */
 
-app.get("/", (req,res)=>{
-res.send("Datta AI server running")
-})
+app.get("/",(req,res)=>{
+  res.send("Datta AI server running");
+});
 
 /* CHAT API */
 
 app.post("/chat", async (req,res)=>{
 
-try{
+  try{
 
-const userMessage = req.body.message
+    const userMessage = req.body.message;
 
-if(!userMessage){
-return res.json({reply:"Message missing"})
-}
+    const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions",{
+      method:"POST",
+      headers:{
+        "Authorization":`Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        model:"deepseek/deepseek-chat",
+        messages:[
+          {role:"user",content:userMessage}
+        ]
+      })
+    });
 
-const response = await fetch("https://openrouter.ai/api/v1/chat/completions",{
-method:"POST",
-headers:{
-"Authorization":`Bearer ${process.env.OPENROUTER_API_KEY}`,
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-model:"deepseek/deepseek-chat",
+    const data = await aiResponse.json();
 
-/* LIMIT RESPONSE SIZE */
+    const answer = data.choices[0].message.content;
 
-max_tokens:120,
+    /* SAVE TO DATABASE */
 
-messages:[
-{
-role:"system",
-content:"You are Datta AI, a helpful assistant. Always answer in 2 or 3 short sentences. Keep responses simple and concise."
-},
-{
-role:"user",
-content:userMessage
-}
-]
+    await Chat.create({
+      question:userMessage,
+      answer:answer,
+      time:new Date()
+    });
 
-})
-})
+    res.json({reply:answer});
 
-const data = await response.json()
+  }catch(error){
 
-const reply = data.choices[0].message.content
+    console.log(error);
 
-res.json({reply})
+    res.json({
+      reply:"Error contacting AI"
+    });
 
-}catch(error){
+  }
 
-console.log(error)
+});
 
-res.json({
-reply:"AI server error"
-})
+/* GET CHAT HISTORY */
 
-}
+app.get("/history", async (req,res)=>{
 
-})
+  const chats = await Chat.find().sort({time:-1}).limit(20);
+
+  res.json(chats);
+
+});
 
 /* START SERVER */
 
-const PORT = process.env.PORT || 3000
-
 app.listen(PORT,()=>{
-console.log("Datta AI server running on port "+PORT)
-})
+  console.log("Datta AI server running on port",PORT);
+});
