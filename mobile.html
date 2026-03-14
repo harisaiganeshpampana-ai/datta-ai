@@ -17,12 +17,12 @@ font-family:Arial;
 background:#1e1e1e;
 color:white;
 height:100vh;
-overflow:hidden;
 display:flex;
 flex-direction:column;
+overflow:hidden;
 }
 
-/* INTRO ANIMATION */
+/* INTRO */
 
 #intro{
 position:fixed;
@@ -57,14 +57,14 @@ visibility:hidden;
 height:60px;
 display:flex;
 align-items:center;
+padding:10px;
 border-bottom:1px solid #333;
-padding:0 10px;
 }
 
 .menu{
 font-size:22px;
-cursor:pointer;
 margin-right:10px;
+cursor:pointer;
 }
 
 .header img{
@@ -72,35 +72,7 @@ width:22px;
 margin-right:6px;
 }
 
-/* SIDEBAR */
-
-.sidebar{
-position:fixed;
-top:0;
-left:-240px;
-width:240px;
-height:100%;
-background:#111;
-padding:15px;
-transition:0.3s;
-z-index:1000;
-}
-
-.sidebar.open{
-left:0;
-}
-
-.sidebar button{
-width:100%;
-padding:10px;
-margin-bottom:10px;
-background:#222;
-border:none;
-color:white;
-border-radius:6px;
-}
-
-/* CHAT */
+/* CHAT AREA */
 
 #chatbox{
 flex:1;
@@ -111,7 +83,7 @@ flex-direction:column;
 gap:12px;
 }
 
-/* MESSAGE BUBBLES */
+/* MESSAGE */
 
 .user{
 align-self:flex-end;
@@ -129,12 +101,10 @@ border-radius:12px;
 max-width:80%;
 }
 
-/* INPUT */
+/* INPUT BAR */
 
 .input{
-height:70px;
 display:flex;
-align-items:center;
 padding:10px;
 border-top:1px solid #333;
 background:#1e1e1e;
@@ -143,8 +113,8 @@ background:#1e1e1e;
 #msg{
 flex:1;
 padding:12px;
-border:none;
 border-radius:20px;
+border:none;
 font-size:16px;
 }
 
@@ -165,28 +135,14 @@ margin-left:8px;
 
 <body>
 
-<!-- INTRO -->
-
 <div id="intro">
 <img src="logo.jpeg">
 <h2>Datta AI</h2>
 </div>
 
-<!-- SIDEBAR -->
-
-<div class="sidebar" id="sidebar">
-
-<button onclick="newChat()">+ New Chat</button>
-
-<div id="history"></div>
-
-</div>
-
-<!-- HEADER -->
-
 <div class="header">
 
-<div class="menu" onclick="toggleMenu()">☰</div>
+<div class="menu">☰</div>
 
 <img src="logo.jpeg">
 
@@ -194,11 +150,11 @@ margin-left:8px;
 
 </div>
 
-<!-- CHAT -->
+<div id="chatbox">
 
-<div id="chatbox"></div>
+<div class="ai">Hello! How can I assist you today?</div>
 
-<!-- INPUT -->
+</div>
 
 <div class="input">
 
@@ -210,71 +166,11 @@ margin-left:8px;
 
 <script>
 
-/* ENTER SEND */
-
 document.getElementById("msg").addEventListener("keypress",function(e){
 if(e.key==="Enter"){
 send()
 }
 })
-
-/* SIDEBAR */
-
-function toggleMenu(){
-document.getElementById("sidebar").classList.toggle("open")
-}
-
-/* STORAGE */
-
-let chats=JSON.parse(localStorage.getItem("dattaChats"))||{}
-let current=null
-
-function save(){
-localStorage.setItem("dattaChats",JSON.stringify(chats))
-}
-
-/* SIDEBAR LIST */
-
-function render(){
-
-const box=document.getElementById("history")
-box.innerHTML=""
-
-for(const id in chats){
-
-const btn=document.createElement("button")
-btn.innerText=chats[id].title
-btn.onclick=()=>load(id)
-
-box.appendChild(btn)
-
-}
-
-}
-
-/* NEW CHAT */
-
-function newChat(){
-current=null
-document.getElementById("chatbox").innerHTML=""
-}
-
-/* LOAD */
-
-function load(id){
-
-current=id
-
-const chat=document.getElementById("chatbox")
-chat.innerHTML=""
-
-chats[id].messages.forEach(m=>{
-chat.innerHTML+=`<div class="${m.role}">${m.text}</div>`
-})
-
-}
-
-/* SEND MESSAGE */
 
 async function send(){
 
@@ -291,25 +187,7 @@ chat.innerHTML+=`<div class="user">${message}</div>`
 
 input.value=""
 
-if(!current){
-
-current=Date.now()
-
-chats[current]={
-title:message.substring(0,40),
-messages:[]
-}
-
-}
-
-chats[current].messages.push({role:"user",text:message})
-
-save()
-render()
-
-const thinking="t"+Date.now()
-
-chat.innerHTML+=`<div class="ai" id="${thinking}">Datta AI is thinking...</div>`
+chat.innerHTML+=`<div class="ai">Datta AI is thinking...</div>`
 
 chat.scrollTop=chat.scrollHeight
 
@@ -323,25 +201,19 @@ body:JSON.stringify({message})
 
 const data=await res.json()
 
-document.getElementById(thinking).remove()
+chat.lastChild.remove()
 
 chat.innerHTML+=`<div class="ai">${data.reply}</div>`
-
-chats[current].messages.push({role:"ai",text:data.reply})
-
-save()
 
 chat.scrollTop=chat.scrollHeight
 
 }catch{
 
-document.getElementById(thinking).innerText="Server error"
+chat.lastChild.innerText="Server error"
 
 }
 
 }
-
-render()
 
 </script>
 
