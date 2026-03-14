@@ -22,12 +22,12 @@ headers:{
 "Content-Type":"application/json",
 "Authorization":"Bearer " + process.env.OPENROUTER_API_KEY
 },
-body:JSON.stringify({
-model:"deepseek/deepseek-chat",
-messages:[
-{role:"user",content:userMessage}
-]
-})
+body: JSON.stringify({
+  model: "deepseek/deepseek-chat",
+  max_tokens: 400,
+  messages: [
+    { role: "user", content: userMessage }
+  ]
 })
 
 const data = await response.json()
