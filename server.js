@@ -1,55 +1,59 @@
 const express = require("express");
 const cors = require("cors");
 
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
+app.get("/", (req,res)=>{
   res.send("Datta AI server running");
 });
 
-app.post("/chat", async (req, res) => {
-  const message = req.body.message;
+app.post("/chat", async (req,res)=>{
 
-  try {
-    const response = await fetch("https://api.deepseek.com/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        messages: [
-          { role: "system", content: "You are Datta AI, a helpful assistant." },
-          { role: "user", content: message }
-        ]
-      })
-    });
+const message = req.body.message;
 
-    const data = await response.json();
+try{
 
-    if (!response.ok) {
-      console.log("DeepSeek error:", data);
-      return res.json({ reply: "AI request failed" });
-    }
+const response = await fetch("https://openrouter.ai/api/v1/chat/completions",{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+"HTTP-Referer":"https://datta-ai",
+"X-Title":"Datta AI"
+},
+body:JSON.stringify({
+model:"openai/gpt-3.5-turbo",
+messages:[
+{role:"user",content:message}
+]
+})
+});
 
-    res.json({
-      reply: data.choices[0].message.content
-    });
+const data = await response.json();
 
-  } catch (err) {
-    console.log("Server error:", err);
-    res.json({ reply: "AI server error" });
-  }
+console.log(data);
+
+res.json({
+reply:data.choices[0].message.content
+});
+
+}catch(err){
+
+console.log(err);
+
+res.json({
+reply:"AI server error"
+});
+
+}
+
 });
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log("Server running");
+app.listen(PORT,()=>{
+console.log("Server running");
 });
