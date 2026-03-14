@@ -46,19 +46,17 @@ margin-right:8px;
 /* CHAT AREA */
 
 #chatbox{
-position:absolute;
-top:60px;
-bottom:80px;
-left:0;
-right:0;
-overflow-y:auto;
+margin-top:60px;
 padding:20px;
+padding-bottom:120px;
+overflow-y:auto;
 display:flex;
 flex-direction:column;
 gap:10px;
+height:calc(100vh - 140px);
 }
 
-/* MESSAGE */
+/* MESSAGES */
 
 .user{
 background:#00a67e;
@@ -88,7 +86,6 @@ display:flex;
 padding:15px;
 background:#1e1e1e;
 border-top:1px solid #333;
-z-index:20;
 }
 
 /* INPUT */
