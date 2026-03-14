@@ -2,205 +2,24 @@
 <html>
 <head>
 
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Datta AI</title>
 
-<!-- disable cache while developing -->
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
+<script>
 
-<style>
+/* force fresh load to avoid cache */
 
-*{
-box-sizing:border-box;
-margin:0;
-padding:0;
-}
+window.location.replace("app.html?v=" + Date.now())
 
-body{
-font-family:Arial, sans-serif;
-background:#1e1e1e;
-color:white;
-height:100dvh;
-display:flex;
-flex-direction:column;
-}
-
-/* HEADER */
-
-.header{
-height:60px;
-display:flex;
-align-items:center;
-padding:0 15px;
-border-bottom:1px solid #333;
-flex-shrink:0;
-}
-
-.logo{
-width:26px;
-margin-right:8px;
-}
-
-/* CHAT AREA */
-
-#chatbox{
-flex:1;
-overflow-y:auto;
-padding:20px;
-display:flex;
-flex-direction:column;
-gap:12px;
-}
-
-/* MESSAGE BUBBLES */
-
-.user{
-align-self:flex-end;
-background:#00a67e;
-padding:10px 14px;
-border-radius:14px;
-max-width:80%;
-}
-
-.ai{
-align-self:flex-start;
-background:#333;
-padding:10px 14px;
-border-radius:14px;
-max-width:80%;
-}
-
-/* INPUT AREA */
-
-.input-area{
-display:flex;
-padding:12px;
-border-top:1px solid #333;
-background:#1e1e1e;
-flex-shrink:0;
-}
-
-#msg{
-flex:1;
-padding:12px;
-border:none;
-border-radius:20px;
-font-size:16px;
-outline:none;
-}
-
-.send{
-width:45px;
-height:45px;
-border-radius:50%;
-background:#00a67e;
-border:none;
-color:white;
-font-size:18px;
-margin-left:8px;
-cursor:pointer;
-}
-
-/* MOBILE TWEAK */
-
-@media (max-width:700px){
-
-#chatbox{
-padding:15px;
-}
-
-.user,.ai{
-max-width:90%;
-}
-
-}
-
-</style>
+</script>
 
 </head>
 
 <body>
 
-<!-- HEADER -->
-
-<div class="header">
-<img src="logo.jpeg" class="logo">
-<b>Datta AI</b>
-</div>
-
-<!-- CHAT -->
-
-<div id="chatbox">
-
-<div class="ai">Hello! How can I assist you today?</div>
-
-</div>
-
-<!-- INPUT -->
-
-<div class="input-area">
-
-<input id="msg" placeholder="Ask anything...">
-
-<button class="send" onclick="send()">➤</button>
-
-</div>
-
-<script>
-
-const msgInput=document.getElementById("msg")
-
-msgInput.addEventListener("keypress",function(e){
-if(e.key==="Enter"){
-send()
-}
-})
-
-async function send(){
-
-let message=msgInput.value.trim()
-
-if(!message) return
-
-message=message.charAt(0).toUpperCase()+message.slice(1)
-
-const chat=document.getElementById("chatbox")
-
-chat.innerHTML+=`<div class="user">${message}</div>`
-
-msgInput.value=""
-
-chat.innerHTML+=`<div class="ai" id="thinking">Datta AI is thinking...</div>`
-
-chat.scrollTop=chat.scrollHeight
-
-try{
-
-const res=await fetch("https://datta-ai-server.onrender.com/chat",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({message})
-})
-
-const data=await res.json()
-
-document.getElementById("thinking").remove()
-
-chat.innerHTML+=`<div class="ai">${data.reply}</div>`
-
-chat.scrollTop=chat.scrollHeight
-
-}catch{
-
-document.getElementById("thinking").innerText="Server error"
-
-}
-
-}
-
-</script>
+Loading Datta AI...
 
 </body>
 </html>
