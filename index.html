@@ -1,25 +1,200 @@
 <!DOCTYPE html>
 <html>
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>Datta AI</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+font-family:Arial;
+background:#1e1e1e;
+color:white;
+height:100vh;
+display:flex;
+flex-direction:column;
+}
+
+/* HEADER */
+
+.header{
+position:fixed;
+top:0;
+left:0;
+right:0;
+height:60px;
+display:flex;
+align-items:center;
+padding:0 15px;
+background:#1e1e1e;
+border-bottom:1px solid #333;
+z-index:10;
+}
+
+.logo{
+width:26px;
+margin-right:8px;
+}
+
+/* CHAT AREA */
+
+#chatbox{
+margin-top:60px;
+padding:20px;
+padding-bottom:120px;
+overflow-y:auto;
+display:flex;
+flex-direction:column;
+gap:14px;
+height:calc(100dvh - 140px);
+}
+
+/* USER MESSAGE */
+
+.user{
+background:#00a67e;
+padding:10px 14px;
+border-radius:14px;
+align-self:flex-end;
+max-width:60%;
+color:white;
+}
+
+/* AI MESSAGE */
+
+.ai{
+background:transparent;
+padding:4px 0;
+border-radius:0;
+align-self:flex-start;
+max-width:70%;
+color:#e5e5e5;
+line-height:1.6;
+}
+
+/* INPUT BAR */
+
+.input-area{
+position:fixed;
+bottom:0;
+left:0;
+right:0;
+height:80px;
+display:flex;
+padding:15px;
+background:#1e1e1e;
+border-top:1px solid #333;
+}
+
+/* INPUT */
+
+#msg{
+flex:1;
+padding:12px;
+border:none;
+border-radius:25px;
+font-size:16px;
+outline:none;
+}
+
+/* SEND BUTTON */
+
+.send{
+width:45px;
+height:45px;
+margin-left:10px;
+border:none;
+border-radius:50%;
+background:#00a67e;
+color:white;
+font-size:18px;
+cursor:pointer;
+}
+
+.send:hover{
+background:#00946f;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+<img src="logo.jpeg" class="logo">
+<b>Datta AI</b>
+</div>
+
+<div id="chatbox">
+<div class="ai">Hello! How can I assist you today?</div>
+</div>
+
+<div class="input-area">
+<input id="msg" placeholder="Ask anything...">
+<button class="send" onclick="send()">➤</button>
+</div>
 
 <script>
 
-/* detect mobile device */
+const input=document.getElementById("msg")
 
-if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-window.location.href = "mobile.html?v=" + Date.now()
+input.addEventListener("keypress",function(e){
+if(e.key==="Enter"){
+send()
 }
-else {
-window.location.href = "app.html?v=" + Date.now()
+})
+
+async function send(){
+
+let message=input.value.trim()
+
+if(!message) return
+
+const chat=document.getElementById("chatbox")
+
+chat.innerHTML+=`<div class="user">${message}</div>`
+
+input.value=""
+
+chat.innerHTML+=`<div class="ai" id="thinking">Datta AI is thinking...</div>`
+
+chat.scrollTop=chat.scrollHeight
+
+try{
+
+const res=await fetch("https://datta-ai-server.onrender.com/chat",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({message})
+})
+
+const data=await res.json()
+
+document.getElementById("thinking").remove()
+
+chat.innerHTML+=`<div class="ai">${data.reply}</div>`
+
+chat.scrollTop=chat.scrollHeight
+
+}catch{
+
+document.getElementById("thinking").innerText="Server error"
+
+}
+
 }
 
 </script>
 
-</head>
-<body>
-Loading Datta AI...
 </body>
 </html>
