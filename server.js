@@ -6,7 +6,7 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
-// conversation memory
+// store conversation
 let conversation = []
 
 app.get("/", (req, res) => {
@@ -19,16 +19,17 @@ app.post("/chat", async (req, res) => {
 
     const userMessage = req.body.message
 
-    // save user message
     conversation.push({
       role: "user",
       content: userMessage
     })
 
-    // keep memory short (last 10 messages)
-    if (conversation.length > 10) {
+    // keep last 12 messages only
+    if (conversation.length > 12) {
       conversation.shift()
     }
+
+    const today = new Date().toDateString()
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -38,11 +39,12 @@ app.post("/chat", async (req, res) => {
       },
       body: JSON.stringify({
         model: "deepseek/deepseek-chat",
-        max_tokens: 400,
+        max_tokens: 300,
         messages: [
           {
             role: "system",
-            content: "You are Datta AI. Give clear and helpful answers."
+            content:
+              "You are Datta AI. Give clear simple answers. Do NOT use markdown symbols like ** ### or LaTeX. Use normal text only. Today's date is " + today
           },
           ...conversation
         ]
@@ -55,7 +57,6 @@ app.post("/chat", async (req, res) => {
       data?.choices?.[0]?.message?.content ||
       "AI did not return a response"
 
-    // save AI reply
     conversation.push({
       role: "assistant",
       content: reply
