@@ -1,3 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Datta AI</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#1e1e1e;
+color:white;
+display:flex;
+height:100vh;
+}
+
+/* SIDEBAR */
+
+.sidebar{
+width:230px;
+background:#111;
+padding:15px;
+border-right:1px solid #333;
+overflow-y:auto;
+}
+
+.sidebar h2{
+margin-top:0;
+}
+
+.sidebar button{
+width:100%;
+padding:10px;
+margin-bottom:10px;
+background:#222;
+color:white;
+border:none;
+cursor:pointer;
+}
+
+/* MAIN */
+
+.main{
+flex:1;
+display:flex;
+flex-direction:column;
+}
+
+/* HEADER */
+
+.header{
+text-align:center;
+padding:10px;
+border-bottom:1px solid #333;
+}
+
+/* CHAT */
+
+#chatbox{
+flex:1;
+overflow-y:auto;
+padding:20px;
+display:flex;
+flex-direction:column;
+gap:10px;
+}
+
+/* MESSAGE BUBBLES */
+
+.user{
+align-self:flex-end;
+background:#00a67e;
+padding:10px 14px;
+border-radius:10px;
+max-width:70%;
+}
+
+.ai{
+align-self:flex-start;
+background:#333;
+padding:10px 14px;
+border-radius:10px;
+max-width:70%;
+}
+
+/* INPUT */
+
+.input-area{
+display:flex;
+padding:15px;
+gap:10px;
+border-top:1px solid #333;
+}
+
+#message{
+flex:1;
+padding:12px;
+border-radius:6px;
+border:none;
+font-size:16px;
+}
+
+.send-btn{
+padding:12px 18px;
+background:#00a67e;
+border:none;
+color:white;
+cursor:pointer;
+border-radius:6px;
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<div class="sidebar">
+
+<h2>Datta AI</h2>
+
+<button onclick="createNewChat()">+ New Chat</button>
+
+<hr>
+
+<div id="chatHistory"></div>
+
+</div>
+
+
+<div class="main">
+
+<div class="header">
+<h2>Datta AI</h2>
+<p>Ask anything</p>
+</div>
+
+<div id="chatbox"></div>
+
+<div class="input-area">
+<input id="message" placeholder="Ask something...">
+<button class="send-btn" onclick="sendMessage()">Send</button>
+</div>
+
+</div>
+
+
 <script>
 
 let chats = JSON.parse(localStorage.getItem("dattaChats")) || {};
@@ -70,9 +221,7 @@ chatbox.innerHTML += `<div class="user">${message}</div>`;
 input.value="";
 
 if(chats[currentChat].messages.length === 0){
-
 chats[currentChat].title = message.substring(0,40);
-
 }
 
 chats[currentChat].messages.push({
@@ -123,3 +272,6 @@ document.getElementById(thinkingId).innerText="Server error";
 renderSidebar();
 
 </script>
+
+</body>
+</html>
