@@ -3,7 +3,6 @@
 <head>
 
 <title>Datta AI</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -32,12 +31,33 @@ flex-direction:column;
 align-items:center;
 justify-content:center;
 z-index:999;
+transition:opacity 0.8s ease;
 }
 
 .big-logo{
 width:120px;
 margin-bottom:20px;
+animation:logoIntro 1.6s ease;
 }
+
+#splash h1{
+font-size:32px;
+letter-spacing:2px;
+animation:textFade 1.8s ease;
+}
+
+@keyframes logoIntro{
+0%{opacity:0; transform:scale(0.6);}
+60%{opacity:1; transform:scale(1.05);}
+100%{transform:scale(1);}
+}
+
+@keyframes textFade{
+0%{opacity:0; transform:translateY(20px);}
+100%{opacity:1; transform:translateY(0);}
+}
+
+/* APP CONTAINER */
 
 #app{
 display:none;
@@ -144,7 +164,7 @@ border-radius:10px;
 max-width:70%;
 }
 
-/* INPUT */
+/* INPUT AREA */
 
 .input-area{
 display:flex;
@@ -171,22 +191,16 @@ border-radius:6px;
 }
 
 </style>
-
 </head>
-
 
 <body>
 
 <!-- SPLASH SCREEN -->
 
 <div id="splash">
-
 <img src="logo.jpeg" class="big-logo">
-
 <h1>Datta AI</h1>
-
 </div>
-
 
 <!-- MAIN APP -->
 
@@ -207,7 +221,6 @@ border-radius:6px;
 
 </div>
 
-
 <div class="main">
 
 <div class="header">
@@ -226,33 +239,25 @@ border-radius:6px;
 
 </div>
 
-
 <script>
 
 /* REMOVE OLD BROKEN CHATS */
-
 localStorage.removeItem("dattaChats");
-
 
 let chats = JSON.parse(localStorage.getItem("dattaChats")) || {};
 let currentChat = null;
 
-
-/* SAVE */
+/* SAVE CHATS */
 
 function saveChats(){
-
 localStorage.setItem("dattaChats", JSON.stringify(chats));
-
 }
-
 
 /* SIDEBAR */
 
 function renderSidebar(){
 
 const history=document.getElementById("chatHistory");
-
 history.innerHTML="";
 
 for(const id in chats){
@@ -260,9 +265,7 @@ for(const id in chats){
 if(!chats[id].title) continue;
 
 const btn=document.createElement("button");
-
 btn.innerText=chats[id].title;
-
 btn.onclick=()=>loadChat(id);
 
 history.appendChild(btn);
@@ -271,17 +274,12 @@ history.appendChild(btn);
 
 }
 
-
 /* NEW CHAT */
 
 function newChat(){
-
 currentChat=null;
-
 document.getElementById("chatbox").innerHTML="";
-
 }
-
 
 /* LOAD CHAT */
 
@@ -290,114 +288,81 @@ function loadChat(id){
 currentChat=id;
 
 const chatbox=document.getElementById("chatbox");
-
 chatbox.innerHTML="";
 
 chats[id].messages.forEach(m=>{
-
 chatbox.innerHTML+=`<div class="${m.role}">${m.text}</div>`;
-
 });
 
 }
-
 
 /* SEND MESSAGE */
 
 async function sendMessage(){
 
 const input=document.getElementById("message");
-
 const chatbox=document.getElementById("chatbox");
 
 const message=input.value.trim();
 
 if(!message) return;
 
-
 chatbox.innerHTML+=`<div class="user">${message}</div>`;
-
 input.value="";
-
-
-/* CREATE CHAT AFTER FIRST MESSAGE */
 
 if(!currentChat){
 
 currentChat=Date.now();
 
 chats[currentChat]={
-
 title:message.substring(0,40),
-
 messages:[]
-
 };
 
 }
 
-
 /* SAVE USER MESSAGE */
 
 chats[currentChat].messages.push({
-
 role:"user",
-
 text:message
-
 });
 
-
 saveChats();
-
 renderSidebar();
 
+/* THINKING MESSAGE */
 
 const thinkingId="t"+Date.now();
 
-
 chatbox.innerHTML+=`<div class="ai" id="${thinkingId}">Datta AI is thinking...</div>`;
 
-
 chatbox.scrollTop=chatbox.scrollHeight;
-
 
 try{
 
 const res=await fetch("https://datta-ai-server.onrender.com/chat",{
 
 method:"POST",
-
 headers:{"Content-Type":"application/json"},
-
 body:JSON.stringify({message})
 
 });
 
-
 const data=await res.json();
-
 
 document.getElementById(thinkingId).remove();
 
-
 chatbox.innerHTML+=`<div class="ai">${data.reply}</div>`;
 
-
 chats[currentChat].messages.push({
-
 role:"ai",
-
 text:data.reply
-
 });
-
 
 saveChats();
 
-
 chatbox.scrollTop=chatbox.scrollHeight;
-
 
 }catch(err){
 
@@ -407,17 +372,22 @@ document.getElementById(thinkingId).innerText="Server error";
 
 }
 
-
-/* STARTUP SCREEN */
+/* SMOOTH SPLASH EXIT */
 
 setTimeout(()=>{
 
-document.getElementById("splash").style.display="none";
+const splash = document.getElementById("splash");
 
+splash.style.opacity = "0";
+
+setTimeout(()=>{
+
+splash.style.display="none";
 document.getElementById("app").style.display="flex";
 
-},2000);
+},800);
 
+},2000);
 
 renderSidebar();
 
