@@ -7,51 +7,60 @@ const app = express()
 app.use(cors())
 app.use(bodyParser.json())
 
-/* SERVER CHECK */
+/* SERVER STATUS CHECK */
 
 app.get("/", (req,res)=>{
 res.send("Datta AI server running")
 })
 
-/* CHAT API */
+/* CHAT ENDPOINT */
 
-app.post("/chat", async (req,res)=>{
+app.post("/chat",(req,res)=>{
 
 try{
 
 const userMessage = req.body?.message
 
-/* CHECK MESSAGE */
-
 if(!userMessage){
 return res.json({reply:"Message missing"})
 }
 
-let reply=""
+const msg = userMessage.toLowerCase()
 
-/* SIMPLE AI RULES */
+let reply = ""
 
-if(userMessage.toLowerCase().includes("hello")){
-reply="Hello! How can I assist you today?"
+/* GREETING */
+
+if(
+msg.includes("hello") ||
+msg.includes("hi") ||
+msg.includes("hey")
+){
+reply = "Hello! How can I assist you today?"
 }
 
-else if(userMessage.toLowerCase().includes("who are you")){
-reply="I am Datta AI, your assistant."
+/* IDENTITY */
+
+else if(
+msg.includes("who are you") ||
+msg.includes("your name")
+){
+reply = "I am Datta AI, your assistant."
 }
 
-else if(userMessage.toLowerCase().includes("your name")){
-reply="My name is Datta AI."
+/* HOW ARE YOU */
+
+else if(
+msg.includes("how are you")
+){
+reply = "I am functioning perfectly. How can I help you?"
 }
 
-else if(userMessage.toLowerCase().includes("how are you")){
-reply="I am functioning perfectly. How can I help you?"
-}
+/* DEFAULT RESPONSE */
 
 else{
-reply="You said: " + userMessage
+reply = "You said: " + userMessage
 }
-
-/* SEND RESPONSE */
 
 res.json({reply})
 
@@ -73,6 +82,6 @@ reply:"AI server error"
 
 const PORT = process.env.PORT || 3000
 
-app.listen(PORT, ()=>{
+app.listen(PORT,()=>{
 console.log("Datta AI server running on port " + PORT)
 })
