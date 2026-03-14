@@ -1,87 +1,58 @@
 const express = require("express")
 const cors = require("cors")
-const bodyParser = require("body-parser")
 
 const app = express()
 
 app.use(cors())
-app.use(bodyParser.json())
-
-/* SERVER STATUS CHECK */
+app.use(express.json())
 
 app.get("/", (req,res)=>{
 res.send("Datta AI server running")
 })
 
-/* CHAT ENDPOINT */
-
-app.post("/chat",(req,res)=>{
+app.post("/chat", async (req,res)=>{
 
 try{
 
-const userMessage = req.body?.message
+const userMessage = req.body.message
 
 if(!userMessage){
 return res.json({reply:"Message missing"})
 }
 
-const msg = userMessage.toLowerCase()
+const response = await fetch("https://openrouter.ai/api/v1/chat/completions",{
+method:"POST",
+headers:{
+"Authorization":`Bearer ${process.env.OPENROUTER_API_KEY}`,
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+model:"deepseek/deepseek-chat",
+messages:[
+{role:"system",content:"You are Datta AI, a helpful assistant."},
+{role:"user",content:userMessage}
+]
+})
+})
 
-let reply = ""
+const data = await response.json()
 
-/* GREETING */
-
-if(
-msg.includes("hello") ||
-msg.includes("hi") ||
-msg.includes("hey")
-){
-reply = "Hello! How can I assist you today?"
-}
-
-/* IDENTITY */
-
-else if(
-msg.includes("who are you") ||
-msg.includes("your name")
-){
-reply = "I am Datta AI, your assistant."
-}
-
-/* HOW ARE YOU */
-
-else if(
-msg.includes("how are you")
-){
-reply = "I am functioning perfectly. How can I help you?"
-}
-
-/* DEFAULT RESPONSE */
-
-else{
-reply = "You said: " + userMessage
-}
+const reply = data.choices[0].message.content
 
 res.json({reply})
 
-}
+}catch(err){
 
-catch(error){
+console.log(err)
 
-console.log(error)
-
-res.json({
-reply:"AI server error"
-})
+res.json({reply:"AI server error"})
 
 }
 
 })
-
-/* START SERVER */
 
 const PORT = process.env.PORT || 3000
 
 app.listen(PORT,()=>{
-console.log("Datta AI server running on port " + PORT)
+console.log("Datta AI server running on port "+PORT)
 })
