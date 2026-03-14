@@ -34,7 +34,7 @@ margin-top:0;
 .sidebar button{
 width:100%;
 padding:10px;
-margin-bottom:10px;
+margin-bottom:8px;
 background:#222;
 color:white;
 border:none;
@@ -57,7 +57,7 @@ padding:10px;
 border-bottom:1px solid #333;
 }
 
-/* CHAT */
+/* CHAT AREA */
 
 #chatbox{
 flex:1;
@@ -86,7 +86,7 @@ border-radius:10px;
 max-width:70%;
 }
 
-/* INPUT */
+/* INPUT AREA */
 
 .input-area{
 display:flex;
@@ -123,7 +123,7 @@ border-radius:6px;
 
 <h2>Datta AI</h2>
 
-<button onclick="createNewChat()">+ New Chat</button>
+<button onclick="newChat()">+ New Chat</button>
 
 <hr>
 
@@ -154,9 +154,13 @@ border-radius:6px;
 let chats = JSON.parse(localStorage.getItem("dattaChats")) || {};
 let currentChat = null;
 
+/* SAVE */
+
 function saveChats(){
 localStorage.setItem("dattaChats", JSON.stringify(chats));
 }
+
+/* SIDEBAR */
 
 function renderSidebar(){
 
@@ -167,7 +171,7 @@ for(const id in chats){
 
 const btn = document.createElement("button");
 
-btn.innerText = chats[id].title || "New Chat";
+btn.innerText = chats[id].title;
 
 btn.onclick = () => loadChat(id);
 
@@ -177,34 +181,35 @@ history.appendChild(btn);
 
 }
 
-function createNewChat(){
+/* NEW CHAT */
 
-currentChat = Date.now();
+function newChat(){
 
-chats[currentChat] = {
-title:"",
-messages:[]
-};
-
-saveChats();
-renderSidebar();
+currentChat = null;
 
 document.getElementById("chatbox").innerHTML="";
 
 }
+
+/* LOAD CHAT */
 
 function loadChat(id){
 
 currentChat = id;
 
 const chatbox = document.getElementById("chatbox");
+
 chatbox.innerHTML="";
 
 chats[id].messages.forEach(m=>{
+
 chatbox.innerHTML += `<div class="${m.role}">${m.text}</div>`;
+
 });
 
 }
+
+/* SEND MESSAGE */
 
 async function sendMessage(){
 
@@ -212,16 +217,22 @@ const input = document.getElementById("message");
 const chatbox = document.getElementById("chatbox");
 
 const message = input.value.trim();
-if(!message) return;
 
-if(!currentChat) createNewChat();
+if(!message) return;
 
 chatbox.innerHTML += `<div class="user">${message}</div>`;
 
 input.value="";
 
-if(chats[currentChat].messages.length === 0){
-chats[currentChat].title = message.substring(0,40);
+if(!currentChat){
+
+currentChat = Date.now();
+
+chats[currentChat] = {
+title: message.substring(0,40),
+messages:[]
+};
+
 }
 
 chats[currentChat].messages.push({
