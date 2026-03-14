@@ -8,8 +8,6 @@
 
 <style>
 
-/* PAGE */
-
 body{
 background:black;
 color:white;
@@ -19,7 +17,7 @@ display:flex;
 height:100vh;
 }
 
-/* SIDEBAR */
+/* Sidebar */
 
 .sidebar{
 width:220px;
@@ -43,7 +41,7 @@ border:none;
 cursor:pointer;
 }
 
-/* MAIN AREA */
+/* Main area */
 
 .main{
 flex:1;
@@ -53,7 +51,7 @@ align-items:center;
 padding:20px;
 }
 
-/* MENU BUTTON */
+/* Menu button */
 
 .menu-btn{
 display:none;
@@ -63,7 +61,7 @@ align-self:flex-start;
 margin-bottom:10px;
 }
 
-/* CHATBOX */
+/* Chatbox */
 
 #chatbox{
 flex:1;
@@ -75,7 +73,7 @@ overflow-y:auto;
 text-align:left;
 }
 
-/* MESSAGE STYLE */
+/* Messages */
 
 .user{
 color:#00ffcc;
@@ -87,7 +85,7 @@ color:white;
 margin:6px 0;
 }
 
-/* INPUT AREA */
+/* Input */
 
 .input-area{
 display:flex;
@@ -108,7 +106,7 @@ padding:10px;
 cursor:pointer;
 }
 
-/* MOBILE */
+/* Mobile */
 
 @media(max-width:768px){
 
@@ -140,8 +138,6 @@ display:block;
 
 <body>
 
-<!-- SIDEBAR -->
-
 <div class="sidebar">
 
 <h2>Datta AI</h2>
@@ -156,8 +152,6 @@ display:block;
 
 </div>
 
-
-<!-- MAIN -->
 
 <div class="main">
 
@@ -195,9 +189,19 @@ const message=input.value;
 
 if(message.trim()==="") return;
 
+/* show user message */
+
 chatbox.innerHTML += "<div class='user'><b>You:</b> "+message+"</div>";
 
 input.value="";
+
+chatbox.scrollTop=chatbox.scrollHeight;
+
+/* thinking message */
+
+const thinkingId="thinking-"+Date.now();
+
+chatbox.innerHTML += "<div class='ai' id='"+thinkingId+"'><b>Datta AI:</b> thinking...</div>";
 
 chatbox.scrollTop=chatbox.scrollHeight;
 
@@ -213,13 +217,19 @@ body:JSON.stringify({message:message})
 
 const data=await response.json();
 
+/* remove thinking */
+
+document.getElementById(thinkingId).remove();
+
+/* show answer */
+
 chatbox.innerHTML += "<div class='ai'><b>Datta AI:</b> "+data.reply+"</div>";
 
 chatbox.scrollTop=chatbox.scrollHeight;
 
 }catch(err){
 
-chatbox.innerHTML += "<div class='ai'>Server error</div>";
+document.getElementById(thinkingId).innerHTML="<b>Datta AI:</b> server error";
 
 }
 
