@@ -7,6 +7,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+let chatHistory = [
+  {
+    role: "system",
+    content:
+      "You are Datta AI. Answer clearly and briefly. Maximum 2-3 sentences unless the user asks for details."
+  }
+];
+
 app.get("/", (req, res) => {
   res.send("Datta AI server running");
 });
@@ -16,6 +24,12 @@ app.post("/chat", async (req, res) => {
   try {
 
     const message = req.body.message;
+
+    // Add user message to history
+    chatHistory.push({
+      role: "user",
+      content: message
+    });
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -27,25 +41,23 @@ app.post("/chat", async (req, res) => {
       },
       body: JSON.stringify({
         model: "openai/gpt-3.5-turbo",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are Datta AI. Answer in short and clear sentences. Maximum 2-3 sentences unless the user asks for details. Do not use markdown symbols like *, #, or bullet points. Reply in plain text."
-          },
-          {
-            role: "user",
-            content: message
-          }
-        ],
+        messages: chatHistory,
         max_tokens: 120
       })
     });
 
     const data = await response.json();
 
+    const reply = data.choices[0].message.content;
+
+    // Add AI reply to history
+    chatHistory.push({
+      role: "assistant",
+      content: reply
+    });
+
     res.json({
-      reply: data.choices[0].message.content
+      reply: reply
     });
 
   } catch (error) {
