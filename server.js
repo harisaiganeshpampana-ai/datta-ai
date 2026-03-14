@@ -34,7 +34,7 @@ const data = await response.json()
 
 const reply = data.choices[0].message.content
 
-res.json({reply:reply})
+res.json({reply: reply || "AI did not return a response"})
 
 }catch(e){
 
