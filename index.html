@@ -3,6 +3,7 @@
 <head>
 
 <title>Datta AI</title>
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -76,8 +77,6 @@ display:flex;
 flex-direction:column;
 }
 
-/* LOGO */
-
 .logo{
 display:flex;
 align-items:center;
@@ -95,8 +94,6 @@ border-radius:4px;
 font-size:18px;
 font-weight:bold;
 }
-
-/* BUTTONS */
 
 .sidebar button{
 width:100%;
@@ -119,7 +116,7 @@ flex:1;
 overflow-y:auto;
 }
 
-/* MAIN AREA */
+/* MAIN */
 
 .main{
 flex:1;
@@ -127,15 +124,11 @@ display:flex;
 flex-direction:column;
 }
 
-/* HEADER */
-
 .header{
 text-align:center;
 padding:10px;
 border-bottom:1px solid #333;
 }
-
-/* CHAT */
 
 #chatbox{
 flex:1;
@@ -179,30 +172,39 @@ padding:12px;
 border-radius:6px;
 border:none;
 font-size:16px;
+text-transform:capitalize;
 }
 
+/* ARROW SEND BUTTON */
+
 .send-btn{
-padding:12px 18px;
+width:46px;
+height:46px;
 background:#00a67e;
 border:none;
 color:white;
 cursor:pointer;
-border-radius:6px;
+border-radius:50%;
+font-size:20px;
+display:flex;
+align-items:center;
+justify-content:center;
 }
 
 </style>
+
 </head>
 
 <body>
 
-<!-- SPLASH SCREEN -->
+<!-- SPLASH -->
 
 <div id="splash">
 <img src="logo.jpeg" class="big-logo">
 <h1>Datta AI</h1>
 </div>
 
-<!-- MAIN APP -->
+<!-- APP -->
 
 <div id="app">
 
@@ -232,7 +234,7 @@ border-radius:6px;
 
 <div class="input-area">
 <input id="message" placeholder="Ask something...">
-<button class="send-btn" onclick="sendMessage()">Send</button>
+<button class="send-btn" onclick="sendMessage()">➤</button>
 </div>
 
 </div>
@@ -241,13 +243,21 @@ border-radius:6px;
 
 <script>
 
-/* REMOVE OLD BROKEN CHATS */
-localStorage.removeItem("dattaChats");
+/* ENTER KEY SEND */
+
+document.getElementById("message").addEventListener("keypress", function(event){
+if(event.key === "Enter"){
+event.preventDefault();
+sendMessage();
+}
+});
+
+/* CHAT STORAGE */
 
 let chats = JSON.parse(localStorage.getItem("dattaChats")) || {};
 let currentChat = null;
 
-/* SAVE CHATS */
+/* SAVE */
 
 function saveChats(){
 localStorage.setItem("dattaChats", JSON.stringify(chats));
@@ -265,7 +275,9 @@ for(const id in chats){
 if(!chats[id].title) continue;
 
 const btn=document.createElement("button");
+
 btn.innerText=chats[id].title;
+
 btn.onclick=()=>loadChat(id);
 
 history.appendChild(btn);
@@ -288,6 +300,7 @@ function loadChat(id){
 currentChat=id;
 
 const chatbox=document.getElementById("chatbox");
+
 chatbox.innerHTML="";
 
 chats[id].messages.forEach(m=>{
@@ -321,8 +334,6 @@ messages:[]
 
 }
 
-/* SAVE USER MESSAGE */
-
 chats[currentChat].messages.push({
 role:"user",
 text:message
@@ -330,8 +341,6 @@ text:message
 
 saveChats();
 renderSidebar();
-
-/* THINKING MESSAGE */
 
 const thinkingId="t"+Date.now();
 
@@ -342,11 +351,9 @@ chatbox.scrollTop=chatbox.scrollHeight;
 try{
 
 const res=await fetch("https://datta-ai-server.onrender.com/chat",{
-
 method:"POST",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({message})
-
 });
 
 const data=await res.json();
@@ -372,19 +379,17 @@ document.getElementById(thinkingId).innerText="Server error";
 
 }
 
-/* SMOOTH SPLASH EXIT */
+/* SPLASH EXIT */
 
 setTimeout(()=>{
 
-const splash = document.getElementById("splash");
+const splash=document.getElementById("splash");
 
-splash.style.opacity = "0";
+splash.style.opacity="0";
 
 setTimeout(()=>{
-
 splash.style.display="none";
 document.getElementById("app").style.display="flex";
-
 },800);
 
 },2000);
