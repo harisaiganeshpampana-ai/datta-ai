@@ -25,7 +25,7 @@ headers:{
 "X-Title":"Datta AI"
 },
 body:JSON.stringify({
-model:"openai/gpt-3.5-turbo",
+model:"model: "deepseek/deepseek-chat"",
 messages:[
 {role:"user",content:message}
 ]
