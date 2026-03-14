@@ -4,9 +4,11 @@
 
 <title>Datta AI</title>
 
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <style>
+
+/* PAGE */
 
 body{
 background:black;
@@ -73,7 +75,7 @@ overflow-y:auto;
 text-align:left;
 }
 
-/* MESSAGE STYLES */
+/* MESSAGE STYLE */
 
 .user{
 color:#00ffcc;
@@ -106,7 +108,7 @@ padding:10px;
 cursor:pointer;
 }
 
-/* MOBILE DESIGN */
+/* MOBILE */
 
 @media(max-width:768px){
 
@@ -155,7 +157,7 @@ display:block;
 </div>
 
 
-<!-- MAIN CHAT AREA -->
+<!-- MAIN -->
 
 <div class="main">
 
@@ -176,19 +178,13 @@ display:block;
 
 <script>
 
-/* OPEN CLOSE SIDEBAR */
-
 function toggleMenu(){
 document.querySelector(".sidebar").classList.toggle("active");
 }
 
-/* NEW CHAT */
-
 function newChat(){
 document.getElementById("chatbox").innerHTML="";
 }
-
-/* SEND MESSAGE */
 
 async function sendMessage(){
 
