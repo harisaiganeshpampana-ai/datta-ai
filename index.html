@@ -1,25 +1,25 @@
 <!DOCTYPE html>
 <html>
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Datta AI</title>
 
 <script>
 
-/* force fresh load to avoid cache */
+/* detect mobile device */
 
-window.location.replace("app.html?v=" + Date.now())
+if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+window.location.href = "mobile.html?v=" + Date.now()
+}
+else {
+window.location.href = "app.html?v=" + Date.now()
+}
 
 </script>
 
 </head>
-
 <body>
-
 Loading Datta AI...
-
 </body>
 </html>
