@@ -6,26 +6,20 @@
 
 body{
 margin:0;
-font-family:Arial,Helvetica,sans-serif;
+font-family:Arial;
 background:#0f0f0f;
 color:white;
-display:flex;
 height:100vh;
+display:flex;
 }
 
 /* SIDEBAR */
 
 .sidebar{
-width:230px;
+width:220px;
 background:#111;
 padding:20px;
-box-sizing:border-box;
 border-right:1px solid #222;
-}
-
-.sidebar h2{
-font-size:16px;
-margin-bottom:20px;
 }
 
 .newChat{
@@ -34,11 +28,11 @@ border:none;
 padding:10px;
 border-radius:8px;
 width:100%;
-cursor:pointer;
 color:white;
+cursor:pointer;
 }
 
-/* MAIN */
+/* MAIN AREA */
 
 .main{
 flex:1;
@@ -46,7 +40,7 @@ display:flex;
 flex-direction:column;
 }
 
-/* START SCREEN */
+/* CENTER START SCREEN */
 
 .start{
 flex:1;
@@ -57,24 +51,33 @@ justify-content:center;
 text-align:center;
 }
 
-.start h1{
-font-size:28px;
-margin-bottom:20px;
+.startInput{
+display:flex;
+width:500px;
+max-width:90%;
 }
 
-/* CHAT AREA */
+.startInput input{
+flex:1;
+padding:14px;
+border-radius:25px;
+border:none;
+background:#1e1e1e;
+color:white;
+}
+
+/* CHAT */
 
 #chat{
 flex:1;
 overflow-y:auto;
 padding:20px;
 max-width:900px;
-width:100%;
 margin:auto;
 display:none;
 }
 
-/* MESSAGES */
+/* MESSAGE BUBBLES */
 
 .ai{
 background:#1e1e1e;
@@ -94,7 +97,7 @@ max-width:320px;
 margin-left:auto;
 }
 
-/* INPUT */
+/* INPUT BAR */
 
 .inputArea{
 display:flex;
@@ -104,12 +107,14 @@ border-top:1px solid #222;
 
 #message{
 flex:1;
-padding:12px 16px;
+padding:12px;
 border-radius:25px;
 border:none;
 background:#1e1e1e;
 color:white;
 }
+
+/* SEND BUTTON */
 
 .sendBtn{
 margin-left:10px;
@@ -123,15 +128,68 @@ font-size:18px;
 cursor:pointer;
 }
 
+/* AI LOADING */
+
+.aiLoading{
+display:flex;
+align-items:center;
+gap:10px;
+margin:10px 0;
+}
+
+.logo{
+width:30px;
+height:30px;
+border-radius:50%;
+}
+
+.loader{
+width:30px;
+height:30px;
+border:3px solid #2ecc71;
+border-top:3px solid transparent;
+border-radius:50%;
+animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+0%{transform:rotate(0deg);}
+100%{transform:rotate(360deg);}
+}
+
 </style></head><body><div class="sidebar">
-<h2>Datta AI</h2>
 <button class="newChat" onclick="location.reload()">+ New Chat</button>
-</div><div class="main"><div class="start" id="startScreen">
-<h1>What’s on the agenda today?</h1>
-</div><div id="chat"></div><div class="inputArea">
+</div><div class="main"><!-- START PAGE --><div class="start" id="startScreen"><img src="logo.jpeg" width="70"><h2>What’s on the agenda today?</h2><div class="startInput">
+<input id="startMessage" placeholder="Ask anything">
+</div></div><!-- CHAT AREA --><div id="chat"></div><!-- BOTTOM INPUT --><div class="inputArea">
 <input id="message" placeholder="Ask anything">
 <button class="sendBtn" onclick="sendMessage()">➤</button>
 </div></div><script>
+
+/* ENTER KEY SUPPORT */
+
+document.addEventListener("keypress",function(e){
+
+if(e.key==="Enter"){
+
+if(document.activeElement.id==="startMessage"){
+
+document.getElementById("message").value =
+document.getElementById("startMessage").value
+
+sendMessage()
+
+}
+
+else if(document.activeElement.id==="message"){
+
+sendMessage()
+
+}
+
+}
+
+})
 
 async function sendMessage(){
 
@@ -150,7 +208,14 @@ chat.innerHTML+=`<div class="user">${text}</div>`
 
 input.value=""
 
-chat.innerHTML+=`<div class="ai" id="thinking">Datta AI is thinking...</div>`
+/* LOADING WITH LOGO */
+
+chat.innerHTML+=`
+<div class="aiLoading" id="thinking">
+<img src="logo.jpeg" class="logo">
+<div class="loader"></div>
+</div>
+`
 
 chat.scrollTop=chat.scrollHeight
 
@@ -174,7 +239,7 @@ chat.scrollTop=chat.scrollHeight
 
 }catch{
 
-document.getElementById("thinking").innerText="Server error. Try again."
+document.getElementById("thinking").innerText="Server error"
 
 }
 
