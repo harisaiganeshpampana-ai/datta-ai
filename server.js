@@ -34,8 +34,15 @@ messages:[
 
 const data = await response.json();
 
+if (!data.choices) {
+  console.log("AI ERROR RESPONSE:", data);
+  return res.json({
+    reply: "AI provider returned an error"
+  });
+}
+
 res.json({
-reply:data.choices[0].message.content
+  reply: data.choices[0].message.content
 });
 
 }catch(err){
