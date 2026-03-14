@@ -3,7 +3,6 @@
 <head>
 
 <title>Datta AI</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -18,7 +17,7 @@ height:100vh;
 overflow:hidden;
 }
 
-/* SPLASH SCREEN */
+/* SPLASH */
 
 #splash{
 position:fixed;
@@ -32,7 +31,7 @@ flex-direction:column;
 align-items:center;
 justify-content:center;
 z-index:999;
-transition:opacity 0.8s ease;
+transition:opacity .8s ease;
 }
 
 .big-logo{
@@ -48,17 +47,17 @@ animation:textFade 1.8s ease;
 }
 
 @keyframes logoIntro{
-0%{opacity:0; transform:scale(0.6);}
-60%{opacity:1; transform:scale(1.05);}
+0%{opacity:0;transform:scale(.6);}
+60%{opacity:1;transform:scale(1.05);}
 100%{transform:scale(1);}
 }
 
 @keyframes textFade{
-0%{opacity:0; transform:translateY(20px);}
-100%{opacity:1; transform:translateY(0);}
+0%{opacity:0;transform:translateY(20px);}
+100%{opacity:1;transform:translateY(0);}
 }
 
-/* APP CONTAINER */
+/* APP */
 
 #app{
 display:none;
@@ -139,7 +138,7 @@ flex-direction:column;
 gap:12px;
 }
 
-/* MESSAGE BUBBLES */
+/* BUBBLES */
 
 .user{
 align-self:flex-end;
@@ -157,7 +156,7 @@ border-radius:10px;
 max-width:70%;
 }
 
-/* INPUT AREA */
+/* INPUT */
 
 .input-area{
 display:flex;
@@ -175,7 +174,7 @@ font-size:16px;
 text-transform:capitalize;
 }
 
-/* ARROW SEND BUTTON */
+/* SEND BUTTON */
 
 .send-btn{
 width:46px;
@@ -192,19 +191,14 @@ justify-content:center;
 }
 
 </style>
-
 </head>
 
 <body>
-
-<!-- SPLASH -->
 
 <div id="splash">
 <img src="logo.jpeg" class="big-logo">
 <h1>Datta AI</h1>
 </div>
-
-<!-- APP -->
 
 <div id="app">
 
@@ -238,29 +232,26 @@ justify-content:center;
 </div>
 
 </div>
-
 </div>
 
 <script>
 
-/* ENTER KEY SEND */
+/* ENTER SEND */
 
-document.getElementById("message").addEventListener("keypress", function(event){
-if(event.key === "Enter"){
-event.preventDefault();
+document.getElementById("message").addEventListener("keypress",function(e){
+if(e.key==="Enter"){
+e.preventDefault();
 sendMessage();
 }
 });
 
-/* CHAT STORAGE */
+/* STORAGE */
 
-let chats = JSON.parse(localStorage.getItem("dattaChats")) || {};
-let currentChat = null;
-
-/* SAVE */
+let chats=JSON.parse(localStorage.getItem("dattaChats"))||{};
+let currentChat=null;
 
 function saveChats(){
-localStorage.setItem("dattaChats", JSON.stringify(chats));
+localStorage.setItem("dattaChats",JSON.stringify(chats));
 }
 
 /* SIDEBAR */
@@ -272,12 +263,8 @@ history.innerHTML="";
 
 for(const id in chats){
 
-if(!chats[id].title) continue;
-
 const btn=document.createElement("button");
-
 btn.innerText=chats[id].title;
-
 btn.onclick=()=>loadChat(id);
 
 history.appendChild(btn);
@@ -293,14 +280,13 @@ currentChat=null;
 document.getElementById("chatbox").innerHTML="";
 }
 
-/* LOAD CHAT */
+/* LOAD */
 
 function loadChat(id){
 
 currentChat=id;
 
 const chatbox=document.getElementById("chatbox");
-
 chatbox.innerHTML="";
 
 chats[id].messages.forEach(m=>{
@@ -309,19 +295,49 @@ chatbox.innerHTML+=`<div class="${m.role}">${m.text}</div>`;
 
 }
 
-/* SEND MESSAGE */
+/* TYPING EFFECT */
+
+function typeText(el,text,speed=15){
+
+let i=0;
+
+function typing(){
+
+if(i<text.length){
+
+el.innerHTML+=text.charAt(i);
+i++;
+
+setTimeout(typing,speed);
+
+}
+
+}
+
+typing();
+
+}
+
+/* SEND */
 
 async function sendMessage(){
 
 const input=document.getElementById("message");
-const chatbox=document.getElementById("chatbox");
-
-const message=input.value.trim();
+let message=input.value.trim();
 
 if(!message) return;
 
+/* CAPITALIZE FIRST LETTER */
+
+message=message.charAt(0).toUpperCase()+message.slice(1);
+
+const chatbox=document.getElementById("chatbox");
+
 chatbox.innerHTML+=`<div class="user">${message}</div>`;
+
 input.value="";
+
+/* CREATE CHAT */
 
 if(!currentChat){
 
@@ -334,6 +350,8 @@ messages:[]
 
 }
 
+/* SAVE USER */
+
 chats[currentChat].messages.push({
 role:"user",
 text:message
@@ -341,6 +359,8 @@ text:message
 
 saveChats();
 renderSidebar();
+
+/* THINKING */
 
 const thinkingId="t"+Date.now();
 
@@ -360,7 +380,13 @@ const data=await res.json();
 
 document.getElementById(thinkingId).remove();
 
-chatbox.innerHTML+=`<div class="ai">${data.reply}</div>`;
+const aiDiv=document.createElement("div");
+aiDiv.className="ai";
+chatbox.appendChild(aiDiv);
+
+typeText(aiDiv,data.reply);
+
+/* SAVE AI */
 
 chats[currentChat].messages.push({
 role:"ai",
@@ -371,7 +397,7 @@ saveChats();
 
 chatbox.scrollTop=chatbox.scrollHeight;
 
-}catch(err){
+}catch{
 
 document.getElementById(thinkingId).innerText="Server error";
 
@@ -379,7 +405,7 @@ document.getElementById(thinkingId).innerText="Server error";
 
 }
 
-/* SPLASH EXIT */
+/* SPLASH */
 
 setTimeout(()=>{
 
