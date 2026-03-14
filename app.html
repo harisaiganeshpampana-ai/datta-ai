@@ -46,9 +46,9 @@ margin-right:8px;
 /* CHAT AREA */
 
 #chatbox{
-position:fixed;
+position:absolute;
 top:60px;
-bottom:70px;
+bottom:80px;
 left:0;
 right:0;
 overflow-y:auto;
@@ -76,18 +76,19 @@ align-self:flex-start;
 max-width:80%;
 }
 
-/* INPUT AREA */
+/* INPUT BAR */
 
 .input-area{
 position:fixed;
 bottom:0;
 left:0;
 right:0;
-height:70px;
+height:80px;
 display:flex;
-padding:10px;
+padding:15px;
 background:#1e1e1e;
 border-top:1px solid #333;
+z-index:20;
 }
 
 /* INPUT */
@@ -106,7 +107,7 @@ outline:none;
 .send{
 width:45px;
 height:45px;
-margin-left:8px;
+margin-left:10px;
 border:none;
 border-radius:50%;
 background:#00a67e;
