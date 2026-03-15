@@ -104,7 +104,7 @@ scrollBottom()
 
 }
 
-/* CHATGPT STYLE TITLE */
+/* TITLE LOGIC */
 
 const greetings = [
 "hi","hello","hey","hii",
@@ -112,16 +112,14 @@ const greetings = [
 "good morning","good afternoon","good evening"
 ]
 
-const cleaned = text.toLowerCase().trim()
+const clean = text.toLowerCase().trim()
 
-if(
-!titleUpdated &&
-!greetings.includes(cleaned) &&
-cleaned.length > 3 &&
-currentChatId
-){
+if(!titleUpdated && !greetings.includes(clean) && clean.length > 3){
+
 await updateChatTitle(currentChatId,text)
+
 titleUpdated = true
+
 }
 
 loadSidebar()
