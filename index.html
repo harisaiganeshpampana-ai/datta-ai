@@ -120,14 +120,12 @@ color:white;
 .send,
 .voice,
 .upload{
-
 width:40px;
 height:40px;
 border-radius:50%;
 border:none;
 cursor:pointer;
 color:white;
-
 }
 
 .send{background:#2ecc71;}
@@ -251,8 +249,6 @@ const data = await res.json()
 
 document.getElementById("loading").remove()
 
-/* AI MESSAGE WITH VOICE CONTROLS */
-
 chatBox.innerHTML += `
 <div class="ai">
 ${data.reply}
@@ -263,7 +259,7 @@ ${data.reply}
 
 chatBox.scrollTop = chatBox.scrollHeight
 
-/* SAVE CHAT */
+/* SAVE CHAT (FIXED) */
 
 if(!currentChat){
 
@@ -272,10 +268,15 @@ title:text.substring(0,30),
 messages:[]
 }
 
+chats.unshift(currentChat)
+
 }
 
 currentChat.messages.push({role:"user",text:text})
 currentChat.messages.push({role:"ai",text:data.reply})
+
+localStorage.setItem("dattaChats",JSON.stringify(chats))
+loadSidebar()
 
 }catch{
 
@@ -321,23 +322,15 @@ alert("File uploaded: "+file.name)
 
 }
 
-/* NEW CHAT */
+/* NEW CHAT (FIXED) */
 
 function newChat(){
-
-if(currentChat && currentChat.messages.length>0){
-
-chats.push(currentChat)
-
-localStorage.setItem("dattaChats",JSON.stringify(chats))
-
-}
 
 currentChat=null
 
 document.getElementById("chat").innerHTML=""
 
-loadSidebar()
+document.getElementById("message").focus()
 
 }
 
