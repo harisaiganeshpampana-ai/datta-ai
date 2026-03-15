@@ -200,11 +200,7 @@ if(!localStorage.getItem("sessionId")){
 localStorage.setItem("sessionId",Date.now().toString())
 }
 
-/* STORAGE */
-
-let chats = JSON.parse(localStorage.getItem("dattaChats")) || []
-let currentChat = null
-let speech = null
+const sessionId = localStorage.getItem("sessionId")
 
 const chatBox=document.getElementById("chat")
 
@@ -229,21 +225,6 @@ chatBox.innerHTML += `
 
 scrollBottom()
 
-/* CREATE CHAT IMMEDIATELY */
-
-if(!currentChat){
-
-currentChat={
-title:text.slice(0,40),
-messages:[]
-}
-
-chats.push(currentChat)
-localStorage.setItem("dattaChats",JSON.stringify(chats))
-loadSidebar()
-
-}
-
 try{
 
 const res = await fetch("https://datta-ai-server.onrender.com/chat",{
@@ -251,7 +232,7 @@ method:"POST",
 headers:{ "Content-Type":"application/json" },
 body:JSON.stringify({
 message:text,
-sessionId:localStorage.getItem("sessionId")
+sessionId:sessionId
 })
 })
 
@@ -269,10 +250,7 @@ ${escapeHTML(data.reply)}
 
 scrollBottom()
 
-currentChat.messages.push({role:"user",text:text})
-currentChat.messages.push({role:"ai",text:data.reply})
-
-localStorage.setItem("dattaChats",JSON.stringify(chats))
+loadSidebar()
 
 }catch{
 
@@ -282,72 +260,49 @@ document.getElementById("loading").innerText="Server error"
 
 }
 
-/* ENTER KEY */
+/* SIDEBAR FROM DATABASE */
 
-document.getElementById("message").addEventListener("keydown",function(e){
-if(e.key==="Enter"){
-send()
-}
-})
+async function loadSidebar(){
 
-/* SIDEBAR */
+const res = await fetch(
+"https://datta-ai-server.onrender.com/history/"+sessionId
+)
 
-function loadSidebar(){
+const messages = await res.json()
 
 const history=document.getElementById("history")
+
 history.innerHTML=""
 
-chats = JSON.parse(localStorage.getItem("dattaChats")) || []
+messages.forEach(msg=>{
 
-chats.forEach((chat,index)=>{
+if(msg.role==="user"){
 
 let div=document.createElement("div")
-div.innerText=chat.title
 
-div.onclick=function(){
-openChat(index)
-}
+div.innerText = msg.content.slice(0,40)
 
 history.appendChild(div)
 
-})
-
-}
-
-/* OPEN OLD CHAT */
-
-function openChat(index){
-
-chats = JSON.parse(localStorage.getItem("dattaChats")) || []
-
-currentChat=chats[index]
-
-chatBox.innerHTML=""
-
-currentChat.messages.forEach(m=>{
-
-if(m.role==="user"){
-chatBox.innerHTML+=`<div class="user">${escapeHTML(m.text)}</div>`
-}else{
-chatBox.innerHTML+=`
-<div class="ai">
-${escapeHTML(m.text)}
-<button onclick="speakText(this)">▶</button>
-<button onclick="stopVoice()">⏹</button>
-</div>`
 }
 
 })
 
-scrollBottom()
-
 }
+
+/* ENTER KEY */
+
+document.getElementById("message").addEventListener("keydown",function(e){
+if(e.key==="Enter"){ send() }
+})
 
 /* NEW CHAT */
 
 function newChat(){
-currentChat=null
-chatBox.innerHTML=""
+
+localStorage.setItem("sessionId",Date.now().toString())
+location.reload()
+
 }
 
 /* VOICE */
@@ -358,7 +313,7 @@ const text = btn.parentElement.innerText
 .replace("▶","")
 .replace("⏹","")
 
-speech = new SpeechSynthesisUtterance(text)
+const speech = new SpeechSynthesisUtterance(text)
 speech.lang="en-US"
 
 speechSynthesis.speak(speech)
