@@ -1,96 +1,55 @@
-const express = require("express");
-const cors = require("cors");
-const axios = require("axios");
-const mongoose = require("mongoose");
+import express from "express";
+import cors from "cors";
+import fetch from "node-fetch";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-/* ------------------ MongoDB ------------------ */
+const PORT = process.env.PORT || 10000;
 
+/* MongoDB connection */
 mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log("MongoDB connected"))
 .catch(err => console.log(err));
 
-const MemorySchema = new mongoose.Schema({
-  question: String,
-  answer: String
-});
-
-const Memory = mongoose.model("Memory", MemorySchema);
-
-/* ------------------ AI Route ------------------ */
-
+/* Chat endpoint */
 app.post("/chat", async (req, res) => {
-
-  const userMessage = req.body.message;
-
   try {
 
-    // Check memory first
-    const memory = await Memory.findOne({ question: userMessage });
+    const userMessage = req.body.message;
 
-    if(memory){
-      return res.json({ reply: memory.answer });
-    }
-
-    // Ask DeepSeek AI
-    const response = await axios.post(
-      "https://api.deepseek.com/v1/chat/completions",
-      {
-        model: "deepseek-chat",
-        messages: [
-          {
-            role: "system",
-            content: "You are Datta AI, a helpful intelligent assistant."
-          },
-          {
-            role: "user",
-            content: userMessage
-          }
-        ]
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json"
       },
-      {
-        headers: {
-          "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
-
-    const aiReply = response.data.choices[0].message.content;
-
-    // Save to memory
-    await Memory.create({
-      question: userMessage,
-      answer: aiReply
+      body: JSON.stringify({
+        model: "deepseek/deepseek-chat",
+        messages: [
+          { role: "user", content: userMessage }
+        ]
+      })
     });
 
-    res.json({ reply: aiReply });
+    const data = await response.json();
+
+    const aiMessage = data.choices[0].message.content;
+
+    res.json({ reply: aiMessage });
 
   } catch (error) {
-
-    console.log(error.response?.data || error.message);
-
-    res.json({
-      reply: "AI error occurred"
-    });
-
+    console.log(error);
+    res.status(500).json({ error: "AI error occurred" });
   }
-
 });
 
-/* ------------------ Test Route ------------------ */
-
-app.get("/", (req,res)=>{
-  res.send("Datta AI server running");
-});
-
-/* ------------------ Server ------------------ */
-
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, ()=>{
-  console.log("Server running on port", PORT);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
