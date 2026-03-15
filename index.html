@@ -128,7 +128,7 @@ const chatBox=document.getElementById("chat")
 
 let currentChatId=null
 
-/* SEND MESSAGE */
+/* SEND MESSAGE (STREAMING VERSION) */
 
 async function send(){
 
@@ -141,11 +141,15 @@ chatBox.innerHTML+=`<div class="user">${escapeHTML(text)}</div>`
 
 input.value=""
 
-chatBox.innerHTML+=`
-<div id="loading" class="ai typing">
-<span></span><span></span><span></span>
-</div>
+let aiDiv=document.createElement("div")
+aiDiv.className="ai"
+aiDiv.innerHTML=`
+<span id="stream"></span>
+<button onclick="speakText(this)">🗣</button>
+<button onclick="stopVoice()">⏹</button>
 `
+
+chatBox.appendChild(aiDiv)
 
 scrollBottom()
 
@@ -159,21 +163,39 @@ chatId:currentChatId
 })
 })
 
-const data=await res.json()
+const reader=res.body.getReader()
+const decoder=new TextDecoder()
 
-currentChatId=data.chatId
+let streamText=""
+let streamSpan=aiDiv.querySelector("#stream")
 
-document.getElementById("loading").remove()
+while(true){
 
-chatBox.innerHTML+=`
-<div class="ai">
-${escapeHTML(data.reply)}
-<button onclick="speakText(this)">🗣</button>
-<button onclick="stopVoice()">⏹</button>
-</div>
-`
+const {done,value}=await reader.read()
+
+if(done) break
+
+const chunk=decoder.decode(value)
+
+if(chunk.includes("__CHATID__")){
+
+const parts=chunk.split("__CHATID__")
+
+streamText+=parts[0]
+streamSpan.innerHTML=escapeHTML(streamText)
+
+currentChatId=parts[1]
+
+}else{
+
+streamText+=chunk
+streamSpan.innerHTML=escapeHTML(streamText)
+
+}
 
 scrollBottom()
+
+}
 
 loadSidebar()
 
