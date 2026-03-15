@@ -101,10 +101,13 @@ span.innerHTML = marked.parse(streamText)
 scrollBottom()
 
 }
+
 await updateChatTitle(currentChatId,text)
 loadSidebar()
 
 }
+
+/* UPDATE CHAT TITLE */
 
 async function updateChatTitle(chatId,message){
 
@@ -115,20 +118,17 @@ const ignore = ["hi","hello","hey","hii"]
 if(ignore.includes(message.toLowerCase())) return
 
 await fetch("https://datta-ai-server.onrender.com/chat/"+chatId+"/rename",{
-
 method:"POST",
-
 headers:{
 "Content-Type":"application/json"
 },
-
 body:JSON.stringify({
 title:message.slice(0,40)
 })
-
 })
 
 }
+
 /* LOAD SIDEBAR */
 
 async function loadSidebar(){
@@ -145,7 +145,7 @@ let div = document.createElement("div")
 div.className = "chatItem"
 
 div.innerHTML = `
-<span onclick="openChat('${chat._id}')">${chat.title}</span>
+<div class="chatTitle">${chat.title}</div>
 
 <div class="chatActions">
 
@@ -157,6 +157,14 @@ div.innerHTML = `
 
 </div>
 `
+
+div.onclick = (e)=>{
+
+if(e.target.closest(".menuBtn")) return
+
+openChat(chat._id)
+
+}
 
 history.appendChild(div)
 
