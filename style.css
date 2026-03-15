@@ -1,466 +1,65 @@
-body{
-margin:0;
-font-family:Arial;
-background:#0f0f0f;
-color:white;
-display:flex;
-height:100vh;
-}
+/* ============================= */
+/* NEW UI IMPROVEMENTS (ADDED) */
+/* ============================= */
 
-/* SIDEBAR */
+/* cleaner response action bar */
 
-.sidebar{
-width:240px;
-background:#151515;
-padding:15px;
-display:flex;
-flex-direction:column;
-}
-
-.logo{
-display:flex;
-align-items:center;
-gap:10px;
-font-weight:bold;
-margin-bottom:15px;
-}
-
-.logo img{width:26px;}
-
-.newchat{
-background:#222;
-border:none;
-padding:10px;
-color:white;
-border-radius:8px;
-cursor:pointer;
-margin-bottom:10px;
-transition:.2s;
-display:flex;
-align-items:center;
-gap:8px;
-}
-
-.newchat:hover{
-background:#2a2a2a;
-}
-
-/* BETTER SEARCH BAR */
-
-.searchBox{
-background:#1e1e1e;
-border:1px solid #2a2a2a;
-padding:10px;
-border-radius:10px;
-color:white;
-margin-bottom:12px;
-outline:none;
-transition:.2s;
-}
-
-.searchBox:focus{
-border-color:#444;
-background:#202020;
-}
-
-/* HISTORY */
-
-.sectionTitle{
-font-size:12px;
-color:#aaa;
-margin-bottom:6px;
-}
-
-.history{
-flex:1;
-overflow:auto;
-}
-
-.chatItem{
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:8px;
-border-radius:6px;
-cursor:pointer;
-font-size:14px;
-}
-
-.chatItem:hover{background:#222;}
-
-.chatActions{
-display:flex;
-align-items:center;
-gap:5px;
-position:relative;
-}
-
-.menuBtn{
-background:none;
-border:none;
-color:white;
-cursor:pointer;
-font-size:16px;
-}
-
-.chatMenu{
-display:none;
-position:absolute;
-right:0;
-top:22px;
-background:#1e1e1e;
-border-radius:8px;
-box-shadow:0 0 10px rgba(0,0,0,0.6);
-}
-
-.chatMenu button{
-display:block;
-width:140px;
-padding:8px;
-background:none;
-border:none;
-color:white;
-text-align:left;
-cursor:pointer;
-}
-
-.chatMenu button:hover{
-background:#333;
-}
-
-/* MAIN */
-
-.main{
-flex:1;
-display:flex;
-flex-direction:column;
-}
-
-.chat{
-flex:1;
-overflow:auto;
-padding:40px;
-max-width:900px;
-margin:auto;
-width:100%;
-}
-
-/* MESSAGE */
-
-.messageRow{
+.aiActions{
 display:flex;
 gap:10px;
-margin:16px 0;
-align-items:flex-start;
+margin-top:6px;
+background:none;
+padding:0;
 }
 
-.userRow{
-justify-content:flex-end;
-}
+/* cleaner buttons (no heavy background box) */
 
-.avatar{
-width:32px;
-height:32px;
-border-radius:50%;
-background:#333;
+.actionBtn{
+background:transparent;
+border:none;
+width:28px;
+height:28px;
 display:flex;
 align-items:center;
 justify-content:center;
-}
-
-.userBubble{
-background:#2ecc71;
-color:black;
-padding:10px 14px;
-border-radius:14px;
-max-width:70%;
-}
-
-.aiBubble{
-background:#1e1e1e;
-padding:10px 14px;
-border-radius:14px;
-max-width:70%;
-}
-
-/* COPY BUTTON */
-
-.copyBtn{
-margin-left:6px;
-background:#333;
-border:none;
-color:white;
 cursor:pointer;
-border-radius:4px;
-padding:2px 6px;
+transition:.2s;
 }
 
-/* ============================= */
-/* INPUT AREA */
-/* ============================= */
-
-.inputArea{
-padding:15px;
-border-top:1px solid #222;
+.actionBtn:hover{
+background:#2a2a2a;
+border-radius:6px;
 }
+
+/* assistant icon fix */
+
+.assistant svg{
+width:18px;
+height:18px;
+stroke:white;
+}
+
+/* input bar alignment improvement */
 
 .inputWrap{
 display:flex;
 align-items:center;
 background:#1e1e1e;
 border-radius:30px;
-padding:6px;
+padding:6px 10px;
 max-width:900px;
 margin:auto;
-gap:6px;
-}
-
-#message{
-flex:1;
-padding:12px;
-border:none;
-background:transparent;
-color:white;
-outline:none;
-font-size:14px;
-}
-
-/* CLEAN ICON BUTTONS */
-
-.send,
-.upload,
-.assistant{
-width:36px;
-height:36px;
-border-radius:50%;
-border:none;
-cursor:pointer;
-color:white;
-background:#2a2a2a;
-display:flex;
-align-items:center;
-justify-content:center;
-transition:.2s;
-}
-
-.send:hover,
-.upload:hover,
-.assistant:hover{
-background:#3a3a3a;
-}
-
-/* SVG icons inside buttons */
-
-.send svg,
-.upload svg,
-.assistant svg,
-.newchat svg{
-width:18px;
-height:18px;
-stroke:white;
-}
-
-/* typing dots */
-
-.typing span{
-height:6px;
-width:6px;
-background:#aaa;
-border-radius:50%;
-display:inline-block;
-margin:2px;
-animation:blink 1.4s infinite;
-}
-
-@keyframes blink{
-0%{opacity:.2}
-20%{opacity:1}
-100%{opacity:.2}
-}
-
-/* MOBILE */
-
-@media (max-width:768px){
-
-body{flex-direction:column}
-
-.sidebar{width:100%}
-
-.chat{padding:15px;margin:0}
-
-.inputArea{
-position:fixed;
-bottom:0;
-left:0;
-right:0;
-background:#0f0f0f;
-}
-
-.chat{padding-bottom:90px}
-
-}
-
-/* ============================= */
-/* STREAMING CURSOR */
-/* ============================= */
-
-.cursor{
-animation:blinkCursor 1s infinite;
-font-weight:bold;
-}
-
-@keyframes blinkCursor{
-0%{opacity:0}
-50%{opacity:1}
-100%{opacity:0}
-}
-
-/* CODE BLOCK */
-
-pre{
-position:relative;
-background:#111;
-padding:12px;
-border-radius:8px;
-overflow:auto;
-}
-
-/* CODE COPY */
-
-.codeCopy{
-position:absolute;
-top:8px;
-right:8px;
-background:#333;
-color:white;
-border:none;
-padding:4px 8px;
-border-radius:6px;
-cursor:pointer;
-font-size:12px;
-}
-
-.codeCopy:hover{
-background:#555;
-}
-
-/* ============================= */
-/* WELCOME SCREEN */
-/* ============================= */
-
-.welcomeScreen{
-text-align:center;
-margin-top:120px;
-animation:fadeIn .6s ease;
-}
-
-.welcomeTitle{
-font-size:36px;
-font-weight:500;
-margin-bottom:30px;
-}
-
-.suggestions{
-display:flex;
-flex-direction:column;
-gap:12px;
-max-width:420px;
-margin:auto;
-}
-
-.suggestions button{
-background:#1e1e1e;
-border:none;
-color:white;
-padding:12px;
-border-radius:14px;
-cursor:pointer;
-font-size:14px;
-transition:.2s;
-}
-
-.suggestions button:hover{
-background:#2a2a2a;
-}
-
-@keyframes fadeIn{
-from{
-opacity:0;
-transform:translateY(20px);
-}
-to{
-opacity:1;
-transform:translateY(0);
-}
-}
-
-/* ============================= */
-/* FAST MODE BUTTON */
-/* ============================= */
-
-.modeBtn{
-background:#2a2a2a;
-border:none;
-color:white;
-padding:6px 12px;
-border-radius:20px;
-cursor:pointer;
-font-size:12px;
-transition:.2s;
-}
-
-.modeBtn:hover{
-background:#3a3a3a;
-}
-
-/* ============================= */
-/* NEW ADDED: AI RESPONSE BUTTONS */
-/* ============================= */
-
-.aiContent{
-display:flex;
-flex-direction:column;
-}
-
-/* action bar below message */
-
-.aiActions{
-display:flex;
 gap:8px;
-margin-top:8px;
 }
 
-/* response buttons */
+/* send button hover polish */
 
-.actionBtn{
-width:30px;
-height:30px;
-border:none;
-background:#2a2a2a;
-border-radius:6px;
-cursor:pointer;
-display:flex;
-align-items:center;
-justify-content:center;
-transition:.2s;
+.send:hover{
+background:#444;
 }
 
-.actionBtn:hover{
-background:#3a3a3a;
-}
+/* plus upload icon hover polish */
 
-.actionBtn svg{
-width:16px;
-height:16px;
-stroke:white;
-}
-
-/* stop button */
-
-.stopBtn{
-background:#c0392b;
-}
-
-.stopBtn:hover{
-background:#e74c3c;
+.upload:hover{
+background:#444;
 }
