@@ -117,6 +117,33 @@ res.json({reply:"Server error"});
 
 });
 
+
+/* HISTORY ROUTE FOR SIDEBAR */
+
+app.get("/history/:sessionId", async (req,res)=>{
+
+try{
+
+const {sessionId} = req.params;
+
+const chat = await Chat.findOne({sessionId});
+
+if(!chat){
+return res.json([]);
+}
+
+res.json(chat.messages);
+
+}catch(err){
+
+console.log(err);
+res.json([]);
+
+}
+
+});
+
+
 /* START SERVER */
 
 app.listen(PORT,()=>{
