@@ -196,6 +196,12 @@ Datta AI
 
 <script>
 
+/* SESSION FIX (NEW) */
+
+if(!localStorage.getItem("sessionId")){
+localStorage.setItem("sessionId",Date.now().toString())
+}
+
 /* STORAGE */
 
 let chats = JSON.parse(localStorage.getItem("dattaChats")) || []
@@ -228,7 +234,10 @@ try{
 const res = await fetch("https://datta-ai-server.onrender.com/chat",{
 method:"POST",
 headers:{ "Content-Type":"application/json" },
-body:JSON.stringify({message:text})
+body:JSON.stringify({
+message:text,
+sessionId:localStorage.getItem("sessionId")   /* NEW */
+})
 })
 
 const data = await res.json()
@@ -308,9 +317,11 @@ alert("File uploaded: "+file.name)
 
 }
 
-/* NEW CHAT */
+/* NEW CHAT (UPDATED) */
 
 function newChat(){
+
+localStorage.setItem("sessionId",Date.now().toString()) /* NEW */
 
 currentChat=null
 document.getElementById("chat").innerHTML=""
