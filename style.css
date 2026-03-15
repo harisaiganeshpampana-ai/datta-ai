@@ -250,6 +250,8 @@ background:#0f0f0f;
 /* NEW FEATURES ADDED BELOW */
 /* ============================= */
 
+/* streaming cursor */
+
 .cursor{
 animation:blinkCursor 1s infinite;
 font-weight:bold;
@@ -261,6 +263,8 @@ font-weight:bold;
 100%{opacity:0}
 }
 
+/* code block */
+
 pre{
 position:relative;
 background:#111;
@@ -268,6 +272,8 @@ padding:12px;
 border-radius:8px;
 overflow:auto;
 }
+
+/* code copy button */
 
 .codeCopy{
 position:absolute;
@@ -284,4 +290,54 @@ font-size:12px;
 
 .codeCopy:hover{
 background:#555;
+}
+
+/* ============================= */
+/* WELCOME SCREEN (NEW) */
+/* ============================= */
+
+.welcomeScreen{
+text-align:center;
+margin-top:120px;
+animation:fadeIn .6s ease;
+}
+
+.welcomeTitle{
+font-size:36px;
+font-weight:500;
+margin-bottom:30px;
+}
+
+.suggestions{
+display:flex;
+flex-direction:column;
+gap:12px;
+max-width:420px;
+margin:auto;
+}
+
+.suggestions button{
+background:#1e1e1e;
+border:none;
+color:white;
+padding:12px;
+border-radius:14px;
+cursor:pointer;
+font-size:14px;
+transition:.2s;
+}
+
+.suggestions button:hover{
+background:#2a2a2a;
+}
+
+@keyframes fadeIn{
+from{
+opacity:0;
+transform:translateY(20px);
+}
+to{
+opacity:1;
+transform:translateY(0);
+}
 }
