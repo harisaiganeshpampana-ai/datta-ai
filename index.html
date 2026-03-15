@@ -204,8 +204,6 @@ const chatBox=document.getElementById("chat")
 
 let serverMessages=[]
 
-/* SEND */
-
 async function send(){
 
 const input=document.getElementById("message")
@@ -252,8 +250,6 @@ loadSidebar()
 
 }
 
-/* SIDEBAR */
-
 async function loadSidebar(){
 
 const res=await fetch(
@@ -283,8 +279,6 @@ history.appendChild(div)
 
 }
 
-/* OPEN CHAT */
-
 function openChat(index){
 
 chatBox.innerHTML=""
@@ -310,12 +304,11 @@ scrollBottom()
 
 }
 
-/* NEW CHAT */
+/* FIXED NEW CHAT */
 
 function newChat(){
 
-localStorage.setItem("sessionId",Date.now().toString())
-location.reload()
+chatBox.innerHTML=""
 
 }
 
@@ -328,7 +321,6 @@ const text=btn.parentElement.innerText
 .replace("⏹","")
 
 const speech=new SpeechSynthesisUtterance(text)
-
 speech.lang="en-US"
 
 speechSynthesis.speak(speech)
@@ -338,8 +330,6 @@ speechSynthesis.speak(speech)
 function stopVoice(){
 speechSynthesis.cancel()
 }
-
-/* VOICE INPUT */
 
 function startAssistant(){
 
