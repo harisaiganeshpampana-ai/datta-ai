@@ -7,11 +7,13 @@ const chatBox = document.getElementById("chat")
 
 let currentChatId = null
 let lastUserMessage = ""
+let titleUpdated = false
 
 /* NEW CHAT */
 
 function newChat(){
 currentChatId = null
+titleUpdated = false
 chatBox.innerHTML = ""
 }
 
@@ -110,8 +112,16 @@ const greetings = [
 "good morning","good afternoon","good evening"
 ]
 
-if(!greetings.includes(text.toLowerCase())){
+const cleaned = text.toLowerCase().trim()
+
+if(
+!titleUpdated &&
+!greetings.includes(cleaned) &&
+cleaned.length > 3 &&
+currentChatId
+){
 await updateChatTitle(currentChatId,text)
+titleUpdated = true
 }
 
 loadSidebar()
