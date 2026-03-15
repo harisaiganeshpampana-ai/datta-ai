@@ -58,16 +58,32 @@ scrollBottom();
 }
 
 /* ============================= */
-/* AI MESSAGE */
+/* AI MESSAGE WITH VOICE BUTTON */
 /* ============================= */
 
 function addAIMessage(text){
 
 const div = document.createElement("div");
 div.className = "aiMessage";
-div.innerText = text;
+
+div.innerHTML = `
+<span class="aiText">${text}</span>
+<button class="voiceBtn">🔊</button>
+`;
 
 chatBox.appendChild(div);
+
+/* voice speak */
+
+div.querySelector(".voiceBtn").onclick = () => {
+
+const speech = new SpeechSynthesisUtterance(text);
+speech.lang = "en-US";
+
+speechSynthesis.speak(speech);
+
+};
+
 scrollBottom();
 
 }
@@ -105,7 +121,7 @@ if(currentChat.length === 1){
 
 chats.unshift({
 title:title,
-messages:currentChat
+messages:[...currentChat]
 });
 
 localStorage.setItem("dattaChats",JSON.stringify(chats));
@@ -147,14 +163,38 @@ function loadChat(index){
 
 chatBox.innerHTML = "";
 
-const chat = chats[index];
+currentChat = [...chats[index].messages];
 
-chat.messages.forEach(m=>{
+currentChat.forEach(m=>{
 
 addUserMessage(m.question);
 addAIMessage(m.answer);
 
 });
+
+}
+
+/* ============================= */
+/* NEW CHAT */
+/* ============================= */
+
+function newChat(){
+
+if(currentChat.length > 0){
+
+chats.unshift({
+title:currentChat[0].question,
+messages:[...currentChat]
+});
+
+localStorage.setItem("dattaChats",JSON.stringify(chats));
+
+renderHistory();
+
+}
+
+currentChat = [];
+chatBox.innerHTML = "";
 
 }
 
