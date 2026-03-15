@@ -7,7 +7,6 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
@@ -16,14 +15,17 @@ const PORT = process.env.PORT || 10000;
 /* MongoDB connection */
 
 mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log("MongoDB connected"))
-.catch(err => console.log(err));
+.then(()=>console.log("MongoDB connected"))
+.catch(err=>console.log(err));
 
-/* Health check */
+/* Chat schema */
 
-app.get("/", (req,res)=>{
-res.send("Datta AI server running");
+const ChatSchema = new mongoose.Schema({
+sessionId:String,
+messages:Array
 });
+
+const Chat = mongoose.model("Chat",ChatSchema);
 
 /* Chat endpoint */
 
@@ -31,7 +33,29 @@ app.post("/chat", async (req,res)=>{
 
 try{
 
-const message = req.body.message;
+const {message,sessionId} = req.body;
+
+/* find session */
+
+let chat = await Chat.findOne({sessionId});
+
+if(!chat){
+
+chat = new Chat({
+sessionId:sessionId,
+messages:[]
+});
+
+}
+
+/* add user message */
+
+chat.messages.push({
+role:"user",
+content:message
+});
+
+/* call AI */
 
 const response = await fetch(
 "https://openrouter.ai/api/v1/chat/completions",
@@ -43,35 +67,40 @@ headers:{
 },
 body:JSON.stringify({
 model:"deepseek/deepseek-chat",
-messages:[
-{role:"user",content:message}
-]
+messages:chat.messages
 })
 }
 );
 
 const data = await response.json();
 
-const reply =
-data?.choices?.[0]?.message?.content ||
-"AI could not generate a response.";
+const reply = data?.choices?.[0]?.message?.content || "AI error";
 
-res.json({ reply });
+/* store AI reply */
 
-}catch(error){
+chat.messages.push({
+role:"assistant",
+content:reply
+});
 
-console.log("AI error:",error);
+await chat.save();
+
+/* send response */
+
+res.json({reply});
+
+}catch(err){
+
+console.log(err);
 
 res.json({
-reply:"Server waking up or AI busy. Please try again."
+reply:"Server error. Try again."
 });
 
 }
 
 });
 
-/* Start server */
-
-app.listen(PORT, ()=>{
-console.log("Server running on port " + PORT);
+app.listen(PORT,()=>{
+console.log("Server running on port "+PORT);
 });
