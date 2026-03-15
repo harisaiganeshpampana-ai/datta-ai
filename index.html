@@ -107,9 +107,7 @@ background:#1e1e1e;
 color:white;
 }
 
-.send,
-.voice,
-.upload{
+.send,.voice,.upload{
 width:40px;
 height:40px;
 border-radius:50%;
@@ -196,7 +194,7 @@ Datta AI
 
 <script>
 
-/* SESSION FIX (NEW) */
+/* SESSION */
 
 if(!localStorage.getItem("sessionId")){
 localStorage.setItem("sessionId",Date.now().toString())
@@ -208,17 +206,19 @@ let chats = JSON.parse(localStorage.getItem("dattaChats")) || []
 let currentChat = null
 let speech = null
 
+const chatBox=document.getElementById("chat")
+
 /* SEND MESSAGE */
 
 async function send(){
 
 const input=document.getElementById("message")
 let text=input.value.trim()
+
 if(!text) return
 
-const chatBox=document.getElementById("chat")
+chatBox.innerHTML += `<div class="user">${escapeHTML(text)}</div>`
 
-chatBox.innerHTML += `<div class="user">${text}</div>`
 input.value=""
 
 chatBox.innerHTML += `
@@ -227,7 +227,7 @@ chatBox.innerHTML += `
 </div>
 `
 
-chatBox.scrollTop = chatBox.scrollHeight
+scrollBottom()
 
 try{
 
@@ -236,7 +236,7 @@ method:"POST",
 headers:{ "Content-Type":"application/json" },
 body:JSON.stringify({
 message:text,
-sessionId:localStorage.getItem("sessionId")   /* NEW */
+sessionId:localStorage.getItem("sessionId")
 })
 })
 
@@ -246,13 +246,13 @@ document.getElementById("loading").remove()
 
 chatBox.innerHTML += `
 <div class="ai">
-${data.reply}
+${escapeHTML(data.reply)}
 <button onclick="speakText(this)">▶</button>
 <button onclick="stopVoice()">⏹</button>
 </div>
 `
 
-chatBox.scrollTop = chatBox.scrollHeight
+scrollBottom()
 
 /* SAVE CHAT */
 
@@ -267,10 +267,17 @@ chats.unshift(currentChat)
 
 }
 
+/* limit history size */
+
+if(chats.length>30){
+chats.pop()
+}
+
 currentChat.messages.push({role:"user",text:text})
 currentChat.messages.push({role:"ai",text:data.reply})
 
 localStorage.setItem("dattaChats",JSON.stringify(chats))
+
 loadSidebar()
 
 }catch{
@@ -283,8 +290,12 @@ document.getElementById("loading").innerText="Server error"
 
 /* ENTER KEY */
 
-document.getElementById("message").addEventListener("keypress",function(e){
-if(e.key==="Enter"){ send() }
+document.getElementById("message").addEventListener("keydown",function(e){
+
+if(e.key==="Enter"){
+send()
+}
+
 })
 
 /* VOICE */
@@ -317,15 +328,14 @@ alert("File uploaded: "+file.name)
 
 }
 
-/* NEW CHAT (UPDATED) */
+/* NEW CHAT */
 
 function newChat(){
 
-localStorage.setItem("sessionId",Date.now().toString()) /* NEW */
+localStorage.setItem("sessionId",Date.now().toString())
 
 currentChat=null
-document.getElementById("chat").innerHTML=""
-document.getElementById("message").focus()
+chatBox.innerHTML=""
 
 }
 
@@ -339,6 +349,7 @@ history.innerHTML=""
 chats.forEach((chat,index)=>{
 
 let div=document.createElement("div")
+
 div.innerText=chat.title
 
 div.onclick=()=>openChat(index)
@@ -355,17 +366,16 @@ function openChat(index){
 
 currentChat=chats[index]
 
-const chatBox=document.getElementById("chat")
 chatBox.innerHTML=""
 
 currentChat.messages.forEach(m=>{
 
 if(m.role==="user"){
-chatBox.innerHTML+=`<div class="user">${m.text}</div>`
+chatBox.innerHTML+=`<div class="user">${escapeHTML(m.text)}</div>`
 }else{
 chatBox.innerHTML+=`
 <div class="ai">
-${m.text}
+${escapeHTML(m.text)}
 <button onclick="speakText(this)">▶</button>
 <button onclick="stopVoice()">⏹</button>
 </div>`
@@ -373,22 +383,46 @@ ${m.text}
 
 })
 
+scrollBottom()
+
 }
 
-/* AI VOICE ASSISTANT */
+/* SECURITY */
+
+function escapeHTML(str){
+return str.replace(/[&<>"']/g,function(m){
+return({
+"&":"&amp;",
+"<":"&lt;",
+">":"&gt;",
+'"':"&quot;",
+"'":"&#039;"
+})[m]
+})
+}
+
+/* SCROLL */
+
+function scrollBottom(){
+chatBox.scrollTop=chatBox.scrollHeight
+}
+
+/* VOICE ASSISTANT */
 
 function startAssistant(){
 
 const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)()
 
-recognition.lang = "en-US"
+recognition.lang="en-US"
 
 recognition.start()
 
-recognition.onresult = function(event){
+recognition.onresult=function(event){
 
 const voiceText = event.results[0][0].transcript
-document.getElementById("message").value = voiceText
+
+document.getElementById("message").value=voiceText
+
 send()
 
 }
