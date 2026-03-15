@@ -201,8 +201,6 @@ padding:15px;
 border-top:1px solid #222;
 }
 
-/* unified input container */
-
 .inputWrap{
 display:flex;
 align-items:center;
@@ -213,8 +211,6 @@ max-width:900px;
 margin:auto;
 gap:6px;
 }
-
-/* input field */
 
 #message{
 flex:1;
@@ -249,8 +245,6 @@ transition:.2s;
 .upload:hover{
 background:#3a3a3a;
 }
-
-/* remove toy colors */
 
 .send{background:#2a2a2a;}
 .voice{background:#2a2a2a;}
@@ -388,4 +382,45 @@ to{
 opacity:1;
 transform:translateY(0);
 }
+}
+
+/* ============================= */
+/* NEW UPDATES (ONLY ADDED) */
+/* ============================= */
+
+/* FAST MODE BUTTON */
+
+.modeBtn{
+background:#2a2a2a;
+border:none;
+color:white;
+padding:6px 12px;
+border-radius:20px;
+cursor:pointer;
+font-size:12px;
+transition:.2s;
+}
+
+.modeBtn:hover{
+background:#3a3a3a;
+}
+
+/* AI ASSISTANT BUTTON */
+
+.assistant{
+width:36px;
+height:36px;
+border-radius:50%;
+border:none;
+cursor:pointer;
+color:white;
+background:#2a2a2a;
+display:flex;
+align-items:center;
+justify-content:center;
+transition:.2s;
+}
+
+.assistant:hover{
+background:#3a3a3a;
 }
