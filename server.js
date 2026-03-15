@@ -24,14 +24,22 @@ const ChatSchema = new mongoose.Schema({
 
 sessionId:String,
 
-title:String,
+title:{
+type:String,
+default:"New Chat"
+},
 
 messages:[
 {
 role:String,
 content:String
 }
-]
+],
+
+createdAt:{
+type:Date,
+default:Date.now
+}
 
 });
 
@@ -61,7 +69,7 @@ chat = new Chat({
 
 sessionId,
 
-title: message ? message.slice(0,40) : "New Chat",
+title:"New Chat",
 
 messages:[
 {
@@ -113,7 +121,6 @@ let reply="";
 for await (const chunk of response.body){
 
 const text = chunk.toString();
-
 const lines = text.split("\n");
 
 for(const line of lines){
@@ -127,13 +134,11 @@ if(json==="[DONE]") continue;
 try{
 
 const parsed=JSON.parse(json);
-
 const token=parsed?.choices?.[0]?.delta?.content;
 
 if(token){
 
 reply+=token;
-
 res.write(token);
 
 }
@@ -146,7 +151,7 @@ res.write(token);
 
 }
 
-/* SAVE FULL AI MESSAGE */
+/* SAVE AI MESSAGE */
 
 chat.messages.push({
 role:"assistant",
@@ -163,7 +168,6 @@ res.end();
 }catch(err){
 
 console.log(err);
-
 res.end("Server error");
 
 }
@@ -181,7 +185,7 @@ const {sessionId} = req.params;
 
 const chats = await Chat.find({sessionId})
 .sort({_id:-1})
-.select("_id title");
+.select("_id title createdAt");
 
 res.json(chats);
 
@@ -221,6 +225,29 @@ res.json([]);
 });
 
 
+/* RENAME CHAT TITLE */
+
+app.post("/chat/:chatId/rename", async (req,res)=>{
+
+try{
+
+const {chatId} = req.params;
+const {title} = req.body;
+
+await Chat.findByIdAndUpdate(chatId,{title});
+
+res.json({success:true});
+
+}catch(err){
+
+console.log(err);
+res.json({success:false});
+
+}
+
+});
+
+
 /* DELETE CHAT */
 
 app.delete("/chat/:chatId", async (req,res)=>{
@@ -236,7 +263,6 @@ res.json({success:true});
 }catch(err){
 
 console.log(err);
-
 res.json({success:false});
 
 }
