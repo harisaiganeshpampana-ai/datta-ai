@@ -7,136 +7,29 @@
 
 <style>
 
-body{
-margin:0;
-font-family:Arial;
-background:#0f0f0f;
-color:white;
-display:flex;
-height:100vh;
-}
-
-.sidebar{
-width:230px;
-background:#151515;
-padding:15px;
-display:flex;
-flex-direction:column;
-}
-
-.logo{
-display:flex;
-align-items:center;
-gap:10px;
-font-weight:bold;
-margin-bottom:20px;
-}
-
-.logo img{
-width:26px;
-}
-
-.newchat{
-background:#222;
-border:none;
-padding:10px;
-color:white;
-border-radius:6px;
-cursor:pointer;
-margin-bottom:20px;
-}
-
-.history{
-flex:1;
-overflow:auto;
-}
-
-.history div{
-padding:8px;
-border-radius:6px;
-cursor:pointer;
-}
-
-.history div:hover{
-background:#222;
-}
-
-.main{
-flex:1;
-display:flex;
-flex-direction:column;
-}
-
-.chat{
-flex:1;
-overflow:auto;
-padding:40px;
-max-width:900px;
-margin:auto;
-width:100%;
-}
-
-.user{
-text-align:right;
-margin:12px 0;
-}
-
-.ai{
-margin:12px 0;
-line-height:1.6;
-}
-
-.inputArea{
-padding:15px;
-border-top:1px solid #222;
-}
-
-.inputWrap{
-display:flex;
-max-width:900px;
-margin:auto;
-gap:10px;
-}
-
-#message{
-flex:1;
-padding:12px;
-border-radius:25px;
-border:none;
-background:#1e1e1e;
-color:white;
-}
-
-.send,.voice,.upload{
-width:40px;
-height:40px;
-border-radius:50%;
-border:none;
-cursor:pointer;
-color:white;
-}
-
+body{margin:0;font-family:Arial;background:#0f0f0f;color:white;display:flex;height:100vh;}
+.sidebar{width:230px;background:#151515;padding:15px;display:flex;flex-direction:column;}
+.logo{display:flex;align-items:center;gap:10px;font-weight:bold;margin-bottom:20px;}
+.logo img{width:26px;}
+.newchat{background:#222;border:none;padding:10px;color:white;border-radius:6px;cursor:pointer;margin-bottom:20px;}
+.history{flex:1;overflow:auto;}
+.history div{padding:8px;border-radius:6px;cursor:pointer;}
+.history div:hover{background:#222;}
+.main{flex:1;display:flex;flex-direction:column;}
+.chat{flex:1;overflow:auto;padding:40px;max-width:900px;margin:auto;width:100%;}
+.user{text-align:right;margin:12px 0;}
+.ai{margin:12px 0;line-height:1.6;}
+.inputArea{padding:15px;border-top:1px solid #222;}
+.inputWrap{display:flex;max-width:900px;margin:auto;gap:10px;}
+#message{flex:1;padding:12px;border-radius:25px;border:none;background:#1e1e1e;color:white;}
+.send,.voice,.upload{width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;color:white;}
 .send{background:#2ecc71;}
 .voice{background:#3498db;}
 .upload{background:#9b59b6;}
-
-.ai button{
-margin-left:8px;
-cursor:pointer;
-border:none;
-background:#222;
-color:white;
-padding:4px 6px;
-border-radius:5px;
-}
+.ai button{margin-left:8px;cursor:pointer;border:none;background:#222;color:white;padding:4px 6px;border-radius:5px;}
 
 .typing span{
-height:6px;
-width:6px;
-background:#aaa;
-border-radius:50%;
-display:inline-block;
-margin:2px;
+height:6px;width:6px;background:#aaa;border-radius:50%;display:inline-block;margin:2px;
 animation:blink 1.4s infinite;
 }
 
@@ -172,7 +65,6 @@ Datta AI
 <div class="chat" id="chat"></div>
 
 <div class="inputArea">
-
 <div class="inputWrap">
 
 <input id="message" placeholder="Ask anything">
@@ -187,7 +79,6 @@ Datta AI
 </label>
 
 </div>
-
 </div>
 
 </div>
@@ -202,7 +93,9 @@ const sessionId = localStorage.getItem("sessionId")
 
 const chatBox=document.getElementById("chat")
 
-let serverMessages=[]
+let currentChatId=null
+
+/* SEND MESSAGE */
 
 async function send(){
 
@@ -228,11 +121,14 @@ method:"POST",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({
 message:text,
-sessionId:sessionId
+sessionId:sessionId,
+chatId:currentChatId
 })
 })
 
 const data=await res.json()
+
+currentChatId=data.chatId
 
 document.getElementById("loading").remove()
 
@@ -250,42 +146,48 @@ loadSidebar()
 
 }
 
+/* LOAD SIDEBAR CHATS */
+
 async function loadSidebar(){
 
 const res=await fetch(
-"https://datta-ai-server.onrender.com/history/"+sessionId
+"https://datta-ai-server.onrender.com/chats/"+sessionId
 )
 
-serverMessages=await res.json()
+const chats=await res.json()
 
 const history=document.getElementById("history")
 history.innerHTML=""
 
-serverMessages.forEach((msg,index)=>{
-
-if(msg.role==="user"){
+chats.forEach(chat=>{
 
 let div=document.createElement("div")
 
-div.innerText=msg.content.slice(0,40)
+div.innerText=chat.title
 
-div.onclick=()=>openChat(index)
+div.onclick=()=>openChat(chat._id)
 
 history.appendChild(div)
-
-}
 
 })
 
 }
 
-function openChat(index){
+/* OPEN CHAT */
+
+async function openChat(chatId){
+
+currentChatId=chatId
 
 chatBox.innerHTML=""
 
-for(let i=0;i<=index;i++){
+const res=await fetch(
+"https://datta-ai-server.onrender.com/chat/"+chatId
+)
 
-const m=serverMessages[i]
+const messages=await res.json()
+
+messages.forEach(m=>{
 
 if(m.role==="user"){
 chatBox.innerHTML+=`<div class="user">${escapeHTML(m.content)}</div>`
@@ -298,16 +200,17 @@ ${escapeHTML(m.content)}
 </div>`
 }
 
-}
+})
 
 scrollBottom()
 
 }
 
-/* FIXED NEW CHAT */
+/* NEW CHAT */
 
 function newChat(){
 
+currentChatId=null
 chatBox.innerHTML=""
 
 }
@@ -321,6 +224,7 @@ const text=btn.parentElement.innerText
 .replace("⏹","")
 
 const speech=new SpeechSynthesisUtterance(text)
+
 speech.lang="en-US"
 
 speechSynthesis.speak(speech)
@@ -330,6 +234,8 @@ speechSynthesis.speak(speech)
 function stopVoice(){
 speechSynthesis.cancel()
 }
+
+/* VOICE INPUT */
 
 function startAssistant(){
 
