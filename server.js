@@ -9,24 +9,25 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
+
 /* =========================
 MongoDB Connection
 ========================= */
 
 mongoose.connect(process.env.MONGO_URI)
 .then(()=>{
-    console.log("MongoDB connected");
+console.log("MongoDB connected");
 })
-.catch((err)=>{
-    console.log("MongoDB error:", err);
+.catch(err=>{
+console.log("MongoDB error:", err);
 });
 
 
 /* =========================
-Basic AI Brain
+AI Brain
 ========================= */
 
-function aiReply(message){
+function aiReply(message, lastMessage){
 
 message = message.toLowerCase();
 
@@ -38,16 +39,12 @@ if(message.includes("who is messi")){
 return "Lionel Messi is an Argentine football player widely considered one of the greatest players in football history. He won the FIFA World Cup with Argentina in 2022 and has won multiple Ballon d'Or awards.";
 }
 
+if(message.includes("age") && lastMessage && lastMessage.includes("messi")){
+return "Lionel Messi was born on June 24, 1987. He is currently 37 years old.";
+}
+
 if(message.includes("what is ai")){
-return "Artificial Intelligence is technology that allows machines to learn, reason and solve problems like humans.";
-}
-
-if(message.includes("who created you")){
-return "I was created as part of the Datta AI project.";
-}
-
-if(message.includes("how are you")){
-return "I'm doing great! Thanks for asking.";
+return "Artificial Intelligence is technology that allows machines to learn, reason and solve problems similar to humans.";
 }
 
 return "I am still learning. Tell me more.";
@@ -65,8 +62,19 @@ try{
 
 const userMessage = req.body.message;
 
-const reply = aiReply(userMessage);
+/* get last conversation */
+const lastMemory = await Memory.findOne().sort({timestamp:-1});
 
+let lastMessage = "";
+
+if(lastMemory){
+lastMessage = lastMemory.message.toLowerCase();
+}
+
+/* generate reply */
+const reply = aiReply(userMessage, lastMessage);
+
+/* store memory */
 const memory = new Memory({
 userId: "user1",
 message: userMessage,
@@ -75,16 +83,14 @@ response: reply
 
 await memory.save();
 
-res.json({
-reply: reply
-});
+res.json({ reply });
 
-}catch(error){
+}catch(err){
 
-console.log(error);
+console.log(err);
 
 res.status(500).json({
-reply: "Server error"
+reply:"Server error"
 });
 
 }
@@ -93,7 +99,7 @@ reply: "Server error"
 
 
 /* =========================
-Get Memory
+Memory Viewer
 ========================= */
 
 app.get("/memory", async (req,res)=>{
@@ -106,17 +112,13 @@ res.json(history);
 
 
 /* =========================
-Test Route
+Server Test
 ========================= */
 
 app.get("/", (req,res)=>{
 res.send("Datta AI server running");
 });
 
-
-/* =========================
-Start Server
-========================= */
 
 app.listen(PORT, ()=>{
 console.log("Datta AI server running");
