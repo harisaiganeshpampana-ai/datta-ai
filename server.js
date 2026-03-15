@@ -12,7 +12,7 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 10000;
 
-/* MongoDB connection */
+/* MongoDB */
 
 mongoose.connect(process.env.MONGO_URI)
 .then(()=>console.log("MongoDB connected"))
@@ -33,31 +33,25 @@ app.post("/chat", async (req,res)=>{
 
 try{
 
-const {message,sessionId} = req.body;
+const {message,sessionId}=req.body;
 
-/* find session */
-
-let chat = await Chat.findOne({sessionId});
+let chat=await Chat.findOne({sessionId});
 
 if(!chat){
 
-chat = new Chat({
+chat=new Chat({
 sessionId:sessionId,
 messages:[]
 });
 
 }
 
-/* add user message */
-
 chat.messages.push({
 role:"user",
 content:message
 });
 
-/* call AI */
-
-const response = await fetch(
+const response=await fetch(
 "https://openrouter.ai/api/v1/chat/completions",
 {
 method:"POST",
@@ -72,11 +66,9 @@ messages:chat.messages
 }
 );
 
-const data = await response.json();
+const data=await response.json();
 
-const reply = data?.choices?.[0]?.message?.content || "AI error";
-
-/* store AI reply */
+const reply=data?.choices?.[0]?.message?.content || "AI error";
 
 chat.messages.push({
 role:"assistant",
@@ -84,8 +76,6 @@ content:reply
 });
 
 await chat.save();
-
-/* send response */
 
 res.json({reply});
 
