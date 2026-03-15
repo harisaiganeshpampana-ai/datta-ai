@@ -29,25 +29,23 @@ if(!text) return
 lastUserMessage = text
 
 chatBox.innerHTML += `
+
 <div class="messageRow userRow">
 <div class="userBubble">${text}</div>
 <div class="avatar">🧑</div>
 </div>
-`
-
-input.value = ""
+`input.value = ""
 
 let aiDiv = document.createElement("div")
 aiDiv.className = "messageRow"
 
 aiDiv.innerHTML = `
+
 <div class="avatar">🤖</div>
 <div class="aiBubble typing">
 <span></span><span></span><span></span>
 </div>
-`
-
-chatBox.appendChild(aiDiv)
+`chatBox.appendChild(aiDiv)
 
 scrollBottom()
 
@@ -62,6 +60,7 @@ chatId:currentChatId
 })
 
 aiDiv.innerHTML = `
+
 <div class="avatar">🤖</div>
 <div class="aiBubble">
 <span id="stream"></span>
@@ -70,9 +69,7 @@ aiDiv.innerHTML = `
 <button onclick="stopVoice()">⏹</button>
 <button onclick="regenerate()">🔄</button>
 </div>
-`
-
-const reader = res.body.getReader()
+`const reader = res.body.getReader()
 const decoder = new TextDecoder()
 
 let streamText = ""
@@ -85,24 +82,30 @@ if(done) break
 
 const chunk = decoder.decode(value)
 
-if(chunk.includes("__CHATID__")){
+if(chunk.includes("CHATID")){
 
-const parts = chunk.split("__CHATID__")
+const parts = chunk.split("CHATID")
 
 streamText += parts[0]
-span.innerHTML = marked.parse(streamText)
+span.innerHTML = marked.parse(streamText) + "<span class="cursor">▌</span>"
 currentChatId = parts[1]
 
 }else{
 
 streamText += chunk
-span.innerHTML = marked.parse(streamText)
+span.innerHTML = marked.parse(streamText) + "<span class="cursor">▌</span>"
 
 }
 
 scrollBottom()
 
 }
+
+/* remove typing cursor when finished */
+
+span.innerHTML = marked.parse(streamText)
+
+addCopyButtons()
 
 /* CHATGPT STYLE TITLE */
 
@@ -198,20 +201,13 @@ let div = document.createElement("div")
 div.className = "chatItem"
 
 div.innerHTML = `
-<div class="chatTitle">${chat.title}</div>
 
-<div class="chatActions">
-
-<button class="menuBtn" onclick="toggleMenu(event,'${chat._id}')">⋮</button>
+<div class="chatTitle">${chat.title}</div><div class="chatActions"><button class="menuBtn" onclick="toggleMenu(event,'${chat._id}')">⋮</button>
 
 <div class="chatMenu" id="menu-${chat._id}">
 <button onclick="deleteChat(event,'${chat._id}')">🗑 Delete</button>
-</div>
-
-</div>
-`
-
-div.onclick = (e)=>{
+</div></div>
+`div.onclick = (e)=>{
 if(e.target.closest(".menuBtn")) return
 openChat(chat._id)
 }
@@ -244,24 +240,24 @@ messages.forEach(m=>{
 if(m.role==="user"){
 
 chatBox.innerHTML += `
+
 <div class="messageRow userRow">
 <div class="userBubble">${m.content}</div>
 <div class="avatar">🧑</div>
 </div>
-`
-
-}else{
+`}else{
 
 chatBox.innerHTML += `
+
 <div class="messageRow">
 <div class="avatar">🤖</div>
 <div class="aiBubble">${marked.parse(m.content)}</div>
 </div>
-`
-
-}
+`}
 
 })
+
+addCopyButtons()
 
 scrollBottom()
 
@@ -298,6 +294,30 @@ i.style.display = i.innerText.toLowerCase().includes(input) ? "flex" : "none"
 
 function copyText(btn){
 navigator.clipboard.writeText(btn.parentElement.innerText)
+}
+
+/* COPY BUTTONS FOR CODE */
+
+function addCopyButtons(){
+
+document.querySelectorAll("pre").forEach(block=>{
+
+if(block.querySelector(".codeCopy")) return
+
+const btn = document.createElement("button")
+btn.innerText = "Copy"
+btn.className = "codeCopy"
+
+btn.onclick = ()=>{
+navigator.clipboard.writeText(block.innerText)
+btn.innerText="Copied"
+setTimeout(()=>btn.innerText="Copy",1000)
+}
+
+block.appendChild(btn)
+
+})
+
 }
 
 /* VOICE */
@@ -384,7 +404,10 @@ m.style.display = "none"
 /* SCROLL */
 
 function scrollBottom(){
-chatBox.scrollTop = chatBox.scrollHeight
+chatBox.scrollTo({
+top: chatBox.scrollHeight,
+behavior:"smooth"
+})
 }
 
 /* ENTER SEND */
