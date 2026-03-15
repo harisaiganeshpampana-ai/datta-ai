@@ -1,11 +1,150 @@
 <!DOCTYPE html>
 <html>
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Datta AI</title>
 
-<link rel="stylesheet" href="style.css">
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#0f0f0f;
+color:white;
+display:flex;
+height:100vh;
+}
+
+/* SIDEBAR */
+
+.sidebar{
+width:220px;
+background:#141414;
+padding:15px;
+}
+
+.logo{
+font-size:20px;
+margin-bottom:20px;
+}
+
+.newchat{
+width:100%;
+padding:10px;
+border:none;
+background:#222;
+color:white;
+cursor:pointer;
+border-radius:6px;
+margin-bottom:20px;
+}
+
+.history div{
+padding:8px;
+margin-bottom:6px;
+cursor:pointer;
+border-radius:5px;
+}
+
+.history div:hover{
+background:#222;
+}
+
+/* MAIN */
+
+.main{
+flex:1;
+display:flex;
+flex-direction:column;
+}
+
+/* CHAT */
+
+.chat{
+flex:1;
+overflow:auto;
+padding:30px;
+max-width:900px;
+margin:auto;
+width:100%;
+}
+
+.user{
+text-align:right;
+margin:12px 0;
+}
+
+.ai{
+margin:12px 0;
+line-height:1.6;
+}
+
+/* INPUT */
+
+.inputArea{
+padding:15px;
+border-top:1px solid #222;
+}
+
+.inputWrap{
+display:flex;
+max-width:900px;
+margin:auto;
+}
+
+#message{
+flex:1;
+padding:12px;
+border-radius:25px;
+border:none;
+background:#1e1e1e;
+color:white;
+}
+
+.send{
+width:40px;
+height:40px;
+border-radius:50%;
+border:none;
+background:#2ecc71;
+color:white;
+cursor:pointer;
+margin-left:10px;
+}
+
+/* LOADING */
+
+.typing{
+display:inline-block;
+}
+
+.typing span{
+height:6px;
+width:6px;
+background:#aaa;
+border-radius:50%;
+display:inline-block;
+margin:2px;
+animation:blink 1.4s infinite;
+}
+
+.typing span:nth-child(2){
+animation-delay:0.2s;
+}
+
+.typing span:nth-child(3){
+animation-delay:0.4s;
+}
+
+@keyframes blink{
+0%{opacity:.2}
+20%{opacity:1}
+100%{opacity:.2}
+}
+
+</style>
 
 </head>
 
@@ -13,39 +152,190 @@
 
 <div class="sidebar">
 
-<div class="logo">
-<img src="logo.jpeg">
-Datta AI
-</div>
+<div class="logo">Datta AI</div>
 
 <button class="newchat" onclick="newChat()">+ New Chat</button>
 
-<div id="history" class="history"></div>
+<div class="history" id="history"></div>
 
 </div>
 
-
 <div class="main">
 
-<div id="chat" class="chat"></div>
+<div class="chat" id="chat"></div>
 
 <div class="inputArea">
+
+<div class="inputWrap">
 
 <input id="message" placeholder="Ask anything">
 
 <button class="send" onclick="send()">➤</button>
 
-<button class="voice" onclick="voice()">🎤</button>
-
-<button class="upload" onclick="upload()">📎</button>
-
-<input type="file" id="fileInput" hidden>
+</div>
 
 </div>
 
 </div>
 
-<script src="app.js"></script>
+<script>
+
+/* STORAGE */
+
+let chats = JSON.parse(localStorage.getItem("dattaChats")) || []
+let currentChat = null
+
+/* SEND MESSAGE */
+
+async function send(){
+
+const input = document.getElementById("message")
+
+let text = input.value.trim()
+
+if(!text) return
+
+const chatBox = document.getElementById("chat")
+
+chatBox.innerHTML += `<div class="user">${text}</div>`
+
+input.value=""
+
+/* LOADING */
+
+chatBox.innerHTML += `
+<div id="loading" class="ai typing">
+<span></span><span></span><span></span>
+</div>
+`
+
+chatBox.scrollTop = chatBox.scrollHeight
+
+try{
+
+const res = await fetch("https://datta-ai-server.onrender.com/chat",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({message:text})
+
+})
+
+const data = await res.json()
+
+document.getElementById("loading").remove()
+
+chatBox.innerHTML += `<div class="ai">${data.reply}</div>`
+
+chatBox.scrollTop = chatBox.scrollHeight
+
+if(!currentChat){
+
+currentChat = {
+title:text.substring(0,30),
+messages:[]
+}
+
+}
+
+currentChat.messages.push({role:"user",text:text})
+currentChat.messages.push({role:"ai",text:data.reply})
+
+}catch{
+
+document.getElementById("loading").innerText="Server error"
+
+}
+
+}
+
+/* ENTER KEY */
+
+document.getElementById("message").addEventListener("keypress",function(e){
+
+if(e.key==="Enter"){
+send()
+}
+
+})
+
+/* NEW CHAT */
+
+function newChat(){
+
+if(currentChat && currentChat.messages.length>0){
+
+chats.push(currentChat)
+
+localStorage.setItem("dattaChats",JSON.stringify(chats))
+
+loadSidebar()
+
+}
+
+currentChat=null
+
+document.getElementById("chat").innerHTML=""
+
+}
+
+/* SIDEBAR */
+
+function loadSidebar(){
+
+const history=document.getElementById("history")
+
+history.innerHTML=""
+
+chats.forEach((chat,index)=>{
+
+let div=document.createElement("div")
+
+div.innerText=chat.title
+
+div.onclick=()=>openChat(index)
+
+history.appendChild(div)
+
+})
+
+}
+
+/* OPEN OLD CHAT */
+
+function openChat(index){
+
+currentChat = chats[index]
+
+const chatBox=document.getElementById("chat")
+
+chatBox.innerHTML=""
+
+currentChat.messages.forEach(m=>{
+
+if(m.role==="user"){
+
+chatBox.innerHTML+=`<div class="user">${m.text}</div>`
+
+}else{
+
+chatBox.innerHTML+=`<div class="ai">${m.text}</div>`
+
+}
+
+})
+
+}
+
+/* LOAD SIDEBAR */
+
+loadSidebar()
+
+</script>
 
 </body>
 </html>
