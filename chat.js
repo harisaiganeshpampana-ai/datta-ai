@@ -10,10 +10,7 @@ let currentChatId = null
 let lastUserMessage = ""
 let titleUpdated = false
 
-/* NEW UPDATE */
 let controller = null
-
-/* NEW CHAT */
 
 function newChat(){
 currentChatId = null
@@ -21,8 +18,6 @@ titleUpdated = false
 chatBox.innerHTML = ""
 showWelcome()
 }
-
-/* SEND MESSAGE */
 
 async function send(){
 
@@ -58,12 +53,9 @@ chatBox.appendChild(aiDiv)
 
 scrollBottom()
 
-/* CHANGE SEND BUTTON → STOP */
-
 sendBtn.innerText = "⛔"
 sendBtn.onclick = stopGeneration
 
-/* STREAM CONTROLLER */
 controller = new AbortController()
 
 const res = await fetch("https://datta-ai-server.onrender.com/chat",{
@@ -77,12 +69,15 @@ chatId:currentChatId
 })
 })
 
+/* UPDATED STRUCTURE */
 aiDiv.innerHTML = `
 <div class="avatar">🤖</div>
 
-<div class="aiBubble">
+<div class="aiContent">
 
+<div class="aiBubble">
 <span class="stream"></span>
+</div>
 
 <div class="aiActions">
 
@@ -131,18 +126,12 @@ scrollBottom()
 
 }
 
-/* restore send button */
-
 sendBtn.innerText = "➤"
 sendBtn.onclick = send
-
-/* remove typing cursor */
 
 span.innerHTML = marked.parse(streamText)
 
 addCopyButtons()
-
-/* CHATGPT STYLE TITLE */
 
 const greetings = [
 "hi","hello","hey","hii",
@@ -166,8 +155,6 @@ loadSidebar()
 
 }
 
-/* UPDATE CHAT TITLE */
-
 async function updateChatTitle(chatId,message){
 
 if(!chatId) return
@@ -183,8 +170,6 @@ title:message.slice(0,40)
 })
 
 }
-
-/* LOAD SIDEBAR */
 
 async function loadSidebar(){
 
@@ -264,8 +249,6 @@ renderGroup("Older",groups.older)
 
 }
 
-/* OPEN CHAT */
-
 async function openChat(chatId){
 
 currentChatId = chatId
@@ -292,7 +275,24 @@ chatBox.innerHTML += `
 chatBox.innerHTML += `
 <div class="messageRow">
 <div class="avatar">🤖</div>
+
+<div class="aiContent">
 <div class="aiBubble">${marked.parse(m.content)}</div>
+
+<div class="aiActions">
+
+<button class="actionBtn" onclick="copyText(this)">📋</button>
+
+<button class="actionBtn" onclick="speakText(this)">🔊</button>
+
+<button class="actionBtn" onclick="stopVoice()">■</button>
+
+<button class="actionBtn" onclick="regenerateFrom(this)">↻</button>
+
+</div>
+
+</div>
+
 </div>
 `
 
@@ -301,12 +301,9 @@ chatBox.innerHTML += `
 })
 
 addCopyButtons()
-
 scrollBottom()
 
 }
-
-/* DELETE CHAT */
 
 async function deleteChat(e,id){
 
@@ -320,8 +317,6 @@ loadSidebar()
 
 }
 
-/* SEARCH */
-
 function searchChats(){
 
 const input = document.getElementById("search").value.toLowerCase()
@@ -333,13 +328,9 @@ i.style.display = i.innerText.toLowerCase().includes(input) ? "flex" : "none"
 
 }
 
-/* COPY */
-
 function copyText(btn){
 navigator.clipboard.writeText(btn.parentElement.innerText)
 }
-
-/* COPY BUTTONS FOR CODE */
 
 function addCopyButtons(){
 
@@ -363,8 +354,6 @@ block.appendChild(btn)
 
 }
 
-/* VOICE */
-
 function speakText(btn){
 
 const text = btn.parentElement.innerText
@@ -378,8 +367,6 @@ speechSynthesis.speak(speech)
 function stopVoice(){
 speechSynthesis.cancel()
 }
-
-/* REGENERATE FROM SPECIFIC RESPONSE */
 
 function regenerateFrom(btn){
 
@@ -397,8 +384,6 @@ send()
 
 }
 
-/* VOICE INPUT */
-
 function startAssistant(){
 
 const recognition = new(window.SpeechRecognition || window.webkitSpeechRecognition)()
@@ -413,8 +398,6 @@ send()
 
 }
 
-/* FILE */
-
 function uploadFile(){
 
 const file = document.getElementById("file").files[0]
@@ -424,8 +407,6 @@ alert("File uploaded: " + file.name)
 }
 
 }
-
-/* MENU */
 
 function toggleMenu(e,id){
 
@@ -451,16 +432,12 @@ m.style.display = "none"
 
 }
 
-/* SCROLL */
-
 function scrollBottom(){
 chatBox.scrollTo({
 top: chatBox.scrollHeight,
 behavior:"smooth"
 })
 }
-
-/* ENTER SEND */
 
 document.getElementById("message").addEventListener("keydown",function(e){
 
@@ -471,11 +448,7 @@ send()
 
 })
 
-/* INITIAL LOAD */
-
 loadSidebar()
-
-/* EXTRA FUNCTIONS */
 
 function fillPrompt(text){
 document.getElementById("message").value = text
@@ -491,8 +464,6 @@ function showWelcome(){
 const welcome = document.getElementById("welcomeScreen")
 if(welcome) welcome.style.display="block"
 }
-
-/* STOP GENERATION */
 
 function stopGeneration(){
 if(controller){
