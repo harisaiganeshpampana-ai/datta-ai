@@ -194,8 +194,6 @@ Datta AI
 
 <script>
 
-/* SESSION */
-
 if(!localStorage.getItem("sessionId")){
 localStorage.setItem("sessionId",Date.now().toString())
 }
@@ -203,6 +201,8 @@ localStorage.setItem("sessionId",Date.now().toString())
 const sessionId = localStorage.getItem("sessionId")
 
 const chatBox=document.getElementById("chat")
+
+let serverMessages=[]
 
 /* SEND MESSAGE */
 
@@ -260,7 +260,7 @@ document.getElementById("loading").innerText="Server error"
 
 }
 
-/* SIDEBAR FROM DATABASE */
+/* LOAD SIDEBAR */
 
 async function loadSidebar(){
 
@@ -268,19 +268,21 @@ const res = await fetch(
 "https://datta-ai-server.onrender.com/history/"+sessionId
 )
 
-const messages = await res.json()
+serverMessages = await res.json()
 
 const history=document.getElementById("history")
 
 history.innerHTML=""
 
-messages.forEach(msg=>{
+serverMessages.forEach((msg,index)=>{
 
 if(msg.role==="user"){
 
 let div=document.createElement("div")
 
 div.innerText = msg.content.slice(0,40)
+
+div.onclick = ()=>openChat(index)
 
 history.appendChild(div)
 
@@ -290,11 +292,32 @@ history.appendChild(div)
 
 }
 
-/* ENTER KEY */
+/* OPEN CHAT */
 
-document.getElementById("message").addEventListener("keydown",function(e){
-if(e.key==="Enter"){ send() }
-})
+function openChat(index){
+
+chatBox.innerHTML=""
+
+for(let i=0;i<=index;i++){
+
+const m=serverMessages[i]
+
+if(m.role==="user"){
+chatBox.innerHTML+=`<div class="user">${escapeHTML(m.content)}</div>`
+}else{
+chatBox.innerHTML+=`
+<div class="ai">
+${escapeHTML(m.content)}
+<button onclick="speakText(this)">▶</button>
+<button onclick="stopVoice()">⏹</button>
+</div>`
+}
+
+}
+
+scrollBottom()
+
+}
 
 /* NEW CHAT */
 
@@ -304,6 +327,12 @@ localStorage.setItem("sessionId",Date.now().toString())
 location.reload()
 
 }
+
+/* ENTER KEY */
+
+document.getElementById("message").addEventListener("keydown",function(e){
+if(e.key==="Enter"){ send() }
+})
 
 /* VOICE */
 
@@ -324,8 +353,6 @@ function stopVoice(){
 speechSynthesis.cancel()
 }
 
-/* FILE */
-
 function uploadFile(){
 
 const file=document.getElementById("file").files[0]
@@ -334,8 +361,6 @@ if(!file) return
 alert("File uploaded: "+file.name)
 
 }
-
-/* SECURITY */
 
 function escapeHTML(str){
 return str.replace(/[&<>"']/g,function(m){
@@ -349,13 +374,9 @@ return({
 })
 }
 
-/* SCROLL */
-
 function scrollBottom(){
 chatBox.scrollTop=chatBox.scrollHeight
 }
-
-/* VOICE ASSISTANT */
 
 function startAssistant(){
 
@@ -373,8 +394,6 @@ send()
 }
 
 }
-
-/* LOAD SIDEBAR */
 
 loadSidebar()
 
