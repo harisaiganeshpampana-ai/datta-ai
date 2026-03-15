@@ -36,6 +36,9 @@ border-radius:8px;
 cursor:pointer;
 margin-bottom:10px;
 transition:.2s;
+display:flex;
+align-items:center;
+gap:8px;
 }
 
 .newchat:hover{
@@ -193,7 +196,7 @@ padding:2px 6px;
 }
 
 /* ============================= */
-/* INPUT AREA (PROFESSIONAL STYLE) */
+/* INPUT AREA */
 /* ============================= */
 
 .inputArea{
@@ -225,8 +228,8 @@ font-size:14px;
 /* CLEAN ICON BUTTONS */
 
 .send,
-.voice,
-.upload{
+.upload,
+.assistant{
 width:36px;
 height:36px;
 border-radius:50%;
@@ -241,14 +244,21 @@ transition:.2s;
 }
 
 .send:hover,
-.voice:hover,
-.upload:hover{
+.upload:hover,
+.assistant:hover{
 background:#3a3a3a;
 }
 
-.send{background:#2a2a2a;}
-.voice{background:#2a2a2a;}
-.upload{background:#2a2a2a;}
+/* SVG icons inside buttons */
+
+.send svg,
+.upload svg,
+.assistant svg,
+.newchat svg{
+width:18px;
+height:18px;
+stroke:white;
+}
 
 /* typing dots */
 
@@ -385,10 +395,8 @@ transform:translateY(0);
 }
 
 /* ============================= */
-/* NEW UPDATES (ONLY ADDED) */
-/* ============================= */
-
 /* FAST MODE BUTTON */
+/* ============================= */
 
 .modeBtn{
 background:#2a2a2a;
@@ -402,25 +410,5 @@ transition:.2s;
 }
 
 .modeBtn:hover{
-background:#3a3a3a;
-}
-
-/* AI ASSISTANT BUTTON */
-
-.assistant{
-width:36px;
-height:36px;
-border-radius:50%;
-border:none;
-cursor:pointer;
-color:white;
-background:#2a2a2a;
-display:flex;
-align-items:center;
-justify-content:center;
-transition:.2s;
-}
-
-.assistant:hover{
 background:#3a3a3a;
 }
