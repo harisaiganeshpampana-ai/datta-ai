@@ -18,7 +18,7 @@ mongoose.connect(process.env.MONGO_URI)
 .then(()=>console.log("MongoDB connected"))
 .catch(err=>console.log(err));
 
-/* CHAT SCHEMA (UPDATED) */
+/* CHAT SCHEMA */
 
 const ChatSchema = new mongoose.Schema({
 
@@ -50,9 +50,7 @@ let chat;
 /* CONTINUE EXISTING CHAT */
 
 if(chatId){
-
 chat = await Chat.findById(chatId);
-
 }
 
 /* CREATE NEW CHAT */
@@ -63,7 +61,7 @@ chat = new Chat({
 
 sessionId,
 
-title: message.slice(0,40),
+title: message ? message.slice(0,40) : "New Chat",
 
 messages:[
 {
@@ -83,7 +81,7 @@ role:"user",
 content:message
 });
 
-/* CALL AI */
+/* CALL AI WITH STREAM */
 
 const response = await fetch(
 "https://openrouter.ai/api/v1/chat/completions",
@@ -96,26 +94,59 @@ headers:{
 body: JSON.stringify({
 model:"openai/gpt-4o-mini",
 messages: chat.messages.slice(-10),
-temperature:0.5
+temperature:0.5,
+stream:true
 })
 }
 );
-
-/* CHECK RESPONSE */
 
 if(!response.ok){
 throw new Error("OpenRouter API error");
 }
 
-/* GET AI RESPONSE */
+/* STREAM RESPONSE */
 
-const data = await response.json();
+res.setHeader("Content-Type","text/event-stream");
 
-let reply = data?.choices?.[0]?.message?.content || "AI error";
+let reply="";
 
-reply = reply.trim();
+for await (const chunk of response.body){
 
-/* SAVE AI MESSAGE */
+const text = chunk.toString();
+
+const lines = text.split("\n");
+
+for(const line of lines){
+
+if(line.startsWith("data: ")){
+
+const json=line.replace("data: ","").trim();
+
+if(json==="[DONE]") continue;
+
+try{
+
+const parsed=JSON.parse(json);
+
+const token=parsed?.choices?.[0]?.delta?.content;
+
+if(token){
+
+reply+=token;
+
+res.write(token);
+
+}
+
+}catch{}
+
+}
+
+}
+
+}
+
+/* SAVE FULL AI MESSAGE */
 
 chat.messages.push({
 role:"assistant",
@@ -124,18 +155,16 @@ content:reply
 
 await chat.save();
 
-/* RETURN RESPONSE */
+/* SEND CHAT ID */
 
-res.json({
-reply:reply,
-chatId:chat._id
-});
+res.write(`__CHATID__${chat._id}`);
+res.end();
 
 }catch(err){
 
 console.log(err);
 
-res.json({reply:"Server error"});
+res.end("Server error");
 
 }
 
@@ -192,7 +221,7 @@ res.json([]);
 });
 
 
-/* DELETE CHAT (NEW FEATURE) */
+/* DELETE CHAT */
 
 app.delete("/chat/:chatId", async (req,res)=>{
 
