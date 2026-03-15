@@ -1,216 +1,185 @@
-let chats = JSON.parse(localStorage.getItem("dattaChats")) || []
-let currentChat = null
-let speaking = false
+const chatBox = document.getElementById("chatBox");
+const input = document.getElementById("input");
+const historyBox = document.getElementById("history");
 
-function cleanText(text){
-return text
-.replace(/[#*`]/g,"")
-.replace(/[\u{1F600}-\u{1F64F}]/gu,"")
-.replace(/[\u{1F300}-\u{1F5FF}]/gu,"")
-.replace(/[\u{1F680}-\u{1F6FF}]/gu,"")
-.replace(/[\u{2600}-\u{26FF}]/gu,"")
-.replace(/[\u{2700}-\u{27BF}]/gu,"")
-}
+let chats = JSON.parse(localStorage.getItem("dattaChats")) || [];
+let currentChat = [];
 
-function loadSidebar(){
+/* ============================= */
+/* SEND MESSAGE */
+/* ============================= */
 
-const history=document.getElementById("history")
-history.innerHTML=""
+async function sendMessage() {
 
-chats.forEach((chat,index)=>{
+const text = input.value.trim();
+if(!text) return;
 
-let div=document.createElement("div")
+addUserMessage(text);
+input.value = "";
 
-div.innerText=chat.title
+showTyping();
 
-div.onclick=()=>openChat(index)
-
-history.appendChild(div)
-
-})
-
-}
-
-function newChat(){
-
-if(currentChat && currentChat.messages.length>0){
-
-chats.unshift(currentChat)
-
-localStorage.setItem("dattaChats",JSON.stringify(chats))
-
-}
-
-currentChat=null
-
-document.getElementById("chat").innerHTML=""
-
-loadSidebar()
-
-}
-
-function openChat(index){
-
-currentChat=chats[index]
-
-const chat=document.getElementById("chat")
-chat.innerHTML=""
-
-currentChat.messages.forEach(m=>{
-
-if(m.role==="user"){
-chat.innerHTML+=`<div class="user">${m.text}</div>`
-}else{
-chat.innerHTML+=`<div class="ai">
-${m.text}
-<button class="speakBtn" onclick="speak(this)">🔊</button>
-</div>`
-}
-
-})
-
-}
-
-async function send(){
-
-let input=document.getElementById("message")
-
-let msg=input.value.trim()
-
-if(!msg)return
-
-const chat=document.getElementById("chat")
-
-chat.innerHTML+=`<div class="user">${msg}</div>`
-
-input.value=""
-
-const res=await fetch("https://datta-ai-server.onrender.com/chat",{
-
+const res = await fetch("https://datta-ai-server.onrender.com/chat",{
 method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({message:text})
+});
 
-headers:{"Content-Type":"application/json"},
+const data = await res.json();
 
-body:JSON.stringify({message:msg})
+removeTyping();
 
-})
+addAIMessage(data.reply);
 
-const data=await res.json()
+currentChat.push({
+question:text,
+answer:data.reply
+});
 
-const clean=cleanText(data.reply)
+saveChat(text);
 
-chat.innerHTML+=`
+}
 
-<div class="ai">
-${clean}
-<button class="speakBtn" onclick="speak(this)">🔊</button>
-</div>
+/* ============================= */
+/* USER MESSAGE */
+/* ============================= */
 
-`
+function addUserMessage(text){
 
-chat.scrollTop=chat.scrollHeight
+const div = document.createElement("div");
+div.className = "userMessage";
+div.innerText = text;
 
-if(!currentChat){
+chatBox.appendChild(div);
+scrollBottom();
 
-currentChat={
-title:msg.substring(0,40),
-messages:[]
+}
+
+/* ============================= */
+/* AI MESSAGE */
+/* ============================= */
+
+function addAIMessage(text){
+
+const div = document.createElement("div");
+div.className = "aiMessage";
+div.innerText = text;
+
+chatBox.appendChild(div);
+scrollBottom();
+
+}
+
+/* ============================= */
+/* AI TYPING ANIMATION */
+/* ============================= */
+
+function showTyping(){
+
+const div = document.createElement("div");
+div.id = "typing";
+div.className = "aiMessage";
+div.innerHTML = "AI typing<span class='dots'>...</span>";
+
+chatBox.appendChild(div);
+scrollBottom();
+
+}
+
+function removeTyping(){
+
+const typing = document.getElementById("typing");
+if(typing) typing.remove();
+
+}
+
+/* ============================= */
+/* SAVE CHAT */
+/* ============================= */
+
+function saveChat(title){
+
+if(currentChat.length === 1){
+
+chats.unshift({
+title:title,
+messages:currentChat
+});
+
+localStorage.setItem("dattaChats",JSON.stringify(chats));
+
+renderHistory();
+
 }
 
 }
 
-currentChat.messages.push({role:"user",text:msg})
-currentChat.messages.push({role:"ai",text:clean})
+/* ============================= */
+/* SIDEBAR HISTORY */
+/* ============================= */
+
+function renderHistory(){
+
+historyBox.innerHTML = "";
+
+chats.forEach((chat,i)=>{
+
+const div = document.createElement("div");
+
+div.className = "historyItem";
+div.innerText = chat.title;
+
+div.onclick = ()=>loadChat(i);
+
+historyBox.appendChild(div);
+
+});
 
 }
 
-function speak(btn){
+/* ============================= */
+/* LOAD OLD CHAT */
+/* ============================= */
 
-const text=btn.parentElement.innerText.replace("🔊","")
+function loadChat(index){
 
-if(speaking){
+chatBox.innerHTML = "";
 
-speechSynthesis.cancel()
+const chat = chats[index];
 
-speaking=false
+chat.messages.forEach(m=>{
 
-btn.innerText="🔊"
+addUserMessage(m.question);
+addAIMessage(m.answer);
 
-return
-
-}
-
-let speech=new SpeechSynthesisUtterance(text)
-
-speech.onend=function(){
-
-speaking=false
-btn.innerText="🔊"
+});
 
 }
 
-speechSynthesis.speak(speech)
+/* ============================= */
+/* ENTER KEY SUPPORT */
+/* ============================= */
 
-speaking=true
+input.addEventListener("keydown",function(e){
 
-btn.innerText="⏹"
-
+if(e.key === "Enter"){
+sendMessage();
 }
 
-function voice(){
+});
 
-const rec=new(window.SpeechRecognition||window.webkitSpeechRecognition)()
+/* ============================= */
+/* SCROLL */
+/* ============================= */
 
-rec.lang="en-US"
-
-rec.start()
-
-rec.onresult=e=>{
-
-document.getElementById("message").value=e.results[0][0].transcript
-
-send()
-
+function scrollBottom(){
+chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-}
+/* ============================= */
+/* LOAD HISTORY ON START */
+/* ============================= */
 
-function upload(){
-
-document.getElementById("fileInput").click()
-
-}
-
-document.getElementById("fileInput").addEventListener("change",async function(){
-
-let file=this.files[0]
-
-let form=new FormData()
-
-form.append("file",file)
-
-const res=await fetch("https://datta-ai-server.onrender.com/upload",{
-
-method:"POST",
-
-body:form
-
-})
-
-const data=await res.json()
-
-const chat=document.getElementById("chat")
-
-chat.innerHTML+=`<div class="ai">${cleanText(data.reply)}</div>`
-
-})
-
-document.getElementById("message").addEventListener("keypress",function(e){
-
-if(e.key==="Enter"){
-send()
-}
-
-})
-
-loadSidebar()
+renderHistory();
