@@ -9,6 +9,14 @@ let currentChatId = null
 let lastUserMessage = ""
 let titleUpdated = false
 
+/* GREETING WORDS */
+
+const greetings = [
+"hi","hello","hey","hii",
+"hi!","hello!","hey!",
+"good morning","good afternoon","good evening"
+]
+
 /* NEW CHAT */
 
 function newChat(){
@@ -106,15 +114,14 @@ scrollBottom()
 
 /* TITLE LOGIC */
 
-const greetings = [
-"hi","hello","hey","hii",
-"hi!","hello!","hey!",
-"good morning","good afternoon","good evening"
-]
-
 const clean = text.toLowerCase().trim()
 
-if(!titleUpdated && !greetings.includes(clean) && clean.length > 3){
+if(
+!titleUpdated &&
+!greetings.includes(clean) &&
+clean.length > 3 &&
+currentChatId
+){
 
 await updateChatTitle(currentChatId,text)
 
