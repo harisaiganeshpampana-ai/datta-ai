@@ -1,7 +1,7 @@
-import express from "express";
+Poimport express from "express";
 import cors from "cors";
-import fetch from "node-fetch";
 import mongoose from "mongoose";
+import fetch from "node-fetch";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -14,42 +14,60 @@ app.use(express.json());
 const PORT = process.env.PORT || 10000;
 
 /* MongoDB connection */
+
 mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log("MongoDB connected"))
 .catch(err => console.log(err));
 
+
 /* Chat endpoint */
+
 app.post("/chat", async (req, res) => {
-  try {
 
-    const userMessage = req.body.message;
+try {
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "deepseek/deepseek-chat",
-        messages: [
-          { role: "user", content: userMessage }
-        ]
-      })
-    });
+const message = req.body.message;
 
-    const data = await response.json();
+const response = await fetch(
+"https://openrouter.ai/api/v1/chat/completions",
+{
+method: "POST",
+headers: {
+"Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+model: "deepseek/deepseek-chat",
+messages: [
+{ role: "user", content: message }
+]
+})
+}
+);
 
-    const aiMessage = data.choices[0].message.content;
+const data = await response.json();
 
-    res.json({ reply: aiMessage });
+const reply = data.choices[0].message.content;
 
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "AI error occurred" });
-  }
+res.json({
+reply: reply
 });
 
+} catch (error) {
+
+console.log(error);
+
+res.json({
+reply: "AI error occurred"
+});
+
+}
+
+});
+
+
+/* Start server */
+
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+console.log("Server running on port " + PORT);
 });
