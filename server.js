@@ -1,4 +1,4 @@
-Poimport express from "express";
+import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import fetch from "node-fetch";
@@ -13,61 +13,51 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 10000;
 
-/* MongoDB connection */
-
 mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log("MongoDB connected"))
-.catch(err => console.log(err));
+.then(()=>console.log("MongoDB connected"))
+.catch(err=>console.log(err));
 
+app.post("/chat", async (req,res)=>{
 
-/* Chat endpoint */
+try{
 
-app.post("/chat", async (req, res) => {
+const message=req.body.message;
 
-try {
-
-const message = req.body.message;
-
-const response = await fetch(
+const response=await fetch(
 "https://openrouter.ai/api/v1/chat/completions",
 {
-method: "POST",
-headers: {
-"Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-"Content-Type": "application/json"
+method:"POST",
+headers:{
+"Authorization":`Bearer ${process.env.OPENROUTER_API_KEY}`,
+"Content-Type":"application/json"
 },
-body: JSON.stringify({
-model: "deepseek/deepseek-chat",
-messages: [
-{ role: "user", content: message }
+body:JSON.stringify({
+model:"deepseek/deepseek-chat",
+messages:[
+{role:"user",content:message}
 ]
 })
 }
 );
 
-const data = await response.json();
-
-const reply = data.choices[0].message.content;
+const data=await response.json();
 
 res.json({
-reply: reply
+reply:data.choices[0].message.content
 });
 
-} catch (error) {
+}catch(error){
 
 console.log(error);
 
 res.json({
-reply: "AI error occurred"
+reply:"AI error occurred"
 });
 
 }
 
 });
 
-
-/* Start server */
-
-app.listen(PORT, () => {
-console.log("Server running on port " + PORT);
+app.listen(PORT,()=>{
+console.log("Server running on port "+PORT);
 });
