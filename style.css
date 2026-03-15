@@ -417,26 +417,31 @@ background:#3a3a3a;
 /* NEW ADDED: AI RESPONSE BUTTONS */
 /* ============================= */
 
+.aiContent{
+display:flex;
+flex-direction:column;
+}
+
+/* action bar below message */
+
 .aiActions{
 display:flex;
-gap:6px;
+gap:8px;
 margin-top:8px;
 }
 
-/* response action buttons */
+/* response buttons */
 
 .actionBtn{
-width:28px;
-height:28px;
+width:30px;
+height:30px;
 border:none;
 background:#2a2a2a;
-color:white;
 border-radius:6px;
 cursor:pointer;
 display:flex;
 align-items:center;
 justify-content:center;
-font-size:13px;
 transition:.2s;
 }
 
@@ -444,7 +449,13 @@ transition:.2s;
 background:#3a3a3a;
 }
 
-/* stop button red */
+.actionBtn svg{
+width:16px;
+height:16px;
+stroke:white;
+}
+
+/* stop button */
 
 .stopBtn{
 background:#c0392b;
