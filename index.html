@@ -186,7 +186,7 @@ Datta AI
 
 <button class="send" onclick="send()">➤</button>
 
-<button class="voice" onclick="toggleVoice()">🔊</button>
+<button class="voice" onclick="startAssistant()">🎤</button>
 
 <label class="upload">
 📎
@@ -260,6 +260,7 @@ chatBox.innerHTML += `
 <div class="ai">
 ${data.reply}
 <button onclick="speakText(this)">🔊</button>
+<button onclick="stopVoice()">⏹</button>
 </div>
 `
 
@@ -333,13 +334,20 @@ speaking=false
 
 function speakText(btn){
 
-const text = btn.parentElement.innerText.replace("🔊","")
+const text = btn.parentElement.innerText
+.replace("🔊","")
+.replace("⏹","")
 
-const speech = new SpeechSynthesisUtterance(text)
-
+speech = new SpeechSynthesisUtterance(text)
 speech.lang="en-US"
 
 speechSynthesis.speak(speech)
+
+}
+
+function stopVoice(){
+
+speechSynthesis.cancel()
 
 }
 
@@ -367,6 +375,12 @@ messages: currentChat.messages
 })
 
 localStorage.setItem("dattaChats",JSON.stringify(chats))
+
+}
+
+currentChat=null
+
+document.getElementById("chat").innerHTML=""
 
 loadSidebar()
 
@@ -424,7 +438,32 @@ chatBox.innerHTML+=`<div class="ai">${m.text}<button onclick="speakText(this)">�
 
 /* LOAD HISTORY */
 
+/* AI VOICE ASSISTANT */
+
+function startAssistant(){
+
+const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)()
+
+recognition.lang = "en-US"
+
+recognition.start()
+
+recognition.onresult = function(event){
+
+const voiceText = event.results[0][0].transcript
+
+document.getElementById("message").value = voiceText
+
+send()
+
+}
+
+}
+
+/* LOAD HISTORY */
+
 loadSidebar()
+
 
 </script>
 
