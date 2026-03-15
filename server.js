@@ -18,11 +18,21 @@ mongoose.connect(process.env.MONGO_URI)
 .then(()=>console.log("MongoDB connected"))
 .catch(err=>console.log(err));
 
-/* CHAT SCHEMA */
+/* CHAT SCHEMA (UPDATED) */
 
 const ChatSchema = new mongoose.Schema({
+
 sessionId:String,
-messages:Array
+
+title:String,
+
+messages:[
+{
+role:String,
+content:String
+}
+]
+
 });
 
 const Chat = mongoose.model("Chat",ChatSchema);
@@ -33,22 +43,35 @@ app.post("/chat", async (req,res)=>{
 
 try{
 
-const {message,sessionId} = req.body;
+const {message,sessionId,chatId} = req.body;
 
-/* FIND OR CREATE CHAT */
+let chat;
 
-let chat = await Chat.findOne({sessionId});
+/* CONTINUE EXISTING CHAT */
+
+if(chatId){
+
+chat = await Chat.findById(chatId);
+
+}
+
+/* CREATE NEW CHAT */
 
 if(!chat){
 
 chat = new Chat({
+
 sessionId,
+
+title: message.slice(0,40),
+
 messages:[
 {
 role:"system",
 content:"You are Datta AI, a helpful AI assistant. Answer clearly, professionally, and concisely. Avoid jokes, emojis, or unnecessary commentary. Provide clean and understandable answers."
 }
 ]
+
 });
 
 }
@@ -90,8 +113,6 @@ const data = await response.json();
 
 let reply = data?.choices?.[0]?.message?.content || "AI error";
 
-/* CLEAN RESPONSE */
-
 reply = reply.trim();
 
 /* SAVE AI MESSAGE */
@@ -103,9 +124,12 @@ content:reply
 
 await chat.save();
 
-/* RETURN ANSWER */
+/* RETURN RESPONSE */
 
-res.json({reply});
+res.json({
+reply:reply,
+chatId:chat._id
+});
 
 }catch(err){
 
@@ -118,15 +142,39 @@ res.json({reply:"Server error"});
 });
 
 
-/* HISTORY ROUTE FOR SIDEBAR */
+/* SIDEBAR CHATS */
 
-app.get("/history/:sessionId", async (req,res)=>{
+app.get("/chats/:sessionId", async (req,res)=>{
 
 try{
 
 const {sessionId} = req.params;
 
-const chat = await Chat.findOne({sessionId});
+const chats = await Chat.find({sessionId})
+.sort({_id:-1})
+.select("_id title");
+
+res.json(chats);
+
+}catch(err){
+
+console.log(err);
+res.json([]);
+
+}
+
+});
+
+
+/* LOAD FULL CHAT */
+
+app.get("/chat/:chatId", async (req,res)=>{
+
+try{
+
+const {chatId} = req.params;
+
+const chat = await Chat.findById(chatId);
 
 if(!chat){
 return res.json([]);
