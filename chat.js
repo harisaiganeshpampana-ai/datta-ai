@@ -101,11 +101,34 @@ span.innerHTML = marked.parse(streamText)
 scrollBottom()
 
 }
-
+await updateChatTitle(currentChatId,text)
 loadSidebar()
 
 }
 
+async function updateChatTitle(chatId,message){
+
+if(!chatId) return
+
+const ignore = ["hi","hello","hey","hii"]
+
+if(ignore.includes(message.toLowerCase())) return
+
+await fetch("https://datta-ai-server.onrender.com/chat/"+chatId+"/rename",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+title:message.slice(0,40)
+})
+
+})
+
+}
 /* LOAD SIDEBAR */
 
 async function loadSidebar(){
