@@ -120,6 +120,18 @@ margin:14px 0;
 line-height:1.6;
 }
 
+/* SPEAK BUTTON */
+
+.speakBtn{
+margin-left:10px;
+background:#444;
+border:none;
+color:white;
+padding:5px 8px;
+border-radius:6px;
+cursor:pointer;
+}
+
 /* INPUT */
 
 .inputArea{
@@ -284,7 +296,6 @@ function openChat(index){
 currentChat = chats[index]
 
 const chatBox=document.getElementById("chat")
-
 chatBox.innerHTML=""
 
 document.getElementById("start").style.display="none"
@@ -365,6 +376,16 @@ speechSynthesis.speak(speech)
 
 }
 
+/* SPEAK BUTTON FUNCTION */
+
+function speakThis(btn){
+
+const text = btn.parentElement.innerText.replace("🔊","")
+
+speak(text)
+
+}
+
 /* SEND MESSAGE */
 
 async function send(){
@@ -410,9 +431,12 @@ const data = await res.json()
 
 document.getElementById("loader").remove()
 
-chatBox.innerHTML+=`<div class="ai">${data.reply}</div>`
-
-speak(data.reply)
+chatBox.innerHTML+=`
+<div class="ai">
+${data.reply}
+<button class="speakBtn" onclick="speakThis(this)">🔊</button>
+</div>
+`
 
 if(!currentChat){
 
