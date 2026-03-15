@@ -1,89 +1,82 @@
-import express from "express";
-import cors from "cors";
-import mongoose from "mongoose";
-import fetch from "node-fetch";
-import dotenv from "dotenv";
+const chat = document.getElementById("chat");
+const input = document.getElementById("messageInput");
 
-dotenv.config();
+const sessionId = localStorage.getItem("datta_session") || Date.now().toString();
+localStorage.setItem("datta_session", sessionId);
 
-const app = express();
+function addMessage(sender,text){
 
-app.use(cors());
-app.use(express.json());
+const div = document.createElement("div");
+div.className="message";
 
-const PORT = process.env.PORT || 10000;
+div.innerHTML="<b>"+sender+":</b> "+text;
 
-mongoose.connect(process.env.MONGO_URI)
-.then(()=>console.log("MongoDB connected"))
-.catch(err=>console.log(err));
+chat.appendChild(div);
 
-const ChatSchema = new mongoose.Schema({
-sessionId:String,
-messages:Array
-});
+return div;
 
-const Chat = mongoose.model("Chat",ChatSchema);
-
-app.post("/chat", async (req,res)=>{
-
-try{
-
-const {message,sessionId}=req.body;
-
-let chat=await Chat.findOne({sessionId});
-
-if(!chat){
-chat=new Chat({
-sessionId:sessionId,
-messages:[]
-});
 }
 
-chat.messages.push({
-role:"user",
-content:message
-});
+function speak(text){
 
-const response=await fetch(
-"https://openrouter.ai/api/v1/chat/completions",
+const speech = new SpeechSynthesisUtterance(text);
+
+speech.lang="en-US";
+
+speechSynthesis.speak(speech);
+
+}
+
+async function sendMessage(){
+
+const message=input.value.trim();
+
+if(!message) return;
+
+addMessage("You",message);
+
+input.value="";
+
+const typingDiv=addMessage("Datta AI","Thinking...");
+
+const response = await fetch(
+"https://datta-ai-server.onrender.com/chat",
 {
 method:"POST",
 headers:{
-"Authorization":`Bearer ${process.env.OPENROUTER_API_KEY}`,
 "Content-Type":"application/json"
 },
 body:JSON.stringify({
-model:"deepseek/deepseek-chat",
-messages:chat.messages
+message:message,
+sessionId:sessionId
 })
 }
 );
 
-const data=await response.json();
+const data = await response.json();
 
-const reply=data?.choices?.[0]?.message?.content || "AI error";
+typingDiv.innerHTML="<b>Datta AI:</b> "+data.reply;
 
-chat.messages.push({
-role:"assistant",
-content:reply
-});
-
-await chat.save();
-
-res.json({reply});
-
-}catch(err){
-
-console.log(err);
-
-res.json({
-reply:"Server error. Try again."
-});
+speak(data.reply);
 
 }
 
-});
+function startVoice(){
 
-app.listen(PORT,()=>{
-console.log("Server running on port "+PORT);
-});
+const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+
+recognition.lang="en-US";
+
+recognition.start();
+
+recognition.onresult = function(event){
+
+const speech = event.results[0][0].transcript;
+
+input.value=speech;
+
+sendMessage();
+
+};
+
+}
