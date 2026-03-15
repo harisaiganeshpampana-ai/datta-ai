@@ -134,6 +134,16 @@ color:white;
 .voice{background:#3498db;}
 .upload{background:#9b59b6;}
 
+.ai button{
+margin-left:8px;
+cursor:pointer;
+border:none;
+background:#222;
+color:white;
+padding:4px 6px;
+border-radius:5px;
+}
+
 /* TYPING */
 
 .typing span{
@@ -173,7 +183,6 @@ Datta AI
 
 </div>
 
-
 <div class="main">
 
 <div class="chat" id="chat"></div>
@@ -199,34 +208,28 @@ Datta AI
 
 </div>
 
-
 <script>
 
 /* STORAGE */
 
 let chats = JSON.parse(localStorage.getItem("dattaChats")) || []
 let currentChat = null
-
-let speaking=false
-let speech=null
+let speech = null
 
 /* SEND MESSAGE */
 
 async function send(){
 
 const input=document.getElementById("message")
-
 let text=input.value.trim()
-
 if(!text) return
 
 const chatBox=document.getElementById("chat")
 
 chatBox.innerHTML += `<div class="user">${text}</div>`
-
 input.value=""
 
-/* typing animation */
+/* typing */
 
 chatBox.innerHTML += `
 <div id="loading" class="ai typing">
@@ -239,34 +242,28 @@ chatBox.scrollTop = chatBox.scrollHeight
 try{
 
 const res = await fetch("https://datta-ai-server.onrender.com/chat",{
-
 method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
+headers:{ "Content-Type":"application/json" },
 body:JSON.stringify({message:text})
-
 })
 
 const data = await res.json()
 
 document.getElementById("loading").remove()
 
-/* AI MESSAGE WITH VOICE BUTTON */
+/* AI MESSAGE WITH VOICE CONTROLS */
 
 chatBox.innerHTML += `
 <div class="ai">
 ${data.reply}
-<button onclick="speakText(this)">🔊</button>
+<button onclick="speakText(this)">▶</button>
 <button onclick="stopVoice()">⏹</button>
 </div>
 `
 
 chatBox.scrollTop = chatBox.scrollHeight
 
-/* CHAT STORAGE */
+/* SAVE CHAT */
 
 if(!currentChat){
 
@@ -291,51 +288,15 @@ document.getElementById("loading").innerText="Server error"
 /* ENTER KEY */
 
 document.getElementById("message").addEventListener("keypress",function(e){
-
-if(e.key==="Enter"){
-send()
-}
-
+if(e.key==="Enter"){ send() }
 })
 
-/* VOICE FOR LAST ANSWER */
-
-function toggleVoice(){
-
-const lastAI=document.querySelectorAll(".ai")
-
-if(lastAI.length===0) return
-
-const text=lastAI[lastAI.length-1].innerText.replace("🔊","")
-
-if(!speaking){
-
-speech=new SpeechSynthesisUtterance(text)
-
-speech.lang="en-US"
-
-speech.onend=()=>{speaking=false}
-
-speechSynthesis.speak(speech)
-
-speaking=true
-
-}else{
-
-speechSynthesis.cancel()
-
-speaking=false
-
-}
-
-}
-
-/* VOICE FOR EACH MESSAGE */
+/* VOICE */
 
 function speakText(btn){
 
 const text = btn.parentElement.innerText
-.replace("🔊","")
+.replace("▶","")
 .replace("⏹","")
 
 speech = new SpeechSynthesisUtterance(text)
@@ -346,17 +307,14 @@ speechSynthesis.speak(speech)
 }
 
 function stopVoice(){
-
 speechSynthesis.cancel()
-
 }
 
-/* FILE UPLOAD */
+/* FILE */
 
 function uploadFile(){
 
 const file=document.getElementById("file").files[0]
-
 if(!file) return
 
 alert("File uploaded: "+file.name)
@@ -369,10 +327,7 @@ function newChat(){
 
 if(currentChat && currentChat.messages.length>0){
 
-chats.push({
-title: currentChat.messages[0].text,
-messages: currentChat.messages
-})
+chats.push(currentChat)
 
 localStorage.setItem("dattaChats",JSON.stringify(chats))
 
@@ -386,26 +341,17 @@ loadSidebar()
 
 }
 
-currentChat=null
-
-document.getElementById("chat").innerHTML=""
-
-}
-
 /* SIDEBAR */
 
 function loadSidebar(){
 
 const history=document.getElementById("history")
-
 history.innerHTML=""
 
 chats.forEach((chat,index)=>{
 
 let div=document.createElement("div")
-
 div.innerText=chat.title
-
 div.onclick=()=>openChat(index)
 
 history.appendChild(div)
@@ -421,7 +367,6 @@ function openChat(index){
 currentChat=chats[index]
 
 const chatBox=document.getElementById("chat")
-
 chatBox.innerHTML=""
 
 currentChat.messages.forEach(m=>{
@@ -429,14 +374,17 @@ currentChat.messages.forEach(m=>{
 if(m.role==="user"){
 chatBox.innerHTML+=`<div class="user">${m.text}</div>`
 }else{
-chatBox.innerHTML+=`<div class="ai">${m.text}<button onclick="speakText(this)">🔊</button></div>`
+chatBox.innerHTML+=`
+<div class="ai">
+${m.text}
+<button onclick="speakText(this)">▶</button>
+<button onclick="stopVoice()">⏹</button>
+</div>`
 }
 
 })
 
 }
-
-/* LOAD HISTORY */
 
 /* AI VOICE ASSISTANT */
 
@@ -451,9 +399,7 @@ recognition.start()
 recognition.onresult = function(event){
 
 const voiceText = event.results[0][0].transcript
-
 document.getElementById("message").value = voiceText
-
 send()
 
 }
@@ -463,7 +409,6 @@ send()
 /* LOAD HISTORY */
 
 loadSidebar()
-
 
 </script>
 
