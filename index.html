@@ -137,6 +137,7 @@ const sessionId=localStorage.getItem("sessionId")
 const chatBox=document.getElementById("chat")
 
 let currentChatId=null
+let lastUserMessage=""
 
 /* SEND */
 
@@ -146,9 +147,14 @@ const input=document.getElementById("message")
 let text=input.value.trim()
 if(!text) return
 
+lastUserMessage=text
+
 chatBox.innerHTML+=`
 <div class="messageRow userRow">
-<div class="userBubble">${escapeHTML(text)}</div>
+<div class="userBubble">
+${escapeHTML(text)}
+<button onclick="editMessage(this)">✏️</button>
+</div>
 <div class="avatar">🧑</div>
 </div>
 `
@@ -186,6 +192,7 @@ aiDiv.innerHTML=`
 <button class="copyBtn" onclick="copyText(this)">📋</button>
 <button onclick="speakText(this)">🗣</button>
 <button onclick="stopVoice()">⏹</button>
+<button onclick="regenerate()">🔄</button>
 </div>
 `
 
@@ -224,11 +231,39 @@ loadSidebar()
 
 }
 
+/* EDIT MESSAGE */
+
+function editMessage(btn){
+
+const text=btn.parentElement.innerText.replace("✏️","")
+document.getElementById("message").value=text
+
+}
+
+/* REGENERATE */
+
+function regenerate(){
+
+if(!lastUserMessage) return
+
+document.getElementById("message").value=lastUserMessage
+send()
+
+}
+
 /* COPY */
 
 function copyText(btn){
-const text=btn.parentElement.innerText.replace("📋","")
+
+const text=btn.parentElement.innerText
 navigator.clipboard.writeText(text)
+
+btn.innerText="✓"
+
+setTimeout(()=>{
+btn.innerText="📋"
+},1000)
+
 }
 
 /* SIDEBAR */
@@ -293,6 +328,7 @@ ${marked.parse(m.content)}
 <button class="copyBtn" onclick="copyText(this)">📋</button>
 <button onclick="speakText(this)">🗣</button>
 <button onclick="stopVoice()">⏹</button>
+<button onclick="regenerate()">🔄</button>
 </div>
 </div>
 `
