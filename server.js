@@ -39,6 +39,11 @@ content:String
 createdAt:{
 type:Date,
 default:Date.now
+},
+
+updatedAt:{
+type:Date,
+default:Date.now
 }
 
 });
@@ -158,6 +163,10 @@ role:"assistant",
 content:reply
 });
 
+/* UPDATE CHAT ACTIVITY TIME */
+
+chat.updatedAt = new Date();
+
 await chat.save();
 
 /* SEND CHAT ID */
@@ -184,8 +193,8 @@ try{
 const {sessionId} = req.params;
 
 const chats = await Chat.find({sessionId})
-.sort({_id:-1})
-.select("_id title createdAt");
+.sort({updatedAt:-1})
+.select("_id title createdAt updatedAt");
 
 res.json(chats);
 
