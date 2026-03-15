@@ -254,7 +254,7 @@ ${escapeHTML(data.reply)}
 
 scrollBottom()
 
-/* SAVE CHAT */
+/* CREATE CHAT IF NEW */
 
 if(!currentChat){
 
@@ -267,16 +267,16 @@ chats.unshift(currentChat)
 
 }
 
-/* limit history size */
-
-if(chats.length>30){
-chats.pop()
-}
+/* ADD MESSAGES */
 
 currentChat.messages.push({role:"user",text:text})
 currentChat.messages.push({role:"ai",text:data.reply})
 
+/* SAVE STORAGE */
+
 localStorage.setItem("dattaChats",JSON.stringify(chats))
+
+/* UPDATE SIDEBAR */
 
 loadSidebar()
 
@@ -332,8 +332,6 @@ alert("File uploaded: "+file.name)
 
 function newChat(){
 
-localStorage.setItem("sessionId",Date.now().toString())
-
 currentChat=null
 chatBox.innerHTML=""
 
@@ -349,7 +347,6 @@ history.innerHTML=""
 chats.forEach((chat,index)=>{
 
 let div=document.createElement("div")
-
 div.innerText=chat.title
 
 div.onclick=()=>openChat(index)
