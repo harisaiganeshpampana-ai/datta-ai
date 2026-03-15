@@ -72,7 +72,7 @@ headers:{
 },
 body:JSON.stringify({
 model:"openai/gpt-4o-mini",
-messages:chat.messages,
+messages: chat.messages.slice(-10)
 temperature:0.5
 })
 }
