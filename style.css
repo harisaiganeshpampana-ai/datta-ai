@@ -32,19 +32,35 @@ background:#222;
 border:none;
 padding:10px;
 color:white;
-border-radius:6px;
+border-radius:8px;
 cursor:pointer;
 margin-bottom:10px;
+transition:.2s;
 }
+
+.newchat:hover{
+background:#2a2a2a;
+}
+
+/* BETTER SEARCH BAR */
 
 .searchBox{
 background:#1e1e1e;
-border:none;
-padding:8px;
-border-radius:6px;
+border:1px solid #2a2a2a;
+padding:10px;
+border-radius:10px;
 color:white;
-margin-bottom:10px;
+margin-bottom:12px;
+outline:none;
+transition:.2s;
 }
+
+.searchBox:focus{
+border-color:#444;
+background:#202020;
+}
+
+/* HISTORY */
 
 .sectionTitle{
 font-size:12px;
@@ -164,6 +180,8 @@ border-radius:14px;
 max-width:70%;
 }
 
+/* COPY BUTTON */
+
 .copyBtn{
 margin-left:6px;
 background:#333;
@@ -174,39 +192,71 @@ border-radius:4px;
 padding:2px 6px;
 }
 
+/* ============================= */
+/* INPUT AREA (PROFESSIONAL STYLE) */
+/* ============================= */
+
 .inputArea{
 padding:15px;
 border-top:1px solid #222;
 }
 
+/* unified input container */
+
 .inputWrap{
 display:flex;
+align-items:center;
+background:#1e1e1e;
+border-radius:30px;
+padding:6px;
 max-width:900px;
 margin:auto;
-gap:10px;
+gap:6px;
 }
+
+/* input field */
 
 #message{
 flex:1;
 padding:12px;
-border-radius:25px;
 border:none;
-background:#1e1e1e;
+background:transparent;
 color:white;
+outline:none;
+font-size:14px;
 }
 
-.send,.voice,.upload{
-width:40px;
-height:40px;
+/* CLEAN ICON BUTTONS */
+
+.send,
+.voice,
+.upload{
+width:36px;
+height:36px;
 border-radius:50%;
 border:none;
 cursor:pointer;
 color:white;
+background:#2a2a2a;
+display:flex;
+align-items:center;
+justify-content:center;
+transition:.2s;
 }
 
-.send{background:#2ecc71;}
-.voice{background:#3498db;}
-.upload{background:#9b59b6;}
+.send:hover,
+.voice:hover,
+.upload:hover{
+background:#3a3a3a;
+}
+
+/* remove toy colors */
+
+.send{background:#2a2a2a;}
+.voice{background:#2a2a2a;}
+.upload{background:#2a2a2a;}
+
+/* typing dots */
 
 .typing span{
 height:6px;
@@ -247,10 +297,8 @@ background:#0f0f0f;
 }
 
 /* ============================= */
-/* NEW FEATURES ADDED BELOW */
+/* STREAMING CURSOR */
 /* ============================= */
-
-/* streaming cursor */
 
 .cursor{
 animation:blinkCursor 1s infinite;
@@ -263,7 +311,7 @@ font-weight:bold;
 100%{opacity:0}
 }
 
-/* code block */
+/* CODE BLOCK */
 
 pre{
 position:relative;
@@ -273,7 +321,7 @@ border-radius:8px;
 overflow:auto;
 }
 
-/* code copy button */
+/* CODE COPY */
 
 .codeCopy{
 position:absolute;
@@ -293,7 +341,7 @@ background:#555;
 }
 
 /* ============================= */
-/* WELCOME SCREEN (NEW) */
+/* WELCOME SCREEN */
 /* ============================= */
 
 .welcomeScreen{
