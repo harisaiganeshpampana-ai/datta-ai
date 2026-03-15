@@ -1,94 +1,85 @@
-const express = require("express")
-const cors = require("cors")
-const mongoose = require("mongoose")
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const Memory = require("./models/Memory");
 
-const app = express()
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-app.use(cors())
-app.use(express.json())
+const PORT = process.env.PORT || 3000;
 
-// ---------------------
-// MongoDB connection
-// ---------------------
+/* ---------------------------
+MongoDB Connection
+--------------------------- */
 
 mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log("MongoDB connected"))
-.catch(err => console.error("MongoDB error:", err))
-
-// ---------------------
-// Chat Schema
-// ---------------------
-
-const ChatSchema = new mongoose.Schema({
-  message: String,
-  reply: String,
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
+.then(()=>{
+    console.log("MongoDB connected");
 })
+.catch((err)=>{
+    console.log("MongoDB error:", err);
+});
 
-const Chat = mongoose.model("Chat", ChatSchema)
+/* ---------------------------
+Basic AI reply
+--------------------------- */
 
-// ---------------------
-// Test route
-// ---------------------
+function aiReply(message){
 
-app.get("/", (req,res)=>{
-  res.send("Datta AI server running")
-})
+    message = message.toLowerCase();
 
-// ---------------------
-// Chat route
-// ---------------------
+    if(message.includes("hello")) return "Hello! How can I help you?";
+    if(message.includes("who are you")) return "I am Datta AI.";
+    if(message.includes("what is ai")) return "AI means Artificial Intelligence.";
+
+    return "I am still learning. Tell me more.";
+}
+
+/* ---------------------------
+Chat route
+--------------------------- */
 
 app.post("/chat", async (req,res)=>{
 
-  try {
+    const userMessage = req.body.message;
 
-    const userMessage = req.body.message
+    const reply = aiReply(userMessage);
 
-    const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method:"POST",
-        headers:{
-          "Authorization":`Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "Content-Type":"application/json"
-        },
-        body:JSON.stringify({
-          model:"deepseek/deepseek-chat",
-          messages:[
-            { role:"user", content:userMessage }
-          ]
-        })
-      }
-    )
+    const memory = new Memory({
+        userId: "user1",
+        message: userMessage,
+        response: reply
+    });
 
-    const data = await response.json()
+    await memory.save();
 
-    const reply = data.choices[0].message.content
+    res.json({
+        reply: reply
+    });
 
-    // save chat
-    await Chat.create({
-      message:userMessage,
-      reply:reply
-    })
+});
 
-    res.json({ reply })
+/* ---------------------------
+Memory route
+--------------------------- */
 
-  }
-  catch(error){
-    console.error(error)
-    res.status(500).json({error:"Server error"})
-  }
+app.get("/memory", async (req,res)=>{
 
-})
+    const history = await Memory.find().sort({timestamp:-1}).limit(20);
 
-// ---------------------
+    res.json(history);
 
-const PORT = process.env.PORT || 10000
+});
+
+/* ---------------------------
+Server start
+--------------------------- */
+
+app.get("/", (req,res)=>{
+    res.send("Datta AI server running");
+});
 
 app.listen(PORT, ()=>{
-  console.log("Datta AI server running")
-})
+    console.log("Datta AI server running");
+});
