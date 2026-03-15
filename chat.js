@@ -112,15 +112,23 @@ loadSidebar()
 
 }
 
-/* UPDATE CHAT TITLE */
+/* UPDATE CHAT TITLE (FIXED LIKE CHATGPT) */
 
 async function updateChatTitle(chatId,message){
 
 if(!chatId) return
 
-const ignore = ["hi","hello","hey","hii"]
+const text = message.toLowerCase().trim()
 
-if(ignore.includes(message.toLowerCase())) return
+const greetings = [
+"hi","hii","hello","hey","heyy",
+"hi!","hello!","hey!",
+"good morning","good afternoon","good evening"
+]
+
+if(greetings.includes(text)) return
+
+const clean = message.trim()
 
 await fetch("https://datta-ai-server.onrender.com/chat/"+chatId+"/rename",{
 method:"POST",
@@ -128,7 +136,7 @@ headers:{
 "Content-Type":"application/json"
 },
 body:JSON.stringify({
-title:message.slice(0,40)
+title:clean.slice(0,40)
 })
 })
 
