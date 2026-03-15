@@ -412,3 +412,44 @@ transition:.2s;
 .modeBtn:hover{
 background:#3a3a3a;
 }
+
+/* ============================= */
+/* NEW ADDED: AI RESPONSE BUTTONS */
+/* ============================= */
+
+.aiActions{
+display:flex;
+gap:6px;
+margin-top:8px;
+}
+
+/* response action buttons */
+
+.actionBtn{
+width:28px;
+height:28px;
+border:none;
+background:#2a2a2a;
+color:white;
+border-radius:6px;
+cursor:pointer;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:13px;
+transition:.2s;
+}
+
+.actionBtn:hover{
+background:#3a3a3a;
+}
+
+/* stop button red */
+
+.stopBtn{
+background:#c0392b;
+}
+
+.stopBtn:hover{
+background:#e74c3c;
+}
