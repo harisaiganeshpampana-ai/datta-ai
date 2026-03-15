@@ -134,7 +134,7 @@ title:message.slice(0,40)
 
 }
 
-/* LOAD SIDEBAR */
+/* LOAD SIDEBAR WITH DATE GROUPING */
 
 async function loadSidebar(){
 
@@ -144,7 +144,43 @@ const chats = await res.json()
 const history = document.getElementById("history")
 history.innerHTML = ""
 
+const today = new Date()
+today.setHours(0,0,0,0)
+
+const yesterday = new Date(today)
+yesterday.setDate(today.getDate()-1)
+
+const week = new Date(today)
+week.setDate(today.getDate()-7)
+
+let groups = {
+today:[],
+yesterday:[],
+week:[],
+older:[]
+}
+
 chats.forEach(chat=>{
+
+let date = new Date(chat.createdAt || Date.now())
+
+if(date >= today) groups.today.push(chat)
+else if(date >= yesterday) groups.yesterday.push(chat)
+else if(date >= week) groups.week.push(chat)
+else groups.older.push(chat)
+
+})
+
+function renderGroup(title,list){
+
+if(list.length===0) return
+
+let label = document.createElement("div")
+label.className = "chatGroup"
+label.innerText = title
+history.appendChild(label)
+
+list.forEach(chat=>{
 
 let div = document.createElement("div")
 div.className = "chatItem"
@@ -167,7 +203,6 @@ div.innerHTML = `
 div.onclick = (e)=>{
 
 if(e.target.closest(".menuBtn")) return
-
 openChat(chat._id)
 
 }
@@ -175,6 +210,13 @@ openChat(chat._id)
 history.appendChild(div)
 
 })
+
+}
+
+renderGroup("Today",groups.today)
+renderGroup("Yesterday",groups.yesterday)
+renderGroup("Last 7 days",groups.week)
+renderGroup("Older",groups.older)
 
 }
 
