@@ -17,13 +17,9 @@ const PORT = process.env.PORT || 10000;
 /* MONGODB CONNECTION */
 /* ========================= */
 
-mongoose.connect(process.env.MONGO_URI,{
-useNewUrlParser:true,
-useUnifiedTopology:true
-})
+mongoose.connect(process.env.MONGO_URI)
 .then(()=>console.log("MongoDB connected"))
 .catch(err=>console.log(err));
-
 
 /* ========================= */
 /* CHAT SCHEMA */
@@ -59,7 +55,6 @@ default:Date.now
 });
 
 const Chat = mongoose.model("Chat",ChatSchema);
-
 
 /* ========================= */
 /* CHAT ROUTE */
@@ -117,7 +112,6 @@ content:message
 
 chat.messages.push(userMessage);
 
-
 /* ========================= */
 /* CALL AI WITH STREAM */
 /* ========================= */
@@ -151,7 +145,6 @@ throw new Error("OpenRouter API error");
 res.setHeader("Content-Type","text/event-stream");
 res.setHeader("Cache-Control","no-cache");
 res.setHeader("Connection","keep-alive");
-
 
 let reply="";
 
@@ -217,7 +210,6 @@ res.end("Server error");
 }
 
 });
-
 
 /* ========================= */
 /* REGENERATE RESPONSE */
@@ -297,7 +289,6 @@ res.json({error:"Regenerate failed"});
 
 });
 
-
 /* ========================= */
 /* SIDEBAR CHATS */
 /* ========================= */
@@ -322,7 +313,6 @@ res.json([]);
 }
 
 });
-
 
 /* ========================= */
 /* LOAD FULL CHAT */
@@ -351,7 +341,6 @@ res.json([]);
 
 });
 
-
 /* ========================= */
 /* RENAME CHAT TITLE */
 /* ========================= */
@@ -376,7 +365,6 @@ res.json({success:false});
 
 });
 
-
 /* ========================= */
 /* DELETE CHAT */
 /* ========================= */
@@ -399,7 +387,6 @@ res.json({success:false});
 }
 
 });
-
 
 /* ========================= */
 /* START SERVER */
