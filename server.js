@@ -71,7 +71,7 @@ headers:{
 "Content-Type":"application/json"
 },
 body:JSON.stringify({
-model:"deepseek/deepseek-chat",
+model:"openai/gpt-4o-mini",
 messages:chat.messages,
 temperature:0.5
 })
