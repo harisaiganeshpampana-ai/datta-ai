@@ -360,29 +360,51 @@ send()
 
 })
 
-/* SPEAK FUNCTION */
+/* CLEAN TEXT */
 
-function speak(text){
+function cleanText(text){
 
-const speech = new SpeechSynthesisUtterance(text)
-
-speech.lang="en-US"
-
-speech.rate=1
-
-speech.pitch=1
-
-speechSynthesis.speak(speech)
+return text
+.replace(/[#*`]/g,"")
+.replace(/\n+/g,"\n")
 
 }
 
-/* SPEAK BUTTON FUNCTION */
+/* SPEECH CONTROL */
+
+let speaking=false
+let speechInstance=null
 
 function speakThis(btn){
 
-const text = btn.parentElement.innerText.replace("🔊","")
+const text = cleanText(btn.parentElement.innerText.replace("🔊","").replace("⏹",""))
 
-speak(text)
+if(speaking){
+
+speechSynthesis.cancel()
+speaking=false
+btn.innerText="🔊"
+return
+
+}
+
+speechInstance = new SpeechSynthesisUtterance(text)
+
+speechInstance.lang="en-US"
+speechInstance.rate=1
+speechInstance.pitch=1
+
+speechInstance.onend=function(){
+
+speaking=false
+btn.innerText="🔊"
+
+}
+
+speechSynthesis.speak(speechInstance)
+
+speaking=true
+btn.innerText="⏹"
 
 }
 
@@ -417,9 +439,7 @@ try{
 const res = await fetch("https://datta-ai-server.onrender.com/chat",{
 
 method:"POST",
-
 headers:{"Content-Type":"application/json"},
-
 body:JSON.stringify({
 message:text,
 sessionId:sessionId
@@ -431,9 +451,11 @@ const data = await res.json()
 
 document.getElementById("loader").remove()
 
+const clean = cleanText(data.reply)
+
 chatBox.innerHTML+=`
 <div class="ai">
-${data.reply}
+${clean}
 <button class="speakBtn" onclick="speakThis(this)">🔊</button>
 </div>
 `
@@ -448,7 +470,7 @@ messages:[]
 }
 
 currentChat.messages.push({role:"user",text:text})
-currentChat.messages.push({role:"ai",text:data.reply})
+currentChat.messages.push({role:"ai",text:clean})
 
 chatBox.scrollTop = chatBox.scrollHeight
 
