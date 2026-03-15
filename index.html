@@ -62,6 +62,27 @@ padding:4px 6px;
 border-radius:5px;
 }
 
+/* LOADING ANIMATION */
+
+.typing span{
+height:6px;
+width:6px;
+background:#aaa;
+border-radius:50%;
+display:inline-block;
+margin:2px;
+animation:blink 1.4s infinite;
+}
+
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+
+@keyframes blink{
+0%{opacity:.2}
+20%{opacity:1}
+100%{opacity:.2}
+}
+
 </style>
 </head>
 
@@ -114,8 +135,6 @@ const chatBox=document.getElementById("chat")
 
 let currentChatId=null
 
-/* SEND MESSAGE */
-
 async function send(){
 
 const input=document.getElementById("message")
@@ -127,9 +146,11 @@ chatBox.innerHTML+=`<div class="user">${escapeHTML(text)}</div>`
 
 input.value=""
 
+/* LOADING ANIMATION */
+
 let aiDiv=document.createElement("div")
-aiDiv.className="ai"
-aiDiv.innerHTML=`<span id="stream"></span>`   /* buttons removed here */
+aiDiv.className="ai typing"
+aiDiv.innerHTML=`<span></span><span></span><span></span>`
 
 chatBox.appendChild(aiDiv)
 
@@ -144,6 +165,11 @@ sessionId:sessionId,
 chatId:currentChatId
 })
 })
+
+/* REPLACE LOADING WITH STREAM */
+
+aiDiv.className="ai"
+aiDiv.innerHTML=`<span id="stream"></span>`
 
 const reader=res.body.getReader()
 const decoder=new TextDecoder()
@@ -179,7 +205,7 @@ scrollBottom()
 
 }
 
-/* ADD VOICE BUTTONS AFTER ANSWER */
+/* ADD VOICE BUTTONS */
 
 aiDiv.innerHTML+=`
 <button onclick="speakText(this)">🗣</button>
@@ -190,7 +216,7 @@ loadSidebar()
 
 }
 
-/* LOAD SIDEBAR */
+/* SIDEBAR */
 
 async function loadSidebar(){
 
@@ -219,8 +245,6 @@ history.appendChild(div)
 
 }
 
-/* DELETE CHAT */
-
 async function deleteChat(e,chatId){
 
 e.stopPropagation()
@@ -240,8 +264,6 @@ currentChatId=null
 loadSidebar()
 
 }
-
-/* OPEN CHAT */
 
 async function openChat(chatId){
 
@@ -273,14 +295,10 @@ scrollBottom()
 
 }
 
-/* NEW CHAT */
-
 function newChat(){
 currentChatId=null
 chatBox.innerHTML=""
 }
-
-/* VOICE READER */
 
 function speakText(btn){
 
@@ -298,8 +316,6 @@ speechSynthesis.speak(speech)
 function stopVoice(){
 speechSynthesis.cancel()
 }
-
-/* VOICE INPUT */
 
 function startAssistant(){
 
