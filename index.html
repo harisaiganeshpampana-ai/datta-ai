@@ -16,8 +16,6 @@ display:flex;
 height:100vh;
 }
 
-/* SIDEBAR */
-
 .sidebar{
 width:230px;
 background:#151515;
@@ -63,15 +61,11 @@ cursor:pointer;
 background:#222;
 }
 
-/* MAIN */
-
 .main{
 flex:1;
 display:flex;
 flex-direction:column;
 }
-
-/* CHAT */
 
 .chat{
 flex:1;
@@ -91,8 +85,6 @@ margin:12px 0;
 margin:12px 0;
 line-height:1.6;
 }
-
-/* INPUT AREA */
 
 .inputArea{
 padding:15px;
@@ -114,8 +106,6 @@ border:none;
 background:#1e1e1e;
 color:white;
 }
-
-/* BUTTONS */
 
 .send,
 .voice,
@@ -141,8 +131,6 @@ color:white;
 padding:4px 6px;
 border-radius:5px;
 }
-
-/* TYPING */
 
 .typing span{
 height:6px;
@@ -227,8 +215,6 @@ const chatBox=document.getElementById("chat")
 chatBox.innerHTML += `<div class="user">${text}</div>`
 input.value=""
 
-/* typing */
-
 chatBox.innerHTML += `
 <div id="loading" class="ai typing">
 <span></span><span></span><span></span>
@@ -259,12 +245,12 @@ ${data.reply}
 
 chatBox.scrollTop = chatBox.scrollHeight
 
-/* SAVE CHAT (FIXED) */
+/* SAVE CHAT */
 
 if(!currentChat){
 
 currentChat={
-title:text.substring(0,30),
+title:text.slice(0,40),
 messages:[]
 }
 
@@ -322,14 +308,12 @@ alert("File uploaded: "+file.name)
 
 }
 
-/* NEW CHAT (FIXED) */
+/* NEW CHAT */
 
 function newChat(){
 
 currentChat=null
-
 document.getElementById("chat").innerHTML=""
-
 document.getElementById("message").focus()
 
 }
@@ -345,6 +329,7 @@ chats.forEach((chat,index)=>{
 
 let div=document.createElement("div")
 div.innerText=chat.title
+
 div.onclick=()=>openChat(index)
 
 history.appendChild(div)
