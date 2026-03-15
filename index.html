@@ -8,12 +8,57 @@
 <style>
 
 body{margin:0;font-family:Arial;background:#0f0f0f;color:white;display:flex;height:100vh;}
-.sidebar{width:230px;background:#151515;padding:15px;display:flex;flex-direction:column;}
-.logo{display:flex;align-items:center;gap:10px;font-weight:bold;margin-bottom:20px;}
-.logo img{width:26px;}
-.newchat{background:#222;border:none;padding:10px;color:white;border-radius:6px;cursor:pointer;margin-bottom:20px;}
 
-.history{flex:1;overflow:auto;}
+.sidebar{
+width:240px;
+background:#151515;
+padding:15px;
+display:flex;
+flex-direction:column;
+}
+
+.logo{
+display:flex;
+align-items:center;
+gap:10px;
+font-weight:bold;
+margin-bottom:15px;
+}
+
+.logo img{width:26px;}
+
+.newchat{
+background:#222;
+border:none;
+padding:10px;
+color:white;
+border-radius:6px;
+cursor:pointer;
+margin-bottom:10px;
+display:flex;
+align-items:center;
+gap:8px;
+}
+
+.searchBox{
+background:#1e1e1e;
+border:none;
+padding:8px;
+border-radius:6px;
+color:white;
+margin-bottom:10px;
+}
+
+.sectionTitle{
+font-size:12px;
+color:#aaa;
+margin-bottom:6px;
+}
+
+.history{
+flex:1;
+overflow:auto;
+}
 
 .chatItem{
 display:flex;
@@ -22,6 +67,7 @@ align-items:center;
 padding:8px;
 border-radius:6px;
 cursor:pointer;
+font-size:14px;
 }
 
 .chatItem:hover{background:#222;}
@@ -35,17 +81,47 @@ font-size:14px;
 }
 
 .main{flex:1;display:flex;flex-direction:column;}
-.chat{flex:1;overflow:auto;padding:40px;max-width:900px;margin:auto;width:100%;}
+
+.chat{
+flex:1;
+overflow:auto;
+padding:40px;
+max-width:900px;
+margin:auto;
+width:100%;
+}
+
 .user{text-align:right;margin:12px 0;}
 .ai{margin:12px 0;line-height:1.6;}
 
-.inputArea{padding:15px;border-top:1px solid #222;}
-.inputWrap{display:flex;max-width:900px;margin:auto;gap:10px;}
+.inputArea{
+padding:15px;
+border-top:1px solid #222;
+}
 
-#message{flex:1;padding:12px;border-radius:25px;border:none;background:#1e1e1e;color:white;}
+.inputWrap{
+display:flex;
+max-width:900px;
+margin:auto;
+gap:10px;
+}
+
+#message{
+flex:1;
+padding:12px;
+border-radius:25px;
+border:none;
+background:#1e1e1e;
+color:white;
+}
 
 .send,.voice,.upload{
-width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;color:white;
+width:40px;
+height:40px;
+border-radius:50%;
+border:none;
+cursor:pointer;
+color:white;
 }
 
 .send{background:#2ecc71;}
@@ -95,7 +171,16 @@ animation:blink 1.4s infinite;
 Datta AI
 </div>
 
-<button class="newchat" onclick="newChat()">+ New Chat</button>
+<button class="newchat" onclick="newChat()">✏️ New Chat</button>
+
+<input
+id="search"
+class="searchBox"
+placeholder="🔍 Search chats"
+onkeyup="searchChats()"
+/>
+
+<div class="sectionTitle">Your Chats</div>
 
 <div class="history" id="history"></div>
 
@@ -146,8 +231,6 @@ chatBox.innerHTML+=`<div class="user">${escapeHTML(text)}</div>`
 
 input.value=""
 
-/* LOADING ANIMATION */
-
 let aiDiv=document.createElement("div")
 aiDiv.className="ai typing"
 aiDiv.innerHTML=`<span></span><span></span><span></span>`
@@ -165,8 +248,6 @@ sessionId:sessionId,
 chatId:currentChatId
 })
 })
-
-/* REPLACE LOADING WITH STREAM */
 
 aiDiv.className="ai"
 aiDiv.innerHTML=`<span id="stream"></span>`
@@ -205,8 +286,6 @@ scrollBottom()
 
 }
 
-/* ADD VOICE BUTTONS */
-
 aiDiv.innerHTML+=`
 <button onclick="speakText(this)">🗣</button>
 <button onclick="stopVoice()">⏹</button>
@@ -215,8 +294,6 @@ aiDiv.innerHTML+=`
 loadSidebar()
 
 }
-
-/* SIDEBAR */
 
 async function loadSidebar(){
 
@@ -241,6 +318,18 @@ div.innerHTML=`
 
 history.appendChild(div)
 
+})
+
+}
+
+function searchChats(){
+
+const input=document.getElementById("search").value.toLowerCase()
+const items=document.querySelectorAll(".chatItem")
+
+items.forEach(item=>{
+const text=item.innerText.toLowerCase()
+item.style.display=text.includes(input)?"flex":"none"
 })
 
 }
