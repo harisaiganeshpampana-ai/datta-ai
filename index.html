@@ -4,7 +4,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Datta AI</title>
 
 <style>
@@ -73,7 +72,7 @@ display:flex;
 flex-direction:column;
 }
 
-/* START */
+/* START PAGE */
 
 .start{
 flex:1;
@@ -166,6 +165,8 @@ cursor:pointer;
 color:white;
 }
 
+/* LOADER */
+
 .loader{
 margin:15px 0;
 }
@@ -255,7 +256,6 @@ localStorage.setItem("dattaSession",sessionId)
 /* STORAGE */
 
 let chats = JSON.parse(localStorage.getItem("dattaChats")) || []
-
 let currentChat = null
 
 /* SIDEBAR */
@@ -263,15 +263,12 @@ let currentChat = null
 function loadSidebar(){
 
 const history=document.getElementById("history")
-
 history.innerHTML=""
 
 chats.forEach((chat,index)=>{
 
 let div=document.createElement("div")
-
 div.innerText=chat.title
-
 div.onclick=()=>openChat(index)
 
 history.appendChild(div)
@@ -297,13 +294,9 @@ document.getElementById("inputArea").style.display="block"
 currentChat.messages.forEach(m=>{
 
 if(m.role==="user"){
-
 chatBox.innerHTML+=`<div class="user">${m.text}</div>`
-
 }else{
-
 chatBox.innerHTML+=`<div class="ai">${m.text}</div>`
-
 }
 
 })
@@ -317,9 +310,7 @@ function newChat(){
 if(currentChat && currentChat.messages.length>0){
 
 chats.push(currentChat)
-
 localStorage.setItem("dattaChats",JSON.stringify(chats))
-
 loadSidebar()
 
 }
@@ -327,11 +318,8 @@ loadSidebar()
 currentChat=null
 
 document.getElementById("chat").innerHTML=""
-
 document.getElementById("start").style.display="flex"
-
 document.getElementById("chat").style.display="none"
-
 document.getElementById("inputArea").style.display="none"
 
 }
@@ -361,16 +349,29 @@ send()
 
 })
 
+/* SPEAK FUNCTION */
+
+function speak(text){
+
+const speech = new SpeechSynthesisUtterance(text)
+
+speech.lang="en-US"
+
+speech.rate=1
+
+speech.pitch=1
+
+speechSynthesis.speak(speech)
+
+}
+
 /* SEND MESSAGE */
 
 async function send(){
 
 const chatBox=document.getElementById("chat")
-
 const start=document.getElementById("start")
-
 const msgInput=document.getElementById("message")
-
 const startInput=document.getElementById("startInput")
 
 let text = msgInput.value || startInput.value
@@ -380,9 +381,7 @@ text=text.trim()
 if(!text) return
 
 start.style.display="none"
-
 chatBox.style.display="block"
-
 document.getElementById("inputArea").style.display="block"
 
 chatBox.innerHTML+=`<div class="user">${text}</div>`
@@ -413,6 +412,8 @@ document.getElementById("loader").remove()
 
 chatBox.innerHTML+=`<div class="ai">${data.reply}</div>`
 
+speak(data.reply)
+
 if(!currentChat){
 
 currentChat={
@@ -435,7 +436,7 @@ document.getElementById("loader").innerText="Server error"
 
 }
 
-/* VOICE */
+/* VOICE INPUT */
 
 function voice(){
 
@@ -457,7 +458,7 @@ send()
 
 }
 
-/* LOAD */
+/* LOAD SIDEBAR */
 
 loadSidebar()
 
