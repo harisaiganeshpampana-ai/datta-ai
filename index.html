@@ -24,13 +24,22 @@
 <span>Datta AI</span>
 </div>
 
-<button class="newchat" onclick="newChat()">✏️ New Chat</button>
+<button class="newchat" onclick="newChat()">
+
+<svg width="16" height="16" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
+<path d="M12 20h9"></path>
+<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+</svg>
+
+<span>New Chat</span>
+
+</button>
 
 <input
 id="search"
 class="searchBox"
 type="text"
-placeholder="🔍 Search chats"
+placeholder="Search chats"
 onkeyup="searchChats()"
 >
 
@@ -80,16 +89,22 @@ Suggest a sleep schedule that works
 
 <div class="inputWrap">
 
-<!-- PLUS BUTTON FOR FILE / TOOLS -->
+<!-- PLUS BUTTON -->
 
 <label class="upload">
-+
+
+<svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
+<line x1="12" y1="5" x2="12" y2="19"></line>
+<line x1="5" y1="12" x2="19" y2="12"></line>
+</svg>
+
 <input
 type="file"
 id="file"
 hidden
 onchange="uploadFile()"
 >
+
 </label>
 
 <!-- INPUT -->
@@ -105,13 +120,27 @@ autocomplete="off"
 
 <button class="modeBtn">Fast</button>
 
-<!-- AI ASSISTANT BUTTON -->
+<!-- AI ASSISTANT -->
 
-<button class="assistant" onclick="startAssistant()">✨</button>
+<button class="assistant" onclick="startAssistant()">
+
+<svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
+<circle cx="12" cy="12" r="10"></circle>
+<path d="M12 8v8M8 12h8"></path>
+</svg>
+
+</button>
 
 <!-- SEND -->
 
-<button class="send" onclick="send()">➤</button>
+<button class="send" onclick="send()">
+
+<svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
+<line x1="22" y1="2" x2="11" y2="13"></line>
+<polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+</svg>
+
+</button>
 
 </div>
 
