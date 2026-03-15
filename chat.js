@@ -4,6 +4,7 @@ localStorage.setItem("sessionId",Date.now().toString())
 
 const sessionId = localStorage.getItem("sessionId")
 const chatBox = document.getElementById("chat")
+const sendBtn = document.querySelector(".send")
 
 let currentChatId = null
 let lastUserMessage = ""
@@ -57,6 +58,11 @@ chatBox.appendChild(aiDiv)
 
 scrollBottom()
 
+/* CHANGE SEND BUTTON → STOP */
+
+sendBtn.innerText = "⛔"
+sendBtn.onclick = stopGeneration
+
 /* STREAM CONTROLLER */
 controller = new AbortController()
 
@@ -71,14 +77,12 @@ chatId:currentChatId
 })
 })
 
-/* CLEANER BUTTON STRUCTURE */
-
 aiDiv.innerHTML = `
 <div class="avatar">🤖</div>
 
 <div class="aiBubble">
 
-<span id="stream"></span>
+<span class="stream"></span>
 
 <div class="aiActions">
 
@@ -88,9 +92,7 @@ aiDiv.innerHTML = `
 
 <button class="actionBtn" onclick="stopVoice()">■</button>
 
-<button class="actionBtn" onclick="regenerate()">↻</button>
-
-<button class="actionBtn stopBtn" onclick="stopGeneration()">⛔</button>
+<button class="actionBtn" onclick="regenerateFrom(this)">↻</button>
 
 </div>
 
@@ -101,7 +103,7 @@ const reader = res.body.getReader()
 const decoder = new TextDecoder()
 
 let streamText = ""
-let span = aiDiv.querySelector("#stream")
+let span = aiDiv.querySelector(".stream")
 
 while(true){
 
@@ -128,6 +130,11 @@ span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>'
 scrollBottom()
 
 }
+
+/* restore send button */
+
+sendBtn.innerText = "➤"
+sendBtn.onclick = send
 
 /* remove typing cursor */
 
@@ -372,6 +379,24 @@ function stopVoice(){
 speechSynthesis.cancel()
 }
 
+/* REGENERATE FROM SPECIFIC RESPONSE */
+
+function regenerateFrom(btn){
+
+const messageRow = btn.closest(".messageRow")
+const previous = messageRow.previousElementSibling
+
+if(previous && previous.querySelector(".userBubble")){
+
+const text = previous.querySelector(".userBubble").innerText
+
+document.getElementById("message").value = text
+send()
+
+}
+
+}
+
 /* VOICE INPUT */
 
 function startAssistant(){
@@ -396,17 +421,6 @@ const file = document.getElementById("file").files[0]
 
 if(file){
 alert("File uploaded: " + file.name)
-}
-
-}
-
-/* REGENERATE */
-
-function regenerate(){
-
-if(lastUserMessage){
-document.getElementById("message").value = lastUserMessage
-send()
 }
 
 }
@@ -485,4 +499,7 @@ if(controller){
 controller.abort()
 controller = null
 }
+
+sendBtn.innerText = "➤"
+sendBtn.onclick = send
 }
