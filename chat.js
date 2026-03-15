@@ -102,7 +102,12 @@ scrollBottom()
 
 }
 
+/* rename only once */
+
+if(!document.querySelector(`[data-chat="${currentChatId}"]`)){
 await updateChatTitle(currentChatId,text)
+}
+
 loadSidebar()
 
 }
@@ -143,6 +148,7 @@ chats.forEach(chat=>{
 
 let div = document.createElement("div")
 div.className = "chatItem"
+div.setAttribute("data-chat",chat._id)
 
 div.innerHTML = `
 <div class="chatTitle">${chat.title}</div>
