@@ -12,9 +12,13 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 10000;
 
+/* MONGODB CONNECTION */
+
 mongoose.connect(process.env.MONGO_URI)
 .then(()=>console.log("MongoDB connected"))
 .catch(err=>console.log(err));
+
+/* CHAT SCHEMA */
 
 const ChatSchema = new mongoose.Schema({
 sessionId:String,
@@ -23,25 +27,40 @@ messages:Array
 
 const Chat = mongoose.model("Chat",ChatSchema);
 
+/* CHAT ROUTE */
+
 app.post("/chat", async (req,res)=>{
 
 try{
 
 const {message,sessionId} = req.body;
 
+/* FIND OR CREATE CHAT */
+
 let chat = await Chat.findOne({sessionId});
 
 if(!chat){
+
 chat = new Chat({
 sessionId,
-messages:[]
-});
+messages:[
+{
+role:"system",
+content:"You are Datta AI, a helpful AI assistant. Answer clearly, professionally, and concisely. Avoid jokes, emojis, or unnecessary commentary. Provide clean and understandable answers."
 }
+]
+});
+
+}
+
+/* ADD USER MESSAGE */
 
 chat.messages.push({
 role:"user",
 content:message
 });
+
+/* CALL AI */
 
 const response = await fetch(
 "https://openrouter.ai/api/v1/chat/completions",
@@ -53,14 +72,23 @@ headers:{
 },
 body:JSON.stringify({
 model:"deepseek/deepseek-chat",
-messages:chat.messages
+messages:chat.messages,
+temperature:0.5
 })
 }
 );
 
 const data = await response.json();
 
-const reply = data?.choices?.[0]?.message?.content || "AI error";
+/* CLEAN RESPONSE */
+
+let reply = data?.choices?.[0]?.message?.content || "AI error";
+
+/* REMOVE EXTRA SPACES */
+
+reply = reply.trim();
+
+/* SAVE AI MESSAGE */
 
 chat.messages.push({
 role:"assistant",
@@ -68,6 +96,8 @@ content:reply
 });
 
 await chat.save();
+
+/* RETURN ANSWER */
 
 res.json({reply});
 
@@ -80,6 +110,8 @@ res.json({reply:"Server error"});
 }
 
 });
+
+/* START SERVER */
 
 app.listen(PORT,()=>{
 console.log("Server running on port "+PORT);
