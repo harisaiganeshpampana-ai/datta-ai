@@ -3,6 +3,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import fetch from "node-fetch";
 import dotenv from "dotenv";
+import crypto from "crypto";
 
 dotenv.config();
 
@@ -12,13 +13,21 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 10000;
 
+/* ========================= */
 /* MONGODB CONNECTION */
+/* ========================= */
 
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI,{
+useNewUrlParser:true,
+useUnifiedTopology:true
+})
 .then(()=>console.log("MongoDB connected"))
 .catch(err=>console.log(err));
 
+
+/* ========================= */
 /* CHAT SCHEMA */
+/* ========================= */
 
 const ChatSchema = new mongoose.Schema({
 
@@ -31,6 +40,7 @@ default:"New Chat"
 
 messages:[
 {
+id:String,
 role:String,
 content:String
 }
@@ -50,7 +60,10 @@ default:Date.now
 
 const Chat = mongoose.model("Chat",ChatSchema);
 
+
+/* ========================= */
 /* CHAT ROUTE */
+/* ========================= */
 
 app.post("/chat", async (req,res)=>{
 
@@ -78,6 +91,7 @@ title:"New Chat",
 
 messages:[
 {
+id:crypto.randomUUID(),
 role:"system",
 content:"You are Datta AI, a helpful AI assistant. Answer clearly, professionally, and concisely. Avoid jokes, emojis, or unnecessary commentary. Provide clean and understandable answers."
 }
@@ -87,14 +101,26 @@ content:"You are Datta AI, a helpful AI assistant. Answer clearly, professionall
 
 }
 
+/* LIMIT MESSAGE HISTORY */
+
+if(chat.messages.length > 40){
+chat.messages = chat.messages.slice(-40);
+}
+
 /* ADD USER MESSAGE */
 
-chat.messages.push({
+const userMessage = {
+id:crypto.randomUUID(),
 role:"user",
 content:message
-});
+};
 
+chat.messages.push(userMessage);
+
+
+/* ========================= */
 /* CALL AI WITH STREAM */
+/* ========================= */
 
 const response = await fetch(
 "https://openrouter.ai/api/v1/chat/completions",
@@ -106,7 +132,10 @@ headers:{
 },
 body: JSON.stringify({
 model:"openai/gpt-4o-mini",
-messages: chat.messages.slice(-10),
+messages: chat.messages.map(m=>({
+role:m.role,
+content:m.content
+})),
 temperature:0.5,
 stream:true
 })
@@ -117,9 +146,12 @@ if(!response.ok){
 throw new Error("OpenRouter API error");
 }
 
-/* STREAM RESPONSE */
+/* STREAM HEADERS */
 
 res.setHeader("Content-Type","text/event-stream");
+res.setHeader("Cache-Control","no-cache");
+res.setHeader("Connection","keep-alive");
+
 
 let reply="";
 
@@ -158,12 +190,15 @@ res.write(token);
 
 /* SAVE AI MESSAGE */
 
-chat.messages.push({
+const aiMessage = {
+id:crypto.randomUUID(),
 role:"assistant",
 content:reply
-});
+};
 
-/* UPDATE CHAT ACTIVITY TIME */
+chat.messages.push(aiMessage);
+
+/* UPDATE CHAT TIME */
 
 chat.updatedAt = new Date();
 
@@ -184,7 +219,88 @@ res.end("Server error");
 });
 
 
+/* ========================= */
+/* REGENERATE RESPONSE */
+/* ========================= */
+
+app.post("/chat/:chatId/regenerate", async (req,res)=>{
+
+try{
+
+const {chatId} = req.params;
+
+const chat = await Chat.findById(chatId);
+
+if(!chat){
+return res.json({error:"Chat not found"});
+}
+
+/* REMOVE LAST AI MESSAGE */
+
+if(chat.messages.length > 0){
+chat.messages.pop();
+}
+
+/* LAST USER MESSAGE */
+
+const lastUser = [...chat.messages].reverse().find(m=>m.role==="user");
+
+if(!lastUser){
+return res.json({error:"No user message"});
+}
+
+/* CALL AI AGAIN */
+
+const response = await fetch(
+"https://openrouter.ai/api/v1/chat/completions",
+{
+method:"POST",
+headers:{
+"Authorization":`Bearer ${process.env.OPENROUTER_API_KEY}`,
+"Content-Type":"application/json"
+},
+body: JSON.stringify({
+model:"openai/gpt-4o-mini",
+messages: chat.messages.map(m=>({
+role:m.role,
+content:m.content
+})),
+temperature:0.5
+})
+}
+);
+
+const data = await response.json();
+
+const reply = data.choices?.[0]?.message?.content || "";
+
+/* SAVE NEW MESSAGE */
+
+chat.messages.push({
+id:crypto.randomUUID(),
+role:"assistant",
+content:reply
+});
+
+chat.updatedAt = new Date();
+
+await chat.save();
+
+res.json({reply});
+
+}catch(err){
+
+console.log(err);
+res.json({error:"Regenerate failed"});
+
+}
+
+});
+
+
+/* ========================= */
 /* SIDEBAR CHATS */
+/* ========================= */
 
 app.get("/chats/:sessionId", async (req,res)=>{
 
@@ -208,7 +324,9 @@ res.json([]);
 });
 
 
+/* ========================= */
 /* LOAD FULL CHAT */
+/* ========================= */
 
 app.get("/chat/:chatId", async (req,res)=>{
 
@@ -234,7 +352,9 @@ res.json([]);
 });
 
 
+/* ========================= */
 /* RENAME CHAT TITLE */
+/* ========================= */
 
 app.post("/chat/:chatId/rename", async (req,res)=>{
 
@@ -257,7 +377,9 @@ res.json({success:false});
 });
 
 
+/* ========================= */
 /* DELETE CHAT */
+/* ========================= */
 
 app.delete("/chat/:chatId", async (req,res)=>{
 
@@ -279,7 +401,9 @@ res.json({success:false});
 });
 
 
+/* ========================= */
 /* START SERVER */
+/* ========================= */
 
 app.listen(PORT,()=>{
 console.log("Server running on port "+PORT);
