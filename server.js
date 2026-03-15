@@ -13,17 +13,27 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 10000;
 
+/* MongoDB connection */
+
 mongoose.connect(process.env.MONGO_URI)
-.then(()=>console.log("MongoDB connected"))
-.catch(err=>console.log(err));
+.then(() => console.log("MongoDB connected"))
+.catch(err => console.log(err));
+
+/* Health check */
+
+app.get("/", (req,res)=>{
+res.send("Datta AI server running");
+});
+
+/* Chat endpoint */
 
 app.post("/chat", async (req,res)=>{
 
 try{
 
-const message=req.body.message;
+const message = req.body.message;
 
-const response=await fetch(
+const response = await fetch(
 "https://openrouter.ai/api/v1/chat/completions",
 {
 method:"POST",
@@ -40,24 +50,28 @@ messages:[
 }
 );
 
-const data=await response.json();
+const data = await response.json();
 
-res.json({
-reply:data.choices[0].message.content
-});
+const reply =
+data?.choices?.[0]?.message?.content ||
+"AI could not generate a response.";
+
+res.json({ reply });
 
 }catch(error){
 
-console.log(error);
+console.log("AI error:",error);
 
 res.json({
-reply:"AI error occurred"
+reply:"Server waking up or AI busy. Please try again."
 });
 
 }
 
 });
 
-app.listen(PORT,()=>{
-console.log("Server running on port "+PORT);
+/* Start server */
+
+app.listen(PORT, ()=>{
+console.log("Server running on port " + PORT);
 });
