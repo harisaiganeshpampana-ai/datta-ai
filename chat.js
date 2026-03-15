@@ -15,6 +15,7 @@ function newChat(){
 currentChatId = null
 titleUpdated = false
 chatBox.innerHTML = ""
+showWelcome()
 }
 
 /* SEND MESSAGE */
@@ -27,6 +28,8 @@ let text = input.value.trim()
 if(!text) return
 
 lastUserMessage = text
+
+hideWelcome()
 
 chatBox.innerHTML += `
 <div class="messageRow userRow">
@@ -239,6 +242,8 @@ async function openChat(chatId){
 currentChatId = chatId
 chatBox.innerHTML = ""
 
+hideWelcome()
+
 const res = await fetch("https://datta-ai-server.onrender.com/chat/" + chatId)
 const messages = await res.json()
 
@@ -433,3 +438,22 @@ send()
 /* INITIAL LOAD */
 
 loadSidebar()
+
+/* ============================== */
+/* NEW FUNCTIONS ADDED BELOW */
+/* ============================== */
+
+function fillPrompt(text){
+document.getElementById("message").value = text
+document.getElementById("message").focus()
+}
+
+function hideWelcome(){
+const welcome = document.getElementById("welcomeScreen")
+if(welcome) welcome.style.display="none"
+}
+
+function showWelcome(){
+const welcome = document.getElementById("welcomeScreen")
+if(welcome) welcome.style.display="block"
+}
