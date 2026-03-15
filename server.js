@@ -9,9 +9,9 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-/* ---------------------------
+/* =========================
 MongoDB Connection
---------------------------- */
+========================= */
 
 mongoose.connect(process.env.MONGO_URI)
 .then(()=>{
@@ -21,65 +21,103 @@ mongoose.connect(process.env.MONGO_URI)
     console.log("MongoDB error:", err);
 });
 
-/* ---------------------------
-Basic AI reply
---------------------------- */
+
+/* =========================
+Basic AI Brain
+========================= */
 
 function aiReply(message){
 
-    message = message.toLowerCase();
+message = message.toLowerCase();
 
-    if(message.includes("hello")) return "Hello! How can I help you?";
-    if(message.includes("who are you")) return "I am Datta AI.";
-    if(message.includes("what is ai")) return "AI means Artificial Intelligence.";
-
-    return "I am still learning. Tell me more.";
+if(message.includes("hello") || message.includes("hi")){
+return "Hello! I am Datta AI. How can I help you?";
 }
 
-/* ---------------------------
-Chat route
---------------------------- */
+if(message.includes("who is messi")){
+return "Lionel Messi is an Argentine football player widely considered one of the greatest players in football history. He won the FIFA World Cup with Argentina in 2022 and has won multiple Ballon d'Or awards.";
+}
+
+if(message.includes("what is ai")){
+return "Artificial Intelligence is technology that allows machines to learn, reason and solve problems like humans.";
+}
+
+if(message.includes("who created you")){
+return "I was created as part of the Datta AI project.";
+}
+
+if(message.includes("how are you")){
+return "I'm doing great! Thanks for asking.";
+}
+
+return "I am still learning. Tell me more.";
+
+}
+
+
+/* =========================
+Chat Route
+========================= */
 
 app.post("/chat", async (req,res)=>{
 
-    const userMessage = req.body.message;
+try{
 
-    const reply = aiReply(userMessage);
+const userMessage = req.body.message;
 
-    const memory = new Memory({
-        userId: "user1",
-        message: userMessage,
-        response: reply
-    });
+const reply = aiReply(userMessage);
 
-    await memory.save();
+const memory = new Memory({
+userId: "user1",
+message: userMessage,
+response: reply
+});
 
-    res.json({
-        reply: reply
-    });
+await memory.save();
+
+res.json({
+reply: reply
+});
+
+}catch(error){
+
+console.log(error);
+
+res.status(500).json({
+reply: "Server error"
+});
+
+}
 
 });
 
-/* ---------------------------
-Memory route
---------------------------- */
+
+/* =========================
+Get Memory
+========================= */
 
 app.get("/memory", async (req,res)=>{
 
-    const history = await Memory.find().sort({timestamp:-1}).limit(20);
+const history = await Memory.find().sort({timestamp:-1}).limit(20);
 
-    res.json(history);
+res.json(history);
 
 });
 
-/* ---------------------------
-Server start
---------------------------- */
+
+/* =========================
+Test Route
+========================= */
 
 app.get("/", (req,res)=>{
-    res.send("Datta AI server running");
+res.send("Datta AI server running");
 });
 
+
+/* =========================
+Start Server
+========================= */
+
 app.listen(PORT, ()=>{
-    console.log("Datta AI server running");
+console.log("Datta AI server running");
 });
