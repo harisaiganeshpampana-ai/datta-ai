@@ -192,6 +192,29 @@ res.json([]);
 });
 
 
+/* DELETE CHAT (NEW FEATURE) */
+
+app.delete("/chat/:chatId", async (req,res)=>{
+
+try{
+
+const {chatId} = req.params;
+
+await Chat.findByIdAndDelete(chatId);
+
+res.json({success:true});
+
+}catch(err){
+
+console.log(err);
+
+res.json({success:false});
+
+}
+
+});
+
+
 /* START SERVER */
 
 app.listen(PORT,()=>{
