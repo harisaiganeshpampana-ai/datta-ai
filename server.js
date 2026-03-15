@@ -73,8 +73,7 @@ headers:{
 body: JSON.stringify({
 model:"openai/gpt-4o-mini",
 messages: chat.messages.slice(-10),
-temperature:0.5,
-stream:true
+temperature:0.5
 })
 }
 );
@@ -85,46 +84,11 @@ if(!response.ok){
 throw new Error("OpenRouter API error");
 }
 
-/* STREAM RESPONSE */
+/* GET AI RESPONSE */
 
-let reply = "";
+const data = await response.json();
 
-const reader = response.body.getReader();
-const decoder = new TextDecoder();
-
-while(true){
-
-const {done,value} = await reader.read();
-
-if(done) break;
-
-const chunk = decoder.decode(value);
-
-const lines = chunk.split("\n");
-
-for(const line of lines){
-
-if(!line.startsWith("data:")) continue;
-
-const data = line.replace("data:","").trim();
-
-if(data === "[DONE]") break;
-
-try{
-
-const parsed = JSON.parse(data);
-
-const token = parsed?.choices?.[0]?.delta?.content;
-
-if(token){
-reply += token;
-}
-
-}catch(e){}
-
-}
-
-}
+let reply = data?.choices?.[0]?.message?.content || "AI error";
 
 /* CLEAN RESPONSE */
 
