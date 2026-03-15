@@ -57,7 +57,7 @@ chatBox.appendChild(aiDiv)
 
 scrollBottom()
 
-/* NEW UPDATE */
+/* STREAM CONTROLLER */
 controller = new AbortController()
 
 const res = await fetch("https://datta-ai-server.onrender.com/chat",{
@@ -71,15 +71,29 @@ chatId:currentChatId
 })
 })
 
+/* CLEANER BUTTON STRUCTURE */
+
 aiDiv.innerHTML = `
 <div class="avatar">🤖</div>
+
 <div class="aiBubble">
+
 <span id="stream"></span>
-<button class="copyBtn" onclick="copyText(this)">📋</button>
-<button onclick="speakText(this)">🗣</button>
-<button onclick="stopVoice()">⏹</button>
-<button onclick="regenerate()">🔄</button>
-<button onclick="stopGeneration()">⛔</button>
+
+<div class="aiActions">
+
+<button class="actionBtn" onclick="copyText(this)">📋</button>
+
+<button class="actionBtn" onclick="speakText(this)">🔊</button>
+
+<button class="actionBtn" onclick="stopVoice()">■</button>
+
+<button class="actionBtn" onclick="regenerate()">↻</button>
+
+<button class="actionBtn stopBtn" onclick="stopGeneration()">⛔</button>
+
+</div>
+
 </div>
 `
 
@@ -447,9 +461,7 @@ send()
 
 loadSidebar()
 
-/* ============================== */
-/* NEW FUNCTIONS ADDED BELOW */
-/* ============================== */
+/* EXTRA FUNCTIONS */
 
 function fillPrompt(text){
 document.getElementById("message").value = text
