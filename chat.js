@@ -102,9 +102,15 @@ scrollBottom()
 
 }
 
-/* rename only once */
+/* CHATGPT STYLE TITLE */
 
-if(!document.querySelector(`[data-chat="${currentChatId}"]`)){
+const greetings = [
+"hi","hello","hey","hii",
+"hi!","hello!","hey!",
+"good morning","good afternoon","good evening"
+]
+
+if(!greetings.includes(text.toLowerCase())){
 await updateChatTitle(currentChatId,text)
 }
 
@@ -112,23 +118,11 @@ loadSidebar()
 
 }
 
-/* UPDATE CHAT TITLE (FIXED LIKE CHATGPT) */
+/* UPDATE CHAT TITLE */
 
 async function updateChatTitle(chatId,message){
 
 if(!chatId) return
-
-const text = message.toLowerCase().trim()
-
-const greetings = [
-"hi","hii","hello","hey","heyy",
-"hi!","hello!","hey!",
-"good morning","good afternoon","good evening"
-]
-
-if(greetings.includes(text)) return
-
-const clean = message.trim()
 
 await fetch("https://datta-ai-server.onrender.com/chat/"+chatId+"/rename",{
 method:"POST",
@@ -136,13 +130,13 @@ headers:{
 "Content-Type":"application/json"
 },
 body:JSON.stringify({
-title:clean.slice(0,40)
+title:message.slice(0,40)
 })
 })
 
 }
 
-/* LOAD SIDEBAR WITH DATE GROUPING */
+/* LOAD SIDEBAR */
 
 async function loadSidebar(){
 
@@ -192,7 +186,6 @@ list.forEach(chat=>{
 
 let div = document.createElement("div")
 div.className = "chatItem"
-div.setAttribute("data-chat",chat._id)
 
 div.innerHTML = `
 <div class="chatTitle">${chat.title}</div>
@@ -209,10 +202,8 @@ div.innerHTML = `
 `
 
 div.onclick = (e)=>{
-
 if(e.target.closest(".menuBtn")) return
 openChat(chat._id)
-
 }
 
 history.appendChild(div)
@@ -280,7 +271,7 @@ loadSidebar()
 
 }
 
-/* SEARCH CHATS */
+/* SEARCH */
 
 function searchChats(){
 
@@ -293,13 +284,13 @@ i.style.display = i.innerText.toLowerCase().includes(input) ? "flex" : "none"
 
 }
 
-/* COPY MESSAGE */
+/* COPY */
 
 function copyText(btn){
 navigator.clipboard.writeText(btn.parentElement.innerText)
 }
 
-/* VOICE SPEAK */
+/* VOICE */
 
 function speakText(btn){
 
@@ -310,8 +301,6 @@ speech.lang = "en-US"
 speechSynthesis.speak(speech)
 
 }
-
-/* STOP VOICE */
 
 function stopVoice(){
 speechSynthesis.cancel()
@@ -327,15 +316,13 @@ recognition.lang = "en-US"
 recognition.start()
 
 recognition.onresult = function(e){
-
 document.getElementById("message").value = e.results[0][0].transcript
 send()
-
 }
 
 }
 
-/* FILE UPLOAD */
+/* FILE */
 
 function uploadFile(){
 
@@ -390,7 +377,7 @@ function scrollBottom(){
 chatBox.scrollTop = chatBox.scrollHeight
 }
 
-/* ENTER KEY SEND */
+/* ENTER SEND */
 
 document.getElementById("message").addEventListener("keydown",function(e){
 
