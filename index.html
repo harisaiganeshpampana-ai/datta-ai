@@ -134,7 +134,7 @@ color:white;
 .voice{background:#3498db;}
 .upload{background:#9b59b6;}
 
-/* TYPING ANIMATION */
+/* TYPING */
 
 .typing span{
 height:6px;
@@ -207,26 +207,26 @@ Datta AI
 let chats = JSON.parse(localStorage.getItem("dattaChats")) || []
 let currentChat = null
 
-let speaking = false
-let speech = null
+let speaking=false
+let speech=null
 
 /* SEND MESSAGE */
 
 async function send(){
 
-const input = document.getElementById("message")
+const input=document.getElementById("message")
 
-let text = input.value.trim()
+let text=input.value.trim()
 
 if(!text) return
 
-const chatBox = document.getElementById("chat")
+const chatBox=document.getElementById("chat")
 
 chatBox.innerHTML += `<div class="user">${text}</div>`
 
 input.value=""
 
-/* typing */
+/* typing animation */
 
 chatBox.innerHTML += `
 <div id="loading" class="ai typing">
@@ -254,9 +254,18 @@ const data = await res.json()
 
 document.getElementById("loading").remove()
 
-chatBox.innerHTML += `<div class="ai">${data.reply}</div>`
+/* AI MESSAGE WITH VOICE BUTTON */
+
+chatBox.innerHTML += `
+<div class="ai">
+${data.reply}
+<button onclick="speakText(this)">🔊</button>
+</div>
+`
 
 chatBox.scrollTop = chatBox.scrollHeight
+
+/* CHAT STORAGE */
 
 if(!currentChat){
 
@@ -288,18 +297,20 @@ send()
 
 })
 
-/* VOICE */
+/* VOICE FOR LAST ANSWER */
 
 function toggleVoice(){
 
 const lastAI=document.querySelectorAll(".ai")
+
 if(lastAI.length===0) return
 
-const text=lastAI[lastAI.length-1].innerText
+const text=lastAI[lastAI.length-1].innerText.replace("🔊","")
 
 if(!speaking){
 
 speech=new SpeechSynthesisUtterance(text)
+
 speech.lang="en-US"
 
 speech.onend=()=>{speaking=false}
@@ -311,9 +322,24 @@ speaking=true
 }else{
 
 speechSynthesis.cancel()
+
 speaking=false
 
 }
+
+}
+
+/* VOICE FOR EACH MESSAGE */
+
+function speakText(btn){
+
+const text = btn.parentElement.innerText.replace("🔊","")
+
+const speech = new SpeechSynthesisUtterance(text)
+
+speech.lang="en-US"
+
+speechSynthesis.speak(speech)
 
 }
 
@@ -327,8 +353,6 @@ if(!file) return
 
 alert("File uploaded: "+file.name)
 
-/* real processing happens in server */
-
 }
 
 /* NEW CHAT */
@@ -337,7 +361,10 @@ function newChat(){
 
 if(currentChat && currentChat.messages.length>0){
 
-chats.push(currentChat)
+chats.push({
+title: currentChat.messages[0].text,
+messages: currentChat.messages
+})
 
 localStorage.setItem("dattaChats",JSON.stringify(chats))
 
@@ -388,12 +415,14 @@ currentChat.messages.forEach(m=>{
 if(m.role==="user"){
 chatBox.innerHTML+=`<div class="user">${m.text}</div>`
 }else{
-chatBox.innerHTML+=`<div class="ai">${m.text}</div>`
+chatBox.innerHTML+=`<div class="ai">${m.text}<button onclick="speakText(this)">🔊</button></div>`
 }
 
 })
 
 }
+
+/* LOAD HISTORY */
 
 loadSidebar()
 
