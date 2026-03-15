@@ -120,35 +120,6 @@ color:white;
 .voice{background:#3498db;}
 .upload{background:#9b59b6;}
 
-.ai button{
-margin-left:8px;
-cursor:pointer;
-border:none;
-background:#222;
-color:white;
-padding:4px 6px;
-border-radius:5px;
-}
-
-.typing span{
-height:6px;
-width:6px;
-background:#aaa;
-border-radius:50%;
-display:inline-block;
-margin:2px;
-animation:blink 1.4s infinite;
-}
-
-.typing span:nth-child(2){animation-delay:.2s}
-.typing span:nth-child(3){animation-delay:.4s}
-
-@keyframes blink{
-0%{opacity:.2}
-20%{opacity:1}
-100%{opacity:.2}
-}
-
 </style>
 </head>
 
@@ -194,6 +165,8 @@ Datta AI
 
 <script>
 
+/* SESSION */
+
 if(!localStorage.getItem("sessionId")){
 localStorage.setItem("sessionId",Date.now().toString())
 }
@@ -202,7 +175,7 @@ const sessionId = localStorage.getItem("sessionId")
 
 const chatBox=document.getElementById("chat")
 
-let serverMessages=[]
+let chatId=null
 
 /* SEND MESSAGE */
 
@@ -213,39 +186,32 @@ let text=input.value.trim()
 
 if(!text) return
 
-chatBox.innerHTML += `<div class="user">${escapeHTML(text)}</div>`
+chatBox.innerHTML+=`<div class="user">${escapeHTML(text)}</div>`
 
 input.value=""
-
-chatBox.innerHTML += `
-<div id="loading" class="ai typing">
-<span></span><span></span><span></span>
-</div>
-`
 
 scrollBottom()
 
 try{
 
-const res = await fetch("https://datta-ai-server.onrender.com/chat",{
+const res = await fetch(
+"https://datta-ai-server.onrender.com/chat",
+{
 method:"POST",
 headers:{ "Content-Type":"application/json" },
 body:JSON.stringify({
 message:text,
-sessionId:sessionId
+sessionId:sessionId,
+chatId:chatId
 })
 })
 
 const data = await res.json()
 
-document.getElementById("loading").remove()
+chatId=data.chatId
 
-chatBox.innerHTML += `
-<div class="ai">
-${escapeHTML(data.reply)}
-<button onclick="speakText(this)">▶</button>
-<button onclick="stopVoice()">⏹</button>
-</div>
+chatBox.innerHTML+=`
+<div class="ai">${escapeHTML(data.reply)}</div>
 `
 
 scrollBottom()
@@ -254,7 +220,7 @@ loadSidebar()
 
 }catch{
 
-document.getElementById("loading").innerText="Server error"
+chatBox.innerHTML+=`<div class="ai">Server error</div>`
 
 }
 
@@ -265,28 +231,24 @@ document.getElementById("loading").innerText="Server error"
 async function loadSidebar(){
 
 const res = await fetch(
-"https://datta-ai-server.onrender.com/history/"+sessionId
+"https://datta-ai-server.onrender.com/chats/"+sessionId
 )
 
-serverMessages = await res.json()
+const chats = await res.json()
 
 const history=document.getElementById("history")
 
 history.innerHTML=""
 
-serverMessages.forEach((msg,index)=>{
-
-if(msg.role==="user"){
+chats.forEach(chat=>{
 
 let div=document.createElement("div")
 
-div.innerText = msg.content.slice(0,40)
+div.innerText=chat.title
 
-div.onclick = ()=>openChat(index)
+div.onclick=()=>openChat(chat._id)
 
 history.appendChild(div)
-
-}
 
 })
 
@@ -294,26 +256,31 @@ history.appendChild(div)
 
 /* OPEN CHAT */
 
-function openChat(index){
+async function openChat(id){
+
+chatId=id
+
+const res = await fetch(
+"https://datta-ai-server.onrender.com/chat/"+id
+)
+
+const chat = await res.json()
 
 chatBox.innerHTML=""
 
-for(let i=0;i<=index;i++){
-
-const m=serverMessages[i]
+chat.messages.forEach(m=>{
 
 if(m.role==="user"){
+
 chatBox.innerHTML+=`<div class="user">${escapeHTML(m.content)}</div>`
+
 }else{
-chatBox.innerHTML+=`
-<div class="ai">
-${escapeHTML(m.content)}
-<button onclick="speakText(this)">▶</button>
-<button onclick="stopVoice()">⏹</button>
-</div>`
-}
+
+chatBox.innerHTML+=`<div class="ai">${escapeHTML(m.content)}</div>`
 
 }
+
+})
 
 scrollBottom()
 
@@ -323,6 +290,7 @@ scrollBottom()
 
 function newChat(){
 
+chatId=null
 chatBox.innerHTML=""
 
 }
@@ -330,39 +298,49 @@ chatBox.innerHTML=""
 /* ENTER KEY */
 
 document.getElementById("message").addEventListener("keydown",function(e){
-if(e.key==="Enter"){ send() }
+
+if(e.key==="Enter") send()
+
 })
 
 /* VOICE */
 
-function speakText(btn){
+function startAssistant(){
 
-const text = btn.parentElement.innerText
-.replace("▶","")
-.replace("⏹","")
+const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)()
 
-const speech = new SpeechSynthesisUtterance(text)
-speech.lang="en-US"
+recognition.lang="en-US"
 
-speechSynthesis.speak(speech)
+recognition.start()
+
+recognition.onresult=function(event){
+
+document.getElementById("message").value=event.results[0][0].transcript
+
+send()
 
 }
 
-function stopVoice(){
-speechSynthesis.cancel()
 }
+
+/* FILE */
 
 function uploadFile(){
 
 const file=document.getElementById("file").files[0]
+
 if(!file) return
 
 alert("File uploaded: "+file.name)
 
 }
 
+/* SECURITY */
+
 function escapeHTML(str){
+
 return str.replace(/[&<>"']/g,function(m){
+
 return({
 "&":"&amp;",
 "<":"&lt;",
@@ -370,27 +348,16 @@ return({
 '"':"&quot;",
 "'":"&#039;"
 })[m]
+
 })
+
 }
+
+/* SCROLL */
 
 function scrollBottom(){
+
 chatBox.scrollTop=chatBox.scrollHeight
-}
-
-function startAssistant(){
-
-const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)()
-
-recognition.lang="en-US"
-recognition.start()
-
-recognition.onresult=function(event){
-
-const voiceText = event.results[0][0].transcript
-document.getElementById("message").value=voiceText
-send()
-
-}
 
 }
 
