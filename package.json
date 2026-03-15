@@ -1,7 +1,6 @@
 {
   "name": "datta-ai-server",
   "version": "1.0.0",
-  "description": "Datta AI backend server",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
