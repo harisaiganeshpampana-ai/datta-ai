@@ -1,4 +1,4 @@
-import express from "express";
+8import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import fetch from "node-fetch";
@@ -7,18 +7,15 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 10000;
 
-/* MongoDB */
-
 mongoose.connect(process.env.MONGO_URI)
 .then(()=>console.log("MongoDB connected"))
 .catch(err=>console.log(err));
-
-/* Chat schema */
 
 const ChatSchema = new mongoose.Schema({
 sessionId:String,
@@ -26,8 +23,6 @@ messages:Array
 });
 
 const Chat = mongoose.model("Chat",ChatSchema);
-
-/* Chat endpoint */
 
 app.post("/chat", async (req,res)=>{
 
@@ -38,12 +33,10 @@ const {message,sessionId}=req.body;
 let chat=await Chat.findOne({sessionId});
 
 if(!chat){
-
 chat=new Chat({
 sessionId:sessionId,
 messages:[]
 });
-
 }
 
 chat.messages.push({
