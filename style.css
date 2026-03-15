@@ -246,11 +246,9 @@ background:#0f0f0f;
 
 }
 
-/* ============================= /
-/ NEW FEATURES ADDED BELOW /
-/ ============================= */
-
-/* streaming typing cursor */
+/* ============================= */
+/* NEW FEATURES ADDED BELOW */
+/* ============================= */
 
 .cursor{
 animation:blinkCursor 1s infinite;
@@ -263,8 +261,6 @@ font-weight:bold;
 100%{opacity:0}
 }
 
-/* code block style */
-
 pre{
 position:relative;
 background:#111;
@@ -272,8 +268,6 @@ padding:12px;
 border-radius:8px;
 overflow:auto;
 }
-
-/* copy button inside code */
 
 .codeCopy{
 position:absolute;
