@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-
 <meta charset="UTF-8">
 <title>Datta AI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 
@@ -20,32 +19,44 @@ height:100vh;
 /* SIDEBAR */
 
 .sidebar{
-width:220px;
-background:#141414;
+width:230px;
+background:#151515;
 padding:15px;
+display:flex;
+flex-direction:column;
 }
 
 .logo{
-font-size:20px;
+display:flex;
+align-items:center;
+gap:10px;
+font-weight:bold;
 margin-bottom:20px;
 }
 
+.logo img{
+width:26px;
+}
+
 .newchat{
-width:100%;
-padding:10px;
-border:none;
 background:#222;
+border:none;
+padding:10px;
 color:white;
-cursor:pointer;
 border-radius:6px;
+cursor:pointer;
 margin-bottom:20px;
+}
+
+.history{
+flex:1;
+overflow:auto;
 }
 
 .history div{
 padding:8px;
-margin-bottom:6px;
+border-radius:6px;
 cursor:pointer;
-border-radius:5px;
 }
 
 .history div:hover{
@@ -65,7 +76,7 @@ flex-direction:column;
 .chat{
 flex:1;
 overflow:auto;
-padding:30px;
+padding:40px;
 max-width:900px;
 margin:auto;
 width:100%;
@@ -81,7 +92,7 @@ margin:12px 0;
 line-height:1.6;
 }
 
-/* INPUT */
+/* INPUT AREA */
 
 .inputArea{
 padding:15px;
@@ -92,6 +103,7 @@ border-top:1px solid #222;
 display:flex;
 max-width:900px;
 margin:auto;
+gap:10px;
 }
 
 #message{
@@ -103,22 +115,26 @@ background:#1e1e1e;
 color:white;
 }
 
-.send{
+/* BUTTONS */
+
+.send,
+.voice,
+.upload{
+
 width:40px;
 height:40px;
 border-radius:50%;
 border:none;
-background:#2ecc71;
-color:white;
 cursor:pointer;
-margin-left:10px;
+color:white;
+
 }
 
-/* LOADING */
+.send{background:#2ecc71;}
+.voice{background:#3498db;}
+.upload{background:#9b59b6;}
 
-.typing{
-display:inline-block;
-}
+/* TYPING ANIMATION */
 
 .typing span{
 height:6px;
@@ -130,13 +146,8 @@ margin:2px;
 animation:blink 1.4s infinite;
 }
 
-.typing span:nth-child(2){
-animation-delay:0.2s;
-}
-
-.typing span:nth-child(3){
-animation-delay:0.4s;
-}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
 
 @keyframes blink{
 0%{opacity:.2}
@@ -145,20 +156,23 @@ animation-delay:0.4s;
 }
 
 </style>
-
 </head>
 
 <body>
 
 <div class="sidebar">
 
-<div class="logo">Datta AI</div>
+<div class="logo">
+<img src="logo.jpeg">
+Datta AI
+</div>
 
 <button class="newchat" onclick="newChat()">+ New Chat</button>
 
 <div class="history" id="history"></div>
 
 </div>
+
 
 <div class="main">
 
@@ -172,11 +186,19 @@ animation-delay:0.4s;
 
 <button class="send" onclick="send()">➤</button>
 
-</div>
+<button class="voice" onclick="toggleVoice()">🔊</button>
+
+<label class="upload">
+📎
+<input type="file" id="file" hidden onchange="uploadFile()">
+</label>
 
 </div>
 
 </div>
+
+</div>
+
 
 <script>
 
@@ -184,6 +206,9 @@ animation-delay:0.4s;
 
 let chats = JSON.parse(localStorage.getItem("dattaChats")) || []
 let currentChat = null
+
+let speaking = false
+let speech = null
 
 /* SEND MESSAGE */
 
@@ -201,7 +226,7 @@ chatBox.innerHTML += `<div class="user">${text}</div>`
 
 input.value=""
 
-/* LOADING */
+/* typing */
 
 chatBox.innerHTML += `
 <div id="loading" class="ai typing">
@@ -235,7 +260,7 @@ chatBox.scrollTop = chatBox.scrollHeight
 
 if(!currentChat){
 
-currentChat = {
+currentChat={
 title:text.substring(0,30),
 messages:[]
 }
@@ -262,6 +287,49 @@ send()
 }
 
 })
+
+/* VOICE */
+
+function toggleVoice(){
+
+const lastAI=document.querySelectorAll(".ai")
+if(lastAI.length===0) return
+
+const text=lastAI[lastAI.length-1].innerText
+
+if(!speaking){
+
+speech=new SpeechSynthesisUtterance(text)
+speech.lang="en-US"
+
+speech.onend=()=>{speaking=false}
+
+speechSynthesis.speak(speech)
+
+speaking=true
+
+}else{
+
+speechSynthesis.cancel()
+speaking=false
+
+}
+
+}
+
+/* FILE UPLOAD */
+
+function uploadFile(){
+
+const file=document.getElementById("file").files[0]
+
+if(!file) return
+
+alert("File uploaded: "+file.name)
+
+/* real processing happens in server */
+
+}
 
 /* NEW CHAT */
 
@@ -309,7 +377,7 @@ history.appendChild(div)
 
 function openChat(index){
 
-currentChat = chats[index]
+currentChat=chats[index]
 
 const chatBox=document.getElementById("chat")
 
@@ -318,20 +386,14 @@ chatBox.innerHTML=""
 currentChat.messages.forEach(m=>{
 
 if(m.role==="user"){
-
 chatBox.innerHTML+=`<div class="user">${m.text}</div>`
-
 }else{
-
 chatBox.innerHTML+=`<div class="ai">${m.text}</div>`
-
 }
 
 })
 
 }
-
-/* LOAD SIDEBAR */
 
 loadSidebar()
 
