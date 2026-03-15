@@ -9,6 +9,9 @@ let currentChatId = null
 let lastUserMessage = ""
 let titleUpdated = false
 
+/* NEW UPDATE */
+let controller = null
+
 /* NEW CHAT */
 
 function newChat(){
@@ -54,9 +57,13 @@ chatBox.appendChild(aiDiv)
 
 scrollBottom()
 
+/* NEW UPDATE */
+controller = new AbortController()
+
 const res = await fetch("https://datta-ai-server.onrender.com/chat",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
+signal: controller.signal,
 body:JSON.stringify({
 message:text,
 sessionId:sessionId,
@@ -72,6 +79,7 @@ aiDiv.innerHTML = `
 <button onclick="speakText(this)">🗣</button>
 <button onclick="stopVoice()">⏹</button>
 <button onclick="regenerate()">🔄</button>
+<button onclick="stopGeneration()">⛔</button>
 </div>
 `
 
@@ -456,4 +464,13 @@ if(welcome) welcome.style.display="none"
 function showWelcome(){
 const welcome = document.getElementById("welcomeScreen")
 if(welcome) welcome.style.display="block"
+}
+
+/* STOP GENERATION */
+
+function stopGeneration(){
+if(controller){
+controller.abort()
+controller = null
+}
 }
