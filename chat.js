@@ -535,6 +535,7 @@ chatBox.scrollTo({
 top: chatBox.scrollHeight,
 behavior:"smooth"
 })
+}
 const scrollBtn = document.getElementById("scrollDownBtn")
 
 chatBox.addEventListener("scroll", function(){
