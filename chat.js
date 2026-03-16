@@ -1,4 +1,4 @@
-// 1. Initialization
+// 1. Session Setup
 if (!localStorage.getItem("sessionId")) {
     localStorage.setItem("sessionId", Date.now().toString());
 }
@@ -12,25 +12,16 @@ let currentChatId = null;
 let controller = null;
 let userScrolledUp = false;
 
-// 2. FIXED SCROLL DOWN ARROW
-// This detects when you scroll away from the bottom
-chatBox.addEventListener("scroll", () => {
-    const threshold = 100;
-    const isAtBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < threshold;
-    
-    userScrolledUp = !isAtBottom;
+// 2. TOGGLE SIDEBAR (The Three Dots/Menu Feature)
+function toggleSidebar() {
+    document.getElementById("sidebar").classList.toggle("active");
+}
 
-    if (scrollBtn) {
-        if (userScrolledUp) {
-            scrollBtn.style.display = "flex";
-            scrollBtn.style.opacity = "1"; 
-            scrollBtn.style.visibility = "visible";
-            scrollBtn.style.bottom = "20px"; // Adjust position so it's visible
-        } else {
-            scrollBtn.style.display = "none";
-            scrollBtn.style.opacity = "0";
-        }
-    }
+// 3. FIXED SCROLL DETECTION
+chatBox.addEventListener("scroll", () => {
+    const isAtBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 100;
+    userScrolledUp = !isAtBottom;
+    scrollBtn.style.display = userScrolledUp ? "flex" : "none";
 });
 
 scrollBtn.addEventListener("click", () => {
@@ -38,56 +29,28 @@ scrollBtn.addEventListener("click", () => {
     chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: "smooth" });
 });
 
-// 3. VOICE / SPEAKER FUNCTION
-function speakText(btn) {
-    // Stop any existing speech
-    window.speechSynthesis.cancel();
-
-    // Get the text from the bubble next to this button
-    const aiContent = btn.closest(".aiContent");
-    const text = aiContent.querySelector(".aiBubble").innerText;
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
-    
-    // Optional: Add an 'onstart' effect to show it's working
-    utterance.onstart = () => { btn.style.transform = "scale(1.2)"; };
-    utterance.onend = () => { btn.style.transform = "scale(1)"; };
-
-    window.speechSynthesis.speak(utterance);
-}
-
-function stopVoice() {
-    window.speechSynthesis.cancel();
-}
-
-// 4. SEND MESSAGE LOGIC
+// 4. SEND MESSAGE
 async function send() {
     const text = messageInput.value.trim();
     if (!text) return;
 
     messageInput.value = "";
-    hideWelcome();
+    document.getElementById("welcomeScreen").style.display = "none";
 
-    // User Message
     chatBox.innerHTML += `
         <div class="messageRow userRow">
             <div class="userBubble">${text}</div>
             <div class="avatar">🧑</div>
         </div>`;
 
-    // AI Placeholder
     let aiDiv = document.createElement("div");
     aiDiv.className = "messageRow";
-    aiDiv.innerHTML = `
-        <div class="avatar">🤖</div>
-        <div class="aiBubble typing"><span></span><span></span><span></span></div>`;
+    aiDiv.innerHTML = `<div class="avatar">🤖</div><div class="aiBubble">Typing...</div>`;
     chatBox.appendChild(aiDiv);
     
-    scrollBottom(true);
+    chatBox.scrollTop = chatBox.scrollHeight;
 
-    // Toggle button to Stop mode
-    sendBtn.innerHTML = `<span style="font-size:12px;">Stop</span>`;
+    sendBtn.innerHTML = "STOP"; // STOP button
     sendBtn.onclick = stopGeneration;
 
     controller = new AbortController();
@@ -100,15 +63,14 @@ async function send() {
             body: JSON.stringify({ message: text, sessionId: sessionId, chatId: currentChatId })
         });
 
-        // Response Layout
         aiDiv.innerHTML = `
             <div class="avatar">🤖</div>
             <div class="aiContent">
                 <div class="aiBubble"><span class="stream"></span></div>
-                <div class="aiActions" style="opacity:1; visibility:visible;">
-                    <button class="actionBtn" onclick="copyText(this)">📋</button>
-                    <button class="actionBtn" onclick="speakText(this)">🔊</button>
-                    <button class="actionBtn" onclick="stopVoice()">■</button>
+                <div class="aiActions">
+                    <button class="actionBtn" onclick="copyText(this)">📋 Copy</button>
+                    <button class="actionBtn" onclick="speakText(this)">🔊 Listen</button>
+                    <button class="actionBtn" onclick="stopVoice()">■ Stop</button>
                 </div>
             </div>`;
 
@@ -120,8 +82,8 @@ async function send() {
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-
             const chunk = decoder.decode(value);
+            
             if (chunk.includes("__CHATID__")) {
                 const parts = chunk.split("__CHATID__");
                 streamText += parts[0];
@@ -129,67 +91,73 @@ async function send() {
             } else {
                 streamText += chunk;
             }
-            span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>';
-            scrollBottom();
+            span.innerHTML = marked.parse(streamText);
+            if (!userScrolledUp) chatBox.scrollTop = chatBox.scrollHeight;
         }
-        span.innerHTML = marked.parse(streamText);
         loadSidebar();
-
-    } catch (err) {
-        console.log("Request Aborted");
-    } finally {
-        resetSendButton();
-    }
+    } catch (err) { console.log("Stopped"); }
+    finally { resetSendButton(); }
 }
 
 function resetSendButton() {
-    sendBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-        </svg>`;
+    sendBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
     sendBtn.onclick = send;
 }
 
-function stopGeneration() {
-    if (controller) controller.abort();
-    resetSendButton();
+// 5. VOICE (SPEAKER) FIX
+function speakText(btn) {
+    window.speechSynthesis.cancel();
+    const text = btn.closest(".aiContent").querySelector(".aiBubble").innerText;
+    const speech = new SpeechSynthesisUtterance(text);
+    speech.lang = 'en-US';
+    window.speechSynthesis.speak(speech);
 }
 
-// 5. SIDEBAR & SEARCH
+function stopVoice() { window.speechSynthesis.cancel(); }
+
+function copyText(btn) {
+    const text = btn.closest(".aiContent").querySelector(".aiBubble").innerText;
+    navigator.clipboard.writeText(text);
+}
+
+// 6. SIDEBAR STORAGE
 async function loadSidebar() {
-    try {
-        const res = await fetch("https://datta-ai-server.onrender.com/chats/" + sessionId);
-        const chats = await res.json();
-        const history = document.getElementById("history");
-        history.innerHTML = "";
-        
-        chats.reverse().forEach(chat => {
-            let div = document.createElement("div");
-            div.className = "chatItem";
-            div.innerHTML = `
-                <div class="chatTitle">${chat.title || "New Chat"}</div>
-                <button class="menuBtn" onclick="deleteChat(event,'${chat._id}')">🗑️</button>
-            `;
-            div.onclick = () => openChat(chat._id);
-            history.appendChild(div);
-        });
-    } catch (e) { console.error("History fail"); }
-}
-
-function searchChats() {
-    const term = document.getElementById("search").value.toLowerCase();
-    document.querySelectorAll(".chatItem").forEach(item => {
-        item.style.display = item.innerText.toLowerCase().includes(term) ? "flex" : "none";
+    const history = document.getElementById("history");
+    const res = await fetch("https://datta-ai-server.onrender.com/chats/" + sessionId);
+    const chats = await res.json();
+    history.innerHTML = "";
+    chats.reverse().forEach(chat => {
+        let div = document.createElement("div");
+        div.className = "chatItem";
+        div.innerHTML = `<span>${chat.title || "New Chat"}</span><button class="menuBtn" onclick="deleteChat(event,'${chat._id}')">🗑️</button>`;
+        div.onclick = () => {
+            openChat(chat._id);
+            if(window.innerWidth < 768) toggleSidebar(); // Auto-close sidebar on mobile
+        };
+        history.appendChild(div);
     });
 }
 
-// 6. UTILS
-function scrollBottom(force = false) {
-    if (userScrolledUp && !force) return;
+async function openChat(chatId) {
+    currentChatId = chatId;
+    chatBox.innerHTML = "";
+    document.getElementById("welcomeScreen").style.display = "none";
+    const res = await fetch("https://datta-ai-server.onrender.com/chat/" + chatId);
+    const messages = await res.json();
+    messages.forEach(m => {
+        const isUser = m.role === "user";
+        chatBox.innerHTML += `<div class="messageRow ${isUser ? 'userRow' : ''}"><div class="avatar">${isUser?'🧑':'🤖'}</div><div class="${isUser?'userBubble':'aiBubble'}">${marked.parse(m.content)}</div></div>`;
+    });
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
+async function deleteChat(e, id) {
+    e.stopPropagation();
+    await fetch("https://datta-ai-server.onrender.com/chat/" + id, { method: "DELETE" });
+    loadSidebar();
+}
+
+// 7. UTILS
 messageInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -197,20 +165,14 @@ messageInput.addEventListener("keydown", (e) => {
     }
 });
 
-function hideWelcome() {
-    const ws = document.getElementById("welcomeScreen");
-    if (ws) ws.style.display = "none";
+function newChat() {
+    currentChatId = null;
+    chatBox.innerHTML = "";
+    document.getElementById("welcomeScreen").style.display = "block";
+    if(window.innerWidth < 768) toggleSidebar();
 }
 
-function fillPrompt(text) {
-    messageInput.value = text;
-    messageInput.focus();
-}
+function stopGeneration() { if (controller) controller.abort(); }
+function fillPrompt(t) { messageInput.value = t; messageInput.focus(); }
 
-function copyText(btn) {
-    const text = btn.closest(".aiContent").querySelector(".aiBubble").innerText;
-    navigator.clipboard.writeText(text);
-}
-
-// Load initial history
 loadSidebar();
