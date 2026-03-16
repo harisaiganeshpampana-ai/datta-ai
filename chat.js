@@ -250,9 +250,54 @@ if(!prev) return
 
 const text = prev.querySelector(".userBubble").innerText
 
-document.getElementById("message").value=text
+const aiBubble = row.querySelector(".aiBubble")
 
-send()
+aiBubble.innerHTML = `<span class="stream"></span>`
+
+const span = aiBubble.querySelector(".stream")
+
+controller = new AbortController()
+
+const res = await fetch("https://datta-ai-server.onrender.com/chat",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+signal: controller.signal,
+body:JSON.stringify({
+message:text,
+sessionId:sessionId,
+chatId:currentChatId
+})
+})
+
+const reader = res.body.getReader()
+const decoder = new TextDecoder()
+
+let streamText=""
+
+while(true){
+
+const {done,value} = await reader.read()
+if(done) break
+
+const chunk = decoder.decode(value)
+
+if(chunk.includes("CHATID")){
+const parts = chunk.split("CHATID")
+streamText += parts[0]
+currentChatId = parts[1]
+}else{
+streamText += chunk
+}
+
+span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>'
+
+scrollBottom()
+
+}
+
+span.innerHTML = marked.parse(streamText)
+
+addCopyButtons()
 
 }
 
