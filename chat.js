@@ -55,7 +55,7 @@ chatBox.innerHTML += `
 <div class="userBubble">${text}</div>
 <div class="avatar">🧑</div>
 </div>
-`
+`;
 
 input.value = ""
 
