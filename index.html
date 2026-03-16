@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 
 <meta charset="UTF-8">
@@ -43,8 +42,6 @@ placeholder="Search chats"
 onkeyup="searchChats()"
 >
 
-<!-- CHAT HISTORY -->
-
 <div class="history" id="history"></div>
 
 </div>
@@ -61,19 +58,19 @@ onkeyup="searchChats()"
 
 <div class="suggestions">
 
-<button class="promptBtn" onclick="fillPrompt('Help me stay focused at work')">
+<button class="promptBtn" onclick="document.getElementById('message').value='Help me stay focused at work'; hideWelcome(); send();">
 Help me stay focused at work
 </button>
 
-<button class="promptBtn" onclick="fillPrompt('Recommend something to watch today')">
+<button class="promptBtn" onclick="document.getElementById('message').value='Recommend something to watch today'; hideWelcome(); send();">
 Recommend something to watch today
 </button>
 
-<button class="promptBtn" onclick="fillPrompt('Write a friendly follow-up email')">
+<button class="promptBtn" onclick="document.getElementById('message').value='Write a friendly follow-up email'; hideWelcome(); send();">
 Write a friendly follow-up email
 </button>
 
-<button class="promptBtn" onclick="fillPrompt('Suggest a sleep schedule that works')">
+<button class="promptBtn" onclick="document.getElementById('message').value='Suggest a sleep schedule that works'; hideWelcome(); send();">
 Suggest a sleep schedule that works
 </button>
 
@@ -95,8 +92,6 @@ Suggest a sleep schedule that works
 
 <div class="inputWrap">
 
-<!-- PLUS BUTTON -->
-
 <label class="upload">
 
 <svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
@@ -113,8 +108,6 @@ onchange="uploadFile()"
 
 </label>
 
-<!-- INPUT -->
-
 <input
 id="message"
 type="text"
@@ -122,11 +115,7 @@ placeholder="Ask Datta AI"
 autocomplete="off"
 >
 
-<!-- FAST MODE BUTTON -->
-
 <button class="modeBtn">Fast</button>
-
-<!-- AI ASSISTANT (Waveform icon) -->
 
 <button class="assistant" onclick="startAssistant()">
 
@@ -138,8 +127,6 @@ autocomplete="off"
 </svg>
 
 </button>
-
-<!-- SEND -->
 
 <button class="send" onclick="send()">
 
@@ -155,8 +142,6 @@ autocomplete="off"
 </div>
 
 </div>
-
-<!-- LOAD SCRIPT -->
 
 <script src="chat.js?v=4"></script>
 
