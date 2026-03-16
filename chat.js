@@ -21,6 +21,7 @@ userScrolledUp = !atBottom
 if(userScrolledUp){
 scrollBtn.style.display = "flex"
 }else{
+scrollBtn.style.display = "none"
 }
 
 })
@@ -62,12 +63,13 @@ let aiDiv = document.createElement("div")
 aiDiv.className = "messageRow"
 
 aiDiv.innerHTML = `
-
 <div class="avatar">🤖</div>  
 <div class="aiBubble typing">  
 <span></span><span></span><span></span>  
-</div>  
-`  chatBox.appendChild(aiDiv)
+</div>
+`;
+
+chatBox.appendChild(aiDiv)
 
 scrollBottom()
 
@@ -501,7 +503,6 @@ behavior:"smooth"
 })
 }
 
-chatBox.addEventListener("scroll", function(){
 
 const distanceFromBottom =
 chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight
