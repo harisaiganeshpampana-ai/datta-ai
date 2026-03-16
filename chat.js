@@ -9,7 +9,6 @@ const sendBtn = document.querySelector(".send")
 let currentChatId = null
 let lastUserMessage = ""
 let titleUpdated = false
-
 let controller = null
 
 function newChat(){
@@ -69,7 +68,8 @@ chatId:currentChatId
 })
 })
 
-/* UPDATED STRUCTURE */
+/* AI MESSAGE STRUCTURE */
+
 aiDiv.innerHTML = `
 <div class="avatar">🤖</div>
 
@@ -226,7 +226,7 @@ div.innerHTML = `
 <button class="menuBtn" onclick="toggleMenu(event,'${chat._id}')">⋮</button>
 
 <div class="chatMenu" id="menu-${chat._id}">
-<button onclick="deleteChat(event,'${chat._id}')">🗑 Delete</button>
+<button onclick="deleteChat(event,'${chat._id}')">Delete</button>
 </div>
 </div>
 `
@@ -277,7 +277,10 @@ chatBox.innerHTML += `
 <div class="avatar">🤖</div>
 
 <div class="aiContent">
-<div class="aiBubble">${marked.parse(m.content)}</div>
+
+<div class="aiBubble">
+${marked.parse(m.content)}
+</div>
 
 <div class="aiActions">
 
@@ -329,7 +332,7 @@ i.style.display = i.innerText.toLowerCase().includes(input) ? "flex" : "none"
 }
 
 function copyText(btn){
-navigator.clipboard.writeText(btn.parentElement.innerText)
+navigator.clipboard.writeText(btn.closest(".aiContent").innerText)
 }
 
 function addCopyButtons(){
@@ -356,7 +359,7 @@ block.appendChild(btn)
 
 function speakText(btn){
 
-const text = btn.parentElement.innerText
+const text = btn.closest(".aiContent").innerText
 const speech = new SpeechSynthesisUtterance(text)
 
 speech.lang = "en-US"
