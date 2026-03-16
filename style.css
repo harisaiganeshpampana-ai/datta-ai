@@ -485,13 +485,11 @@ color:#ff4d4d;
 
 .aiActions{
 opacity:0;
-transition:0.2s;
+visibility:hidden;
+transition:opacity .2s ease;
 }
 
 .messageRow:hover .aiActions{
 opacity:1;
-}
-
-.stopBtn:hover{
-background:#2a2a2a;
+visibility:visible;
 }
