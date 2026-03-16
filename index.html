@@ -1,164 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
-<meta charset="UTF-8">
-<title>Datta AI</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<link rel="stylesheet" href="style.css">
-
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
+    <meta charset="UTF-8">
+    <title>Datta AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
-
 <body>
 
-<!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+        <div class="logo">
+            <img src="logo.jpeg" alt="Logo">
+            <span>Datta AI</span>
+        </div>
 
-<div class="sidebar">
+        <button class="newchat" onclick="newChat()">
+            <svg width="16" height="16" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+            </svg>
+            <span>New Chat</span>
+        </button>
 
-<div class="logo">
-<img src="logo.jpeg" alt="Datta AI Logo">
-<span>Datta AI</span>
-</div>
+        <input id="search" class="searchBox" type="text" placeholder="Search chats" onkeyup="searchChats()">
+        
+        <div class="history" id="history">
+            </div>
+    </div>
 
-<button class="newchat" onclick="newChat()">
+    <div class="main">
+        <button class="mobileMenuBtn" onclick="toggleSidebar()">☰</button>
 
-<svg width="16" height="16" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
-<path d="M12 20h9"></path>
-<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-</svg>
+        <div id="welcomeScreen" class="welcomeScreen">
+            <h1 class="welcomeTitle">Ask a question</h1>
+            <div class="suggestions">
+                <button onclick="fillPrompt('Help me stay focused at work')">Help me stay focused at work</button>
+                <button onclick="fillPrompt('Recommend something to watch today')">Recommend something to watch today</button>
+                <button onclick="fillPrompt('Write a friendly follow-up email')">Write a friendly follow-up email</button>
+            </div>
+        </div>
 
-<span>New Chat</span>
+        <div class="chatWrapper">
+            <div class="chat" id="chat"></div>
+            <button id="scrollDownBtn" style="display: none;">↓</button>
+        </div>
 
-</button>
+        <div class="inputArea">
+            <div class="inputWrap">
+                <label class="upload">
+                    <svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <input type="file" id="file" hidden onchange="uploadFile()">
+                </label>
 
-<input
-id="search"
-class="searchBox"
-type="text"
-placeholder="Search chats"
-onkeyup="searchChats()"
->
+                <input id="message" type="text" placeholder="Ask Datta AI" autocomplete="off">
+                <button class="modeBtn">Fast</button>
+                
+                <button class="send" onclick="send()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
 
-<!-- CHAT HISTORY -->
-
-<div class="history" id="history"></div>
-
-</div>
-
-<!-- MAIN CHAT AREA -->
-
-<div class="main">
-
-<!-- WELCOME SCREEN -->
-
-<div id="welcomeScreen" class="welcomeScreen">
-
-<h1 class="welcomeTitle">Ask a question</h1>
-
-<div class="suggestions">
-
-<button onclick="fillPrompt('Help me stay focused at work')">
-Help me stay focused at work
-</button>
-
-<button onclick="fillPrompt('Recommend something to watch today')">
-Recommend something to watch today
-</button>
-
-<button onclick="fillPrompt('Write a friendly follow-up email')">
-Write a friendly follow-up email
-</button>
-
-<button onclick="fillPrompt('Suggest a sleep schedule that works')">
-Suggest a sleep schedule that works
-</button>
-
-</div>
-
-</div>
-
-<div class="chatWrapper">
-
-<div class="chat" id="chat"></div>
-
-<button id="scrollDownBtn">↓</button>
-
-</div>
-
-<!-- INPUT AREA -->
-
-<div class="inputArea">
-
-<div class="inputWrap">
-
-<!-- PLUS BUTTON -->
-
-<label class="upload">
-
-<svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
-<line x1="12" y1="5" x2="12" y2="19"></line>
-<line x1="5" y1="12" x2="19" y2="12"></line>
-</svg>
-
-<input
-type="file"
-id="file"
-hidden
-onchange="uploadFile()"
->
-
-</label>
-
-<!-- INPUT -->
-
-<input
-id="message"
-type="text"
-placeholder="Ask Datta AI"
-autocomplete="off"
->
-
-<!-- FAST MODE BUTTON -->
-
-<button class="modeBtn">Fast</button>
-
-<!-- AI ASSISTANT (Waveform icon) -->
-
-<button class="assistant" onclick="startAssistant()">
-
-<svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
-<line x1="6" y1="9" x2="6" y2="15"></line>
-<line x1="10" y1="6" x2="10" y2="18"></line>
-<line x1="14" y1="10" x2="14" y2="14"></line>
-<line x1="18" y1="8" x2="18" y2="16"></line>
-</svg>
-
-</button>
-
-<!-- SEND -->
-
-<button class="send" onclick="send()">
-
-<svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
-<line x1="22" y1="2" x2="11" y2="13"></line>
-<polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-</svg>
-
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-<!-- LOAD SCRIPT -->
-
-<script src="chat.js?v=4"></script>
-
+    <script src="chat.js"></script>
 </body>
 </html>
