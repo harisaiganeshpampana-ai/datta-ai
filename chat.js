@@ -429,15 +429,10 @@ hideWelcome()
 send()
 
 })
-})
 function toggleSidebar(){
 
-const sidebar = document.querySelector(".sidebar")
+const sidebar = document.querySelector(".sidebar");
 
-if(sidebar.style.display === "none"){
-sidebar.style.display = "block";
-}else{
-sidebar.style.display = "none";
-}
+sidebar.classList.toggle("active");
 
 }
