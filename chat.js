@@ -81,13 +81,35 @@ aiDiv.innerHTML = `
 
 <div class="aiActions">
 
-<button class="actionBtn" onclick="copyText(this)">📋</button>
+<button class="actionBtn" onclick="copyText(this)">
+<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+<rect x="9" y="9" width="13" height="13" rx="2"></rect>
+<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+</svg>
+</button>
 
-<button class="actionBtn" onclick="speakText(this)">🔊</button>
+<button class="actionBtn" onclick="speakText(this)">
+<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+<polygon points="11 5 6 9 2 9 2 15 6 15 11 19"></polygon>
+<path d="M19 9a3 3 0 0 1 0 6"></path>
+<path d="M22 7a6 6 0 0 1 0 10"></path>
+</svg>
+</button>
 
-<button class="actionBtn" onclick="stopVoice()">■</button>
+<button class="actionBtn" onclick="stopVoice()">
+<svg viewBox="0 0 24 24" fill="white">
+<rect x="6" y="6" width="12" height="12"></rect>
+</svg>
+</button>
 
-<button class="actionBtn" onclick="regenerateFrom(this)">↻</button>
+<button class="actionBtn" onclick="regenerateFrom(this)">
+<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+<polyline points="23 4 23 10 17 10"></polyline>
+<polyline points="1 20 1 14 7 14"></polyline>
+<path d="M3.5 9a9 9 0 0 1 14-3L23 10"></path>
+<path d="M20.5 15a9 9 0 0 1-14 3L1 14"></path>
+</svg>
+</button>
 
 </div>
 
