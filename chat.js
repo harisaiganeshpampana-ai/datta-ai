@@ -393,6 +393,8 @@ const input = document.getElementById("message")
 
 input.value = text
 
-input.focus()
+hideWelcome()
+
+send()
 
 }
