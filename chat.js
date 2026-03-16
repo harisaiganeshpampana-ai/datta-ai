@@ -525,6 +525,7 @@ m.style.display = "none"
 })
 
 }
+let userScrolledUp = false
 
 function scrollBottom(){
 
@@ -534,8 +535,32 @@ chatBox.scrollTo({
 top: chatBox.scrollHeight,
 behavior:"smooth"
 })
+const scrollBtn = document.getElementById("scrollDownBtn")
 
+chatBox.addEventListener("scroll", function(){
+
+const distanceFromBottom =
+chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight
+
+if(distanceFromBottom > 150){
+userScrolledUp = true
+scrollBtn.classList.add("showScrollBtn")
+}else{
+userScrolledUp = false
+scrollBtn.classList.remove("showScrollBtn")
 }
+
+})
+
+scrollBtn.addEventListener("click", function(){
+
+chatBox.scrollTo({
+top: chatBox.scrollHeight,
+behavior:"smooth"
+})
+
+})
+
 
 document.getElementById("message").addEventListener("keydown",function(e){
 
