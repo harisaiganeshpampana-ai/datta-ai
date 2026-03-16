@@ -1,214 +1,558 @@
-// 1. Session & Global Variables
-if (!localStorage.getItem("sessionId")) {
-    localStorage.setItem("sessionId", Date.now().toString());
-}
-const sessionId = localStorage.getItem("sessionId");
-const chatBox = document.getElementById("chat");
-const sendBtn = document.querySelector(".send");
-const scrollBtn = document.getElementById("scrollDownBtn");
-const messageInput = document.getElementById("message");
-
-let currentChatId = null;
-let controller = null;
-let userScrolledUp = false;
-
-// 2. FIXED SCROLL BUTTON VISIBILITY
-chatBox.addEventListener("scroll", () => {
-    // Threshold: if user scrolls up more than 100px from the bottom
-    const threshold = 100;
-    const isAtBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < threshold;
-    
-    userScrolledUp = !isAtBottom;
-
-    if (scrollBtn) {
-        if (userScrolledUp) {
-            scrollBtn.style.display = "flex";
-            scrollBtn.style.opacity = "1"; // Override the CSS opacity: 0
-            scrollBtn.style.visibility = "visible";
-        } else {
-            scrollBtn.style.display = "none";
-            scrollBtn.style.opacity = "0";
-        }
-    }
-});
-
-// 3. SEND MESSAGE FUNCTION
-async function send() {
-    const text = messageInput.value.trim();
-    if (!text) return;
-
-    messageInput.value = "";
-    hideWelcome();
-
-    // Append User Message
-    chatBox.innerHTML += `
-        <div class="messageRow userRow">
-            <div class="userBubble">${text}</div>
-            <div class="avatar">🧑</div>
-        </div>`;
-
-    // Append AI Loading State
-    let aiDiv = document.createElement("div");
-    aiDiv.className = "messageRow";
-    aiDiv.innerHTML = `
-        <div class="avatar">🤖</div>
-        <div class="aiBubble typing"><span></span><span></span><span></span></div>`;
-    chatBox.appendChild(aiDiv);
-    
-    scrollBottom(true);
-
-    // Toggle Stop Button
-    sendBtn.innerText = "⛔";
-    sendBtn.onclick = stopGeneration;
-
-    controller = new AbortController();
-
-    try {
-        const res = await fetch("https://datta-ai-server.onrender.com/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            signal: controller.signal,
-            body: JSON.stringify({ message: text, sessionId: sessionId, chatId: currentChatId })
-        });
-
-        // Set up the AI Response Area
-        aiDiv.innerHTML = `
-            <div class="avatar">🤖</div>
-            <div class="aiContent">
-                <div class="aiBubble"><span class="stream"></span></div>
-                <div class="aiActions" style="opacity: 1; visibility: visible;"> 
-                    <button class="actionBtn" onclick="copyText(this)">📋</button>
-                    <button class="actionBtn" onclick="speakText(this)">🔊</button>
-                    <button class="actionBtn" onclick="stopVoice()">■</button>
-                </div>
-            </div>`;
-
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let streamText = "";
-        let span = aiDiv.querySelector(".stream");
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            const chunk = decoder.decode(value);
-            if (chunk.includes("__CHATID__")) {
-                const parts = chunk.split("__CHATID__");
-                streamText += parts[0];
-                currentChatId = parts[1];
-            } else {
-                streamText += chunk;
-            }
-            // Render Markdown
-            span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>';
-            scrollBottom();
-        }
-
-        span.innerHTML = marked.parse(streamText);
-        loadSidebar();
-
-    } catch (err) {
-        console.log("Stream stopped");
-    } finally {
-        sendBtn.innerText = "➤";
-        sendBtn.onclick = send;
-    }
+body{
+margin:0;
+font-family:Arial;
+background:#0f0f0f;
+color:white;
+display:flex;
+height:100vh;
 }
 
-// 4. FIXED VOICE (SPEAKER) FUNCTION
-function speakText(btn) {
-    window.speechSynthesis.cancel(); // Stop any existing voice
-    
-    // Target the specific bubble text
-    const aiBubble = btn.closest(".aiContent").querySelector(".aiBubble");
-    const textToSpeak = aiBubble.innerText;
+/* SIDEBAR */
 
-    const utterance = new SpeechSynthesisUtterance(textToSpeak);
-    utterance.lang = 'en-US';
-    utterance.rate = 1.0;
-    
-    window.speechSynthesis.speak(utterance);
+.sidebar{
+width:240px;
+background:#151515;
+padding:15px;
+display:flex;
+flex-direction:column;
 }
 
-function stopVoice() {
-    window.speechSynthesis.cancel();
+.logo{
+display:flex;
+align-items:center;
+gap:10px;
+font-weight:bold;
+margin-bottom:15px;
 }
 
-function copyText(btn) {
-    const text = btn.closest(".aiContent").querySelector(".aiBubble").innerText;
-    navigator.clipboard.writeText(text);
+.logo img{width:26px;}
+
+.newchat{
+background:#222;
+border:none;
+padding:10px;
+color:white;
+border-radius:8px;
+cursor:pointer;
+margin-bottom:10px;
+transition:.2s;
+display:flex;
+align-items:center;
+gap:8px;
 }
 
-// 5. SIDEBAR & HISTORY
-async function loadSidebar() {
-    try {
-        const res = await fetch("https://datta-ai-server.onrender.com/chats/" + sessionId);
-        const chats = await res.json();
-        const history = document.getElementById("history");
-        if (!history) return;
-        
-        history.innerHTML = "";
-        chats.reverse().forEach(chat => {
-            let div = document.createElement("div");
-            div.className = "chatItem";
-            div.innerHTML = `
-                <div class="chatTitle">${chat.title || "New Chat"}</div>
-                <button class="menuBtn" onclick="deleteChat(event,'${chat._id}')">🗑️</button>
-            `;
-            div.onclick = () => openChat(chat._id);
-            history.appendChild(div);
-        });
-    } catch (e) { console.log("Sidebar error"); }
+.newchat:hover{
+background:#2a2a2a;
 }
 
-async function openChat(chatId) {
-    currentChatId = chatId;
-    chatBox.innerHTML = "";
-    hideWelcome();
-    const res = await fetch("https://datta-ai-server.onrender.com/chat/" + chatId);
-    const messages = await res.json();
-    messages.forEach(m => {
-        const isUser = m.role === "user";
-        chatBox.innerHTML += `
-            <div class="messageRow ${isUser ? 'userRow' : ''}">
-                <div class="avatar">${isUser ? '🧑' : '🤖'}</div>
-                <div class="${isUser ? 'userBubble' : 'aiContent'}">
-                    ${isUser ? m.content : `<div class="aiBubble">${marked.parse(m.content)}</div>
-                    <div class="aiActions" style="opacity: 1; visibility: visible;">
-                        <button class="actionBtn" onclick="speakText(this)">🔊</button>
-                    </div>`}
-                </div>
-            </div>`;
-    });
-    scrollBottom(true);
+/* BETTER SEARCH BAR */
+
+.searchBox{
+background:#1e1e1e;
+border:1px solid #2a2a2a;
+padding:10px;
+border-radius:10px;
+color:white;
+margin-bottom:12px;
+outline:none;
+transition:.2s;
 }
 
-// 6. UTILITIES
-function scrollBottom(force = false) {
-    if (userScrolledUp && !force) return;
-    chatBox.scrollTop = chatBox.scrollHeight;
+.searchBox:focus{
+border-color:#444;
+background:#202020;
 }
 
-scrollBtn.addEventListener("click", () => {
-    userScrolledUp = false;
-    chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: "smooth" });
-});
+/* HISTORY */
 
-messageInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        send();
-    }
-});
-
-function stopGeneration() {
-    if (controller) controller.abort();
+.sectionTitle{
+font-size:12px;
+color:#aaa;
+margin-bottom:6px;
 }
 
-function hideWelcome() {
-    const w = document.getElementById("welcomeScreen");
-    if (w) w.style.display = "none";
+.history{
+flex:1;
+overflow:auto;
 }
 
-loadSidebar();
+.chatItem{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:8px;
+border-radius:6px;
+cursor:pointer;
+font-size:14px;
+}
+
+.chatItem:hover{background:#222;}
+
+.chatActions{
+display:flex;
+align-items:center;
+gap:5px;
+position:relative;
+}
+
+.menuBtn{
+background:none;
+border:none;
+color:white;
+cursor:pointer;
+font-size:16px;
+}
+
+.chatMenu{
+display:none;
+position:absolute;
+right:0;
+top:22px;
+background:#1e1e1e;
+border-radius:8px;
+box-shadow:0 0 10px rgba(0,0,0,0.6);
+}
+
+.chatMenu button{
+display:block;
+width:140px;
+padding:8px;
+background:none;
+border:none;
+color:white;
+text-align:left;
+cursor:pointer;
+}
+
+.chatMenu button:hover{
+background:#333;
+}
+
+/* MAIN */
+
+.main{
+flex:1;
+display:flex;
+flex-direction:column;
+}
+
+.chat{
+flex:1;
+overflow:auto;
+padding:40px;
+max-width:900px;
+margin:auto;
+width:100%;
+}
+
+/* MESSAGE */
+
+.messageRow{
+display:flex;
+gap:10px;
+margin:16px 0;
+align-items:flex-start;
+}
+
+.userRow{
+justify-content:flex-end;
+}
+
+.avatar{
+width:32px;
+height:32px;
+border-radius:50%;
+background:#333;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.userBubble{
+background:#2ecc71;
+color:black;
+padding:10px 14px;
+border-radius:14px;
+max-width:70%;
+}
+
+.aiBubble{
+background:#1e1e1e;
+padding:10px 14px;
+border-radius:14px;
+max-width:70%;
+}
+
+/* COPY BUTTON */
+
+.copyBtn{
+margin-left:6px;
+background:#333;
+border:none;
+color:white;
+cursor:pointer;
+border-radius:4px;
+padding:2px 6px;
+}
+
+/* ============================= */
+/* INPUT AREA */
+/* ============================= */
+
+.inputArea{
+padding:15px;
+border-top:1px solid #222;
+}
+
+.inputWrap{
+display:flex;
+align-items:center;
+background:#1e1e1e;
+border-radius:30px;
+padding:6px;
+max-width:900px;
+margin:auto;
+gap:6px;
+}
+
+#message{
+flex:1;
+padding:12px;
+border:none;
+background:transparent;
+color:white;
+outline:none;
+font-size:14px;
+}
+
+/* CLEAN ICON BUTTONS */
+
+.send,
+.upload,
+.assistant{
+width:36px;
+height:36px;
+border-radius:50%;
+border:none;
+cursor:pointer;
+color:white;
+background:#2a2a2a;
+display:flex;
+align-items:center;
+justify-content:center;
+transition:.2s;
+}
+
+.send:hover,
+.upload:hover,
+.assistant:hover{
+background:#3a3a3a;
+}
+
+/* SVG icons inside buttons */
+
+.send svg,
+.upload svg,
+.assistant svg,
+.newchat svg{
+width:18px;
+height:18px;
+stroke:white;
+}
+
+/* typing dots */
+
+.typing span{
+height:6px;
+width:6px;
+background:#aaa;
+border-radius:50%;
+display:inline-block;
+margin:2px;
+animation:blink 1.4s infinite;
+}
+
+@keyframes blink{
+0%{opacity:.2}
+20%{opacity:1}
+100%{opacity:.2}
+}
+
+/* MOBILE */
+
+@media (max-width:768px){
+
+body{flex-direction:column}
+
+.sidebar{width:100%}
+
+.chat{padding:15px;margin:0}
+
+.inputArea{
+position:fixed;
+bottom:0;
+left:0;
+right:0;
+background:#0f0f0f;
+}
+
+.chat{padding-bottom:90px}
+
+}
+
+/* ============================= */
+/* STREAMING CURSOR */
+/* ============================= */
+
+.cursor{
+animation:blinkCursor 1s infinite;
+font-weight:bold;
+}
+
+@keyframes blinkCursor{
+0%{opacity:0}
+50%{opacity:1}
+100%{opacity:0}
+}
+
+/* CODE BLOCK */
+
+pre{
+position:relative;
+background:#111;
+padding:12px;
+border-radius:8px;
+overflow:auto;
+}
+
+/* CODE COPY */
+
+.codeCopy{
+position:absolute;
+top:8px;
+right:8px;
+background:#333;
+color:white;
+border:none;
+padding:4px 8px;
+border-radius:6px;
+cursor:pointer;
+font-size:12px;
+}
+
+.codeCopy:hover{
+background:#555;
+}
+
+/* ============================= */
+/* WELCOME SCREEN */
+/* ============================= */
+
+.welcomeScreen{
+text-align:center;
+margin-top:120px;
+animation:fadeIn .6s ease;
+}
+
+.welcomeTitle{
+font-size:36px;
+font-weight:500;
+margin-bottom:30px;
+}
+
+.suggestions{
+display:flex;
+flex-direction:column;
+gap:12px;
+max-width:420px;
+margin:auto;
+}
+
+.suggestions button{
+background:#1e1e1e;
+border:none;
+color:white;
+padding:12px;
+border-radius:14px;
+cursor:pointer;
+font-size:14px;
+transition:.2s;
+}
+
+.suggestions button:hover{
+background:#2a2a2a;
+}
+
+@keyframes fadeIn{
+from{
+opacity:0;
+transform:translateY(20px);
+}
+to{
+opacity:1;
+transform:translateY(0);
+}
+}
+
+/* ============================= */
+/* FAST MODE BUTTON */
+/* ============================= */
+
+.modeBtn{
+background:#2a2a2a;
+border:none;
+color:white;
+padding:6px 12px;
+border-radius:20px;
+cursor:pointer;
+font-size:12px;
+transition:.2s;
+}
+
+.modeBtn:hover{
+background:#3a3a3a;
+}
+
+/* ============================= */
+/* NEW ADDED: AI RESPONSE BUTTONS */
+/* ============================= */
+
+.aiContent{
+display:flex;
+flex-direction:column;
+align-items:flex-start;
+position:relative;
+}
+
+.aiActions{
+display:flex;
+gap:10px;
+margin-top:6px;
+padding-left:2px;
+}
+
+.actionBtn{
+width:30px;
+height:30px;
+border:none;
+background:transparent;
+border-radius:6px;
+cursor:pointer;
+display:flex;
+align-items:center;
+justify-content:center;
+transition:.2s;
+}
+
+.actionBtn:hover{
+background:#2a2a2a;
+}
+
+.actionBtn svg{
+width:16px;
+height:16px;
+stroke:white;
+}
+
+.stopBtn{
+background:#c0392b;
+}
+
+.stopBtn:hover{
+background:#e74c3c;
+}
+
+/* ============================= */
+/* NEW UPDATE (APPENDED ONLY) */
+/* ============================= */
+
+.aiActions{
+background:transparent;
+padding:0;
+gap:12px;
+}
+
+.actionBtn{
+background:transparent;
+}
+
+.actionBtn:hover{
+background:#2a2a2a;
+}
+
+.stopBtn{
+background:transparent;
+color:#ff4d4d;
+}
+/* Hide AI buttons until hover */
+
+.aiActions{
+opacity:0;
+visibility:hidden;
+transition:opacity .2s ease;
+}
+.messageRow{
+padding-bottom:10px;
+}
+.messageRow:hover .aiActions{
+opacity:1;
+visibility:visible;
+}
+/* Scroll to bottom button */
+
+#scrollDownBtn{
+position:fixed;
+bottom:90px;
+right:30px;
+width:38px;
+height:38px;
+border-radius:50%;
+border:none;
+background:#2a2a2a;
+color:white;
+font-size:18px;
+cursor:pointer;
+display:none;
+align-items:center;
+justify-content:center;
+box-shadow:0 2px 10px rgba(0,0,0,0.4);
+}
+
+#scrollDownBtn:hover{
+background:#3a3a3a;
+}
+/* CHAT WRAPPER */
+
+.chatWrapper{
+position:relative;
+flex:1;
+display:flex;
+flex-direction:column;
+}
+
+/* SCROLL BUTTON */
+
+#scrollDownBtn{
+position:absolute;
+bottom:80px;
+
+left:50%;
+transform:translateX(-50%);
+
+width:40px;
+height:40px;
+border-radius:50%;
+border:none;
+background:#2a2a2a;
+color:white;
+font-size:18px;
+cursor:pointer;
+display:flex;
+align-items:center;
+justify-content:center;
+
+z-index:999;
+opacity:0;
+transition:0.2s;
+}
+}
