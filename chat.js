@@ -115,7 +115,7 @@ loadSidebar()
 
 }
 
-}
+
 
 
 async function loadSidebar(){
