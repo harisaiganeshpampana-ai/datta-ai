@@ -104,12 +104,16 @@ streamText += chunk
 
 span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>'
 scrollBottom()
+lucide.createIcons()
 
 }
 
 span.innerHTML = marked.parse(streamText)
+lucide.createIcons()
 
 loadSidebar()
+
+}
 
 }
 
