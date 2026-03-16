@@ -1,257 +1,216 @@
-if(!localStorage.getItem("sessionId")){
-    localStorage.setItem("sessionId",Date.now().toString())
+// 1. Initialization
+if (!localStorage.getItem("sessionId")) {
+    localStorage.setItem("sessionId", Date.now().toString());
 }
+const sessionId = localStorage.getItem("sessionId");
+const chatBox = document.getElementById("chat");
+const sendBtn = document.querySelector(".send");
+const scrollBtn = document.getElementById("scrollDownBtn");
+const messageInput = document.getElementById("message");
 
-const sessionId = localStorage.getItem("sessionId")
-const chatBox = document.getElementById("chat")
-const sendBtn = document.querySelector(".send")
-const scrollBtn = document.getElementById("scrollDownBtn")
+let currentChatId = null;
+let controller = null;
+let userScrolledUp = false;
 
-let currentChatId = null
-let lastUserMessage = ""
-let titleUpdated = false
-let controller = null
-let userScrolledUp = false
-
-// --- FIXED SCROLL LOGIC ---
+// 2. FIXED SCROLL DOWN ARROW
+// This detects when you scroll away from the bottom
 chatBox.addEventListener("scroll", () => {
-    const threshold = 100 
-    // Calculate if we are NOT at the bottom
-    const isAtBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < threshold
+    const threshold = 100;
+    const isAtBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < threshold;
     
-    userScrolledUp = !isAtBottom
+    userScrolledUp = !isAtBottom;
 
-    if(userScrolledUp){
-        scrollBtn.style.display = "flex" // Make sure it shows up
-        scrollBtn.style.opacity = "1"    // Ensure it's not transparent
-    } else {
-        scrollBtn.style.display = "none"
+    if (scrollBtn) {
+        if (userScrolledUp) {
+            scrollBtn.style.display = "flex";
+            scrollBtn.style.opacity = "1"; 
+            scrollBtn.style.visibility = "visible";
+            scrollBtn.style.bottom = "20px"; // Adjust position so it's visible
+        } else {
+            scrollBtn.style.display = "none";
+            scrollBtn.style.opacity = "0";
+        }
     }
-})
-
-function newChat(){
-    currentChatId = null
-    titleUpdated = false
-    chatBox.innerHTML = ""
-    showWelcome()
-}
-
-async function send(){
-    const input = document.getElementById("message")
-    let text = input.value.trim()
-
-    if(!text) return
-
-    lastUserMessage = text
-    hideWelcome()
-
-    chatBox.innerHTML += `
-    <div class="messageRow userRow">
-    <div class="userBubble">${text}</div>
-    <div class="avatar">🧑</div>
-    </div>
-    `
-
-    input.value = ""
-
-    let aiDiv = document.createElement("div")
-    aiDiv.className = "messageRow"
-    aiDiv.innerHTML = `
-    <div class="avatar">🤖</div>
-    <div class="aiBubble typing">
-    <span></span><span></span><span></span>
-    </div>
-    `
-    chatBox.appendChild(aiDiv)
-    scrollBottom()
-
-    sendBtn.innerText = "⛔"
-    sendBtn.onclick = stopGeneration
-
-    controller = new AbortController()
-
-    try {
-        const res = await fetch("https://datta-ai-server.onrender.com/chat",{
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            signal: controller.signal,
-            body:JSON.stringify({
-                message:text,
-                sessionId:sessionId,
-                chatId:currentChatId
-            })
-        })
-
-        // --- FIXED ICON COLORS (Stroke="white") ---
-        aiDiv.innerHTML = `
-        <div class="avatar">🤖</div>
-        <div class="aiContent">
-            <div class="aiBubble">
-                <span class="stream"></span>
-            </div>
-            <div class="aiActions">
-                <button class="actionBtn" onclick="copyText(this)" title="Copy">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
-                        <rect x="9" y="9" width="13" height="13" rx="2"></rect>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                    </svg>
-                </button>
-                <button class="actionBtn" onclick="speakText(this)" title="Listen">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
-                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19"></polygon>
-                        <path d="M19 9a3 3 0 0 1 0 6"></path>
-                        <path d="M22 7a6 6 0 0 1 0 10"></path>
-                    </svg>
-                </button>
-                <button class="actionBtn" onclick="stopVoice()" title="Stop Voice">
-                    <svg viewBox="0 0 24 24" fill="white" width="18" height="18">
-                        <rect x="6" y="6" width="12" height="12"></rect>
-                    </svg>
-                </button>
-                <button class="actionBtn" onclick="regenerateFrom(this)" title="Regenerate">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
-                        <polyline points="23 4 23 10 17 10"></polyline>
-                        <polyline points="1 20 1 14 7 14"></polyline>
-                        <path d="M3.5 9a9 9 0 0 1 14-3L23 10"></path>
-                        <path d="M20.5 15a9 9 0 0 1-14 3L1 14"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>
-        `
-
-        const reader = res.body.getReader()
-        const decoder = new TextDecoder()
-        let streamText = ""
-        let span = aiDiv.querySelector(".stream")
-
-        while(true){
-            const {done,value} = await reader.read()
-            if(done) break
-            const chunk = decoder.decode(value)
-
-            if(chunk.includes("__CHATID__")){
-                const parts = chunk.split("__CHATID__")
-                streamText += parts[0]
-                span.innerHTML = marked.parse(streamText) + '<span class="cursor" style="color:white;">▌</span>'
-                currentChatId = parts[1]
-            }else{
-                streamText += chunk
-                span.innerHTML = marked.parse(streamText) + '<span class="cursor" style="color:white;">▌</span>'
-            }
-            scrollBottom()
-        }
-
-        span.innerHTML = marked.parse(streamText)
-        addCopyButtons()
-
-        const greetings = ["hi","hello","hey","hii"]
-        if(!titleUpdated && !greetings.includes(text.toLowerCase()) && currentChatId){
-            await updateChatTitle(currentChatId,text)
-            titleUpdated = true
-        }
-        loadSidebar()
-    } catch(err) {
-        console.log("Stopped")
-    } finally {
-        sendBtn.innerText = "➤"
-        sendBtn.onclick = send
-    }
-}
-
-async function loadSidebar(){
-    try {
-        const res = await fetch("https://datta-ai-server.onrender.com/chats/" + sessionId)
-        const chats = await res.json()
-        const history = document.getElementById("history")
-        history.innerHTML = ""
-        renderGroup("Recent Chats", chats)
-    } catch(e) { console.error(e) }
-}
-
-function renderGroup(title,list){
-    if(list.length===0) return
-    const history = document.getElementById("history")
-    let label = document.createElement("div")
-    label.className = "chatGroup"
-    label.innerText = title
-    history.appendChild(label)
-
-    list.forEach(chat=>{
-        let div = document.createElement("div")
-        div.className = "chatItem"
-        div.innerHTML = `
-        <div class="chatTitle">${chat.title}</div>
-        <div class="chatActions">
-            <button class="menuBtn" style="color:white;" onclick="toggleMenu(event,'${chat._id}')">⋮</button>
-            <div class="chatMenu" id="menu-${chat._id}">
-                <button onclick="deleteChat(event,'${chat._id}')">Delete</button>
-            </div>
-        </div>
-        `
-        div.onclick = (e)=>{
-            if(e.target.closest(".menuBtn")) return
-            openChat(chat._id)
-        }
-        history.appendChild(div)
-    })
-}
-
-async function openChat(chatId){
-    currentChatId = chatId
-    chatBox.innerHTML = ""
-    hideWelcome()
-    const res = await fetch("https://datta-ai-server.onrender.com/chat/" + chatId)
-    const messages = await res.json()
-
-    messages.forEach(m=>{
-        if(m.role==="user"){
-            chatBox.innerHTML += `<div class="messageRow userRow"><div class="userBubble">${m.content}</div><div class="avatar">🧑</div></div>`
-        }else{
-            chatBox.innerHTML += `
-            <div class="messageRow">
-                <div class="avatar">🤖</div>
-                <div class="aiContent">
-                    <div class="aiBubble">${marked.parse(m.content)}</div>
-                    <div class="aiActions">
-                        <button class="actionBtn" onclick="copyText(this)" style="color:white;">📋</button>
-                        <button class="actionBtn" onclick="speakText(this)" style="color:white;">🔊</button>
-                        <button class="actionBtn" onclick="stopVoice()" style="color:white;">■</button>
-                        <button class="actionBtn" onclick="regenerateFrom(this)" style="color:white;">↻</button>
-                    </div>
-                </div>
-            </div>`
-        }
-    })
-    addCopyButtons()
-    scrollBottom()
-}
-
-// Helper functions (Scroll, Welcome, Stop)
-function scrollBottom(){
-    if(userScrolledUp) return
-    chatBox.scrollTo({ top: chatBox.scrollHeight, behavior:"smooth" })
-}
+});
 
 scrollBtn.addEventListener("click", () => {
-    userScrolledUp = false
-    chatBox.scrollTo({ top: chatBox.scrollHeight, behavior:"smooth" })
-})
+    userScrolledUp = false;
+    chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: "smooth" });
+});
 
-document.getElementById("message").addEventListener("keydown", (e) => {
-    if(e.key === "Enter" && !e.shiftKey){
-        e.preventDefault()
-        send()
-    }
-})
+// 3. VOICE / SPEAKER FUNCTION
+function speakText(btn) {
+    // Stop any existing speech
+    window.speechSynthesis.cancel();
 
-function stopGeneration(){
-    if(controller) controller.abort()
-    sendBtn.innerText = "➤"
-    sendBtn.onclick = send
+    // Get the text from the bubble next to this button
+    const aiContent = btn.closest(".aiContent");
+    const text = aiContent.querySelector(".aiBubble").innerText;
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    
+    // Optional: Add an 'onstart' effect to show it's working
+    utterance.onstart = () => { btn.style.transform = "scale(1.2)"; };
+    utterance.onend = () => { btn.style.transform = "scale(1)"; };
+
+    window.speechSynthesis.speak(utterance);
 }
 
-function hideWelcome(){ document.getElementById("welcomeScreen").style.display="none" }
-function showWelcome(){ document.getElementById("welcomeScreen").style.display="block" }
+function stopVoice() {
+    window.speechSynthesis.cancel();
+}
 
-loadSidebar()
+// 4. SEND MESSAGE LOGIC
+async function send() {
+    const text = messageInput.value.trim();
+    if (!text) return;
+
+    messageInput.value = "";
+    hideWelcome();
+
+    // User Message
+    chatBox.innerHTML += `
+        <div class="messageRow userRow">
+            <div class="userBubble">${text}</div>
+            <div class="avatar">🧑</div>
+        </div>`;
+
+    // AI Placeholder
+    let aiDiv = document.createElement("div");
+    aiDiv.className = "messageRow";
+    aiDiv.innerHTML = `
+        <div class="avatar">🤖</div>
+        <div class="aiBubble typing"><span></span><span></span><span></span></div>`;
+    chatBox.appendChild(aiDiv);
+    
+    scrollBottom(true);
+
+    // Toggle button to Stop mode
+    sendBtn.innerHTML = `<span style="font-size:12px;">Stop</span>`;
+    sendBtn.onclick = stopGeneration;
+
+    controller = new AbortController();
+
+    try {
+        const res = await fetch("https://datta-ai-server.onrender.com/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            signal: controller.signal,
+            body: JSON.stringify({ message: text, sessionId: sessionId, chatId: currentChatId })
+        });
+
+        // Response Layout
+        aiDiv.innerHTML = `
+            <div class="avatar">🤖</div>
+            <div class="aiContent">
+                <div class="aiBubble"><span class="stream"></span></div>
+                <div class="aiActions" style="opacity:1; visibility:visible;">
+                    <button class="actionBtn" onclick="copyText(this)">📋</button>
+                    <button class="actionBtn" onclick="speakText(this)">🔊</button>
+                    <button class="actionBtn" onclick="stopVoice()">■</button>
+                </div>
+            </div>`;
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let streamText = "";
+        let span = aiDiv.querySelector(".stream");
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            if (chunk.includes("__CHATID__")) {
+                const parts = chunk.split("__CHATID__");
+                streamText += parts[0];
+                currentChatId = parts[1];
+            } else {
+                streamText += chunk;
+            }
+            span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>';
+            scrollBottom();
+        }
+        span.innerHTML = marked.parse(streamText);
+        loadSidebar();
+
+    } catch (err) {
+        console.log("Request Aborted");
+    } finally {
+        resetSendButton();
+    }
+}
+
+function resetSendButton() {
+    sendBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>`;
+    sendBtn.onclick = send;
+}
+
+function stopGeneration() {
+    if (controller) controller.abort();
+    resetSendButton();
+}
+
+// 5. SIDEBAR & SEARCH
+async function loadSidebar() {
+    try {
+        const res = await fetch("https://datta-ai-server.onrender.com/chats/" + sessionId);
+        const chats = await res.json();
+        const history = document.getElementById("history");
+        history.innerHTML = "";
+        
+        chats.reverse().forEach(chat => {
+            let div = document.createElement("div");
+            div.className = "chatItem";
+            div.innerHTML = `
+                <div class="chatTitle">${chat.title || "New Chat"}</div>
+                <button class="menuBtn" onclick="deleteChat(event,'${chat._id}')">🗑️</button>
+            `;
+            div.onclick = () => openChat(chat._id);
+            history.appendChild(div);
+        });
+    } catch (e) { console.error("History fail"); }
+}
+
+function searchChats() {
+    const term = document.getElementById("search").value.toLowerCase();
+    document.querySelectorAll(".chatItem").forEach(item => {
+        item.style.display = item.innerText.toLowerCase().includes(term) ? "flex" : "none";
+    });
+}
+
+// 6. UTILS
+function scrollBottom(force = false) {
+    if (userScrolledUp && !force) return;
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+messageInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        send();
+    }
+});
+
+function hideWelcome() {
+    const ws = document.getElementById("welcomeScreen");
+    if (ws) ws.style.display = "none";
+}
+
+function fillPrompt(text) {
+    messageInput.value = text;
+    messageInput.focus();
+}
+
+function copyText(btn) {
+    const text = btn.closest(".aiContent").querySelector(".aiBubble").innerText;
+    navigator.clipboard.writeText(text);
+}
+
+// Load initial history
+loadSidebar();
