@@ -279,6 +279,7 @@ headers:{"Content-Type":"application/json"},
 signal: controller.signal,
 body:JSON.stringify({
 message:text,
+title:text.substring(0,40),
 sessionId:sessionId,
 chatId:currentChatId
 })
