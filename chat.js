@@ -116,7 +116,9 @@ aiDiv.innerHTML = `
 <path d="M20.5 15a9 9 0 0 1-14 3L1 14"></path>  
 </svg>  
 </button>  </div>  </div>  
-`  const reader = res.body.getReader()
+`;
+  
+const reader = res.body.getReader()
 const decoder = new TextDecoder()
 
 let streamText = ""
