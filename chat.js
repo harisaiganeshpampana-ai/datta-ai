@@ -50,12 +50,13 @@ lastUserMessage = text
 hideWelcome()
 
 chatBox.innerHTML += `
+<div class="messageRow userRow">
+<div class="userBubble">${text}</div>
+<div class="avatar">🧑</div>
+</div>
+`
 
-<div class="messageRow userRow">  
-<div class="userBubble">${text}</div>  
-<div class="avatar">🧑</div>  
-</div>  
-`  input.value = ""
+input.value = ""
 
 let aiDiv = document.createElement("div")
 aiDiv.className = "messageRow"
