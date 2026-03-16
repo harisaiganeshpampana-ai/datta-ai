@@ -29,7 +29,7 @@ let currentChatId = null
 let lastUserMessage = ""
 let titleUpdated = false
 let controller = null
-let userScrolledUp = false
+
 
 function newChat(){
 currentChatId = null
