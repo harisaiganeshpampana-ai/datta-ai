@@ -398,3 +398,18 @@ hideWelcome()
 send()
 
 }
+document.querySelectorAll(".suggestBtn").forEach(btn=>{
+btn.addEventListener("click",()=>{
+
+const text = btn.getAttribute("data-text")
+
+const input = document.getElementById("message")
+
+input.value = text
+
+hideWelcome()
+
+send()
+
+})
+})
