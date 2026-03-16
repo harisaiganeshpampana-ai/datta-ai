@@ -63,13 +63,13 @@ let aiDiv = document.createElement("div")
 aiDiv.className = "messageRow"
 
 aiDiv.innerHTML = `
-<div class="avatar">🤖</div>  
-<div class="aiBubble typing">  
-<span></span><span></span><span></span>  
+<div class="avatar">🤖</div>
+<div class="aiBubble typing">
+<span></span><span></span><span></span>
 </div>
 `;
 
-chatBox.appendChild(aiDiv)
+chatBox.appendChild(aiDiv);
 
 scrollBottom()
 
