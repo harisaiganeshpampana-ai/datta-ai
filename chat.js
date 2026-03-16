@@ -1,4 +1,4 @@
-// 1. Session Setup
+// Initialization
 if (!localStorage.getItem("sessionId")) {
     localStorage.setItem("sessionId", Date.now().toString());
 }
@@ -7,17 +7,18 @@ const chatBox = document.getElementById("chat");
 const sendBtn = document.querySelector(".send");
 const scrollBtn = document.getElementById("scrollDownBtn");
 const messageInput = document.getElementById("message");
+const sidebar = document.getElementById("sidebar");
 
 let currentChatId = null;
 let controller = null;
 let userScrolledUp = false;
 
-// 2. TOGGLE SIDEBAR (The Three Dots/Menu Feature)
+// Toggle Sidebar (Mobile Menu)
 function toggleSidebar() {
-    document.getElementById("sidebar").classList.toggle("active");
+    sidebar.classList.toggle("active");
 }
 
-// 3. FIXED SCROLL DETECTION
+// Scroll detection logic
 chatBox.addEventListener("scroll", () => {
     const isAtBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 100;
     userScrolledUp = !isAtBottom;
@@ -29,11 +30,21 @@ scrollBtn.addEventListener("click", () => {
     chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: "smooth" });
 });
 
-// 4. SEND MESSAGE
+// Voice / Speaker Function
+function speakText(btn) {
+    window.speechSynthesis.cancel();
+    const aiBubble = btn.closest(".aiContent").querySelector(".aiBubble");
+    const speech = new SpeechSynthesisUtterance(aiBubble.innerText);
+    speech.lang = 'en-US';
+    window.speechSynthesis.speak(speech);
+}
+
+function stopVoice() { window.speechSynthesis.cancel(); }
+
+// API Messaging
 async function send() {
     const text = messageInput.value.trim();
     if (!text) return;
-
     messageInput.value = "";
     document.getElementById("welcomeScreen").style.display = "none";
 
@@ -45,16 +56,14 @@ async function send() {
 
     let aiDiv = document.createElement("div");
     aiDiv.className = "messageRow";
-    aiDiv.innerHTML = `<div class="avatar">🤖</div><div class="aiBubble">Typing...</div>`;
+    aiDiv.innerHTML = `<div class="avatar">🤖</div><div class="aiBubble">...</div>`;
     chatBox.appendChild(aiDiv);
-    
     chatBox.scrollTop = chatBox.scrollHeight;
 
-    sendBtn.innerHTML = "STOP"; // STOP button
-    sendBtn.onclick = stopGeneration;
+    sendBtn.innerHTML = "STOP";
+    sendBtn.onclick = () => { if(controller) controller.abort(); };
 
     controller = new AbortController();
-
     try {
         const res = await fetch("https://datta-ai-server.onrender.com/chat", {
             method: "POST",
@@ -82,45 +91,18 @@ async function send() {
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            const chunk = decoder.decode(value);
-            
-            if (chunk.includes("__CHATID__")) {
-                const parts = chunk.split("__CHATID__");
-                streamText += parts[0];
-                currentChatId = parts[1];
-            } else {
-                streamText += chunk;
-            }
+            streamText += decoder.decode(value);
             span.innerHTML = marked.parse(streamText);
             if (!userScrolledUp) chatBox.scrollTop = chatBox.scrollHeight;
         }
         loadSidebar();
     } catch (err) { console.log("Stopped"); }
-    finally { resetSendButton(); }
+    finally { 
+        sendBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
+        sendBtn.onclick = send;
+    }
 }
 
-function resetSendButton() {
-    sendBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
-    sendBtn.onclick = send;
-}
-
-// 5. VOICE (SPEAKER) FIX
-function speakText(btn) {
-    window.speechSynthesis.cancel();
-    const text = btn.closest(".aiContent").querySelector(".aiBubble").innerText;
-    const speech = new SpeechSynthesisUtterance(text);
-    speech.lang = 'en-US';
-    window.speechSynthesis.speak(speech);
-}
-
-function stopVoice() { window.speechSynthesis.cancel(); }
-
-function copyText(btn) {
-    const text = btn.closest(".aiContent").querySelector(".aiBubble").innerText;
-    navigator.clipboard.writeText(text);
-}
-
-// 6. SIDEBAR STORAGE
 async function loadSidebar() {
     const history = document.getElementById("history");
     const res = await fetch("https://datta-ai-server.onrender.com/chats/" + sessionId);
@@ -130,49 +112,26 @@ async function loadSidebar() {
         let div = document.createElement("div");
         div.className = "chatItem";
         div.innerHTML = `<span>${chat.title || "New Chat"}</span><button class="menuBtn" onclick="deleteChat(event,'${chat._id}')">🗑️</button>`;
-        div.onclick = () => {
-            openChat(chat._id);
-            if(window.innerWidth < 768) toggleSidebar(); // Auto-close sidebar on mobile
-        };
+        div.onclick = () => { openChat(chat._id); if(window.innerWidth < 768) toggleSidebar(); };
         history.appendChild(div);
     });
 }
 
-async function openChat(chatId) {
+function openChat(chatId) {
     currentChatId = chatId;
     chatBox.innerHTML = "";
     document.getElementById("welcomeScreen").style.display = "none";
-    const res = await fetch("https://datta-ai-server.onrender.com/chat/" + chatId);
-    const messages = await res.json();
-    messages.forEach(m => {
-        const isUser = m.role === "user";
-        chatBox.innerHTML += `<div class="messageRow ${isUser ? 'userRow' : ''}"><div class="avatar">${isUser?'🧑':'🤖'}</div><div class="${isUser?'userBubble':'aiBubble'}">${marked.parse(m.content)}</div></div>`;
+    fetch("https://datta-ai-server.net/chat/" + chatId).then(r => r.json()).then(messages => {
+        messages.forEach(m => {
+            const isUser = m.role === "user";
+            chatBox.innerHTML += `<div class="messageRow ${isUser?'userRow':''}"><div class="avatar">${isUser?'🧑':'🤖'}</div><div class="${isUser?'userBubble':'aiBubble'}">${marked.parse(m.content)}</div></div>`;
+        });
+        chatBox.scrollTop = chatBox.scrollHeight;
     });
-    chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-async function deleteChat(e, id) {
-    e.stopPropagation();
-    await fetch("https://datta-ai-server.onrender.com/chat/" + id, { method: "DELETE" });
-    loadSidebar();
-}
-
-// 7. UTILS
-messageInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        send();
-    }
-});
-
-function newChat() {
-    currentChatId = null;
-    chatBox.innerHTML = "";
-    document.getElementById("welcomeScreen").style.display = "block";
-    if(window.innerWidth < 768) toggleSidebar();
-}
-
-function stopGeneration() { if (controller) controller.abort(); }
-function fillPrompt(t) { messageInput.value = t; messageInput.focus(); }
-
+messageInput.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }});
+function newChat() { currentChatId = null; chatBox.innerHTML = ""; document.getElementById("welcomeScreen").style.display = "block"; if(window.innerWidth < 768) toggleSidebar(); }
+function copyText(btn) { navigator.clipboard.writeText(btn.closest(".aiContent").querySelector(".aiBubble").innerText); }
+function deleteChat(e, id) { e.stopPropagation(); fetch("https://datta-ai-server.onrender.com/chat/"+id, {method:"DELETE"}).then(() => loadSidebar()); }
 loadSidebar();
