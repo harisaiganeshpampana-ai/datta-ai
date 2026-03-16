@@ -7,6 +7,8 @@ const chatBox = document.getElementById("chat")
 const sendBtn = document.querySelector(".send")
 const scrollBtn = document.getElementById("scrollDownBtn")
 
+let userScrolledUp = false
+
 chatBox.addEventListener("scroll", () => {
 
 const threshold = 100
