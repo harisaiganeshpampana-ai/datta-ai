@@ -6,10 +6,22 @@ const sessionId = localStorage.getItem("sessionId")
 const chatBox = document.getElementById("chat")
 const sendBtn = document.querySelector(".send")
 
+chatBox.addEventListener("scroll", () => {
+
+const threshold = 100
+
+const atBottom =
+chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < threshold
+
+userScrolledUp = !atBottom
+
+})
+
 let currentChatId = null
 let lastUserMessage = ""
 let titleUpdated = false
 let controller = null
+let userScrolledUp = false
 
 function newChat(){
 currentChatId = null
@@ -507,10 +519,14 @@ m.style.display = "none"
 }
 
 function scrollBottom(){
+
+if(userScrolledUp) return
+
 chatBox.scrollTo({
 top: chatBox.scrollHeight,
 behavior:"smooth"
 })
+
 }
 
 document.getElementById("message").addEventListener("keydown",function(e){
