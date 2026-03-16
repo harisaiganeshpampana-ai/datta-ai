@@ -5,6 +5,8 @@ localStorage.setItem("sessionId",Date.now().toString())
 const sessionId = localStorage.getItem("sessionId")
 const chatBox = document.getElementById("chat")
 const sendBtn = document.querySelector(".send")
+const scrollBtn = document.getElementById("scrollDownBtn")
+
 
 chatBox.addEventListener("scroll", () => {
 
@@ -14,6 +16,12 @@ const atBottom =
 chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < threshold
 
 userScrolledUp = !atBottom
+
+if(userScrolledUp){
+scrollBtn.style.display = "flex"
+}else{
+scrollBtn.style.display = "none"
+}
 
 })
 
@@ -559,6 +567,14 @@ function stopGeneration(){
 if(controller){
 controller.abort()
 controller = null
+}
+scrollBtn.onclick = function(){
+
+chatBox.scrollTo({
+top: chatBox.scrollHeight,
+behavior:"smooth"
+})
+
 }
 
 sendBtn.innerText = "➤"
