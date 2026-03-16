@@ -247,14 +247,16 @@ let div = document.createElement("div")
 div.className = "chatItem"
 
 div.innerHTML = `
+<div class="chatTitle">${chat.title}</div>
+<div class="chatActions">
+<button class="menuBtn" onclick="toggleMenu(event,'${chat._id}')">⋮</button>
+<div class="chatMenu" id="menu-${chat._id}">
+<button onclick="deleteChat(event,'${chat._id}')">Delete</button>
+</div>
+</div>
+`;
 
-<div class="chatTitle">${chat.title}</div>  
-<div class="chatActions">  
-<button class="menuBtn" onclick="toggleMenu(event,'${chat._id}')">⋮</button>  <div class="chatMenu" id="menu-${chat._id}">  
-<button onclick="deleteChat(event,'${chat._id}')">Delete</button>  
-</div>  
-</div>  
-`  div.onclick = (e)=>{
+div.onclick = (e)=>{
 if(e.target.closest(".menuBtn")) return
 openChat(chat._id)
 }
