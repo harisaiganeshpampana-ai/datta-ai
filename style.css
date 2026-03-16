@@ -488,7 +488,9 @@ opacity:0;
 visibility:hidden;
 transition:opacity .2s ease;
 }
-
+.messageRow{
+padding-bottom:10px;
+}
 .messageRow:hover .aiActions{
 opacity:1;
 visibility:visible;
