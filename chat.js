@@ -7,21 +7,24 @@ const chatBox = document.getElementById("chat")
 const sendBtn = document.querySelector(".send")
 const scrollBtn = document.getElementById("scrollDownBtn")
 
-// Removed duplicate let userScrolledUp from here
 let currentChatId = null
 let lastUserMessage = ""
 let titleUpdated = false
 let controller = null
 let userScrolledUp = false
 
+// --- FIXED SCROLL LOGIC ---
 chatBox.addEventListener("scroll", () => {
-    const threshold = 100
-    const atBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < threshold
-    userScrolledUp = !atBottom
+    const threshold = 100 
+    // Calculate if we are NOT at the bottom
+    const isAtBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < threshold
+    
+    userScrolledUp = !isAtBottom
 
     if(userScrolledUp){
-        scrollBtn.style.display = "flex"
-    }else{
+        scrollBtn.style.display = "flex" // Make sure it shows up
+        scrollBtn.style.opacity = "1"    // Ensure it's not transparent
+    } else {
         scrollBtn.style.display = "none"
     }
 })
@@ -79,18 +82,41 @@ async function send(){
             })
         })
 
+        // --- FIXED ICON COLORS (Stroke="white") ---
         aiDiv.innerHTML = `
         <div class="avatar">🤖</div>
         <div class="aiContent">
-        <div class="aiBubble">
-        <span class="stream"></span>
-        </div>
-        <div class="aiActions">
-        <button class="actionBtn" onclick="copyText(this)">📋</button>
-        <button class="actionBtn" onclick="speakText(this)">🔊</button>
-        <button class="actionBtn" onclick="stopVoice()">■</button>
-        <button class="actionBtn" onclick="regenerateFrom(this)">↻</button>
-        </div>
+            <div class="aiBubble">
+                <span class="stream"></span>
+            </div>
+            <div class="aiActions">
+                <button class="actionBtn" onclick="copyText(this)" title="Copy">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
+                        <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                </button>
+                <button class="actionBtn" onclick="speakText(this)" title="Listen">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19"></polygon>
+                        <path d="M19 9a3 3 0 0 1 0 6"></path>
+                        <path d="M22 7a6 6 0 0 1 0 10"></path>
+                    </svg>
+                </button>
+                <button class="actionBtn" onclick="stopVoice()" title="Stop Voice">
+                    <svg viewBox="0 0 24 24" fill="white" width="18" height="18">
+                        <rect x="6" y="6" width="12" height="12"></rect>
+                    </svg>
+                </button>
+                <button class="actionBtn" onclick="regenerateFrom(this)" title="Regenerate">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.5 9a9 9 0 0 1 14-3L23 10"></path>
+                        <path d="M20.5 15a9 9 0 0 1-14 3L1 14"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
         `
 
@@ -107,11 +133,11 @@ async function send(){
             if(chunk.includes("__CHATID__")){
                 const parts = chunk.split("__CHATID__")
                 streamText += parts[0]
-                span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>'
+                span.innerHTML = marked.parse(streamText) + '<span class="cursor" style="color:white;">▌</span>'
                 currentChatId = parts[1]
             }else{
                 streamText += chunk
-                span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>'
+                span.innerHTML = marked.parse(streamText) + '<span class="cursor" style="color:white;">▌</span>'
             }
             scrollBottom()
         }
@@ -120,29 +146,17 @@ async function send(){
         addCopyButtons()
 
         const greetings = ["hi","hello","hey","hii"]
-        const cleaned = text.toLowerCase().trim()
-
-        if(!titleUpdated && !greetings.includes(cleaned) && cleaned.length > 3 && currentChatId){
+        if(!titleUpdated && !greetings.includes(text.toLowerCase()) && currentChatId){
             await updateChatTitle(currentChatId,text)
             titleUpdated = true
         }
         loadSidebar()
     } catch(err) {
-        console.log("Stream stopped or error: ", err)
+        console.log("Stopped")
     } finally {
-        // Reset button state
         sendBtn.innerText = "➤"
         sendBtn.onclick = send
     }
-}
-
-async function updateChatTitle(chatId,message){
-    if(!chatId) return
-    await fetch("https://datta-ai-server.onrender.com/chat/"+chatId+"/rename",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ title:message.slice(0,40) })
-    })
 }
 
 async function loadSidebar(){
@@ -151,18 +165,7 @@ async function loadSidebar(){
         const chats = await res.json()
         const history = document.getElementById("history")
         history.innerHTML = ""
-
-        const today = new Date(); today.setHours(0,0,0,0)
-        let groups = { today:[], yesterday:[], week:[], older:[] }
-
-        chats.forEach(chat=>{
-            let date = new Date(chat.createdAt || Date.now())
-            if(date >= today) groups.today.push(chat)
-            else groups.older.push(chat)
-        })
-
-        renderGroup("Today", groups.today)
-        renderGroup("Older", groups.older)
+        renderGroup("Recent Chats", chats)
     } catch(e) { console.error(e) }
 }
 
@@ -180,10 +183,10 @@ function renderGroup(title,list){
         div.innerHTML = `
         <div class="chatTitle">${chat.title}</div>
         <div class="chatActions">
-        <button class="menuBtn" onclick="toggleMenu(event,'${chat._id}')">⋮</button>
-        <div class="chatMenu" id="menu-${chat._id}">
-        <button onclick="deleteChat(event,'${chat._id}')">Delete</button>
-        </div>
+            <button class="menuBtn" style="color:white;" onclick="toggleMenu(event,'${chat._id}')">⋮</button>
+            <div class="chatMenu" id="menu-${chat._id}">
+                <button onclick="deleteChat(event,'${chat._id}')">Delete</button>
+            </div>
         </div>
         `
         div.onclick = (e)=>{
@@ -205,98 +208,26 @@ async function openChat(chatId){
         if(m.role==="user"){
             chatBox.innerHTML += `<div class="messageRow userRow"><div class="userBubble">${m.content}</div><div class="avatar">🧑</div></div>`
         }else{
-            chatBox.innerHTML += `<div class="messageRow"><div class="avatar">🤖</div><div class="aiContent"><div class="aiBubble">${marked.parse(m.content)}</div><div class="aiActions"><button class="actionBtn" onclick="copyText(this)">📋</button><button class="actionBtn" onclick="speakText(this)">🔊</button><button class="actionBtn" onclick="stopVoice()">■</button><button class="actionBtn" onclick="regenerateFrom(this)">↻</button></div></div></div>`
+            chatBox.innerHTML += `
+            <div class="messageRow">
+                <div class="avatar">🤖</div>
+                <div class="aiContent">
+                    <div class="aiBubble">${marked.parse(m.content)}</div>
+                    <div class="aiActions">
+                        <button class="actionBtn" onclick="copyText(this)" style="color:white;">📋</button>
+                        <button class="actionBtn" onclick="speakText(this)" style="color:white;">🔊</button>
+                        <button class="actionBtn" onclick="stopVoice()" style="color:white;">■</button>
+                        <button class="actionBtn" onclick="regenerateFrom(this)" style="color:white;">↻</button>
+                    </div>
+                </div>
+            </div>`
         }
     })
     addCopyButtons()
     scrollBottom()
 }
 
-async function deleteChat(e,id){
-    e.stopPropagation()
-    await fetch("https://datta-ai-server.onrender.com/chat/" + id,{ method:"DELETE" })
-    loadSidebar()
-}
-
-function copyText(btn){
-    const text = btn.closest(".aiContent").querySelector(".aiBubble").innerText
-    navigator.clipboard.writeText(text)
-}
-
-function addCopyButtons(){
-    document.querySelectorAll("pre").forEach(block=>{
-        if(block.querySelector(".codeCopy")) return
-        const btn = document.createElement("button")
-        btn.innerText = "Copy"; btn.className = "codeCopy"
-        btn.onclick = ()=>{
-            navigator.clipboard.writeText(block.innerText)
-            btn.innerText="Copied"
-            setTimeout(()=>btn.innerText="Copy",1000)
-        }
-        block.appendChild(btn)
-    })
-}
-
-function speakText(btn){
-    const text = btn.closest(".aiContent").innerText
-    const speech = new SpeechSynthesisUtterance(text)
-    speech.lang = "en-US"
-    speechSynthesis.speak(speech)
-}
-
-function stopVoice(){ speechSynthesis.cancel() }
-
-async function regenerateFrom(btn){
-    const messageRow = btn.closest(".messageRow")
-    const previous = messageRow.previousElementSibling
-    if(!previous) return
-    const userBubble = previous.querySelector(".userBubble")
-    if(!userBubble) return
-
-    const text = userBubble.innerText
-    const aiBubble = messageRow.querySelector(".aiBubble")
-    aiBubble.innerHTML = `<span class="stream"></span>`
-    const span = aiBubble.querySelector(".stream")
-
-    controller = new AbortController()
-    const res = await fetch("https://datta-ai-server.onrender.com/chat",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        signal:controller.signal,
-        body:JSON.stringify({ message:text, sessionId:sessionId, chatId:currentChatId })
-    })
-
-    const reader = res.body.getReader()
-    const decoder = new TextDecoder()
-    let streamText=""
-
-    while(true){
-        const {done,value} = await reader.read()
-        if(done) break
-        const chunk = decoder.decode(value)
-        if(chunk.includes("__CHATID__")){
-            const parts = chunk.split("__CHATID__")
-            streamText += parts[0]
-            currentChatId = parts[1]
-        }else{ streamText += chunk }
-        span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>'
-        scrollBottom()
-    }
-    span.innerHTML = marked.parse(streamText)
-    addCopyButtons()
-}
-
-function toggleMenu(e,id){
-    e.stopPropagation()
-    document.querySelectorAll(".chatMenu").forEach(m=> m.style.display = "none")
-    const menu = document.getElementById("menu-" + id)
-    if(menu) menu.style.display = "block"
-}
-
-window.onclick = function(){
-    document.querySelectorAll(".chatMenu").forEach(m=> m.style.display = "none")
-}
-
+// Helper functions (Scroll, Welcome, Stop)
 function scrollBottom(){
     if(userScrolledUp) return
     chatBox.scrollTo({ top: chatBox.scrollHeight, behavior:"smooth" })
@@ -304,34 +235,23 @@ function scrollBottom(){
 
 scrollBtn.addEventListener("click", () => {
     userScrolledUp = false
-    scrollBottom()
+    chatBox.scrollTo({ top: chatBox.scrollHeight, behavior:"smooth" })
 })
 
-document.getElementById("message").addEventListener("keydown",function(e){
-    if(e.key==="Enter"){
+document.getElementById("message").addEventListener("keydown", (e) => {
+    if(e.key === "Enter" && !e.shiftKey){
         e.preventDefault()
         send()
     }
 })
 
-function hideWelcome(){
-    const welcome = document.getElementById("welcomeScreen")
-    if(welcome) welcome.style.display="none"
-}
-
-function showWelcome(){
-    const welcome = document.getElementById("welcomeScreen")
-    if(welcome) welcome.style.display="block"
-}
-
 function stopGeneration(){
-    if(controller){
-        controller.abort()
-        controller = null
-    }
+    if(controller) controller.abort()
     sendBtn.innerText = "➤"
     sendBtn.onclick = send
 }
 
-// Initial Call
+function hideWelcome(){ document.getElementById("welcomeScreen").style.display="none" }
+function showWelcome(){ document.getElementById("welcomeScreen").style.display="block" }
+
 loadSidebar()
