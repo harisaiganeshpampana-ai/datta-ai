@@ -184,10 +184,21 @@ ${marked.parse(m.content)}
 </div>
 
 <div class="aiActions">
-<button onclick="copyText(this)">📋</button>
-<button onclick="speakText(this)">🔊</button>
-<button onclick="stopVoice()">■</button>
-<button onclick="regenerateFrom(this)">↻</button>
+<button class="actionBtn" onclick="copyText(this)">
+<i data-lucide="copy"></i>
+</button>
+
+<button class="actionBtn" onclick="speakText(this)">
+<i data-lucide="volume-2"></i>
+</button>
+
+<button class="actionBtn" onclick="stopVoice()">
+<i data-lucide="square"></i>
+</button>
+
+<button class="actionBtn" onclick="regenerateFrom(this)">
+<i data-lucide="refresh-cw"></i>
+</button>
 </div>
 
 </div>
