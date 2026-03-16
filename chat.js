@@ -354,8 +354,9 @@ behavior:"smooth"
 
 function fillPrompt(text){
 document.getElementById("message").value = text
+hideWelcome()
 send()
- }
+}
 
 
 function hideWelcome(){
