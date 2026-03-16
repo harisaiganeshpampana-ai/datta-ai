@@ -580,3 +580,11 @@ behavior:"smooth"
 sendBtn.innerText = "➤"
 sendBtn.onclick = send
 }
+scrollBtn.addEventListener("click", () => {
+
+chatBox.scrollTo({
+top: chatBox.scrollHeight,
+behavior:"smooth"
+})
+
+})
