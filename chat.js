@@ -429,6 +429,7 @@ hideWelcome()
 send()
 
 })
+})
 function toggleSidebar(){
 
 const sidebar = document.querySelector(".sidebar");
