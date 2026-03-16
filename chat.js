@@ -354,7 +354,8 @@ i.style.display = i.innerText.toLowerCase().includes(input) ? "flex" : "none"
 }
 
 function copyText(btn){
-navigator.clipboard.writeText(btn.closest(".aiContent").innerText)
+const text = btn.closest(".aiContent").querySelector(".aiBubble").innerText
+navigator.clipboard.writeText(text)
 }
 
 function addCopyButtons(){
