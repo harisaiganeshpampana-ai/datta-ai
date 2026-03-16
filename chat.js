@@ -487,7 +487,6 @@ m.style.display = "none"
 })
 
 }
-let userScrolledUp = false
 
 function scrollBottom(){
 
