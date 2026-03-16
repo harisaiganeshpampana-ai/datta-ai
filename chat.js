@@ -72,10 +72,10 @@ aiDiv.innerHTML = `
 </div>
 
 <div class="aiActions">
-<button class="actionBtn" onclick="copyText(this)">📋</button>
-<button class="actionBtn" onclick="speakText(this)">🔊</button>
-<button class="actionBtn" onclick="stopVoice()">■</button>
-<button class="actionBtn" onclick="regenerateFrom(this)">↻</button>
+<button onclick="copyText(this)"><i data-lucide="copy"></i></button>
+<button onclick="speakText(this)"><i data-lucide="volume-2"></i></button>
+<button onclick="stopVoice()"><i data-lucide="square"></i></button>
+<button onclick="regenerateFrom(this)"><i data-lucide="refresh-ccw"></i></button>
 </div>
 
 </div>
