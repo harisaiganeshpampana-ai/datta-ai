@@ -18,12 +18,18 @@ overflow:hidden;
 /* SIDEBAR */
 
 .sidebar{
+position:fixed;
+left:-260px;
+top:0;
 width:260px;
+height:100%;
 background:#171717;
 border-right:1px solid #2a2a2a;
 display:flex;
 flex-direction:column;
 padding:15px;
+transition:0.3s;
+z-index:100;
 }
 
 .logo{
@@ -352,4 +358,8 @@ display:none;
 
 .showScrollBtn{
 display:block;
+}
+
+.sidebar.active{
+left:0;
 }
