@@ -387,7 +387,7 @@ send()
 
 loadSidebar()
 
-function fillPrompt(text){
+window.fillPrompt = function(text){
 
 const input = document.getElementById("message")
 
