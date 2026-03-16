@@ -254,7 +254,14 @@ gap:6px;
 background:none;
 border:none;
 cursor:pointer;
-opacity:.7;
+color:white;
+fill:white;
+opacity:0.8;
+}
+
+.actionBtn svg{
+stroke:white;
+fill:white;
 }
 
 .actionBtn:hover{
