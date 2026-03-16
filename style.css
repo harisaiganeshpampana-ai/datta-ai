@@ -481,6 +481,16 @@ background:#2a2a2a;
 background:transparent;
 color:#ff4d4d;
 }
+/* Hide AI buttons until hover */
+
+.aiActions{
+opacity:0;
+transition:0.2s;
+}
+
+.messageRow:hover .aiActions{
+opacity:1;
+}
 
 .stopBtn:hover{
 background:#2a2a2a;
