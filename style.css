@@ -903,9 +903,25 @@ pre {
   border-radius: 20px;
   width: 480px;
   max-width: 95vw;
-  max-height: 85vh;
+  max-height: 88vh;
   overflow-y: auto;
+  overflow-x: hidden;
   animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  scrollbar-width: thin;
+  scrollbar-color: #333 transparent;
+}
+
+.modalBox::-webkit-scrollbar {
+  width: 4px;
+}
+
+.modalBox::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modalBox::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
 }
 
 .modalHeader {
@@ -1223,3 +1239,30 @@ body.light .sSelect { background: #f5f5f5; border-color: #ddd; color: #111; }
 body.light .sidebarProfile { border-top-color: #e0e0e0; }
 body.light .profileName { color: #111; }
 body.light #splash { background: #fff; }
+
+/* WEB SEARCH INDICATOR */
+.searchingIndicator {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px !important;
+  background: #0a1a2a !important;
+  border: 1px solid #0a3a5a !important;
+}
+
+.searchIcon {
+  font-size: 16px;
+  animation: spin 1.5s linear infinite;
+  display: inline-block;
+}
+
+.searchText {
+  font-size: 13px;
+  color: #4fc3f7;
+  letter-spacing: 0.3px;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
