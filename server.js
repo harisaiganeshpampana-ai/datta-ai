@@ -1,16 +1,15 @@
 import express from "express"
 import cors from "cors"
 import dotenv from "dotenv"
-import OpenAI from "openai"
 import mongoose from "mongoose"
 import multer from "multer"
+import { GoogleGenerativeAI } from "@google/generative-ai"
 
 dotenv.config()
 
-// Limit file size to 4MB to avoid payload too large errors
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 4 * 1024 * 1024 }
+  limits: { fileSize: 10 * 1024 * 1024 }
 })
 
 const app = express()
@@ -18,11 +17,8 @@ app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-// OPENAI via OpenRouter
-const openai = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1"
-})
+// GEMINI AI (free)
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
 
 // DATABASE
 mongoose.connect(process.env.MONGO_URI)
@@ -31,7 +27,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 const MessageSchema = new mongoose.Schema({
   role: String,
-  content: mongoose.Schema.Types.Mixed
+  content: String
 })
 
 const ChatSchema = new mongoose.Schema({
@@ -43,50 +39,6 @@ const ChatSchema = new mongoose.Schema({
 
 const Chat = mongoose.model("Chat", ChatSchema)
 
-// BUILD CONTENT: text + file => AI message content
-function buildUserContent(text, file) {
-
-  // No file, just return the text
-  if (!file) {
-    return text || ""
-  }
-
-  const mimeType = file.mimetype || "application/octet-stream"
-
-  // IMAGE: send as base64 image_url (supported by gpt-4o on OpenRouter)
-  if (mimeType.startsWith("image/")) {
-    const base64 = file.buffer.toString("base64")
-    const dataUrl = "data:" + mimeType + ";base64," + base64
-    const parts = []
-    if (text) {
-      parts.push({ type: "text", text: text })
-    } else {
-      parts.push({ type: "text", text: "Please analyze this image." })
-    }
-    parts.push({
-      type: "image_url",
-      image_url: { url: dataUrl }
-    })
-    return parts
-  }
-
-  // PDF: extract as base64 text description
-  if (mimeType === "application/pdf") {
-    const base64 = file.buffer.toString("base64")
-    const note = "[PDF Attached: " + file.originalname + "]\nBase64: data:application/pdf;base64," + base64.substring(0, 500) + "...(truncated)"
-    return text ? text + "\n\n" + note : note
-  }
-
-  // TEXT / CODE / CSV / OTHER: read as plain text
-  try {
-    const fileText = file.buffer.toString("utf-8")
-    const note = "[File: " + file.originalname + "]\n\n" + fileText
-    return text ? text + "\n\n" + note : note
-  } catch (e) {
-    return text ? text + "\n\n[Binary file attached: " + file.originalname + "]" : "[Binary file: " + file.originalname + "]"
-  }
-}
-
 // CHAT ROUTE
 app.post("/chat", upload.single("image"), async (req, res) => {
 
@@ -97,9 +49,8 @@ app.post("/chat", upload.single("image"), async (req, res) => {
     const chatId = req.body.chatId || ""
     const file = req.file || null
 
-    console.log("--- NEW REQUEST ---")
     console.log("Message:", message)
-    console.log("File:", file ? file.originalname + " | " + file.mimetype + " | " + file.size + " bytes" : "none")
+    console.log("File:", file ? file.originalname + " (" + file.mimetype + ")" : "none")
 
     if (!message && !file) {
       return res.status(400).json({ error: "No message or file" })
@@ -112,7 +63,6 @@ app.post("/chat", upload.single("image"), async (req, res) => {
       try {
         chat = await Chat.findById(chatId)
       } catch (e) {
-        console.log("Invalid chatId, creating new chat")
         chat = null
       }
     }
@@ -128,56 +78,69 @@ app.post("/chat", upload.single("image"), async (req, res) => {
       })
     }
 
-    // Save user message to DB (plain text version for history)
+    // Build chat history for Gemini format
+    const history = chat.messages.map(function(m) {
+      return {
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }]
+      }
+    })
+
+    // Save user message to DB
     const savedContent = message || "[File: " + (file ? file.originalname : "unknown") + "]"
     chat.messages.push({ role: "user", content: savedContent })
     await chat.save()
 
-    // Set response headers
     res.setHeader("x-chat-id", chat._id.toString())
     res.setHeader("Content-Type", "text/plain")
 
-    // Build history for AI (exclude last user message, we'll add it with file)
-    const history = chat.messages.slice(0, -1).map(function(m) {
-      return {
-        role: m.role,
-        content: typeof m.content === "string" ? m.content : JSON.stringify(m.content)
-      }
+    // Choose model
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash",
+      systemInstruction: "You are Datta AI, a helpful and accurate assistant. If an image or file is provided, analyze it carefully. Keep answers clear and complete."
     })
 
-    // Build the current user message with file if attached
-    const userContent = buildUserContent(message, file)
+    // Start chat session with history
+    const chatSession = model.startChat({ history: history })
 
-    // Choose model: use vision model only for images
-    const isImage = file && file.mimetype && file.mimetype.startsWith("image/")
-    const model = isImage ? "openai/gpt-4o" : "openai/gpt-4o-mini"
+    // Build the current user message parts
+    const parts = []
 
-    console.log("Using model:", model)
+    if (file) {
+      const mimeType = file.mimetype || "application/octet-stream"
 
-    const aiMessages = [
-      {
-        role: "system",
-        content: "You are Datta AI, a helpful assistant. Give accurate and factual answers. If an image or file is provided, analyze it carefully. If unsure, say you don't know."
-      },
-      ...history,
-      {
-        role: "user",
-        content: userContent
+      if (mimeType.startsWith("image/") || mimeType === "application/pdf") {
+        // Images and PDFs sent as inline data
+        parts.push({
+          inlineData: {
+            mimeType: mimeType,
+            data: file.buffer.toString("base64")
+          }
+        })
+      } else {
+        // Text/code/csv files — read as plain text
+        try {
+          const fileText = file.buffer.toString("utf-8")
+          parts.push({ text: "[File: " + file.originalname + "]\n\n" + fileText })
+        } catch (e) {
+          parts.push({ text: "[Binary file attached: " + file.originalname + "]" })
+        }
       }
-    ]
+    }
 
-    // Call OpenRouter API with streaming
-    const stream = await openai.chat.completions.create({
-      model: model,
-      temperature: 0.3,
-      messages: aiMessages,
-      stream: true
-    })
+    if (message) {
+      parts.push({ text: message })
+    } else if (!file) {
+      parts.push({ text: "Please analyze this." })
+    }
+
+    // Stream response from Gemini
+    const result = await chatSession.sendMessageStream(parts)
 
     let full = ""
 
-    for await (const part of stream) {
-      const token = part.choices?.[0]?.delta?.content
+    for await (const chunk of result.stream) {
+      const token = chunk.text()
       if (token) {
         full += token
         res.write(token)
@@ -192,9 +155,8 @@ app.post("/chat", upload.single("image"), async (req, res) => {
     res.end()
 
   } catch (err) {
-    console.error("=== SERVER ERROR ===")
-    console.error("Message:", err.message)
-    console.error("Stack:", err.stack)
+    console.error("=== ERROR ===")
+    console.error(err.message)
     if (!res.headersSent) {
       res.status(500).send("Server error: " + err.message)
     }
@@ -202,7 +164,7 @@ app.post("/chat", upload.single("image"), async (req, res) => {
 
 })
 
-// GET ALL CHATS FOR SESSION
+// GET ALL CHATS
 app.get("/chats/:sessionId", async (req, res) => {
   try {
     const chats = await Chat.find({ sessionId: req.params.sessionId }).sort({ createdAt: -1 })
@@ -212,7 +174,7 @@ app.get("/chats/:sessionId", async (req, res) => {
   }
 })
 
-// GET MESSAGES FOR A CHAT
+// GET CHAT MESSAGES
 app.get("/chat/:id", async (req, res) => {
   try {
     const chat = await Chat.findById(req.params.id)
