@@ -27,7 +27,8 @@ let text = input.value.trim()
 if(!text) return
 
 hideWelcome()
-
+document.body.classList.add("chat-started")
+   
 chatBox.innerHTML += `
 <div class="messageRow userRow">
 <div class="userBubble">${text}</div>
