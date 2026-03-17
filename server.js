@@ -3,8 +3,10 @@ import cors from "cors"
 import dotenv from "dotenv"
 import OpenAI from "openai"
 import mongoose from "mongoose"
+import multer from "multer"
 
 dotenv.config()
+const upload = multer()
 
 const app = express()
 app.use(cors())
@@ -37,16 +39,20 @@ const Chat = mongoose.model("Chat", ChatSchema)
 
 /* CHAT STREAM */
 
-app.post("/chat", async (req, res) => {
+app.post("/chat", upload.single("image"), async (req, res) => {
 
   try {
 
-    const { message, sessionId, chatId } = req.body
-
-    if (!message) {
-      return res.status(400).json({ error: "No message" })
-    }
-
+    const message = req.body.message
+const sessionId = req.body.sessionId
+const chatId = req.body.chatId
+const file = req.file
+console.log("MESSAGE:", message)
+console.log("FILE:", file)
+    
+  if (!message && !file) {
+  return res.status(400).json({ error: "No message or image" })
+}
     let chat
 
     if (chatId) {
