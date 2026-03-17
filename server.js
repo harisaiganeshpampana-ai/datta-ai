@@ -217,7 +217,7 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// ── AUTH ROUTES ──────────────────────────────────────────────────────────────
+//  AUTH ROUTES 
 
 // SIGNUP
 app.post("/auth/signup", async (req, res) => {
@@ -377,7 +377,7 @@ app.get("/auth/google/callback",
   }
 )
 
-// ── CHAT ROUTES ──────────────────────────────────────────────────────────────
+//  CHAT ROUTES 
 
 app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
   try {
