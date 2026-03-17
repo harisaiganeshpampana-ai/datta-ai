@@ -2,199 +2,619 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Datta AI</title>
+<title>Datta AI - Login</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
-</head>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:system-ui,Arial,sans-serif; }
 
+body {
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: hidden;
+}
+
+/* Background glow */
+body::before {
+  content: '';
+  position: fixed;
+  top: -200px; left: 50%;
+  transform: translateX(-50%);
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(0,255,136,0.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.container {
+  width: 100%;
+  max-width: 420px;
+  padding: 24px 20px;
+}
+
+/* LOGO */
+.logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 32px;
+  animation: fadeDown 0.6s ease forwards;
+}
+
+.logoRing {
+  position: relative;
+  width: 72px; height: 72px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px;
+}
+
+.logoRing::before {
+  content: '';
+  position: absolute; inset: -3px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #00ff88, #00ccff, #0066ff, #00ff88);
+  animation: spin 3s linear infinite;
+  filter: blur(2px);
+  opacity: 0.8;
+}
+
+.logoRing::after {
+  content: ''; position: absolute; inset: 1px;
+  border-radius: 50%; background: #0a0a0a;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.logoRing img {
+  width: 62px; height: 62px;
+  border-radius: 50%; object-fit: cover;
+  position: relative; z-index: 1;
+}
+
+.logoTitle {
+  font-size: 26px; font-weight: 800;
+  background: linear-gradient(90deg, #00ff88, #00ccff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.logoSub {
+  font-size: 13px; color: #555;
+  margin-top: 4px; letter-spacing: 1px;
+}
+
+@keyframes fadeDown {
+  from { opacity:0; transform:translateY(-20px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* CARD */
+.card {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 20px;
+  padding: 28px 24px;
+  animation: fadeUp 0.6s ease 0.2s both;
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(20px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* TABS */
+.tabs {
+  display: flex;
+  background: #1a1a1a;
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 24px;
+}
+
+.tab {
+  flex: 1; padding: 9px;
+  background: none; border: none;
+  color: #666; font-size: 14px;
+  font-weight: 600; border-radius: 8px;
+  cursor: pointer; transition: all 0.2s;
+}
+
+.tab.active {
+  background: #222; color: white;
+}
+
+/* FORM */
+.formSection { display: none; }
+.formSection.active { display: block; }
+
+.formTitle {
+  font-size: 20px; font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.formSub {
+  font-size: 13px; color: #555;
+  margin-bottom: 22px;
+}
+
+.field {
+  margin-bottom: 14px;
+}
+
+.field label {
+  display: block;
+  font-size: 12px; color: #888;
+  margin-bottom: 6px; font-weight: 500;
+  letter-spacing: 0.5px; text-transform: uppercase;
+}
+
+.field input {
+  width: 100%;
+  padding: 12px 14px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  color: white; font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.field input:focus {
+  border-color: #00ff88;
+}
+
+.field input::placeholder { color: #444; }
+
+/* SUBMIT BTN */
+.submitBtn {
+  width: 100%;
+  padding: 13px;
+  background: linear-gradient(135deg, #00cc6a, #00aaff);
+  border: none; border-radius: 12px;
+  color: white; font-size: 15px;
+  font-weight: 700; cursor: pointer;
+  margin-top: 6px;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.submitBtn:hover { opacity: 0.9; }
+.submitBtn:active { transform: scale(0.98); }
+.submitBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* DIVIDER */
+.divider {
+  display: flex; align-items: center;
+  gap: 12px; margin: 20px 0;
+  color: #444; font-size: 12px;
+}
+.divider::before, .divider::after {
+  content: ''; flex: 1; height: 1px; background: #222;
+}
+
+/* SOCIAL BTNS */
+.socialBtns {
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+.socialBtn {
+  width: 100%; padding: 12px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  color: white; font-size: 14px;
+  font-weight: 500; cursor: pointer;
+  display: flex; align-items: center;
+  justify-content: center; gap: 10px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.socialBtn:hover {
+  background: #222; border-color: #333;
+}
+
+.socialBtn img { width: 20px; height: 20px; }
+
+/* PHONE ROW */
+.phoneRow {
+  display: flex; gap: 8px;
+}
+
+.phoneRow .countryCode {
+  width: 80px; padding: 12px 10px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  color: white; font-size: 15px;
+  outline: none;
+}
+
+.phoneRow .field { flex: 1; margin: 0; }
+
+/* GUEST BTN */
+.guestBtn {
+  width: 100%; padding: 12px;
+  background: none;
+  border: 1px dashed #2a2a2a;
+  border-radius: 12px;
+  color: #666; font-size: 14px;
+  cursor: pointer; margin-top: 10px;
+  transition: all 0.2s;
+}
+
+.guestBtn:hover { border-color: #444; color: #aaa; }
+
+/* ERROR / SUCCESS */
+.msg {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  display: none;
+}
+
+.msg.error { background: #2a1010; border: 1px solid #441010; color: #ff6666; display: block; }
+.msg.success { background: #0a2a1a; border: 1px solid #104410; color: #44ff88; display: block; }
+
+/* LOADING SPINNER */
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block; vertical-align: middle;
+  margin-right: 6px;
+}
+</style>
+</head>
 <body>
 
-<!-- SPLASH SCREEN -->
-<div id="splash">
-  <div class="splash-ring">
-    <img class="splash-logo" src="logo.jpeg" alt="Datta AI Logo">
-  </div>
-  <div class="splash-title">Datta AI</div>
-  <div class="splash-subtitle">Welcome</div>
-  <div class="splash-dots">
-    <span></span><span></span><span></span>
-  </div>
-</div>
+<div class="container">
 
-<!-- TOP BAR -->
-<div class="topbar">
-  <button onclick="toggleSidebar()" class="menuBtn">☰</button>
-  <span class="topTitle">Datta AI</span>
-</div>
-
-<!-- SIDEBAR -->
-<div class="sidebar">
-
-  <!-- TOP: Logo + New Chat -->
-  <div class="sidebarTop">
-    <div class="sidebarBrand">Datta AI</div>
-    <button class="newChatBtn" onclick="newChat()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="16"></line>
-        <line x1="8" y1="12" x2="16" y2="12"></line>
-      </svg>
-      New chat
-    </button>
-  </div>
-
-  <!-- NAV ITEMS -->
-  <div class="sidebarNav">
-    <button class="navItem active" onclick="showSection('chats')">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-      </svg>
-      Chats
-    </button>
-    <button class="navItem" onclick="showSection('projects')">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="2" y="7" width="20" height="14" rx="2"></rect>
-        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path>
-      </svg>
-      Projects
-    </button>
-    <button class="navItem" onclick="showSection('artifacts')">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-      </svg>
-      Artifacts
-    </button>
-  </div>
-
-  <div class="sidebarDivider"></div>
-
-  <!-- RECENTS LABEL -->
-  <div class="recentsLabel" id="recentsLabel">Recents</div>
-
-  <!-- SEARCH -->
-  <input id="search" class="searchBox" type="text" placeholder="Search chats" onkeyup="searchChats()">
-
-  <!-- SECTIONS -->
-  <div class="sidebarSection" id="section-chats">
-    <div class="history" id="history"></div>
-  </div>
-
-  <div class="sidebarSection" id="section-projects" style="display:none;">
-    <div class="emptySection">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5">
-        <rect x="2" y="7" width="20" height="14" rx="2"></rect>
-        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path>
-      </svg>
-      <p>No projects yet</p>
+  <!-- LOGO -->
+  <div class="logo">
+    <div class="logoRing">
+      <img src="logo.jpeg" alt="Datta AI">
     </div>
+    <div class="logoTitle">Datta AI</div>
+    <div class="logoSub">Your personal AI assistant</div>
   </div>
 
-  <div class="sidebarSection" id="section-artifacts" style="display:none;">
-    <div class="emptySection">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5">
-        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-      </svg>
-      <p>No artifacts yet</p>
+  <!-- CARD -->
+  <div class="card">
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('login')">Login</button>
+      <button class="tab" onclick="switchTab('signup')">Sign Up</button>
     </div>
-  </div>
 
-  <!-- BOTTOM USER PROFILE -->
-  <div class="sidebarProfile">
-    <div class="profileAvatar">G</div>
-    <div class="profileInfo">
-      <div class="profileName">Ganesh</div>
-      <div class="profileSub">Free Plan</div>
-    </div>
-    <button class="profileSettings" title="Settings">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="3"></circle>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-      </svg>
-    </button>
-  </div>
+    <!-- ERROR/SUCCESS MSG -->
+    <div class="msg" id="msg"></div>
 
-</div>
+    <!-- LOGIN SECTION -->
+    <div class="formSection active" id="loginSection">
+      <div class="formTitle">Welcome back</div>
+      <div class="formSub">Login to continue to Datta AI</div>
 
-<!-- MAIN CHAT AREA -->
-<div class="main">
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="Enter your password">
+      </div>
 
-  <!-- WELCOME -->
-  <div id="welcomeScreen" class="welcomeScreen">
-    <h1 class="welcomeTitle">Ask a question</h1>
-  </div>
+      <button class="submitBtn" onclick="handleLogin()">Login</button>
 
-  <!-- CHAT -->
-  <div class="chatWrapper">
-    <div class="chat" id="chat"></div>
-    <button id="scrollDownBtn">↓</button>
-  </div>
+      <div class="divider">or continue with</div>
 
-  <!-- INPUT -->
-  <div class="inputArea">
-    <div class="inputWrap">
+      <div class="socialBtns">
+        <button class="socialBtn" onclick="handleGoogle()">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+          Continue with Google
+        </button>
+        <button class="socialBtn" onclick="switchTab('phone')">
+          📱 Continue with Phone
+        </button>
+      </div>
 
-      <input type="file" id="imageInput" accept="*/*" style="display:none;">
-      <button id="uploadBtn" title="Attach file">+</button>
-      <span id="filePreview"></span>
-      <button id="clearFile" title="Remove file">✕</button>
-
-      <input id="message" type="text" placeholder="Ask Datta AI" autocomplete="off">
-
-      <button class="modeBtn">Fast</button>
-
-      <button class="assistant" onclick="startAssistant()">
-        <svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
-          <line x1="6" y1="9" x2="6" y2="15"></line>
-          <line x1="10" y1="6" x2="10" y2="18"></line>
-          <line x1="14" y1="10" x2="14" y2="14"></line>
-          <line x1="18" y1="8" x2="18" y2="16"></line>
-        </svg>
+      <button class="guestBtn" onclick="handleGuest()">
+        👤 Continue as Guest
       </button>
-
-      <button class="send" onclick="send()">
-        <svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
-          <line x1="22" y1="2" x2="11" y2="13"></line>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-        </svg>
-      </button>
-
     </div>
+
+    <!-- SIGNUP SECTION -->
+    <div class="formSection" id="signupSection">
+      <div class="formTitle">Create account</div>
+      <div class="formSub">Join Datta AI for free</div>
+
+      <div class="field">
+        <label>Username</label>
+        <input type="text" id="signupUsername" placeholder="Choose a username">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="signupEmail" placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="signupPassword" placeholder="Min 6 characters">
+      </div>
+
+      <button class="submitBtn" onclick="handleSignup()">Create Account</button>
+
+      <div class="divider">or continue with</div>
+
+      <div class="socialBtns">
+        <button class="socialBtn" onclick="handleGoogle()">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+          Continue with Google
+        </button>
+      </div>
+
+      <button class="guestBtn" onclick="handleGuest()">
+        👤 Continue as Guest
+      </button>
+    </div>
+
+    <!-- PHONE SECTION -->
+    <div class="formSection" id="phoneSection">
+      <div class="formTitle">Phone Login</div>
+      <div class="formSub">Enter your phone number</div>
+
+      <div class="field">
+        <label>Phone Number</label>
+        <div class="phoneRow">
+          <input class="countryCode" type="text" id="countryCode" value="+91">
+          <div class="field">
+            <input type="tel" id="phoneNumber" placeholder="9876543210">
+          </div>
+        </div>
+      </div>
+
+      <div class="field" id="otpField" style="display:none;">
+        <label>OTP</label>
+        <input type="text" id="otpInput" placeholder="Enter 6-digit OTP" maxlength="6">
+      </div>
+
+      <button class="submitBtn" id="phoneBtn" onclick="handlePhone()">Send OTP</button>
+
+      <button class="guestBtn" onclick="switchTab('login')" style="margin-top:10px;">
+        ← Back to Login
+      </button>
+    </div>
+
   </div>
-
 </div>
-
-<script src="chat.js?v=6"></script>
 
 <script>
-  // File upload
-  const uploadBtn = document.getElementById("uploadBtn")
-  const fileInput = document.getElementById("imageInput")
-  const filePreview = document.getElementById("filePreview")
-  const clearFileBtn = document.getElementById("clearFile")
+const SERVER = "https://datta-ai-server.onrender.com"
 
-  uploadBtn.addEventListener("click", () => fileInput.click())
+// Check if already logged in
+window.addEventListener("load", function() {
+  const token = localStorage.getItem("datta_token")
+  const user = localStorage.getItem("datta_user")
+  if (token && user) {
+    window.location.href = "index.html"
+  }
+})
 
-  fileInput.addEventListener("change", function() {
-    const file = fileInput.files[0]
-    if (!file) return
-    filePreview.textContent = "📄 " + file.name
-    clearFileBtn.style.display = "inline"
-  })
+function switchTab(tab) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"))
+  document.querySelectorAll(".formSection").forEach(s => s.classList.remove("active"))
+  clearMsg()
 
-  clearFileBtn.addEventListener("click", () => {
-    fileInput.value = ""
-    filePreview.textContent = ""
-    clearFileBtn.style.display = "none"
-  })
+  if (tab === "login") {
+    document.querySelectorAll(".tab")[0].classList.add("active")
+    document.getElementById("loginSection").classList.add("active")
+  } else if (tab === "signup") {
+    document.querySelectorAll(".tab")[1].classList.add("active")
+    document.getElementById("signupSection").classList.add("active")
+  } else if (tab === "phone") {
+    document.getElementById("phoneSection").classList.add("active")
+  }
+}
 
-  // Splash screen
-  window.addEventListener("load", function() {
-    setTimeout(function() {
-      document.getElementById("splash").classList.add("hide")
-    }, 3000)
-  })
+function showMsg(text, type) {
+  const el = document.getElementById("msg")
+  el.textContent = text
+  el.className = "msg " + type
+}
+
+function clearMsg() {
+  const el = document.getElementById("msg")
+  el.className = "msg"
+  el.textContent = ""
+}
+
+function setLoading(btnId, loading) {
+  const btn = document.getElementById(btnId) || document.querySelector(".submitBtn")
+  if (loading) {
+    btn.disabled = true
+    btn.innerHTML = '<span class="spinner"></span> Please wait...'
+  } else {
+    btn.disabled = false
+  }
+}
+
+// EMAIL LOGIN
+async function handleLogin() {
+  const email = document.getElementById("loginEmail").value.trim()
+  const password = document.getElementById("loginPassword").value
+  clearMsg()
+
+  if (!email || !password) return showMsg("Please fill in all fields", "error")
+
+  const btn = document.querySelectorAll(".submitBtn")[0]
+  btn.disabled = true
+  btn.innerHTML = '<span class="spinner"></span> Logging in...'
+
+  try {
+    const res = await fetch(SERVER + "/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    })
+    const data = await res.json()
+
+    if (!res.ok) {
+      showMsg(data.error || "Login failed", "error")
+      btn.disabled = false
+      btn.textContent = "Login"
+      return
+    }
+
+    localStorage.setItem("datta_token", data.token)
+    localStorage.setItem("datta_user", JSON.stringify(data.user))
+    showMsg("Login successful! Redirecting...", "success")
+    setTimeout(() => window.location.href = "index.html", 1000)
+
+  } catch (e) {
+    showMsg("Server error. Please try again.", "error")
+    btn.disabled = false
+    btn.textContent = "Login"
+  }
+}
+
+// EMAIL SIGNUP
+async function handleSignup() {
+  const username = document.getElementById("signupUsername").value.trim()
+  const email = document.getElementById("signupEmail").value.trim()
+  const password = document.getElementById("signupPassword").value
+  clearMsg()
+
+  if (!username || !email || !password) return showMsg("Please fill in all fields", "error")
+  if (password.length < 6) return showMsg("Password must be at least 6 characters", "error")
+  if (username.length < 3) return showMsg("Username must be at least 3 characters", "error")
+
+  const btn = document.querySelectorAll(".submitBtn")[1]
+  btn.disabled = true
+  btn.innerHTML = '<span class="spinner"></span> Creating account...'
+
+  try {
+    const res = await fetch(SERVER + "/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, email, password })
+    })
+    const data = await res.json()
+
+    if (!res.ok) {
+      showMsg(data.error || "Signup failed", "error")
+      btn.disabled = false
+      btn.textContent = "Create Account"
+      return
+    }
+
+    localStorage.setItem("datta_token", data.token)
+    localStorage.setItem("datta_user", JSON.stringify(data.user))
+    showMsg("Account created! Redirecting...", "success")
+    setTimeout(() => window.location.href = "index.html", 1000)
+
+  } catch (e) {
+    showMsg("Server error. Please try again.", "error")
+    btn.disabled = false
+    btn.textContent = "Create Account"
+  }
+}
+
+// PHONE OTP
+let otpSent = false
+async function handlePhone() {
+  const code = document.getElementById("countryCode").value.trim()
+  const phone = document.getElementById("phoneNumber").value.trim()
+  const btn = document.getElementById("phoneBtn")
+
+  if (!otpSent) {
+    if (!phone) return showMsg("Enter your phone number", "error")
+    clearMsg()
+    btn.disabled = true
+    btn.innerHTML = '<span class="spinner"></span> Sending OTP...'
+
+    try {
+      const res = await fetch(SERVER + "/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: code + phone })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        showMsg(data.error || "Failed to send OTP", "error")
+        btn.disabled = false
+        btn.textContent = "Send OTP"
+        return
+      }
+      otpSent = true
+      document.getElementById("otpField").style.display = "block"
+      btn.disabled = false
+      btn.textContent = "Verify OTP"
+      showMsg("OTP sent to " + code + phone, "success")
+    } catch (e) {
+      showMsg("Server error", "error")
+      btn.disabled = false
+      btn.textContent = "Send OTP"
+    }
+
+  } else {
+    const otp = document.getElementById("otpInput").value.trim()
+    if (!otp) return showMsg("Enter the OTP", "error")
+    clearMsg()
+    btn.disabled = true
+    btn.innerHTML = '<span class="spinner"></span> Verifying...'
+
+    try {
+      const res = await fetch(SERVER + "/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: document.getElementById("countryCode").value + document.getElementById("phoneNumber").value, otp })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        showMsg(data.error || "Invalid OTP", "error")
+        btn.disabled = false
+        btn.textContent = "Verify OTP"
+        return
+      }
+      localStorage.setItem("datta_token", data.token)
+      localStorage.setItem("datta_user", JSON.stringify(data.user))
+      showMsg("Verified! Redirecting...", "success")
+      setTimeout(() => window.location.href = "index.html", 1000)
+    } catch (e) {
+      showMsg("Server error", "error")
+      btn.disabled = false
+      btn.textContent = "Verify OTP"
+    }
+  }
+}
+
+// GOOGLE LOGIN
+function handleGoogle() {
+  window.location.href = SERVER + "/auth/google"
+}
+
+// GUEST LOGIN
+function handleGuest() {
+  const guestId = "guest_" + Date.now()
+  const guestUser = { username: "Guest", email: "", isGuest: true, id: guestId }
+  localStorage.setItem("datta_token", "guest_" + guestId)
+  localStorage.setItem("datta_user", JSON.stringify(guestUser))
+  window.location.href = "index.html"
+}
+
+// Enter key support
+document.addEventListener("keydown", function(e) {
+  if (e.key !== "Enter") return
+  const active = document.querySelector(".formSection.active")
+  if (!active) return
+  if (active.id === "loginSection") handleLogin()
+  else if (active.id === "signupSection") handleSignup()
+  else if (active.id === "phoneSection") handlePhone()
+})
 </script>
 
 </body>
