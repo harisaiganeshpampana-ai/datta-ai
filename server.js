@@ -3,7 +3,7 @@ import cors from "cors"
 import dotenv from "dotenv"
 import mongoose from "mongoose"
 import multer from "multer"
-import { GoogleGenAI } from "@google/genai"
+import Groq from "groq-sdk"
 
 dotenv.config()
 
@@ -17,8 +17,8 @@ app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-// GOOGLE GEMINI
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+// GROQ CLIENT (free)
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
 // DATABASE
 mongoose.connect(process.env.MONGO_URI)
@@ -86,61 +86,77 @@ app.post("/chat", upload.single("image"), async (req, res) => {
     res.setHeader("x-chat-id", chat._id.toString())
     res.setHeader("Content-Type", "text/plain")
 
-    // Build conversation history as text for context
-    const historyParts = chat.messages.slice(0, -1).map(function(m) {
-      const role = m.role === "assistant" ? "Assistant" : "User"
-      return role + ": " + m.content
-    }).join("\n")
+    // Build chat history
+    const history = chat.messages.slice(0, -1).map(function(m) {
+      return {
+        role: m.role === "assistant" ? "assistant" : "user",
+        content: m.content
+      }
+    })
 
-    // Build current message parts array
-    const parts = []
+    // Build current user message
+    const isImage = file && file.mimetype && file.mimetype.startsWith("image/")
+    let userContent
 
-    // Add history context if exists
-    if (historyParts) {
-      parts.push({ text: "Previous conversation:\n" + historyParts + "\n\n---\n" })
-    }
-
-    // Add file if present
-    if (file) {
-      const mimeType = file.mimetype || "application/octet-stream"
-
-      if (mimeType.startsWith("image/") || mimeType === "application/pdf") {
-        parts.push({
-          inlineData: {
-            mimeType: mimeType,
-            data: file.buffer.toString("base64")
-          }
-        })
-      } else {
-        try {
-          const fileText = file.buffer.toString("utf-8")
-          parts.push({ text: "[File: " + file.originalname + "]\n\n" + fileText })
-        } catch (e) {
-          parts.push({ text: "[Binary file: " + file.originalname + "]" })
+    if (isImage) {
+      // Send image as base64 for vision model
+      const base64 = file.buffer.toString("base64")
+      const dataUrl = "data:" + file.mimetype + ";base64," + base64
+      userContent = [
+        {
+          type: "text",
+          text: message || "Please analyze this image."
+        },
+        {
+          type: "image_url",
+          image_url: { url: dataUrl }
         }
+      ]
+    } else if (file) {
+      // Non-image: read as text
+      try {
+        const fileText = file.buffer.toString("utf-8")
+        userContent = (message ? message + "\n\n" : "") + "[File: " + file.originalname + "]\n\n" + fileText
+      } catch (e) {
+        userContent = (message ? message + "\n\n" : "") + "[File: " + file.originalname + "]"
       }
-    }
-
-    // Add user text
-    if (message) {
-      parts.push({ text: message })
     } else {
-      parts.push({ text: "Please analyze this." })
+      userContent = message
     }
 
-    // Call Gemini with streaming
-    const streamResult = await ai.models.generateContentStream({
-      model: "gemini-2.0-flash",
-      contents: [{ role: "user", parts: parts }],
-      config: {
-        systemInstruction: "You are Datta AI, a helpful and accurate assistant. If an image or file is provided, analyze it carefully. Keep answers clear and complete."
+    // Choose model:
+    // Text: llama-3.3-70b-versatile (free, very capable)
+    // Image: llama-4-scout-17b-16e-instruct (free vision model on Groq)
+    const model = isImage
+      ? "meta-llama/llama-4-scout-17b-16e-instruct"
+      : "llama-3.3-70b-versatile"
+
+    console.log("Using model:", model)
+
+    const aiMessages = [
+      {
+        role: "system",
+        content: "You are Datta AI, a helpful and accurate assistant. If an image or file is provided, analyze it carefully. Keep answers clear and complete."
+      },
+      ...history,
+      {
+        role: "user",
+        content: userContent
       }
+    ]
+
+    // Stream response from Groq
+    const stream = await groq.chat.completions.create({
+      model: model,
+      messages: aiMessages,
+      max_tokens: 1024,
+      stream: true
     })
 
     let full = ""
 
-    for await (const chunk of streamResult) {
-      const token = chunk.text
+    for await (const part of stream) {
+      const token = part.choices?.[0]?.delta?.content
       if (token) {
         full += token
         res.write(token)
