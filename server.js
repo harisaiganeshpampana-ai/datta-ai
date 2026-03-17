@@ -51,7 +51,6 @@ app.post("/chat", upload.single("image"), async (req, res) => {
 const message = req.body?.message || ""
 const sessionId = req.body?.sessionId
 const chatId = req.body?.chatId
-const file = req.file || null
 console.log("MESSAGE:", message)
 console.log("FILE:", file)
     
