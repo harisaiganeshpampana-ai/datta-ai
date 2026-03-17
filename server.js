@@ -6,6 +6,9 @@ import multer from "multer"
 import Groq from "groq-sdk"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
+import passport from "passport"
+import { Strategy as GoogleStrategy } from "passport-google-oauth20"
+import session from "express-session"
 
 dotenv.config()
 
@@ -18,6 +21,20 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+
+// SESSION (needed for passport)
+app.use(session({
+  secret: process.env.JWT_SECRET || "datta-session-secret",
+  resave: false,
+  saveUninitialized: false
+}))
+
+// PASSPORT
+app.use(passport.initialize())
+app.use(passport.session())
+
+passport.serializeUser((user, done) => done(null, user))
+passport.deserializeUser((user, done) => done(null, user))
 
 // GROQ
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
@@ -61,6 +78,35 @@ const Chat = mongoose.model("Chat", ChatSchema)
 
 // JWT HELPER
 const JWT_SECRET = process.env.JWT_SECRET || "datta-ai-secret-key-2024"
+
+// GOOGLE OAUTH STRATEGY
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://harisaiganeshpampana-ai.github.io/datta-ai"
+
+passport.use(new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: "https://datta-ai-server.onrender.com/auth/google/callback"
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    let user = await User.findOne({ googleId: profile.id })
+
+    if (!user) {
+      const email = profile.emails?.[0]?.value || ""
+      const username = profile.displayName.replace(/\s+/g, "_").toLowerCase() + "_" + profile.id.slice(-4)
+
+      user = await User.create({
+        googleId: profile.id,
+        username: username,
+        email: email
+      })
+    }
+
+    const token = generateToken(user)
+    return done(null, { token, user: { id: user._id, username: user.username, email: user.email } })
+  } catch (err) {
+    return done(err, null)
+  }
+}))
 
 function generateToken(user) {
   return jwt.sign(
@@ -236,6 +282,22 @@ app.get("/auth/me", authMiddleware, async (req, res) => {
   res.json({ user: req.user })
 })
 
+// GOOGLE AUTH - Redirect to Google
+app.get("/auth/google", passport.authenticate("google", {
+  scope: ["profile", "email"]
+}))
+
+// GOOGLE AUTH - Callback after Google login
+app.get("/auth/google/callback",
+  passport.authenticate("google", { session: false, failureRedirect: FRONTEND_URL + "/login.html?error=google_failed" }),
+  (req, res) => {
+    const { token, user } = req.user
+    // Redirect to frontend with token in URL
+    const userStr = encodeURIComponent(JSON.stringify(user))
+    res.redirect(FRONTEND_URL + "/login.html?token=" + token + "&user=" + userStr)
+  }
+)
+
 // ── CHAT ROUTES ──────────────────────────────────────────────────────────────
 
 app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
@@ -250,6 +312,20 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
 
     if (!message && !file) {
       return res.status(400).json({ error: "No message or file" })
+    }
+
+    // Reject files that are too large
+    if (file && file.size > 5 * 1024 * 1024) {
+      return res.status(413).json({ error: "File too large. Please upload files under 5MB." })
+    }
+
+    // Only allow images and text files (no videos)
+    if (file) {
+      const allowed = ["image/", "text/", "application/pdf", "application/json"]
+      const isAllowed = allowed.some(t => file.mimetype.startsWith(t))
+      if (!isAllowed) {
+        return res.status(400).json({ error: "File type not supported. Please upload images, PDFs, or text files only." })
+      }
     }
 
     let chat = null
@@ -314,10 +390,13 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       ? "meta-llama/llama-4-scout-17b-16e-instruct"
       : "llama-3.3-70b-versatile"
 
+    // Limit max_tokens based on message type
+    const maxTokens = isImage ? 512 : 400
+
     const aiMessages = [
       {
         role: "system",
-        content: "You are Datta AI, a helpful and accurate assistant. The user's name is " + req.user.username + ". If an image or file is provided, analyze it carefully."
+        content: "You are Datta AI, a helpful and accurate assistant. The user's name is " + req.user.username + ". Keep answers short and to the point unless the user asks for details or explanation. For simple questions give 1-3 sentences max. For complex questions give a clear structured answer. If an image or file is provided, analyze it carefully."
       },
       ...history,
       { role: "user", content: userContent }
@@ -326,7 +405,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const stream = await groq.chat.completions.create({
       model: model,
       messages: aiMessages,
-      max_tokens: 1024,
+      max_tokens: maxTokens,
       stream: true
     })
 
