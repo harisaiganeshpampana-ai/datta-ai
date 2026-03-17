@@ -96,7 +96,7 @@ app.post("/chat", upload.single("image"), async (req, res) => {
 
     // Choose model
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-1.5-flash",
       systemInstruction: "You are Datta AI, a helpful and accurate assistant. If an image or file is provided, analyze it carefully. Keep answers clear and complete."
     })
 
