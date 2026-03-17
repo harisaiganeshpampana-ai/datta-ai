@@ -70,18 +70,20 @@ app.post("/chat", async (req, res) => {
 
 res.setHeader("x-chat-id", chat._id.toString())
 
-    const stream = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
+   const stream = await openai.chat.completions.create({
+  model: "gpt-4o",
+  temperature: 0.3,
+
+  messages: [
     {
-        role: "system",
-        content: "Give short, direct answers. No explanation unless asked."
+      role: "system",
+      content: "Give accurate and factual answers. Keep them short but complete. Do not guess. If unsure, say you don't know."
     },
     ...chat.messages
-],
-      stream: true
-    })
+  ],
 
+  stream: true
+})
     res.setHeader("Content-Type", "text/plain")
 
     let full = ""
