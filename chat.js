@@ -1,8 +1,16 @@
 // AUTH CHECK - redirect to login if not logged in
 const datta_token = localStorage.getItem("datta_token")
-const datta_user = JSON.parse(localStorage.getItem("datta_user") || "null")
+let datta_user = null
+try {
+  const raw = localStorage.getItem("datta_user")
+  if (raw && raw !== "null" && raw !== "undefined") {
+    datta_user = JSON.parse(raw)
+  }
+} catch(e) {
+  datta_user = null
+}
 
-if (!datta_token || !datta_user) {
+if (!datta_token) {
   window.location.href = "login.html"
 }
 
@@ -483,14 +491,14 @@ window.logout = logout
 
 function openSettings() {
   const modal = document.getElementById("settingsModal")
+  if (!modal) return
   modal.classList.add("show")
-
-  // Load saved settings into UI
   loadSettingsUI()
 }
 
 function closeSettings() {
-  document.getElementById("settingsModal").classList.remove("show")
+  const modal = document.getElementById("settingsModal")
+  if (modal) modal.classList.remove("show")
   clearSettingsMsg()
 }
 
@@ -515,8 +523,11 @@ function clearSettingsMsg() {
 }
 
 function loadSettingsUI() {
-  // Load username
-  const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
+  let user = {}
+  try {
+    const raw = localStorage.getItem("datta_user")
+    if (raw && raw !== "null") user = JSON.parse(raw)
+  } catch(e) {}
   const usernameInput = document.getElementById("newUsername")
   if (usernameInput) usernameInput.placeholder = user.username || "Enter new username"
 
