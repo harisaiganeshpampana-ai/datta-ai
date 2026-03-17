@@ -478,3 +478,232 @@ function logout() {
 }
 
 window.logout = logout
+
+// ── SETTINGS ─────────────────────────────────────────────────────────────────
+
+function openSettings() {
+  const modal = document.getElementById("settingsModal")
+  modal.classList.add("show")
+
+  // Load saved settings into UI
+  loadSettingsUI()
+}
+
+function closeSettings() {
+  document.getElementById("settingsModal").classList.remove("show")
+  clearSettingsMsg()
+}
+
+function switchSettingsTab(tab) {
+  document.querySelectorAll(".sTab").forEach(t => t.classList.remove("active"))
+  document.querySelectorAll(".sTabContent").forEach(c => c.classList.remove("active"))
+  document.querySelector(".sTab[onclick=\"switchSettingsTab('" + tab + "')\"]").classList.add("active")
+  document.getElementById("tab-" + tab).classList.add("active")
+  clearSettingsMsg()
+}
+
+function showSettingsMsg(text, type) {
+  const el = document.getElementById("settingsMsg")
+  el.textContent = text
+  el.className = "settingsMsg " + type
+  setTimeout(() => { el.className = "settingsMsg"; el.textContent = "" }, 3000)
+}
+
+function clearSettingsMsg() {
+  const el = document.getElementById("settingsMsg")
+  if (el) { el.className = "settingsMsg"; el.textContent = "" }
+}
+
+function loadSettingsUI() {
+  // Load username
+  const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
+  const usernameInput = document.getElementById("newUsername")
+  if (usernameInput) usernameInput.placeholder = user.username || "Enter new username"
+
+  // Load theme
+  const theme = localStorage.getItem("datta_theme") || "dark"
+  setTheme(theme, true)
+
+  // Load language
+  const lang = localStorage.getItem("datta_language") || "English"
+  const langSelect = document.getElementById("aiLanguage")
+  if (langSelect) langSelect.value = lang
+
+  // Load notification settings
+  const notifSettings = JSON.parse(localStorage.getItem("datta_notif") || "{}")
+  const soundToggle = document.getElementById("soundToggle")
+  const notifToggle = document.getElementById("notifToggle")
+  const streamToggle = document.getElementById("streamToggle")
+  if (soundToggle) soundToggle.checked = notifSettings.sound || false
+  if (notifToggle) notifToggle.checked = notifSettings.notif || false
+  if (streamToggle) streamToggle.checked = notifSettings.stream !== false
+}
+
+// CHANGE USERNAME
+async function changeUsername() {
+  const newUsername = document.getElementById("newUsername").value.trim()
+  if (!newUsername) return showSettingsMsg("Please enter a username", "error")
+  if (newUsername.length < 3) return showSettingsMsg("Username must be at least 3 characters", "error")
+
+  try {
+    const res = await fetch("https://datta-ai-server.onrender.com/auth/update-username", {
+      method: "POST",
+      headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ username: newUsername })
+    })
+    const data = await res.json()
+    if (!res.ok) return showSettingsMsg(data.error || "Failed to update", "error")
+
+    // Update local storage
+    const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
+    user.username = newUsername
+    localStorage.setItem("datta_user", JSON.stringify(user))
+
+    // Update sidebar
+    const nameEl = document.querySelector(".profileName")
+    const avatarEl = document.querySelector(".profileAvatar")
+    if (nameEl) nameEl.textContent = newUsername
+    if (avatarEl) avatarEl.textContent = newUsername[0].toUpperCase()
+
+    showSettingsMsg("Username updated successfully!", "success")
+  } catch (e) {
+    showSettingsMsg("Server error. Try again.", "error")
+  }
+}
+
+// CHANGE PASSWORD
+async function changePassword() {
+  const current = document.getElementById("currentPassword").value
+  const newPass = document.getElementById("newPassword").value
+  const confirm = document.getElementById("confirmPassword").value
+
+  if (!current || !newPass || !confirm) return showSettingsMsg("Please fill all fields", "error")
+  if (newPass.length < 6) return showSettingsMsg("New password must be at least 6 characters", "error")
+  if (newPass !== confirm) return showSettingsMsg("Passwords do not match", "error")
+
+  try {
+    const res = await fetch("https://datta-ai-server.onrender.com/auth/change-password", {
+      method: "POST",
+      headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword: current, newPassword: newPass })
+    })
+    const data = await res.json()
+    if (!res.ok) return showSettingsMsg(data.error || "Failed to change password", "error")
+
+    document.getElementById("currentPassword").value = ""
+    document.getElementById("newPassword").value = ""
+    document.getElementById("confirmPassword").value = ""
+    showSettingsMsg("Password changed successfully!", "success")
+  } catch (e) {
+    showSettingsMsg("Server error. Try again.", "error")
+  }
+}
+
+// SET THEME
+function setTheme(theme, silent) {
+  localStorage.setItem("datta_theme", theme)
+  if (theme === "light") {
+    document.body.classList.add("light")
+    document.getElementById("themeDark")?.classList.remove("active")
+    document.getElementById("themeLight")?.classList.add("active")
+  } else {
+    document.body.classList.remove("light")
+    document.getElementById("themeDark")?.classList.add("active")
+    document.getElementById("themeLight")?.classList.remove("active")
+  }
+  if (!silent) showSettingsMsg("Theme changed to " + theme + " mode!", "success")
+}
+
+// SET FONT SIZE
+function setFontSize(size) {
+  document.querySelectorAll(".fontBtn").forEach(b => b.classList.remove("active"))
+  event.target.classList.add("active")
+  const sizes = { small: "13px", medium: "15px", large: "17px" }
+  document.documentElement.style.setProperty("--chat-font-size", sizes[size])
+  document.querySelectorAll(".aiBubble, .userBubble").forEach(el => el.style.fontSize = sizes[size])
+  localStorage.setItem("datta_fontsize", size)
+  showSettingsMsg("Font size set to " + size, "success")
+}
+
+// SAVE LANGUAGE
+function saveLanguage() {
+  const lang = document.getElementById("aiLanguage").value
+  localStorage.setItem("datta_language", lang)
+  showSettingsMsg("AI will now respond in " + lang + "!", "success")
+}
+
+// SAVE NOTIFICATION SETTINGS
+function saveNotifSettings() {
+  const settings = {
+    sound: document.getElementById("soundToggle").checked,
+    notif: document.getElementById("notifToggle").checked,
+    stream: document.getElementById("streamToggle").checked
+  }
+  localStorage.setItem("datta_notif", JSON.stringify(settings))
+}
+
+// DELETE ALL CHATS
+async function deleteAllChats() {
+  if (!confirm("Are you sure? This will delete ALL your chats permanently!")) return
+
+  try {
+    const res = await fetch("https://datta-ai-server.onrender.com/chats/all", {
+      method: "DELETE",
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) return showSettingsMsg("Failed to delete chats", "error")
+
+    chatBox.innerHTML = ""
+    currentChatId = null
+    showWelcome()
+    loadSidebar()
+    showSettingsMsg("All chats deleted!", "success")
+  } catch (e) {
+    showSettingsMsg("Server error. Try again.", "error")
+  }
+}
+
+// DELETE ACCOUNT
+async function deleteAccount() {
+  const password = document.getElementById("deleteAccountPassword").value
+  if (!password) return showSettingsMsg("Enter your password to confirm", "error")
+
+  if (!confirm("This will PERMANENTLY delete your account. Are you absolutely sure?")) return
+
+  try {
+    const res = await fetch("https://datta-ai-server.onrender.com/auth/delete-account", {
+      method: "DELETE",
+      headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ password })
+    })
+    const data = await res.json()
+    if (!res.ok) return showSettingsMsg(data.error || "Failed to delete account", "error")
+
+    localStorage.clear()
+    window.location.href = "login.html"
+  } catch (e) {
+    showSettingsMsg("Server error. Try again.", "error")
+  }
+}
+
+// Apply saved theme on load
+;(function() {
+  const theme = localStorage.getItem("datta_theme") || "dark"
+  if (theme === "light") document.body.classList.add("light")
+
+  // Apply saved language to system prompt
+  const lang = localStorage.getItem("datta_language")
+  if (lang) window.dattaLanguage = lang
+})()
+
+window.openSettings = openSettings
+window.closeSettings = closeSettings
+window.switchSettingsTab = switchSettingsTab
+window.changeUsername = changeUsername
+window.changePassword = changePassword
+window.setTheme = setTheme
+window.setFontSize = setFontSize
+window.saveLanguage = saveLanguage
+window.saveNotifSettings = saveNotifSettings
+window.deleteAllChats = deleteAllChats
+window.deleteAccount = deleteAccount
