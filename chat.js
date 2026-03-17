@@ -23,7 +23,16 @@ async function send(){
 
 const input = document.getElementById("message")
 let text = input.value.trim()
+   
+if (!currentChatId) {
+    let title = text.substring(0, 30)
 
+    if (title.length < text.length) {
+        title += "..."
+    }
+
+    saveChatTitle(title)
+}
 if(!text) return
 
 hideWelcome()
@@ -449,6 +458,19 @@ window.toggleSidebar = toggleSidebar
 
 function toggleSidebar() {
    const sidebar = document.querySelector(".sidebar")
+
+function saveChatTitle(title) {
+    const history = document.getElementById("history")
+
+    const div = document.createElement("div")
+    div.className = "chatItem"
+
+    div.innerHTML = `
+        <span class="chatTitle">${title}</span>
+    `
+
+    history.prepend(div)
+}
    sidebar.classList.toggle("show")
 }
 
