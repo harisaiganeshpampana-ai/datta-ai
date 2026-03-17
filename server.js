@@ -14,22 +14,20 @@ app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-/* ── OPENAI (OpenRouter) ───────────────────────────────────────────────────── */
-
+// OPENAI (OpenRouter)
 const openai = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
   baseURL: "https://openrouter.ai/api/v1"
 })
 
-/* ── DATABASE ─────────────────────────────────────────────────────────────── */
-
+// DATABASE
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch(err => console.error("Mongo error:", err))
 
 const MessageSchema = new mongoose.Schema({
   role: String,
-  content: mongoose.Schema.Types.Mixed   // allows string OR array (for image messages)
+  content: mongoose.Schema.Types.Mixed
 })
 
 const ChatSchema = new mongoose.Schema({
@@ -41,125 +39,118 @@ const ChatSchema = new mongoose.Schema({
 
 const Chat = mongoose.model("Chat", ChatSchema)
 
-/* ── HELPER: build user content block ────────────────────────────────────── */
-
+// HELPER: build content block for AI
 function buildUserContent(text, file) {
 
-  // No file → plain text
   if (!file) return text || ""
 
   const mimeType = file.mimetype
   const base64 = file.buffer.toString("base64")
 
-  // ── IMAGE ──────────────────────────────────────────────────────────────────
+  // Image file
   if (mimeType.startsWith("image/")) {
     const content = []
-
     if (text) {
-      content.push({ type: "text", text })
+      content.push({ type: "text", text: text })
     }
-
     content.push({
       type: "image_url",
       image_url: {
-        url: `data:${mimeType};base64,${base64}`
+        url: "data:" + mimeType + ";base64," + base64
       }
     })
-
     return content
   }
 
-  // ── PDF ────────────────────────────────────────────────────────────────────
+  // PDF file
   if (mimeType === "application/pdf") {
-    const pdfText = `[PDF file: ${file.originalname}]\n(PDF content attached as base64 — ask the AI to analyze it)\ndata:application/pdf;base64,${base64}`
-    return text ? `${text}\n\n${pdfText}` : pdfText
+    const pdfText = "[PDF file: " + file.originalname + "]\ndata:application/pdf;base64," + base64
+    return text ? text + "\n\n" + pdfText : pdfText
   }
 
-  // ── TEXT / CODE / OTHER ────────────────────────────────────────────────────
+  // Text / code / other files
   const fileContent = file.buffer.toString("utf-8")
-  const combined = `[File: ${file.originalname}]\n\n${fileContent}`
-  return text ? `${text}\n\n${combined}` : combined
+  const combined = "[File: " + file.originalname + "]\n\n" + fileContent
+  return text ? text + "\n\n" + combined : combined
 }
 
-/* ── CHAT STREAM ──────────────────────────────────────────────────────────── */
-
+// CHAT ROUTE
 app.post("/chat", upload.single("image"), async (req, res) => {
 
   try {
 
-    const message = req.body?.message || ""
-    const sessionId = req.body?.sessionId
-    const chatId = req.body?.chatId
+    const message = req.body.message || ""
+    const sessionId = req.body.sessionId
+    const chatId = req.body.chatId
     const file = req.file || null
 
     console.log("MESSAGE:", message)
-    console.log("FILE:", file ? `${file.originalname} (${file.mimetype})` : "none")
+    console.log("FILE:", file ? file.originalname + " (" + file.mimetype + ")" : "none")
 
     if (!message && !file) {
       return res.status(400).json({ error: "No message or file provided" })
     }
 
-    // ── Find or create chat ──────────────────────────────────────────────────
-    let chat
+    let chat = null
 
     if (chatId) {
       try {
         chat = await Chat.findById(chatId)
-      } catch {
+      } catch (e) {
         chat = null
       }
     }
 
     if (!chat) {
+      const title = message ? message.substring(0, 40) : (file ? file.originalname : "New chat")
       chat = await Chat.create({
         sessionId: sessionId || "default",
-        title: message ? message.substring(0, 40) : (file?.originalname || "New chat"),
+        title: title,
         messages: []
       })
     }
 
-    if (!chat.messages) chat.messages = []
+    if (!chat.messages) {
+      chat.messages = []
+    }
 
-    // ── Build user content (text + optional file) ────────────────────────────
     const userContent = buildUserContent(message, file)
 
-    // Save to DB (store text version for history display)
     chat.messages.push({
       role: "user",
-      content: message || `[File: ${file?.originalname}]`
+      content: message || "[File: " + (file ? file.originalname : "unknown") + "]"
     })
+
     await chat.save()
 
     res.setHeader("x-chat-id", chat._id.toString())
     res.setHeader("Content-Type", "text/plain")
 
-    // ── Build messages for AI ────────────────────────────────────────────────
-    // Use full history as plain text, replace the last message with rich content
-    const historyMessages = chat.messages.slice(0, -1).map(m => ({
-      role: m.role,
-      content: typeof m.content === "string" ? m.content : JSON.stringify(m.content)
-    }))
-
-    const aiMessages = [
-      {
-        role: "system",
-        content: "Give accurate and factual answers. Keep them short but complete. If an image or file is provided, analyze it carefully. If unsure, say you don't know."
-      },
-      ...historyMessages,
-      {
-        role: "user",
-        content: userContent   // this is the rich content with file if attached
+    const historyMessages = chat.messages.slice(0, -1).map(function(m) {
+      return {
+        role: m.role,
+        content: typeof m.content === "string" ? m.content : JSON.stringify(m.content)
       }
-    ]
+    })
 
-    // ── Choose model based on whether image is attached ──────────────────────
-    // gpt-4o supports vision; gpt-4o-mini also supports vision on OpenRouter
-    const model = file && file.mimetype.startsWith("image/")
-      ? "openai/gpt-4o"        // vision model for images
-      : "openai/gpt-4o-mini"   // fast model for text/files
+    const systemMsg = {
+      role: "system",
+      content: "Give accurate and factual answers. Keep them short but complete. If an image or file is provided, analyze it carefully. If unsure, say you don't know."
+    }
+
+    const userMsg = {
+      role: "user",
+      content: userContent
+    }
+
+    const aiMessages = [systemMsg].concat(historyMessages).concat([userMsg])
+
+    const model = (file && file.mimetype.startsWith("image/"))
+      ? "openai/gpt-4o"
+      : "openai/gpt-4o-mini"
 
     const stream = await openai.chat.completions.create({
-      model,
+      model: model,
       temperature: 0.3,
       messages: aiMessages,
       stream: true
@@ -168,18 +159,18 @@ app.post("/chat", upload.single("image"), async (req, res) => {
     let full = ""
 
     for await (const part of stream) {
-      const token = part.choices?.[0]?.delta?.content
+      const token = part.choices[0].delta.content
       if (token) {
         full += token
         res.write(token)
       }
     }
 
-    // Save AI response to DB
     chat.messages.push({
       role: "assistant",
       content: full
     })
+
     await chat.save()
 
     res.write("CHATID" + chat._id)
@@ -192,37 +183,34 @@ app.post("/chat", upload.single("image"), async (req, res) => {
 
 })
 
-/* ── GET CHAT LIST ────────────────────────────────────────────────────────── */
-
+// GET ALL CHATS
 app.get("/chats/:sessionId", async (req, res) => {
   const chats = await Chat.find({ sessionId: req.params.sessionId }).sort({ createdAt: -1 })
   res.json(chats)
 })
 
-/* ── OPEN CHAT ────────────────────────────────────────────────────────────── */
-
+// GET SINGLE CHAT MESSAGES
 app.get("/chat/:id", async (req, res) => {
   const chat = await Chat.findById(req.params.id)
   if (!chat) return res.json([])
   res.json(chat.messages)
 })
 
-/* ── DELETE CHAT ──────────────────────────────────────────────────────────── */
-
+// DELETE CHAT
 app.delete("/chat/:id", async (req, res) => {
   await Chat.findByIdAndDelete(req.params.id)
   res.json({ success: true })
 })
 
-/* ── RENAME CHAT ──────────────────────────────────────────────────────────── */
-
+// RENAME CHAT
 app.post("/chat/:id/rename", async (req, res) => {
-  const { title } = req.body
-  await Chat.findByIdAndUpdate(req.params.id, { title })
+  const title = req.body.title
+  await Chat.findByIdAndUpdate(req.params.id, { title: title })
   res.json({ success: true })
 })
 
-/* ── START SERVER ─────────────────────────────────────────────────────────── */
-
+// START SERVER
 const PORT = process.env.PORT || 3000
-app.listen(PORT, () => console.log("Server running
+app.listen(PORT, function() {
+  console.log("Server running on port " + PORT)
+})
