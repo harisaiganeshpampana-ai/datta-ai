@@ -450,17 +450,22 @@ send()
 
 window.send = send
 function toggleSidebar() {
-   const sidebar = document.querySelector(".sidebar")
-   sidebar.classList.toggle("show")
+    const sidebar = document.querySelector(".sidebar")
+    sidebar.classList.toggle("show")
+}
+
+window.toggleSidebar = toggleSidebar
+function toggleSidebar() {
+    const sidebar = document.querySelector(".sidebar")
+    sidebar.classList.toggle("show")
 }
 
 window.toggleSidebar = toggleSidebar
 
-function toggleSidebar() {
-   const sidebar = document.querySelector(".sidebar")
-
 function saveChatTitle(title) {
     const history = document.getElementById("history")
+
+    if (!history) return
 
     const div = document.createElement("div")
     div.className = "chatItem"
@@ -471,7 +476,3 @@ function saveChatTitle(title) {
 
     history.prepend(div)
 }
-   sidebar.classList.toggle("show")
-}
-
-window.toggleSidebar = toggleSidebar
