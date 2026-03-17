@@ -34,10 +34,10 @@ async function send() {
   // Block send if nothing to send
   if (!text && !file) return
 
-  // Save chat title
+  // Save chat title - always use the typed message as title
   if (!currentChatId) {
-    let title = text ? text.substring(0, 30) : (file ? file.name.substring(0, 30) : "New Chat")
-    if (text && title.length < text.length) title += "..."
+    let title = text ? text.substring(0, 40) : "New Chat"
+    if (text && text.length > 40) title += "..."
     saveChatTitle(title)
   }
 
@@ -167,16 +167,11 @@ async function loadSidebar() {
     let div = document.createElement("div")
     div.className = "chatItem"
     div.innerHTML = `
-      <div class="chatTitle">${chat.title}</div>
-      <div class="chatActions">
-        <button class="menuBtn" onclick="toggleMenu(event,'${chat._id}')">⋮</button>
-        <div class="chatMenu" id="menu-${chat._id}">
-          <button onclick="deleteChat(event,'${chat._id}')">Delete</button>
-        </div>
-      </div>
+      <div class="chatTitle" title="${chat.title}">${chat.title}</div>
+      <button class="deleteBtn" onclick="confirmDelete(event,'${chat._id}')" title="Delete chat">🗑</button>
     `
     div.onclick = (e) => {
-      if (e.target.closest(".menuBtn")) return
+      if (e.target.closest(".deleteBtn")) return
       openChat(chat._id)
     }
     history.appendChild(div)
