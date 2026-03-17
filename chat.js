@@ -15,6 +15,10 @@ let userScrolledUp = false
 function newChat(){
 currentChatId = null
 chatBox.innerHTML = ""
+
+// reset scroll properly (optional but safe)
+chatBox.scrollTop = 0
+
 showWelcome()
 }
 
@@ -45,6 +49,8 @@ chatBox.innerHTML += `
 </div>
 `
 
+chatBox.scrollTop = chatBox.scrollHeight
+
 input.value = ""
 
 let aiDiv = document.createElement("div")
@@ -59,7 +65,7 @@ aiDiv.innerHTML = `
 
 chatBox.appendChild(aiDiv)
 
-scrollBottom()
+chatBox.scrollTop = chatBox.scrollHeight
 
 controller = new AbortController()
 
