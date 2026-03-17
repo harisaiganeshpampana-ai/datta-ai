@@ -93,7 +93,7 @@ app.post("/chat", upload.single("image"), async (req, res) => {
 
     let chat = null
 
-    if (chatId) {
+    if (chatId && chatId !== "null" && chatId !== "") {
       try {
         chat = await Chat.findById(chatId)
       } catch (e) {
@@ -159,7 +159,7 @@ app.post("/chat", upload.single("image"), async (req, res) => {
     let full = ""
 
     for await (const part of stream) {
-      const token = part.choices[0].delta.content
+      const token = part.choices?.[0]?.delta?.content
       if (token) {
         full += token
         res.write(token)
