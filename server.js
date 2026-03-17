@@ -82,31 +82,36 @@ const JWT_SECRET = process.env.JWT_SECRET || "datta-ai-secret-key-2024"
 // GOOGLE OAUTH STRATEGY
 const FRONTEND_URL = process.env.FRONTEND_URL || "https://harisaiganeshpampana-ai.github.io/datta-ai"
 
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: "https://datta-ai-server.onrender.com/auth/google/callback"
-}, async (accessToken, refreshToken, profile, done) => {
-  try {
-    let user = await User.findOne({ googleId: profile.id })
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: "https://datta-ai-server.onrender.com/auth/google/callback"
+  }, async (accessToken, refreshToken, profile, done) => {
+    try {
+      let user = await User.findOne({ googleId: profile.id })
 
-    if (!user) {
-      const email = profile.emails?.[0]?.value || ""
-      const username = profile.displayName.replace(/\s+/g, "_").toLowerCase() + "_" + profile.id.slice(-4)
+      if (!user) {
+        const email = profile.emails && profile.emails[0] ? profile.emails[0].value : ""
+        const username = profile.displayName.replace(/\s+/g, "_").toLowerCase() + "_" + profile.id.slice(-4)
 
-      user = await User.create({
-        googleId: profile.id,
-        username: username,
-        email: email
-      })
+        user = await User.create({
+          googleId: profile.id,
+          username: username,
+          email: email
+        })
+      }
+
+      const token = generateToken(user)
+      return done(null, { token, user: { id: user._id, username: user.username, email: user.email } })
+    } catch (err) {
+      return done(err, null)
     }
-
-    const token = generateToken(user)
-    return done(null, { token, user: { id: user._id, username: user.username, email: user.email } })
-  } catch (err) {
-    return done(err, null)
-  }
-}))
+  }))
+  console.log("Google OAuth enabled")
+} else {
+  console.log("Google OAuth disabled - GOOGLE_CLIENT_ID not set")
+}
 
 function generateToken(user) {
   return jwt.sign(
@@ -396,7 +401,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const aiMessages = [
       {
         role: "system",
-        content: "You are Datta AI, a helpful and accurate assistant. The user's name is " + req.user.username + ". Keep answers short and to the point unless the user asks for details or explanation. For simple questions give 1-3 sentences max. For complex questions give a clear structured answer. If an image or file is provided, analyze it carefully."
+        content: "You are Datta AI, a helpful and accurate assistant. The user's name is " + req.user.username + ". Keep answers short and to the point unless the user asks for details or explanation. For simple questions give 1-3 sentences max. For complex questions give a clear structured answer. If an image or file is provided, analyze it carefully." + (req.body.language && req.body.language !== "English" ? " Always respond in " + req.body.language + "." : "")
       },
       ...history,
       { role: "user", content: userContent }
@@ -473,6 +478,71 @@ app.post("/chat/:id/rename", authMiddleware, async (req, res) => {
       { _id: req.params.id, userId: req.user.id },
       { title: req.body.title }
     )
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+
+// UPDATE USERNAME
+app.post("/auth/update-username", authMiddleware, async (req, res) => {
+  try {
+    const { username } = req.body
+    if (!username || username.length < 3) {
+      return res.status(400).json({ error: "Username must be at least 3 characters" })
+    }
+    const existing = await User.findOne({ username })
+    if (existing && existing._id.toString() !== req.user.id) {
+      return res.status(400).json({ error: "Username already taken" })
+    }
+    await User.findByIdAndUpdate(req.user.id, { username })
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// CHANGE PASSWORD
+app.post("/auth/change-password", authMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body
+    const user = await User.findById(req.user.id)
+    if (!user || !user.password) {
+      return res.status(400).json({ error: "Cannot change password for this account" })
+    }
+    const isMatch = await bcrypt.compare(currentPassword, user.password)
+    if (!isMatch) return res.status(400).json({ error: "Current password is incorrect" })
+    const hashed = await bcrypt.hash(newPassword, 10)
+    await User.findByIdAndUpdate(req.user.id, { password: hashed })
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// DELETE ALL CHATS
+app.delete("/chats/all", authMiddleware, async (req, res) => {
+  try {
+    await Chat.deleteMany({ userId: req.user.id })
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// DELETE ACCOUNT
+app.delete("/auth/delete-account", authMiddleware, async (req, res) => {
+  try {
+    const { password } = req.body
+    const user = await User.findById(req.user.id)
+    if (!user) return res.status(404).json({ error: "User not found" })
+    if (user.password) {
+      const isMatch = await bcrypt.compare(password, user.password)
+      if (!isMatch) return res.status(400).json({ error: "Incorrect password" })
+    }
+    await Chat.deleteMany({ userId: req.user.id })
+    await User.findByIdAndDelete(req.user.id)
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
