@@ -53,7 +53,7 @@ scrollBottom()
 
 controller = new AbortController()
 
-Vconst res = await fetch("https://datta-ai-server.onrender.com/chat", {
+const res = await fetch("https://datta-ai-server.onrender.com/chat", {
    method: "POST",
    headers: {"Content-Type":"application/json"},
    signal: controller.signal,
@@ -437,10 +437,11 @@ send()
 
 })
 })
-function toggleSidebar(){
 
-const sidebar = document.querySelector(".sidebar");
-
-sidebar.classList.toggle("active");
-
+window.send = send
+function toggleSidebar() {
+   const sidebar = document.querySelector(".sidebar")
+   sidebar.classList.toggle("show")
 }
+
+window.toggleSidebar = toggleSidebar
