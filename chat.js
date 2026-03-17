@@ -184,9 +184,7 @@ async function send() {
 
 // ─── LOAD SIDEBAR ─────────────────────────────────────────────────────────────
 async function loadSidebar() {
-  const res = await fetch("https://datta-ai-server.onrender.com/chats", {
-    headers: getAuthHeaders()
-  })
+  const res = await fetch("https://datta-ai-server.onrender.com/chats?token=" + datta_token)
   const chats = await res.json()
   const history = document.getElementById("history")
   history.innerHTML = ""
@@ -213,9 +211,7 @@ async function openChat(chatId) {
   chatBox.innerHTML = ""
   hideWelcome()
 
-  const res = await fetch("https://datta-ai-server.onrender.com/chat/" + chatId, {
-    headers: getAuthHeaders()
-  })
+  const res = await fetch("https://datta-ai-server.onrender.com/chat/" + chatId + "?token=" + datta_token)
   const messages = await res.json()
 
   messages.forEach(m => {
@@ -252,9 +248,8 @@ async function openChat(chatId) {
 // ─── DELETE CHAT ──────────────────────────────────────────────────────────────
 async function deleteChat(e, id) {
   e.stopPropagation()
-  await fetch("https://datta-ai-server.onrender.com/chat/" + id, {
-    method: "DELETE",
-    headers: getAuthHeaders()
+  await fetch("https://datta-ai-server.onrender.com/chat/" + id + "?token=" + datta_token, {
+    method: "DELETE"
   })
   loadSidebar()
 }
@@ -492,6 +487,14 @@ window.logout = logout
 function openSettings() {
   const modal = document.getElementById("settingsModal")
   if (!modal) return
+
+  // Always reset to Profile tab first
+  switchSettingsTab("profile")
+
+  // Scroll modal to top
+  const box = modal.querySelector(".modalBox")
+  if (box) box.scrollTop = 0
+
   modal.classList.add("show")
   loadSettingsUI()
 }
@@ -559,8 +562,8 @@ async function changeUsername() {
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/auth/update-username", {
       method: "POST",
-      headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
-      body: JSON.stringify({ username: newUsername })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: newUsername, token: datta_token })
     })
     const data = await res.json()
     if (!res.ok) return showSettingsMsg(data.error || "Failed to update", "error")
@@ -595,8 +598,8 @@ async function changePassword() {
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/auth/change-password", {
       method: "POST",
-      headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
-      body: JSON.stringify({ currentPassword: current, newPassword: newPass })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword: current, newPassword: newPass, token: datta_token })
     })
     const data = await res.json()
     if (!res.ok) return showSettingsMsg(data.error || "Failed to change password", "error")
@@ -658,9 +661,8 @@ async function deleteAllChats() {
   if (!confirm("Are you sure? This will delete ALL your chats permanently!")) return
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/chats/all", {
-      method: "DELETE",
-      headers: getAuthHeaders()
+    const res = await fetch("https://datta-ai-server.onrender.com/chats/all?token=" + datta_token, {
+      method: "DELETE"
     })
     if (!res.ok) return showSettingsMsg("Failed to delete chats", "error")
 
@@ -684,8 +686,8 @@ async function deleteAccount() {
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/auth/delete-account", {
       method: "DELETE",
-      headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
-      body: JSON.stringify({ password })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password, token: datta_token })
     })
     const data = await res.json()
     if (!res.ok) return showSettingsMsg(data.error || "Failed to delete account", "error")
