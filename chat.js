@@ -445,3 +445,10 @@ function toggleSidebar() {
 }
 
 window.toggleSidebar = toggleSidebar
+
+function toggleSidebar() {
+   const sidebar = document.querySelector(".sidebar")
+   sidebar.classList.toggle("show")
+}
+
+window.toggleSidebar = toggleSidebar
