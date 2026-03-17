@@ -402,3 +402,16 @@ display:none;
 .showScrollBtn{
 display:block;
 }
+
+/* AFTER FIRST MESSAGE */
+.chat-started .inputArea{
+position: fixed;
+bottom: 0;
+top: auto;
+left: 0;
+transform: none;
+
+padding: 10px;
+background: #0f0f0f;
+border-top: 1px solid #2a2a2a;
+}
