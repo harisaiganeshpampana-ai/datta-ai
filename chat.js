@@ -1,11 +1,30 @@
-if (!localStorage.getItem("sessionId")) {
-  localStorage.setItem("sessionId", Date.now().toString())
+// AUTH CHECK - redirect to login if not logged in
+const datta_token = localStorage.getItem("datta_token")
+const datta_user = JSON.parse(localStorage.getItem("datta_user") || "null")
+
+if (!datta_token || !datta_user) {
+  window.location.href = "login.html"
 }
 
-const sessionId = localStorage.getItem("sessionId")
+// Update sidebar profile with real user info
+window.addEventListener("DOMContentLoaded", function() {
+  if (datta_user) {
+    const nameEl = document.querySelector(".profileName")
+    const avatarEl = document.querySelector(".profileAvatar")
+    const subEl = document.querySelector(".profileSub")
+    if (nameEl) nameEl.textContent = datta_user.username || "User"
+    if (avatarEl) avatarEl.textContent = (datta_user.username || "U")[0].toUpperCase()
+    if (subEl) subEl.textContent = datta_user.isGuest ? "Guest" : (datta_user.email || "Free Plan")
+  }
+})
+
 const chatBox = document.getElementById("chat")
 const sendBtn = document.querySelector(".send")
 const scrollBtn = document.getElementById("scrollDownBtn")
+
+function getAuthHeaders() {
+  return { "Authorization": "Bearer " + datta_token }
+}
 
 let currentChatId = null
 let controller = null
@@ -158,7 +177,9 @@ async function send() {
 
 // ─── LOAD SIDEBAR ─────────────────────────────────────────────────────────────
 async function loadSidebar() {
-  const res = await fetch("https://datta-ai-server.onrender.com/chats/" + sessionId)
+  const res = await fetch("https://datta-ai-server.onrender.com/chats", {
+    headers: getAuthHeaders()
+  })
   const chats = await res.json()
   const history = document.getElementById("history")
   history.innerHTML = ""
@@ -185,7 +206,9 @@ async function openChat(chatId) {
   chatBox.innerHTML = ""
   hideWelcome()
 
-  const res = await fetch("https://datta-ai-server.onrender.com/chat/" + chatId)
+  const res = await fetch("https://datta-ai-server.onrender.com/chat/" + chatId, {
+    headers: getAuthHeaders()
+  })
   const messages = await res.json()
 
   messages.forEach(m => {
@@ -222,7 +245,10 @@ async function openChat(chatId) {
 // ─── DELETE CHAT ──────────────────────────────────────────────────────────────
 async function deleteChat(e, id) {
   e.stopPropagation()
-  await fetch("https://datta-ai-server.onrender.com/chat/" + id, { method: "DELETE" })
+  await fetch("https://datta-ai-server.onrender.com/chat/" + id, {
+    method: "DELETE",
+    headers: getAuthHeaders()
+  })
   loadSidebar()
 }
 
@@ -445,3 +471,12 @@ function showSection(name) {
 }
 
 window.showSection = showSection
+
+// LOGOUT
+function logout() {
+  localStorage.removeItem("datta_token")
+  localStorage.removeItem("datta_user")
+  window.location.href = "login.html"
+}
+
+window.logout = logout
