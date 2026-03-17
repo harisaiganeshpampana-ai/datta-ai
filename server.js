@@ -60,7 +60,7 @@ console.log("FILE:", file)
 }
     let chat
 
-   if (chatId) {
+ if (chatId) {
   try {
     chat = await Chat.findById(chatId)
   } catch (err) {
@@ -68,11 +68,21 @@ console.log("FILE:", file)
     chat = null
   }
 }
-    chat.messages.push({
-      role: "user",
-      content: message
-    })
 
+if (!chat) {
+  chat = await Chat.create({
+    sessionId: sessionId || "default",
+    messages: []
+  })
+}
+   if (!chat.messages) {
+  chat.messages = []
+}
+
+chat.messages.push({
+  role: "user",
+  content: message
+})
     await chat.save()
 
 res.setHeader("x-chat-id", chat._id.toString())
