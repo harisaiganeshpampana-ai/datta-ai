@@ -51,6 +51,7 @@ app.post("/chat", upload.single("image"), async (req, res) => {
 const message = req.body?.message || ""
 const sessionId = req.body?.sessionId
 const chatId = req.body?.chatId
+const file = req.file || null
 console.log("MESSAGE:", message)
 console.log("FILE:", file)
     
@@ -59,18 +60,14 @@ console.log("FILE:", file)
 }
     let chat
 
-    if (chatId) {
-      chat = await Chat.findById(chatId)
-    }
-
-    if (!chat) {
-   chat = await Chat.create({
-      sessionId,
-      title: req.body.title || req.body.message.substring(0,40),
-      messages: []
-   })
+   if (chatId) {
+  try {
+    chat = await Chat.findById(chatId)
+  } catch (err) {
+    console.log("Invalid chatId")
+    chat = null
+  }
 }
-
     chat.messages.push({
       role: "user",
       content: message
