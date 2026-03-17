@@ -70,8 +70,8 @@
 
             <!-- FILE -->
 
-                <input type="file" id="imageInput" accept="image/*">
-
+                <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                <button id="uploadBtn">+</button>
             <!-- INPUT -->
             <input 
                 id="message"
@@ -104,6 +104,15 @@
 </div>
 
 <script src="chat.js?v=4"></script>
+    
+<script>
+  const uploadBtn = document.getElementById("uploadBtn")
+  const fileInput = document.getElementById("imageInput")
+
+  uploadBtn.addEventListener("click", () => {
+    fileInput.click()
+  })
+</script>
 
 </body>
 </html>
