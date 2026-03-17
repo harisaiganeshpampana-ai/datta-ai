@@ -1,18 +1,24 @@
 // AUTH CHECK - redirect to login if not logged in
-const datta_token = localStorage.getItem("datta_token")
-let datta_user = null
-try {
-  const raw = localStorage.getItem("datta_user")
-  if (raw && raw !== "null" && raw !== "undefined") {
-    datta_user = JSON.parse(raw)
-  }
-} catch(e) {
-  datta_user = null
+// Always read token fresh
+function getToken() {
+  return localStorage.getItem("datta_token") || ""
 }
 
-if (!datta_token) {
+function getUser() {
+  try {
+    const raw = localStorage.getItem("datta_user")
+    if (raw && raw !== "null" && raw !== "undefined") return JSON.parse(raw)
+  } catch(e) {}
+  return null
+}
+
+// AUTH CHECK
+if (!getToken()) {
   window.location.href = "login.html"
 }
+
+const datta_token = getToken()
+const datta_user = getUser()
 
 // Update sidebar profile with real user info
 window.addEventListener("DOMContentLoaded", function() {
@@ -31,7 +37,7 @@ const sendBtn = document.querySelector(".send")
 const scrollBtn = document.getElementById("scrollDownBtn")
 
 function getAuthHeaders() {
-  return { "Authorization": "Bearer " + datta_token }
+  return { "Authorization": "Bearer " + getToken() }
 }
 
 let currentChatId = null
@@ -90,10 +96,20 @@ async function send() {
   if (filePreview) filePreview.textContent = ""
   if (clearFileBtn) clearFileBtn.style.display = "none"
 
-  // Show typing indicator
+  // Detect if web search will be triggered
+  const searchTriggers = ["latest","recent","today","yesterday","this week","current","now","live","breaking","news","who is","price of","weather","score","2024","2025","2026","happened","update","trending","stock","crypto","bitcoin","search","find","look up"]
+  const willSearch = searchTriggers.some(t => text.toLowerCase().includes(t))
+
+  // Show typing indicator with web search status
   let aiDiv = document.createElement("div")
   aiDiv.className = "messageRow"
-  aiDiv.innerHTML = `
+  aiDiv.innerHTML = willSearch ? `
+    <div class="avatar">🤖</div>
+    <div class="aiBubble typing searchingIndicator">
+      <span class="searchIcon">🌐</span>
+      <span class="searchText">Searching the web...</span>
+    </div>
+  ` : `
     <div class="avatar">🤖</div>
     <div class="aiBubble typing">
       <span></span><span></span><span></span>
@@ -184,7 +200,7 @@ async function send() {
 
 // ─── LOAD SIDEBAR ─────────────────────────────────────────────────────────────
 async function loadSidebar() {
-  const res = await fetch("https://datta-ai-server.onrender.com/chats?token=" + datta_token)
+  const res = await fetch("https://datta-ai-server.onrender.com/chats?token=" + getToken())
   const chats = await res.json()
   const history = document.getElementById("history")
   history.innerHTML = ""
@@ -211,7 +227,7 @@ async function openChat(chatId) {
   chatBox.innerHTML = ""
   hideWelcome()
 
-  const res = await fetch("https://datta-ai-server.onrender.com/chat/" + chatId + "?token=" + datta_token)
+  const res = await fetch("https://datta-ai-server.onrender.com/chat/" + chatId + "?token=" + getToken())
   const messages = await res.json()
 
   messages.forEach(m => {
@@ -248,7 +264,7 @@ async function openChat(chatId) {
 // ─── DELETE CHAT ──────────────────────────────────────────────────────────────
 async function deleteChat(e, id) {
   e.stopPropagation()
-  await fetch("https://datta-ai-server.onrender.com/chat/" + id + "?token=" + datta_token, {
+  await fetch("https://datta-ai-server.onrender.com/chat/" + id + "?token=" + getToken(), {
     method: "DELETE"
   })
   loadSidebar()
@@ -661,7 +677,7 @@ async function deleteAllChats() {
   if (!confirm("Are you sure? This will delete ALL your chats permanently!")) return
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/chats/all?token=" + datta_token, {
+    const res = await fetch("https://datta-ai-server.onrender.com/chats/all?token=" + getToken(), {
       method: "DELETE"
     })
     if (!res.ok) return showSettingsMsg("Failed to delete chats", "error")
