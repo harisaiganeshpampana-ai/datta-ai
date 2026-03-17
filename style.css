@@ -7,12 +7,11 @@ box-sizing:border-box;
 font-family:system-ui,Arial,sans-serif;
 }
 
-body{
-display:flex;
-height:100vh;
-background:#0f0f0f;
-color:white;
-overflow:hidden;
+body {
+   height:100vh;
+   background:#0f0f0f;
+   color:white;
+   overflow:hidden;
 }
 
 /* SIDEBAR */
