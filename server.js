@@ -3,7 +3,7 @@ import cors from "cors"
 import dotenv from "dotenv"
 import mongoose from "mongoose"
 import multer from "multer"
-import { GoogleGenerativeAI } from "@google/generative-ai"
+import { GoogleGenAI } from "@google/genai"
 
 dotenv.config()
 
@@ -17,8 +17,8 @@ app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-// GEMINI AI (free)
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+// GOOGLE GEMINI (free)
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
 
 // DATABASE
 mongoose.connect(process.env.MONGO_URI)
@@ -78,14 +78,6 @@ app.post("/chat", upload.single("image"), async (req, res) => {
       })
     }
 
-    // Build chat history for Gemini format
-    const history = chat.messages.map(function(m) {
-      return {
-        role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: m.content }]
-      }
-    })
-
     // Save user message to DB
     const savedContent = message || "[File: " + (file ? file.originalname : "unknown") + "]"
     chat.messages.push({ role: "user", content: savedContent })
@@ -94,60 +86,83 @@ app.post("/chat", upload.single("image"), async (req, res) => {
     res.setHeader("x-chat-id", chat._id.toString())
     res.setHeader("Content-Type", "text/plain")
 
-    // Choose model
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash-latest",
-      systemInstruction: "You are Datta AI, a helpful and accurate assistant. If an image or file is provided, analyze it carefully. Keep answers clear and complete."
-    })
+    // Build conversation history as plain text context
+    const historyText = chat.messages.slice(0, -1).map(function(m) {
+      const role = m.role === "assistant" ? "Assistant" : "User"
+      return role + ": " + m.content
+    }).join("\n")
 
-    // Start chat session with history
-    const chatSession = model.startChat({ history: history })
+    // Build contents array for Gemini
+    const contents = []
 
-    // Build the current user message parts
-    const parts = []
+    // Add history as first text part if exists
+    if (historyText) {
+      contents.push({
+        role: "user",
+        parts: [{ text: "Previous conversation:\n" + historyText + "\n\nNow continue:" }]
+      })
+      contents.push({
+        role: "model",
+        parts: [{ text: "Understood, I will continue the conversation." }]
+      })
+    }
 
+    // Build current user message parts
+    const userParts = []
+
+    // Add file if present
     if (file) {
       const mimeType = file.mimetype || "application/octet-stream"
 
       if (mimeType.startsWith("image/") || mimeType === "application/pdf") {
-        // Images and PDFs sent as inline data
-        parts.push({
+        userParts.push({
           inlineData: {
             mimeType: mimeType,
             data: file.buffer.toString("base64")
           }
         })
       } else {
-        // Text/code/csv files — read as plain text
         try {
           const fileText = file.buffer.toString("utf-8")
-          parts.push({ text: "[File: " + file.originalname + "]\n\n" + fileText })
+          userParts.push({ text: "[File: " + file.originalname + "]\n\n" + fileText })
         } catch (e) {
-          parts.push({ text: "[Binary file attached: " + file.originalname + "]" })
+          userParts.push({ text: "[Binary file: " + file.originalname + "]" })
         }
       }
     }
 
+    // Add text message
     if (message) {
-      parts.push({ text: message })
-    } else if (!file) {
-      parts.push({ text: "Please analyze this." })
+      userParts.push({ text: message })
+    } else {
+      userParts.push({ text: "Please analyze this." })
     }
 
-    // Stream response from Gemini
-    const result = await chatSession.sendMessageStream(parts)
+    contents.push({
+      role: "user",
+      parts: userParts
+    })
+
+    // Call Gemini API with streaming
+    const streamResult = await ai.models.generateContentStream({
+      model: "gemini-1.5-flash",
+      config: {
+        systemInstruction: "You are Datta AI, a helpful and accurate assistant. If an image or file is provided, analyze it carefully. Keep answers clear and complete."
+      },
+      contents: contents
+    })
 
     let full = ""
 
-    for await (const chunk of result.stream) {
-      const token = chunk.text()
+    for await (const chunk of streamResult) {
+      const token = chunk.text
       if (token) {
         full += token
         res.write(token)
       }
     }
 
-    // Save AI response to DB
+    // Save AI response
     chat.messages.push({ role: "assistant", content: full })
     await chat.save()
 
