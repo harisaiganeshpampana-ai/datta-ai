@@ -395,13 +395,34 @@ body::before {
 <script>
 const SERVER = "https://datta-ai-server.onrender.com"
 
+// Run immediately on script load - dont wait for window load
+;(function() {
+  const params = new URLSearchParams(window.location.search)
+  const token = params.get("token")
+  if (token) {
+    localStorage.setItem("datta_token", token)
+    const userStr = params.get("user")
+    if (userStr) {
+      try {
+        localStorage.setItem("datta_user", decodeURIComponent(userStr))
+      } catch(e) {}
+    }
+    window.location.replace("index.html")
+  }
+})()
+
 // Check if already logged in
 window.addEventListener("load", function() {
+  const params = new URLSearchParams(window.location.search)
+  if (params.get("token")) return // already handling above
+
   const token = localStorage.getItem("datta_token")
   const user = localStorage.getItem("datta_user")
   if (token && user) {
     window.location.href = "index.html"
   }
+
+  handleGoogleCallback()
 })
 
 function switchTab(tab) {
@@ -592,9 +613,42 @@ async function handlePhone() {
   }
 }
 
-// GOOGLE LOGIN
+// GOOGLE LOGIN - Real OAuth
 function handleGoogle() {
-  window.location.href = SERVER + "/auth/google"
+  window.location.href = "https://datta-ai-server.onrender.com/auth/google"
+}
+
+// Handle Google callback token in URL
+function handleGoogleCallback() {
+  const params = new URLSearchParams(window.location.search)
+  const token = params.get("token")
+  const userStr = params.get("user")
+  const error = params.get("error")
+
+  if (error) {
+    showMsg("Google login failed. Please try again.", "error")
+    return
+  }
+
+  if (token) {
+    try {
+      // Save token
+      localStorage.setItem("datta_token", token)
+
+      // Save user if provided
+      if (userStr) {
+        const user = JSON.parse(decodeURIComponent(userStr))
+        localStorage.setItem("datta_user", JSON.stringify(user))
+      }
+
+      // Clean URL and redirect immediately
+      window.history.replaceState({}, document.title, window.location.pathname)
+      window.location.replace("index.html")
+    } catch (e) {
+      console.error("Callback error:", e)
+      showMsg("Login error. Please try again.", "error")
+    }
+  }
 }
 
 // GUEST LOGIN
