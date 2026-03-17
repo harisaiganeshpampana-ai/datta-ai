@@ -80,7 +80,7 @@ res.setHeader("x-chat-id", chat._id.toString())
       content: "Give accurate and factual answers. Keep them short but complete. Do not guess. If unsure, say you don't know."
     },
     ...chat.messages
-  ],
+  ]
 
   stream: true
 })
