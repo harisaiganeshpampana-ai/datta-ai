@@ -4,6 +4,8 @@ import dotenv from "dotenv"
 import mongoose from "mongoose"
 import multer from "multer"
 import Groq from "groq-sdk"
+import bcrypt from "bcryptjs"
+import jwt from "jsonwebtoken"
 
 dotenv.config()
 
@@ -17,7 +19,7 @@ app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-// GROQ CLIENT (free)
+// GROQ
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
 // DATABASE
@@ -25,12 +27,30 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch(err => console.error("Mongo error:", err))
 
+// USER SCHEMA
+const UserSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true, trim: true },
+  email: { type: String, sparse: true, trim: true },
+  password: { type: String },
+  phone: { type: String, sparse: true },
+  isGuest: { type: Boolean, default: false },
+  googleId: { type: String, sparse: true },
+  createdAt: { type: Date, default: Date.now }
+})
+
+const User = mongoose.model("User", UserSchema)
+
+// OTP STORE (in memory, resets on server restart)
+const otpStore = {}
+
+// MESSAGE + CHAT SCHEMAS
 const MessageSchema = new mongoose.Schema({
   role: String,
   content: String
 })
 
 const ChatSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   sessionId: String,
   title: { type: String, default: "New chat" },
   messages: [MessageSchema],
@@ -39,49 +59,222 @@ const ChatSchema = new mongoose.Schema({
 
 const Chat = mongoose.model("Chat", ChatSchema)
 
-// CHAT ROUTE
-app.post("/chat", upload.single("image"), async (req, res) => {
+// JWT HELPER
+const JWT_SECRET = process.env.JWT_SECRET || "datta-ai-secret-key-2024"
+
+function generateToken(user) {
+  return jwt.sign(
+    { id: user._id, username: user.username, email: user.email },
+    JWT_SECRET,
+    { expiresIn: "30d" }
+  )
+}
+
+// AUTH MIDDLEWARE
+function authMiddleware(req, res, next) {
+  const header = req.headers.authorization
+  if (!header) return res.status(401).json({ error: "No token" })
+
+  const token = header.replace("Bearer ", "")
+
+  // Guest token
+  if (token.startsWith("guest_")) {
+    req.user = { id: token, username: "Guest", isGuest: true }
+    return next()
+  }
 
   try {
+    const decoded = jwt.verify(token, JWT_SECRET)
+    req.user = decoded
+    next()
+  } catch (e) {
+    return res.status(401).json({ error: "Invalid token" })
+  }
+}
 
+// ── AUTH ROUTES ──────────────────────────────────────────────────────────────
+
+// SIGNUP
+app.post("/auth/signup", async (req, res) => {
+  try {
+    const { username, email, password } = req.body
+
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: "All fields are required" })
+    }
+    if (username.length < 3) {
+      return res.status(400).json({ error: "Username must be at least 3 characters" })
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" })
+    }
+
+    const existingUser = await User.findOne({
+      $or: [{ email: email.toLowerCase() }, { username }]
+    })
+
+    if (existingUser) {
+      if (existingUser.username === username) {
+        return res.status(400).json({ error: "Username already taken" })
+      }
+      return res.status(400).json({ error: "Email already registered" })
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    const user = await User.create({
+      username,
+      email: email.toLowerCase(),
+      password: hashedPassword
+    })
+
+    const token = generateToken(user)
+
+    res.json({
+      token,
+      user: { id: user._id, username: user.username, email: user.email }
+    })
+
+  } catch (err) {
+    console.error("Signup error:", err.message)
+    res.status(500).json({ error: "Server error" })
+  }
+})
+
+// LOGIN
+app.post("/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" })
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() })
+
+    if (!user || !user.password) {
+      return res.status(400).json({ error: "Invalid email or password" })
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password)
+
+    if (!isMatch) {
+      return res.status(400).json({ error: "Invalid email or password" })
+    }
+
+    const token = generateToken(user)
+
+    res.json({
+      token,
+      user: { id: user._id, username: user.username, email: user.email }
+    })
+
+  } catch (err) {
+    console.error("Login error:", err.message)
+    res.status(500).json({ error: "Server error" })
+  }
+})
+
+// SEND OTP (simulated - prints OTP to console, use Twilio for real SMS)
+app.post("/auth/send-otp", async (req, res) => {
+  try {
+    const { phone } = req.body
+    if (!phone) return res.status(400).json({ error: "Phone number required" })
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+    otpStore[phone] = { otp, expires: Date.now() + 5 * 60 * 1000 }
+
+    console.log("OTP for", phone, ":", otp)
+
+    // In production: use Twilio to send real SMS
+    // For now we just return success (OTP printed in server logs)
+    res.json({ success: true, message: "OTP sent" })
+
+  } catch (err) {
+    res.status(500).json({ error: "Failed to send OTP" })
+  }
+})
+
+// VERIFY OTP
+app.post("/auth/verify-otp", async (req, res) => {
+  try {
+    const { phone, otp } = req.body
+    const stored = otpStore[phone]
+
+    if (!stored) return res.status(400).json({ error: "OTP expired or not sent" })
+    if (Date.now() > stored.expires) {
+      delete otpStore[phone]
+      return res.status(400).json({ error: "OTP expired" })
+    }
+    if (stored.otp !== otp) {
+      return res.status(400).json({ error: "Invalid OTP" })
+    }
+
+    delete otpStore[phone]
+
+    let user = await User.findOne({ phone })
+    if (!user) {
+      user = await User.create({
+        username: "user_" + phone.slice(-4),
+        phone
+      })
+    }
+
+    const token = generateToken(user)
+    res.json({
+      token,
+      user: { id: user._id, username: user.username, phone: user.phone }
+    })
+
+  } catch (err) {
+    res.status(500).json({ error: "Server error" })
+  }
+})
+
+// GET CURRENT USER
+app.get("/auth/me", authMiddleware, async (req, res) => {
+  res.json({ user: req.user })
+})
+
+// ── CHAT ROUTES ──────────────────────────────────────────────────────────────
+
+app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
+  try {
     const message = req.body.message || ""
-    const sessionId = req.body.sessionId || "default"
     const chatId = req.body.chatId || ""
     const file = req.file || null
+    const userId = req.user.id
 
-    console.log("Message:", message)
+    console.log("User:", req.user.username, "| Message:", message)
     console.log("File:", file ? file.originalname + " (" + file.mimetype + ")" : "none")
 
     if (!message && !file) {
       return res.status(400).json({ error: "No message or file" })
     }
 
-    // Find or create chat
     let chat = null
 
     if (chatId && chatId !== "" && chatId !== "null" && chatId !== "undefined") {
       try {
-        chat = await Chat.findById(chatId)
+        chat = await Chat.findOne({ _id: chatId, userId: userId })
       } catch (e) {
         chat = null
       }
     }
 
     if (!chat) {
-      // Always use message text as title, never file name
       let title = "New chat"
       if (message && message.trim()) {
         title = message.trim().substring(0, 45)
         if (message.trim().length > 45) title += "..."
       }
       chat = await Chat.create({
-        sessionId: sessionId,
+        userId: userId,
         title: title,
         messages: []
       })
     }
 
-    // Save user message to DB
     const savedContent = message || "[File: " + (file ? file.originalname : "unknown") + "]"
     chat.messages.push({ role: "user", content: savedContent })
     await chat.save()
@@ -89,7 +282,6 @@ app.post("/chat", upload.single("image"), async (req, res) => {
     res.setHeader("x-chat-id", chat._id.toString())
     res.setHeader("Content-Type", "text/plain")
 
-    // Build chat history
     const history = chat.messages.slice(0, -1).map(function(m) {
       return {
         role: m.role === "assistant" ? "assistant" : "user",
@@ -97,26 +289,17 @@ app.post("/chat", upload.single("image"), async (req, res) => {
       }
     })
 
-    // Build current user message
     const isImage = file && file.mimetype && file.mimetype.startsWith("image/")
     let userContent
 
     if (isImage) {
-      // Send image as base64 for vision model
       const base64 = file.buffer.toString("base64")
       const dataUrl = "data:" + file.mimetype + ";base64," + base64
       userContent = [
-        {
-          type: "text",
-          text: message || "Please analyze this image."
-        },
-        {
-          type: "image_url",
-          image_url: { url: dataUrl }
-        }
+        { type: "text", text: message || "Please analyze this image." },
+        { type: "image_url", image_url: { url: dataUrl } }
       ]
     } else if (file) {
-      // Non-image: read as text
       try {
         const fileText = file.buffer.toString("utf-8")
         userContent = (message ? message + "\n\n" : "") + "[File: " + file.originalname + "]\n\n" + fileText
@@ -127,28 +310,19 @@ app.post("/chat", upload.single("image"), async (req, res) => {
       userContent = message
     }
 
-    // Choose model:
-    // Text: llama-3.3-70b-versatile (free, very capable)
-    // Image: llama-4-scout-17b-16e-instruct (free vision model on Groq)
     const model = isImage
       ? "meta-llama/llama-4-scout-17b-16e-instruct"
       : "llama-3.3-70b-versatile"
 
-    console.log("Using model:", model)
-
     const aiMessages = [
       {
         role: "system",
-        content: "You are Datta AI, a helpful and accurate assistant. If an image or file is provided, analyze it carefully. Keep answers clear and complete."
+        content: "You are Datta AI, a helpful and accurate assistant. The user's name is " + req.user.username + ". If an image or file is provided, analyze it carefully."
       },
       ...history,
-      {
-        role: "user",
-        content: userContent
-      }
+      { role: "user", content: userContent }
     ]
 
-    // Stream response from Groq
     const stream = await groq.chat.completions.create({
       model: model,
       messages: aiMessages,
@@ -166,7 +340,6 @@ app.post("/chat", upload.single("image"), async (req, res) => {
       }
     }
 
-    // Save AI response
     chat.messages.push({ role: "assistant", content: full })
     await chat.save()
 
@@ -174,19 +347,19 @@ app.post("/chat", upload.single("image"), async (req, res) => {
     res.end()
 
   } catch (err) {
-    console.error("=== ERROR ===")
-    console.error(err.message)
+    console.error("Chat error:", err.message)
     if (!res.headersSent) {
       res.status(500).send("Server error: " + err.message)
     }
   }
-
 })
 
-// GET ALL CHATS
-app.get("/chats/:sessionId", async (req, res) => {
+// GET ALL CHATS FOR USER
+app.get("/chats", authMiddleware, async (req, res) => {
   try {
-    const chats = await Chat.find({ sessionId: req.params.sessionId }).sort({ createdAt: -1 })
+    const chats = await Chat.find({ userId: req.user.id })
+      .sort({ createdAt: -1 })
+      .select("title createdAt")
     res.json(chats)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -194,9 +367,9 @@ app.get("/chats/:sessionId", async (req, res) => {
 })
 
 // GET CHAT MESSAGES
-app.get("/chat/:id", async (req, res) => {
+app.get("/chat/:id", authMiddleware, async (req, res) => {
   try {
-    const chat = await Chat.findById(req.params.id)
+    const chat = await Chat.findOne({ _id: req.params.id, userId: req.user.id })
     if (!chat) return res.json([])
     res.json(chat.messages)
   } catch (err) {
@@ -205,9 +378,9 @@ app.get("/chat/:id", async (req, res) => {
 })
 
 // DELETE CHAT
-app.delete("/chat/:id", async (req, res) => {
+app.delete("/chat/:id", authMiddleware, async (req, res) => {
   try {
-    await Chat.findByIdAndDelete(req.params.id)
+    await Chat.findOneAndDelete({ _id: req.params.id, userId: req.user.id })
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -215,9 +388,12 @@ app.delete("/chat/:id", async (req, res) => {
 })
 
 // RENAME CHAT
-app.post("/chat/:id/rename", async (req, res) => {
+app.post("/chat/:id/rename", authMiddleware, async (req, res) => {
   try {
-    await Chat.findByIdAndUpdate(req.params.id, { title: req.body.title })
+    await Chat.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.id },
+      { title: req.body.title }
+    )
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
