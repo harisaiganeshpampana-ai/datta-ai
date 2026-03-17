@@ -68,6 +68,8 @@ app.post("/chat", async (req, res) => {
 
     await chat.save()
 
+res.setHeader("x-chat-id", chat._id.toString())
+
     const stream = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: chat.messages,
