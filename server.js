@@ -68,9 +68,12 @@ app.post("/chat", upload.single("image"), async (req, res) => {
     }
 
     if (!chat) {
-      const title = message
-        ? message.substring(0, 40)
-        : (file ? file.originalname.substring(0, 40) : "New chat")
+      // Always use message text as title, never file name
+      let title = "New chat"
+      if (message && message.trim()) {
+        title = message.trim().substring(0, 45)
+        if (message.trim().length > 45) title += "..."
+      }
       chat = await Chat.create({
         sessionId: sessionId,
         title: title,
