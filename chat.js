@@ -421,3 +421,27 @@ function searchChats() {
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 window.send = send
 loadSidebar()
+
+// SHOW SIDEBAR SECTION
+function showSection(name) {
+  // Hide all sections
+  document.querySelectorAll(".sidebarSection").forEach(s => s.style.display = "none")
+  // Show selected
+  const el = document.getElementById("section-" + name)
+  if (el) el.style.display = "flex"
+
+  // Update active nav
+  document.querySelectorAll(".navItem").forEach(b => b.classList.remove("active"))
+  const btns = document.querySelectorAll(".navItem")
+  const idx = ["chats","projects","artifacts"].indexOf(name)
+  if (btns[idx]) btns[idx].classList.add("active")
+
+  // Show/hide recents label and search
+  const showRecents = name === "chats"
+  const recentsLabel = document.getElementById("recentsLabel")
+  const search = document.getElementById("search")
+  if (recentsLabel) recentsLabel.style.display = showRecents ? "block" : "none"
+  if (search) search.style.display = showRecents ? "block" : "none"
+}
+
+window.showSection = showSection
