@@ -26,6 +26,9 @@ showWelcome()
 async function send(){
 
 const input = document.getElementById("message")
+const imageInput = document.getElementById("imageInput")
+const file = imageInput.files[0]
+
 let text = input.value.trim()
    
 if (!currentChatId) {
@@ -68,18 +71,21 @@ chatBox.appendChild(aiDiv)
 chatBox.scrollTop = chatBox.scrollHeight
 
 controller = new AbortController()
+const formData = new FormData()
+formData.append("message", text)
+formData.append("sessionId", sessionId)
+formData.append("chatId", currentChatId)
+
+if (file) {
+  formData.append("image", file)
+}
 
 const res = await fetch("https://datta-ai-server.onrender.com/chat", {
    method: "POST",
-   headers: {"Content-Type":"application/json"},
    signal: controller.signal,
-   body: JSON.stringify({
-      message: text,
-      sessionId: sessionId,
-      chatId: currentChatId
-   })
+   body: formData
 })
-
+   
 const chatIdFromHeader = res.headers.get("x-chat-id")
 
 if (!currentChatId && chatIdFromHeader) {
