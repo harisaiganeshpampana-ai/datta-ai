@@ -18,7 +18,11 @@ const upload = multer({
 })
 
 const app = express()
-app.use(cors())
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-chat-id"]
+}))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
@@ -38,6 +42,61 @@ passport.deserializeUser((user, done) => done(null, user))
 
 // GROQ
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+
+// WEB SEARCH using Tavily
+async function webSearch(query) {
+  try {
+    const res = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        api_key: process.env.TAVILY_API_KEY,
+        query: query,
+        search_depth: "basic",
+        max_results: 5,
+        include_answer: true
+      })
+    })
+    const data = await res.json()
+    if (!data.results) return null
+
+    // Format results for AI
+    const summary = data.answer ? "Quick answer: " + data.answer + "
+
+" : ""
+    const sources = data.results.map((r, i) =>
+      (i + 1) + ". " + r.title + "
+" + r.content.substring(0, 300) + "...
+Source: " + r.url
+    ).join("
+
+")
+
+    return summary + "Search results:
+
+" + sources
+  } catch (e) {
+    console.error("Web search error:", e.message)
+    return null
+  }
+}
+
+// DETECT if query needs web search
+function needsWebSearch(message) {
+  if (!message) return false
+  const msg = message.toLowerCase()
+
+  const triggers = [
+    "latest", "recent", "today", "yesterday", "this week", "this month",
+    "current", "now", "right now", "live", "breaking", "news",
+    "who is", "what is the", "price of", "weather", "score",
+    "2024", "2025", "2026", "happened", "update", "trending",
+    "stock", "crypto", "bitcoin", "search", "find", "look up",
+    "what happened", "tell me about recent", "new release"
+  ]
+
+  return triggers.some(t => msg.includes(t))
+}
 
 // DATABASE
 mongoose.connect(process.env.MONGO_URI)
@@ -386,6 +445,23 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     })
 
     const isImage = file && file.mimetype && file.mimetype.startsWith("image/")
+
+    // AUTO WEB SEARCH if query needs current info
+    let searchContext = ""
+    if (message && needsWebSearch(message) && process.env.TAVILY_API_KEY) {
+      console.log("Searching web for:", message)
+      const results = await webSearch(message)
+      if (results) {
+        searchContext = "
+
+[Web Search Results]
+" + results + "
+[End of Search Results]
+"
+        console.log("Web search successful")
+      }
+    }
+
     let userContent
 
     if (isImage) {
@@ -403,7 +479,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
         userContent = (message ? message + "\n\n" : "") + "[File: " + file.originalname + "]"
       }
     } else {
-      userContent = message
+      userContent = message + searchContext
     }
 
     const model = isImage
@@ -416,7 +492,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const aiMessages = [
       {
         role: "system",
-        content: "You are Datta AI, a helpful and accurate assistant. The user's name is " + req.user.username + ". Keep answers short and to the point unless the user asks for details or explanation. For simple questions give 1-3 sentences max. For complex questions give a clear structured answer. If an image or file is provided, analyze it carefully." + (req.body.language && req.body.language !== "English" ? " Always respond in " + req.body.language + "." : "")
+        content: "You are Datta AI, a helpful and accurate assistant. The user's name is " + req.user.username + ". Keep answers short and to the point unless the user asks for details or explanation. For simple questions give 1-3 sentences max. For complex questions give a clear structured answer. If an image or file is provided, analyze it carefully. If web search results are provided in [Web Search Results], use them to give accurate up-to-date answers and mention sources." + (req.body.language && req.body.language !== "English" ? " Always respond in " + req.body.language + "." : "")
       },
       ...history,
       { role: "user", content: userContent }
