@@ -3,7 +3,7 @@ import cors from "cors"
 import dotenv from "dotenv"
 import OpenAI from "openai"
 import mongoose from "mongoose"
-import multer from "multer"
+const upload = multer({ storage: multer.memoryStorage() })
 
 dotenv.config()
 const upload = multer()
