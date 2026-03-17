@@ -17,7 +17,7 @@ app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-// GOOGLE GEMINI (free)
+// GOOGLE GEMINI
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
 
 // DATABASE
@@ -86,36 +86,26 @@ app.post("/chat", upload.single("image"), async (req, res) => {
     res.setHeader("x-chat-id", chat._id.toString())
     res.setHeader("Content-Type", "text/plain")
 
-    // Build conversation history as plain text context
-    const historyText = chat.messages.slice(0, -1).map(function(m) {
+    // Build conversation history as text for context
+    const historyParts = chat.messages.slice(0, -1).map(function(m) {
       const role = m.role === "assistant" ? "Assistant" : "User"
       return role + ": " + m.content
     }).join("\n")
 
-    // Build contents array for Gemini
-    const contents = []
+    // Build current message parts array
+    const parts = []
 
-    // Add history as first text part if exists
-    if (historyText) {
-      contents.push({
-        role: "user",
-        parts: [{ text: "Previous conversation:\n" + historyText + "\n\nNow continue:" }]
-      })
-      contents.push({
-        role: "model",
-        parts: [{ text: "Understood, I will continue the conversation." }]
-      })
+    // Add history context if exists
+    if (historyParts) {
+      parts.push({ text: "Previous conversation:\n" + historyParts + "\n\n---\n" })
     }
-
-    // Build current user message parts
-    const userParts = []
 
     // Add file if present
     if (file) {
       const mimeType = file.mimetype || "application/octet-stream"
 
       if (mimeType.startsWith("image/") || mimeType === "application/pdf") {
-        userParts.push({
+        parts.push({
           inlineData: {
             mimeType: mimeType,
             data: file.buffer.toString("base64")
@@ -124,32 +114,27 @@ app.post("/chat", upload.single("image"), async (req, res) => {
       } else {
         try {
           const fileText = file.buffer.toString("utf-8")
-          userParts.push({ text: "[File: " + file.originalname + "]\n\n" + fileText })
+          parts.push({ text: "[File: " + file.originalname + "]\n\n" + fileText })
         } catch (e) {
-          userParts.push({ text: "[Binary file: " + file.originalname + "]" })
+          parts.push({ text: "[Binary file: " + file.originalname + "]" })
         }
       }
     }
 
-    // Add text message
+    // Add user text
     if (message) {
-      userParts.push({ text: message })
+      parts.push({ text: message })
     } else {
-      userParts.push({ text: "Please analyze this." })
+      parts.push({ text: "Please analyze this." })
     }
 
-    contents.push({
-      role: "user",
-      parts: userParts
-    })
-
-    // Call Gemini API with streaming
+    // Call Gemini with streaming
     const streamResult = await ai.models.generateContentStream({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.0-flash",
+      contents: [{ role: "user", parts: parts }],
       config: {
         systemInstruction: "You are Datta AI, a helpful and accurate assistant. If an image or file is provided, analyze it carefully. Keep answers clear and complete."
-      },
-      contents: contents
+      }
     })
 
     let full = ""
