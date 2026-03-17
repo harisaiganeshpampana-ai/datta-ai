@@ -107,7 +107,7 @@
       <div class="profileName">Ganesh</div>
       <div class="profileSub">Free Plan</div>
     </div>
-    <button class="profileSettings" title="Settings">
+    <button class="profileSettings" title="Settings" onclick="openSettings()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="3"></circle>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -196,6 +196,150 @@
     }, 3000)
   })
 </script>
+
+
+<!-- SETTINGS MODAL -->
+<div id="settingsModal" class="modalOverlay" onclick="closeSettings()">
+  <div class="modalBox" onclick="event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="modalHeader">
+      <div class="modalTitle">⚙️ Settings</div>
+      <button class="modalClose" onclick="closeSettings()">✕</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="settingsTabs">
+      <button class="sTab active" onclick="switchSettingsTab('profile')">👤 Profile</button>
+      <button class="sTab" onclick="switchSettingsTab('appearance')">🎨 Appearance</button>
+      <button class="sTab" onclick="switchSettingsTab('language')">🌐 Language</button>
+      <button class="sTab" onclick="switchSettingsTab('notifications')">🔔 Notifications</button>
+      <button class="sTab danger" onclick="switchSettingsTab('danger')">⚠️ Account</button>
+    </div>
+
+    <!-- Messages -->
+    <div id="settingsMsg" class="settingsMsg"></div>
+
+    <!-- PROFILE TAB -->
+    <div class="sTabContent active" id="tab-profile">
+      <div class="sSection">
+        <div class="sLabel">Username</div>
+        <div class="sRow">
+          <input type="text" id="newUsername" class="sInput" placeholder="Enter new username">
+          <button class="sSaveBtn" onclick="changeUsername()">Save</button>
+        </div>
+      </div>
+      <div class="sSection">
+        <div class="sLabel">Current Password</div>
+        <input type="password" id="currentPassword" class="sInput" placeholder="Current password">
+        <div class="sLabel" style="margin-top:12px;">New Password</div>
+        <input type="password" id="newPassword" class="sInput" placeholder="New password (min 6 chars)">
+        <div class="sLabel" style="margin-top:12px;">Confirm New Password</div>
+        <input type="password" id="confirmPassword" class="sInput" placeholder="Confirm new password">
+        <button class="sSaveBtn" style="margin-top:14px;width:100%;" onclick="changePassword()">Change Password</button>
+      </div>
+    </div>
+
+    <!-- APPEARANCE TAB -->
+    <div class="sTabContent" id="tab-appearance">
+      <div class="sSection">
+        <div class="sLabel">Theme</div>
+        <div class="themeOptions">
+          <button class="themeBtn active" id="themeDark" onclick="setTheme('dark')">
+            🌙 Dark
+          </button>
+          <button class="themeBtn" id="themeLight" onclick="setTheme('light')">
+            ☀️ Light
+          </button>
+        </div>
+      </div>
+      <div class="sSection">
+        <div class="sLabel">Font Size</div>
+        <div class="sRow">
+          <button class="fontBtn" onclick="setFontSize('small')">Small</button>
+          <button class="fontBtn active" onclick="setFontSize('medium')">Medium</button>
+          <button class="fontBtn" onclick="setFontSize('large')">Large</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LANGUAGE TAB -->
+    <div class="sTabContent" id="tab-language">
+      <div class="sSection">
+        <div class="sLabel">AI Response Language</div>
+        <select id="aiLanguage" class="sSelect" onchange="saveLanguage()">
+          <option value="English">🇺🇸 English</option>
+          <option value="Hindi">🇮🇳 Hindi</option>
+          <option value="Telugu">🇮🇳 Telugu</option>
+          <option value="Tamil">🇮🇳 Tamil</option>
+          <option value="Spanish">🇪🇸 Spanish</option>
+          <option value="French">🇫🇷 French</option>
+          <option value="Arabic">🇸🇦 Arabic</option>
+          <option value="Chinese">🇨🇳 Chinese</option>
+          <option value="Japanese">🇯🇵 Japanese</option>
+          <option value="German">🇩🇪 German</option>
+        </select>
+        <div class="sHint">AI will respond in your selected language</div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS TAB -->
+    <div class="sTabContent" id="tab-notifications">
+      <div class="sSection">
+        <div class="sToggleRow">
+          <div>
+            <div class="sToggleLabel">Sound Effects</div>
+            <div class="sHint">Play sound when AI responds</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="soundToggle" onchange="saveNotifSettings()">
+            <span class="toggleSlider"></span>
+          </label>
+        </div>
+        <div class="sToggleRow">
+          <div>
+            <div class="sToggleLabel">Message Notifications</div>
+            <div class="sHint">Browser notifications for responses</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="notifToggle" onchange="saveNotifSettings()">
+            <span class="toggleSlider"></span>
+          </label>
+        </div>
+        <div class="sToggleRow">
+          <div>
+            <div class="sToggleLabel">Streaming Text</div>
+            <div class="sHint">Show text as it types (faster feel)</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="streamToggle" checked onchange="saveNotifSettings()">
+            <span class="toggleSlider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- DANGER TAB -->
+    <div class="sTabContent" id="tab-danger">
+      <div class="sSection">
+        <div class="sDangerBox">
+          <div class="sDangerTitle">🗑️ Delete All Chats</div>
+          <div class="sDangerDesc">This will permanently delete all your chat history.</div>
+          <button class="sDangerBtn" onclick="deleteAllChats()">Delete All Chats</button>
+        </div>
+      </div>
+      <div class="sSection">
+        <div class="sDangerBox">
+          <div class="sDangerTitle">❌ Delete Account</div>
+          <div class="sDangerDesc">This will permanently delete your account and all data. This cannot be undone.</div>
+          <input type="password" id="deleteAccountPassword" class="sInput" placeholder="Enter password to confirm" style="margin-bottom:10px;">
+          <button class="sDangerBtn" onclick="deleteAccount()">Delete My Account</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
 
 </body>
 </html>
