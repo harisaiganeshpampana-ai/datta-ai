@@ -53,16 +53,22 @@ scrollBottom()
 
 controller = new AbortController()
 
-const res = await fetch("https://datta-ai-server.onrender.com/chat",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-signal:controller.signal,
-body:JSON.stringify({
-message:text,
-sessionId:sessionId,
-chatId:currentChatId
+Vconst res = await fetch("https://datta-ai-server.onrender.com/chat", {
+   method: "POST",
+   headers: {"Content-Type":"application/json"},
+   signal: controller.signal,
+   body: JSON.stringify({
+      message: text,
+      sessionId: sessionId,
+      chatId: currentChatId
+   })
 })
-})
+
+const chatIdFromHeader = res.headers.get("x-chat-id")
+
+if (!currentChatId && chatIdFromHeader) {
+   currentChatId = chatIdFromHeader
+}
 
 aiDiv.innerHTML = `
 <div class="avatar">🤖</div>
