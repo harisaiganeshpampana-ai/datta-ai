@@ -123,10 +123,25 @@ function generateToken(user) {
 
 // AUTH MIDDLEWARE
 function authMiddleware(req, res, next) {
-  const header = req.headers.authorization
-  if (!header) return res.status(401).json({ error: "No token" })
+  // Read token from header OR body OR query
+  let token = null
 
-  const token = header.replace("Bearer ", "")
+  const header = req.headers.authorization
+  if (header) {
+    token = header.replace("Bearer ", "").trim()
+  }
+
+  // Also check body (for FormData requests)
+  if (!token && req.body && req.body.token) {
+    token = req.body.token
+  }
+
+  // Also check query string
+  if (!token && req.query && req.query.token) {
+    token = req.query.token
+  }
+
+  if (!token) return res.status(401).json({ error: "No token" })
 
   // Guest token
   if (token.startsWith("guest_")) {
