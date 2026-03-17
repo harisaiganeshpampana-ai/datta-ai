@@ -9,13 +9,157 @@
 <link rel="stylesheet" href="style.css">
 
 <style>
+
+/* ── SPLASH SCREEN ── */
+#splash {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+#splash.hide {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Glowing ring around logo */
+.splash-ring {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: splashPop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+.splash-ring::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #00ff88, #00ccff, #0066ff, #00ff88);
+  animation: spinRing 2s linear infinite;
+  filter: blur(2px);
+  opacity: 0.85;
+}
+.splash-ring::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: #000;
+}
+@keyframes spinRing {
+  to { transform: rotate(360deg); }
+}
+
+.splash-logo {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  object-fit: cover;
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes splashPop {
+  0%   { transform: scale(0.2); opacity: 0; }
+  70%  { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+.splash-title {
+  margin-top: 28px;
+  font-size: 36px;
+  font-weight: 800;
+  background: linear-gradient(90deg, #00ff88, #00ccff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  opacity: 0;
+  animation: splashFadeUp 0.6s ease 0.7s forwards;
+  letter-spacing: 1px;
+}
+
+.splash-subtitle {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #555;
+  opacity: 0;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  animation: splashFadeUp 0.6s ease 1s forwards;
+}
+
+@keyframes splashFadeUp {
+  0%   { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.splash-dots {
+  margin-top: 50px;
+  display: flex;
+  gap: 10px;
+  opacity: 0;
+  animation: splashFadeUp 0.4s ease 1.3s forwards;
+}
+.splash-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #333;
+  animation: dotBounce 1s infinite ease-in-out;
+}
+.splash-dots span:nth-child(1) { animation-delay: 0s; }
+.splash-dots span:nth-child(2) { animation-delay: 0.2s; }
+.splash-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotBounce {
+  0%, 80%, 100% { background: #333; transform: scale(1); }
+  40%            { background: #00ff88; transform: scale(1.5); box-shadow: 0 0 8px #00ff88; }
+}
+
+
+  40%            { background: white; transform: scale(1.4); }
+}
+
 #uploadBtn {
   background: transparent;
   border: none;
   color: white;
-  font-size: 18px;
+  font-size: 22px;
   cursor: pointer;
-  margin-right: 8px;
+  margin-right: 4px;
+  padding: 0 6px;
+  line-height: 1;
+}
+
+#filePreview {
+  color: #aaa;
+  font-size: 12px;
+  margin-right: 6px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+#clearFile {
+  background: transparent;
+  border: none;
+  color: #aaa;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 2px;
+  display: none;
+  vertical-align: middle;
 }
 </style>
 
@@ -25,6 +169,18 @@
 </head>
 
 <body>
+
+<!-- SPLASH SCREEN -->
+<div id="splash">
+  <div class="splash-ring">
+    <img class="splash-logo" src="logo.jpeg" alt="Datta AI Logo">
+  </div>
+  <div class="splash-title">Datta AI</div>
+  <div class="splash-subtitle">Welcome</div>
+  <div class="splash-dots">
+    <span></span><span></span><span></span>
+  </div>
+</div>
 
 <!-- TOP BAR -->
 <div class="topbar">
@@ -48,7 +204,7 @@
         <span>New Chat</span>
     </button>
 
-    <!-- FIXED SEARCH -->
+    <!-- SEARCH -->
     <input 
         id="search" 
         class="searchBox" 
@@ -79,11 +235,17 @@
     <div class="inputArea">
         <div class="inputWrap">
 
-            <!-- FILE -->
+            <!-- FILE INPUT (hidden) - accepts ALL file types -->
+            <input type="file" id="imageInput" accept="*/*" style="display: none;">
 
-                <input type="file" id="imageInput" accept="image/*" style="display: none;">
-                <button id="uploadBtn">+</button>
-            <!-- INPUT -->
+            <!-- Upload button -->
+            <button id="uploadBtn" title="Attach file">+</button>
+
+            <!-- File preview label -->
+            <span id="filePreview"></span>
+            <button id="clearFile" title="Remove file">✕</button>
+
+            <!-- TEXT INPUT -->
             <input 
                 id="message"
                 type="text"
@@ -114,16 +276,42 @@
 
 </div>
 
-<script src="chat.js?v=4"></script>
-    
+<script src="chat.js?v=5"></script>
+
 <script>
   const uploadBtn = document.getElementById("uploadBtn")
   const fileInput = document.getElementById("imageInput")
+  const filePreview = document.getElementById("filePreview")
+  const clearFile = document.getElementById("clearFile")
 
+  // Open file picker on button click
   uploadBtn.addEventListener("click", () => {
     fileInput.click()
   })
+
+  // Show file name after user selects a file
+  fileInput.addEventListener("change", function () {
+    const file = fileInput.files[0]
+    if (!file) return
+    filePreview.textContent = "📄 " + file.name
+    clearFile.style.display = "inline"
+  })
+
+  // Clear selected file
+  clearFile.addEventListener("click", () => {
+    fileInput.value = ""
+    filePreview.textContent = ""
+    clearFile.style.display = "none"
+  })
 </script>
 
+
+<script>
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      document.getElementById('splash').classList.add('hide')
+    }, 3000)
+  })
+</script>
 </body>
 </html>
