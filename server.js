@@ -54,11 +54,12 @@ app.post("/chat", async (req, res) => {
     }
 
     if (!chat) {
-      chat = await Chat.create({
-        sessionId,
-        messages: []
-      })
-    }
+   chat = await Chat.create({
+      sessionId,
+      title: req.body.title || req.body.message.substring(0,40),
+      messages: []
+   })
+}
 
     chat.messages.push({
       role: "user",
