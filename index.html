@@ -1,171 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
 <meta charset="UTF-8">
 <title>Datta AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <link rel="stylesheet" href="style.css">
-
-<style>
-
-/* ── SPLASH SCREEN ── */
-#splash {
-  position: fixed;
-  inset: 0;
-  background: #000;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  transition: opacity 0.8s ease, visibility 0.8s ease;
-}
-#splash.hide {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-/* Glowing ring around logo */
-.splash-ring {
-  position: relative;
-  width: 150px;
-  height: 150px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: splashPop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-.splash-ring::before {
-  content: '';
-  position: absolute;
-  inset: -6px;
-  border-radius: 50%;
-  background: conic-gradient(from 0deg, #00ff88, #00ccff, #0066ff, #00ff88);
-  animation: spinRing 2s linear infinite;
-  filter: blur(2px);
-  opacity: 0.85;
-}
-.splash-ring::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: 50%;
-  background: #000;
-}
-@keyframes spinRing {
-  to { transform: rotate(360deg); }
-}
-
-.splash-logo {
-  width: 130px;
-  height: 130px;
-  border-radius: 50%;
-  object-fit: cover;
-  position: relative;
-  z-index: 1;
-}
-
-@keyframes splashPop {
-  0%   { transform: scale(0.2); opacity: 0; }
-  70%  { transform: scale(1.08); opacity: 1; }
-  100% { transform: scale(1);   opacity: 1; }
-}
-
-.splash-title {
-  margin-top: 28px;
-  font-size: 36px;
-  font-weight: 800;
-  background: linear-gradient(90deg, #00ff88, #00ccff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  opacity: 0;
-  animation: splashFadeUp 0.6s ease 0.7s forwards;
-  letter-spacing: 1px;
-}
-
-.splash-subtitle {
-  margin-top: 8px;
-  font-size: 12px;
-  color: #555;
-  opacity: 0;
-  letter-spacing: 4px;
-  text-transform: uppercase;
-  animation: splashFadeUp 0.6s ease 1s forwards;
-}
-
-@keyframes splashFadeUp {
-  0%   { opacity: 0; transform: translateY(16px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-.splash-dots {
-  margin-top: 50px;
-  display: flex;
-  gap: 10px;
-  opacity: 0;
-  animation: splashFadeUp 0.4s ease 1.3s forwards;
-}
-.splash-dots span {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #333;
-  animation: dotBounce 1s infinite ease-in-out;
-}
-.splash-dots span:nth-child(1) { animation-delay: 0s; }
-.splash-dots span:nth-child(2) { animation-delay: 0.2s; }
-.splash-dots span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes dotBounce {
-  0%, 80%, 100% { background: #333; transform: scale(1); }
-  40%            { background: #00ff88; transform: scale(1.5); box-shadow: 0 0 8px #00ff88; }
-}
-
-
-  40%            { background: white; transform: scale(1.4); }
-}
-
-#uploadBtn {
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 22px;
-  cursor: pointer;
-  margin-right: 4px;
-  padding: 0 6px;
-  line-height: 1;
-}
-
-#filePreview {
-  color: #aaa;
-  font-size: 12px;
-  margin-right: 6px;
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  display: inline-block;
-  vertical-align: middle;
-}
-
-#clearFile {
-  background: transparent;
-  border: none;
-  color: #aaa;
-  font-size: 14px;
-  cursor: pointer;
-  padding: 0 2px;
-  display: none;
-  vertical-align: middle;
-}
-</style>
-
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
-
 </head>
 
 <body>
@@ -184,134 +25,177 @@
 
 <!-- TOP BAR -->
 <div class="topbar">
-    <button onclick="toggleSidebar()" class="menuBtn">☰</button>
-    <span class="topTitle">Datta AI</span>
+  <button onclick="toggleSidebar()" class="menuBtn">☰</button>
+  <span class="topTitle">Datta AI</span>
 </div>
 
 <!-- SIDEBAR -->
 <div class="sidebar">
 
-    <div class="logo">
-        <img src="logo.jpeg" alt="Datta AI Logo">
-        <span>Datta AI</span>
-    </div>
-
-    <button class="newchat" onclick="newChat()">
-        <svg width="16" height="16" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
-            <path d="M12 20h9"></path>
-            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-        </svg>
-        <span>New Chat</span>
+  <!-- TOP: Logo + New Chat -->
+  <div class="sidebarTop">
+    <div class="sidebarBrand">Datta AI</div>
+    <button class="newChatBtn" onclick="newChat()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="16"></line>
+        <line x1="8" y1="12" x2="16" y2="12"></line>
+      </svg>
+      New chat
     </button>
+  </div>
 
-    <!-- SEARCH -->
-    <input 
-        id="search" 
-        class="searchBox" 
-        type="text" 
-        placeholder="Search chats" 
-        onkeyup="searchChats()"
-    >
+  <!-- NAV ITEMS -->
+  <div class="sidebarNav">
+    <button class="navItem active" onclick="showSection('chats')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+      Chats
+    </button>
+    <button class="navItem" onclick="showSection('projects')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="7" width="20" height="14" rx="2"></rect>
+        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path>
+      </svg>
+      Projects
+    </button>
+    <button class="navItem" onclick="showSection('artifacts')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+      </svg>
+      Artifacts
+    </button>
+  </div>
 
+  <div class="sidebarDivider"></div>
+
+  <!-- RECENTS LABEL -->
+  <div class="recentsLabel" id="recentsLabel">Recents</div>
+
+  <!-- SEARCH -->
+  <input id="search" class="searchBox" type="text" placeholder="Search chats" onkeyup="searchChats()">
+
+  <!-- SECTIONS -->
+  <div class="sidebarSection" id="section-chats">
     <div class="history" id="history"></div>
+  </div>
+
+  <div class="sidebarSection" id="section-projects" style="display:none;">
+    <div class="emptySection">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5">
+        <rect x="2" y="7" width="20" height="14" rx="2"></rect>
+        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path>
+      </svg>
+      <p>No projects yet</p>
+    </div>
+  </div>
+
+  <div class="sidebarSection" id="section-artifacts" style="display:none;">
+    <div class="emptySection">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+      </svg>
+      <p>No artifacts yet</p>
+    </div>
+  </div>
+
+  <!-- BOTTOM USER PROFILE -->
+  <div class="sidebarProfile">
+    <div class="profileAvatar">G</div>
+    <div class="profileInfo">
+      <div class="profileName">Ganesh</div>
+      <div class="profileSub">Free Plan</div>
+    </div>
+    <button class="profileSettings" title="Settings">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+    </button>
+  </div>
 
 </div>
 
 <!-- MAIN CHAT AREA -->
 <div class="main">
 
-    <!-- WELCOME -->
-    <div id="welcomeScreen" class="welcomeScreen">
-        <h1 class="welcomeTitle">Ask a question</h1>
+  <!-- WELCOME -->
+  <div id="welcomeScreen" class="welcomeScreen">
+    <h1 class="welcomeTitle">Ask a question</h1>
+  </div>
+
+  <!-- CHAT -->
+  <div class="chatWrapper">
+    <div class="chat" id="chat"></div>
+    <button id="scrollDownBtn">↓</button>
+  </div>
+
+  <!-- INPUT -->
+  <div class="inputArea">
+    <div class="inputWrap">
+
+      <input type="file" id="imageInput" accept="*/*" style="display:none;">
+      <button id="uploadBtn" title="Attach file">+</button>
+      <span id="filePreview"></span>
+      <button id="clearFile" title="Remove file">✕</button>
+
+      <input id="message" type="text" placeholder="Ask Datta AI" autocomplete="off">
+
+      <button class="modeBtn">Fast</button>
+
+      <button class="assistant" onclick="startAssistant()">
+        <svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
+          <line x1="6" y1="9" x2="6" y2="15"></line>
+          <line x1="10" y1="6" x2="10" y2="18"></line>
+          <line x1="14" y1="10" x2="14" y2="14"></line>
+          <line x1="18" y1="8" x2="18" y2="16"></line>
+        </svg>
+      </button>
+
+      <button class="send" onclick="send()">
+        <svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+
     </div>
-
-    <!-- CHAT -->
-    <div class="chatWrapper">
-        <div class="chat" id="chat"></div>
-        <button id="scrollDownBtn">↓</button>
-    </div>
-
-    <!-- INPUT -->
-    <div class="inputArea">
-        <div class="inputWrap">
-
-            <!-- FILE INPUT (hidden) - accepts ALL file types -->
-            <input type="file" id="imageInput" accept="*/*" style="display: none;">
-
-            <!-- Upload button -->
-            <button id="uploadBtn" title="Attach file">+</button>
-
-            <!-- File preview label -->
-            <span id="filePreview"></span>
-            <button id="clearFile" title="Remove file">✕</button>
-
-            <!-- TEXT INPUT -->
-            <input 
-                id="message"
-                type="text"
-                placeholder="Ask Datta AI"
-                autocomplete="off"
-            >
-
-            <button class="modeBtn">Fast</button>
-
-            <button class="assistant" onclick="startAssistant()">
-                <svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
-                    <line x1="6" y1="9" x2="6" y2="15"></line>
-                    <line x1="10" y1="6" x2="10" y2="18"></line>
-                    <line x1="14" y1="10" x2="14" y2="14"></line>
-                    <line x1="18" y1="8" x2="18" y2="16"></line>
-                </svg>
-            </button>
-
-            <button class="send" onclick="send()">
-                <svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
-                    <line x1="22" y1="2" x2="11" y2="13"></line>
-                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                </svg>
-            </button>
-
-        </div>
-    </div>
+  </div>
 
 </div>
 
-<script src="chat.js?v=5"></script>
+<script src="chat.js?v=6"></script>
 
 <script>
+  // File upload
   const uploadBtn = document.getElementById("uploadBtn")
   const fileInput = document.getElementById("imageInput")
   const filePreview = document.getElementById("filePreview")
-  const clearFile = document.getElementById("clearFile")
+  const clearFileBtn = document.getElementById("clearFile")
 
-  // Open file picker on button click
-  uploadBtn.addEventListener("click", () => {
-    fileInput.click()
-  })
+  uploadBtn.addEventListener("click", () => fileInput.click())
 
-  // Show file name after user selects a file
-  fileInput.addEventListener("change", function () {
+  fileInput.addEventListener("change", function() {
     const file = fileInput.files[0]
     if (!file) return
     filePreview.textContent = "📄 " + file.name
-    clearFile.style.display = "inline"
+    clearFileBtn.style.display = "inline"
   })
 
-  // Clear selected file
-  clearFile.addEventListener("click", () => {
+  clearFileBtn.addEventListener("click", () => {
     fileInput.value = ""
     filePreview.textContent = ""
-    clearFile.style.display = "none"
+    clearFileBtn.style.display = "none"
   })
-</script>
 
-
-<script>
-  window.addEventListener('load', function() {
+  // Splash screen
+  window.addEventListener("load", function() {
     setTimeout(function() {
-      document.getElementById('splash').classList.add('hide')
+      document.getElementById("splash").classList.add("hide")
     }, 3000)
   })
 </script>
+
 </body>
 </html>
