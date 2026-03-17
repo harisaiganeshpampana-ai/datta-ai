@@ -98,7 +98,6 @@ async function send() {
   controller = new AbortController()
   const formData = new FormData()
   formData.append("message", text)
-  formData.append("sessionId", sessionId)
   formData.append("chatId", currentChatId || "")
 
   if (file) {
@@ -295,7 +294,6 @@ async function regenerateFrom(btn) {
     body: JSON.stringify({
       message: text,
       title: text.substring(0, 40),
-      sessionId: sessionId,
       chatId: currentChatId
     })
   })
