@@ -376,6 +376,27 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     res.setHeader("x-chat-id", chat._id.toString())
     res.setHeader("Content-Type", "text/plain")
 
+    // IMAGE GENERATION using Pollinations AI (free, no key needed)
+    if (message && isImageRequest(message)) {
+      const imagePrompt = getImagePrompt(message)
+      const encodedPrompt = encodeURIComponent(imagePrompt)
+      const imageUrl = "https://image.pollinations.ai/prompt/" + encodedPrompt + "?width=768&height=768&nologo=true&enhance=true"
+
+      console.log("Generating image for:", imagePrompt)
+
+      res.setHeader("Content-Type", "text/plain")
+
+      const responseText = "Here is your generated image:\n\n![Generated Image](" + imageUrl + ")\n\n*Generated: " + imagePrompt + "*"
+      res.write(responseText)
+
+      chat.messages.push({ role: "assistant", content: responseText })
+      await chat.save()
+
+      res.write("CHATID" + chat._id)
+      res.end()
+      return
+    }
+
     let searchContext = ""
     if (message && needsWebSearch(message) && process.env.TAVILY_API_KEY) {
       console.log("Searching web for:", message)
