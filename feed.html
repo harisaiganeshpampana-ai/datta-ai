@@ -13,7 +13,7 @@
 * { margin:0;padding:0;box-sizing:border-box; }
 body { background:#080800;color:#fff8e7;font-family:'DM Sans',sans-serif;min-height:100vh; }
 
-.feedNav { position:fixed;top:0;left:0;right:0;height:54px;background:rgba(8,8,0,0.96);border-bottom:1px solid rgba(255,215,0,0.1);display:flex;align-items:center;padding:0 16px;gap:12px;z-index:100;backdrop-filter:blur(20px); }
+.feedNav { position:fixed;top:0;left:0;right:0;height:54px;background:rgba(8,8,0,0.96);border-bottom:1px solid rgba(255,215,0,0.1);display:flex;align-items:center;padding:0 16px;gap:12px;z-index:200;backdrop-filter:blur(20px); }
 .navBack { background:none;border:none;color:#665500;cursor:pointer;display:flex;align-items:center; }
 .navBack:hover { color:var(--accent); }
 .navTitle { font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:4px;background:linear-gradient(90deg,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent; }
@@ -25,27 +25,47 @@ body { background:#080800;color:#fff8e7;font-family:'DM Sans',sans-serif;min-hei
 .spinMe { animation:sp 0.8s linear infinite; }
 @keyframes sp { to{transform:rotate(360deg)} }
 
-.main { padding:70px 14px 40px;max-width:860px;margin:0 auto; }
+/* STICKY SUBHEADER */
+.stickyBar {
+  position: fixed;
+  top: 54px;
+  left: 0;
+  right: 0;
+  z-index: 150;
+  background: rgba(8,8,0,0.97);
+  backdrop-filter: blur(20px);
+  padding: 10px 14px 0;
+  border-bottom: 1px solid rgba(255,215,0,0.07);
+  max-width: 100%;
+}
+
+.stickyBarInner {
+  max-width: 860px;
+  margin: 0 auto;
+}
 
 /* TICKER */
-.ticker { overflow:hidden;white-space:nowrap;background:rgba(255,215,0,0.04);border-bottom:1px solid rgba(255,215,0,0.08);padding:7px 0;margin-bottom:14px; }
+.ticker { overflow:hidden;white-space:nowrap;background:rgba(255,215,0,0.04);border-bottom:1px solid rgba(255,215,0,0.08);padding:7px 0;margin-bottom:10px; }
 .tickerInner { display:inline-block;animation:tick 80s linear infinite;font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:1px;color:#554400; }
 .tickerInner span { margin:0 24px; }
 .tickerInner b { color:var(--accent); }
 @keyframes tick { from{transform:translateX(100vw)}to{transform:translateX(-100%)} }
 
 /* SEARCH */
-.sbar { display:flex;align-items:center;gap:8px;background:#0f0e00;border:1px solid rgba(255,215,0,0.1);border-radius:50px;padding:8px 16px;margin-bottom:12px; }
+.sbar { display:flex;align-items:center;gap:8px;background:#0f0e00;border:1px solid rgba(255,215,0,0.1);border-radius:50px;padding:8px 16px;margin-bottom:10px; }
 .sbar:focus-within { border-color:rgba(255,215,0,0.3); }
 .sbar input { flex:1;background:none;border:none;color:#fff8e7;outline:none;font-size:14px; }
 .sbar input::placeholder { color:#332200; }
 
 /* CATS */
-.cats { display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;scrollbar-width:none; }
+.cats { display:flex;gap:8px;overflow-x:auto;padding:4px 0 10px;scrollbar-width:none; }
 .cats::-webkit-scrollbar { display:none; }
 .cat { padding:6px 14px;background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.1);border-radius:50px;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;color:#554400;cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0; }
 .cat:hover { color:var(--accent);border-color:rgba(255,215,0,0.25); }
 .cat.on { background:rgba(255,215,0,0.1);border-color:var(--accent);color:var(--accent); }
+
+/* MAIN CONTENT — pushed down below sticky bars */
+.main { padding:14px 14px 40px;max-width:860px;margin:0 auto; }
 
 .info { font-family:'Rajdhani',sans-serif;font-size:11px;color:#332200;letter-spacing:2px;margin-bottom:16px;text-align:right; }
 
@@ -82,7 +102,6 @@ body { background:#080800;color:#fff8e7;font-family:'DM Sans',sans-serif;min-hei
 .abtn { background:none;border:none;color:#443300;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;padding:0; }
 .abtn:hover { color:var(--accent); }
 
-/* SCORE/POINTS badge */
 .score { font-family:'Rajdhani',sans-serif;font-size:10px;color:#443300;letter-spacing:1px;margin-top:6px; }
 
 /* SKELETON */
@@ -97,7 +116,6 @@ body { background:#080800;color:#fff8e7;font-family:'DM Sans',sans-serif;min-hei
 .eDesc { font-size:13px;color:#332200;margin-bottom:20px; }
 .eBtn { padding:10px 24px;background:linear-gradient(135deg,var(--accent),#ff8c00);border:none;border-radius:50px;color:#000;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer; }
 
-/* SOURCE TABS showing which API */
 .sourceNote { font-family:'Rajdhani',sans-serif;font-size:10px;color:#222000;letter-spacing:1px;text-align:center;margin-top:24px; }
 </style>
 </head>
@@ -118,26 +136,30 @@ body { background:#080800;color:#fff8e7;font-family:'DM Sans',sans-serif;min-hei
   </button>
 </nav>
 
-<div class="main">
-  <div class="ticker"><div class="tickerInner" id="ticker"><span>⚡ Loading latest stories...</span></div></div>
-
-  <div class="sbar">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input type="text" placeholder="Search stories..." oninput="onSearch(this.value)">
+<!-- STICKY SEARCH + CATEGORY BAR -->
+<div class="stickyBar">
+  <div class="stickyBarInner">
+    <div class="ticker"><div class="tickerInner" id="ticker"><span>⚡ Loading latest stories...</span></div></div>
+    <div class="sbar">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="Search stories..." oninput="onSearch(this.value)">
+    </div>
+    <div class="cats">
+      <button class="cat on" onclick="setCat('all',this)">🌐 All</button>
+      <button class="cat" onclick="setCat('tech',this)">💻 Tech & AI</button>
+      <button class="cat" onclick="setCat('world',this)">🌍 World</button>
+      <button class="cat" onclick="setCat('india',this)">🇮🇳 India</button>
+      <button class="cat" onclick="setCat('fin',this)">💰 Finance</button>
+      <button class="cat" onclick="setCat('sci',this)">🔬 Science</button>
+      <button class="cat" onclick="setCat('sport',this)">🏏 Sports</button>
+      <button class="cat" onclick="setCat('ent',this)">🎬 Entertainment</button>
+      <button class="cat" onclick="setCat('health',this)">❤️ Health</button>
+    </div>
   </div>
+</div>
 
-  <div class="cats">
-    <button class="cat on" onclick="setCat('all',this)">🌐 All</button>
-    <button class="cat" onclick="setCat('tech',this)">💻 Tech & AI</button>
-    <button class="cat" onclick="setCat('world',this)">🌍 World</button>
-    <button class="cat" onclick="setCat('india',this)">🇮🇳 India</button>
-    <button class="cat" onclick="setCat('fin',this)">💰 Finance</button>
-    <button class="cat" onclick="setCat('sci',this)">🔬 Science</button>
-    <button class="cat" onclick="setCat('sport',this)">🏏 Sports</button>
-    <button class="cat" onclick="setCat('ent',this)">🎬 Entertainment</button>
-    <button class="cat" onclick="setCat('health',this)">❤️ Health</button>
-  </div>
-
+<!-- DYNAMIC TOP PADDING — set by JS after measuring stickyBar height -->
+<div class="main" id="main">
   <div class="info" id="info">Fetching stories...</div>
   <div class="grid" id="grid"></div>
   <div class="sourceNote">Sources: Hacker News · Reddit · Wikipedia · Open APIs · No API key required</div>
@@ -146,9 +168,19 @@ body { background:#080800;color:#fff8e7;font-family:'DM Sans',sans-serif;min-hei
 <script>
 let all = [], cat = 'all', q = ''
 
-// ── SOURCES (all CORS-friendly, no API key) ──────────────
+// Adjust main padding to match sticky bar height
+function adjustPadding() {
+  const bar = document.querySelector('.stickyBar')
+  const main = document.getElementById('main')
+  if (bar && main) {
+    main.style.paddingTop = (bar.offsetHeight + 14) + 'px'
+  }
+}
+window.addEventListener('load', adjustPadding)
+window.addEventListener('resize', adjustPadding)
 
-// 1. Hacker News Top Stories (tech/world)
+// ── SOURCES ──────────────────────────────────────────────
+
 async function fetchHN() {
   const ids = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json').then(r=>r.json())
   const top = ids.slice(0,15)
@@ -179,7 +211,6 @@ function guessHNCat(title) {
   return 'tech'
 }
 
-// 2. Reddit - multiple subreddits
 const SUBS = [
   { sub:'worldnews',       cat:'world' },
   { sub:'india',           cat:'india' },
@@ -223,20 +254,18 @@ async function fetchAllReddit() {
   return results.flatMap(r => r.status==='fulfilled' ? r.value : [])
 }
 
-// ── CAT CONFIG ───────────────────────────────────────────
 const CATMAP = {
-  all:   { label:'🌐 All',        pill:'p-world'  },
-  tech:  { label:'💻 Tech & AI',  pill:'p-tech'   },
-  world: { label:'🌍 World',      pill:'p-world'  },
-  india: { label:'🇮🇳 India',     pill:'p-india'  },
-  fin:   { label:'💰 Finance',    pill:'p-fin'    },
-  sci:   { label:'🔬 Science',    pill:'p-sci'    },
-  sport: { label:'🏏 Sports',     pill:'p-sport'  },
-  ent:   { label:'🎬 Entertainment',pill:'p-ent'  },
-  health:{ label:'❤️ Health',     pill:'p-health' },
+  all:   { label:'🌐 All',          pill:'p-world'  },
+  tech:  { label:'💻 Tech & AI',    pill:'p-tech'   },
+  world: { label:'🌍 World',        pill:'p-world'  },
+  india: { label:'🇮🇳 India',       pill:'p-india'  },
+  fin:   { label:'💰 Finance',      pill:'p-fin'    },
+  sci:   { label:'🔬 Science',      pill:'p-sci'    },
+  sport: { label:'🏏 Sports',       pill:'p-sport'  },
+  ent:   { label:'🎬 Entertainment',pill:'p-ent'    },
+  health:{ label:'❤️ Health',       pill:'p-health' },
 }
 
-// ── TIME ─────────────────────────────────────────────────
 function timeAgo(ms) {
   const d = (Date.now()-ms)/1000
   if(d<60) return 'Just now'
@@ -245,7 +274,6 @@ function timeAgo(ms) {
   return Math.floor(d/86400)+'d ago'
 }
 
-// ── SKELETONS ────────────────────────────────────────────
 function showSkels() {
   document.getElementById('grid').innerHTML = Array(8).fill(0).map((_,i)=>`
     <div class="skCard ${i===0?'big':''}">
@@ -258,7 +286,6 @@ function showSkels() {
     </div>`).join('')
 }
 
-// ── LOAD ─────────────────────────────────────────────────
 async function loadAll() {
   document.getElementById('rIco').classList.add('spinMe')
   document.getElementById('info').textContent = '⏳ Loading live stories...'
@@ -271,10 +298,8 @@ async function loadAll() {
     ...(reddit.status==='fulfilled' ? reddit.value : [])
   ]
 
-  // Sort by recency, big first
   all.sort((a,b) => (b.big?1:0)-(a.big?1:0))
 
-  // Remove duplicates by title
   const seen = new Set()
   all = all.filter(n => {
     const key = n.title.substring(0,30).toLowerCase()
@@ -284,6 +309,7 @@ async function loadAll() {
   })
 
   updateTicker()
+  adjustPadding()
   render()
 
   const now = new Date()
@@ -294,7 +320,6 @@ async function loadAll() {
   setTimeout(loadAll, 600000)
 }
 
-// ── TICKER ───────────────────────────────────────────────
 function updateTicker() {
   if(!all.length) return
   const t = document.getElementById('ticker')
@@ -305,7 +330,6 @@ function updateTicker() {
   t.innerHTML = html+html
 }
 
-// ── RENDER ───────────────────────────────────────────────
 function render() {
   const grid = document.getElementById('grid')
   let news = all
@@ -347,7 +371,6 @@ function render() {
   }).join('')
 }
 
-// ── HELPERS ──────────────────────────────────────────────
 function setCat(c, btn) {
   cat = c
   document.querySelectorAll('.cat').forEach(b=>b.classList.remove('on'))
