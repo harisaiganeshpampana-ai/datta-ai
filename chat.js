@@ -501,18 +501,19 @@ window.logout = logout
 // ── SETTINGS ─────────────────────────────────────────────────────────────────
 
 function openSettings() {
+  event.stopPropagation()
   const modal = document.getElementById("settingsModal")
   if (!modal) return
 
-  // Always reset to Profile tab first
-  switchSettingsTab("profile")
-
-  // Scroll modal to top
-  const box = modal.querySelector(".modalBox")
-  if (box) box.scrollTop = 0
-
   modal.classList.add("show")
-  loadSettingsUI()
+
+  // Reset to profile tab and scroll top
+  setTimeout(function() {
+    switchSettingsTab("profile")
+    const box = modal.querySelector(".modalBox")
+    if (box) box.scrollTop = 0
+    loadSettingsUI()
+  }, 10)
 }
 
 function closeSettings() {
