@@ -29,7 +29,7 @@ iframe { width:100%;height:220px;border:none;display:block; }
 </head>
 <body>
 <div class="topbar">
-  <button class="back" onclick="history.back()">
+  <button class="back" onclick="window.location.href='index.html'">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
     Back
   </button>
@@ -44,14 +44,14 @@ iframe { width:100%;height:220px;border:none;display:block; }
 </div>
 <script>
 const PLAYLISTS = {
-  focused:  { emoji:"🎯", name:"Focused",     color:"#00ccff", desc:"Lo-Fi study beats",    query:"lofi+hip+hop+study+beats" },
-  happy:    { emoji:"😄", name:"Happy",       color:"#ffd700", desc:"Upbeat feel good",      query:"happy+upbeat+feel+good+music" },
-  stressed: { emoji:"😮‍💨", name:"Stressed",  color:"#00ff88", desc:"Calm & relaxing",      query:"calm+relaxing+stress+relief" },
-  creative: { emoji:"🎨", name:"Creative",    color:"#c084fc", desc:"Creative flow state",   query:"creative+flow+state+music" },
-  lazy:     { emoji:"😴", name:"Lazy",        color:"#f97316", desc:"Chill sunday beats",    query:"chill+lazy+sunday+beats" },
-  curious:  { emoji:"🔍", name:"Curious",     color:"#ec4899", desc:"Deep focus music",      query:"deep+focus+concentration" },
-  night:    { emoji:"🌙", name:"Night Brain", color:"#818cf8", desc:"Late night lo-fi",      query:"late+night+lofi+chill" },
-  support:  { emoji:"🫂", name:"Healing",     color:"#00ff88", desc:"Healing meditation",    query:"healing+meditation+calm+piano" },
+  focused:  { emoji:"🎯", name:"Focused",     color:"#00ccff", desc:"Lo-Fi study beats",    vid:"jfKfPfyJRdk" },
+  happy:    { emoji:"😄", name:"Happy",       color:"#ffd700", desc:"Upbeat feel good",      vid:"H-2j5IIbEKw" },
+  stressed: { emoji:"😮‍💨", name:"Stressed",  color:"#00ff88", desc:"Calm & relaxing",      vid:"1ZYbU82GVz4" },
+  creative: { emoji:"🎨", name:"Creative",    color:"#c084fc", desc:"Creative flow state",   vid:"DWcJFNfaw9c" },
+  lazy:     { emoji:"😴", name:"Lazy",        color:"#f97316", desc:"Chill sunday beats",    vid:"4oStw0r33so" },
+  curious:  { emoji:"🔍", name:"Curious",     color:"#ec4899", desc:"Deep focus music",      vid:"WPni755-Krg" },
+  night:    { emoji:"🌙", name:"Night Brain", color:"#818cf8", desc:"Late night lo-fi",      vid:"rUxyKA_-grg" },
+  support:  { emoji:"🫂", name:"Healing",     color:"#00ff88", desc:"Healing meditation",    vid:"lFcSrYw2ARY" },
 }
 const grid = document.getElementById("moodGrid")
 let active = null
@@ -74,7 +74,7 @@ function play(key, card) {
   card.style.borderColor = PLAYLISTS[key].color + "44"
   const pl = PLAYLISTS[key]
   document.getElementById("playerLabel").textContent = `${pl.emoji} ${pl.name} — ${pl.desc}`
-  document.getElementById("musicFrame").src = `https://www.youtube.com/embed?listType=search&list=${pl.query}&autoplay=1&controls=1&modestbranding=1`
+  document.getElementById("musicFrame").src = `https://www.youtube.com/embed/${pl.vid}?autoplay=1&controls=1&modestbranding=1&rel=0`
 }
 
 // Auto-play saved mood
