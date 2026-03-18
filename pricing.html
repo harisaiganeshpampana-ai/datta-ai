@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Datta AI - Pricing</title>
+<title>Datta AI - Plans</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; font-family:system-ui,Arial,sans-serif; }
@@ -457,13 +457,14 @@ body {
 
 <div class="header">
   <button class="backBtn" onclick="window.location.href='index.html'">← Back</button>
-  <div class="headerTitle">Upgrade Datta AI</div>
+  <div class="headerTitle">Datta AI Plans</div>
   <div class="currentPlan" id="currentPlanBadge">Free Plan</div>
 </div>
 
 <div class="hero">
-  <div class="heroTitle">Choose Your Plan</div>
-  <div class="heroSub">Unlock the full power of Datta AI with advanced features and unlimited access</div>
+  <div class="heroTitle">Choose Your Path</div>
+  <div style="font-size:12px;color:#555;letter-spacing:2px;margin-bottom:12px;font-family:'Rajdhani',sans-serif;">DATTA AI v2.0 SHAKTI</div>
+  <div class="heroSub">From Arambh to Brahma — find the path that matches your ambition</div>
 
   <div class="billingToggle">
     <span class="toggleLabel active" id="monthlyLabel">Monthly</span>
@@ -480,9 +481,9 @@ body {
 
   <!-- FREE -->
   <div class="planCard" id="plan-free">
-    <div class="planIcon">🆓</div>
-    <div class="planName">Free</div>
-    <div class="planDesc">Perfect for trying out Datta AI</div>
+    <div class="planIcon">🌱</div>
+    <div class="planName">Arambh <span style="font-size:11px;color:#666;font-family:system-ui">आरंभ</span></div>
+    <div class="planDesc">The beginning of your AI journey</div>
     <div class="planPrice">
       <span class="price">₹0</span>
       <span class="pricePeriod">/month</span>
@@ -502,8 +503,8 @@ body {
   <!-- BASIC -->
   <div class="planCard" id="plan-basic">
     <div class="planIcon">⚡</div>
-    <div class="planName">Basic</div>
-    <div class="planDesc">For regular users who need more</div>
+    <div class="planName">Shakti <span style="font-size:11px;color:#888;font-family:system-ui">शक्ति</span></div>
+    <div class="planDesc">Unleash your power with Datta AI</div>
     <div class="planPrice">
       <span class="price" id="basicPrice">₹199</span>
       <span class="pricePeriod">/month</span>
@@ -518,15 +519,15 @@ body {
       <li><span class="crossIcon">✗</span> Custom AI personality</li>
       <li><span class="crossIcon">✗</span> Priority support</li>
     </ul>
-    <button class="planBtn basic" onclick="openPayment('basic')">Get Basic</button>
+    <button class="planBtn basic" onclick="openPayment('basic')">Get Shakti</button>
   </div>
 
   <!-- PRO -->
   <div class="planCard popular" id="plan-pro">
     <div class="popularBadge">Most Popular</div>
-    <div class="planIcon">🚀</div>
-    <div class="planName">Pro</div>
-    <div class="planDesc">Best for power users and creators</div>
+    <div class="planIcon">🔥</div>
+    <div class="planName">Agni <span style="font-size:11px;color:#aaffcc;font-family:system-ui">अग्नि</span></div>
+    <div class="planDesc">Burn through tasks at lightning speed</div>
     <div class="planPrice">
       <span class="price" id="proPrice">₹499</span>
       <span class="pricePeriod">/month</span>
@@ -541,14 +542,14 @@ body {
       <li><span class="checkIcon">✓</span> Priority support</li>
       <li><span class="checkIcon">✓</span> Early access to features</li>
     </ul>
-    <button class="planBtn pro" onclick="openPayment('pro')">Get Pro</button>
+    <button class="planBtn pro" onclick="openPayment('pro')">Get Agni</button>
   </div>
 
   <!-- ENTERPRISE -->
   <div class="planCard" id="plan-enterprise">
-    <div class="planIcon">🏢</div>
-    <div class="planName">Enterprise</div>
-    <div class="planDesc">For teams and businesses</div>
+    <div class="planIcon">👑</div>
+    <div class="planName">Brahma <span style="font-size:11px;color:#ffaacc;font-family:system-ui">ब्रह्म</span></div>
+    <div class="planDesc">Create your AI empire</div>
     <div class="planPrice">
       <span class="price" id="enterprisePrice">₹1499</span>
       <span class="pricePeriod">/month</span>
@@ -563,7 +564,7 @@ body {
       <li><span class="checkIcon">✓</span> Custom integrations</li>
       <li><span class="checkIcon">✓</span> SLA guarantee</li>
     </ul>
-    <button class="planBtn enterprise" onclick="openPayment('enterprise')">Get Enterprise</button>
+    <button class="planBtn enterprise" onclick="openPayment('enterprise')">Get Brahma</button>
   </div>
 
 </div>
@@ -606,7 +607,7 @@ body {
 
     <div class="payPlanInfo">
       <div>
-        <div class="payPlanName" id="payPlanName">Pro Plan</div>
+        <div class="payPlanName" id="payPlanName">Agni Plan</div>
         <div style="font-size:12px;color:#666;">Monthly subscription</div>
       </div>
       <div class="payPlanPrice" id="payPlanPrice">₹499</div>
