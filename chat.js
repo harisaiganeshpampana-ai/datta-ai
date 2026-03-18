@@ -27,7 +27,7 @@ function stopGeneration() {
 
 window.stopGeneration = stopGeneration
 
-// RENDER IMAGE RESPONSE - Datta AI unique style
+// RENDER IMAGE RESPONSE
 function renderImageResponse(text) {
   let cleanText = text
   if (text.includes("DATTA_IMAGE_START")) {
@@ -111,23 +111,18 @@ function downloadImage(url, prompt) {
 async function regenerateImage(prompt, btn) {
   const wrap = btn.closest(".dattaImgWrap")
   if (!wrap) return
-
   btn.disabled = true
   btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 0.6s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Generating...'
-
   const seed = Math.floor(Math.random() * 999999)
   const newUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&enhance=true&seed=" + seed
-
   const shimmer = wrap.querySelector(".dattaShimmer")
   const img = wrap.querySelector(".dattaImg")
   const actions = wrap.querySelector(".dattaImgActions")
   const label = wrap.querySelector(".dattaImgLabel")
-
   if (shimmer) { shimmer.style.display = "flex"; shimmer.querySelector(".shimmerText").textContent = "Regenerating..." }
   if (img) { img.style.display = "none"; img.style.opacity = "0"; img.dataset.retries = "0" }
   if (actions) actions.style.display = "none"
   if (label) label.innerHTML = '<span class="dattaImgIcon">🎨</span><span>Regenerating...</span>'
-
   img.onload = () => {
     if (shimmer) shimmer.style.display = "none"
     if (actions) actions.style.display = "flex"
@@ -137,13 +132,11 @@ async function regenerateImage(prompt, btn) {
     btn.disabled = false
     btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Regenerate'
   }
-
   img.onerror = () => {
     if (shimmer) shimmer.innerHTML = '<div style="padding:32px;color:#888;text-align:center;font-size:13px">❌ Failed. Try again.</div>'
     btn.disabled = false
     btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Regenerate'
   }
-
   img.src = newUrl
 }
 
@@ -210,7 +203,6 @@ let currentChatId = null
 let controller = null
 let userScrolledUp = false
 
-// Image trigger keywords
 const imageTriggers = [
   "generate image", "create image", "make image", "draw", "generate photo",
   "create photo", "make photo", "generate picture", "create picture",
@@ -218,7 +210,7 @@ const imageTriggers = [
   "sketch", "generate art", "create art", "make art"
 ]
 
-// ─── NEW CHAT ────────────────────────────────────────────────────────────────
+// ─── NEW CHAT ─────────────────────────────────────────────────────────────────
 function newChat() {
   currentChatId = null
   chatBox.innerHTML = ""
@@ -226,22 +218,58 @@ function newChat() {
   showWelcome()
 }
 
-// ─── MOOD SYSTEM HELPER ──────────────────────────────────────────────────────
-// Returns the current mood personality prompt if a mood is set
+// ─── MOOD SYSTEM ──────────────────────────────────────────────────────────────
 function getMoodContext() {
   return window.dattaMoodPersonality || null
 }
 
-// Builds a mood-aware system message prefix
+// ── AUTO MOOD DETECT INDICATOR ────────────────────────────────────────────────
+// Shows a small pill in topbar when mood is auto-detected from message
+function showAutoMoodPill(moodKey) {
+  const MOODS = window.MOODS || {}
+  const mood = MOODS[moodKey]
+  if (!mood) return
+
+  let pill = document.getElementById("autoMoodPill")
+  if (!pill) {
+    pill = document.createElement("div")
+    pill.id = "autoMoodPill"
+    pill.style.cssText = `
+      position:fixed;top:58px;left:50%;transform:translateX(-50%);
+      background:#0f0e00;border-radius:50px;padding:5px 14px;
+      font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;
+      letter-spacing:1px;z-index:3000;pointer-events:none;
+      transition:opacity 0.4s ease;opacity:0;
+      box-shadow:0 4px 20px rgba(0,0,0,0.6);white-space:nowrap;
+    `
+    document.body.appendChild(pill)
+  }
+
+  pill.style.border = `1px solid ${mood.color}55`
+  pill.style.color = mood.color
+  pill.textContent = `🤖 Auto-detected: ${mood.emoji} ${mood.label}`
+  pill.style.opacity = "1"
+  setTimeout(() => { pill.style.opacity = "0" }, 3000)
+}
+
+// ── FIXED buildMoodPrefix — with strict length control ────────────────────────
 function buildMoodPrefix() {
   const mood = getMoodContext()
-  if (!mood) return ""
-  return "\n\n[MOOD INSTRUCTION - FOLLOW THIS STRICTLY]: " + mood + "\n\n"
+
+  const lengthRule = `[RESPONSE LENGTH RULE — ALWAYS FOLLOW THIS]:
+- Keep answers SHORT and CONCISE by default.
+- If the user asks a simple or casual question, reply in 1 to 3 sentences only.
+- Only give a long, detailed answer if the user explicitly says: "explain", "elaborate", "in detail", "tell me more", "say more", "describe", or asks something clearly complex.
+- Use a maximum of 2 emojis per response. Do NOT spam emojis.
+- Never pad answers with filler phrases or unnecessary enthusiasm.
+- Match your response length strictly to what was asked.\n\n`
+
+  if (!mood) return "[STRICT INSTRUCTION]: " + lengthRule
+  return "[STRICT INSTRUCTION]: " + lengthRule + "[MOOD INSTRUCTION - FOLLOW THIS STRICTLY]: " + mood + "\n\n"
 }
 
 // ─── SEND MESSAGE ─────────────────────────────────────────────────────────────
 async function send() {
-
   const input = document.getElementById("message")
 
   let file = null
@@ -251,8 +279,13 @@ async function send() {
     if (el && el.files && el.files[0]) { file = el.files[0]; break }
   }
   const text = input.value.trim()
-
   if (!text && !file) return
+
+  // Auto detect mood from message
+  if (window.dattaAutoDetectMood && text) {
+    const detected = window.dattaAutoDetectMood(text)
+    if (detected) showAutoMoodPill(detected)
+  }
 
   if (!currentChatId) {
     let title = text ? text.substring(0, 40) : "New Chat"
@@ -263,7 +296,6 @@ async function send() {
   hideWelcome()
   document.body.classList.add("chat-started")
 
-  // Show mood emoji in user bubble if mood is set
   const moodEmoji = window.dattaMoodEmoji ? window.dattaMoodEmoji + " " : ""
 
   chatBox.innerHTML += `
@@ -277,7 +309,6 @@ async function send() {
   `
 
   chatBox.scrollTop = chatBox.scrollHeight
-
   input.value = ""
   ;["cameraInput","photoInput","imageInput"].forEach(id => {
     const el = document.getElementById(id)
@@ -286,11 +317,8 @@ async function send() {
   if (typeof clearFileSelection === "function") clearFileSelection()
 
   const searchTriggers = ["latest","recent","today","yesterday","this week","current","now","live","breaking","news","who is","what is the","price of","weather","score","2025","2026","happened","update","trending","stock","crypto","bitcoin","search for","find","look up","ipl","cricket","match","movie","released","launched","election","gold","petrol"]
-
   const willSearch = searchTriggers.some(t => text.toLowerCase().includes(t))
   const willGenImage = imageTriggers.some(t => text.toLowerCase().includes(t))
-
-  // Show mood emoji in AI avatar too
   const aiAvatarEmoji = window.dattaMoodEmoji || "🤖"
 
   let aiDiv = document.createElement("div")
@@ -322,22 +350,17 @@ async function send() {
   }
   chatBox.appendChild(aiDiv)
   chatBox.scrollTop = chatBox.scrollHeight
-
   showStopBtn()
 
-  // ── CLIENT-SIDE IMAGE GENERATION ──
+  // CLIENT-SIDE IMAGE GENERATION
   if (willGenImage) {
     let prompt = text
       .replace(/generate image of|create image of|make image of|generate photo of|create photo of|make photo of|generate picture of|create picture of|picture of|photo of|image of|draw me a|draw me|draw a|draw|illustrate a|illustrate|sketch a|sketch|paint a|paint|generate art of|create art of|make art of/gi, "")
       .trim()
-
     if (!prompt) prompt = text
-
     const seed = Math.floor(Math.random() * 999999)
     const imgUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&enhance=true&seed=" + seed
-
     const fakeResponse = `DATTA_IMAGE_START\n![${prompt}](${imgUrl})\nPROMPT:${prompt}\nDATTA_IMAGE_END`
-
     setTimeout(() => {
       aiDiv.innerHTML = `
         <div class="avatar">🎨</div>
@@ -347,36 +370,20 @@ async function send() {
       hideStopBtn()
       loadSidebar()
     }, 800)
-
     return
   }
 
-  // ── SERVER CALL ──
+  // SERVER CALL
   controller = new AbortController()
   const formData = new FormData()
-
-  // ════════════════════════════════════════════════
-  // MOOD SYSTEM — inject mood personality into message
-  // This is the core of the Mood-Based AI feature!
-  // ════════════════════════════════════════════════
   const moodPrefix = buildMoodPrefix()
-  const messageWithMood = moodPrefix
-    ? moodPrefix + text  // prepend mood instructions to the message
-    : text
-
+  const messageWithMood = moodPrefix ? moodPrefix + text : text
   formData.append("message", messageWithMood)
   formData.append("chatId", currentChatId || "")
   formData.append("token", getToken())
   formData.append("language", localStorage.getItem("datta_language") || "English")
-
-  // Also send mood as separate field so server can handle it
-  if (window.dattaMoodLabel) {
-    formData.append("mood", window.dattaMoodLabel)
-  }
-
-  if (file) {
-    formData.append("image", file)
-  }
+  if (window.dattaMoodLabel) formData.append("mood", window.dattaMoodLabel)
+  if (file) formData.append("image", file)
 
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/chat", {
@@ -386,9 +393,7 @@ async function send() {
     })
 
     const chatIdFromHeader = res.headers.get("x-chat-id")
-    if (!currentChatId && chatIdFromHeader) {
-      currentChatId = chatIdFromHeader
-    }
+    if (!currentChatId && chatIdFromHeader) currentChatId = chatIdFromHeader
 
     aiDiv.innerHTML = `
       <div class="avatar">${aiAvatarEmoji}</div>
@@ -416,9 +421,7 @@ async function send() {
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
-
       const chunk = decoder.decode(value)
-
       if (chunk.includes("CHATID")) {
         const parts = chunk.split("CHATID")
         streamText += parts[0]
@@ -426,7 +429,6 @@ async function send() {
       } else {
         streamText += chunk
       }
-
       const isImgResponse = streamText.includes("pollinations.ai") || streamText.includes("DATTA_IMAGE")
       if (isImgResponse) {
         const container = aiDiv.querySelector(".aiContent") || aiDiv
@@ -467,25 +469,21 @@ async function send() {
   }
 }
 
-
 // ─── LOAD SIDEBAR ─────────────────────────────────────────────────────────────
 async function loadSidebar() {
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/chats?token=" + getToken())
-
     if (res.status === 401) {
       localStorage.removeItem("datta_token")
       localStorage.removeItem("datta_user")
       window.location.href = "login.html"
       return
     }
-
     const data = await res.json()
     const chats = Array.isArray(data) ? data : []
     const history = document.getElementById("history")
     if (!history) return
     history.innerHTML = ""
-
     chats.forEach(chat => {
       let div = document.createElement("div")
       div.className = "chatItem"
@@ -504,16 +502,13 @@ async function loadSidebar() {
   }
 }
 
-
 // ─── OPEN CHAT ────────────────────────────────────────────────────────────────
 async function openChat(chatId) {
   currentChatId = chatId
   chatBox.innerHTML = ""
   hideWelcome()
-
   const res = await fetch("https://datta-ai-server.onrender.com/chat/" + chatId + "?token=" + getToken())
   const messages = await res.json()
-
   messages.forEach(m => {
     if (m.role === "user") {
       chatBox.innerHTML += `
@@ -542,28 +537,22 @@ async function openChat(chatId) {
       `
     }
   })
-
   scrollBottom()
   lucide.createIcons()
 }
 
-
 // ─── DELETE CHAT ──────────────────────────────────────────────────────────────
 async function deleteChat(e, id) {
   e.stopPropagation()
-  await fetch("https://datta-ai-server.onrender.com/chat/" + id + "?token=" + getToken(), {
-    method: "DELETE"
-  })
+  await fetch("https://datta-ai-server.onrender.com/chat/" + id + "?token=" + getToken(), { method: "DELETE" })
   loadSidebar()
 }
-
 
 // ─── COPY TEXT ────────────────────────────────────────────────────────────────
 function copyText(btn) {
   const text = btn.closest(".aiContent").querySelector(".aiBubble").innerText
   navigator.clipboard.writeText(text)
 }
-
 
 // ─── SPEAK TEXT ───────────────────────────────────────────────────────────────
 function speakText(btn) {
@@ -573,26 +562,21 @@ function speakText(btn) {
   speechSynthesis.speak(speech)
 }
 
-
 // ─── STOP VOICE ───────────────────────────────────────────────────────────────
 function stopVoice() {
   speechSynthesis.cancel()
 }
-
 
 // ─── REGENERATE ───────────────────────────────────────────────────────────────
 async function regenerateFrom(btn) {
   const row = btn.closest(".messageRow")
   const prev = row.previousElementSibling
   if (!prev) return
-
   const text = prev.querySelector(".userBubble").innerText
   const aiBubble = row.querySelector(".aiBubble")
   aiBubble.innerHTML = `<span class="stream"></span>`
   const span = aiBubble.querySelector(".stream")
-
   controller = new AbortController()
-
   const formData = new FormData()
   const moodPrefix = buildMoodPrefix()
   formData.append("message", moodPrefix ? moodPrefix + text : text)
@@ -600,23 +584,18 @@ async function regenerateFrom(btn) {
   formData.append("token", getToken())
   formData.append("language", localStorage.getItem("datta_language") || "English")
   if (window.dattaMoodLabel) formData.append("mood", window.dattaMoodLabel)
-
   const res = await fetch("https://datta-ai-server.onrender.com/chat", {
     method: "POST",
     signal: controller.signal,
     body: formData
   })
-
   const reader = res.body.getReader()
   const decoder = new TextDecoder()
   let streamText = ""
-
   while (true) {
     const { done, value } = await reader.read()
     if (done) break
-
     const chunk = decoder.decode(value)
-
     if (chunk.includes("CHATID")) {
       const parts = chunk.split("CHATID")
       streamText += parts[0]
@@ -624,21 +603,17 @@ async function regenerateFrom(btn) {
     } else {
       streamText += chunk
     }
-
     span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>'
     scrollBottom()
   }
-
   span.innerHTML = marked.parse(streamText)
   lucide.createIcons()
 }
-
 
 // ─── VOICE INPUT ──────────────────────────────────────────────────────────────
 function startAssistant() {
   openVoiceAssistant()
 }
-
 
 // ─── TOGGLE MENU ─────────────────────────────────────────────────────────────
 function toggleMenu(e, id) {
@@ -651,7 +626,6 @@ function toggleMenu(e, id) {
 window.onclick = () => {
   document.querySelectorAll(".chatMenu").forEach(m => m.style.display = "none")
 }
-
 
 // ─── SCROLL ───────────────────────────────────────────────────────────────────
 function scrollBottom() {
@@ -672,7 +646,6 @@ if (scrollBtn) {
   })
 }
 
-
 // ─── WELCOME HELPERS ──────────────────────────────────────────────────────────
 function hideWelcome() {
   const w = document.getElementById("welcomeScreen")
@@ -684,16 +657,13 @@ function showWelcome() {
   if (w) w.style.display = "block"
 }
 
-
 // ─── FILL PROMPT ──────────────────────────────────────────────────────────────
 function fillPrompt(text) {
   document.getElementById("message").value = text
   hideWelcome()
   send()
 }
-
 window.fillPrompt = fillPrompt
-
 
 // ─── SUGGEST BUTTONS ──────────────────────────────────────────────────────────
 document.querySelectorAll(".suggestBtn").forEach(btn => {
@@ -705,7 +675,6 @@ document.querySelectorAll(".suggestBtn").forEach(btn => {
   })
 })
 
-
 // ─── ENTER KEY ────────────────────────────────────────────────────────────────
 document.getElementById("message").addEventListener("keydown", function (e) {
   if (e.key === "Enter") {
@@ -714,15 +683,12 @@ document.getElementById("message").addEventListener("keydown", function (e) {
   }
 })
 
-
 // ─── SIDEBAR TOGGLE ───────────────────────────────────────────────────────────
 function toggleSidebar() {
   const sidebar = document.querySelector(".sidebar")
   sidebar.classList.toggle("show")
 }
-
 window.toggleSidebar = toggleSidebar
-
 
 // ─── SAVE CHAT TITLE ─────────────────────────────────────────────────────────
 function saveChatTitle(title) {
@@ -734,7 +700,6 @@ function saveChatTitle(title) {
   history.prepend(div)
 }
 
-
 // ─── SEARCH CHATS ────────────────────────────────────────────────────────────
 function searchChats() {
   const query = document.getElementById("search").value.toLowerCase()
@@ -743,7 +708,6 @@ function searchChats() {
     item.style.display = title.includes(query) ? "" : "none"
   })
 }
-
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 window.send = send
@@ -754,19 +718,16 @@ function showSection(name) {
   document.querySelectorAll(".sidebarSection").forEach(s => s.style.display = "none")
   const el = document.getElementById("section-" + name)
   if (el) el.style.display = "flex"
-
   document.querySelectorAll(".navItem").forEach(b => b.classList.remove("active"))
   const btns = document.querySelectorAll(".navItem")
   const idx = ["chats","projects","artifacts"].indexOf(name)
   if (btns[idx]) btns[idx].classList.add("active")
-
   const showRecents = name === "chats"
   const recentsLabel = document.getElementById("recentsLabel")
   const search = document.getElementById("search")
   if (recentsLabel) recentsLabel.style.display = showRecents ? "block" : "none"
   if (search) search.style.display = showRecents ? "block" : "none"
 }
-
 window.showSection = showSection
 
 // LOGOUT
@@ -775,7 +736,6 @@ function logout() {
   localStorage.removeItem("datta_user")
   window.location.href = "login.html"
 }
-
 window.logout = logout
 
 // ── SETTINGS ─────────────────────────────────────────────────────────────────
@@ -826,14 +786,11 @@ function loadSettingsUI() {
   } catch(e) {}
   const usernameInput = document.getElementById("newUsername")
   if (usernameInput) usernameInput.placeholder = user.username || "Enter new username"
-
   const theme = localStorage.getItem("datta_theme") || "dark"
   setTheme(theme, true)
-
   const lang = localStorage.getItem("datta_language") || "English"
   const langSelect = document.getElementById("aiLanguage")
   if (langSelect) langSelect.value = lang
-
   const notifSettings = JSON.parse(localStorage.getItem("datta_notif") || "{}")
   const soundToggle = document.getElementById("soundToggle")
   const notifToggle = document.getElementById("notifToggle")
@@ -847,7 +804,6 @@ async function changeUsername() {
   const newUsername = document.getElementById("newUsername").value.trim()
   if (!newUsername) return showSettingsMsg("Please enter a username", "error")
   if (newUsername.length < 3) return showSettingsMsg("Username must be at least 3 characters", "error")
-
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/auth/update-username", {
       method: "POST",
@@ -856,16 +812,13 @@ async function changeUsername() {
     })
     const data = await res.json()
     if (!res.ok) return showSettingsMsg(data.error || "Failed to update", "error")
-
     const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
     user.username = newUsername
     localStorage.setItem("datta_user", JSON.stringify(user))
-
     const nameEl = document.querySelector(".profileName")
     const avatarEl = document.querySelector(".profileAvatar")
     if (nameEl) nameEl.textContent = newUsername
     if (avatarEl) avatarEl.textContent = newUsername[0].toUpperCase()
-
     showSettingsMsg("Username updated successfully!", "success")
   } catch (e) {
     showSettingsMsg("Server error. Try again.", "error")
@@ -876,11 +829,9 @@ async function changePassword() {
   const current = document.getElementById("currentPassword").value
   const newPass = document.getElementById("newPassword").value
   const confirm = document.getElementById("confirmPassword").value
-
   if (!current || !newPass || !confirm) return showSettingsMsg("Please fill all fields", "error")
   if (newPass.length < 6) return showSettingsMsg("New password must be at least 6 characters", "error")
   if (newPass !== confirm) return showSettingsMsg("Passwords do not match", "error")
-
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/auth/change-password", {
       method: "POST",
@@ -889,7 +840,6 @@ async function changePassword() {
     })
     const data = await res.json()
     if (!res.ok) return showSettingsMsg(data.error || "Failed to change password", "error")
-
     document.getElementById("currentPassword").value = ""
     document.getElementById("newPassword").value = ""
     document.getElementById("confirmPassword").value = ""
@@ -940,13 +890,9 @@ function saveNotifSettings() {
 
 async function deleteAllChats() {
   if (!confirm("Are you sure? This will delete ALL your chats permanently!")) return
-
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/chats/all?token=" + getToken(), {
-      method: "DELETE"
-    })
+    const res = await fetch("https://datta-ai-server.onrender.com/chats/all?token=" + getToken(), { method: "DELETE" })
     if (!res.ok) return showSettingsMsg("Failed to delete chats", "error")
-
     chatBox.innerHTML = ""
     currentChatId = null
     showWelcome()
@@ -960,9 +906,7 @@ async function deleteAllChats() {
 async function deleteAccount() {
   const password = document.getElementById("deleteAccountPassword").value
   if (!password) return showSettingsMsg("Enter your password to confirm", "error")
-
   if (!confirm("This will PERMANENTLY delete your account. Are you absolutely sure?")) return
-
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/auth/delete-account", {
       method: "DELETE",
@@ -971,7 +915,6 @@ async function deleteAccount() {
     })
     const data = await res.json()
     if (!res.ok) return showSettingsMsg(data.error || "Failed to delete account", "error")
-
     localStorage.clear()
     window.location.href = "login.html"
   } catch (e) {
@@ -1040,19 +983,16 @@ function openVoiceAssistant() {
   const overlay = document.getElementById("voiceOverlay")
   if (overlay) overlay.classList.add("show")
   setVoiceStatus("Tap the mic to speak", "idle")
-
-  // Greeting changes based on mood
   const moodGreets = {
     focused: "Ready to help you get things done!",
-    happy: "Hey hey! I am so happy to chat with you!",
+    happy: "Hey! Happy to chat with you!",
     stressed: "Hey, take a deep breath. I am here for you.",
     creative: "Let us create something amazing together!",
     lazy: "sup. what do you need.",
-    curious: "Oh how exciting! What shall we explore today?"
+    curious: "What shall we explore today?"
   }
   const savedMood = localStorage.getItem("datta_mood")
   const greeting = (savedMood && moodGreets[savedMood]) || "Hello! I am Datta AI. How can I help you today?"
-
   setTimeout(() => { speakText2(greeting) }, 500)
 }
 
@@ -1068,7 +1008,6 @@ function setVoiceStatus(text, mode) {
   const status = document.getElementById("voiceStatus")
   const orb = document.getElementById("voiceOrb")
   const micBtn = document.getElementById("voiceMicBtn")
-
   if (status) status.textContent = text
   if (orb) {
     orb.classList.remove("listening", "speaking")
@@ -1092,24 +1031,15 @@ function startListening() {
     setVoiceText("Speech recognition not supported in this browser.")
     return
   }
-
   stopSpeaking()
-
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
   voiceRecognition = new SpeechRecognition()
   voiceRecognition.lang = "en-US"
   voiceRecognition.continuous = false
   voiceRecognition.interimResults = true
-
-  voiceRecognition.onstart = () => {
-    isListening = true
-    setVoiceStatus("Listening...", "listening")
-    setVoiceText("")
-  }
-
+  voiceRecognition.onstart = () => { isListening = true; setVoiceStatus("Listening...", "listening"); setVoiceText("") }
   voiceRecognition.onresult = (e) => {
-    let interim = ""
-    let final = ""
+    let interim = "", final = ""
     for (let i = e.resultIndex; i < e.results.length; i++) {
       if (e.results[i].isFinal) { final += e.results[i][0].transcript }
       else { interim += e.results[i][0].transcript }
@@ -1117,17 +1047,8 @@ function startListening() {
     setVoiceText(final || interim)
     if (final) { stopListening(); processVoiceQuery(final) }
   }
-
-  voiceRecognition.onerror = (e) => {
-    isListening = false
-    setVoiceStatus("Error: " + e.error + ". Try again.", "idle")
-  }
-
-  voiceRecognition.onend = () => {
-    isListening = false
-    if (voiceActive) setVoiceStatus("Tap to speak", "idle")
-  }
-
+  voiceRecognition.onerror = (e) => { isListening = false; setVoiceStatus("Error: " + e.error + ". Try again.", "idle") }
+  voiceRecognition.onend = () => { isListening = false; if (voiceActive) setVoiceStatus("Tap to speak", "idle") }
   voiceRecognition.start()
 }
 
@@ -1142,17 +1063,14 @@ function stopListening() {
 
 async function processVoiceQuery(query) {
   if (!query.trim()) return
-
   setVoiceStatus("Thinking...", "speaking")
   setVoiceText(query)
-
   const closeCmds = ["close", "stop", "exit", "bye", "goodbye", "dismiss"]
   if (closeCmds.some(c => query.toLowerCase().includes(c))) {
     speakText2("Goodbye! Have a great day!")
     setTimeout(closeVoiceAssistant, 2000)
     return
   }
-
   try {
     const formData = new FormData()
     const moodPrefix = buildMoodPrefix()
@@ -1162,25 +1080,17 @@ async function processVoiceQuery(query) {
     formData.append("language", localStorage.getItem("datta_language") || "English")
     formData.append("voice", "true")
     if (window.dattaMoodLabel) formData.append("mood", window.dattaMoodLabel)
-
-    const res = await fetch("https://datta-ai-server.onrender.com/chat", {
-      method: "POST",
-      body: formData
-    })
-
+    const res = await fetch("https://datta-ai-server.onrender.com/chat", { method: "POST", body: formData })
     if (!res.ok) {
       speakText2("Sorry, I encountered an error. Please try again.")
       setVoiceStatus("Error. Tap to try again.", "idle")
       return
     }
-
     const chatIdFromHeader = res.headers.get("x-chat-id")
     if (!currentChatId && chatIdFromHeader) currentChatId = chatIdFromHeader
-
     const reader = res.body.getReader()
     const decoder = new TextDecoder()
     let fullText = ""
-
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
@@ -1193,7 +1103,6 @@ async function processVoiceQuery(query) {
         fullText += chunk
       }
     }
-
     const cleanText = fullText
       .replace(/!\[.*?\]\(.*?\)/g, "I generated an image for you.")
       .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
@@ -1202,9 +1111,7 @@ async function processVoiceQuery(query) {
       .replace(/\*/g, "")
       .replace(/`/g, "")
       .trim()
-
     setVoiceText(cleanText.substring(0, 100) + (cleanText.length > 100 ? "..." : ""))
-
     const aiEmoji = window.dattaMoodEmoji || "🤖"
     chatBox.innerHTML += `
       <div class="messageRow userRow">
@@ -1223,7 +1130,6 @@ async function processVoiceQuery(query) {
     chatBox.scrollTop = chatBox.scrollHeight
     loadSidebar()
     speakText2(cleanText)
-
   } catch (err) {
     console.error("Voice query error:", err)
     speakText2("Sorry, something went wrong.")
@@ -1234,16 +1140,13 @@ async function processVoiceQuery(query) {
 function speakText2(text) {
   if (!voiceSynth) return
   stopSpeaking()
-
   isSpeaking = true
   setVoiceStatus("Speaking...", "speaking")
-
   const utterance = new SpeechSynthesisUtterance(text)
   utterance.lang = "en-US"
   utterance.rate = 0.95
   utterance.pitch = 1.0
   utterance.volume = 1.0
-
   const voices = voiceSynth.getVoices()
   const preferred = voices.find(v =>
     v.name.includes("Google") || v.name.includes("Samantha") ||
@@ -1251,7 +1154,6 @@ function speakText2(text) {
     (v.lang === "en-US" && !v.name.includes("Male"))
   )
   if (preferred) utterance.voice = preferred
-
   utterance.onend = () => {
     isSpeaking = false
     if (voiceActive) {
@@ -1259,7 +1161,6 @@ function speakText2(text) {
       setTimeout(() => { if (voiceActive) startListening() }, 800)
     }
   }
-
   utterance.onerror = () => { isSpeaking = false; setVoiceStatus("Tap to speak", "idle") }
   voiceSynth.speak(utterance)
 }
@@ -1293,20 +1194,16 @@ async function loadUserVersion() {
     const data = await res.json()
     const plan = data.plan || "free"
     const v = planVersions[plan] || planVersions.free
-
     const tag = document.getElementById("versionTag")
     if (tag) tag.textContent = "DATTA AI " + v.version + " · " + v.name.toUpperCase()
-
     const sub = document.querySelector(".profileSub")
     if (sub) sub.textContent = v.emoji + " " + v.name + " " + v.sanskrit
-
     const upgradeBtn = document.querySelector(".upgradeBtn div div:first-child")
     if (upgradeBtn && plan === "free") {
       upgradeBtn.textContent = "Upgrade to Agni 🔥"
     } else if (upgradeBtn) {
       upgradeBtn.textContent = v.emoji + " " + v.name + " Plan"
     }
-
     localStorage.setItem("datta_plan", plan)
   } catch(e) {
     console.log("Version load error:", e.message)
