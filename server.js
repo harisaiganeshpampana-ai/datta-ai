@@ -94,6 +94,11 @@ function authMiddleware(req, res, next) {
   if (!token && req.body && req.body.token) token = req.body.token
   if (!token && req.query && req.query.token) token = req.query.token
 
+  console.log("Auth - header:", header ? "present" : "none")
+  console.log("Auth - body token:", req.body && req.body.token ? "present" : "none")
+  console.log("Auth - query token:", req.query && req.query.token ? "present" : "none")
+  console.log("Auth - final token:", token ? token.substring(0, 20) + "..." : "NONE")
+
   if (!token) return res.status(401).json({ error: "No token" })
 
   if (token.startsWith("guest_")) {
