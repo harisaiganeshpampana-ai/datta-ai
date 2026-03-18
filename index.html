@@ -523,13 +523,13 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
 
   <!-- NAV -->
   <div style="padding:0 8px 4px;">
-    <button class="navItem active" onclick="showSection('chats')" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;">
+    <button class="navItem active" onclick="showSection('chats');if(window.innerWidth<900)closeSidebar()" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chats
     </button>
-    <button class="navItem" onclick="showSection('projects')" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;">
+    <button class="navItem" onclick="showSection('projects');if(window.innerWidth<900)closeSidebar()" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>Projects
     </button>
-    <button class="navItem" onclick="showSection('artifacts')" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;">
+    <button class="navItem" onclick="showSection('artifacts');if(window.innerWidth<900)closeSidebar()" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Artifacts
     </button>
     <button onclick="window.location.href='feed.html'" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)'" onmouseout="this.style.background='none'">
@@ -550,6 +550,7 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
     <div class="emptySection"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><p>No artifacts yet</p></div>
   </div>
 
+  <div class="sidebarBottom">
   <div id="versionTag" style="text-align:center;font-size:9px;color:#252000;letter-spacing:2px;padding:2px 0;font-family:'Rajdhani',sans-serif;">DATTA AI v2.0 · SHAKTI</div>
 
   <!-- UPGRADE -->
@@ -594,6 +595,7 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
       Log out
     </button>
   </div>
+  </div><!-- end sidebarBottom -->
 
 </div>
 
