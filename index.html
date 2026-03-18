@@ -7,6 +7,7 @@
 <meta name="description" content="Datta AI - Think Less. Do More. Your AI assistant for chat, images, voice and web search.">
 <link rel="icon" type="image/jpeg" href="logo.jpeg">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="theme-vars.css">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -224,7 +225,94 @@
 <div class="topbar">
   <button onclick="toggleSidebar()" class="menuBtn">☰</button>
   <span class="topTitle">Datta AI</span>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:6px;">
+    <button id="topbarColorBtn" onclick="toggleColorPanel()" title="Change Theme Color" style="
+      background: none; border: none; cursor: pointer;
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; position: relative;
+    ">
+      <div id="topbarColorDot" style="
+        width: 22px; height: 22px; border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 8px var(--accent-glow);
+        border: 2px solid rgba(255,255,255,0.15);
+        transition: all 0.3s;
+      "></div>
+    </button>
+  </div>
 </div>
+
+<!-- COLOR PANEL POPUP -->
+<div id="colorPanel" style="
+  position: fixed; top: 58px; right: 10px;
+  background: #0f0e00; border: 1px solid rgba(255,215,0,0.2);
+  border-radius: 20px; padding: 20px;
+  z-index: 2000; display: none;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  min-width: 240px;
+  animation: colorPanelIn 0.2s ease;
+">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:3px;color:var(--accent);margin-bottom:14px;">🎨 THEME COLOR</div>
+
+  <!-- PRESET SWATCHES -->
+  <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+    <button class="presetColor active" data-color="#ffd700" style="background:#ffd700;" title="👑 Gold (Default)" onclick="dattaTheme.saveAndApply('#ffd700');updateTopbarDot()"></button>
+    <button class="presetColor" data-color="#00ff88" style="background:#00ff88;" title="Green" onclick="dattaTheme.saveAndApply('#00ff88');updateTopbarDot()"></button>
+    <button class="presetColor" data-color="#00ccff" style="background:#00ccff;" title="Cyan" onclick="dattaTheme.saveAndApply('#00ccff');updateTopbarDot()"></button>
+    <button class="presetColor" data-color="#c084fc" style="background:#c084fc;" title="Purple" onclick="dattaTheme.saveAndApply('#c084fc');updateTopbarDot()"></button>
+    <button class="presetColor" data-color="#f97316" style="background:#f97316;" title="Orange" onclick="dattaTheme.saveAndApply('#f97316');updateTopbarDot()"></button>
+    <button class="presetColor" data-color="#ef4444" style="background:#ef4444;" title="Red" onclick="dattaTheme.saveAndApply('#ef4444');updateTopbarDot()"></button>
+    <button class="presetColor" data-color="#3b82f6" style="background:#3b82f6;" title="Blue" onclick="dattaTheme.saveAndApply('#3b82f6');updateTopbarDot()"></button>
+    <button class="presetColor" data-color="#ec4899" style="background:#ec4899;" title="Pink" onclick="dattaTheme.saveAndApply('#ec4899');updateTopbarDot()"></button>
+  </div>
+
+  <!-- CUSTOM PICKER -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+    <span style="font-family:'Rajdhani',sans-serif;font-size:13px;color:#665500;letter-spacing:1px;">Custom:</span>
+    <input type="color" id="accentColorPicker" value="#ffd700"
+      oninput="dattaTheme.saveAndApply(this.value);updateTopbarDot()"
+      style="width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,0.1);cursor:pointer;padding:2px;background:none;outline:none;">
+    <button onclick="dattaTheme.saveAndApply(dattaTheme.DEFAULT);updateTopbarDot()" style="
+      padding:6px 12px; background:none;
+      border:1px solid rgba(255,215,0,0.2);
+      border-radius:8px; color:#665500;
+      font-size:11px; font-family:'Rajdhani',sans-serif;
+      letter-spacing:1px; cursor:pointer; transition:all 0.2s;
+    " onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#665500'">
+      👑 Reset Gold
+    </button>
+  </div>
+
+  <button onclick="toggleColorPanel()" style="
+    width:100%; padding:8px; background:rgba(255,215,0,0.07);
+    border:1px solid rgba(255,215,0,0.15); border-radius:10px;
+    color:var(--accent); font-family:'Rajdhani',sans-serif;
+    font-size:13px; letter-spacing:1px; cursor:pointer;
+  ">✕ Close</button>
+</div>
+
+<style>
+@keyframes colorPanelIn {
+  from { opacity:0; transform:translateY(-8px) scale(0.96); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+.presetColor {
+  width:32px; height:32px; border-radius:50%;
+  border:3px solid transparent; cursor:pointer;
+  transition:all 0.2s; position:relative; flex-shrink:0;
+}
+.presetColor:hover { transform:scale(1.15); }
+.presetColor.active {
+  border-color:white !important;
+  box-shadow:0 0 0 2px rgba(255,255,255,0.3), 0 0 16px rgba(255,255,255,0.2);
+}
+.presetColor.active::after {
+  content:'✓'; position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:13px; font-weight:700; color:rgba(0,0,0,0.7);
+}
+</style>
 
 <!-- SIDEBAR -->
 <div class="sidebar">
@@ -587,6 +675,27 @@
     </div>
     <div class="sTabContent" id="tab-appearance">
       <div class="sSection">
+        <div class="sLabel">🎨 Accent Color</div>
+        <div class="sHint" style="margin-bottom:14px;">Choose your theme color. Gold 👑 is the default.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+          <button class="presetColor active" data-color="#ffd700" style="background:#ffd700;" title="👑 Gold" onclick="dattaTheme.saveAndApply('#ffd700');updateTopbarDot()"></button>
+          <button class="presetColor" data-color="#00ff88" style="background:#00ff88;" title="Green" onclick="dattaTheme.saveAndApply('#00ff88');updateTopbarDot()"></button>
+          <button class="presetColor" data-color="#00ccff" style="background:#00ccff;" title="Cyan" onclick="dattaTheme.saveAndApply('#00ccff');updateTopbarDot()"></button>
+          <button class="presetColor" data-color="#c084fc" style="background:#c084fc;" title="Purple" onclick="dattaTheme.saveAndApply('#c084fc');updateTopbarDot()"></button>
+          <button class="presetColor" data-color="#f97316" style="background:#f97316;" title="Orange" onclick="dattaTheme.saveAndApply('#f97316');updateTopbarDot()"></button>
+          <button class="presetColor" data-color="#ef4444" style="background:#ef4444;" title="Red" onclick="dattaTheme.saveAndApply('#ef4444');updateTopbarDot()"></button>
+          <button class="presetColor" data-color="#3b82f6" style="background:#3b82f6;" title="Blue" onclick="dattaTheme.saveAndApply('#3b82f6');updateTopbarDot()"></button>
+          <button class="presetColor" data-color="#ec4899" style="background:#ec4899;" title="Pink" onclick="dattaTheme.saveAndApply('#ec4899');updateTopbarDot()"></button>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-family:'Rajdhani',sans-serif;font-size:13px;color:#665500;letter-spacing:1px;">Custom:</span>
+          <input type="color" id="accentColorPickerSettings" value="#ffd700"
+            oninput="dattaTheme.saveAndApply(this.value);updateTopbarDot()"
+            style="width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,0.1);cursor:pointer;padding:2px;background:none;outline:none;">
+          <button onclick="dattaTheme.saveAndApply(dattaTheme.DEFAULT);updateTopbarDot()" class="resetAccentBtn">👑 Reset Gold</button>
+        </div>
+      </div>
+      <div class="sSection">
         <div class="sLabel">Theme</div>
         <div class="themeOptions">
           <button class="themeBtn active" id="themeDark" onclick="setTheme('dark')">🌙 Dark</button>
@@ -775,5 +884,39 @@
   </div>
 </div>
 
+<script src="theme.js"></script>
+<script>
+  function toggleColorPanel() {
+    const panel = document.getElementById('colorPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function updateTopbarDot() {
+    const dot = document.getElementById('topbarColorDot');
+    if (dot) {
+      dot.style.background = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+    }
+    // Sync both pickers
+    const saved = localStorage.getItem('datta_accent') || '#ffd700';
+    const p1 = document.getElementById('accentColorPicker');
+    const p2 = document.getElementById('accentColorPickerSettings');
+    if (p1) p1.value = saved;
+    if (p2) p2.value = saved;
+  }
+
+  // Close color panel when clicking outside
+  document.addEventListener('click', function(e) {
+    const panel = document.getElementById('colorPanel');
+    const btn = document.getElementById('topbarColorBtn');
+    if (panel && !panel.contains(e.target) && !btn.contains(e.target)) {
+      panel.style.display = 'none';
+    }
+  });
+
+  // Update dot on load
+  window.addEventListener('DOMContentLoaded', function() {
+    setTimeout(updateTopbarDot, 100);
+  });
+</script>
 </body>
 </html>
