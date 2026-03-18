@@ -253,25 +253,34 @@ function showAutoMoodPill(moodKey) {
   }, 4000)
 }
 
-// Show auto pill on page load if there was a previous auto-detected mood
+// Show auto pill on page load — mirrors current active mood
 function restoreAutoMoodPill() {
-  const saved = localStorage.getItem("datta_last_auto_mood")
-  if (!saved) return
+  const autoSaved = localStorage.getItem("datta_last_auto_mood")
+  if (!autoSaved) return  // only show if a mood was auto-detected before
+
   const MOODS = window.MOODS || {}
-  const mood = MOODS[saved]
+  const mood = MOODS[autoSaved]
   if (!mood) return
+
   const pill = document.getElementById("autoMoodPill")
   if (!pill) return
+
   pill.style.border = `1px solid ${mood.color}55`
   pill.style.background = mood.bgGlow || `rgba(255,215,0,0.05)`
   pill.style.color = mood.color
   pill.textContent = `🤖 ${mood.emoji} ${mood.label}`
   pill.style.display = "flex"
+  pill.style.transition = "all 0.3s ease"
 }
 
-// Run on load
+// Run on load — wait for mood.js to fully load first
 window.addEventListener("DOMContentLoaded", function() {
-  setTimeout(restoreAutoMoodPill, 600)
+  setTimeout(restoreAutoMoodPill, 1500)
+})
+
+// Also try again after full page load
+window.addEventListener("load", function() {
+  setTimeout(restoreAutoMoodPill, 500)
 })
 
 // ── FIXED buildMoodPrefix — with strict length control ────────────────────────
