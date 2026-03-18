@@ -1342,3 +1342,26 @@ body.light #splash { background: #fff; }
   transition: transform 0.2s;
   cursor: zoom-in;
 }
+
+/* UPGRADE BUTTON IN SIDEBAR */
+.upgradeBtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, #0a2a1a, #0a1a2a);
+  border: 1px solid #00ff8833;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.upgradeBtn:hover {
+  background: linear-gradient(135deg, #0a3a2a, #0a2a3a);
+  border-color: #00ff8866;
+}
+
+.upgradeBtn span:first-child {
+  font-size: 20px;
+}
