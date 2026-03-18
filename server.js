@@ -94,11 +94,6 @@ function authMiddleware(req, res, next) {
   if (!token && req.body && req.body.token) token = req.body.token
   if (!token && req.query && req.query.token) token = req.query.token
 
-  console.log("Auth - header:", header ? "present" : "none")
-  console.log("Auth - body token:", req.body && req.body.token ? "present" : "none")
-  console.log("Auth - query token:", req.query && req.query.token ? "present" : "none")
-  console.log("Auth - final token:", token ? token.substring(0, 20) + "..." : "NONE")
-
   if (!token) return res.status(401).json({ error: "No token" })
 
   if (token.startsWith("guest_")) {
@@ -165,8 +160,9 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       let user = await User.findOne({ googleId: profile.id })
       if (!user) {
         const email = profile.emails && profile.emails[0] ? profile.emails[0].value : ""
-        const base = profile.displayName ? profile.displayName.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase() : "user"
-        const username = base + "_" + profile.id.slice(-4)
+        // Use first name only as username
+        const firstName = profile.displayName ? profile.displayName.split(" ")[0] : "User"
+        const username = firstName + "_" + profile.id.slice(-4)
         user = await User.create({ googleId: profile.id, username: username, email: email })
       }
       const token = generateToken(user)
@@ -395,7 +391,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const aiMessages = [
       {
         role: "system",
-        content: "You are Datta AI, a helpful and accurate assistant. The user's name is " + req.user.username + ". Keep answers short and to the point. For simple questions give 1-3 sentences. For complex questions give clear structured answers. If an image or file is provided, analyze it carefully." + langNote + searchNote
+        content: "You are Datta AI, a helpful and accurate assistant. Keep answers short and to the point. For simple questions give 1-3 sentences. For complex questions give clear structured answers. If an image or file is provided, analyze it carefully. Never mention the user's name in your answers." + langNote + searchNote
       },
       ...history,
       { role: "user", content: userContent }
