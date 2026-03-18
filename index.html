@@ -156,29 +156,7 @@
   <!-- INPUT -->
   <div class="inputArea" id="inputArea">
 
-    <!-- PLUS MENU -->
-    <div class="plusMenu" id="plusMenu">
-      <button class="plusMenuItem" onclick="triggerCamera()">
-        <span class="plusMenuIcon">📷</span>
-        <span>Camera</span>
-      </button>
-      <button class="plusMenuItem" onclick="triggerPhotos()">
-        <span class="plusMenuIcon">🖼️</span>
-        <span>Photos</span>
-      </button>
-      <button class="plusMenuItem" onclick="triggerFile()">
-        <span class="plusMenuIcon">📄</span>
-        <span>File</span>
-      </button>
-      <button class="plusMenuItem" onclick="triggerWebSearch()">
-        <span class="plusMenuIcon">🌐</span>
-        <span>Web Search</span>
-      </button>
-      <button class="plusMenuItem" onclick="triggerImageGen()">
-        <span class="plusMenuIcon">🎨</span>
-        <span>Generate Image</span>
-      </button>
-    </div>
+
 
     <div class="inputWrap" id="inputWrap">
 
@@ -198,27 +176,37 @@
       <!-- Bottom row -->
       <div class="inputRow">
         <button class="plusBtn" id="plusBtn" onclick="togglePlusMenu()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
         </button>
 
-        <input id="message" type="text" placeholder="Ask Datta AI..." autocomplete="off">
+        <input id="message" type="text" placeholder="Reply to Datta AI..." autocomplete="off">
 
         <div class="inputRightBtns">
-          <button class="iconBtn voiceBtn" onclick="startAssistant()" title="Voice">
+          <!-- Mic / Siri button -->
+          <button class="micBtn" id="micBtn" onclick="startAssistant()" title="Voice">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="6" y1="9" x2="6" y2="15"></line>
-              <line x1="10" y1="6" x2="10" y2="18"></line>
-              <line x1="14" y1="10" x2="14" y2="14"></line>
-              <line x1="18" y1="8" x2="18" y2="16"></line>
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
             </svg>
           </button>
+
+          <!-- Stop button (shows while generating) -->
+          <button class="stopBtn" id="stopBtn" onclick="stopGeneration()" style="display:none;" title="Stop">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+            </svg>
+          </button>
+
+          <!-- Send button (up arrow) -->
           <button class="sendBtn" id="sendBtn" onclick="send()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="19" x2="12" y2="5"/>
+              <polyline points="5 12 12 5 19 12"/>
             </svg>
           </button>
         </div>
@@ -240,24 +228,43 @@
     }, 3000)
   })
 
-  // PLUS MENU
+  // BOTTOM SHEET
   function togglePlusMenu() {
-    const menu = document.getElementById("plusMenu")
+    const sheet = document.getElementById("addToChatSheet")
+    const overlay = document.getElementById("addToChatOverlay")
     const btn = document.getElementById("plusBtn")
-    if (!menu) return
-    const isOpen = menu.classList.toggle("show")
-    btn.classList.toggle("active", isOpen)
+    if (!sheet) return
+    sheet.classList.add("show")
+    overlay.classList.add("show")
+    btn.classList.add("active")
   }
 
-  // Close plus menu when clicking outside
-  document.addEventListener("click", function(e) {
-    const menu = document.getElementById("plusMenu")
+  function closePlusMenu() {
+    const sheet = document.getElementById("addToChatSheet")
+    const overlay = document.getElementById("addToChatOverlay")
     const btn = document.getElementById("plusBtn")
-    if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
-      menu.classList.remove("show")
-      btn.classList.remove("active")
+    if (sheet) sheet.classList.remove("show")
+    if (overlay) overlay.classList.remove("show")
+    if (btn) btn.classList.remove("active")
+  }
+
+  function toggleWebSearch(row) {
+    const toggle = document.getElementById("webSearchToggle")
+    if (toggle) toggle.checked = !toggle.checked
+    handleWebSearchToggle(toggle)
+  }
+
+  function handleWebSearchToggle(checkbox) {
+    window.webSearchEnabled = checkbox.checked
+    const row = checkbox.closest(".sheetRow")
+    if (row) {
+      row.style.opacity = checkbox.checked ? "1" : "0.7"
     }
-  })
+  }
+
+  window.closePlusMenu = closePlusMenu
+  window.toggleWebSearch = toggleWebSearch
+  window.handleWebSearchToggle = handleWebSearchToggle
 
   // FILE HELPERS
   function getSelectedFile() {
@@ -508,6 +515,111 @@
     </button>
     <button class="voiceActionBtn voiceCloseBtn" onclick="closeVoiceAssistant()">✕ Close</button>
   </div>
+</div>
+
+
+<!-- ADD TO CHAT BOTTOM SHEET -->
+<div class="addToChatOverlay" id="addToChatOverlay" onclick="closePlusMenu()"></div>
+<div class="addToChatSheet" id="addToChatSheet">
+  <div class="sheetHandle"></div>
+  <div class="sheetHeader">
+    <button class="sheetCloseBtn" onclick="closePlusMenu()">✕</button>
+    <div class="sheetTitle">Add to chat</div>
+    <div></div>
+  </div>
+
+  <!-- Top 3 big buttons -->
+  <div class="sheetTopBtns">
+    <button class="sheetBigBtn" onclick="triggerCamera();closePlusMenu()">
+      <div class="sheetBigIcon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+      </div>
+      <span>Camera</span>
+    </button>
+    <button class="sheetBigBtn" onclick="triggerPhotos();closePlusMenu()">
+      <div class="sheetBigIcon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+      </div>
+      <span>Photos</span>
+    </button>
+    <button class="sheetBigBtn" onclick="triggerFile();closePlusMenu()">
+      <div class="sheetBigIcon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </div>
+      <span>Files</span>
+    </button>
+  </div>
+
+  <div class="sheetDivider"></div>
+
+  <!-- Web Search Row -->
+  <div class="sheetRow" onclick="toggleWebSearch(this)">
+    <div class="sheetRowLeft">
+      <div class="sheetRowIcon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </div>
+      <div>
+        <div class="sheetRowLabel">Web search</div>
+      </div>
+    </div>
+    <label class="sheetToggle" onclick="event.stopPropagation()">
+      <input type="checkbox" id="webSearchToggle" onchange="handleWebSearchToggle(this)">
+      <span class="sheetToggleTrack"></span>
+    </label>
+  </div>
+
+  <div class="sheetDivider"></div>
+
+  <!-- Image Generate Row -->
+  <div class="sheetRow" onclick="triggerImageGen();closePlusMenu()">
+    <div class="sheetRowLeft">
+      <div class="sheetRowIcon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      </div>
+      <div>
+        <div class="sheetRowLabel">Generate Image</div>
+        <div class="sheetRowSub">AI image generation</div>
+      </div>
+    </div>
+    <span class="sheetRowArrow">›</span>
+  </div>
+
+  <div class="sheetDivider"></div>
+
+  <!-- Voice Row -->
+  <div class="sheetRow" onclick="startAssistant();closePlusMenu()">
+    <div class="sheetRowLeft">
+      <div class="sheetRowIcon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+      </div>
+      <div>
+        <div class="sheetRowLabel">Voice Assistant</div>
+        <div class="sheetRowSub">Talk to Datta AI</div>
+      </div>
+    </div>
+    <span class="sheetRowArrow">›</span>
+  </div>
+
 </div>
 
 </body>
