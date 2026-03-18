@@ -224,33 +224,55 @@ function getMoodContext() {
 }
 
 // ── AUTO MOOD DETECT INDICATOR ────────────────────────────────────────────────
-// Shows a small pill in topbar when mood is auto-detected from message
+// Shows the #autoMoodPill in the topbar when mood is auto-detected from message
 function showAutoMoodPill(moodKey) {
   const MOODS = window.MOODS || {}
   const mood = MOODS[moodKey]
   if (!mood) return
 
-  let pill = document.getElementById("autoMoodPill")
-  if (!pill) {
-    pill = document.createElement("div")
-    pill.id = "autoMoodPill"
-    pill.style.cssText = `
-      position:fixed;top:58px;left:50%;transform:translateX(-50%);
-      background:#0f0e00;border-radius:50px;padding:5px 14px;
-      font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;
-      letter-spacing:1px;z-index:3000;pointer-events:none;
-      transition:opacity 0.4s ease;opacity:0;
-      box-shadow:0 4px 20px rgba(0,0,0,0.6);white-space:nowrap;
-    `
-    document.body.appendChild(pill)
-  }
+  const pill = document.getElementById("autoMoodPill")
+  if (!pill) return
 
   pill.style.border = `1px solid ${mood.color}55`
+  pill.style.background = mood.bgGlow || `rgba(255,215,0,0.05)`
   pill.style.color = mood.color
-  pill.textContent = `🤖 Auto-detected: ${mood.emoji} ${mood.label}`
-  pill.style.opacity = "1"
-  setTimeout(() => { pill.style.opacity = "0" }, 3000)
+  pill.textContent = `🤖 ${mood.emoji} ${mood.label}`
+  pill.style.display = "flex"
+
+  // Save last auto detected mood so it persists on reload
+  localStorage.setItem("datta_last_auto_mood", moodKey)
+
+  // Auto hide after 4 seconds
+  clearTimeout(pill._hideTimer)
+  pill._hideTimer = setTimeout(() => {
+    pill.style.opacity = "0"
+    setTimeout(() => {
+      pill.style.display = "none"
+      pill.style.opacity = "1"
+    }, 400)
+  }, 4000)
 }
+
+// Show auto pill on page load if there was a previous auto-detected mood
+function restoreAutoMoodPill() {
+  const saved = localStorage.getItem("datta_last_auto_mood")
+  if (!saved) return
+  const MOODS = window.MOODS || {}
+  const mood = MOODS[saved]
+  if (!mood) return
+  const pill = document.getElementById("autoMoodPill")
+  if (!pill) return
+  pill.style.border = `1px solid ${mood.color}55`
+  pill.style.background = mood.bgGlow || `rgba(255,215,0,0.05)`
+  pill.style.color = mood.color
+  pill.textContent = `🤖 ${mood.emoji} ${mood.label}`
+  pill.style.display = "flex"
+}
+
+// Run on load
+window.addEventListener("DOMContentLoaded", function() {
+  setTimeout(restoreAutoMoodPill, 600)
+})
 
 // ── FIXED buildMoodPrefix — with strict length control ────────────────────────
 function buildMoodPrefix() {
