@@ -1,0 +1,255 @@
+/*
+  ═══════════════════════════════════════════
+  DATTA AI — DYNAMIC ACCENT COLOR VARIABLES
+  Add this AFTER style.css in your HTML
+  ═══════════════════════════════════════════
+  Default values (gold) — overridden by theme.js
+*/
+
+:root {
+  --accent:        #ffd700;
+  --accent-rgb:    255,215,0;
+  --accent-dark:   rgba(255,215,0,0.08);
+  --accent-mid:    rgba(255,215,0,0.20);
+  --accent-glow:   rgba(255,215,0,0.35);
+  --accent-border: rgba(255,215,0,0.25);
+}
+
+/* ── TOPBAR ── */
+.topTitle {
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #ff4400)) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 0 8px var(--accent-glow)) !important;
+}
+
+/* ── SIDEBAR BRAND ── */
+.sidebarBrand {
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #ff4400)) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 0 8px var(--accent-glow)) !important;
+}
+
+/* ── NEW CHAT BUTTON ── */
+.newChatBtn { color: var(--accent) !important; }
+.newChatBtn:hover { background: var(--accent-dark) !important; }
+
+/* ── NAV ITEMS ── */
+.navItem:hover { background: var(--accent-dark) !important; color: var(--accent) !important; }
+.navItem.active { background: rgba(var(--accent-rgb), 0.1) !important; color: var(--accent) !important; }
+
+/* ── CHAT ITEMS ── */
+.chatItem:hover { background: var(--accent-dark) !important; }
+
+/* ── SIDEBAR DIVIDER ── */
+.sidebarDivider { background: rgba(var(--accent-rgb), 0.08) !important; }
+.sidebarProfile { border-top-color: rgba(var(--accent-rgb), 0.08) !important; }
+.sidebarProfile:hover { background: var(--accent-dark) !important; }
+
+/* ── PROFILE AVATAR ── */
+.profileAvatar { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400)) !important; }
+.profileSettings:hover { color: var(--accent) !important; background: var(--accent-dark) !important; }
+
+/* ── UPGRADE BUTTON ── */
+.upgradeBtn { border-color: var(--accent-border) !important; background: linear-gradient(135deg, var(--accent-dark), rgba(var(--accent-rgb),0.04)) !important; }
+.upgradeBtn:hover { border-color: rgba(var(--accent-rgb),0.4) !important; }
+
+/* ── WELCOME SCREEN ── */
+.welcomeScreen::before { background: radial-gradient(circle, rgba(var(--accent-rgb),0.06) 0%, transparent 70%) !important; }
+.welcomeScreen::after  { background: radial-gradient(circle, rgba(var(--accent-rgb),0.04) 0%, transparent 70%) !important; }
+.welcomeLogo { box-shadow: 0 0 32px rgba(var(--accent-rgb),0.25) !important; }
+.welcomeGreeting { color: var(--accent) !important; }
+.welcomeTitle {
+  background: linear-gradient(135deg, #fff8e7, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400)) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+.welcomeBadge { background: var(--accent-dark) !important; border-color: rgba(var(--accent-rgb),0.12) !important; }
+.welcomeBadge:hover { border-color: var(--accent-border) !important; color: var(--accent) !important; background: rgba(var(--accent-rgb),0.1) !important; }
+.chip:hover { background: rgba(var(--accent-rgb),0.07) !important; border-color: rgba(var(--accent-rgb),0.3) !important; }
+.chip:hover .chipTitle { color: var(--accent) !important; }
+.chipTitle { color: color-mix(in srgb, var(--accent) 80%, #888) !important; }
+
+/* ── INPUT WRAP ── */
+.inputWrap { border-color: rgba(var(--accent-rgb),0.15) !important; }
+.inputWrap:focus-within { border-color: rgba(var(--accent-rgb),0.4) !important; box-shadow: 0 4px 32px rgba(var(--accent-rgb),0.08) !important; }
+
+/* ── PLUS BUTTON ── */
+.plusBtn { background: rgba(var(--accent-rgb),0.08) !important; border-color: rgba(var(--accent-rgb),0.15) !important; }
+.plusBtn:hover, .plusBtn.active { background: rgba(var(--accent-rgb),0.15) !important; color: var(--accent) !important; border-color: rgba(var(--accent-rgb),0.3) !important; }
+
+/* ── SEND BUTTON ── */
+.sendBtn { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400)) !important; box-shadow: 0 0 12px var(--accent-glow) !important; }
+.sendBtn:hover { box-shadow: 0 0 20px var(--accent-glow) !important; }
+.sendBtn svg { stroke: #000 !important; }
+
+/* ── STOP BUTTON ── */
+.stopBtn { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400)) !important; }
+
+/* ── MIC BUTTON ── */
+.micBtn:hover { color: var(--accent) !important; background: var(--accent-dark) !important; }
+.micBtn.listening { color: var(--accent) !important; }
+
+/* ── ICON BUTTONS ── */
+.iconBtn:hover { color: var(--accent) !important; background: var(--accent-dark) !important; }
+.assistant:hover { color: var(--accent) !important; background: var(--accent-dark) !important; }
+.assistant.active { color: var(--accent) !important; }
+
+/* ── ACTION BUTTONS ── */
+.actionBtn:hover { color: var(--accent) !important; background: var(--accent-dark) !important; }
+.likeBtn.active { color: var(--accent) !important; }
+
+/* ── USER BUBBLE ── */
+.userBubble { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400)) !important; }
+
+/* ── TYPING DOTS ── */
+.typing span { background: var(--accent) !important; }
+
+/* ── SCROLL DOWN BTN ── */
+#scrollDownBtn { background: var(--accent-dark) !important; border-color: var(--accent-border) !important; color: var(--accent) !important; }
+
+/* ── SPLASH SCREEN ── */
+.splash-ring::before { background: conic-gradient(from 0deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400), var(--accent)) !important; }
+.splash-title { background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #ff4400)) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; filter: drop-shadow(0 0 12px var(--accent-glow)) !important; }
+@keyframes dotBounce { 40% { background: var(--accent) !important; box-shadow: 0 0 8px var(--accent) !important; } }
+
+/* ── SETTINGS ── */
+.sInput:focus { border-color: rgba(var(--accent-rgb),0.4) !important; }
+.sSaveBtn { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400)) !important; }
+.themeBtn.active { border-color: var(--accent) !important; color: var(--accent) !important; background: var(--accent-dark) !important; }
+.fontBtn.active { border-color: var(--accent) !important; color: var(--accent) !important; }
+.sTab:hover { background: var(--accent-dark) !important; color: var(--accent) !important; }
+.sTab.active { background: var(--accent-dark) !important; color: var(--accent) !important; }
+.toggle input:checked + .toggleSlider { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400)) !important; }
+.settingsMsg.success { background: var(--accent-dark) !important; border-color: rgba(var(--accent-rgb),0.2) !important; color: var(--accent) !important; }
+
+/* ── VOICE OVERLAY ── */
+.voiceRing { border-color: rgba(var(--accent-rgb),0.2) !important; }
+.voiceCore { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400)) !important; box-shadow: 0 0 40px var(--accent-glow) !important; }
+.voiceOrb.listening .voiceCore { box-shadow: 0 0 60px rgba(var(--accent-rgb),0.7) !important; }
+.voiceActionBtn.active { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400)) !important; }
+
+/* ── BOTTOM SHEET ── */
+.sheetTitle { color: var(--accent) !important; }
+.sheetBigBtn:hover { background: var(--accent-dark) !important; border-color: rgba(var(--accent-rgb),0.2) !important; color: var(--accent) !important; }
+.sheetCloseBtn:hover { background: var(--accent-dark) !important; color: var(--accent) !important; }
+.sheetToggle input:checked + .sheetToggleTrack { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400)) !important; }
+.sheetRow:hover { background: rgba(var(--accent-rgb),0.05) !important; }
+
+/* ── IMAGE GENERATION ── */
+.shimmerOrb { background: conic-gradient(from 0deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400), var(--accent)) !important; box-shadow: 0 0 40px var(--accent-glow) !important; }
+.dattaImgBtn:hover { background: var(--accent-dark) !important; color: var(--accent) !important; border-color: rgba(var(--accent-rgb),0.25) !important; }
+.likeImgBtn:hover, .likeImgBtn.active { color: var(--accent) !important; }
+
+/* ── WEB SEARCH INDICATOR ── */
+.searchingIndicator { background: var(--accent-dark) !important; border-color: rgba(var(--accent-rgb),0.2) !important; }
+.searchText { color: var(--accent) !important; }
+
+/* ── UPGRADE ARROW ── */
+.upgradeArrow { color: var(--accent) !important; }
+
+/* ── CODE BLOCK ── */
+pre { border-color: rgba(var(--accent-rgb),0.1) !important; }
+.codeCopy { background: var(--accent-dark) !important; border-color: rgba(var(--accent-rgb),0.2) !important; color: var(--accent) !important; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb),0.3) !important; }
+
+/* ── WELCOME SUGGEST LABEL ── */
+.welcomeSuggestLabel { color: color-mix(in srgb, var(--accent) 40%, transparent) !important; }
+
+/* ── HOME PAGE (home.html) ── */
+.hero-badge { border-color: rgba(var(--accent-rgb),0.3) !important; color: var(--accent) !important; background: var(--accent-dark) !important; }
+.badge-dot { background: var(--accent) !important; box-shadow: 0 0 6px var(--accent) !important; }
+.hero h1 span { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400)) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; }
+.btn-hero.primary { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400)) !important; box-shadow: 0 0 40px var(--accent-glow) !important; }
+.stat-num { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400)) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; }
+.section-label { color: var(--accent) !important; background: var(--accent-dark) !important; border-color: rgba(var(--accent-rgb),0.2) !important; }
+.step-num { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400)) !important; box-shadow: 0 0 24px var(--accent-glow) !important; }
+.step h3 { color: var(--accent) !important; }
+.price-amount { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400)) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; }
+.btn-plan.pro { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400)) !important; box-shadow: 0 0 30px var(--accent-glow) !important; }
+.price-features li::before { color: var(--accent) !important; }
+.cta-box h2 { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff4400)) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; }
+
+/* ── COLOR PICKER UI ── */
+.accentSection { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid rgba(var(--accent-rgb),0.06); }
+
+.presetColors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.presetColor {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.presetColor:hover { transform: scale(1.15); }
+
+.presetColor.active {
+  border-color: white !important;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.3), 0 0 16px rgba(255,255,255,0.2);
+}
+
+.presetColor.active::after {
+  content: '✓';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(0,0,0,0.7);
+}
+
+.customColorRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.customColorRow label {
+  font-size: 13px;
+  color: #665500;
+  font-family: 'Rajdhani', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+#accentColorPicker {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.1);
+  cursor: pointer;
+  padding: 2px;
+  background: none;
+  outline: none;
+}
+
+.resetAccentBtn {
+  padding: 6px 14px;
+  background: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #665500;
+  font-size: 12px;
+  font-family: 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.resetAccentBtn:hover {
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
