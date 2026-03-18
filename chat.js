@@ -109,7 +109,6 @@ function downloadImage(url, prompt) {
 }
 
 async function regenerateImage(prompt, btn) {
-  // Find the parent dattaImgWrap
   const wrap = btn.closest(".dattaImgWrap")
   if (!wrap) return
 
@@ -119,7 +118,6 @@ async function regenerateImage(prompt, btn) {
   const seed = Math.floor(Math.random() * 999999)
   const newUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&enhance=true&seed=" + seed
 
-  // Show shimmer again
   const shimmer = wrap.querySelector(".dattaShimmer")
   const img = wrap.querySelector(".dattaImg")
   const actions = wrap.querySelector(".dattaImgActions")
@@ -151,7 +149,7 @@ async function regenerateImage(prompt, btn) {
 
 function likeImage(btn) {
   const isActive = btn.classList.toggle("active")
-  btn.style.color = isActive ? "#00ff88" : ""
+  btn.style.color = isActive ? "var(--accent)" : ""
   const dislike = btn.closest(".dattaImgActions").querySelector(".dislikeImgBtn")
   if (dislike) { dislike.classList.remove("active"); dislike.style.color = "" }
 }
@@ -228,6 +226,19 @@ function newChat() {
   showWelcome()
 }
 
+// ─── MOOD SYSTEM HELPER ──────────────────────────────────────────────────────
+// Returns the current mood personality prompt if a mood is set
+function getMoodContext() {
+  return window.dattaMoodPersonality || null
+}
+
+// Builds a mood-aware system message prefix
+function buildMoodPrefix() {
+  const mood = getMoodContext()
+  if (!mood) return ""
+  return "\n\n[MOOD INSTRUCTION - FOLLOW THIS STRICTLY]: " + mood + "\n\n"
+}
+
 // ─── SEND MESSAGE ─────────────────────────────────────────────────────────────
 async function send() {
 
@@ -252,13 +263,16 @@ async function send() {
   hideWelcome()
   document.body.classList.add("chat-started")
 
+  // Show mood emoji in user bubble if mood is set
+  const moodEmoji = window.dattaMoodEmoji ? window.dattaMoodEmoji + " " : ""
+
   chatBox.innerHTML += `
     <div class="messageRow userRow">
       <div class="userBubble">
         ${file ? `<div style="font-size:12px;opacity:0.75;margin-bottom:4px;">📄 ${file.name}</div>` : ""}
         ${text ? `<div>${text}</div>` : ""}
       </div>
-      <div class="avatar">🧑</div>
+      <div class="avatar">${moodEmoji || "🧑"}</div>
     </div>
   `
 
@@ -276,12 +290,15 @@ async function send() {
   const willSearch = searchTriggers.some(t => text.toLowerCase().includes(t))
   const willGenImage = imageTriggers.some(t => text.toLowerCase().includes(t))
 
+  // Show mood emoji in AI avatar too
+  const aiAvatarEmoji = window.dattaMoodEmoji || "🤖"
+
   let aiDiv = document.createElement("div")
   aiDiv.className = "messageRow"
 
   if (willGenImage) {
     aiDiv.innerHTML = `
-      <div class="avatar">🤖</div>
+      <div class="avatar">🎨</div>
       <div class="aiBubble searchingIndicator" style="background:#1a0a2a!important;border-color:#4a1a6a!important;">
         <span class="searchIcon">🎨</span>
         <span class="searchText" style="color:#cc88ff;">Generating image...</span>
@@ -289,7 +306,7 @@ async function send() {
     `
   } else if (willSearch) {
     aiDiv.innerHTML = `
-      <div class="avatar">🤖</div>
+      <div class="avatar">${aiAvatarEmoji}</div>
       <div class="aiBubble searchingIndicator">
         <span class="searchIcon">🌐</span>
         <span class="searchText">Searching the web...</span>
@@ -297,7 +314,7 @@ async function send() {
     `
   } else {
     aiDiv.innerHTML = `
-      <div class="avatar">🤖</div>
+      <div class="avatar">${aiAvatarEmoji}</div>
       <div class="aiBubble typing">
         <span></span><span></span><span></span>
       </div>
@@ -308,9 +325,8 @@ async function send() {
 
   showStopBtn()
 
-  // ── CLIENT-SIDE IMAGE GENERATION (Pollinations AI - free, no API key) ──
+  // ── CLIENT-SIDE IMAGE GENERATION ──
   if (willGenImage) {
-    // Extract just the subject/prompt from the message
     let prompt = text
       .replace(/generate image of|create image of|make image of|generate photo of|create photo of|make photo of|generate picture of|create picture of|picture of|photo of|image of|draw me a|draw me|draw a|draw|illustrate a|illustrate|sketch a|sketch|paint a|paint|generate art of|create art of|make art of/gi, "")
       .trim()
@@ -322,10 +338,9 @@ async function send() {
 
     const fakeResponse = `DATTA_IMAGE_START\n![${prompt}](${imgUrl})\nPROMPT:${prompt}\nDATTA_IMAGE_END`
 
-    // Small delay for UX feel
     setTimeout(() => {
       aiDiv.innerHTML = `
-        <div class="avatar">🤖</div>
+        <div class="avatar">🎨</div>
         <div class="aiContent">${renderImageResponse(fakeResponse)}</div>
       `
       chatBox.scrollTop = chatBox.scrollHeight
@@ -333,16 +348,31 @@ async function send() {
       loadSidebar()
     }, 800)
 
-    return // Skip server call entirely
+    return
   }
 
-  // ── SERVER CALL for normal text/search responses ──
+  // ── SERVER CALL ──
   controller = new AbortController()
   const formData = new FormData()
-  formData.append("message", text)
+
+  // ════════════════════════════════════════════════
+  // MOOD SYSTEM — inject mood personality into message
+  // This is the core of the Mood-Based AI feature!
+  // ════════════════════════════════════════════════
+  const moodPrefix = buildMoodPrefix()
+  const messageWithMood = moodPrefix
+    ? moodPrefix + text  // prepend mood instructions to the message
+    : text
+
+  formData.append("message", messageWithMood)
   formData.append("chatId", currentChatId || "")
   formData.append("token", getToken())
   formData.append("language", localStorage.getItem("datta_language") || "English")
+
+  // Also send mood as separate field so server can handle it
+  if (window.dattaMoodLabel) {
+    formData.append("mood", window.dattaMoodLabel)
+  }
 
   if (file) {
     formData.append("image", file)
@@ -361,7 +391,7 @@ async function send() {
     }
 
     aiDiv.innerHTML = `
-      <div class="avatar">🤖</div>
+      <div class="avatar">${aiAvatarEmoji}</div>
       <div class="aiContent">
         <div class="aiBubble">
           <span class="stream"></span>
@@ -397,7 +427,6 @@ async function send() {
         streamText += chunk
       }
 
-      // Check if server returned an image response as fallback
       const isImgResponse = streamText.includes("pollinations.ai") || streamText.includes("DATTA_IMAGE")
       if (isImgResponse) {
         const container = aiDiv.querySelector(".aiContent") || aiDiv
@@ -564,15 +593,18 @@ async function regenerateFrom(btn) {
 
   controller = new AbortController()
 
+  const formData = new FormData()
+  const moodPrefix = buildMoodPrefix()
+  formData.append("message", moodPrefix ? moodPrefix + text : text)
+  formData.append("chatId", currentChatId || "")
+  formData.append("token", getToken())
+  formData.append("language", localStorage.getItem("datta_language") || "English")
+  if (window.dattaMoodLabel) formData.append("mood", window.dattaMoodLabel)
+
   const res = await fetch("https://datta-ai-server.onrender.com/chat", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     signal: controller.signal,
-    body: JSON.stringify({
-      message: text,
-      title: text.substring(0, 40),
-      chatId: currentChatId
-    })
+    body: formData
   })
 
   const reader = res.body.getReader()
@@ -692,7 +724,7 @@ function toggleSidebar() {
 window.toggleSidebar = toggleSidebar
 
 
-// ─── SAVE CHAT TITLE (local fallback) ────────────────────────────────────────
+// ─── SAVE CHAT TITLE ─────────────────────────────────────────────────────────
 function saveChatTitle(title) {
   const history = document.getElementById("history")
   if (!history) return
@@ -747,7 +779,6 @@ function logout() {
 window.logout = logout
 
 // ── SETTINGS ─────────────────────────────────────────────────────────────────
-
 function openSettings() {
   event.stopPropagation()
   const modal = document.getElementById("settingsModal")
@@ -977,7 +1008,7 @@ function likeMsg(btn) {
   })
   if (!wasActive) {
     btn.classList.add("active")
-    btn.style.color = "#00ff88"
+    btn.style.color = "var(--accent)"
   }
 }
 
@@ -997,8 +1028,7 @@ function dislikeMsg(btn) {
 window.likeMsg = likeMsg
 window.dislikeMsg = dislikeMsg
 
-// ── VOICE ASSISTANT (SIRI-LIKE) ──────────────────────────────────────────────
-
+// ── VOICE ASSISTANT ──────────────────────────────────────────────────────────
 let voiceRecognition = null
 let voiceSynth = window.speechSynthesis
 let isListening = false
@@ -1011,9 +1041,19 @@ function openVoiceAssistant() {
   if (overlay) overlay.classList.add("show")
   setVoiceStatus("Tap the mic to speak", "idle")
 
-  setTimeout(() => {
-    speakText2("Hello! I am Datta AI. How can I help you today?")
-  }, 500)
+  // Greeting changes based on mood
+  const moodGreets = {
+    focused: "Ready to help you get things done!",
+    happy: "Hey hey! I am so happy to chat with you!",
+    stressed: "Hey, take a deep breath. I am here for you.",
+    creative: "Let us create something amazing together!",
+    lazy: "sup. what do you need.",
+    curious: "Oh how exciting! What shall we explore today?"
+  }
+  const savedMood = localStorage.getItem("datta_mood")
+  const greeting = (savedMood && moodGreets[savedMood]) || "Hello! I am Datta AI. How can I help you today?"
+
+  setTimeout(() => { speakText2(greeting) }, 500)
 }
 
 function closeVoiceAssistant() {
@@ -1035,9 +1075,7 @@ function setVoiceStatus(text, mode) {
     if (mode === "listening") orb.classList.add("listening")
     if (mode === "speaking") orb.classList.add("speaking")
   }
-  if (micBtn) {
-    micBtn.classList.toggle("active", mode === "listening")
-  }
+  if (micBtn) micBtn.classList.toggle("active", mode === "listening")
 }
 
 function setVoiceText(text) {
@@ -1046,11 +1084,7 @@ function setVoiceText(text) {
 }
 
 function toggleVoiceListening() {
-  if (isListening) {
-    stopListening()
-  } else {
-    startListening()
-  }
+  if (isListening) { stopListening() } else { startListening() }
 }
 
 function startListening() {
@@ -1077,22 +1111,14 @@ function startListening() {
     let interim = ""
     let final = ""
     for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) {
-        final += e.results[i][0].transcript
-      } else {
-        interim += e.results[i][0].transcript
-      }
+      if (e.results[i].isFinal) { final += e.results[i][0].transcript }
+      else { interim += e.results[i][0].transcript }
     }
     setVoiceText(final || interim)
-
-    if (final) {
-      stopListening()
-      processVoiceQuery(final)
-    }
+    if (final) { stopListening(); processVoiceQuery(final) }
   }
 
   voiceRecognition.onerror = (e) => {
-    console.error("Voice error:", e.error)
     isListening = false
     setVoiceStatus("Error: " + e.error + ". Try again.", "idle")
   }
@@ -1129,11 +1155,13 @@ async function processVoiceQuery(query) {
 
   try {
     const formData = new FormData()
-    formData.append("message", query)
+    const moodPrefix = buildMoodPrefix()
+    formData.append("message", moodPrefix ? moodPrefix + query : query)
     formData.append("chatId", currentChatId || "")
     formData.append("token", getToken())
     formData.append("language", localStorage.getItem("datta_language") || "English")
     formData.append("voice", "true")
+    if (window.dattaMoodLabel) formData.append("mood", window.dattaMoodLabel)
 
     const res = await fetch("https://datta-ai-server.onrender.com/chat", {
       method: "POST",
@@ -1177,6 +1205,7 @@ async function processVoiceQuery(query) {
 
     setVoiceText(cleanText.substring(0, 100) + (cleanText.length > 100 ? "..." : ""))
 
+    const aiEmoji = window.dattaMoodEmoji || "🤖"
     chatBox.innerHTML += `
       <div class="messageRow userRow">
         <div class="userBubble">🎤 ${query}</div>
@@ -1185,7 +1214,7 @@ async function processVoiceQuery(query) {
     `
     chatBox.innerHTML += `
       <div class="messageRow">
-        <div class="avatar">🤖</div>
+        <div class="avatar">${aiEmoji}</div>
         <div class="aiContent">
           <div class="aiBubble">${marked.parse(fullText.split("CHATID")[0])}</div>
         </div>
@@ -1193,7 +1222,6 @@ async function processVoiceQuery(query) {
     `
     chatBox.scrollTop = chatBox.scrollHeight
     loadSidebar()
-
     speakText2(cleanText)
 
   } catch (err) {
@@ -1218,10 +1246,8 @@ function speakText2(text) {
 
   const voices = voiceSynth.getVoices()
   const preferred = voices.find(v =>
-    v.name.includes("Google") ||
-    v.name.includes("Samantha") ||
-    v.name.includes("Karen") ||
-    v.name.includes("Female") ||
+    v.name.includes("Google") || v.name.includes("Samantha") ||
+    v.name.includes("Karen") || v.name.includes("Female") ||
     (v.lang === "en-US" && !v.name.includes("Male"))
   )
   if (preferred) utterance.voice = preferred
@@ -1230,17 +1256,11 @@ function speakText2(text) {
     isSpeaking = false
     if (voiceActive) {
       setVoiceStatus("Tap to speak", "idle")
-      setTimeout(() => {
-        if (voiceActive) startListening()
-      }, 800)
+      setTimeout(() => { if (voiceActive) startListening() }, 800)
     }
   }
 
-  utterance.onerror = () => {
-    isSpeaking = false
-    setVoiceStatus("Tap to speak", "idle")
-  }
-
+  utterance.onerror = () => { isSpeaking = false; setVoiceStatus("Tap to speak", "idle") }
   voiceSynth.speak(utterance)
 }
 
@@ -1249,15 +1269,12 @@ function stopSpeaking() {
   isSpeaking = false
 }
 
-window.startAssistant = function() {
-  openVoiceAssistant()
-}
-
+window.startAssistant = function() { openVoiceAssistant() }
 window.openVoiceAssistant = openVoiceAssistant
 window.closeVoiceAssistant = closeVoiceAssistant
 window.toggleVoiceListening = toggleVoiceListening
 
-// VERSION NAMES based on plan
+// VERSION NAMES
 const planVersions = {
   free:       { name: "Arambh", sanskrit: "आरंभ", version: "v1.0", emoji: "🌱" },
   starter:    { name: "Arambh", sanskrit: "आरंभ", version: "v1.0", emoji: "🌱" },
@@ -1291,7 +1308,6 @@ async function loadUserVersion() {
     }
 
     localStorage.setItem("datta_plan", plan)
-
   } catch(e) {
     console.log("Version load error:", e.message)
   }
