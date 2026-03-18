@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&family=Orbitron:wght@700;900&display=swap');
+
 /* GLOBAL */
 * {
   margin: 0;
@@ -1364,4 +1366,91 @@ body.light #splash { background: #fff; }
 
 .upgradeBtn span:first-child {
   font-size: 20px;
+}
+
+/* CUSTOM FONTS - Bold & Strong */
+:root {
+  --font-brand: 'Bebas Neue', sans-serif;
+  --font-heading: 'Rajdhani', sans-serif;
+  --font-tech: 'Orbitron', sans-serif;
+}
+
+/* App title in topbar */
+.topTitle {
+  font-family: var(--font-brand) !important;
+  font-size: 22px !important;
+  letter-spacing: 3px !important;
+  background: linear-gradient(90deg, #00ff88, #00ccff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Sidebar brand name */
+.sidebarBrand {
+  font-family: var(--font-brand) !important;
+  font-size: 26px !important;
+  letter-spacing: 3px !important;
+  background: linear-gradient(90deg, #00ff88, #00ccff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Welcome title */
+.welcomeTitle {
+  font-family: var(--font-heading) !important;
+  font-size: 36px !important;
+  font-weight: 700 !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase;
+}
+
+/* Section titles in settings/pricing */
+.sectionTitle, .modalTitle, .panelTitle, .heroTitle {
+  font-family: var(--font-heading) !important;
+  font-weight: 700 !important;
+  letter-spacing: 1px !important;
+}
+
+/* Nav items */
+.navItem {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* Splash title */
+.splash-title {
+  font-family: var(--font-brand) !important;
+  font-size: 42px !important;
+  letter-spacing: 4px !important;
+}
+
+/* Plan names in pricing */
+.planName {
+  font-family: var(--font-heading) !important;
+  font-weight: 700 !important;
+  letter-spacing: 1px !important;
+  text-transform: uppercase;
+}
+
+/* Settings header */
+.headerTitle {
+  font-family: var(--font-heading) !important;
+  font-weight: 700 !important;
+  letter-spacing: 1px !important;
+}
+
+/* New chat button */
+.newChatBtn {
+  font-family: var(--font-heading) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* Profile name */
+.profileName {
+  font-family: var(--font-heading) !important;
+  font-weight: 700 !important;
 }
