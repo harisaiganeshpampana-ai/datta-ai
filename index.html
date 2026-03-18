@@ -225,22 +225,28 @@
 <div class="topbar">
   <button onclick="toggleSidebar()" class="menuBtn">☰</button>
   <span class="topTitle">Datta AI</span>
-  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:6px;">
-    <button id="topbarColorBtn" onclick="toggleColorPanel()" title="Change Theme Color" style="
-      background: none; border: none; cursor: pointer;
-      width: 32px; height: 32px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.2s; position: relative;
-    ">
-      <div id="topbarColorDot" style="
-        width: 22px; height: 22px; border-radius: 50%;
-        background: var(--accent);
-        box-shadow: 0 0 8px var(--accent-glow);
-        border: 2px solid rgba(255,255,255,0.15);
-        transition: all 0.3s;
-      "></div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:6px;padding-right:6px;">
+    <div id="moodIndicator" onclick="toggleMoodPanel()" style="display:none;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;border:1px solid rgba(255,215,0,0.3);background:rgba(255,215,0,0.08);font-family:Rajdhani,sans-serif;font-size:12px;font-weight:600;letter-spacing:1px;color:#ffd700;cursor:pointer;transition:all 0.2s;"></div>
+    <button id="moodBtn" onclick="toggleMoodPanel()" title="Set your mood" style="background:none;border:1px solid rgba(255,255,255,0.08);cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all 0.2s;">😊</button>
+    <button id="topbarColorBtn" onclick="toggleColorPanel()" title="Change Theme Color" style="background:none;border:none;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all 0.2s;position:relative;">
+      <div id="topbarColorDot" style="width:22px;height:22px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent-glow);border:2px solid rgba(255,255,255,0.15);transition:all 0.3s;"></div>
     </button>
   </div>
+</div>
+
+<!-- MOOD PANEL -->
+<div id="moodPanel" style="position:fixed;top:58px;right:50px;background:#0f0e00;border:1px solid rgba(255,215,0,0.2);border-radius:24px;padding:22px;z-index:2000;display:none;box-shadow:0 8px 40px rgba(0,0,0,0.7);min-width:300px;">
+  <div style="font-family:Bebas Neue,sans-serif;font-size:18px;letter-spacing:3px;color:var(--accent);margin-bottom:6px;">😊 WHATS YOUR MOOD?</div>
+  <div style="font-family:Rajdhani,sans-serif;font-size:12px;color:#443300;letter-spacing:1px;margin-bottom:18px;">Datta AI adapts to how you feel</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+    <button class="moodBtn" data-mood="focused" onclick="applyMood('focused')" style="background:rgba(0,204,255,0.06);border:1px solid rgba(0,204,255,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;"><div style="font-size:24px;margin-bottom:6px;">🎯</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#00ccff;letter-spacing:1px;">Focused</div><div style="font-size:11px;color:#443300;margin-top:2px;">Sharp &amp; concise</div></button>
+    <button class="moodBtn" data-mood="happy" onclick="applyMood('happy')" style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;"><div style="font-size:24px;margin-bottom:6px;">😄</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#ffd700;letter-spacing:1px;">Happy</div><div style="font-size:11px;color:#443300;margin-top:2px;">Fun &amp; energetic</div></button>
+    <button class="moodBtn" data-mood="stressed" onclick="applyMood('stressed')" style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;"><div style="font-size:24px;margin-bottom:6px;">😮‍💨</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#00ff88;letter-spacing:1px;">Stressed</div><div style="font-size:11px;color:#443300;margin-top:2px;">Calm &amp; reassuring</div></button>
+    <button class="moodBtn" data-mood="creative" onclick="applyMood('creative')" style="background:rgba(192,132,252,0.06);border:1px solid rgba(192,132,252,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;"><div style="font-size:24px;margin-bottom:6px;">🎨</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#c084fc;letter-spacing:1px;">Creative</div><div style="font-size:11px;color:#443300;margin-top:2px;">Bold &amp; imaginative</div></button>
+    <button class="moodBtn" data-mood="lazy" onclick="applyMood('lazy')" style="background:rgba(249,115,22,0.06);border:1px solid rgba(249,115,22,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;"><div style="font-size:24px;margin-bottom:6px;">😴</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#f97316;letter-spacing:1px;">Lazy</div><div style="font-size:11px;color:#443300;margin-top:2px;">Short &amp; chill</div></button>
+    <button class="moodBtn" data-mood="curious" onclick="applyMood('curious')" style="background:rgba(236,72,153,0.06);border:1px solid rgba(236,72,153,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;"><div style="font-size:24px;margin-bottom:6px;">🔍</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#ec4899;letter-spacing:1px;">Curious</div><div style="font-size:11px;color:#443300;margin-top:2px;">Deep &amp; exploratory</div></button>
+  </div>
+  <button onclick="clearMood()" style="width:100%;padding:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#443300;font-family:Rajdhani,sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;">✕ Clear mood · Reset to Gold</button>
 </div>
 
 <!-- COLOR PANEL POPUP -->
@@ -884,6 +890,7 @@
   </div>
 </div>
 
+<script src="mood.js"></script>
 <script src="theme.js"></script>
 <script>
   function toggleColorPanel() {
