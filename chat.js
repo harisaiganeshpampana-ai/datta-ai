@@ -27,7 +27,7 @@ function stopGeneration() {
 
 window.stopGeneration = stopGeneration
 
-// RENDER IMAGE RESPONSE - like ChatGPT style
+// RENDER IMAGE RESPONSE - Datta AI unique style
 function renderImageResponse(text) {
   const imgMatch = text.match(/!\[([^\]]*)\]\(([^)]+)\)/)
   const promptMatch = text.match(/\*Prompt: ([^*]+)\*/)
@@ -36,55 +36,53 @@ function renderImageResponse(text) {
   const altText = imgMatch[1] || "Generated Image"
   const imgUrl = imgMatch[2]
   const prompt = promptMatch ? promptMatch[1] : altText
-  const uid = "img_" + Date.now()
+  const uid = "ig" + Date.now()
 
-  return `
-    <div class="imageGenWrap" id="${uid}">
-      <div class="creatingLabel">Creating image</div>
-      <div class="imageGenBox">
-        <div class="imageGradientPlaceholder"></div>
-        <img
-          src="${imgUrl}"
-          alt="${altText}"
-          class="generatedImg"
-          style="display:none;opacity:0;"
-          onload="
-            var box = this.closest('.imageGenBox');
-            var ph = box.querySelector('.imageGradientPlaceholder');
-            var label = box.closest('.imageGenWrap').querySelector('.creatingLabel');
-            ph.style.display='none';
-            this.style.display='block';
-            this.style.transition='opacity 0.5s ease';
-            setTimeout(function(){ document.querySelector('#${uid} img').style.opacity='1'; },10);
-            if(label) label.textContent='Generated image';
-          "
-          onerror="
-            var ph = this.closest('.imageGenBox').querySelector('.imageGradientPlaceholder');
-            ph.innerHTML='<div style=padding:40px;color:#888;text-align:center>Failed to generate. Try again.</div>';
-            ph.style.background='#1a1a1a';
-          "
-        >
-      </div>
-      <div class="imageGenActions">
-        <div class="imageGenBtns">
-          <button class="imgActionBtn" onclick="downloadImage('${imgUrl}', '${prompt}')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Download
-          </button>
-          <button class="imgActionBtn" onclick="regenerateImage('${prompt}', this)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-            Regenerate
-          </button>
-          <button class="imgActionBtn likeImgBtn" onclick="likeImage(this)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
-          </button>
-          <button class="imgActionBtn dislikeImgBtn" onclick="dislikeImage(this)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
-          </button>
-        </div>
-      </div>
+  return `<div class="dattaImgWrap" id="${uid}">
+  <div class="dattaImgLabel" id="${uid}lbl">
+    <span class="dattaImgIcon">🎨</span>
+    <span>Creating your image...</span>
+  </div>
+  <div class="dattaImgBox">
+    <div class="dattaShimmer" id="${uid}shimmer">
+      <div class="shimmerOrb"></div>
+      <div class="shimmerText">Generating with AI...</div>
     </div>
-  `
+    <img src="${imgUrl}" alt="${altText}" class="dattaImg" style="display:none;opacity:0;"
+      onload="
+        var w=document.getElementById('${uid}');
+        var s=document.getElementById('${uid}shimmer');
+        var l=document.getElementById('${uid}lbl');
+        var a=document.getElementById('${uid}actions');
+        if(s)s.style.display='none';
+        if(l)l.innerHTML='<span class=dattaImgIcon>✨</span><span>${prompt}</span>';
+        if(a)a.style.display='flex';
+        this.style.display='block';
+        setTimeout(function(){var img=document.querySelector('#${uid} .dattaImg');if(img)img.style.opacity='1';},10);
+      "
+      onerror="
+        var s=document.getElementById('${uid}shimmer');
+        if(s)s.innerHTML='<div style=padding:32px;color:#888;text-align:center;font-size:13px>❌ Failed to generate. Try again.</div>';
+      "
+    >
+  </div>
+  <div class="dattaImgActions" id="${uid}actions" style="display:none;">
+    <button class="dattaImgBtn" onclick="downloadImage('${imgUrl}','${prompt}')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download
+    </button>
+    <button class="dattaImgBtn" onclick="regenerateImage('${prompt}',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Regenerate
+    </button>
+    <button class="dattaImgBtn likeImgBtn" onclick="likeImage(this)" title="Like">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+    </button>
+    <button class="dattaImgBtn dislikeImgBtn" onclick="dislikeImage(this)" title="Dislike">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
+    </button>
+  </div>
+</div>`
 }
 
 function downloadImage(url, prompt) {
@@ -352,12 +350,24 @@ async function send() {
         streamText += chunk
       }
 
-      span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>'
+      // Check if image response
+      if (streamText.includes("pollinations.ai")) {
+        const container = aiDiv.querySelector(".aiContent") || aiDiv
+        container.innerHTML = renderImageResponse(streamText)
+      } else {
+        span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>'
+      }
       scrollBottom()
       lucide.createIcons()
     }
 
-    span.innerHTML = marked.parse(streamText)
+    // Final render
+    if (streamText.includes("pollinations.ai")) {
+      const container = aiDiv.querySelector(".aiContent") || aiDiv
+      container.innerHTML = renderImageResponse(streamText)
+    } else {
+      span.innerHTML = marked.parse(streamText)
+    }
     lucide.createIcons()
     hideStopBtn()
     loadSidebar()
