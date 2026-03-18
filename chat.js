@@ -123,9 +123,11 @@ async function send() {
   const formData = new FormData()
   formData.append("message", text)
   formData.append("chatId", currentChatId || "")
+  formData.append("token", getToken())
+  formData.append("language", localStorage.getItem("datta_language") || "English")
 
   if (file) {
-    formData.append("image", file)  // server receives file here
+    formData.append("image", file)
   }
 
   try {
