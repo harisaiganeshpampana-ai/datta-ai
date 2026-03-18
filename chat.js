@@ -195,6 +195,11 @@ const chatBox = document.getElementById("chat") || document.createElement("div")
 const sendBtn = document.querySelector(".send")
 const scrollBtn = document.getElementById("scrollDownBtn")
 
+// Re-get chatBox safely since scripts are at bottom
+function getChatBox() {
+  return document.getElementById("chat") || chatBox
+}
+
 function getAuthHeaders() {
   return { "Authorization": "Bearer " + getToken() }
 }
