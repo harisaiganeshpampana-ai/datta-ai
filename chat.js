@@ -221,12 +221,24 @@ async function send() {
 
 // ─── LOAD SIDEBAR ─────────────────────────────────────────────────────────────
 async function loadSidebar() {
-  const res = await fetch("https://datta-ai-server.onrender.com/chats?token=" + getToken())
-  const chats = await res.json()
-  const history = document.getElementById("history")
-  history.innerHTML = ""
+  try {
+    const res = await fetch("https://datta-ai-server.onrender.com/chats?token=" + getToken())
 
-  chats.forEach(chat => {
+    // If 401 redirect to login
+    if (res.status === 401) {
+      localStorage.removeItem("datta_token")
+      localStorage.removeItem("datta_user")
+      window.location.href = "login.html"
+      return
+    }
+
+    const data = await res.json()
+    const chats = Array.isArray(data) ? data : []
+    const history = document.getElementById("history")
+    if (!history) return
+    history.innerHTML = ""
+
+    chats.forEach(chat => {
     let div = document.createElement("div")
     div.className = "chatItem"
     div.innerHTML = `
