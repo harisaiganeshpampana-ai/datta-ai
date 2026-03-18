@@ -741,39 +741,17 @@ document.addEventListener("DOMContentLoaded", function() {
     if (!sidebar || !divider) return
 
     const toolBar = document.createElement("div")
-    toolBar.style.cssText = `
-      display:flex;gap:6px;padding:8px 14px;flex-wrap:wrap;
-    `
+    toolBar.style.cssText = "display:flex;align-items:center;justify-content:space-between;padding:5px 14px;border-bottom:1px solid rgba(255,215,0,0.06);"
     toolBar.innerHTML = `
-      <button onclick="showMemoryPanel()" title="Smart Memory"
-        style="flex:1;padding:7px 4px;background:rgba(0,255,136,0.05);
-        border:1px solid rgba(0,255,136,0.12);border-radius:10px;
-        color:#00ff88;font-family:'Rajdhani',sans-serif;font-size:10px;
-        font-weight:700;letter-spacing:1px;cursor:pointer;text-align:center;">
-        🧾<br>Memory
-      </button>
-      <button onclick="showTranslatorPanel()" title="Translator"
-        style="flex:1;padding:7px 4px;background:rgba(0,204,255,0.05);
-        border:1px solid rgba(0,204,255,0.12);border-radius:10px;
-        color:#00ccff;font-family:'Rajdhani',sans-serif;font-size:10px;
-        font-weight:700;letter-spacing:1px;cursor:pointer;text-align:center;">
-        🌍<br>Translate
-      </button>
-      <button onclick="showMusicPlayer()" title="Music Player"
-        style="flex:1;padding:7px 4px;background:rgba(236,72,153,0.05);
-        border:1px solid rgba(236,72,153,0.12);border-radius:10px;
-        color:#ec4899;font-family:'Rajdhani',sans-serif;font-size:10px;
-        font-weight:700;letter-spacing:1px;cursor:pointer;text-align:center;">
-        🎵<br>Music
-      </button>
-      <button onclick="showAnalyticsDashboard()" title="Analytics"
-        style="flex:1;padding:7px 4px;background:rgba(192,132,252,0.05);
-        border:1px solid rgba(192,132,252,0.12);border-radius:10px;
-        color:#c084fc;font-family:'Rajdhani',sans-serif;font-size:10px;
-        font-weight:700;letter-spacing:1px;cursor:pointer;text-align:center;">
-        📊<br>Stats
-      </button>
-    `
+      <span style="font-family:'Rajdhani',sans-serif;font-size:10px;letter-spacing:2px;color:#332200;">TOOLS</span>
+      <div style="display:flex;gap:4px;">
+        <button onclick="showMemoryPanel()" title="Memory" style="width:28px;height:28px;background:none;border:1px solid rgba(0,255,136,0.2);border-radius:7px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🧾</button>
+        <button onclick="showTranslatorPanel()" title="Translate" style="width:28px;height:28px;background:none;border:1px solid rgba(0,204,255,0.2);border-radius:7px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🌍</button>
+        <button onclick="showMusicPlayer()" title="Music" style="width:28px;height:28px;background:none;border:1px solid rgba(236,72,153,0.2);border-radius:7px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🎵</button>
+        <button onclick="showAnalyticsDashboard()" title="Stats" style="width:28px;height:28px;background:none;border:1px solid rgba(192,132,252,0.2);border-radius:7px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;">📊</button>
+        <button onclick="showXPPanel()" title="XP" style="width:28px;height:28px;background:none;border:1px solid rgba(255,215,0,0.2);border-radius:7px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🎮</button>
+      </div>
+    \`
     sidebar.insertBefore(toolBar, divider.nextSibling)
   }, 800)
 })
