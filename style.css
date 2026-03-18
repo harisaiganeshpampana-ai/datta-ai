@@ -1591,3 +1591,201 @@ body.light #splash { background: #fff; }
 
 .assistant:hover { color: #00ff88; background: #0a2a1a; }
 .assistant.active { color: #00ff88; }
+
+/* ── NEW INPUT BAR ── */
+.inputArea {
+  position: absolute !important;
+  bottom: 24px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  top: auto !important;
+  width: 100% !important;
+  max-width: 720px !important;
+  padding: 0 16px !important;
+  background: none !important;
+  border: none !important;
+  z-index: 100;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chat-started .inputArea {
+  position: fixed !important;
+  bottom: 16px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  top: auto !important;
+  background: none !important;
+  border: none !important;
+  padding: 0 16px !important;
+}
+
+.inputWrap {
+  background: #1a1a1a !important;
+  border: 1px solid #2a2a2a !important;
+  border-radius: 20px !important;
+  padding: 8px 8px 8px 14px !important;
+  width: 100% !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.inputWrap:focus-within {
+  border-color: #333 !important;
+  box-shadow: 0 4px 32px rgba(0,255,136,0.08);
+}
+
+.filePreviewWrap {
+  padding: 4px 4px 8px 4px;
+}
+
+.filePreviewChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #252525;
+  border: 1px solid #333;
+  border-radius: 20px;
+  padding: 4px 10px 4px 12px;
+  font-size: 12px;
+  color: #aaa;
+  max-width: 200px;
+}
+
+.filePreviewChip button {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+  line-height: 1;
+}
+
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plusBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #252525;
+  border: 1px solid #333;
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.plusBtn:hover, .plusBtn.active {
+  background: #2a2a2a;
+  color: white;
+  border-color: #444;
+}
+
+.plusBtn.active {
+  transform: rotate(45deg);
+}
+
+#message {
+  flex: 1;
+  background: none !important;
+  border: none !important;
+  color: white !important;
+  outline: none !important;
+  font-size: 15px !important;
+  padding: 6px 0 !important;
+}
+
+#message::placeholder { color: #555; }
+
+.inputRightBtns {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.iconBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: none;
+  border: none;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.iconBtn:hover { color: #aaa; background: #252525; }
+
+.sendBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.sendBtn:hover { background: #e0e0e0; transform: scale(1.05); }
+.sendBtn svg { stroke: black; }
+
+/* PLUS MENU */
+.plusMenu {
+  display: none;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 8px;
+  margin-bottom: 8px;
+  gap: 4px;
+  flex-wrap: wrap;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  animation: menuSlideUp 0.2s ease;
+}
+
+.plusMenu.show { display: flex; }
+
+@keyframes menuSlideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.plusMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #222;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  color: white;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.plusMenuItem:hover {
+  background: #2a2a2a;
+  border-color: #333;
+}
+
+.plusMenuIcon { font-size: 18px; }
+
+/* Remove old button styles */
+.modeBtn { display: none !important; }
