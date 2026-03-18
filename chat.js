@@ -1,3 +1,111 @@
+// RENDER IMAGE RESPONSE - like Gemini/ChatGPT
+function renderImageResponse(text) {
+  // Extract image URL and prompt
+  const imgMatch = text.match(/!\[([^\]]*)\]\(([^)]+)\)/)
+  const promptMatch = text.match(/\*Prompt: ([^*]+)\*/)
+
+  if (!imgMatch) return marked.parse(text)
+
+  const altText = imgMatch[1] || "Generated Image"
+  const imgUrl = imgMatch[2]
+  const prompt = promptMatch ? promptMatch[1] : altText
+
+  return `
+    <div class="imageGenContainer">
+      <div class="imageGenLoader" id="imgLoader_${Date.now()}">
+        <div class="imageGenSpinner"></div>
+        <div class="imageGenLoadText">Generating image...</div>
+      </div>
+      <div class="imageGenResult" style="display:none;">
+        <img
+          src="${imgUrl}"
+          alt="${altText}"
+          class="generatedImg"
+          onload="this.closest('.imageGenResult').style.display='block';this.closest('.imageGenContainer').querySelector('.imageGenLoader').style.display='none';"
+          onerror="this.closest('.imageGenLoader').innerHTML='<div style=color:#f88>Failed to generate. Try again.</div>'"
+        >
+        <div class="imageGenActions">
+          <div class="imageGenPrompt">${prompt}</div>
+          <div class="imageGenBtns">
+            <button class="imgActionBtn" onclick="downloadImage('${imgUrl}', '${prompt}')" title="Download">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download
+            </button>
+            <button class="imgActionBtn" onclick="regenerateImage('${prompt}', this)" title="Regenerate">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Regenerate
+            </button>
+            <button class="imgActionBtn likeImgBtn" onclick="likeImage(this)" title="Like">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+            </button>
+            <button class="imgActionBtn dislikeImgBtn" onclick="dislikeImage(this)" title="Dislike">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function downloadImage(url, prompt) {
+  const a = document.createElement("a")
+  a.href = url
+  a.download = prompt.substring(0, 30).replace(/[^a-z0-9]/gi, "_") + ".jpg"
+  a.target = "_blank"
+  a.click()
+}
+
+async function regenerateImage(prompt, btn) {
+  btn.disabled = true
+  btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 0.6s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Generating...'
+
+  const container = btn.closest(".imageGenContainer")
+  const img = container.querySelector(".generatedImg")
+  const loader = container.querySelector(".imageGenLoader")
+  const result = container.querySelector(".imageGenResult")
+
+  // Show loader
+  result.style.display = "none"
+  loader.style.display = "flex"
+  loader.innerHTML = '<div class="imageGenSpinner"></div><div class="imageGenLoadText">Regenerating...</div>'
+
+  // Generate new image with different seed
+  const seed = Math.floor(Math.random() * 99999)
+  const newUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&enhance=true&seed=" + seed
+
+  img.onload = () => {
+    result.style.display = "block"
+    loader.style.display = "none"
+    btn.disabled = false
+    btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Regenerate'
+  }
+  img.onerror = () => {
+    loader.innerHTML = '<div style="color:#f88">Failed. Try again.</div>'
+    btn.disabled = false
+  }
+  img.src = newUrl
+}
+
+function likeImage(btn) {
+  const isActive = btn.classList.toggle("active")
+  btn.style.color = isActive ? "#00ff88" : ""
+  const dislike = btn.closest(".imageGenBtns").querySelector(".dislikeImgBtn")
+  if (dislike) { dislike.classList.remove("active"); dislike.style.color = "" }
+}
+
+function dislikeImage(btn) {
+  const isActive = btn.classList.toggle("active")
+  btn.style.color = isActive ? "#ff4444" : ""
+  const like = btn.closest(".imageGenBtns").querySelector(".likeImgBtn")
+  if (like) { like.classList.remove("active"); like.style.color = "" }
+}
+
+window.downloadImage = downloadImage
+window.regenerateImage = regenerateImage
+window.likeImage = likeImage
+window.dislikeImage = dislikeImage
+window.renderImageResponse = renderImageResponse
 // AUTH CHECK - redirect to login if not logged in
 // Always read token fresh
 function getToken() {
@@ -58,10 +166,15 @@ function newChat() {
 async function send() {
 
   const input = document.getElementById("message")
-  const imageInput = document.getElementById("imageInput")
   const filePreview = document.getElementById("filePreview")
-  const clearFileBtn = document.getElementById("clearFile")
-  const file = imageInput.files[0]
+
+  // Get file from any input source
+  let file = null
+  const fileInputIds = ["cameraInput", "photoInput", "imageInput"]
+  for (const id of fileInputIds) {
+    const el = document.getElementById(id)
+    if (el && el.files && el.files[0]) { file = el.files[0]; break }
+  }
   const text = input.value.trim()
 
   // Block send if nothing to send
@@ -92,9 +205,11 @@ async function send() {
 
   // Clear input + file
   input.value = ""
-  imageInput.value = ""
-  if (filePreview) filePreview.textContent = ""
-  if (clearFileBtn) clearFileBtn.style.display = "none"
+  ;["cameraInput","photoInput","imageInput"].forEach(id => {
+    const el = document.getElementById(id)
+    if (el) el.value = ""
+  })
+  if (typeof clearFileSelection === "function") clearFileSelection()
 
   // Detect request type for indicator
   const searchTriggers = ["latest","recent","today","yesterday","this week","current","now","live","breaking","news","who is","what is the","price of","weather","score","2025","2026","happened","update","trending","stock","crypto","bitcoin","search for","find","look up","ipl","cricket","match","movie","released","launched","election","gold","petrol"]
