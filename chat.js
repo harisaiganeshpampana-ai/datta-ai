@@ -191,7 +191,7 @@ window.addEventListener("DOMContentLoaded", function() {
   }
 })
 
-const chatBox = document.getElementById("chat")
+const chatBox = document.getElementById("chat") || document.createElement("div")
 const sendBtn = document.querySelector(".send")
 const scrollBtn = document.getElementById("scrollDownBtn")
 
