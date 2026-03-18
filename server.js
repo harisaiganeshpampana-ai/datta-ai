@@ -12,7 +12,7 @@ import session from "express-session"
 
 dotenv.config()
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } })
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } })
 const app = express()
 
 app.use(cors({ origin: "*", methods: ["GET","POST","PUT","DELETE","OPTIONS"], allowedHeaders: ["Content-Type","Authorization","x-chat-id"] }))
@@ -27,10 +27,10 @@ passport.deserializeUser((u, done) => done(null, u))
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
+  .then(() => console.log("✅ MongoDB connected"))
   .catch(err => console.error("Mongo error:", err))
 
-// SCHEMAS
+// ── SCHEMAS ──────────────────────────────────────────────────────────────────
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true, trim: true },
   email: { type: String, sparse: true, trim: true },
@@ -62,55 +62,35 @@ const SubscriptionSchema = new mongoose.Schema({
 })
 const Subscription = mongoose.model("Subscription", SubscriptionSchema)
 
-// PLAN LIMITS
+// ── PLAN LIMITS ───────────────────────────────────────────────────────────────
 const planLimits = {
-  free:       { messages: 50,      images: 5,       resetHours: 1 },
-  basic:      { messages: 500,     images: 20,      resetHours: 24 },
-  pro:        { messages: 999999,  images: 999999,  resetHours: 0 },
-  enterprise: { messages: 999999,  images: 999999,  resetHours: 0 }
+  free:       { messages: 50,     images: 5,      resetHours: 1 },
+  basic:      { messages: 500,    images: 20,     resetHours: 24 },
+  pro:        { messages: 999999, images: 999999, resetHours: 0 },
+  enterprise: { messages: 999999, images: 999999, resetHours: 0 }
 }
 
-// RATE LIMIT STORE (in memory)
 const rateLimitStore = {}
 
 function checkAndUpdateLimit(userId, plan, type) {
   const limits = planLimits[plan] || planLimits.free
   if (limits[type] === 999999) return { allowed: true }
-
   const key = userId.toString() + "_" + type
   const now = Date.now()
   const resetMs = limits.resetHours * 60 * 60 * 1000
-
-  if (!rateLimitStore[key]) {
-    rateLimitStore[key] = { count: 0, windowStart: now }
-  }
-
+  if (!rateLimitStore[key]) rateLimitStore[key] = { count: 0, windowStart: now }
   const store = rateLimitStore[key]
-
-  if (resetMs > 0 && now - store.windowStart > resetMs) {
-    store.count = 0
-    store.windowStart = now
-  }
-
+  if (resetMs > 0 && now - store.windowStart > resetMs) { store.count = 0; store.windowStart = now }
   const limit = limits[type]
-
   if (store.count >= limit) {
     const waitMs = resetMs - (now - store.windowStart)
-    const waitMins = Math.ceil(waitMs / 60000)
-    return {
-      allowed: false,
-      type: type,
-      plan: plan,
-      waitMins: waitMins,
-      limit: limit
-    }
+    return { allowed: false, type, plan, waitMins: Math.ceil(waitMs / 60000), limit }
   }
-
   store.count++
-  return { allowed: true, used: store.count, limit: limit }
+  return { allowed: true, used: store.count, limit }
 }
 
-// JWT
+// ── JWT ───────────────────────────────────────────────────────────────────────
 const JWT_SECRET = process.env.JWT_SECRET || "datta-ai-secret-2024"
 const FRONTEND_URL = process.env.FRONTEND_URL || "https://harisaiganeshpampana-ai.github.io/datta-ai"
 
@@ -137,7 +117,7 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// WEB SEARCH
+// ── WEB SEARCH ────────────────────────────────────────────────────────────────
 async function webSearch(query) {
   try {
     const key = process.env.TAVILY_API_KEY
@@ -145,14 +125,14 @@ async function webSearch(query) {
     const response = await fetch("https://api.tavily.com/search", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
-      body: JSON.stringify({ query: query, search_depth: "basic", max_results: 5, include_answer: true })
+      body: JSON.stringify({ query, search_depth: "basic", max_results: 5, include_answer: true })
     })
     if (!response.ok) return null
     const data = await response.json()
     if (!data.results || data.results.length === 0) return null
     const answer = data.answer ? "Summary: " + data.answer + "\n\n" : ""
     const sources = data.results.slice(0, 3).map((r, i) =>
-      (i + 1) + ". " + r.title + "\n" + r.content.substring(0, 200) + "\nSource: " + r.url
+      (i + 1) + ". " + r.title + "\n" + r.content.substring(0, 300) + "\nSource: " + r.url
     ).join("\n\n")
     return answer + sources
   } catch (e) {
@@ -168,22 +148,16 @@ function needsWebSearch(message) {
   return triggers.some(t => msg.includes(t))
 }
 
+// ── IMAGE DETECTION ───────────────────────────────────────────────────────────
 function isImageRequest(message) {
   if (!message) return false
   const msg = message.toLowerCase()
   const triggers = [
-    "generate image", "create image", "make image",
-    "generate a image", "create a image", "make a image",
-    "generate an image", "create an image", "make an image",
-    "generate photo", "create photo", "make photo",
-    "generate a photo", "create a photo", "make a photo",
-    "generate picture", "create picture", "make picture",
-    "generate a picture", "create a picture", "make a picture",
-    "generate art", "create art", "make art",
-    "draw", "paint", "illustrate", "sketch",
-    "image of", "picture of", "photo of",
-    "show me a image", "show me an image", "show image",
-    "genrate", "generat"
+    "generate image","create image","make image","generate a image","create a image",
+    "generate an image","create an image","make an image","generate photo","create photo",
+    "generate picture","create picture","generate art","create art","make art",
+    "draw","paint","illustrate","sketch","image of","picture of","photo of",
+    "show me a image","show me an image","genrate","generat","dall-e","stable diffusion"
   ]
   return triggers.some(t => msg.includes(t))
 }
@@ -191,40 +165,71 @@ function isImageRequest(message) {
 function getImagePrompt(message) {
   let prompt = message.trim()
   const removes = [
-    "generate an image of", "create an image of", "make an image of",
-    "generate a image of", "create a image of", "make a image of",
-    "generate image of", "create image of", "make image of",
-    "generate an image", "create an image", "make an image",
-    "generate a image", "create a image", "make a image",
-    "generate image", "create image", "make image",
-    "generate a photo of", "create a photo of",
-    "generate a photo", "create a photo", "generate photo",
-    "generate a picture of", "create a picture of",
-    "generate a picture", "create a picture", "generate picture",
-    "generate a art of", "create a art of",
-    "generate art", "create art", "make art",
-    "draw me a", "draw me an", "draw me", "draw a", "draw an", "draw",
-    "paint a", "paint an", "paint",
-    "illustrate a", "illustrate an", "illustrate",
-    "sketch of a", "sketch of an", "sketch of", "sketch a", "sketch an", "sketch",
-    "image of a", "image of an", "image of",
-    "picture of a", "picture of an", "picture of",
-    "photo of a", "photo of an", "photo of",
-    "show me a image of", "show me an image of",
-    "show me a image", "show me an image", "show image of", "show image",
-    "genrate an", "genrate a", "genrate",
-    "generat an", "generat a", "generat"
+    "generate an image of","create an image of","make an image of",
+    "generate a image of","create a image of","make a image of",
+    "generate image of","create image of","make image of",
+    "generate an image","create an image","make an image",
+    "generate a image","create a image","make a image",
+    "generate image","create image","make image",
+    "generate a photo of","create a photo of","generate a photo","create a photo","generate photo",
+    "generate a picture of","create a picture of","generate a picture","create a picture","generate picture",
+    "generate art","create art","make art",
+    "draw me a","draw me an","draw me","draw a","draw an","draw",
+    "paint a","paint an","paint",
+    "illustrate a","illustrate an","illustrate",
+    "sketch of a","sketch of an","sketch of","sketch a","sketch an","sketch",
+    "image of a","image of an","image of",
+    "picture of a","picture of an","picture of",
+    "photo of a","photo of an","photo of",
+    "show me a image of","show me an image of","show me a image","show me an image",
+    "genrate an","genrate a","genrate","generat an","generat a","generat"
   ]
   removes.sort((a, b) => b.length - a.length)
   removes.forEach(r => {
-    const regex = new RegExp("^" + r + "\s*", "i")
-    prompt = prompt.replace(regex, "")
-    prompt = prompt.replace(new RegExp("\s*" + r + "\s*", "gi"), " ")
+    prompt = prompt.replace(new RegExp("^" + r.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "\\s*", "i"), "")
   })
   return prompt.trim() || message
 }
 
-// GOOGLE OAUTH
+// ── ALL-ROUNDER SYSTEM PROMPT ─────────────────────────────────────────────────
+function getSystemPrompt(language, hasSearch) {
+  const langNote = language && language !== "English" ? ` Always respond in ${language}.` : ""
+  const searchNote = hasSearch ? " Use the web search results provided to give accurate, up-to-date answers. Always cite sources." : ""
+
+  return `You are Datta AI — a powerful, all-rounder AI assistant like Claude or ChatGPT. You can do ANYTHING.
+
+CORE RULES:
+1. ALWAYS give COMPLETE answers — never say "here's a partial example" or cut off code
+2. For coding requests: give FULL working code, every line, nothing missing
+3. For website requests: give COMPLETE HTML + CSS + JS in one file, fully functional
+4. For PDF/document requests: give complete content ready to copy
+5. For explanations: be clear, detailed and use examples
+6. For math/science: show full working steps
+7. For creative writing: be vivid and complete
+8. NEVER say "I can't do that" — always find a way to help
+9. Format code in proper markdown code blocks with language specified
+10. Be smart, helpful and thorough like a senior expert
+
+WHAT YOU CAN DO:
+- Build complete websites (HTML/CSS/JS) ✅
+- Write full code in ANY language (Python, JS, Java, C++, etc.) ✅  
+- Explain anything clearly ✅
+- Answer any question on any topic ✅
+- Help with math, science, history, geography ✅
+- Write essays, stories, emails, reports ✅
+- Analyze and debug code ✅
+- Give step-by-step tutorials ✅
+- Help with business, marketing, strategy ✅
+- Medical/legal info (with disclaimer) ✅
+- Web search results integration ✅
+- Image analysis ✅
+
+For PDF content requests, provide well-structured text content the user can save.
+For code: ALWAYS provide 100% complete, working, copy-paste ready code.
+For websites: ALWAYS provide complete single-file HTML with embedded CSS and JS.${langNote}${searchNote}`
+}
+
+// ── GOOGLE OAUTH ──────────────────────────────────────────────────────────────
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
@@ -234,10 +239,10 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     try {
       let user = await User.findOne({ googleId: profile.id })
       if (!user) {
-        const email = profile.emails && profile.emails[0] ? profile.emails[0].value : ""
-        const firstName = profile.displayName ? profile.displayName.split(" ")[0] : "User"
+        const email = profile.emails?.[0]?.value || ""
+        const firstName = profile.displayName?.split(" ")[0] || "User"
         const username = firstName + "_" + profile.id.slice(-4)
-        user = await User.create({ googleId: profile.id, username: username, email: email })
+        user = await User.create({ googleId: profile.id, username, email })
       }
       return done(null, { token: generateToken(user), user: { id: user._id, username: user.username, email: user.email } })
     } catch (err) { return done(err, null) }
@@ -246,7 +251,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
 const otpStore = {}
 
-// AUTH ROUTES
+// ── AUTH ROUTES ───────────────────────────────────────────────────────────────
 app.post("/auth/signup", async (req, res) => {
   try {
     const { username, email, password } = req.body
@@ -340,12 +345,12 @@ app.delete("/auth/delete-account", authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// SUBSCRIPTION ROUTES
+// ── SUBSCRIPTION ROUTES ───────────────────────────────────────────────────────
 app.get("/payment/subscription", authMiddleware, async (req, res) => {
   try {
     const sub = await Subscription.findOne({ userId: req.user.id, active: true })
     const plan = sub ? sub.plan : "free"
-    res.json({ plan, period: sub ? sub.period : "monthly", endDate: sub ? sub.endDate : null, limits: planLimits[plan] })
+    res.json({ plan, period: sub?.period || "monthly", endDate: sub?.endDate || null, limits: planLimits[plan] })
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
@@ -366,7 +371,7 @@ app.post("/payment/activate", authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// CHAT ROUTE
+// ── MAIN CHAT ROUTE ───────────────────────────────────────────────────────────
 app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
   try {
     const message = req.body.message || ""
@@ -376,37 +381,21 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const userId = req.user.id
 
     if (!message && !file) return res.status(400).json({ error: "No message or file" })
-    if (file && file.size > 5 * 1024 * 1024) return res.status(413).json({ error: "File too large. Max 5MB." })
-    if (file) {
-      const allowed = ["image/","text/","application/pdf","application/json"]
-      if (!allowed.some(t => file.mimetype.startsWith(t))) return res.status(400).json({ error: "File type not supported." })
-    }
 
     // Get user plan
     const sub = await Subscription.findOne({ userId: userId, active: true }).catch(() => null)
     const userPlan = sub ? sub.plan : "free"
 
-    // Check image generation limit
+    // Rate limiting
     if (isImageRequest(message)) {
       const imgCheck = checkAndUpdateLimit(userId, userPlan, "images")
       if (!imgCheck.allowed) {
-        return res.status(429).json({
-          error: "IMAGE_LIMIT",
-          plan: userPlan,
-          waitMins: imgCheck.waitMins,
-          limit: imgCheck.limit
-        })
+        return res.status(429).json({ error: "IMAGE_LIMIT", plan: userPlan, waitMins: imgCheck.waitMins, limit: imgCheck.limit })
       }
     } else {
-      // Check message limit
       const msgCheck = checkAndUpdateLimit(userId, userPlan, "messages")
       if (!msgCheck.allowed) {
-        return res.status(429).json({
-          error: "MESSAGE_LIMIT",
-          plan: userPlan,
-          waitMins: msgCheck.waitMins,
-          limit: msgCheck.limit
-        })
+        return res.status(429).json({ error: "MESSAGE_LIMIT", plan: userPlan, waitMins: msgCheck.waitMins, limit: msgCheck.limit })
       }
     }
 
@@ -416,25 +405,29 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       try { chat = await Chat.findOne({ _id: chatId, userId: userId }) } catch (e) { chat = null }
     }
     if (!chat) {
-      const greetings = ["hi","hii","hello","hey","helo","hai","sup","yo"]
+      const greetings = ["hi","hii","hello","hey","helo","hai","sup","yo","hiya","howdy"]
       const msgLower = message.trim().toLowerCase()
       let title = greetings.includes(msgLower) ? "New conversation" : message.trim().substring(0, 45)
       if (message.trim().length > 45) title += "..."
-      chat = await Chat.create({ userId: userId, title: title, messages: [] })
+      chat = await Chat.create({ userId, title, messages: [] })
     }
 
-    chat.messages.push({ role: "user", content: message || "[File: " + (file ? file.originalname : "unknown") + "]" })
+    chat.messages.push({ role: "user", content: message || "[File: " + (file?.originalname || "unknown") + "]" })
     await chat.save()
 
     res.setHeader("x-chat-id", chat._id.toString())
-    res.setHeader("Content-Type", "text/plain")
+    res.setHeader("Content-Type", "text/plain; charset=utf-8")
 
-    // IMAGE GENERATION
+    // ── IMAGE GENERATION (Client-side via Pollinations) ────────────────────
     if (message && isImageRequest(message)) {
       const imagePrompt = getImagePrompt(message)
+      const seed = Math.floor(Math.random() * 999999)
+      // Use multiple URL formats for reliability
       const encodedPrompt = encodeURIComponent(imagePrompt)
-      const imageUrl = "https://image.pollinations.ai/prompt/" + encodedPrompt + "?width=768&height=768&nologo=true&enhance=true"
-      const responseText = "Here is your generated image:\n\n![" + imagePrompt + "](" + imageUrl + ")\n\n*Prompt: " + imagePrompt + "*"
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&enhance=true&seed=${seed}&model=flux`
+
+      const responseText = `DATTA_IMAGE_START\n![${imagePrompt}](${imageUrl})\nPROMPT:${imagePrompt}\nDATTA_IMAGE_END`
+
       res.write(responseText)
       chat.messages.push({ role: "assistant", content: responseText })
       await chat.save()
@@ -443,54 +436,71 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       return
     }
 
-    // WEB SEARCH
+    // ── WEB SEARCH ────────────────────────────────────────────────────────
     let searchContext = ""
     if (message && needsWebSearch(message) && process.env.TAVILY_API_KEY) {
-      console.log("Web searching:", message)
+      console.log("🔍 Searching web for:", message)
       const results = await webSearch(message)
       if (results) {
-        searchContext = "\n\n[Web Search Results]\n" + results + "\n[End of Search Results]"
-        console.log("Web search done")
+        searchContext = "\n\n[Web Search Results - Today's Data]\n" + results + "\n[End of Search Results]"
       }
     }
 
-    // Build history
-    const history = chat.messages.slice(0, -1).map(m => ({
+    // ── BUILD MESSAGE HISTORY ─────────────────────────────────────────────
+    const history = chat.messages.slice(0, -1).slice(-10).map(m => ({
       role: m.role === "assistant" ? "assistant" : "user",
       content: m.content
     }))
 
-    const isImage = file && file.mimetype && file.mimetype.startsWith("image/")
+    const isImageFile = file && file.mimetype?.startsWith("image/")
     let userContent
 
-    if (isImage) {
+    if (isImageFile) {
       const base64 = file.buffer.toString("base64")
       userContent = [
-        { type: "text", text: (message || "Analyze this image.") + searchContext },
-        { type: "image_url", image_url: { url: "data:" + file.mimetype + ";base64," + base64 } }
+        { type: "text", text: (message || "Analyze this image in detail.") + searchContext },
+        { type: "image_url", image_url: { url: `data:${file.mimetype};base64,${base64}` } }
       ]
     } else if (file) {
       try {
-        userContent = (message ? message + "\n\n" : "") + "[File: " + file.originalname + "]\n\n" + file.buffer.toString("utf-8") + searchContext
+        const fileContent = file.buffer.toString("utf-8")
+        userContent = (message ? message + "\n\n" : "") + `[File: ${file.originalname}]\n\n${fileContent}` + searchContext
       } catch (e) {
-        userContent = (message ? message + "\n\n" : "") + "[File: " + file.originalname + "]" + searchContext
+        userContent = (message ? message + "\n\n" : "") + `[File: ${file.originalname}]` + searchContext
       }
     } else {
       userContent = message + searchContext
     }
 
-    const model = isImage ? "meta-llama/llama-4-scout-17b-16e-instruct" : "llama-3.3-70b-versatile"
-    const langNote = language && language !== "English" ? " Always respond in " + language + "." : ""
-    const searchNote = searchContext ? " Use web search results to give accurate answers and cite sources." : ""
+    // ── CHOOSE MODEL ──────────────────────────────────────────────────────
+    // Use vision model for images, best model for everything else
+    const model = isImageFile
+      ? "meta-llama/llama-4-scout-17b-16e-instruct"
+      : "llama-3.3-70b-versatile"
 
+    // ── DETERMINE MAX TOKENS ──────────────────────────────────────────────
+    const msg = message.toLowerCase()
+    const needsLongResponse =
+      msg.includes("website") || msg.includes("code") || msg.includes("full") ||
+      msg.includes("complete") || msg.includes("build") || msg.includes("create") ||
+      msg.includes("write") || msg.includes("essay") || msg.includes("explain") ||
+      msg.includes("html") || msg.includes("css") || msg.includes("javascript") ||
+      msg.includes("python") || msg.includes("program") || msg.includes("script") ||
+      msg.includes("pdf") || msg.includes("document") || msg.includes("report") ||
+      msg.includes("story") || msg.includes("article") || msg.includes("tutorial")
+
+    const maxTokens = isImageFile ? 1024 : (needsLongResponse ? 8000 : 1024)
+
+    // ── STREAM RESPONSE ───────────────────────────────────────────────────
     const stream = await groq.chat.completions.create({
-      model: model,
+      model,
       messages: [
-        { role: "system", content: "You are Datta AI, a helpful assistant. Keep answers short and to the point. For simple questions 1-3 sentences. For complex questions, structured answers. Never mention the user name in answers." + langNote + searchNote },
+        { role: "system", content: getSystemPrompt(language, !!searchContext) },
         ...history,
         { role: "user", content: userContent }
       ],
-      max_tokens: isImage ? 512 : 400,
+      max_tokens: maxTokens,
+      temperature: 0.7,
       stream: true
     })
 
@@ -502,13 +512,14 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
 
     chat.messages.push({ role: "assistant", content: full })
 
-    // Generate smart title after 2nd exchange
+    // ── AUTO TITLE GENERATION ─────────────────────────────────────────────
     if (chat.messages.length === 4 || chat.title === "New conversation") {
       try {
         const titleRes = await groq.chat.completions.create({
           model: "llama-3.3-70b-versatile",
-          messages: [{ role: "user", content: "Generate a very short title (max 5 words) for a chat about: " + message + ". Just the title, no quotes." }],
-          max_tokens: 15
+          messages: [{ role: "user", content: `Generate a very short title (max 5 words, no quotes, no punctuation) for a conversation about: "${message}". Just the title.` }],
+          max_tokens: 15,
+          temperature: 0.5
         })
         const newTitle = titleRes.choices?.[0]?.message?.content?.trim()
         if (newTitle) chat.title = newTitle
@@ -520,12 +531,13 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     res.end()
 
   } catch (err) {
-    console.error("Chat error:", err.message)
+    console.error("❌ Chat error:", err.message)
     if (!res.headersSent) res.status(500).send("Server error: " + err.message)
+    else res.end()
   }
 })
 
-// CHAT HISTORY ROUTES
+// ── CHAT HISTORY ROUTES ───────────────────────────────────────────────────────
 app.get("/chats", authMiddleware, async (req, res) => {
   try {
     const chats = await Chat.find({ userId: req.user.id }).sort({ createdAt: -1 }).select("title createdAt")
@@ -562,5 +574,9 @@ app.post("/chat/:id/rename", authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
+// ── HEALTH CHECK ──────────────────────────────────────────────────────────────
+app.get("/", (req, res) => res.json({ status: "✅ Datta AI Server Running", version: "3.0" }))
+app.get("/health", (req, res) => res.json({ status: "ok", uptime: process.uptime() }))
+
 const PORT = process.env.PORT || 3000
-app.listen(PORT, function() { console.log("Server running on port " + PORT) })
+app.listen(PORT, () => console.log(`🚀 Datta AI Server running on port ${PORT}`))
