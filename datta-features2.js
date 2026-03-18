@@ -751,7 +751,7 @@ document.addEventListener("DOMContentLoaded", function() {
         <button onclick="showAnalyticsDashboard()" title="Stats" style="width:28px;height:28px;background:none;border:1px solid rgba(192,132,252,0.2);border-radius:7px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;">📊</button>
         <button onclick="showXPPanel()" title="XP" style="width:28px;height:28px;background:none;border:1px solid rgba(255,215,0,0.2);border-radius:7px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🎮</button>
       </div>
-    \`
+    `
     sidebar.insertBefore(toolBar, divider.nextSibling)
   }, 800)
 })
