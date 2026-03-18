@@ -332,10 +332,18 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }
 
     if (!chat) {
+      // Generate smart title from first message
       let title = "New chat"
       if (message && message.trim()) {
-        title = message.trim().substring(0, 45)
-        if (message.trim().length > 45) title += "..."
+        // For short greetings, use generic title
+        const greetings = ["hi", "hii", "hello", "hey", "helo", "hai", "sup", "yo"]
+        const msgLower = message.trim().toLowerCase()
+        if (greetings.includes(msgLower)) {
+          title = "New conversation"
+        } else {
+          title = message.trim().substring(0, 45)
+          if (message.trim().length > 45) title += "..."
+        }
       }
       chat = await Chat.create({ userId: userId, title: title, messages: [] })
     }
@@ -411,6 +419,29 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }
 
     chat.messages.push({ role: "assistant", content: full })
+
+    // After 2nd exchange or if title is generic, generate a smart title
+    if (chat.messages.length === 4 || chat.title === "New conversation" || chat.title === "New chat") {
+      try {
+        const titleRes = await groq.chat.completions.create({
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            {
+              role: "user",
+              content: "Generate a very short title (max 5 words) for a chat that started with this message: " + message + ". Just give the title, nothing else, no quotes."
+            }
+          ],
+          max_tokens: 20
+        })
+        const newTitle = titleRes.choices?.[0]?.message?.content?.trim()
+        if (newTitle && newTitle.length > 0) {
+          chat.title = newTitle
+        }
+      } catch(e) {
+        console.log("Title generation failed:", e.message)
+      }
+    }
+
     await chat.save()
     res.write("CHATID" + chat._id)
     res.end()
