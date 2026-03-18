@@ -96,25 +96,41 @@ async function send() {
   if (filePreview) filePreview.textContent = ""
   if (clearFileBtn) clearFileBtn.style.display = "none"
 
-  // Detect if web search will be triggered
-  const searchTriggers = ["latest","recent","today","yesterday","this week","current","now","live","breaking","news","who is","what is the","price of","weather","score","2024","2025","2026","happened","update","trending","stock","crypto","bitcoin","search for","find","look up","tell me about recent","new release","ipl","cricket","match","movie","released","launched"]
-  const willSearch = searchTriggers.some(t => text.toLowerCase().includes(t))
+  // Detect request type for indicator
+  const searchTriggers = ["latest","recent","today","yesterday","this week","current","now","live","breaking","news","who is","what is the","price of","weather","score","2025","2026","happened","update","trending","stock","crypto","bitcoin","search for","find","look up","ipl","cricket","match","movie","released","launched","election","gold","petrol"]
+  const imageTriggers = ["generate image","create image","make image","draw","generate photo","create photo","make photo","generate picture","create picture","image of","picture of","photo of","draw me","paint","illustrate","sketch","generate art","create art"]
 
-  // Show typing indicator with web search status
+  const willSearch = searchTriggers.some(t => text.toLowerCase().includes(t))
+  const willGenImage = imageTriggers.some(t => text.toLowerCase().includes(t))
+
+  // Show appropriate indicator
   let aiDiv = document.createElement("div")
   aiDiv.className = "messageRow"
-  aiDiv.innerHTML = willSearch ? `
-    <div class="avatar">🤖</div>
-    <div class="aiBubble searchingIndicator">
-      <span class="searchIcon">🌐</span>
-      <span class="searchText">Searching the web...</span>
-    </div>
-  ` : `
-    <div class="avatar">🤖</div>
-    <div class="aiBubble typing">
-      <span></span><span></span><span></span>
-    </div>
-  `
+
+  if (willGenImage) {
+    aiDiv.innerHTML = `
+      <div class="avatar">🤖</div>
+      <div class="aiBubble searchingIndicator" style="background:#1a0a2a!important;border-color:#4a1a6a!important;">
+        <span class="searchIcon">🎨</span>
+        <span class="searchText" style="color:#cc88ff;">Generating image...</span>
+      </div>
+    `
+  } else if (willSearch) {
+    aiDiv.innerHTML = `
+      <div class="avatar">🤖</div>
+      <div class="aiBubble searchingIndicator">
+        <span class="searchIcon">🌐</span>
+        <span class="searchText">Searching the web...</span>
+      </div>
+    `
+  } else {
+    aiDiv.innerHTML = `
+      <div class="avatar">🤖</div>
+      <div class="aiBubble typing">
+        <span></span><span></span><span></span>
+      </div>
+    `
+  }
   chatBox.appendChild(aiDiv)
   chatBox.scrollTop = chatBox.scrollHeight
 
