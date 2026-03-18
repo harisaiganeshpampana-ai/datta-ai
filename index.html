@@ -691,17 +691,185 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
 
 
 <script>
-  // Hide splash after 3 seconds
+  // ── SPLASH ──────────────────────────────────────────
   setTimeout(function() {
     var splash = document.getElementById('splash');
     if (splash) {
       splash.style.opacity = '0';
       splash.style.transition = 'opacity 0.5s ease';
-      setTimeout(function() {
-        splash.style.display = 'none';
-      }, 500);
+      setTimeout(function() { splash.style.display = 'none'; }, 500);
     }
   }, 2500);
+
+  // ── GREETING ────────────────────────────────────────
+  window.addEventListener('load', function() {
+    var hour = new Date().getHours();
+    var greet = hour < 12 ? "Good morning ☀️" : hour < 17 ? "Good afternoon 🌤️" : hour < 21 ? "Good evening 🌙" : "Good night 🌟";
+    var el = document.querySelector(".welcomeGreeting");
+    if (el) el.textContent = greet;
+  });
+
+  // ── SIDEBAR TOGGLE ──────────────────────────────────
+  function toggleSidebar() {
+    document.querySelector(".sidebar").classList.toggle("show");
+  }
+  window.toggleSidebar = toggleSidebar;
+
+  // ── COLOR PANEL ─────────────────────────────────────
+  function toggleColorPanel() {
+    var panel = document.getElementById('colorPanel');
+    if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  }
+  window.toggleColorPanel = toggleColorPanel;
+
+  function updateTopbarDot() {
+    var dot = document.getElementById('topbarColorDot');
+    if (dot) dot.style.background = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+    var saved = localStorage.getItem('datta_accent') || '#ffd700';
+    var p1 = document.getElementById('accentColorPicker');
+    var p2 = document.getElementById('accentColorPickerSettings');
+    if (p1) p1.value = saved;
+    if (p2) p2.value = saved;
+  }
+  window.updateTopbarDot = updateTopbarDot;
+  window.addEventListener('load', function() { setTimeout(updateTopbarDot, 100); });
+
+  // Close color panel on outside click
+  document.addEventListener('click', function(e) {
+    var panel = document.getElementById('colorPanel');
+    var btn = document.getElementById('topbarColorBtn');
+    if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
+      panel.style.display = 'none';
+    }
+  });
+
+  // ── PROFILE MENU ────────────────────────────────────
+  function toggleProfileMenu() {
+    var menu = document.getElementById('profileMenu');
+    if (!menu) return;
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  }
+  window.toggleProfileMenu = toggleProfileMenu;
+
+  document.addEventListener('click', function(e) {
+    var menu = document.getElementById('profileMenu');
+    if (menu && menu.style.display !== 'none' &&
+        !menu.contains(e.target) &&
+        !e.target.closest('[onclick*="toggleProfileMenu"]')) {
+      menu.style.display = 'none';
+    }
+  });
+
+  // ── SETTINGS ────────────────────────────────────────
+  function goToSettings() {
+    if (typeof currentChatId !== 'undefined' && currentChatId) {
+      sessionStorage.setItem('datta_return_chat', currentChatId);
+    }
+    window.location.href = 'settings.html';
+  }
+  window.goToSettings = goToSettings;
+
+  // Restore chat on return from settings
+  window.addEventListener('load', function() {
+    var returnChat = sessionStorage.getItem('datta_return_chat');
+    if (returnChat) {
+      sessionStorage.removeItem('datta_return_chat');
+      setTimeout(function() {
+        if (typeof openChat === 'function') openChat(returnChat);
+      }, 1200);
+    }
+  });
+
+  // ── PLUS MENU ───────────────────────────────────────
+  function togglePlusMenu() {
+    var sheet = document.getElementById("addToChatSheet");
+    var overlay = document.getElementById("addToChatOverlay");
+    var btn = document.getElementById("plusBtn");
+    if (!sheet) return;
+    sheet.classList.add("show");
+    if (overlay) overlay.classList.add("show");
+    if (btn) btn.classList.add("active");
+  }
+  function closePlusMenu() {
+    var sheet = document.getElementById("addToChatSheet");
+    var overlay = document.getElementById("addToChatOverlay");
+    var btn = document.getElementById("plusBtn");
+    if (sheet) sheet.classList.remove("show");
+    if (overlay) overlay.classList.remove("show");
+    if (btn) btn.classList.remove("active");
+  }
+  window.togglePlusMenu = togglePlusMenu;
+  window.closePlusMenu = closePlusMenu;
+
+  function toggleWebSearch(row) {
+    var toggle = document.getElementById("webSearchToggle");
+    if (toggle) { toggle.checked = !toggle.checked; handleWebSearchToggle(toggle); }
+  }
+  function handleWebSearchToggle(checkbox) {
+    window.webSearchEnabled = checkbox.checked;
+  }
+  window.toggleWebSearch = toggleWebSearch;
+  window.handleWebSearchToggle = handleWebSearchToggle;
+
+  function showFilePreview(file) {
+    var preview = document.getElementById("filePreview");
+    var wrap = document.getElementById("filePreviewWrap");
+    if (preview) preview.textContent = "📄 " + file.name;
+    if (wrap) wrap.style.display = "block";
+  }
+  function clearFileSelection() {
+    ["cameraInput","photoInput","imageInput"].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.value = "";
+    });
+    var preview = document.getElementById("filePreview");
+    var wrap = document.getElementById("filePreviewWrap");
+    if (preview) preview.textContent = "";
+    if (wrap) wrap.style.display = "none";
+  }
+  window.clearFileSelection = clearFileSelection;
+
+  window.addEventListener('load', function() {
+    var inputs = [
+      {id:"imageInput"}, {id:"cameraInput"}, {id:"photoInput"}
+    ];
+    inputs.forEach(function(item) {
+      var el = document.getElementById(item.id);
+      if (el) el.addEventListener("change", function() {
+        if (this.files[0]) { showFilePreview(this.files[0]); closePlusMenu(); }
+      });
+    });
+  });
+
+  function triggerCamera() { document.getElementById("cameraInput").click(); }
+  function triggerPhotos() { document.getElementById("photoInput").click(); }
+  function triggerFile()   { document.getElementById("imageInput").click(); }
+  function triggerImageGen() {
+    var input = document.getElementById("message");
+    if (input) { input.value = "generate image of "; input.focus(); }
+    closePlusMenu();
+  }
+  function triggerWebSearch() {
+    var input = document.getElementById("message");
+    if (input) { input.placeholder = "Search the web..."; input.focus(); }
+    closePlusMenu();
+  }
+  window.triggerCamera = triggerCamera;
+  window.triggerPhotos = triggerPhotos;
+  window.triggerFile = triggerFile;
+  window.triggerImageGen = triggerImageGen;
+  window.triggerWebSearch = triggerWebSearch;
+
+  // Feed prompt restore
+  window.addEventListener('load', function() {
+    var feedPrompt = localStorage.getItem('datta_feed_prompt');
+    if (feedPrompt) {
+      localStorage.removeItem('datta_feed_prompt');
+      setTimeout(function() {
+        var input = document.getElementById('message');
+        if (input && typeof send === 'function') { input.value = feedPrompt; send(); }
+      }, 1500);
+    }
+  });
 </script>
 <script src="theme.js"></script>
 <script src="mood.js"></script>
