@@ -391,115 +391,98 @@
 </style>
 
 <!-- SIDEBAR -->
-<div class="sidebar">
-  <div class="sidebarTop">
-    <div class="sidebarBrand">👑 Datta AI</div>
-    <button class="newChatBtn" onclick="newChat()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="16"></line>
-        <line x1="8" y1="12" x2="16" y2="12"></line>
-      </svg>
-      New chat
+<div class="sidebar" style="position:relative;">
+
+  <!-- TOP -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 14px 8px;">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;background:linear-gradient(90deg,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">👑 DATTA AI</div>
+    <button onclick="newChat()" title="New Chat" style="width:34px;height:34px;border-radius:10px;background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.15);color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,215,0,0.14)'" onmouseout="this.style.background='rgba(255,215,0,0.07)'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </button>
   </div>
 
-  <div class="sidebarNav">
-    <button class="navItem active" onclick="showSection('chats')">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-      </svg>
-      Chats
+  <!-- SEARCH -->
+  <div style="padding:0 12px 8px;">
+    <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,215,0,0.08);border-radius:10px;padding:7px 12px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="search" type="text" placeholder="Search chats" onkeyup="searchChats()" style="background:none;border:none;outline:none;color:#fff8e7;font-size:13px;font-family:'DM Sans',sans-serif;width:100%;">
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div style="padding:0 8px 4px;">
+    <button class="navItem active" onclick="showSection('chats')" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chats
     </button>
-    <button class="navItem" onclick="showSection('projects')">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="2" y="7" width="20" height="14" rx="2"></rect>
-        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path>
-      </svg>
-      Projects
+    <button class="navItem" onclick="showSection('projects')" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>Projects
     </button>
-    <button class="navItem" onclick="showSection('artifacts')">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-      </svg>
-      Artifacts
+    <button class="navItem" onclick="showSection('artifacts')" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Artifacts
     </button>
-    <button class="navItem" onclick="window.location.href='feed.html'" style="color:var(--accent);">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/>
-      </svg>
-      📺 Live Feed
+    <button onclick="window.location.href='feed.html'" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)'" onmouseout="this.style.background='none'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>📺 Live Feed
     </button>
   </div>
 
   <div class="sidebarDivider"></div>
-  <div class="recentsLabel" id="recentsLabel">Recents</div>
-  <input id="search" class="searchBox" type="text" placeholder="Search chats" onkeyup="searchChats()">
+  <div id="recentsLabel" style="padding:6px 14px 4px;font-family:'Rajdhani',sans-serif;font-size:10px;letter-spacing:2px;color:#332200;">RECENTS</div>
 
-  <div class="sidebarSection" id="section-chats">
+  <div class="sidebarSection" id="section-chats" style="flex:1;overflow-y:auto;">
     <div class="history" id="history"></div>
   </div>
-
   <div class="sidebarSection" id="section-projects" style="display:none;">
-    <div class="emptySection">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="1.5">
-        <rect x="2" y="7" width="20" height="14" rx="2"></rect>
-        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path>
-      </svg>
-      <p>No projects yet</p>
-    </div>
+    <div class="emptySection"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg><p>No projects yet</p></div>
   </div>
-
   <div class="sidebarSection" id="section-artifacts" style="display:none;">
-    <div class="emptySection">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="1.5">
-        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-      </svg>
-      <p>No artifacts yet</p>
-    </div>
+    <div class="emptySection"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><p>No artifacts yet</p></div>
   </div>
 
-  <div class="upgradeBtn" onclick="window.location.href='pricing.html'">
-    <span>👑</span>
-    <div>
-      <div style="font-size:13px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;color:#ffd700;">Upgrade to Agni</div>
-      <div style="font-size:11px;color:#665500;">Unlimited power • ₹499/mo</div>
-    </div>
-    <span style="color:#ffd700;font-size:16px;">›</span>
+  <div id="versionTag" style="text-align:center;font-size:9px;color:#252000;letter-spacing:2px;padding:2px 0;font-family:'Rajdhani',sans-serif;">DATTA AI v2.0 · SHAKTI</div>
+
+  <!-- UPGRADE -->
+  <div onclick="window.location.href='pricing.html'" style="margin:6px 10px;padding:10px 14px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.12);border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,215,0,0.1)'" onmouseout="this.style.background='rgba(255,215,0,0.05)'">
+    <span style="font-size:18px;">👑</span>
+    <div style="flex:1;"><div style="font-size:12px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;color:var(--accent);">Upgrade to Agni</div><div style="font-size:10px;color:#554400;">Unlimited power · ₹499/mo</div></div>
+    <span style="color:#554400;font-size:14px;">›</span>
   </div>
 
-  <div style="text-align:center;font-size:10px;color:#332200;letter-spacing:2px;padding:4px 0;font-family:'Rajdhani',sans-serif;" id="versionTag">DATTA AI v2.0 · SHAKTI</div>
-
-  <div style="text-align:center;padding:4px 0 6px;display:flex;justify-content:center;gap:10px;">
-    <a href="privacy.html" style="font-size:10px;color:#332200;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;transition:color 0.2s;" onmouseover="this.style.color='#ffd700'" onmouseout="this.style.color='#332200'">Privacy</a>
-    <span style="color:#2a2000;font-size:10px;">·</span>
-    <a href="terms.html" style="font-size:10px;color:#332200;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;transition:color 0.2s;" onmouseover="this.style.color='#ffd700'" onmouseout="this.style.color='#332200'">Terms</a>
-    <span style="color:#2a2000;font-size:10px;">·</span>
-    <a href="home.html" style="font-size:10px;color:#332200;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;transition:color 0.2s;" onmouseover="this.style.color='#ffd700'" onmouseout="this.style.color='#332200'">About</a>
+  <!-- PROFILE BOTTOM -->
+  <div onclick="toggleProfileMenu()" style="margin:4px 10px 10px;padding:10px 12px;border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.2s;border:1px solid transparent;" onmouseover="this.style.background='rgba(255,215,0,0.05)';this.style.borderColor='rgba(255,215,0,0.1)'" onmouseout="this.style.background='none';this.style.borderColor='transparent'">
+    <div class="profileAvatar" style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#ff8c00);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;font-family:'Rajdhani',sans-serif;flex-shrink:0;">G</div>
+    <div style="flex:1;min-width:0;">
+      <div class="profileName" style="font-size:13px;font-weight:600;color:#fff8e7;font-family:'DM Sans',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Ganesh</div>
+      <div class="profileSub" style="font-size:11px;color:#554400;font-family:'Rajdhani',sans-serif;">Free Plan</div>
+    </div>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
   </div>
 
-  <div class="sidebarProfile">
-    <div class="profileAvatar">G</div>
-    <div class="profileInfo">
-      <div class="profileName">Ganesh</div>
-      <div class="profileSub">Free Plan</div>
+  <!-- PROFILE POPUP MENU -->
+  <div id="profileMenu" style="display:none;position:absolute;bottom:80px;left:10px;right:10px;background:#0f0e00;border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:6px;box-shadow:0 -8px 30px rgba(0,0,0,0.5);z-index:1000;animation:profileMenuIn 0.2s ease;">
+    <style>@keyframes profileMenuIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}</style>
+    <button onclick="goToSettings();toggleProfileMenu()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.color='#fff8e7'" onmouseout="this.style.background='none';this.style.color='#665500'">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </button>
+    <button onclick="showMemoryPanel && showMemoryPanel();toggleProfileMenu()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.color='#fff8e7'" onmouseout="this.style.background='none';this.style.color='#665500'">🧾 Smart Memory</button>
+    <button onclick="showTranslatorPanel && showTranslatorPanel();toggleProfileMenu()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.color='#fff8e7'" onmouseout="this.style.background='none';this.style.color='#665500'">🌍 Translator</button>
+    <button onclick="showMusicPlayer && showMusicPlayer();toggleProfileMenu()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.color='#fff8e7'" onmouseout="this.style.background='none';this.style.color='#665500'">🎵 Music Player</button>
+    <button onclick="showAnalyticsDashboard && showAnalyticsDashboard();toggleProfileMenu()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.color='#fff8e7'" onmouseout="this.style.background='none';this.style.color='#665500'">📊 Analytics</button>
+    <button onclick="showXPPanel && showXPPanel();toggleProfileMenu()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.color='#fff8e7'" onmouseout="this.style.background='none';this.style.color='#665500'">🎮 XP Progress</button>
+    <div style="border-top:1px solid rgba(255,215,0,0.07);margin:4px 0;"></div>
+    <div style="display:flex;justify-content:center;gap:14px;padding:4px;">
+      <a href="privacy.html" style="font-size:10px;color:#332200;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;" onmouseover="this.style.color='#ffd700'" onmouseout="this.style.color='#332200'">Privacy</a>
+      <span style="color:#2a2000;font-size:10px;">·</span>
+      <a href="terms.html" style="font-size:10px;color:#332200;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;" onmouseover="this.style.color='#ffd700'" onmouseout="this.style.color='#332200'">Terms</a>
+      <span style="color:#2a2000;font-size:10px;">·</span>
+      <a href="home.html" style="font-size:10px;color:#332200;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;" onmouseover="this.style.color='#ffd700'" onmouseout="this.style.color='#332200'">About</a>
     </div>
-    <div style="display:flex;gap:4px;">
-      <button class="profileSettings" title="Settings" onclick="event.stopPropagation();goToSettings()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-        </svg>
-      </button>
-      <button class="profileSettings" title="Logout" onclick="event.stopPropagation();logout()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-          <polyline points="16 17 21 12 16 7"></polyline>
-          <line x1="21" y1="12" x2="9" y2="12"></line>
-        </svg>
-      </button>
-    </div>
+    <button onclick="logout()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#ff4444;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,60,60,0.08)'" onmouseout="this.style.background='none'">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Log out
+    </button>
   </div>
+
 </div>
 
 <!-- MAIN CHAT AREA -->
@@ -974,6 +957,25 @@
     window.location.href = 'settings.html'
   }
   window.goToSettings = goToSettings
+
+  // Toggle profile popup menu
+  function toggleProfileMenu() {
+    const menu = document.getElementById('profileMenu')
+    if (!menu) return
+    const isOpen = menu.style.display !== 'none'
+    menu.style.display = isOpen ? 'none' : 'block'
+  }
+  window.toggleProfileMenu = toggleProfileMenu
+
+  // Close profile menu when clicking outside
+  document.addEventListener('click', function(e) {
+    const menu = document.getElementById('profileMenu')
+    if (menu && menu.style.display !== 'none' &&
+        !menu.contains(e.target) &&
+        !e.target.closest('[onclick*="toggleProfileMenu"]')) {
+      menu.style.display = 'none'
+    }
+  })
 
   // On load — restore last chat if returning from settings
   window.addEventListener('DOMContentLoaded', function() {
