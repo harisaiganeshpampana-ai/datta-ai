@@ -97,7 +97,7 @@ async function send() {
   if (clearFileBtn) clearFileBtn.style.display = "none"
 
   // Detect if web search will be triggered
-  const searchTriggers = ["latest","recent","today","yesterday","this week","current","now","live","breaking","news","who is","price of","weather","score","2024","2025","2026","happened","update","trending","stock","crypto","bitcoin","search","find","look up"]
+  const searchTriggers = ["latest","recent","today","yesterday","this week","current","now","live","breaking","news","who is","what is the","price of","weather","score","2024","2025","2026","happened","update","trending","stock","crypto","bitcoin","search for","find","look up","tell me about recent","new release","ipl","cricket","match","movie","released","launched"]
   const willSearch = searchTriggers.some(t => text.toLowerCase().includes(t))
 
   // Show typing indicator with web search status
@@ -105,7 +105,7 @@ async function send() {
   aiDiv.className = "messageRow"
   aiDiv.innerHTML = willSearch ? `
     <div class="avatar">🤖</div>
-    <div class="aiBubble typing searchingIndicator">
+    <div class="aiBubble searchingIndicator">
       <span class="searchIcon">🌐</span>
       <span class="searchText">Searching the web...</span>
     </div>
