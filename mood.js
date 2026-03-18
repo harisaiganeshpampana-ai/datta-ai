@@ -700,6 +700,18 @@ function applyMood(moodKey, save = true, isAuto = false) {
   window.dattaMoodPersonality = mood.personality;
   window.dattaMoodEmoji = mood.emoji;
   window.dattaMoodLabel = mood.label;
+
+  // Always update the auto mood pill to reflect current active mood
+  const pill = document.getElementById("autoMoodPill");
+  if (pill) {
+    pill.style.border = `1px solid ${mood.color}55`;
+    pill.style.background = mood.bgGlow || "rgba(255,215,0,0.05)";
+    pill.style.color = mood.color;
+    pill.textContent = `${isAuto ? "🤖" : "✅"} ${mood.emoji} ${mood.label}`;
+    pill.style.display = "flex";
+    pill.style.transition = "all 0.3s ease";
+  }
+
   closeMoodPanel();
   showMoodToast(mood);
 }
