@@ -28,7 +28,7 @@ select { width:100%;background:#0f0e00;border:1px solid rgba(255,215,0,0.1);bord
 </head>
 <body>
 <div class="topbar">
-  <button class="back" onclick="history.back()">
+  <button class="back" onclick="window.location.href='index.html'">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
     Back
   </button>
@@ -60,23 +60,36 @@ select { width:100%;background:#0f0e00;border:1px solid rgba(255,215,0,0.1);bord
     <option value="Italian">🇮🇹 Italian</option>
     <option value="Turkish">🇹🇷 Turkish</option>
   </select>
-  <button class="transBtn" onclick="translate()">🌍 TRANSLATE</button>
+  <button class="transBtn" onclick="runTranslate()">🌍 TRANSLATE</button>
   <div class="output" id="output">Translation will appear here...</div>
   <button class="copyBtn" onclick="copy()">📋 Copy Translation</button>
 </div>
 <script>
-async function translate() {
+async function runTranslate() {
   const text = document.getElementById("input").value.trim()
   const lang = document.getElementById("langSelect").value
   const out = document.getElementById("output")
-  if (!text) return
+  const btn = document.querySelector(".transBtn")
+  if (!text) { out.textContent = "Please enter text to translate!"; return }
+
+  const token = localStorage.getItem("datta_token") || ""
+  if (!token) {
+    out.style.color = "#ff4444"
+    out.textContent = "Please log in to Datta AI first to use the translator."
+    return
+  }
+
   out.style.color = "#443300"
   out.textContent = "Translating..."
+  btn.textContent = "⏳ Translating..."
+  btn.disabled = true
+
   try {
     const fd = new FormData()
-    fd.append("message", `Translate to ${lang}. Reply with ONLY the translation: "${text}"`)
-    fd.append("token", localStorage.getItem("datta_token") || "")
+    fd.append("message", `Translate the following text to ${lang}. Reply with ONLY the translated text, nothing else, no explanation: "${text}"`)
+    fd.append("token", token)
     const res = await fetch("https://datta-ai-server.onrender.com/chat", { method:"POST", body:fd })
+    if (!res.ok) throw new Error("Server error")
     const reader = res.body.getReader()
     const dec = new TextDecoder()
     let result = ""
@@ -89,7 +102,10 @@ async function translate() {
     out.textContent = result.split("CHATID")[0].trim()
   } catch(e) {
     out.style.color = "#ff4444"
-    out.textContent = "Translation failed. Try again."
+    out.textContent = "Translation failed. Make sure you are logged in and try again."
+  } finally {
+    btn.textContent = "🌍 TRANSLATE"
+    btn.disabled = false
   }
 }
 function copy() {
