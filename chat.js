@@ -239,18 +239,21 @@ async function loadSidebar() {
     history.innerHTML = ""
 
     chats.forEach(chat => {
-    let div = document.createElement("div")
-    div.className = "chatItem"
-    div.innerHTML = `
-      <div class="chatTitle" title="${chat.title}">${chat.title}</div>
-      <button class="deleteBtn" onclick="confirmDelete(event,'${chat._id}')" title="Delete chat">🗑</button>
-    `
-    div.onclick = (e) => {
-      if (e.target.closest(".deleteBtn")) return
-      openChat(chat._id)
-    }
-    history.appendChild(div)
-  })
+      let div = document.createElement("div")
+      div.className = "chatItem"
+      div.innerHTML = `
+        <div class="chatTitle" title="${chat.title}">${chat.title}</div>
+        <button class="deleteBtn" onclick="confirmDelete(event,'${chat._id}')" title="Delete chat">🗑</button>
+      `
+      div.onclick = (e) => {
+        if (e.target.closest(".deleteBtn")) return
+        openChat(chat._id)
+      }
+      history.appendChild(div)
+    })
+  } catch(e) {
+    console.error("Sidebar error:", e.message)
+  }
 }
 
 
