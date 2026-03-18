@@ -1,47 +1,86 @@
-// RENDER IMAGE RESPONSE - like Gemini/ChatGPT
+// STOP GENERATION
+function showStopBtn() {
+  const stop = document.getElementById("stopBtn")
+  const send = document.getElementById("sendBtn")
+  const mic = document.getElementById("micBtn")
+  if (stop) stop.style.display = "flex"
+  if (send) send.style.display = "none"
+  if (mic) mic.style.display = "none"
+}
+
+function hideStopBtn() {
+  const stop = document.getElementById("stopBtn")
+  const send = document.getElementById("sendBtn")
+  const mic = document.getElementById("micBtn")
+  if (stop) stop.style.display = "none"
+  if (send) send.style.display = "flex"
+  if (mic) mic.style.display = "flex"
+}
+
+function stopGeneration() {
+  if (controller) {
+    controller.abort()
+    controller = null
+  }
+  hideStopBtn()
+}
+
+window.stopGeneration = stopGeneration
+
+// RENDER IMAGE RESPONSE - like ChatGPT style
 function renderImageResponse(text) {
-  // Extract image URL and prompt
   const imgMatch = text.match(/!\[([^\]]*)\]\(([^)]+)\)/)
   const promptMatch = text.match(/\*Prompt: ([^*]+)\*/)
-
   if (!imgMatch) return marked.parse(text)
 
   const altText = imgMatch[1] || "Generated Image"
   const imgUrl = imgMatch[2]
   const prompt = promptMatch ? promptMatch[1] : altText
+  const uid = "img_" + Date.now()
 
   return `
-    <div class="imageGenContainer">
-      <div class="imageGenLoader" id="imgLoader_${Date.now()}">
-        <div class="imageGenSpinner"></div>
-        <div class="imageGenLoadText">Generating image...</div>
-      </div>
-      <div class="imageGenResult" style="display:none;">
+    <div class="imageGenWrap" id="${uid}">
+      <div class="creatingLabel">Creating image</div>
+      <div class="imageGenBox">
+        <div class="imageGradientPlaceholder"></div>
         <img
           src="${imgUrl}"
           alt="${altText}"
           class="generatedImg"
-          onload="this.closest('.imageGenResult').style.display='block';this.closest('.imageGenContainer').querySelector('.imageGenLoader').style.display='none';"
-          onerror="this.closest('.imageGenLoader').innerHTML='<div style=color:#f88>Failed to generate. Try again.</div>'"
+          style="display:none;opacity:0;"
+          onload="
+            var box = this.closest('.imageGenBox');
+            var ph = box.querySelector('.imageGradientPlaceholder');
+            var label = box.closest('.imageGenWrap').querySelector('.creatingLabel');
+            ph.style.display='none';
+            this.style.display='block';
+            this.style.transition='opacity 0.5s ease';
+            setTimeout(function(){ document.querySelector('#${uid} img').style.opacity='1'; },10);
+            if(label) label.textContent='Generated image';
+          "
+          onerror="
+            var ph = this.closest('.imageGenBox').querySelector('.imageGradientPlaceholder');
+            ph.innerHTML='<div style=padding:40px;color:#888;text-align:center>Failed to generate. Try again.</div>';
+            ph.style.background='#1a1a1a';
+          "
         >
-        <div class="imageGenActions">
-          <div class="imageGenPrompt">${prompt}</div>
-          <div class="imageGenBtns">
-            <button class="imgActionBtn" onclick="downloadImage('${imgUrl}', '${prompt}')" title="Download">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Download
-            </button>
-            <button class="imgActionBtn" onclick="regenerateImage('${prompt}', this)" title="Regenerate">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-              Regenerate
-            </button>
-            <button class="imgActionBtn likeImgBtn" onclick="likeImage(this)" title="Like">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
-            </button>
-            <button class="imgActionBtn dislikeImgBtn" onclick="dislikeImage(this)" title="Dislike">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
-            </button>
-          </div>
+      </div>
+      <div class="imageGenActions">
+        <div class="imageGenBtns">
+          <button class="imgActionBtn" onclick="downloadImage('${imgUrl}', '${prompt}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download
+          </button>
+          <button class="imgActionBtn" onclick="regenerateImage('${prompt}', this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Regenerate
+          </button>
+          <button class="imgActionBtn likeImgBtn" onclick="likeImage(this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+          </button>
+          <button class="imgActionBtn dislikeImgBtn" onclick="dislikeImage(this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
+          </button>
         </div>
       </div>
     </div>
@@ -261,6 +300,8 @@ async function send() {
     formData.append("image", file)
   }
 
+  showStopBtn()
+
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/chat", {
       method: "POST",
@@ -318,6 +359,7 @@ async function send() {
 
     span.innerHTML = marked.parse(streamText)
     lucide.createIcons()
+    hideStopBtn()
     loadSidebar()
 
   } catch (err) {
