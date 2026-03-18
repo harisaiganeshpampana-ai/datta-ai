@@ -29,7 +29,6 @@ window.stopGeneration = stopGeneration
 
 // RENDER IMAGE RESPONSE - Datta AI unique style
 function renderImageResponse(text) {
-  // Handle new format
   let cleanText = text
   if (text.includes("DATTA_IMAGE_START")) {
     cleanText = text.replace("DATTA_IMAGE_START\n", "").replace("\nDATTA_IMAGE_END", "")
@@ -110,47 +109,57 @@ function downloadImage(url, prompt) {
 }
 
 async function regenerateImage(prompt, btn) {
+  // Find the parent dattaImgWrap
+  const wrap = btn.closest(".dattaImgWrap")
+  if (!wrap) return
+
   btn.disabled = true
-  btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 0.6s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Generating...'
+  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 0.6s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Generating...'
 
-  const container = btn.closest(".imageGenContainer")
-  const img = container.querySelector(".generatedImg")
-  const loader = container.querySelector(".imageGenLoader")
-  const result = container.querySelector(".imageGenResult")
-
-  // Show loader
-  result.style.display = "none"
-  loader.style.display = "flex"
-  loader.innerHTML = '<div class="imageGenSpinner"></div><div class="imageGenLoadText">Regenerating...</div>'
-
-  // Generate new image with different seed
-  const seed = Math.floor(Math.random() * 99999)
+  const seed = Math.floor(Math.random() * 999999)
   const newUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&enhance=true&seed=" + seed
 
+  // Show shimmer again
+  const shimmer = wrap.querySelector(".dattaShimmer")
+  const img = wrap.querySelector(".dattaImg")
+  const actions = wrap.querySelector(".dattaImgActions")
+  const label = wrap.querySelector(".dattaImgLabel")
+
+  if (shimmer) { shimmer.style.display = "flex"; shimmer.querySelector(".shimmerText").textContent = "Regenerating..." }
+  if (img) { img.style.display = "none"; img.style.opacity = "0"; img.dataset.retries = "0" }
+  if (actions) actions.style.display = "none"
+  if (label) label.innerHTML = '<span class="dattaImgIcon">🎨</span><span>Regenerating...</span>'
+
   img.onload = () => {
-    result.style.display = "block"
-    loader.style.display = "none"
+    if (shimmer) shimmer.style.display = "none"
+    if (actions) actions.style.display = "flex"
+    if (label) label.innerHTML = '<span class="dattaImgIcon">✨</span><span>' + prompt + '</span>'
+    img.style.display = "block"
+    setTimeout(() => { img.style.opacity = "1" }, 10)
     btn.disabled = false
-    btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Regenerate'
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Regenerate'
   }
+
   img.onerror = () => {
-    loader.innerHTML = '<div style="color:#f88">Failed. Try again.</div>'
+    if (shimmer) shimmer.innerHTML = '<div style="padding:32px;color:#888;text-align:center;font-size:13px">❌ Failed. Try again.</div>'
     btn.disabled = false
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Regenerate'
   }
+
   img.src = newUrl
 }
 
 function likeImage(btn) {
   const isActive = btn.classList.toggle("active")
   btn.style.color = isActive ? "#00ff88" : ""
-  const dislike = btn.closest(".imageGenBtns").querySelector(".dislikeImgBtn")
+  const dislike = btn.closest(".dattaImgActions").querySelector(".dislikeImgBtn")
   if (dislike) { dislike.classList.remove("active"); dislike.style.color = "" }
 }
 
 function dislikeImage(btn) {
   const isActive = btn.classList.toggle("active")
   btn.style.color = isActive ? "#ff4444" : ""
-  const like = btn.closest(".imageGenBtns").querySelector(".likeImgBtn")
+  const like = btn.closest(".dattaImgActions").querySelector(".likeImgBtn")
   if (like) { like.classList.remove("active"); like.style.color = "" }
 }
 
@@ -159,8 +168,8 @@ window.regenerateImage = regenerateImage
 window.likeImage = likeImage
 window.dislikeImage = dislikeImage
 window.renderImageResponse = renderImageResponse
-// AUTH CHECK - redirect to login if not logged in
-// Always read token fresh
+
+// AUTH CHECK
 function getToken() {
   return localStorage.getItem("datta_token") || ""
 }
@@ -173,7 +182,6 @@ function getUser() {
   return null
 }
 
-// AUTH CHECK
 if (!getToken()) {
   window.location.href = "login.html"
 }
@@ -181,7 +189,6 @@ if (!getToken()) {
 const datta_token = getToken()
 const datta_user = getUser()
 
-// Update sidebar profile with real user info
 window.addEventListener("DOMContentLoaded", function() {
   if (datta_user) {
     const nameEl = document.querySelector(".profileName")
@@ -205,6 +212,13 @@ let currentChatId = null
 let controller = null
 let userScrolledUp = false
 
+// Image trigger keywords
+const imageTriggers = [
+  "generate image", "create image", "make image", "draw", "generate photo",
+  "create photo", "make photo", "generate picture", "create picture",
+  "image of", "picture of", "photo of", "draw me", "paint", "illustrate",
+  "sketch", "generate art", "create art", "make art"
+]
 
 // ─── NEW CHAT ────────────────────────────────────────────────────────────────
 function newChat() {
@@ -214,14 +228,11 @@ function newChat() {
   showWelcome()
 }
 
-
 // ─── SEND MESSAGE ─────────────────────────────────────────────────────────────
 async function send() {
 
   const input = document.getElementById("message")
-  const filePreview = document.getElementById("filePreview")
 
-  // Get file from any input source
   let file = null
   const fileInputIds = ["cameraInput", "photoInput", "imageInput"]
   for (const id of fileInputIds) {
@@ -230,10 +241,8 @@ async function send() {
   }
   const text = input.value.trim()
 
-  // Block send if nothing to send
   if (!text && !file) return
 
-  // Save chat title - always use the typed message as title
   if (!currentChatId) {
     let title = text ? text.substring(0, 40) : "New Chat"
     if (text && text.length > 40) title += "..."
@@ -243,7 +252,6 @@ async function send() {
   hideWelcome()
   document.body.classList.add("chat-started")
 
-  // Show user bubble with file info if attached
   chatBox.innerHTML += `
     <div class="messageRow userRow">
       <div class="userBubble">
@@ -256,7 +264,6 @@ async function send() {
 
   chatBox.scrollTop = chatBox.scrollHeight
 
-  // Clear input + file
   input.value = ""
   ;["cameraInput","photoInput","imageInput"].forEach(id => {
     const el = document.getElementById(id)
@@ -264,14 +271,11 @@ async function send() {
   })
   if (typeof clearFileSelection === "function") clearFileSelection()
 
-  // Detect request type for indicator
   const searchTriggers = ["latest","recent","today","yesterday","this week","current","now","live","breaking","news","who is","what is the","price of","weather","score","2025","2026","happened","update","trending","stock","crypto","bitcoin","search for","find","look up","ipl","cricket","match","movie","released","launched","election","gold","petrol"]
-  const imageTriggers = ["generate image","create image","make image","draw","generate photo","create photo","make photo","generate picture","create picture","image of","picture of","photo of","draw me","paint","illustrate","sketch","generate art","create art"]
 
   const willSearch = searchTriggers.some(t => text.toLowerCase().includes(t))
   const willGenImage = imageTriggers.some(t => text.toLowerCase().includes(t))
 
-  // Show appropriate indicator
   let aiDiv = document.createElement("div")
   aiDiv.className = "messageRow"
 
@@ -302,7 +306,37 @@ async function send() {
   chatBox.appendChild(aiDiv)
   chatBox.scrollTop = chatBox.scrollHeight
 
-  // Build FormData
+  showStopBtn()
+
+  // ── CLIENT-SIDE IMAGE GENERATION (Pollinations AI - free, no API key) ──
+  if (willGenImage) {
+    // Extract just the subject/prompt from the message
+    let prompt = text
+      .replace(/generate image of|create image of|make image of|generate photo of|create photo of|make photo of|generate picture of|create picture of|picture of|photo of|image of|draw me a|draw me|draw a|draw|illustrate a|illustrate|sketch a|sketch|paint a|paint|generate art of|create art of|make art of/gi, "")
+      .trim()
+
+    if (!prompt) prompt = text
+
+    const seed = Math.floor(Math.random() * 999999)
+    const imgUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&enhance=true&seed=" + seed
+
+    const fakeResponse = `DATTA_IMAGE_START\n![${prompt}](${imgUrl})\nPROMPT:${prompt}\nDATTA_IMAGE_END`
+
+    // Small delay for UX feel
+    setTimeout(() => {
+      aiDiv.innerHTML = `
+        <div class="avatar">🤖</div>
+        <div class="aiContent">${renderImageResponse(fakeResponse)}</div>
+      `
+      chatBox.scrollTop = chatBox.scrollHeight
+      hideStopBtn()
+      loadSidebar()
+    }, 800)
+
+    return // Skip server call entirely
+  }
+
+  // ── SERVER CALL for normal text/search responses ──
   controller = new AbortController()
   const formData = new FormData()
   formData.append("message", text)
@@ -313,8 +347,6 @@ async function send() {
   if (file) {
     formData.append("image", file)
   }
-
-  showStopBtn()
 
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/chat", {
@@ -328,7 +360,6 @@ async function send() {
       currentChatId = chatIdFromHeader
     }
 
-    // Replace typing indicator with response bubble
     aiDiv.innerHTML = `
       <div class="avatar">🤖</div>
       <div class="aiContent">
@@ -366,7 +397,7 @@ async function send() {
         streamText += chunk
       }
 
-      // Check if image response
+      // Check if server returned an image response as fallback
       const isImgResponse = streamText.includes("pollinations.ai") || streamText.includes("DATTA_IMAGE")
       if (isImgResponse) {
         const container = aiDiv.querySelector(".aiContent") || aiDiv
@@ -382,7 +413,6 @@ async function send() {
       lucide.createIcons()
     }
 
-    // Final render
     const isImgResponse = streamText.includes("pollinations.ai") || streamText.includes("DATTA_IMAGE")
     if (isImgResponse) {
       const container = aiDiv.querySelector(".aiContent") || aiDiv
@@ -404,6 +434,7 @@ async function send() {
       `
       console.error("Send error:", err)
     }
+    hideStopBtn()
   }
 }
 
@@ -413,7 +444,6 @@ async function loadSidebar() {
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/chats?token=" + getToken())
 
-    // If 401 redirect to login
     if (res.status === 401) {
       localStorage.removeItem("datta_token")
       localStorage.removeItem("datta_user")
@@ -574,13 +604,7 @@ async function regenerateFrom(btn) {
 
 // ─── VOICE INPUT ──────────────────────────────────────────────────────────────
 function startAssistant() {
-  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)()
-  recognition.lang = "en-US"
-  recognition.start()
-  recognition.onresult = (e) => {
-    document.getElementById("message").value = e.results[0][0].transcript
-    send()
-  }
+  openVoiceAssistant()
 }
 
 
@@ -695,19 +719,15 @@ loadSidebar()
 
 // SHOW SIDEBAR SECTION
 function showSection(name) {
-  // Hide all sections
   document.querySelectorAll(".sidebarSection").forEach(s => s.style.display = "none")
-  // Show selected
   const el = document.getElementById("section-" + name)
   if (el) el.style.display = "flex"
 
-  // Update active nav
   document.querySelectorAll(".navItem").forEach(b => b.classList.remove("active"))
   const btns = document.querySelectorAll(".navItem")
   const idx = ["chats","projects","artifacts"].indexOf(name)
   if (btns[idx]) btns[idx].classList.add("active")
 
-  // Show/hide recents label and search
   const showRecents = name === "chats"
   const recentsLabel = document.getElementById("recentsLabel")
   const search = document.getElementById("search")
@@ -732,10 +752,7 @@ function openSettings() {
   event.stopPropagation()
   const modal = document.getElementById("settingsModal")
   if (!modal) return
-
   modal.classList.add("show")
-
-  // Reset to profile tab and scroll top
   setTimeout(function() {
     switchSettingsTab("profile")
     const box = modal.querySelector(".modalBox")
@@ -779,16 +796,13 @@ function loadSettingsUI() {
   const usernameInput = document.getElementById("newUsername")
   if (usernameInput) usernameInput.placeholder = user.username || "Enter new username"
 
-  // Load theme
   const theme = localStorage.getItem("datta_theme") || "dark"
   setTheme(theme, true)
 
-  // Load language
   const lang = localStorage.getItem("datta_language") || "English"
   const langSelect = document.getElementById("aiLanguage")
   if (langSelect) langSelect.value = lang
 
-  // Load notification settings
   const notifSettings = JSON.parse(localStorage.getItem("datta_notif") || "{}")
   const soundToggle = document.getElementById("soundToggle")
   const notifToggle = document.getElementById("notifToggle")
@@ -798,7 +812,6 @@ function loadSettingsUI() {
   if (streamToggle) streamToggle.checked = notifSettings.stream !== false
 }
 
-// CHANGE USERNAME
 async function changeUsername() {
   const newUsername = document.getElementById("newUsername").value.trim()
   if (!newUsername) return showSettingsMsg("Please enter a username", "error")
@@ -813,12 +826,10 @@ async function changeUsername() {
     const data = await res.json()
     if (!res.ok) return showSettingsMsg(data.error || "Failed to update", "error")
 
-    // Update local storage
     const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
     user.username = newUsername
     localStorage.setItem("datta_user", JSON.stringify(user))
 
-    // Update sidebar
     const nameEl = document.querySelector(".profileName")
     const avatarEl = document.querySelector(".profileAvatar")
     if (nameEl) nameEl.textContent = newUsername
@@ -830,7 +841,6 @@ async function changeUsername() {
   }
 }
 
-// CHANGE PASSWORD
 async function changePassword() {
   const current = document.getElementById("currentPassword").value
   const newPass = document.getElementById("newPassword").value
@@ -858,7 +868,6 @@ async function changePassword() {
   }
 }
 
-// SET THEME
 function setTheme(theme, silent) {
   localStorage.setItem("datta_theme", theme)
   if (theme === "light") {
@@ -873,7 +882,6 @@ function setTheme(theme, silent) {
   if (!silent) showSettingsMsg("Theme changed to " + theme + " mode!", "success")
 }
 
-// SET FONT SIZE
 function setFontSize(size) {
   document.querySelectorAll(".fontBtn").forEach(b => b.classList.remove("active"))
   event.target.classList.add("active")
@@ -884,14 +892,12 @@ function setFontSize(size) {
   showSettingsMsg("Font size set to " + size, "success")
 }
 
-// SAVE LANGUAGE
 function saveLanguage() {
   const lang = document.getElementById("aiLanguage").value
   localStorage.setItem("datta_language", lang)
   showSettingsMsg("AI will now respond in " + lang + "!", "success")
 }
 
-// SAVE NOTIFICATION SETTINGS
 function saveNotifSettings() {
   const settings = {
     sound: document.getElementById("soundToggle").checked,
@@ -901,7 +907,6 @@ function saveNotifSettings() {
   localStorage.setItem("datta_notif", JSON.stringify(settings))
 }
 
-// DELETE ALL CHATS
 async function deleteAllChats() {
   if (!confirm("Are you sure? This will delete ALL your chats permanently!")) return
 
@@ -921,7 +926,6 @@ async function deleteAllChats() {
   }
 }
 
-// DELETE ACCOUNT
 async function deleteAccount() {
   const password = document.getElementById("deleteAccountPassword").value
   if (!password) return showSettingsMsg("Enter your password to confirm", "error")
@@ -944,12 +948,9 @@ async function deleteAccount() {
   }
 }
 
-// Apply saved theme on load
 ;(function() {
   const theme = localStorage.getItem("datta_theme") || "dark"
   if (theme === "light") document.body.classList.add("light")
-
-  // Apply saved language to system prompt
   const lang = localStorage.getItem("datta_language")
   if (lang) window.dattaLanguage = lang
 })()
@@ -1010,7 +1011,6 @@ function openVoiceAssistant() {
   if (overlay) overlay.classList.add("show")
   setVoiceStatus("Tap the mic to speak", "idle")
 
-  // Greet user
   setTimeout(() => {
     speakText2("Hello! I am Datta AI. How can I help you today?")
   }, 500)
@@ -1120,7 +1120,6 @@ async function processVoiceQuery(query) {
   setVoiceStatus("Thinking...", "speaking")
   setVoiceText(query)
 
-  // Check for close commands
   const closeCmds = ["close", "stop", "exit", "bye", "goodbye", "dismiss"]
   if (closeCmds.some(c => query.toLowerCase().includes(c))) {
     speakText2("Goodbye! Have a great day!")
@@ -1167,7 +1166,6 @@ async function processVoiceQuery(query) {
       }
     }
 
-    // Clean text for speaking (remove markdown)
     const cleanText = fullText
       .replace(/!\[.*?\]\(.*?\)/g, "I generated an image for you.")
       .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
@@ -1179,7 +1177,6 @@ async function processVoiceQuery(query) {
 
     setVoiceText(cleanText.substring(0, 100) + (cleanText.length > 100 ? "..." : ""))
 
-    // Add to chat UI
     chatBox.innerHTML += `
       <div class="messageRow userRow">
         <div class="userBubble">🎤 ${query}</div>
@@ -1197,7 +1194,6 @@ async function processVoiceQuery(query) {
     chatBox.scrollTop = chatBox.scrollHeight
     loadSidebar()
 
-    // Speak the response
     speakText2(cleanText)
 
   } catch (err) {
@@ -1220,7 +1216,6 @@ function speakText2(text) {
   utterance.pitch = 1.0
   utterance.volume = 1.0
 
-  // Try to get a good voice
   const voices = voiceSynth.getVoices()
   const preferred = voices.find(v =>
     v.name.includes("Google") ||
@@ -1235,7 +1230,6 @@ function speakText2(text) {
     isSpeaking = false
     if (voiceActive) {
       setVoiceStatus("Tap to speak", "idle")
-      // Auto listen after speaking
       setTimeout(() => {
         if (voiceActive) startListening()
       }, 800)
@@ -1255,7 +1249,6 @@ function stopSpeaking() {
   isSpeaking = false
 }
 
-// Update the assistant button to open voice overlay
 window.startAssistant = function() {
   openVoiceAssistant()
 }
@@ -1284,15 +1277,12 @@ async function loadUserVersion() {
     const plan = data.plan || "free"
     const v = planVersions[plan] || planVersions.free
 
-    // Update version tag in sidebar
     const tag = document.getElementById("versionTag")
     if (tag) tag.textContent = "DATTA AI " + v.version + " · " + v.name.toUpperCase()
 
-    // Update profile subtitle
     const sub = document.querySelector(".profileSub")
     if (sub) sub.textContent = v.emoji + " " + v.name + " " + v.sanskrit
 
-    // Update upgrade button
     const upgradeBtn = document.querySelector(".upgradeBtn div div:first-child")
     if (upgradeBtn && plan === "free") {
       upgradeBtn.textContent = "Upgrade to Agni 🔥"
@@ -1300,7 +1290,6 @@ async function loadUserVersion() {
       upgradeBtn.textContent = v.emoji + " " + v.name + " Plan"
     }
 
-    // Store plan
     localStorage.setItem("datta_plan", plan)
 
   } catch(e) {
@@ -1308,7 +1297,6 @@ async function loadUserVersion() {
   }
 }
 
-// Load version on startup
 window.addEventListener("DOMContentLoaded", function() {
   setTimeout(loadUserVersion, 1000)
 })
