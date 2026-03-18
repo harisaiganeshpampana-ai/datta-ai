@@ -239,6 +239,24 @@
 }
 .moodExtraBtn .meBtnIcon { font-size: 20px; line-height: 1; }
 .moodExtraBtn .meBtnLabel { font-size: 10px; letter-spacing: 1px; text-align: center; }
+
+/* SPLASH SCREEN */
+#splash {
+  position: fixed; top:0; left:0; right:0; bottom:0;
+  background: #080800;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 99999;
+  transition: opacity 0.5s ease;
+}
+#splash.hide {
+  opacity: 0;
+  pointer-events: none;
+  animation: splashOut 0.5s ease forwards;
+}
+@keyframes splashOut {
+  to { opacity: 0; visibility: hidden; display: none; }
+}
 </style>
 </head>
 
@@ -579,6 +597,20 @@
   </div>
 </div>
 
+
+<script>
+  // Hide splash after 3 seconds
+  setTimeout(function() {
+    var splash = document.getElementById('splash');
+    if (splash) {
+      splash.style.opacity = '0';
+      splash.style.transition = 'opacity 0.5s ease';
+      setTimeout(function() {
+        splash.style.display = 'none';
+      }, 500);
+    }
+  }, 2500);
+</script>
 <script src="theme.js"></script>
 <script src="mood.js"></script>
 <script src="chat.js?v=12"></script>
