@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>404 — Page Not Found | Datta AI</title>
+<link rel="icon" type="image/jpeg" href="logo.jpeg">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --purple: #7c3aed;
+    --grad: linear-gradient(135deg, #7c3aed, #2563eb, #ec4899);
+    --dark: #08070f;
+    --card: #13111f;
+    --border: rgba(255,255,255,0.07);
+    --text: #f0eeff;
+    --muted: #8b85a8;
+  }
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+    overflow: hidden;
+  }
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+  }
+  .orb1 { width: 500px; height: 500px; background: rgba(124,58,237,0.15); top: -100px; left: -100px; }
+  .orb2 { width: 400px; height: 400px; background: rgba(236,72,153,0.1); bottom: -100px; right: -100px; }
+
+  .big-num {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(100px, 20vw, 180px);
+    font-weight: 800;
+    background: var(--grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+    animation: pulse 3s ease-in-out infinite;
+    position: relative;
+    z-index: 1;
+  }
+  .glitch {
+    position: relative;
+  }
+  .glitch::before, .glitch::after {
+    content: '404';
+    position: absolute;
+    inset: 0;
+    background: var(--grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .glitch::before { animation: glitch1 3s infinite; clip-path: polygon(0 0, 100% 0, 100% 40%, 0 40%); }
+  .glitch::after { animation: glitch2 3s infinite; clip-path: polygon(0 60%, 100% 60%, 100% 100%, 0 100%); }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(24px, 4vw, 36px);
+    font-weight: 700;
+    margin: 16px 0 12px;
+    position: relative;
+    z-index: 1;
+  }
+  p {
+    font-size: 16px;
+    color: var(--muted);
+    max-width: 420px;
+    line-height: 1.7;
+    margin-bottom: 40px;
+    position: relative;
+    z-index: 1;
+  }
+  .btns {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+  }
+  .btn {
+    padding: 13px 28px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.25s;
+    cursor: pointer;
+  }
+  .btn-primary { background: var(--grad); color: #fff; border: none; box-shadow: 0 0 30px rgba(124,58,237,0.4); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 50px rgba(124,58,237,0.6); }
+  .btn-ghost { background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+
+  .logo-bar {
+    position: fixed;
+    top: 24px; left: 50%; transform: translateX(-50%);
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    background: var(--grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    z-index: 10;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
+  }
+  @keyframes glitch1 {
+    0%, 90%, 100% { transform: translateX(0); opacity: 0; }
+    92% { transform: translateX(-4px); opacity: 0.6; }
+    94% { transform: translateX(4px); opacity: 0.6; }
+    96% { transform: translateX(0); opacity: 0; }
+  }
+  @keyframes glitch2 {
+    0%, 85%, 100% { transform: translateX(0); opacity: 0; }
+    87% { transform: translateX(4px); opacity: 0.6; }
+    89% { transform: translateX(-4px); opacity: 0.6; }
+    91% { transform: translateX(0); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <a href="home.html" class="logo-bar">Datta AI</a>
+
+  <div class="big-num glitch">404</div>
+  <h1>Page not found</h1>
+  <p>Oops! The page you're looking for doesn't exist or has been moved. Let's get you back on track.</p>
+  <div class="btns">
+    <a href="home.html" class="btn btn-primary">← Go Home</a>
+    <a href="index.html" class="btn btn-ghost">Open Chat</a>
+  </div>
+</body>
+</html>
