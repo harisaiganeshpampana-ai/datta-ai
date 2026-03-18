@@ -112,6 +112,9 @@ function authMiddleware(req, res, next) {
 
 async function webSearch(query) {
   try {
+    console.log("Tavily API key present:", !!process.env.TAVILY_API_KEY)
+    console.log("Searching for:", query)
+
     const res = await fetch("https://api.tavily.com/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -123,13 +126,24 @@ async function webSearch(query) {
         include_answer: true
       })
     })
-    const data = await res.json()
-    if (!data.results) return null
+
+    const text = await res.text()
+    console.log("Tavily raw response:", text.substring(0, 200))
+
+    const data = JSON.parse(text)
+    if (!data.results || data.results.length === 0) {
+      console.log("No results from Tavily")
+      return null
+    }
+
     const summary = data.answer ? "Quick answer: " + data.answer + "\n\n" : ""
-    const sources = data.results.map((r, i) =>
-      (i + 1) + ". " + r.title + "\n" + r.content.substring(0, 300) + "...\nSource: " + r.url
+    const sources = data.results.slice(0, 3).map((r, i) =>
+      (i + 1) + ". " + r.title + "\n" + r.content.substring(0, 200) + "...\nSource: " + r.url
     ).join("\n\n")
-    return summary + "Search results:\n\n" + sources
+
+    console.log("Web search successful, found", data.results.length, "results")
+    return summary + "Web search results:\n\n" + sources
+
   } catch (e) {
     console.error("Web search error:", e.message)
     return null
@@ -139,13 +153,20 @@ async function webSearch(query) {
 function needsWebSearch(message) {
   if (!message) return false
   const msg = message.toLowerCase()
+
+  // Always search for questions about current events/facts
   const triggers = [
     "latest", "recent", "today", "yesterday", "this week", "this month",
     "current", "now", "right now", "live", "breaking", "news",
     "who is", "what is the", "price of", "weather", "score",
     "2024", "2025", "2026", "happened", "update", "trending",
-    "stock", "crypto", "bitcoin", "search", "find", "look up",
-    "what happened", "new release"
+    "stock", "crypto", "bitcoin", "search", "find out", "look up",
+    "what happened", "new release", "ipl", "cricket", "match",
+    "movie", "released", "launched", "election", "government",
+    "president", "prime minister", "war", "attack", "earthquake",
+    "flood", "disaster", "rate", "inflation", "gdp", "rupee",
+    "dollar", "gold", "silver", "petrol", "diesel", "result",
+    "exam", "board", "admit card", "answer key"
   ]
   return triggers.some(t => msg.includes(t))
 }
