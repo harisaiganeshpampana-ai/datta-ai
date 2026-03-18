@@ -127,7 +127,7 @@ function showNightModeBanner() {
 //  🎙️ FEATURE 2: VOICE EMOTION DETECTION
 // ═══════════════════════════════════════════════════
 
-let voiceRecognition = null;
+let moodVoiceRecognition = null;
 let isListeningForMood = false;
 
 function startVoiceMoodDetection() {
@@ -135,29 +135,29 @@ function startVoiceMoodDetection() {
   if (!SpeechRecognition) { showFloatToast('❌ Voice not supported in this browser', '#ff4444'); return; }
   if (isListeningForMood) { stopVoiceMoodDetection(); return; }
 
-  voiceRecognition = new SpeechRecognition();
-  voiceRecognition.continuous = false;
-  voiceRecognition.interimResults = false;
-  voiceRecognition.lang = 'en-IN';
-  voiceRecognition.maxAlternatives = 1;
+  moodVoiceRecognition = new SpeechRecognition();
+  moodVoiceRecognition.continuous = false;
+  moodVoiceRecognition.interimResults = false;
+  moodVoiceRecognition.lang = 'en-IN';
+  moodVoiceRecognition.maxAlternatives = 1;
   isListeningForMood = true;
   showVoiceListeningUI();
 
-  voiceRecognition.onresult = function(e) {
+  moodVoiceRecognition.onresult = function(e) {
     const transcript = e.results[0][0].transcript;
     const confidence = e.results[0][0].confidence;
     analyzeVoiceMood(transcript, confidence);
   };
-  voiceRecognition.onerror = function() {
+  moodVoiceRecognition.onerror = function() {
     isListeningForMood = false; hideVoiceUI();
     showFloatToast('🎙️ Could not hear you clearly', '#ff8c00');
   };
-  voiceRecognition.onend = function() { isListeningForMood = false; hideVoiceUI(); };
-  voiceRecognition.start();
+  moodVoiceRecognition.onend = function() { isListeningForMood = false; hideVoiceUI(); };
+  moodVoiceRecognition.start();
 }
 
 function stopVoiceMoodDetection() {
-  if (voiceRecognition) voiceRecognition.stop();
+  if (moodVoiceRecognition) moodVoiceRecognition.stop();
   isListeningForMood = false;
   hideVoiceUI();
 }
