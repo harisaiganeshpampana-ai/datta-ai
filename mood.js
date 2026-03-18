@@ -79,19 +79,13 @@ let currentMood = null;
 function checkNightMode() {
   const hour = new Date().getHours();
   const isNight = hour >= 23 || hour <= 3;
-  const nightDismissed = localStorage.getItem('datta_night_dismissed');
-  const dismissedAt = parseInt(nightDismissed || '0');
-  const dismissedToday = Date.now() - dismissedAt < 6 * 60 * 60 * 1000;
-
-  if (isNight && !dismissedToday && currentMood !== 'night') {
-    showNightModeBanner();
-  }
+  const dismissedAt = parseInt(localStorage.getItem('datta_night_dismissed') || '0');
+  const dismissedRecently = Date.now() - dismissedAt < 6 * 60 * 60 * 1000;
+  if (isNight && !dismissedRecently && currentMood !== 'night') showNightModeBanner();
 }
 
 function showNightModeBanner() {
-  const existing = document.getElementById('nightBanner');
-  if (existing) return;
-
+  if (document.getElementById('nightBanner')) return;
   const banner = document.createElement('div');
   banner.id = 'nightBanner';
   banner.style.cssText = `
@@ -116,15 +110,11 @@ function showNightModeBanner() {
             style="flex:1;padding:7px;background:rgba(129,140,248,0.15);
             border:1px solid rgba(129,140,248,0.4);border-radius:50px;
             color:#818cf8;font-family:'Rajdhani',sans-serif;font-size:12px;
-            font-weight:700;letter-spacing:1px;cursor:pointer;">
-            🌙 YES, SWITCH
-          </button>
+            font-weight:700;letter-spacing:1px;cursor:pointer;">🌙 YES, SWITCH</button>
           <button onclick="localStorage.setItem('datta_night_dismissed',Date.now());document.getElementById('nightBanner').remove();"
             style="padding:7px 14px;background:none;border:1px solid rgba(255,215,0,0.1);
             border-radius:50px;color:#443300;font-family:'Rajdhani',sans-serif;
-            font-size:12px;cursor:pointer;">
-            Not now
-          </button>
+            font-size:12px;cursor:pointer;">Not now</button>
         </div>
       </div>
     </div>
@@ -142,119 +132,83 @@ let isListeningForMood = false;
 
 function startVoiceMoodDetection() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    showFloatToast('❌ Voice not supported in this browser', '#ff4444');
-    return;
-  }
-
-  if (isListeningForMood) {
-    stopVoiceMoodDetection();
-    return;
-  }
+  if (!SpeechRecognition) { showFloatToast('❌ Voice not supported in this browser', '#ff4444'); return; }
+  if (isListeningForMood) { stopVoiceMoodDetection(); return; }
 
   voiceRecognition = new SpeechRecognition();
   voiceRecognition.continuous = false;
   voiceRecognition.interimResults = false;
   voiceRecognition.lang = 'en-IN';
   voiceRecognition.maxAlternatives = 1;
-
   isListeningForMood = true;
-  showVoiceMoodUI();
+  showVoiceListeningUI();
 
   voiceRecognition.onresult = function(e) {
     const transcript = e.results[0][0].transcript;
     const confidence = e.results[0][0].confidence;
     analyzeVoiceMood(transcript, confidence);
   };
-
-  voiceRecognition.onerror = function(e) {
-    isListeningForMood = false;
-    hideVoiceMoodUI();
+  voiceRecognition.onerror = function() {
+    isListeningForMood = false; hideVoiceUI();
     showFloatToast('🎙️ Could not hear you clearly', '#ff8c00');
   };
-
-  voiceRecognition.onend = function() {
-    isListeningForMood = false;
-    hideVoiceMoodUI();
-  };
-
+  voiceRecognition.onend = function() { isListeningForMood = false; hideVoiceUI(); };
   voiceRecognition.start();
 }
 
 function stopVoiceMoodDetection() {
   if (voiceRecognition) voiceRecognition.stop();
   isListeningForMood = false;
-  hideVoiceMoodUI();
+  hideVoiceUI();
 }
 
 function analyzeVoiceMood(transcript, confidence) {
-  // Detect from words
   const textMood = autoDetectMoodFromText(transcript);
-
-  // Detect speech energy from transcript characteristics
   const words = transcript.split(' ').length;
   const hasExclamation = transcript.includes('!');
-  const isShort = words < 4;
-  const isLong = words > 12;
-
   let voiceMood = textMood;
-
-  // Override with speech pattern clues
-  if (isShort && !hasExclamation) voiceMood = 'lazy';
-  if (isLong && hasExclamation) voiceMood = 'happy';
+  if (!voiceMood && words < 4 && !hasExclamation) voiceMood = 'lazy';
+  if (!voiceMood && words > 12 && hasExclamation) voiceMood = 'happy';
   if (!voiceMood) voiceMood = 'focused';
-
-  const mood = MOODS[voiceMood];
-  showVoiceResultUI(transcript, voiceMood, confidence);
+  showVoiceResultUI(transcript, voiceMood);
 }
 
-function showVoiceMoodUI() {
+function showVoiceListeningUI() {
   let el = document.getElementById('voiceMoodOverlay');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'voiceMoodOverlay';
-    document.body.appendChild(el);
-  }
+  if (!el) { el = document.createElement('div'); el.id = 'voiceMoodOverlay'; document.body.appendChild(el); }
   el.style.cssText = `
     position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
     background:#0a0900;border:1px solid rgba(255,60,60,0.4);
     border-radius:18px;padding:18px 24px;z-index:9999;
     text-align:center;width:min(300px,88vw);
-    box-shadow:0 12px 40px rgba(0,0,0,0.8);
-    font-family:'DM Sans',sans-serif;
+    box-shadow:0 12px 40px rgba(0,0,0,0.8);font-family:'DM Sans',sans-serif;
   `;
   el.innerHTML = `
-    <div style="font-size:32px;margin-bottom:8px;animation:pulse 1s infinite;">🎙️</div>
+    <div style="font-size:32px;margin-bottom:8px;animation:vPulse 1s infinite;">🎙️</div>
     <div style="font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;
       letter-spacing:2px;color:#ff6060;">LISTENING FOR MOOD...</div>
-    <div style="font-size:12px;color:#332200;margin-top:6px;">
-      Say how you're feeling right now
-    </div>
+    <div style="font-size:12px;color:#332200;margin-top:6px;">Say how you're feeling right now</div>
     <div style="display:flex;justify-content:center;gap:4px;margin-top:12px;">
-      ${[...Array(5)].map((_,i)=>`
-        <div style="width:4px;height:${12+i*6}px;background:#ff4444;border-radius:4px;
-          animation:bar 0.6s ${i*0.1}s infinite alternate;"></div>
-      `).join('')}
+      ${[...Array(5)].map((_,i)=>`<div style="width:4px;height:${12+i*6}px;background:#ff4444;
+        border-radius:4px;animation:vBar 0.6s ${i*0.1}s infinite alternate;"></div>`).join('')}
     </div>
     <style>
-      @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
-      @keyframes bar{from{transform:scaleY(0.4)}to{transform:scaleY(1)}}
+      @keyframes vPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+      @keyframes vBar{from{transform:scaleY(0.4)}to{transform:scaleY(1)}}
     </style>
     <button onclick="stopVoiceMoodDetection()"
       style="margin-top:14px;padding:6px 16px;background:none;
       border:1px solid rgba(255,60,60,0.3);border-radius:50px;
-      color:#ff6060;font-family:'Rajdhani',sans-serif;font-size:11px;cursor:pointer;">
-      ✕ Cancel
-    </button>
+      color:#ff6060;font-family:'Rajdhani',sans-serif;font-size:11px;cursor:pointer;">✕ Cancel</button>
   `;
 }
 
-function hideVoiceMoodUI() {
+function hideVoiceUI() {
   const el = document.getElementById('voiceMoodOverlay');
   if (el) el.remove();
 }
 
-function showVoiceResultUI(transcript, moodKey, confidence) {
+function showVoiceResultUI(transcript, moodKey) {
   const mood = MOODS[moodKey];
   let el = document.getElementById('voiceMoodOverlay');
   if (!el) { el = document.createElement('div'); el.id='voiceMoodOverlay'; document.body.appendChild(el); }
@@ -269,23 +223,16 @@ function showVoiceResultUI(transcript, moodKey, confidence) {
     <div style="font-size:36px;margin-bottom:6px;">${mood.emoji}</div>
     <div style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;
       letter-spacing:2px;color:${mood.color};">DETECTED: ${mood.label.toUpperCase()}</div>
-    <div style="font-size:11px;color:#443300;margin:6px 0 12px;font-style:italic;">
-      "${transcript}"
-    </div>
+    <div style="font-size:11px;color:#443300;margin:6px 0 12px;font-style:italic;">"${transcript}"</div>
     <div style="display:flex;gap:8px;justify-content:center;">
       <button onclick="applyMood('${moodKey}');document.getElementById('voiceMoodOverlay').remove();"
         style="flex:1;padding:8px;background:${mood.bgGlow};
         border:1px solid ${mood.color}44;border-radius:50px;
         color:${mood.color};font-family:'Rajdhani',sans-serif;
-        font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;">
-        ✓ Apply Mood
-      </button>
+        font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;">✓ Apply Mood</button>
       <button onclick="document.getElementById('voiceMoodOverlay').remove();"
-        style="padding:8px 14px;background:none;
-        border:1px solid rgba(255,215,0,0.1);border-radius:50px;
-        color:#443300;font-family:'Rajdhani',sans-serif;font-size:12px;cursor:pointer;">
-        ✕
-      </button>
+        style="padding:8px 14px;background:none;border:1px solid rgba(255,215,0,0.1);
+        border-radius:50px;color:#443300;font-family:'Rajdhani',sans-serif;font-size:12px;cursor:pointer;">✕</button>
     </div>
   `;
   setTimeout(() => { if (el.parentNode) el.remove(); }, 8000);
@@ -298,14 +245,13 @@ window.stopVoiceMoodDetection = stopVoiceMoodDetection;
 //  📸 FEATURE 3: PHOTO / SELFIE MOOD DETECTION
 // ═══════════════════════════════════════════════════
 
-async function startPhotoMoodDetection() {
-  showPhotoMoodUI();
-}
+let moodCamStream = null;
+
+function startPhotoMoodDetection() { showPhotoMoodUI(); }
 
 function showPhotoMoodUI() {
   let overlay = document.getElementById('photoMoodOverlay');
   if (overlay) { overlay.remove(); return; }
-
   overlay = document.createElement('div');
   overlay.id = 'photoMoodOverlay';
   overlay.style.cssText = `
@@ -318,47 +264,37 @@ function showPhotoMoodUI() {
     <div style="background:#0a0900;border:1px solid rgba(255,215,0,0.15);
       border-radius:24px;padding:24px;width:min(360px,92vw);text-align:center;
       box-shadow:0 20px 60px rgba(0,0,0,0.9);">
-      
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;
           background:linear-gradient(90deg,#ffd700,#ff8c00);
           -webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-          📸 SELFIE MOOD SCAN
-        </div>
+          📸 SELFIE MOOD SCAN</div>
         <button onclick="closePhotoMoodUI()"
           style="background:none;border:none;color:#554400;cursor:pointer;font-size:16px;">✕</button>
       </div>
-
       <video id="moodCamFeed" autoplay playsinline muted
         style="width:100%;border-radius:16px;background:#0f0e00;
-        border:1px solid rgba(255,215,0,0.1);aspect-ratio:4/3;object-fit:cover;
-        display:none;"></video>
-
+        border:1px solid rgba(255,215,0,0.1);aspect-ratio:4/3;
+        object-fit:cover;display:none;"></video>
       <canvas id="moodCamCanvas" style="display:none;"></canvas>
-
       <div id="photoMoodStatus" style="padding:30px 20px;">
         <div style="font-size:40px;margin-bottom:10px;">📷</div>
         <div style="font-family:'Rajdhani',sans-serif;font-size:13px;
           letter-spacing:1px;color:#554400;">
-          Take a selfie and Datta AI will detect your mood from your expression
-        </div>
+          Take a selfie and Datta AI will detect your mood from your expression</div>
       </div>
-
       <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px;">
         <button id="photoMoodCamBtn" onclick="openMoodCamera()"
           style="padding:12px;background:rgba(255,215,0,0.08);
           border:1px solid rgba(255,215,0,0.25);border-radius:50px;
           color:#ffd700;font-family:'Rajdhani',sans-serif;font-size:13px;
-          font-weight:700;letter-spacing:2px;cursor:pointer;">
-          📷 OPEN CAMERA
-        </button>
+          font-weight:700;letter-spacing:2px;cursor:pointer;">📷 OPEN CAMERA</button>
         <label style="padding:12px;background:rgba(255,215,0,0.04);
           border:1px solid rgba(255,215,0,0.1);border-radius:50px;
           color:#554400;font-family:'Rajdhani',sans-serif;font-size:13px;
           font-weight:700;letter-spacing:2px;cursor:pointer;display:block;">
           🖼️ UPLOAD PHOTO
-          <input type="file" accept="image/*" onchange="handlePhotoUpload(event)"
-            style="display:none;">
+          <input type="file" accept="image/*" onchange="handlePhotoUpload(event)" style="display:none;">
         </label>
       </div>
     </div>
@@ -366,28 +302,21 @@ function showPhotoMoodUI() {
   document.body.appendChild(overlay);
 }
 
-let moodCamStream = null;
-
 async function openMoodCamera() {
   try {
-    moodCamStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: 320, height: 240 }
-    });
+    moodCamStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'user', width:320, height:240 } });
     const video = document.getElementById('moodCamFeed');
-    const status = document.getElementById('photoMoodStatus');
-    const btn = document.getElementById('photoMoodCamBtn');
+    document.getElementById('photoMoodStatus').style.display = 'none';
     video.srcObject = moodCamStream;
     video.style.display = 'block';
-    status.style.display = 'none';
+    const btn = document.getElementById('photoMoodCamBtn');
     btn.textContent = '📸 CAPTURE & ANALYSE';
     btn.onclick = captureMoodPhoto;
   } catch(e) {
     document.getElementById('photoMoodStatus').innerHTML = `
       <div style="font-size:32px;margin-bottom:8px;">🚫</div>
       <div style="font-family:'Rajdhani',sans-serif;font-size:12px;color:#ff6060;letter-spacing:1px;">
-        Camera access denied.<br>Please upload a photo instead.
-      </div>
-    `;
+        Camera access denied.<br>Please upload a photo instead.</div>`;
   }
 }
 
@@ -411,10 +340,7 @@ function handlePhotoUpload(e) {
 }
 
 function stopMoodCamera() {
-  if (moodCamStream) {
-    moodCamStream.getTracks().forEach(t => t.stop());
-    moodCamStream = null;
-  }
+  if (moodCamStream) { moodCamStream.getTracks().forEach(t => t.stop()); moodCamStream = null; }
 }
 
 async function analyzePhotoMood(imageData) {
@@ -424,77 +350,54 @@ async function analyzePhotoMood(imageData) {
   if (status) {
     status.style.display = 'block';
     status.innerHTML = `
-      <div style="font-size:32px;margin-bottom:8px;animation:spin 1s linear infinite;">🔍</div>
-      <div style="font-family:'Rajdhani',sans-serif;font-size:13px;
-        letter-spacing:1px;color:#554400;">Analysing your expression...</div>
-      <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-    `;
+      <div style="font-size:32px;margin-bottom:8px;animation:photoSpin 1s linear infinite;">🔍</div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:1px;color:#554400;">
+        Analysing your expression...</div>
+      <style>@keyframes photoSpin{to{transform:rotate(360deg)}}</style>`;
   }
-
-  // Use Anthropic API (already available in Datta AI) to analyse the selfie
   try {
     const base64 = imageData.split(',')[1];
     const mediaType = imageData.split(';')[0].split(':')[1];
-
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 100,
+        max_tokens: 20,
         messages: [{
           role: 'user',
           content: [
-            {
-              type: 'image',
-              source: { type: 'base64', media_type: mediaType, data: base64 }
-            },
-            {
-              type: 'text',
-              text: `Look at this person's facial expression and body language. 
-              Respond with ONLY one word from this exact list: 
-              focused, happy, stressed, creative, lazy, curious.
-              Choose the mood that best matches their expression. 
-              No explanation, no punctuation — just the single word.`
-            }
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: `Look at this person's facial expression. Reply with ONLY one word from this list: focused, happy, stressed, creative, lazy, curious. No explanation.` }
           ]
         }]
       })
     });
-
     const data = await response.json();
-    const raw = data?.content?.[0]?.text?.trim().toLowerCase() || '';
+    const raw = (data?.content?.[0]?.text || '').trim().toLowerCase().replace(/[^a-z]/g,'');
     const detected = MOODS[raw] ? raw : 'happy';
     showPhotoMoodResult(imageData, detected);
-
   } catch(e) {
-    // Fallback: random mood if API fails
     const fallback = Object.keys(MOODS).filter(k => k !== 'night');
-    const detected = fallback[Math.floor(Math.random() * fallback.length)];
-    showPhotoMoodResult(imageData, detected);
+    showPhotoMoodResult(imageData, fallback[Math.floor(Math.random() * fallback.length)]);
   }
 }
 
 function showPhotoMoodResult(imageData, moodKey) {
   const mood = MOODS[moodKey];
-  const overlay = document.getElementById('photoMoodOverlay');
-  if (!overlay) return;
-
-  overlay.querySelector('div').innerHTML = `
+  const box = document.querySelector('#photoMoodOverlay > div');
+  if (!box) return;
+  box.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;
         background:linear-gradient(90deg,#ffd700,#ff8c00);
-        -webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-        📸 MOOD DETECTED
-      </div>
+        -webkit-background-clip:text;-webkit-text-fill-color:transparent;">📸 MOOD DETECTED</div>
       <button onclick="closePhotoMoodUI()"
         style="background:none;border:none;color:#554400;cursor:pointer;font-size:16px;">✕</button>
     </div>
-
     <img src="${imageData}" style="width:100%;border-radius:14px;
       border:2px solid ${mood.color}55;margin-bottom:14px;
       object-fit:cover;max-height:180px;">
-
     <div style="background:${mood.bgGlow};border:1px solid ${mood.color}44;
       border-radius:14px;padding:14px;margin-bottom:14px;text-align:center;">
       <div style="font-size:36px;margin-bottom:4px;">${mood.emoji}</div>
@@ -502,21 +405,17 @@ function showPhotoMoodResult(imageData, moodKey) {
         letter-spacing:2px;color:${mood.color};">${mood.label.toUpperCase()}</div>
       <div style="font-size:12px;color:#554400;margin-top:4px;">${mood.desc}</div>
     </div>
-
     <div style="display:flex;gap:8px;">
       <button onclick="applyMood('${moodKey}');closePhotoMoodUI();"
         style="flex:1;padding:11px;background:${mood.bgGlow};
         border:1px solid ${mood.color}55;border-radius:50px;
         color:${mood.color};font-family:'Rajdhani',sans-serif;font-size:13px;
         font-weight:700;letter-spacing:1px;cursor:pointer;">
-        ✓ Apply ${mood.emoji} ${mood.label}
-      </button>
+        ✓ Apply ${mood.emoji} ${mood.label}</button>
       <button onclick="showPhotoMoodUI()"
         style="padding:11px 14px;background:none;
         border:1px solid rgba(255,215,0,0.1);border-radius:50px;
-        color:#443300;font-family:'Rajdhani',sans-serif;font-size:12px;cursor:pointer;">
-        🔄
-      </button>
+        color:#443300;font-family:'Rajdhani',sans-serif;font-size:12px;cursor:pointer;">🔄</button>
     </div>
   `;
 }
@@ -535,7 +434,7 @@ window.closePhotoMoodUI = closePhotoMoodUI;
 window.showPhotoMoodUI = showPhotoMoodUI;
 
 // ═══════════════════════════════════════════════════
-//  AUTO MOOD DETECTION (text-based, from v3.0)
+//  AUTO MOOD DETECTION (text-based)
 // ═══════════════════════════════════════════════════
 
 const MOOD_KEYWORDS = {
@@ -578,16 +477,14 @@ window.dattaAutoDetectMood = function(userMessage) {
 };
 
 // ═══════════════════════════════════════════════════
-//  MOOD MEMORY TIMELINE (from v3.0)
+//  MOOD MEMORY TIMELINE
 // ═══════════════════════════════════════════════════
 
 function logMoodToTimeline(moodKey, trigger = '') {
   const timeline = getMoodTimeline();
-  timeline.push({
-    mood: moodKey, time: Date.now(),
+  timeline.push({ mood: moodKey, time: Date.now(),
     hour: new Date().getHours(), day: new Date().getDay(),
-    trigger: trigger.substring(0, 60)
-  });
+    trigger: trigger.substring(0, 60) });
   if (timeline.length > 200) timeline.splice(0, timeline.length - 200);
   localStorage.setItem('datta_mood_timeline', JSON.stringify(timeline));
 }
@@ -610,22 +507,20 @@ function getMoodInsights() {
     dayMood[e.day][e.mood] = (dayMood[e.day][e.mood]||0)+1;
   }
   const topMood = Object.entries(moodCount).sort((a,b)=>b[1]-a[1])[0][0];
-  let bestHour=null,bestHourScore=0;
+  let bestHour=null, bestHourScore=0;
   for (const [h,moods] of Object.entries(hourMood)) {
     const score=(moods.focused||0)+(moods.happy||0)+(moods.creative||0);
     if(score>bestHourScore){bestHourScore=score;bestHour=h;}
   }
-  let stressDay=null,stressDayScore=0;
+  let stressDay=null, stressDayScore=0;
   for (const [d,moods] of Object.entries(dayMood)) {
     if((moods.stressed||0)>stressDayScore){stressDayScore=moods.stressed;stressDay=d;}
   }
   const weekAgo = Date.now()-7*24*60*60*1000;
   const weekMoods = {};
-  for (const e of timeline.filter(e=>e.time>weekAgo))
-    weekMoods[e.mood]=(weekMoods[e.mood]||0)+1;
+  for (const e of timeline.filter(e=>e.time>weekAgo)) weekMoods[e.mood]=(weekMoods[e.mood]||0)+1;
   return { topMood, bestHour: bestHour!==null?`${bestHour}:00`:null,
-    stressDay: stressDay!==null?days[stressDay]:null,
-    weekMoods, total: timeline.length };
+    stressDay: stressDay!==null?days[stressDay]:null, weekMoods, total: timeline.length };
 }
 
 function predictMood() {
@@ -644,7 +539,6 @@ window.getMoodInsights = getMoodInsights;
 window.getMoodTimeline = getMoodTimeline;
 window.dattaPredictMood = predictMood;
 
-// Timeline Panel UI
 function showTimelinePanel() {
   let panel = document.getElementById('moodTimelinePanel');
   if (panel) { panel.remove(); return; }
@@ -657,8 +551,7 @@ function showTimelinePanel() {
     background:#0a0900;border:1px solid rgba(255,215,0,0.2);
     border-radius:20px;padding:24px;z-index:10000;
     width:min(420px,92vw);max-height:80vh;overflow-y:auto;
-    box-shadow:0 20px 60px rgba(0,0,0,0.8);
-    font-family:'DM Sans',sans-serif;color:#fff8e7;
+    box-shadow:0 20px 60px rgba(0,0,0,0.8);font-family:'DM Sans',sans-serif;color:#fff8e7;
   `;
   const noData = !insights;
   panel.innerHTML = `
@@ -698,7 +591,7 @@ function showTimelinePanel() {
     <div style="font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:2px;
       color:#443300;margin-bottom:10px;">RECENT HISTORY</div>
     <div style="display:flex;flex-direction:column;gap:8px;">
-      ${timeline.map(e=>{
+      ${timeline.map(e => {
         const m=MOODS[e.mood];
         const d=new Date(e.time);
         const label=d.toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
@@ -709,13 +602,12 @@ function showTimelinePanel() {
           <div style="flex:1;">
             <div style="font-family:'Rajdhani',sans-serif;font-size:13px;
               color:${m?.color||'#fff'};font-weight:700;">${m?.label||e.mood}</div>
-            ${e.trigger?`<div style="font-size:11px;color:#332200;margin-top:1px;
-              overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;">
-              "${e.trigger}"</div>`:''}
+            ${e.trigger?`<div style="font-size:11px;color:#332200;overflow:hidden;
+              text-overflow:ellipsis;white-space:nowrap;max-width:200px;">"${e.trigger}"</div>`:''}
           </div>
           <div style="text-align:right;">
             <div style="font-size:10px;color:#332200;">${label}</div>
-            <div style="font-size:10px;color:#443300;margin-top:2px;">${e.trigger?'🤖 auto':'👆 manual'}</div>
+            <div style="font-size:10px;color:#443300;">${e.trigger?'🤖 auto':'👆 manual'}</div>
           </div>
         </div>`}).join('')}
     </div>`}
@@ -723,8 +615,7 @@ function showTimelinePanel() {
       style="margin-top:16px;width:100%;padding:10px;background:none;
       border:1px solid rgba(255,60,60,0.2);border-radius:50px;color:#ff4444;
       font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;">
-      🗑️ Clear Timeline
-    </button>
+      🗑️ Clear Timeline</button>
   `;
   document.body.appendChild(panel);
 }
@@ -753,7 +644,6 @@ function loadMood() {
     if (predicted) { applyMood(predicted, true, true); showPredictionBanner(predicted); }
   }
   checkNightMode();
-  // Re-check night mode every 30 minutes
   setInterval(checkNightMode, 30 * 60 * 1000);
 }
 
@@ -762,16 +652,15 @@ function showPredictionBanner(moodKey) {
   const banner = document.createElement('div');
   banner.style.cssText = `
     position:fixed;top:64px;left:50%;transform:translateX(-50%);
-    background:#0f0e00;border:1px solid ${mood.color}44;
-    border-radius:50px;padding:8px 18px;z-index:9999;
-    font-family:'Rajdhani',sans-serif;font-size:12px;
-    letter-spacing:1px;color:${mood.color};
+    background:#0f0e00;border:1px solid ${mood.color}44;border-radius:50px;
+    padding:8px 18px;z-index:9999;font-family:'Rajdhani',sans-serif;
+    font-size:12px;letter-spacing:1px;color:${mood.color};
     box-shadow:0 4px 20px rgba(0,0,0,0.5);
-    animation:fadeInOut 4s ease forwards;pointer-events:none;
+    animation:pFade 4s ease forwards;pointer-events:none;
   `;
   banner.textContent = `🧠 Predicted: ${mood.emoji} ${mood.label} mode based on your patterns`;
   const style = document.createElement('style');
-  style.textContent = `@keyframes fadeInOut{0%{opacity:0;top:74px}15%{opacity:1;top:64px}75%{opacity:1}100%{opacity:0}}`;
+  style.textContent = `@keyframes pFade{0%{opacity:0;top:74px}15%{opacity:1;top:64px}75%{opacity:1}100%{opacity:0}}`;
   document.head.appendChild(style);
   document.body.appendChild(banner);
   setTimeout(() => banner.remove(), 4100);
@@ -852,7 +741,7 @@ function showMoodToast(mood) {
 }
 
 function showFloatToast(msg, color = '#ffd700') {
-  let t = document.createElement('div');
+  const t = document.createElement('div');
   t.style.cssText = `position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
     background:#0f0e00;border:1px solid ${color}44;border-radius:50px;
     padding:10px 20px;font-family:'Rajdhani',sans-serif;font-size:13px;
@@ -866,8 +755,7 @@ function showFloatToast(msg, color = '#ffd700') {
 function toggleMoodPanel() {
   const panel = document.getElementById('moodPanel');
   if (!panel) return;
-  const isOpen = panel.style.display !== 'none';
-  panel.style.display = isOpen ? 'none' : 'block';
+  panel.style.display = panel.style.display !== 'none' ? 'none' : 'block';
   const colorPanel = document.getElementById('colorPanel');
   if (colorPanel) colorPanel.style.display = 'none';
 }
@@ -879,12 +767,20 @@ function closeMoodPanel() {
 
 document.addEventListener('click', function(e) {
   const panel = document.getElementById('moodPanel');
-  const btn = document.getElementById('moodBtn');
+  const btn = document.getElementById('moodToggleBtn');
   const indicator = document.getElementById('moodIndicator');
+  const autoMoodPill = document.getElementById('autoMoodPill');
   const timelinePanel = document.getElementById('moodTimelinePanel');
-  if (panel && btn &&
-    !panel.contains(e.target) && !btn.contains(e.target) &&
-    !indicator?.contains(e.target) && !timelinePanel?.contains(e.target)) {
+  const photoOverlay = document.getElementById('photoMoodOverlay');
+  const voiceOverlay2 = document.getElementById('voiceMoodOverlay');
+  if (panel &&
+    !panel.contains(e.target) &&
+    !btn?.contains(e.target) &&
+    !indicator?.contains(e.target) &&
+    !autoMoodPill?.contains(e.target) &&
+    !timelinePanel?.contains(e.target) &&
+    !photoOverlay?.contains(e.target) &&
+    !voiceOverlay2?.contains(e.target)) {
     closeMoodPanel();
   }
 });
