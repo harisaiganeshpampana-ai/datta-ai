@@ -171,6 +171,74 @@ function needsWebSearch(message) {
   return triggers.some(t => msg.includes(t))
 }
 
+function isImageRequest(message) {
+  if (!message) return false
+  const msg = message.toLowerCase()
+  const triggers = [
+    "generate image", "create image", "make image", "draw",
+    "generate photo", "create photo", "make photo",
+    "generate picture", "create picture", "make picture",
+    "generate art", "create art", "make art", "paint",
+    "illustrate", "image of", "picture of", "photo of",
+    "draw me", "sketch", "generate a image", "create a image"
+  ]
+  return triggers.some(t => msg.includes(t))
+}
+
+function getImagePrompt(message) {
+  let prompt = message
+  const removes = [
+    "generate image of", "create image of", "make image of",
+    "generate a image of", "create a image of", "make a image of",
+    "generate photo of", "create photo of", "generate picture of",
+    "create picture of", "generate image", "create image",
+    "make image", "generate photo", "create photo", "generate picture",
+    "create picture", "draw me a", "draw me", "draw a", "draw",
+    "paint a", "paint", "illustrate", "image of", "picture of",
+    "photo of", "generate art of", "create art of",
+    "generate a", "create a", "make a", "make me"
+  ]
+  removes.forEach(r => {
+    prompt = prompt.replace(new RegExp(r, "gi"), "")
+  })
+  return prompt.trim() || message
+}
+
+// RATE LIMITING - 50 messages per hour for free users
+const messageCountStore = {}
+
+function checkRateLimit(userId, plan) {
+  if (plan !== "free") return { allowed: true }
+
+  const now = Date.now()
+  const key = userId.toString()
+
+  if (!messageCountStore[key]) {
+    messageCountStore[key] = { count: 0, windowStart: now }
+  }
+
+  const store = messageCountStore[key]
+  const hourMs = 60 * 60 * 1000
+
+  // Reset window if 1 hour passed
+  if (now - store.windowStart > hourMs) {
+    store.count = 0
+    store.windowStart = now
+  }
+
+  if (store.count >= 50) {
+    const waitMs = hourMs - (now - store.windowStart)
+    const waitMins = Math.ceil(waitMs / 60000)
+    return {
+      allowed: false,
+      message: "Free plan limit reached (50 messages/hour). Please wait " + waitMins + " minutes or upgrade to Pro for unlimited messages."
+    }
+  }
+
+  store.count++
+  return { allowed: true, remaining: 50 - store.count }
+}
+
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
@@ -345,6 +413,14 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       const allowed = ["image/", "text/", "application/pdf", "application/json"]
       const isAllowed = allowed.some(t => file.mimetype.startsWith(t))
       if (!isAllowed) return res.status(400).json({ error: "File type not supported. Use images, PDFs, or text files." })
+    }
+
+    // Check rate limit for free users
+    const sub = await Subscription.findOne({ userId: userId, active: true }).catch(() => null)
+    const userPlan = sub ? sub.plan : "free"
+    const rateCheck = checkRateLimit(userId, userPlan)
+    if (!rateCheck.allowed) {
+      return res.status(429).json({ error: rateCheck.message })
     }
 
     let chat = null
