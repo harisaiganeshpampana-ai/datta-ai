@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics | Datta AI</title>
+<link rel="icon" type="image/jpeg" href="logo.jpeg">
+<link rel="stylesheet" href="theme-vars.css">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+* { margin:0;padding:0;box-sizing:border-box; }
+body { background:#080800;color:#fff8e7;font-family:'DM Sans',sans-serif;min-height:100vh; }
+.topbar { position:fixed;top:0;left:0;right:0;height:54px;background:rgba(8,8,0,0.96);border-bottom:1px solid rgba(255,215,0,0.1);display:flex;align-items:center;padding:0 16px;gap:12px;z-index:100;backdrop-filter:blur(20px); }
+.back { background:none;border:none;color:#665500;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:1px; }
+.back:hover { color:var(--accent); }
+.pageTitle { font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;background:linear-gradient(90deg,#c084fc,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent; }
+.main { padding:70px 16px 40px;max-width:680px;margin:0 auto; }
+.grid3 { display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px; }
+.statCard { background:#0f0e00;border:1px solid rgba(255,215,0,0.07);border-radius:14px;padding:14px;text-align:center; }
+.statVal { font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;margin-bottom:2px; }
+.statLbl { font-family:'Rajdhani',sans-serif;font-size:10px;color:#332200;letter-spacing:1px; }
+.section { background:#0f0e00;border:1px solid rgba(255,215,0,0.07);border-radius:16px;padding:16px;margin-bottom:14px; }
+.secTitle { font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:2px;color:#443300;margin-bottom:14px; }
+.bar { background:rgba(255,255,255,0.04);border-radius:4px;height:6px;margin-bottom:8px; }
+.barFill { height:100%;border-radius:4px;transition:width 0.8s ease; }
+.hourBars { display:flex;align-items:flex-end;gap:3px;height:60px; }
+.hourBar { flex:1;border-radius:3px 3px 0 0;min-height:3px;transition:height 0.5s; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button class="back" onclick="history.back()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    Back
+  </button>
+  <div class="pageTitle">📊 Analytics</div>
+</div>
+<div class="main" id="main">Loading...</div>
+<script>
+const MOODS = { focused:{emoji:"🎯",label:"Focused",color:"#00ccff"}, happy:{emoji:"😄",label:"Happy",color:"#ffd700"}, stressed:{emoji:"😮‍💨",label:"Stressed",color:"#00ff88"}, creative:{emoji:"🎨",label:"Creative",color:"#c084fc"}, lazy:{emoji:"😴",label:"Lazy",color:"#f97316"}, curious:{emoji:"🔍",label:"Curious",color:"#ec4899"}, night:{emoji:"🌙",label:"Night Brain",color:"#818cf8"} }
+const XP_LEVELS = [{level:1,name:"Beginner",emoji:"🌱",xpNeeded:0},{level:2,name:"Explorer",emoji:"🔭",xpNeeded:100},{level:3,name:"Thinker",emoji:"💭",xpNeeded:300},{level:4,name:"Creator",emoji:"⚡",xpNeeded:600},{level:5,name:"Mastermind",emoji:"🧠",xpNeeded:1000},{level:6,name:"Legend",emoji:"👑",xpNeeded:2000},{level:7,name:"Brahma",emoji:"🔥",xpNeeded:5000}]
+
+function getCurrentLevel(xp) {
+  let cur = XP_LEVELS[0]
+  for (const l of XP_LEVELS) { if (xp >= l.xpNeeded) cur = l; else break }
+  return cur
+}
+
+const xpData = (() => { try { return JSON.parse(localStorage.getItem("datta_xp")||"{}") } catch{return{}} })()
+const moodTL = (() => { try { return JSON.parse(localStorage.getItem("datta_mood_timeline")||"[]") } catch{return[]} })()
+const pers = (() => { try { return JSON.parse(localStorage.getItem("datta_personality")||"{}") } catch{return{}} })()
+const mem = (() => { try { return JSON.parse(localStorage.getItem("datta_memory")||"{}") } catch{return{}} })()
+
+const totalXP = xpData.totalXP || 0
+const streak = xpData.streak || 0
+const history = xpData.history || []
+const msgs = history.filter(h=>h.type==="message").length
+const imgs = history.filter(h=>h.type==="image").length
+const voice = history.filter(h=>h.type==="voice").length
+const memCount = Object.keys(mem).filter(k=>!k.endsWith("_time")).length
+const level = getCurrentLevel(totalXP)
+
+const moodCounts = {}
+for (const e of moodTL) moodCounts[e.mood]=(moodCounts[e.mood]||0)+1
+const topMoods = Object.entries(moodCounts).sort((a,b)=>b[1]-a[1]).slice(0,4)
+
+const hourBuckets = Array(24).fill(0)
+const weekAgo = Date.now()-7*86400000
+for (const h of history.filter(h=>h.time>weekAgo)) hourBuckets[new Date(h.time).getHours()]++
+const maxH = Math.max(...hourBuckets,1)
+const peakHour = hourBuckets.indexOf(Math.max(...hourBuckets))
+
+const topics = pers.topics || {}
+const topTopics = Object.entries(topics).sort((a,b)=>b[1]-a[1]).slice(0,3)
+
+document.getElementById("main").innerHTML = `
+  <div class="grid3">
+    <div class="statCard"><div class="statVal" style="color:#ffd700">${msgs}</div><div class="statLbl">💬 MESSAGES</div></div>
+    <div class="statCard"><div class="statVal" style="color:#f97316">${totalXP}</div><div class="statLbl">⚡ TOTAL XP</div></div>
+    <div class="statCard"><div class="statVal" style="color:#ef4444">${streak}</div><div class="statLbl">🔥 STREAK</div></div>
+    <div class="statCard"><div class="statVal" style="color:#c084fc">${imgs}</div><div class="statLbl">🎨 IMAGES</div></div>
+    <div class="statCard"><div class="statVal" style="color:#00ff88">${voice}</div><div class="statLbl">🎙️ VOICE</div></div>
+    <div class="statCard"><div class="statVal" style="color:#00ccff">${memCount}</div><div class="statLbl">🧾 MEMORIES</div></div>
+  </div>
+
+  <div class="section">
+    <div class="secTitle">${level.emoji} CURRENT LEVEL — ${level.name}</div>
+    <div style="font-family:'Rajdhani',sans-serif;font-size:13px;color:#443300;">${totalXP} XP · Level ${level.level}</div>
+  </div>
+
+  <div class="section">
+    <div class="secTitle">⏰ HOURLY ACTIVITY · Peak: ${peakHour}:00</div>
+    <div class="hourBars">
+      ${hourBuckets.map((c,h)=>`<div class="hourBar" style="height:${Math.max(3,Math.round((c/maxH)*56))}px;background:${h===peakHour?'var(--accent)':'rgba(255,215,0,0.2)'};"></div>`).join("")}
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:4px;">
+      ${["12am","6am","12pm","6pm","11pm"].map(t=>`<span style="font-family:Rajdhani,sans-serif;font-size:9px;color:#332200">${t}</span>`).join("")}
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="secTitle">😊 MOOD DISTRIBUTION</div>
+    ${topMoods.length===0?'<div style="color:#332200;font-size:12px;">No mood data yet</div>':
+    topMoods.map(([mood,count])=>{
+      const m=MOODS[mood]||{emoji:"❓",label:mood,color:"#ffd700"}
+      const pct=Math.round((count/moodTL.length)*100)
+      return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-family:Rajdhani,sans-serif;font-size:12px;color:${m.color}">${m.emoji} ${m.label}</span><span style="font-family:Rajdhani,sans-serif;font-size:11px;color:#332200">${pct}%</span></div><div class="bar"><div class="barFill" style="width:${pct}%;background:${m.color}"></div></div></div>`
+    }).join("")}
+  </div>
+
+  ${topTopics.length>0?`<div class="section">
+    <div class="secTitle">🎯 TOP INTERESTS</div>
+    ${topTopics.map(([t,c],i)=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,215,0,0.05)"><span style="font-size:16px">${["🥇","🥈","🥉"][i]}</span><span style="font-family:Rajdhani,sans-serif;font-size:13px;color:${["#ffd700","#c084fc","#00ccff"][i]};flex:1">${t.charAt(0).toUpperCase()+t.slice(1)}</span><span style="font-family:Rajdhani,sans-serif;font-size:11px;color:#332200">${c}x</span></div>`).join("")}
+  </div>`:""}
+`
+</script>
+</body>
+</html>
