@@ -28,7 +28,6 @@
   overflow: hidden;
 }
 
-/* Background orbs - GOLD */
 .welcomeScreen::before {
   content: '';
   position: absolute;
@@ -101,7 +100,6 @@
   animation: fadeSlideUp 0.6s 0.3s ease forwards;
 }
 
-/* Feature badges */
 .welcomeBadges {
   display: flex;
   gap: 8px;
@@ -134,7 +132,6 @@
 }
 .welcomeBadge span { font-size: 14px; }
 
-/* Suggestion chips */
 .welcomeSuggestLabel {
   font-size: 11px;
   color: #443300;
@@ -204,6 +201,39 @@
   .welcomeChips { grid-template-columns: 1fr; }
   .welcomeBadges { gap: 6px; }
 }
+
+/* ── MOOD PANEL EXTRA BUTTONS ───────────────────────────────────── */
+.moodExtraBtns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.moodExtraBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 6px;
+  background: rgba(255,215,0,0.04);
+  border: 1px solid rgba(255,215,0,0.12);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #554400;
+}
+.moodExtraBtn:hover {
+  background: rgba(255,215,0,0.1);
+  border-color: rgba(255,215,0,0.3);
+  color: #ffd700;
+  transform: translateY(-2px);
+}
+.moodExtraBtn .meBtnIcon { font-size: 20px; line-height: 1; }
+.moodExtraBtn .meBtnLabel { font-size: 10px; letter-spacing: 1px; text-align: center; }
 </style>
 </head>
 
@@ -238,6 +268,8 @@
 <div id="moodPanel" style="position:fixed;top:58px;right:50px;background:#0f0e00;border:1px solid rgba(255,215,0,0.2);border-radius:24px;padding:22px;z-index:2000;display:none;box-shadow:0 8px 40px rgba(0,0,0,0.7);min-width:300px;">
   <div style="font-family:Bebas Neue,sans-serif;font-size:18px;letter-spacing:3px;color:var(--accent);margin-bottom:6px;">😊 WHATS YOUR MOOD?</div>
   <div style="font-family:Rajdhani,sans-serif;font-size:12px;color:#443300;letter-spacing:1px;margin-bottom:18px;">Datta AI adapts to how you feel</div>
+
+  <!-- MOOD GRID (original) -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
     <button class="moodBtn" data-mood="focused" onclick="applyMood('focused')" style="background:rgba(0,204,255,0.06);border:1px solid rgba(0,204,255,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;"><div style="font-size:24px;margin-bottom:6px;">🎯</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#00ccff;letter-spacing:1px;">Focused</div><div style="font-size:11px;color:#443300;margin-top:2px;">Sharp &amp; concise</div></button>
     <button class="moodBtn" data-mood="happy" onclick="applyMood('happy')" style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;"><div style="font-size:24px;margin-bottom:6px;">😄</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#ffd700;letter-spacing:1px;">Happy</div><div style="font-size:11px;color:#443300;margin-top:2px;">Fun &amp; energetic</div></button>
@@ -245,7 +277,30 @@
     <button class="moodBtn" data-mood="creative" onclick="applyMood('creative')" style="background:rgba(192,132,252,0.06);border:1px solid rgba(192,132,252,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;"><div style="font-size:24px;margin-bottom:6px;">🎨</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#c084fc;letter-spacing:1px;">Creative</div><div style="font-size:11px;color:#443300;margin-top:2px;">Bold &amp; imaginative</div></button>
     <button class="moodBtn" data-mood="lazy" onclick="applyMood('lazy')" style="background:rgba(249,115,22,0.06);border:1px solid rgba(249,115,22,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;"><div style="font-size:24px;margin-bottom:6px;">😴</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#f97316;letter-spacing:1px;">Lazy</div><div style="font-size:11px;color:#443300;margin-top:2px;">Short &amp; chill</div></button>
     <button class="moodBtn" data-mood="curious" onclick="applyMood('curious')" style="background:rgba(236,72,153,0.06);border:1px solid rgba(236,72,153,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;"><div style="font-size:24px;margin-bottom:6px;">🔍</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#ec4899;letter-spacing:1px;">Curious</div><div style="font-size:11px;color:#443300;margin-top:2px;">Deep &amp; exploratory</div></button>
+    <!-- Night Brain (new) -->
+    <button class="moodBtn" data-mood="night" onclick="applyMood('night')" style="background:rgba(129,140,248,0.06);border:1px solid rgba(129,140,248,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;grid-column:span 2;"><div style="font-size:24px;margin-bottom:6px;">🌙</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#818cf8;letter-spacing:1px;">Night Brain</div><div style="font-size:11px;color:#443300;margin-top:2px;">Philosophical &amp; deep</div></button>
   </div>
+
+  <!-- DIVIDER -->
+  <div style="border-top:1px solid rgba(255,215,0,0.07);margin-bottom:12px;"></div>
+  <div style="font-family:Rajdhani,sans-serif;font-size:10px;letter-spacing:2px;color:#332200;margin-bottom:10px;">DETECT MY MOOD</div>
+
+  <!-- 3 NEW FEATURE BUTTONS -->
+  <div class="moodExtraBtns">
+    <button class="moodExtraBtn" onclick="startVoiceMoodDetection();closeMoodPanel();">
+      <span class="meBtnIcon">🎙️</span>
+      <span class="meBtnLabel">VOICE<br>DETECT</span>
+    </button>
+    <button class="moodExtraBtn" onclick="startPhotoMoodDetection();closeMoodPanel();">
+      <span class="meBtnIcon">📸</span>
+      <span class="meBtnLabel">SELFIE<br>SCAN</span>
+    </button>
+    <button class="moodExtraBtn" onclick="showMoodTimeline();closeMoodPanel();">
+      <span class="meBtnIcon">🧠</span>
+      <span class="meBtnLabel">MOOD<br>TIMELINE</span>
+    </button>
+  </div>
+
   <button onclick="clearMood()" style="width:100%;padding:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#443300;font-family:Rajdhani,sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;">✕ Clear mood · Reset to Gold</button>
 </div>
 
@@ -260,8 +315,6 @@
   animation: colorPanelIn 0.2s ease;
 ">
   <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:3px;color:var(--accent);margin-bottom:14px;">🎨 THEME COLOR</div>
-
-  <!-- PRESET SWATCHES -->
   <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
     <button class="presetColor active" data-color="#ffd700" style="background:#ffd700;" title="👑 Gold (Default)" onclick="dattaTheme.saveAndApply('#ffd700');updateTopbarDot()"></button>
     <button class="presetColor" data-color="#00ff88" style="background:#00ff88;" title="Green" onclick="dattaTheme.saveAndApply('#00ff88');updateTopbarDot()"></button>
@@ -272,8 +325,6 @@
     <button class="presetColor" data-color="#3b82f6" style="background:#3b82f6;" title="Blue" onclick="dattaTheme.saveAndApply('#3b82f6');updateTopbarDot()"></button>
     <button class="presetColor" data-color="#ec4899" style="background:#ec4899;" title="Pink" onclick="dattaTheme.saveAndApply('#ec4899');updateTopbarDot()"></button>
   </div>
-
-  <!-- CUSTOM PICKER -->
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
     <span style="font-family:'Rajdhani',sans-serif;font-size:13px;color:#665500;letter-spacing:1px;">Custom:</span>
     <input type="color" id="accentColorPicker" value="#ffd700"
@@ -289,7 +340,6 @@
       👑 Reset Gold
     </button>
   </div>
-
   <button onclick="toggleColorPanel()" style="
     width:100%; padding:8px; background:rgba(255,215,0,0.07);
     border:1px solid rgba(255,215,0,0.15); border-radius:10px;
@@ -322,7 +372,6 @@
 
 <!-- SIDEBAR -->
 <div class="sidebar">
-
   <div class="sidebarTop">
     <div class="sidebarBrand">👑 Datta AI</div>
     <button class="newChatBtn" onclick="newChat()">
@@ -390,7 +439,6 @@
     </div>
   </div>
 
-  <!-- UPGRADE BUTTON -->
   <div class="upgradeBtn" onclick="window.location.href='pricing.html'">
     <span>👑</span>
     <div>
@@ -400,10 +448,8 @@
     <span style="color:#ffd700;font-size:16px;">›</span>
   </div>
 
-  <!-- VERSION TAG -->
   <div style="text-align:center;font-size:10px;color:#332200;letter-spacing:2px;padding:4px 0;font-family:'Rajdhani',sans-serif;" id="versionTag">DATTA AI v2.0 · SHAKTI</div>
 
-  <!-- LEGAL LINKS -->
   <div style="text-align:center;padding:4px 0 6px;display:flex;justify-content:center;gap:10px;">
     <a href="privacy.html" style="font-size:10px;color:#332200;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;transition:color 0.2s;" onmouseover="this.style.color='#ffd700'" onmouseout="this.style.color='#332200'">Privacy</a>
     <span style="color:#2a2000;font-size:10px;">·</span>
@@ -412,7 +458,6 @@
     <a href="home.html" style="font-size:10px;color:#332200;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;transition:color 0.2s;" onmouseover="this.style.color='#ffd700'" onmouseout="this.style.color='#332200'">About</a>
   </div>
 
-  <!-- BOTTOM USER PROFILE -->
   <div class="sidebarProfile">
     <div class="profileAvatar">G</div>
     <div class="profileInfo">
@@ -435,13 +480,10 @@
       </button>
     </div>
   </div>
-
 </div>
 
 <!-- MAIN CHAT AREA -->
 <div class="main">
-
-  <!-- WELCOME SCREEN -->
   <div id="welcomeScreen" class="welcomeScreen">
     <img src="logo.jpeg" alt="Datta AI" class="welcomeLogo">
     <div class="welcomeGreeting">Good to see you 👋</div>
@@ -480,13 +522,11 @@
     </div>
   </div>
 
-  <!-- CHAT -->
   <div class="chatWrapper">
     <div class="chat" id="chat"></div>
     <button id="scrollDownBtn">↓</button>
   </div>
 
-  <!-- INPUT -->
   <div class="inputArea" id="inputArea">
     <div class="inputWrap" id="inputWrap">
       <input type="file" id="imageInput" accept="image/*,.pdf,.txt,.csv,.js,.py,.html,.css,.json,.md,.doc,.docx" style="display:none;">
@@ -534,7 +574,6 @@
       </div>
     </div>
   </div>
-
 </div>
 
 <script src="chat.js?v=7"></script>
@@ -909,7 +948,6 @@
     if (dot) {
       dot.style.background = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
     }
-    // Sync both pickers
     const saved = localStorage.getItem('datta_accent') || '#ffd700';
     const p1 = document.getElementById('accentColorPicker');
     const p2 = document.getElementById('accentColorPickerSettings');
@@ -917,7 +955,6 @@
     if (p2) p2.value = saved;
   }
 
-  // Close color panel when clicking outside
   document.addEventListener('click', function(e) {
     const panel = document.getElementById('colorPanel');
     const btn = document.getElementById('topbarColorBtn');
@@ -926,17 +963,15 @@
     }
   });
 
-  // Update dot on load
   window.addEventListener('DOMContentLoaded', function() {
-  // Check if coming from Live Feed
-  const feedPrompt = localStorage.getItem('datta_feed_prompt')
-  if (feedPrompt) {
-    localStorage.removeItem('datta_feed_prompt')
-    setTimeout(() => {
-      const input = document.getElementById('message')
-      if (input) { input.value = feedPrompt; send() }
-    }, 1500)
-  }
+    const feedPrompt = localStorage.getItem('datta_feed_prompt')
+    if (feedPrompt) {
+      localStorage.removeItem('datta_feed_prompt')
+      setTimeout(() => {
+        const input = document.getElementById('message')
+        if (input) { input.value = feedPrompt; send() }
+      }, 1500)
+    }
     setTimeout(updateTopbarDot, 100);
   });
 </script>
