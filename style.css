@@ -1789,3 +1789,109 @@ body.light #splash { background: #fff; }
 
 /* Remove old button styles */
 .modeBtn { display: none !important; }
+
+/* IMAGE GENERATION - Gemini/ChatGPT Style */
+.imageGenContainer {
+  max-width: 420px;
+  margin: 4px 0;
+}
+
+.imageGenLoader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px;
+  background: #1a1a1a;
+  border-radius: 16px;
+  border: 1px solid #2a2a2a;
+}
+
+.imageGenSpinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #2a2a2a;
+  border-top-color: #00ff88;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.imageGenLoadText {
+  font-size: 13px;
+  color: #888;
+  animation: pulse 1.5s ease infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.imageGenResult {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #2a2a2a;
+  background: #111;
+}
+
+.generatedImg {
+  width: 100%;
+  display: block;
+  border-radius: 16px 16px 0 0;
+  max-height: 420px;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.generatedImg:hover {
+  transform: scale(1.01);
+  cursor: zoom-in;
+}
+
+.imageGenActions {
+  padding: 10px 12px;
+  background: #111;
+}
+
+.imageGenPrompt {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.imageGenBtns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.imgActionBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: #1e1e1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 20px;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.imgActionBtn:hover {
+  background: #2a2a2a;
+  color: white;
+  border-color: #333;
+}
+
+.imgActionBtn svg { flex-shrink: 0; }
+
+.likeImgBtn:hover { color: #00ff88 !important; border-color: #00ff8844 !important; }
+.dislikeImgBtn:hover { color: #ff4444 !important; border-color: #ff444444 !important; }
