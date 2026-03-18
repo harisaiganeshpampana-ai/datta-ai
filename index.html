@@ -14,7 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&family=Orbitron:wght@700;900&family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 
 <style>
-/* ── WELCOME SCREEN UPGRADE ─────────────────────────────────────────────── */
+/* ── WELCOME SCREEN ─────────────────────────────────────────────── */
 .welcomeScreen {
   display: flex;
   flex-direction: column;
@@ -27,12 +27,12 @@
   overflow: hidden;
 }
 
-/* Background orbs */
+/* Background orbs - GOLD */
 .welcomeScreen::before {
   content: '';
   position: absolute;
   width: 500px; height: 500px;
-  background: radial-gradient(circle, rgba(0,255,136,0.06) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255,215,0,0.06) 0%, transparent 70%);
   top: 50%; left: 50%;
   transform: translate(-50%, -60%);
   pointer-events: none;
@@ -42,7 +42,7 @@
   content: '';
   position: absolute;
   width: 300px; height: 300px;
-  background: radial-gradient(circle, rgba(0,204,255,0.05) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255,140,0,0.05) 0%, transparent 70%);
   bottom: 20%; right: 10%;
   pointer-events: none;
   border-radius: 50%;
@@ -53,7 +53,7 @@
   border-radius: 20px;
   object-fit: cover;
   margin-bottom: 20px;
-  box-shadow: 0 0 32px rgba(0,255,136,0.2);
+  box-shadow: 0 0 32px rgba(255,215,0,0.25);
   animation: welcomeFloat 3s ease-in-out infinite;
 }
 
@@ -67,7 +67,7 @@
   font-weight: 600;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: #00ff88;
+  color: #ffd700;
   margin-bottom: 10px;
   font-family: 'Rajdhani', sans-serif;
   opacity: 0;
@@ -75,10 +75,11 @@
 }
 
 .welcomeTitle {
-  font-family: 'Syne', sans-serif !important;
-  font-size: clamp(28px, 5vw, 44px) !important;
-  font-weight: 800 !important;
-  background: linear-gradient(135deg, #ffffff, #00ff88, #00ccff) !important;
+  font-family: 'Bebas Neue', sans-serif !important;
+  font-size: clamp(28px, 5vw, 52px) !important;
+  font-weight: 400 !important;
+  letter-spacing: 4px !important;
+  background: linear-gradient(135deg, #fff8e7, #ffd700, #ff8c00) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
@@ -86,13 +87,15 @@
   margin-bottom: 10px !important;
   opacity: 0;
   animation: fadeSlideUp 0.6s 0.2s ease forwards;
+  filter: drop-shadow(0 0 20px rgba(255,215,0,0.2));
 }
 
 .welcomeSub {
   font-size: 15px;
-  color: #555;
+  color: #665500;
   margin-bottom: 36px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
   opacity: 0;
   animation: fadeSlideUp 0.6s 0.3s ease forwards;
 }
@@ -113,26 +116,27 @@
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,215,0,0.05);
+  border: 1px solid rgba(255,215,0,0.12);
   border-radius: 100px;
   font-size: 12px;
-  color: #888;
-  font-family: 'DM Sans', sans-serif;
+  color: #665500;
+  font-family: 'Rajdhani', sans-serif;
+  letter-spacing: 0.5px;
   transition: all 0.2s;
   cursor: default;
 }
 .welcomeBadge:hover {
-  border-color: rgba(0,255,136,0.3);
-  color: #ccc;
-  background: rgba(0,255,136,0.05);
+  border-color: rgba(255,215,0,0.35);
+  color: #ffd700;
+  background: rgba(255,215,0,0.08);
 }
 .welcomeBadge span { font-size: 14px; }
 
 /* Suggestion chips */
 .welcomeSuggestLabel {
   font-size: 11px;
-  color: #444;
+  color: #443300;
   letter-spacing: 2px;
   text-transform: uppercase;
   font-family: 'Rajdhani', sans-serif;
@@ -152,23 +156,24 @@
 }
 
 .chip {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,215,0,0.03);
+  border: 1px solid rgba(255,215,0,0.08);
   border-radius: 14px;
   padding: 14px 16px;
   text-align: left;
   cursor: pointer;
   transition: all 0.2s;
-  color: #aaa;
+  color: #665500;
   font-size: 13px;
   font-family: 'DM Sans', sans-serif;
   line-height: 1.5;
 }
 .chip:hover {
-  background: rgba(0,255,136,0.06);
-  border-color: rgba(0,255,136,0.25);
-  color: #eee;
+  background: rgba(255,215,0,0.07);
+  border-color: rgba(255,215,0,0.3);
+  color: #fff8e7;
   transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(255,215,0,0.08);
 }
 .chipIcon {
   font-size: 20px;
@@ -176,14 +181,17 @@
   display: block;
 }
 .chipTitle {
-  font-weight: 600;
+  font-weight: 700;
   font-size: 13px;
-  color: #ddd;
+  color: #cc9900;
   margin-bottom: 3px;
+  font-family: 'Rajdhani', sans-serif;
+  letter-spacing: 0.5px;
 }
+.chip:hover .chipTitle { color: #ffd700; }
 .chipDesc {
   font-size: 11px;
-  color: #555;
+  color: #443300;
 }
 
 @keyframes fadeSlideUp {
@@ -221,9 +229,8 @@
 <!-- SIDEBAR -->
 <div class="sidebar">
 
-  <!-- TOP: Logo + New Chat -->
   <div class="sidebarTop">
-    <div class="sidebarBrand">Datta AI</div>
+    <div class="sidebarBrand">👑 Datta AI</div>
     <button class="newChatBtn" onclick="newChat()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10"></circle>
@@ -234,7 +241,6 @@
     </button>
   </div>
 
-  <!-- NAV ITEMS -->
   <div class="sidebarNav">
     <button class="navItem active" onclick="showSection('chats')">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -258,21 +264,16 @@
   </div>
 
   <div class="sidebarDivider"></div>
-
-  <!-- RECENTS LABEL -->
   <div class="recentsLabel" id="recentsLabel">Recents</div>
-
-  <!-- SEARCH -->
   <input id="search" class="searchBox" type="text" placeholder="Search chats" onkeyup="searchChats()">
 
-  <!-- SECTIONS -->
   <div class="sidebarSection" id="section-chats">
     <div class="history" id="history"></div>
   </div>
 
   <div class="sidebarSection" id="section-projects" style="display:none;">
     <div class="emptySection">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="1.5">
         <rect x="2" y="7" width="20" height="14" rx="2"></rect>
         <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path>
       </svg>
@@ -282,7 +283,7 @@
 
   <div class="sidebarSection" id="section-artifacts" style="display:none;">
     <div class="emptySection">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="1.5">
         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
       </svg>
       <p>No artifacts yet</p>
@@ -291,24 +292,24 @@
 
   <!-- UPGRADE BUTTON -->
   <div class="upgradeBtn" onclick="window.location.href='pricing.html'">
-    <span>🔥</span>
+    <span>👑</span>
     <div>
-      <div style="font-size:13px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;">Upgrade to Agni</div>
-      <div style="font-size:11px;color:#888;">Unlimited power • ₹499/mo</div>
+      <div style="font-size:13px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;color:#ffd700;">Upgrade to Agni</div>
+      <div style="font-size:11px;color:#665500;">Unlimited power • ₹499/mo</div>
     </div>
-    <span style="color:#00ff88;font-size:16px;">›</span>
+    <span style="color:#ffd700;font-size:16px;">›</span>
   </div>
 
   <!-- VERSION TAG -->
-  <div style="text-align:center;font-size:10px;color:#333;letter-spacing:2px;padding:4px 0;font-family:'Rajdhani',sans-serif;" id="versionTag">DATTA AI v2.0 · SHAKTI</div>
+  <div style="text-align:center;font-size:10px;color:#332200;letter-spacing:2px;padding:4px 0;font-family:'Rajdhani',sans-serif;" id="versionTag">DATTA AI v2.0 · SHAKTI</div>
 
   <!-- LEGAL LINKS -->
   <div style="text-align:center;padding:4px 0 6px;display:flex;justify-content:center;gap:10px;">
-    <a href="privacy.html" style="font-size:10px;color:#333;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;transition:color 0.2s;" onmouseover="this.style.color='#00ff88'" onmouseout="this.style.color='#333'">Privacy</a>
-    <span style="color:#2a2a2a;font-size:10px;">·</span>
-    <a href="terms.html" style="font-size:10px;color:#333;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;transition:color 0.2s;" onmouseover="this.style.color='#00ff88'" onmouseout="this.style.color='#333'">Terms</a>
-    <span style="color:#2a2a2a;font-size:10px;">·</span>
-    <a href="home.html" style="font-size:10px;color:#333;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;transition:color 0.2s;" onmouseover="this.style.color='#00ff88'" onmouseout="this.style.color='#333'">About</a>
+    <a href="privacy.html" style="font-size:10px;color:#332200;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;transition:color 0.2s;" onmouseover="this.style.color='#ffd700'" onmouseout="this.style.color='#332200'">Privacy</a>
+    <span style="color:#2a2000;font-size:10px;">·</span>
+    <a href="terms.html" style="font-size:10px;color:#332200;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;transition:color 0.2s;" onmouseover="this.style.color='#ffd700'" onmouseout="this.style.color='#332200'">Terms</a>
+    <span style="color:#2a2000;font-size:10px;">·</span>
+    <a href="home.html" style="font-size:10px;color:#332200;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;transition:color 0.2s;" onmouseover="this.style.color='#ffd700'" onmouseout="this.style.color='#332200'">About</a>
   </div>
 
   <!-- BOTTOM USER PROFILE -->
@@ -340,14 +341,13 @@
 <!-- MAIN CHAT AREA -->
 <div class="main">
 
-  <!-- WELCOME SCREEN - UPGRADED -->
+  <!-- WELCOME SCREEN -->
   <div id="welcomeScreen" class="welcomeScreen">
     <img src="logo.jpeg" alt="Datta AI" class="welcomeLogo">
     <div class="welcomeGreeting">Good to see you 👋</div>
     <h1 class="welcomeTitle">How can I help you today?</h1>
     <p class="welcomeSub">Think Less. Do More.</p>
 
-    <!-- Feature Badges -->
     <div class="welcomeBadges">
       <div class="welcomeBadge"><span>💬</span> AI Chat</div>
       <div class="welcomeBadge"><span>🎨</span> Image Generation</div>
@@ -355,7 +355,6 @@
       <div class="welcomeBadge"><span>🎙️</span> Voice Assistant</div>
     </div>
 
-    <!-- Suggestion Chips -->
     <div class="welcomeSuggestLabel">Try asking</div>
     <div class="welcomeChips">
       <div class="chip" onclick="fillPrompt('Generate image of a futuristic city at night')">
@@ -390,13 +389,10 @@
   <!-- INPUT -->
   <div class="inputArea" id="inputArea">
     <div class="inputWrap" id="inputWrap">
-
-      <!-- Hidden file inputs -->
       <input type="file" id="imageInput" accept="image/*,.pdf,.txt,.csv,.js,.py,.html,.css,.json,.md,.doc,.docx" style="display:none;">
       <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
       <input type="file" id="photoInput" accept="image/*" style="display:none;">
 
-      <!-- File preview -->
       <div id="filePreviewWrap" style="display:none;">
         <div class="filePreviewChip">
           <span id="filePreview"></span>
@@ -404,7 +400,6 @@
         </div>
       </div>
 
-      <!-- Bottom row -->
       <div class="inputRow">
         <button class="plusBtn" id="plusBtn" onclick="togglePlusMenu()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -437,7 +432,6 @@
           </button>
         </div>
       </div>
-
     </div>
   </div>
 
@@ -446,7 +440,6 @@
 <script src="chat.js?v=7"></script>
 
 <script>
-  // SPLASH SCREEN
   window.addEventListener("load", function() {
     setTimeout(function() {
       const splash = document.getElementById("splash")
@@ -454,7 +447,6 @@
     }, 3000)
   })
 
-  // GREET by time of day
   window.addEventListener("DOMContentLoaded", function() {
     const hour = new Date().getHours()
     let greet = "Good to see you 👋"
@@ -466,7 +458,6 @@
     if (el) el.textContent = greet
   })
 
-  // BOTTOM SHEET
   function togglePlusMenu() {
     const sheet = document.getElementById("addToChatSheet")
     const overlay = document.getElementById("addToChatOverlay")
@@ -502,7 +493,6 @@
   window.toggleWebSearch = toggleWebSearch
   window.handleWebSearchToggle = handleWebSearchToggle
 
-  // FILE HELPERS
   function showFilePreview(file) {
     const preview = document.getElementById("filePreview")
     const wrap = document.getElementById("filePreviewWrap")
@@ -673,7 +663,7 @@
     <div class="voiceRing ring2"></div>
     <div class="voiceRing ring3"></div>
     <div class="voiceCore">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2">
         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
         <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
         <line x1="12" y1="19" x2="12" y2="23"></line>
