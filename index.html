@@ -197,6 +197,11 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes autoMoodIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
 @media (max-width: 500px) {
   .welcomeChips { grid-template-columns: 1fr; }
   .welcomeBadges { gap: 6px; }
@@ -256,7 +261,22 @@
   <button onclick="toggleSidebar()" class="menuBtn">☰</button>
   <span class="topTitle">Datta AI</span>
   <div style="margin-left:auto;display:flex;align-items:center;gap:6px;padding-right:6px;">
+
+    <!-- AUTO MOOD PILL — appears when mood is detected from message -->
+    <div id="autoMoodPill" onclick="toggleMoodPanel()" style="
+      display:none;align-items:center;gap:5px;
+      padding:3px 10px;border-radius:20px;
+      border:1px solid rgba(255,215,0,0.2);
+      background:rgba(255,215,0,0.05);
+      font-family:'Rajdhani',sans-serif;font-size:11px;
+      font-weight:600;letter-spacing:1px;color:#665500;
+      cursor:pointer;transition:all 0.4s ease;
+      animation:autoMoodIn 0.4s ease;
+    "></div>
+
+    <!-- MANUAL MOOD INDICATOR — appears when mood is manually set -->
     <div id="moodIndicator" onclick="toggleMoodPanel()" style="display:none;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;border:1px solid rgba(255,215,0,0.3);background:rgba(255,215,0,0.08);font-family:Rajdhani,sans-serif;font-size:12px;font-weight:600;letter-spacing:1px;color:#ffd700;cursor:pointer;transition:all 0.2s;"></div>
+
     <button id="moodBtn" onclick="toggleMoodPanel()" title="Set your mood" style="background:none;border:1px solid rgba(255,255,255,0.08);cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all 0.2s;">😊</button>
     <button id="topbarColorBtn" onclick="toggleColorPanel()" title="Change Theme Color" style="background:none;border:none;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all 0.2s;position:relative;">
       <div id="topbarColorDot" style="width:22px;height:22px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent-glow);border:2px solid rgba(255,255,255,0.15);transition:all 0.3s;"></div>
