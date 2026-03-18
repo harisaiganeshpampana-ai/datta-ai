@@ -1,0 +1,63 @@
+<!--
+  ═══════════════════════════════════════════════════════
+  DATTA AI — ACCENT COLOR PICKER
+  Paste this INSIDE your tab-appearance div in index.html
+  REPLACE the existing tab-appearance sSection blocks
+  ═══════════════════════════════════════════════════════
+-->
+
+<div class="sTabContent active" id="tab-appearance">
+
+  <!-- ACCENT COLOR -->
+  <div class="sSection accentSection">
+    <div class="sLabel">🎨 Accent Color</div>
+    <div class="sHint" style="margin-bottom:14px;">Choose your theme color. Gold is the default.</div>
+
+    <!-- PRESET SWATCHES -->
+    <div class="presetColors">
+      <button class="presetColor active" data-color="#ffd700" style="background:#ffd700;" title="Gold (Default)" onclick="dattaTheme.saveAndApply('#ffd700')"></button>
+      <button class="presetColor" data-color="#00ff88" style="background:#00ff88;" title="Green" onclick="dattaTheme.saveAndApply('#00ff88')"></button>
+      <button class="presetColor" data-color="#00ccff" style="background:#00ccff;" title="Cyan" onclick="dattaTheme.saveAndApply('#00ccff')"></button>
+      <button class="presetColor" data-color="#c084fc" style="background:#c084fc;" title="Purple" onclick="dattaTheme.saveAndApply('#c084fc')"></button>
+      <button class="presetColor" data-color="#f97316" style="background:#f97316;" title="Orange" onclick="dattaTheme.saveAndApply('#f97316')"></button>
+      <button class="presetColor" data-color="#ef4444" style="background:#ef4444;" title="Red" onclick="dattaTheme.saveAndApply('#ef4444')"></button>
+      <button class="presetColor" data-color="#3b82f6" style="background:#3b82f6;" title="Blue" onclick="dattaTheme.saveAndApply('#3b82f6')"></button>
+      <button class="presetColor" data-color="#ec4899" style="background:#ec4899;" title="Pink" onclick="dattaTheme.saveAndApply('#ec4899')"></button>
+    </div>
+
+    <!-- CUSTOM COLOR PICKER -->
+    <div class="customColorRow">
+      <label>Custom:</label>
+      <input
+        type="color"
+        id="accentColorPicker"
+        value="#ffd700"
+        oninput="dattaTheme.saveAndApply(this.value)"
+        title="Pick any color"
+      >
+      <button class="resetAccentBtn" onclick="dattaTheme.saveAndApply(dattaTheme.DEFAULT)">
+        👑 Reset to Gold
+      </button>
+    </div>
+  </div>
+
+  <!-- THEME (dark/light) -->
+  <div class="sSection">
+    <div class="sLabel">Theme</div>
+    <div class="themeOptions">
+      <button class="themeBtn active" id="themeDark" onclick="setTheme('dark')">🌙 Dark</button>
+      <button class="themeBtn" id="themeLight" onclick="setTheme('light')">☀️ Light</button>
+    </div>
+  </div>
+
+  <!-- FONT SIZE -->
+  <div class="sSection">
+    <div class="sLabel">Font Size</div>
+    <div class="sRow">
+      <button class="fontBtn" onclick="setFontSize('small')">Small</button>
+      <button class="fontBtn active" onclick="setFontSize('medium')">Medium</button>
+      <button class="fontBtn" onclick="setFontSize('large')">Large</button>
+    </div>
+  </div>
+
+</div>
