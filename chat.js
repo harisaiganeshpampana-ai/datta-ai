@@ -150,10 +150,13 @@ async function send() {
           <span class="stream"></span>
         </div>
         <div class="aiActions">
-          <button onclick="copyText(this)"><i data-lucide="copy"></i></button>
-          <button onclick="speakText(this)"><i data-lucide="volume-2"></i></button>
-          <button onclick="stopVoice()"><i data-lucide="square"></i></button>
-          <button onclick="regenerateFrom(this)"><i data-lucide="refresh-ccw"></i></button>
+          <button class="actionBtn" title="Copy" onclick="copyText(this)"><i data-lucide="copy"></i></button>
+          <button class="actionBtn" title="Speak" onclick="speakText(this)"><i data-lucide="volume-2"></i></button>
+          <button class="actionBtn" title="Stop" onclick="stopVoice()"><i data-lucide="square"></i></button>
+          <button class="actionBtn" title="Regenerate" onclick="regenerateFrom(this)"><i data-lucide="refresh-ccw"></i></button>
+          <div class="actionDivider"></div>
+          <button class="actionBtn likeBtn" title="Good response" onclick="likeMsg(this)"><i data-lucide="thumbs-up"></i></button>
+          <button class="actionBtn dislikeBtn" title="Bad response" onclick="dislikeMsg(this)"><i data-lucide="thumbs-down"></i></button>
         </div>
       </div>
     `
@@ -247,10 +250,13 @@ async function openChat(chatId) {
           <div class="aiContent">
             <div class="aiBubble">${marked.parse(m.content)}</div>
             <div class="aiActions">
-              <button class="actionBtn" onclick="copyText(this)"><i data-lucide="copy"></i></button>
-              <button class="actionBtn" onclick="speakText(this)"><i data-lucide="volume-2"></i></button>
-              <button class="actionBtn" onclick="stopVoice()"><i data-lucide="square"></i></button>
-              <button class="actionBtn" onclick="regenerateFrom(this)"><i data-lucide="refresh-cw"></i></button>
+              <button class="actionBtn" title="Copy" onclick="copyText(this)"><i data-lucide="copy"></i></button>
+              <button class="actionBtn" title="Speak" onclick="speakText(this)"><i data-lucide="volume-2"></i></button>
+              <button class="actionBtn" title="Stop" onclick="stopVoice()"><i data-lucide="square"></i></button>
+              <button class="actionBtn" title="Regenerate" onclick="regenerateFrom(this)"><i data-lucide="refresh-cw"></i></button>
+              <div class="actionDivider"></div>
+              <button class="actionBtn likeBtn" title="Good response" onclick="likeMsg(this)"><i data-lucide="thumbs-up"></i></button>
+              <button class="actionBtn dislikeBtn" title="Bad response" onclick="dislikeMsg(this)"><i data-lucide="thumbs-down"></i></button>
             </div>
           </div>
         </div>
@@ -739,3 +745,33 @@ window.saveLanguage = saveLanguage
 window.saveNotifSettings = saveNotifSettings
 window.deleteAllChats = deleteAllChats
 window.deleteAccount = deleteAccount
+
+// LIKE / DISLIKE
+function likeMsg(btn) {
+  const wasActive = btn.classList.contains("active")
+  const row = btn.closest(".aiActions")
+  row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => {
+    b.classList.remove("active")
+    b.style.color = ""
+  })
+  if (!wasActive) {
+    btn.classList.add("active")
+    btn.style.color = "#00ff88"
+  }
+}
+
+function dislikeMsg(btn) {
+  const wasActive = btn.classList.contains("active")
+  const row = btn.closest(".aiActions")
+  row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => {
+    b.classList.remove("active")
+    b.style.color = ""
+  })
+  if (!wasActive) {
+    btn.classList.add("active")
+    btn.style.color = "#ff4444"
+  }
+}
+
+window.likeMsg = likeMsg
+window.dislikeMsg = dislikeMsg
