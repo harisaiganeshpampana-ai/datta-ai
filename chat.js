@@ -509,6 +509,60 @@ async function send() {
   }
 }
 
+// ─── LANGUAGE HELPERS ────────────────────────────────────────────────────────
+
+// Map language name to BCP-47 code for SpeechRecognition
+function getLangCode(langName) {
+  const map = {
+    "English": "en-IN",
+    "Hindi": "hi-IN",
+    "Telugu": "te-IN",
+    "Tamil": "ta-IN",
+    "Kannada": "kn-IN",
+    "Malayalam": "ml-IN",
+    "Bengali": "bn-IN",
+    "Marathi": "mr-IN",
+    "Gujarati": "gu-IN",
+    "Punjabi": "pa-IN",
+    "Urdu": "ur-PK",
+    "Spanish": "es-ES",
+    "French": "fr-FR",
+    "German": "de-DE",
+    "Arabic": "ar-SA",
+    "Chinese": "zh-CN",
+    "Japanese": "ja-JP",
+    "Korean": "ko-KR",
+    "Portuguese": "pt-BR",
+    "Russian": "ru-RU",
+    "Italian": "it-IT",
+    "Dutch": "nl-NL",
+    "Turkish": "tr-TR",
+    "Vietnamese": "vi-VN",
+    "Thai": "th-TH",
+    "Indonesian": "id-ID",
+    "Malay": "ms-MY",
+  }
+  return map[langName] || "en-IN"
+}
+
+// Auto-detect language from text script
+function detectTextLanguage(text) {
+  if (!text) return getLangCode(localStorage.getItem("datta_language") || "English")
+  if (/[ऀ-ॿ]/.test(text)) return "hi-IN"   // Hindi/Devanagari
+  if (/[ఀ-౿]/.test(text)) return "te-IN"   // Telugu
+  if (/[஀-௿]/.test(text)) return "ta-IN"   // Tamil
+  if (/[ಀ-೿]/.test(text)) return "kn-IN"   // Kannada
+  if (/[ഀ-ൿ]/.test(text)) return "ml-IN"   // Malayalam
+  if (/[ঀ-৿]/.test(text)) return "bn-IN"   // Bengali
+  if (/[؀-ۿ]/.test(text)) return "ar-SA"   // Arabic/Urdu
+  if (/[一-鿿]/.test(text)) return "zh-CN"   // Chinese
+  if (/[぀-ヿ]/.test(text)) return "ja-JP"   // Japanese
+  if (/[가-힯]/.test(text)) return "ko-KR"   // Korean
+  if (/[Ѐ-ӿ]/.test(text)) return "ru-RU"   // Russian
+  // Default to user's selected language
+  return getLangCode(localStorage.getItem("datta_language") || "English")
+}
+
 // ─── LOAD SIDEBAR ─────────────────────────────────────────────────────────────
 async function loadSidebar() {
   try {
@@ -598,7 +652,11 @@ function copyText(btn) {
 function speakText(btn) {
   const text = btn.closest(".aiContent").querySelector(".aiBubble").innerText
   const speech = new SpeechSynthesisUtterance(text)
-  speech.lang = "en-US"
+  const detectedLang = detectTextLanguage(text)
+  speech.lang = detectedLang
+  const voices = speechSynthesis.getVoices()
+  const match = voices.find(v => v.lang.startsWith(detectedLang.split("-")[0]))
+  if (match) speech.voice = match
   speechSynthesis.speak(speech)
 }
 
@@ -687,7 +745,7 @@ function startAssistant() {
   }
 
   inlineRecognition = new SpeechRecognition()
-  inlineRecognition.lang = "en-IN"
+  inlineRecognition.lang = getLangCode(localStorage.getItem("datta_language") || "English")
   inlineRecognition.continuous = false
   inlineRecognition.interimResults = true
   inlineRecognition.maxAlternatives = 1
@@ -1163,7 +1221,7 @@ function startListening() {
   stopSpeaking()
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
   voiceRecognition = new SpeechRecognition()
-  voiceRecognition.lang = "en-US"
+  voiceRecognition.lang = getLangCode(localStorage.getItem("datta_language") || "English")
   voiceRecognition.continuous = false
   voiceRecognition.interimResults = true
   voiceRecognition.onstart = () => { isListening = true; setVoiceStatus("Listening...", "listening"); setVoiceText("") }
@@ -1272,16 +1330,18 @@ function speakText2(text) {
   isSpeaking = true
   setVoiceStatus("Speaking...", "speaking")
   const utterance = new SpeechSynthesisUtterance(text)
-  utterance.lang = "en-US"
+  const detectedLang2 = detectTextLanguage(text)
+  utterance.lang = detectedLang2
   utterance.rate = 0.95
   utterance.pitch = 1.0
   utterance.volume = 1.0
   const voices = voiceSynth.getVoices()
-  const preferred = voices.find(v =>
-    v.name.includes("Google") || v.name.includes("Samantha") ||
-    v.name.includes("Karen") || v.name.includes("Female") ||
-    (v.lang === "en-US" && !v.name.includes("Male"))
-  )
+  // Find best voice for detected language
+  const langCode = detectedLang2.split("-")[0]
+  const preferred = voices.find(v => v.lang === detectedLang2 && !v.name.includes("Male"))
+    || voices.find(v => v.lang.startsWith(langCode) && !v.name.includes("Male"))
+    || voices.find(v => v.lang.startsWith(langCode))
+    || voices.find(v => v.name.includes("Google") || v.name.includes("Samantha"))
   if (preferred) utterance.voice = preferred
   utterance.onend = () => {
     isSpeaking = false
