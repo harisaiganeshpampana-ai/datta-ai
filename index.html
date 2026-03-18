@@ -357,5 +357,35 @@
   </div>
 </div>
 
+
+<!-- VOICE ASSISTANT OVERLAY -->
+<div id="voiceOverlay" class="voiceOverlay">
+  <div class="voiceOrb" id="voiceOrb">
+    <div class="voiceRing ring1"></div>
+    <div class="voiceRing ring2"></div>
+    <div class="voiceRing ring3"></div>
+    <div class="voiceCore">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+        <line x1="12" y1="19" x2="12" y2="23"></line>
+        <line x1="8" y1="23" x2="16" y2="23"></line>
+      </svg>
+    </div>
+  </div>
+  <div class="voiceStatus" id="voiceStatus">Tap to speak</div>
+  <div class="voiceText" id="voiceText"></div>
+  <div class="voiceActions">
+    <button class="voiceActionBtn" id="voiceMicBtn" onclick="toggleVoiceListening()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+      </svg>
+      Hold to Talk
+    </button>
+    <button class="voiceActionBtn voiceCloseBtn" onclick="closeVoiceAssistant()">✕ Close</button>
+  </div>
+</div>
+
 </body>
 </html>
