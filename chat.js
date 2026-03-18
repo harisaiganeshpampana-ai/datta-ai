@@ -650,10 +650,99 @@ async function regenerateFrom(btn) {
   lucide.createIcons()
 }
 
-// ─── VOICE INPUT ──────────────────────────────────────────────────────────────
+// ─── MIC BUTTON — directly listens into input box (like Claude) ───────────────
+let inlineListening = false
+let inlineRecognition = null
+
 function startAssistant() {
-  openVoiceAssistant()
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+  if (!SpeechRecognition) {
+    // Fallback to voice overlay if not supported
+    openVoiceAssistant()
+    return
+  }
+
+  if (inlineListening) {
+    stopInlineListening()
+    return
+  }
+
+  const input = document.getElementById("message")
+  const micBtn = document.getElementById("micBtn")
+
+  inlineListening = true
+
+  // Visual feedback on mic button
+  if (micBtn) {
+    micBtn.style.color = "#ff4444"
+    micBtn.style.background = "rgba(255,60,60,0.1)"
+    micBtn.style.borderColor = "rgba(255,60,60,0.3)"
+    micBtn.title = "Listening... (click to stop)"
+  }
+
+  // Show listening indicator inside input
+  if (input) {
+    input.placeholder = "🎤 Listening..."
+    input.style.borderColor = "rgba(255,60,60,0.3)"
+  }
+
+  inlineRecognition = new SpeechRecognition()
+  inlineRecognition.lang = "en-IN"
+  inlineRecognition.continuous = false
+  inlineRecognition.interimResults = true
+  inlineRecognition.maxAlternatives = 1
+
+  inlineRecognition.onresult = function(e) {
+    let interim = ""
+    let final = ""
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript
+      else interim += e.results[i][0].transcript
+    }
+    if (input) input.value = final || interim
+  }
+
+  inlineRecognition.onend = function() {
+    stopInlineListening()
+    // Auto-send if there's text
+    const text = document.getElementById("message")?.value.trim()
+    if (text) {
+      setTimeout(() => send(), 300)
+    }
+  }
+
+  inlineRecognition.onerror = function(e) {
+    stopInlineListening()
+    if (input) input.placeholder = "Message Datta AI..."
+  }
+
+  inlineRecognition.start()
 }
+
+function stopInlineListening() {
+  inlineListening = false
+  const micBtn = document.getElementById("micBtn")
+  const input = document.getElementById("message")
+
+  if (inlineRecognition) {
+    try { inlineRecognition.stop() } catch(e) {}
+    inlineRecognition = null
+  }
+
+  if (micBtn) {
+    micBtn.style.color = ""
+    micBtn.style.background = ""
+    micBtn.style.borderColor = ""
+    micBtn.title = "Voice"
+  }
+
+  if (input) {
+    input.placeholder = "Message Datta AI..."
+    input.style.borderColor = ""
+  }
+}
+
+window.stopInlineListening = stopInlineListening
 
 // ─── TOGGLE MENU ─────────────────────────────────────────────────────────────
 function toggleMenu(e, id) {
@@ -1210,7 +1299,7 @@ function stopSpeaking() {
   isSpeaking = false
 }
 
-window.startAssistant = function() { openVoiceAssistant() }
+window.startAssistant = startAssistant
 window.openVoiceAssistant = openVoiceAssistant
 window.closeVoiceAssistant = closeVoiceAssistant
 window.toggleVoiceListening = toggleVoiceListening
