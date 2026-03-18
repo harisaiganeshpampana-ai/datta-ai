@@ -154,33 +154,75 @@
   </div>
 
   <!-- INPUT -->
-  <div class="inputArea">
-    <div class="inputWrap">
+  <div class="inputArea" id="inputArea">
 
+    <!-- PLUS MENU -->
+    <div class="plusMenu" id="plusMenu">
+      <button class="plusMenuItem" onclick="triggerCamera()">
+        <span class="plusMenuIcon">📷</span>
+        <span>Camera</span>
+      </button>
+      <button class="plusMenuItem" onclick="triggerPhotos()">
+        <span class="plusMenuIcon">🖼️</span>
+        <span>Photos</span>
+      </button>
+      <button class="plusMenuItem" onclick="triggerFile()">
+        <span class="plusMenuIcon">📄</span>
+        <span>File</span>
+      </button>
+      <button class="plusMenuItem" onclick="triggerWebSearch()">
+        <span class="plusMenuIcon">🌐</span>
+        <span>Web Search</span>
+      </button>
+      <button class="plusMenuItem" onclick="triggerImageGen()">
+        <span class="plusMenuIcon">🎨</span>
+        <span>Generate Image</span>
+      </button>
+    </div>
+
+    <div class="inputWrap" id="inputWrap">
+
+      <!-- Hidden file inputs -->
       <input type="file" id="imageInput" accept="image/*,.pdf,.txt,.csv,.js,.py,.html,.css,.json,.md,.doc,.docx" style="display:none;">
-      <button id="uploadBtn" title="Attach file">+</button>
-      <span id="filePreview"></span>
-      <button id="clearFile" title="Remove file">✕</button>
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
+      <input type="file" id="photoInput" accept="image/*" style="display:none;">
 
-      <input id="message" type="text" placeholder="Ask Datta AI" autocomplete="off">
+      <!-- File preview -->
+      <div id="filePreviewWrap" style="display:none;">
+        <div class="filePreviewChip">
+          <span id="filePreview"></span>
+          <button id="clearFile" onclick="clearFileSelection()">✕</button>
+        </div>
+      </div>
 
-      <button class="modeBtn">Fast</button>
+      <!-- Bottom row -->
+      <div class="inputRow">
+        <button class="plusBtn" id="plusBtn" onclick="togglePlusMenu()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
 
-      <button class="assistant" onclick="startAssistant()">
-        <svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
-          <line x1="6" y1="9" x2="6" y2="15"></line>
-          <line x1="10" y1="6" x2="10" y2="18"></line>
-          <line x1="14" y1="10" x2="14" y2="14"></line>
-          <line x1="18" y1="8" x2="18" y2="16"></line>
-        </svg>
-      </button>
+        <input id="message" type="text" placeholder="Ask Datta AI..." autocomplete="off">
 
-      <button class="send" onclick="send()">
-        <svg width="18" height="18" viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2">
-          <line x1="22" y1="2" x2="11" y2="13"></line>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-        </svg>
-      </button>
+        <div class="inputRightBtns">
+          <button class="iconBtn voiceBtn" onclick="startAssistant()" title="Voice">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="6" y1="9" x2="6" y2="15"></line>
+              <line x1="10" y1="6" x2="10" y2="18"></line>
+              <line x1="14" y1="10" x2="14" y2="14"></line>
+              <line x1="18" y1="8" x2="18" y2="16"></line>
+            </svg>
+          </button>
+          <button class="sendBtn" id="sendBtn" onclick="send()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+      </div>
 
     </div>
   </div>
@@ -190,33 +232,114 @@
 <script src="chat.js?v=6"></script>
 
 <script>
-  // File upload
-  const uploadBtn = document.getElementById("uploadBtn")
-  const fileInput = document.getElementById("imageInput")
-  const filePreview = document.getElementById("filePreview")
-  const clearFileBtn = document.getElementById("clearFile")
-
-  uploadBtn.addEventListener("click", () => fileInput.click())
-
-  fileInput.addEventListener("change", function() {
-    const file = fileInput.files[0]
-    if (!file) return
-    filePreview.textContent = "📄 " + file.name
-    clearFileBtn.style.display = "inline"
-  })
-
-  clearFileBtn.addEventListener("click", () => {
-    fileInput.value = ""
-    filePreview.textContent = ""
-    clearFileBtn.style.display = "none"
-  })
-
-  // Splash screen
+  // SPLASH SCREEN
   window.addEventListener("load", function() {
     setTimeout(function() {
-      document.getElementById("splash").classList.add("hide")
+      const splash = document.getElementById("splash")
+      if (splash) splash.classList.add("hide")
     }, 3000)
   })
+
+  // PLUS MENU
+  function togglePlusMenu() {
+    const menu = document.getElementById("plusMenu")
+    const btn = document.getElementById("plusBtn")
+    if (!menu) return
+    const isOpen = menu.classList.toggle("show")
+    btn.classList.toggle("active", isOpen)
+  }
+
+  // Close plus menu when clicking outside
+  document.addEventListener("click", function(e) {
+    const menu = document.getElementById("plusMenu")
+    const btn = document.getElementById("plusBtn")
+    if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
+      menu.classList.remove("show")
+      btn.classList.remove("active")
+    }
+  })
+
+  // FILE HELPERS
+  function getSelectedFile() {
+    const inputs = ["cameraInput","photoInput","imageInput"]
+    for (const id of inputs) {
+      const el = document.getElementById(id)
+      if (el && el.files && el.files[0]) return el.files[0]
+    }
+    return null
+  }
+
+  function showFilePreview(file) {
+    const preview = document.getElementById("filePreview")
+    const wrap = document.getElementById("filePreviewWrap")
+    if (preview) preview.textContent = "📄 " + file.name
+    if (wrap) wrap.style.display = "block"
+  }
+
+  function clearFileSelection() {
+    ["cameraInput","photoInput","imageInput"].forEach(id => {
+      const el = document.getElementById(id)
+      if (el) el.value = ""
+    })
+    const preview = document.getElementById("filePreview")
+    const wrap = document.getElementById("filePreviewWrap")
+    if (preview) preview.textContent = ""
+    if (wrap) wrap.style.display = "none"
+  }
+
+  window.clearFileSelection = clearFileSelection
+
+  // FILE INPUT LISTENERS
+  document.getElementById("imageInput").addEventListener("change", function() {
+    if (this.files[0]) { showFilePreview(this.files[0]); togglePlusMenu() }
+  })
+
+  document.getElementById("cameraInput").addEventListener("change", function() {
+    if (this.files[0]) { showFilePreview(this.files[0]); togglePlusMenu() }
+  })
+
+  document.getElementById("photoInput").addEventListener("change", function() {
+    if (this.files[0]) { showFilePreview(this.files[0]); togglePlusMenu() }
+  })
+
+  // PLUS MENU ACTIONS
+  function triggerCamera() {
+    document.getElementById("cameraInput").click()
+  }
+
+  function triggerPhotos() {
+    document.getElementById("photoInput").click()
+  }
+
+  function triggerFile() {
+    document.getElementById("imageInput").click()
+  }
+
+  function triggerWebSearch() {
+    const input = document.getElementById("message")
+    if (input) {
+      input.placeholder = "Search the web..."
+      input.focus()
+    }
+    togglePlusMenu()
+  }
+
+  function triggerImageGen() {
+    const input = document.getElementById("message")
+    if (input) {
+      input.value = "generate image of "
+      input.focus()
+      input.setSelectionRange(input.value.length, input.value.length)
+    }
+    togglePlusMenu()
+  }
+
+  window.triggerCamera = triggerCamera
+  window.triggerPhotos = triggerPhotos
+  window.triggerFile = triggerFile
+  window.triggerWebSearch = triggerWebSearch
+  window.triggerImageGen = triggerImageGen
+  window.togglePlusMenu = togglePlusMenu
 </script>
 
 
