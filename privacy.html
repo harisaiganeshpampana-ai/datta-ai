@@ -5,101 +5,184 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Privacy Policy | Datta AI</title>
 <link rel="icon" type="image/jpeg" href="logo.jpeg">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
-    --grad: linear-gradient(135deg, #7c3aed, #2563eb, #ec4899);
-    --dark: #08070f;
-    --card: #13111f;
-    --border: rgba(255,255,255,0.07);
-    --text: #f0eeff;
-    --muted: #8b85a8;
+    --grad: linear-gradient(135deg, #ffd700, #ff8c00);
+    --grad2: linear-gradient(135deg, #ffd700, #ffaa00, #ff8c00);
+    --dark: #080800;
+    --card: #0f0e00;
+    --card2: #111100;
+    --border: rgba(255,215,0,0.08);
+    --border-hover: rgba(255,215,0,0.2);
+    --text: #fff8e7;
+    --muted: #9a8a60;
+    --gold: #ffd700;
+    --orange: #ff8c00;
   }
+
   body { background: var(--dark); color: var(--text); font-family: 'DM Sans', sans-serif; }
 
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--dark); }
+  ::-webkit-scrollbar-thumb { background: rgba(255,215,0,0.3); border-radius: 3px; }
+
+  /* NAV */
   nav {
     position: sticky; top: 0; z-index: 100;
     padding: 18px 48px;
     display: flex; align-items: center; justify-content: space-between;
-    background: rgba(8,7,15,0.9); backdrop-filter: blur(20px);
+    background: rgba(8,8,0,0.92); backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
   }
-  .nav-logo { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
-  .nav-back { font-size: 14px; color: var(--muted); text-decoration: none; transition: color 0.2s; }
-  .nav-back:hover { color: var(--text); }
 
+  .nav-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px; letter-spacing: 4px;
+    background: var(--grad);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    text-decoration: none;
+    filter: drop-shadow(0 0 8px rgba(255,215,0,0.3));
+  }
+
+  .nav-back {
+    font-size: 14px; color: var(--muted);
+    text-decoration: none; transition: color 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .nav-back:hover { color: var(--gold); }
+
+  /* HERO */
   .page-hero {
     padding: 72px 48px 48px;
-    max-width: 800px;
-    margin: 0 auto;
+    max-width: 800px; margin: 0 auto;
   }
+
   .page-tag {
     display: inline-block;
     font-size: 11px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase;
-    color: #a78bfa; margin-bottom: 16px;
+    color: var(--gold);
+    background: rgba(255,215,0,0.08);
+    border: 1px solid rgba(255,215,0,0.2);
+    padding: 4px 12px; border-radius: 20px;
+    margin-bottom: 20px;
   }
-  .page-hero h1 { font-family: 'Syne', sans-serif; font-size: 48px; font-weight: 800; margin-bottom: 12px; }
-  .page-hero p { font-size: 16px; color: var(--muted); line-height: 1.7; }
-  .updated { font-size: 13px; color: #555; margin-top: 12px; }
 
+  .page-hero h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 56px; letter-spacing: 4px;
+    background: var(--grad2);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 16px;
+    filter: drop-shadow(0 0 20px rgba(255,215,0,0.2));
+  }
+
+  .page-hero p { font-size: 16px; color: var(--muted); line-height: 1.7; }
+  .updated {
+    font-size: 13px; color: #443a00; margin-top: 12px;
+    font-family: 'Rajdhani', sans-serif; letter-spacing: 1px;
+  }
+
+  /* CONTENT */
   .content {
-    max-width: 800px;
-    margin: 0 auto;
+    max-width: 800px; margin: 0 auto;
     padding: 0 48px 100px;
   }
 
   .section-block {
-    margin-bottom: 48px;
+    margin-bottom: 24px;
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 32px;
+    transition: border-color 0.3s, box-shadow 0.3s;
   }
+
+  .section-block:hover {
+    border-color: var(--border-hover);
+    box-shadow: 0 0 30px rgba(255,215,0,0.04);
+  }
+
   .section-block h2 {
-    font-family: 'Syne', sans-serif;
-    font-size: 20px; font-weight: 700;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 3px;
     margin-bottom: 16px;
     background: var(--grad);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     display: inline-block;
   }
-  .section-block p { font-size: 15px; color: var(--muted); line-height: 1.8; margin-bottom: 12px; }
-  .section-block p:last-child { margin-bottom: 0; }
-  .section-block ul { padding-left: 20px; }
-  .section-block ul li { font-size: 15px; color: var(--muted); line-height: 1.8; margin-bottom: 6px; }
 
+  .section-block p {
+    font-size: 15px; color: var(--muted);
+    line-height: 1.8; margin-bottom: 12px;
+  }
+  .section-block p:last-child { margin-bottom: 0; }
+
+  .section-block ul { padding-left: 20px; }
+  .section-block ul li {
+    font-size: 15px; color: var(--muted);
+    line-height: 1.8; margin-bottom: 8px;
+  }
+
+  .section-block strong { color: var(--gold); font-weight: 600; }
+
+  /* DIVIDER LINE accent */
+  .section-block::before {
+    content: '';
+    display: block;
+    width: 40px; height: 2px;
+    background: var(--grad);
+    border-radius: 2px;
+    margin-bottom: 20px;
+    opacity: 0.6;
+  }
+
+  /* FOOTER */
   footer {
     border-top: 1px solid var(--border);
     padding: 32px 48px;
-    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
   }
-  .footer-logo { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .footer-links { display: flex; gap: 20px; }
-  .footer-links a { font-size: 13px; color: var(--muted); text-decoration: none; }
-  .footer-links a:hover { color: var(--text); }
-  .footer-copy { font-size: 13px; color: var(--muted); }
 
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: var(--dark); }
-  ::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.4); border-radius: 3px; }
+  .footer-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px; letter-spacing: 4px;
+    background: var(--grad);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .footer-links { display: flex; gap: 20px; }
+  .footer-links a {
+    font-size: 13px; color: var(--muted);
+    text-decoration: none; transition: color 0.2s;
+    font-family: 'Rajdhani', sans-serif; letter-spacing: 1px;
+  }
+  .footer-links a:hover { color: var(--gold); }
+
+  .footer-copy {
+    font-size: 13px; color: #3a3200;
+    font-family: 'Rajdhani', sans-serif;
+  }
 
   @media (max-width: 768px) {
     nav, .page-hero, .content, footer { padding-left: 20px; padding-right: 20px; }
-    .page-hero h1 { font-size: 32px; }
+    .page-hero h1 { font-size: 40px; }
+    .section-block { padding: 24px; }
   }
 </style>
 </head>
 <body>
 
 <nav>
-  <a href="home.html" class="nav-logo">Datta AI</a>
+  <a href="home.html" class="nav-logo">👑 Datta AI</a>
   <a href="home.html" class="nav-back">← Back to Home</a>
 </nav>
 
 <div class="page-hero">
-  <span class="page-tag">Legal</span>
+  <span class="page-tag">⚖ Legal</span>
   <h1>Privacy Policy</h1>
   <p>We care about your privacy. This policy explains what data we collect, how we use it, and your rights as a user of Datta AI.</p>
   <div class="updated">Last updated: March 18, 2026</div>
@@ -139,7 +222,7 @@
 
   <div class="section-block">
     <h2>4. Chat History</h2>
-    <p>Your conversations with Datta AI are saved to your account to provide continuity across sessions. You can delete individual chats or all chat history at any time from Settings → Account → Delete All Chats.</p>
+    <p>Your conversations with Datta AI are saved to your account to provide continuity across sessions. You can delete individual chats or all chat history at any time from <strong>Settings → Account → Delete All Chats</strong>.</p>
     <p>Deleted chats are permanently removed from our servers and cannot be recovered.</p>
   </div>
 
@@ -168,7 +251,7 @@
       <li>Update your username and password from Settings.</li>
       <li>Export your chat history (feature coming soon).</li>
     </ul>
-    <p>To delete your account, go to Settings → Account → Delete Account, or contact us directly.</p>
+    <p>To delete your account, go to <strong>Settings → Account → Delete Account</strong>, or contact us directly.</p>
   </div>
 
   <div class="section-block">
@@ -189,7 +272,7 @@
 </div>
 
 <footer>
-  <div class="footer-logo">Datta AI</div>
+  <div class="footer-logo">👑 Datta AI</div>
   <div class="footer-links">
     <a href="home.html">Home</a>
     <a href="terms.html">Terms</a>
