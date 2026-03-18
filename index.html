@@ -4,12 +4,198 @@
 <meta charset="UTF-8">
 <title>Datta AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Datta AI - Think Less. Do More. Your AI assistant for chat, images, voice and web search.">
+<link rel="icon" type="image/jpeg" href="logo.jpeg">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&family=Orbitron:wght@700;900&family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ── WELCOME SCREEN UPGRADE ─────────────────────────────────────────────── */
+.welcomeScreen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px 24px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Background orbs */
+.welcomeScreen::before {
+  content: '';
+  position: absolute;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(0,255,136,0.06) 0%, transparent 70%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -60%);
+  pointer-events: none;
+  border-radius: 50%;
+}
+.welcomeScreen::after {
+  content: '';
+  position: absolute;
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(0,204,255,0.05) 0%, transparent 70%);
+  bottom: 20%; right: 10%;
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.welcomeLogo {
+  width: 72px; height: 72px;
+  border-radius: 20px;
+  object-fit: cover;
+  margin-bottom: 20px;
+  box-shadow: 0 0 32px rgba(0,255,136,0.2);
+  animation: welcomeFloat 3s ease-in-out infinite;
+}
+
+@keyframes welcomeFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.welcomeGreeting {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #00ff88;
+  margin-bottom: 10px;
+  font-family: 'Rajdhani', sans-serif;
+  opacity: 0;
+  animation: fadeSlideUp 0.6s 0.1s ease forwards;
+}
+
+.welcomeTitle {
+  font-family: 'Syne', sans-serif !important;
+  font-size: clamp(28px, 5vw, 44px) !important;
+  font-weight: 800 !important;
+  background: linear-gradient(135deg, #ffffff, #00ff88, #00ccff) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  line-height: 1.1 !important;
+  margin-bottom: 10px !important;
+  opacity: 0;
+  animation: fadeSlideUp 0.6s 0.2s ease forwards;
+}
+
+.welcomeSub {
+  font-size: 15px;
+  color: #555;
+  margin-bottom: 36px;
+  font-family: 'DM Sans', sans-serif;
+  opacity: 0;
+  animation: fadeSlideUp 0.6s 0.3s ease forwards;
+}
+
+/* Feature badges */
+.welcomeBadges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 40px;
+  opacity: 0;
+  animation: fadeSlideUp 0.6s 0.4s ease forwards;
+}
+
+.welcomeBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 100px;
+  font-size: 12px;
+  color: #888;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+  cursor: default;
+}
+.welcomeBadge:hover {
+  border-color: rgba(0,255,136,0.3);
+  color: #ccc;
+  background: rgba(0,255,136,0.05);
+}
+.welcomeBadge span { font-size: 14px; }
+
+/* Suggestion chips */
+.welcomeSuggestLabel {
+  font-size: 11px;
+  color: #444;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-family: 'Rajdhani', sans-serif;
+  margin-bottom: 14px;
+  opacity: 0;
+  animation: fadeSlideUp 0.6s 0.5s ease forwards;
+}
+
+.welcomeChips {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  max-width: 560px;
+  width: 100%;
+  opacity: 0;
+  animation: fadeSlideUp 0.6s 0.6s ease forwards;
+}
+
+.chip {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  padding: 14px 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #aaa;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  line-height: 1.5;
+}
+.chip:hover {
+  background: rgba(0,255,136,0.06);
+  border-color: rgba(0,255,136,0.25);
+  color: #eee;
+  transform: translateY(-2px);
+}
+.chipIcon {
+  font-size: 20px;
+  margin-bottom: 8px;
+  display: block;
+}
+.chipTitle {
+  font-weight: 600;
+  font-size: 13px;
+  color: #ddd;
+  margin-bottom: 3px;
+}
+.chipDesc {
+  font-size: 11px;
+  color: #555;
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 500px) {
+  .welcomeChips { grid-template-columns: 1fr; }
+  .welcomeBadges { gap: 6px; }
+}
+</style>
 </head>
 
 <body>
@@ -116,6 +302,15 @@
   <!-- VERSION TAG -->
   <div style="text-align:center;font-size:10px;color:#333;letter-spacing:2px;padding:4px 0;font-family:'Rajdhani',sans-serif;" id="versionTag">DATTA AI v2.0 · SHAKTI</div>
 
+  <!-- LEGAL LINKS -->
+  <div style="text-align:center;padding:4px 0 6px;display:flex;justify-content:center;gap:10px;">
+    <a href="privacy.html" style="font-size:10px;color:#333;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;transition:color 0.2s;" onmouseover="this.style.color='#00ff88'" onmouseout="this.style.color='#333'">Privacy</a>
+    <span style="color:#2a2a2a;font-size:10px;">·</span>
+    <a href="terms.html" style="font-size:10px;color:#333;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;transition:color 0.2s;" onmouseover="this.style.color='#00ff88'" onmouseout="this.style.color='#333'">Terms</a>
+    <span style="color:#2a2a2a;font-size:10px;">·</span>
+    <a href="home.html" style="font-size:10px;color:#333;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;transition:color 0.2s;" onmouseover="this.style.color='#00ff88'" onmouseout="this.style.color='#333'">About</a>
+  </div>
+
   <!-- BOTTOM USER PROFILE -->
   <div class="sidebarProfile">
     <div class="profileAvatar">G</div>
@@ -145,9 +340,45 @@
 <!-- MAIN CHAT AREA -->
 <div class="main">
 
-  <!-- WELCOME -->
+  <!-- WELCOME SCREEN - UPGRADED -->
   <div id="welcomeScreen" class="welcomeScreen">
-    <h1 class="welcomeTitle">Ask a question</h1>
+    <img src="logo.jpeg" alt="Datta AI" class="welcomeLogo">
+    <div class="welcomeGreeting">Good to see you 👋</div>
+    <h1 class="welcomeTitle">How can I help you today?</h1>
+    <p class="welcomeSub">Think Less. Do More.</p>
+
+    <!-- Feature Badges -->
+    <div class="welcomeBadges">
+      <div class="welcomeBadge"><span>💬</span> AI Chat</div>
+      <div class="welcomeBadge"><span>🎨</span> Image Generation</div>
+      <div class="welcomeBadge"><span>🌐</span> Web Search</div>
+      <div class="welcomeBadge"><span>🎙️</span> Voice Assistant</div>
+    </div>
+
+    <!-- Suggestion Chips -->
+    <div class="welcomeSuggestLabel">Try asking</div>
+    <div class="welcomeChips">
+      <div class="chip" onclick="fillPrompt('Generate image of a futuristic city at night')">
+        <span class="chipIcon">🎨</span>
+        <div class="chipTitle">Generate an image</div>
+        <div class="chipDesc">Futuristic city at night</div>
+      </div>
+      <div class="chip" onclick="fillPrompt('What are the latest AI news today?')">
+        <span class="chipIcon">🌐</span>
+        <div class="chipTitle">Search the web</div>
+        <div class="chipDesc">Latest AI news today</div>
+      </div>
+      <div class="chip" onclick="fillPrompt('Write a Python script to sort a list of numbers')">
+        <span class="chipIcon">💻</span>
+        <div class="chipTitle">Write code</div>
+        <div class="chipDesc">Python sorting script</div>
+      </div>
+      <div class="chip" onclick="fillPrompt('Explain quantum computing in simple terms')">
+        <span class="chipIcon">🧠</span>
+        <div class="chipTitle">Explain anything</div>
+        <div class="chipDesc">Quantum computing simply</div>
+      </div>
+    </div>
   </div>
 
   <!-- CHAT -->
@@ -158,7 +389,6 @@
 
   <!-- INPUT -->
   <div class="inputArea" id="inputArea">
-
     <div class="inputWrap" id="inputWrap">
 
       <!-- Hidden file inputs -->
@@ -183,10 +413,9 @@
           </svg>
         </button>
 
-        <input id="message" type="text" placeholder="Reply to Datta AI..." autocomplete="off">
+        <input id="message" type="text" placeholder="Message Datta AI..." autocomplete="off">
 
         <div class="inputRightBtns">
-          <!-- Mic / Siri button -->
           <button class="micBtn" id="micBtn" onclick="startAssistant()" title="Voice">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
@@ -195,15 +424,11 @@
               <line x1="8" y1="23" x2="16" y2="23"/>
             </svg>
           </button>
-
-          <!-- Stop button (shows while generating) -->
           <button class="stopBtn" id="stopBtn" onclick="stopGeneration()" style="display:none;" title="Stop">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <rect x="3" y="3" width="18" height="18" rx="2"/>
             </svg>
           </button>
-
-          <!-- Send button (up arrow) -->
           <button class="sendBtn" id="sendBtn" onclick="send()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <line x1="12" y1="19" x2="12" y2="5"/>
@@ -218,7 +443,7 @@
 
 </div>
 
-<script src="chat.js?v=6"></script>
+<script src="chat.js?v=7"></script>
 
 <script>
   // SPLASH SCREEN
@@ -227,6 +452,18 @@
       const splash = document.getElementById("splash")
       if (splash) splash.classList.add("hide")
     }, 3000)
+  })
+
+  // GREET by time of day
+  window.addEventListener("DOMContentLoaded", function() {
+    const hour = new Date().getHours()
+    let greet = "Good to see you 👋"
+    if (hour < 12) greet = "Good morning ☀️"
+    else if (hour < 17) greet = "Good afternoon 🌤️"
+    else if (hour < 21) greet = "Good evening 🌙"
+    else greet = "Good night 🌟"
+    const el = document.querySelector(".welcomeGreeting")
+    if (el) el.textContent = greet
   })
 
   // BOTTOM SHEET
@@ -258,9 +495,7 @@
   function handleWebSearchToggle(checkbox) {
     window.webSearchEnabled = checkbox.checked
     const row = checkbox.closest(".sheetRow")
-    if (row) {
-      row.style.opacity = checkbox.checked ? "1" : "0.7"
-    }
+    if (row) row.style.opacity = checkbox.checked ? "1" : "0.7"
   }
 
   window.closePlusMenu = closePlusMenu
@@ -268,15 +503,6 @@
   window.handleWebSearchToggle = handleWebSearchToggle
 
   // FILE HELPERS
-  function getSelectedFile() {
-    const inputs = ["cameraInput","photoInput","imageInput"]
-    for (const id of inputs) {
-      const el = document.getElementById(id)
-      if (el && el.files && el.files[0]) return el.files[0]
-    }
-    return null
-  }
-
   function showFilePreview(file) {
     const preview = document.getElementById("filePreview")
     const wrap = document.getElementById("filePreviewWrap")
@@ -297,39 +523,24 @@
 
   window.clearFileSelection = clearFileSelection
 
-  // FILE INPUT LISTENERS
   document.getElementById("imageInput").addEventListener("change", function() {
-    if (this.files[0]) { showFilePreview(this.files[0]); togglePlusMenu() }
+    if (this.files[0]) { showFilePreview(this.files[0]); closePlusMenu() }
   })
-
   document.getElementById("cameraInput").addEventListener("change", function() {
-    if (this.files[0]) { showFilePreview(this.files[0]); togglePlusMenu() }
+    if (this.files[0]) { showFilePreview(this.files[0]); closePlusMenu() }
   })
-
   document.getElementById("photoInput").addEventListener("change", function() {
-    if (this.files[0]) { showFilePreview(this.files[0]); togglePlusMenu() }
+    if (this.files[0]) { showFilePreview(this.files[0]); closePlusMenu() }
   })
 
-  // PLUS MENU ACTIONS
-  function triggerCamera() {
-    document.getElementById("cameraInput").click()
-  }
-
-  function triggerPhotos() {
-    document.getElementById("photoInput").click()
-  }
-
-  function triggerFile() {
-    document.getElementById("imageInput").click()
-  }
+  function triggerCamera() { document.getElementById("cameraInput").click() }
+  function triggerPhotos() { document.getElementById("photoInput").click() }
+  function triggerFile() { document.getElementById("imageInput").click() }
 
   function triggerWebSearch() {
     const input = document.getElementById("message")
-    if (input) {
-      input.placeholder = "Search the web..."
-      input.focus()
-    }
-    togglePlusMenu()
+    if (input) { input.placeholder = "Search the web..."; input.focus() }
+    closePlusMenu()
   }
 
   function triggerImageGen() {
@@ -339,7 +550,7 @@
       input.focus()
       input.setSelectionRange(input.value.length, input.value.length)
     }
-    togglePlusMenu()
+    closePlusMenu()
   }
 
   window.triggerCamera = triggerCamera
@@ -350,15 +561,13 @@
   window.togglePlusMenu = togglePlusMenu
 </script>
 
-
+<!-- SETTINGS MODAL -->
 <div id="settingsModal" class="settingsModal" style="display:none;">
   <div class="settingsBox">
     <div class="settingsHeader">
       <div class="settingsTitle">⚙️ Settings</div>
       <button class="modalClose" onclick="closeSettings()">✕</button>
     </div>
-
-    <!-- Tabs -->
     <div class="settingsTabs" id="settingsTabs">
       <button class="sTab active" id="stab-profile" onclick="switchSettingsTab('profile')">👤 Profile</button>
       <button class="sTab" id="stab-appearance" onclick="switchSettingsTab('appearance')">🎨 Appearance</button>
@@ -366,11 +575,7 @@
       <button class="sTab" id="stab-notifications" onclick="switchSettingsTab('notifications')">🔔 Notifications</button>
       <button class="sTab danger" id="stab-danger" onclick="switchSettingsTab('danger')">⚠️ Account</button>
     </div>
-
-    <!-- Messages -->
     <div id="settingsMsg" class="settingsMsg"></div>
-
-    <!-- PROFILE TAB -->
     <div class="sTabContent active" id="tab-profile">
       <div class="sSection">
         <div class="sLabel">Username</div>
@@ -390,18 +595,12 @@
         <button class="sSaveBtn" style="margin-top:14px;width:100%;" onclick="changePassword()">Change Password</button>
       </div>
     </div>
-
-    <!-- APPEARANCE TAB -->
     <div class="sTabContent" id="tab-appearance">
       <div class="sSection">
         <div class="sLabel">Theme</div>
         <div class="themeOptions">
-          <button class="themeBtn active" id="themeDark" onclick="setTheme('dark')">
-            🌙 Dark
-          </button>
-          <button class="themeBtn" id="themeLight" onclick="setTheme('light')">
-            ☀️ Light
-          </button>
+          <button class="themeBtn active" id="themeDark" onclick="setTheme('dark')">🌙 Dark</button>
+          <button class="themeBtn" id="themeLight" onclick="setTheme('light')">☀️ Light</button>
         </div>
       </div>
       <div class="sSection">
@@ -413,8 +612,6 @@
         </div>
       </div>
     </div>
-
-    <!-- LANGUAGE TAB -->
     <div class="sTabContent" id="tab-language">
       <div class="sSection">
         <div class="sLabel">AI Response Language</div>
@@ -433,44 +630,22 @@
         <div class="sHint">AI will respond in your selected language</div>
       </div>
     </div>
-
-    <!-- NOTIFICATIONS TAB -->
     <div class="sTabContent" id="tab-notifications">
       <div class="sSection">
         <div class="sToggleRow">
-          <div>
-            <div class="sToggleLabel">Sound Effects</div>
-            <div class="sHint">Play sound when AI responds</div>
-          </div>
-          <label class="toggle">
-            <input type="checkbox" id="soundToggle" onchange="saveNotifSettings()">
-            <span class="toggleSlider"></span>
-          </label>
+          <div><div class="sToggleLabel">Sound Effects</div><div class="sHint">Play sound when AI responds</div></div>
+          <label class="toggle"><input type="checkbox" id="soundToggle" onchange="saveNotifSettings()"><span class="toggleSlider"></span></label>
         </div>
         <div class="sToggleRow">
-          <div>
-            <div class="sToggleLabel">Message Notifications</div>
-            <div class="sHint">Browser notifications for responses</div>
-          </div>
-          <label class="toggle">
-            <input type="checkbox" id="notifToggle" onchange="saveNotifSettings()">
-            <span class="toggleSlider"></span>
-          </label>
+          <div><div class="sToggleLabel">Message Notifications</div><div class="sHint">Browser notifications for responses</div></div>
+          <label class="toggle"><input type="checkbox" id="notifToggle" onchange="saveNotifSettings()"><span class="toggleSlider"></span></label>
         </div>
         <div class="sToggleRow">
-          <div>
-            <div class="sToggleLabel">Streaming Text</div>
-            <div class="sHint">Show text as it types (faster feel)</div>
-          </div>
-          <label class="toggle">
-            <input type="checkbox" id="streamToggle" checked onchange="saveNotifSettings()">
-            <span class="toggleSlider"></span>
-          </label>
+          <div><div class="sToggleLabel">Streaming Text</div><div class="sHint">Show text as it types (faster feel)</div></div>
+          <label class="toggle"><input type="checkbox" id="streamToggle" checked onchange="saveNotifSettings()"><span class="toggleSlider"></span></label>
         </div>
       </div>
     </div>
-
-    <!-- DANGER TAB -->
     <div class="sTabContent" id="tab-danger">
       <div class="sSection">
         <div class="sDangerBox">
@@ -488,10 +663,8 @@
         </div>
       </div>
     </div>
-
   </div>
 </div>
-
 
 <!-- VOICE ASSISTANT OVERLAY -->
 <div id="voiceOverlay" class="voiceOverlay">
@@ -522,7 +695,6 @@
   </div>
 </div>
 
-
 <!-- ADD TO CHAT BOTTOM SHEET -->
 <div class="addToChatOverlay" id="addToChatOverlay" onclick="closePlusMenu()"></div>
 <div class="addToChatSheet" id="addToChatSheet">
@@ -532,8 +704,6 @@
     <div class="sheetTitle">Add to chat</div>
     <div></div>
   </div>
-
-  <!-- Top 3 big buttons -->
   <div class="sheetTopBtns">
     <button class="sheetBigBtn" onclick="triggerCamera();closePlusMenu()">
       <div class="sheetBigIcon">
@@ -565,10 +735,7 @@
       <span>Files</span>
     </button>
   </div>
-
   <div class="sheetDivider"></div>
-
-  <!-- Web Search Row -->
   <div class="sheetRow" onclick="toggleWebSearch(this)">
     <div class="sheetRowLeft">
       <div class="sheetRowIcon">
@@ -576,19 +743,14 @@
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
       </div>
-      <div>
-        <div class="sheetRowLabel">Web search</div>
-      </div>
+      <div><div class="sheetRowLabel">Web search</div></div>
     </div>
     <label class="sheetToggle" onclick="event.stopPropagation()">
       <input type="checkbox" id="webSearchToggle" onchange="handleWebSearchToggle(this)">
       <span class="sheetToggleTrack"></span>
     </label>
   </div>
-
   <div class="sheetDivider"></div>
-
-  <!-- Image Generate Row -->
   <div class="sheetRow" onclick="triggerImageGen();closePlusMenu()">
     <div class="sheetRowLeft">
       <div class="sheetRowIcon">
@@ -603,10 +765,7 @@
     </div>
     <span class="sheetRowArrow">›</span>
   </div>
-
   <div class="sheetDivider"></div>
-
-  <!-- Voice Row -->
   <div class="sheetRow" onclick="startAssistant();closePlusMenu()">
     <div class="sheetRowLeft">
       <div class="sheetRowIcon">
@@ -624,7 +783,6 @@
     </div>
     <span class="sheetRowArrow">›</span>
   </div>
-
 </div>
 
 </body>
