@@ -806,3 +806,271 @@ function dislikeMsg(btn) {
 
 window.likeMsg = likeMsg
 window.dislikeMsg = dislikeMsg
+
+// ── VOICE ASSISTANT (SIRI-LIKE) ──────────────────────────────────────────────
+
+let voiceRecognition = null
+let voiceSynth = window.speechSynthesis
+let isListening = false
+let isSpeaking = false
+let voiceActive = false
+
+function openVoiceAssistant() {
+  voiceActive = true
+  const overlay = document.getElementById("voiceOverlay")
+  if (overlay) overlay.classList.add("show")
+  setVoiceStatus("Tap the mic to speak", "idle")
+
+  // Greet user
+  setTimeout(() => {
+    speakText2("Hello! I am Datta AI. How can I help you today?")
+  }, 500)
+}
+
+function closeVoiceAssistant() {
+  voiceActive = false
+  stopListening()
+  stopSpeaking()
+  const overlay = document.getElementById("voiceOverlay")
+  if (overlay) overlay.classList.remove("show")
+}
+
+function setVoiceStatus(text, mode) {
+  const status = document.getElementById("voiceStatus")
+  const orb = document.getElementById("voiceOrb")
+  const micBtn = document.getElementById("voiceMicBtn")
+
+  if (status) status.textContent = text
+  if (orb) {
+    orb.classList.remove("listening", "speaking")
+    if (mode === "listening") orb.classList.add("listening")
+    if (mode === "speaking") orb.classList.add("speaking")
+  }
+  if (micBtn) {
+    micBtn.classList.toggle("active", mode === "listening")
+  }
+}
+
+function setVoiceText(text) {
+  const el = document.getElementById("voiceText")
+  if (el) el.textContent = text
+}
+
+function toggleVoiceListening() {
+  if (isListening) {
+    stopListening()
+  } else {
+    startListening()
+  }
+}
+
+function startListening() {
+  if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
+    setVoiceText("Speech recognition not supported in this browser.")
+    return
+  }
+
+  stopSpeaking()
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+  voiceRecognition = new SpeechRecognition()
+  voiceRecognition.lang = "en-US"
+  voiceRecognition.continuous = false
+  voiceRecognition.interimResults = true
+
+  voiceRecognition.onstart = () => {
+    isListening = true
+    setVoiceStatus("Listening...", "listening")
+    setVoiceText("")
+  }
+
+  voiceRecognition.onresult = (e) => {
+    let interim = ""
+    let final = ""
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        final += e.results[i][0].transcript
+      } else {
+        interim += e.results[i][0].transcript
+      }
+    }
+    setVoiceText(final || interim)
+
+    if (final) {
+      stopListening()
+      processVoiceQuery(final)
+    }
+  }
+
+  voiceRecognition.onerror = (e) => {
+    console.error("Voice error:", e.error)
+    isListening = false
+    setVoiceStatus("Error: " + e.error + ". Try again.", "idle")
+  }
+
+  voiceRecognition.onend = () => {
+    isListening = false
+    if (voiceActive) setVoiceStatus("Tap to speak", "idle")
+  }
+
+  voiceRecognition.start()
+}
+
+function stopListening() {
+  isListening = false
+  if (voiceRecognition) {
+    try { voiceRecognition.stop() } catch(e) {}
+    voiceRecognition = null
+  }
+  setVoiceStatus("Tap to speak", "idle")
+}
+
+async function processVoiceQuery(query) {
+  if (!query.trim()) return
+
+  setVoiceStatus("Thinking...", "speaking")
+  setVoiceText(query)
+
+  // Check for close commands
+  const closeCmds = ["close", "stop", "exit", "bye", "goodbye", "dismiss"]
+  if (closeCmds.some(c => query.toLowerCase().includes(c))) {
+    speakText2("Goodbye! Have a great day!")
+    setTimeout(closeVoiceAssistant, 2000)
+    return
+  }
+
+  try {
+    const formData = new FormData()
+    formData.append("message", query)
+    formData.append("chatId", currentChatId || "")
+    formData.append("token", getToken())
+    formData.append("language", localStorage.getItem("datta_language") || "English")
+    formData.append("voice", "true")
+
+    const res = await fetch("https://datta-ai-server.onrender.com/chat", {
+      method: "POST",
+      body: formData
+    })
+
+    if (!res.ok) {
+      speakText2("Sorry, I encountered an error. Please try again.")
+      setVoiceStatus("Error. Tap to try again.", "idle")
+      return
+    }
+
+    const chatIdFromHeader = res.headers.get("x-chat-id")
+    if (!currentChatId && chatIdFromHeader) currentChatId = chatIdFromHeader
+
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let fullText = ""
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      const chunk = decoder.decode(value)
+      if (chunk.includes("CHATID")) {
+        const parts = chunk.split("CHATID")
+        fullText += parts[0]
+        currentChatId = parts[1]
+      } else {
+        fullText += chunk
+      }
+    }
+
+    // Clean text for speaking (remove markdown)
+    const cleanText = fullText
+      .replace(/!\[.*?\]\(.*?\)/g, "I generated an image for you.")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/#{1,6}\s/g, "")
+      .replace(/\*\*/g, "")
+      .replace(/\*/g, "")
+      .replace(/`/g, "")
+      .trim()
+
+    setVoiceText(cleanText.substring(0, 100) + (cleanText.length > 100 ? "..." : ""))
+
+    // Add to chat UI
+    chatBox.innerHTML += `
+      <div class="messageRow userRow">
+        <div class="userBubble">🎤 ${query}</div>
+        <div class="avatar">🧑</div>
+      </div>
+    `
+    chatBox.innerHTML += `
+      <div class="messageRow">
+        <div class="avatar">🤖</div>
+        <div class="aiContent">
+          <div class="aiBubble">${marked.parse(fullText.split("CHATID")[0])}</div>
+        </div>
+      </div>
+    `
+    chatBox.scrollTop = chatBox.scrollHeight
+    loadSidebar()
+
+    // Speak the response
+    speakText2(cleanText)
+
+  } catch (err) {
+    console.error("Voice query error:", err)
+    speakText2("Sorry, something went wrong.")
+    setVoiceStatus("Error. Tap to try again.", "idle")
+  }
+}
+
+function speakText2(text) {
+  if (!voiceSynth) return
+  stopSpeaking()
+
+  isSpeaking = true
+  setVoiceStatus("Speaking...", "speaking")
+
+  const utterance = new SpeechSynthesisUtterance(text)
+  utterance.lang = "en-US"
+  utterance.rate = 0.95
+  utterance.pitch = 1.0
+  utterance.volume = 1.0
+
+  // Try to get a good voice
+  const voices = voiceSynth.getVoices()
+  const preferred = voices.find(v =>
+    v.name.includes("Google") ||
+    v.name.includes("Samantha") ||
+    v.name.includes("Karen") ||
+    v.name.includes("Female") ||
+    (v.lang === "en-US" && !v.name.includes("Male"))
+  )
+  if (preferred) utterance.voice = preferred
+
+  utterance.onend = () => {
+    isSpeaking = false
+    if (voiceActive) {
+      setVoiceStatus("Tap to speak", "idle")
+      // Auto listen after speaking
+      setTimeout(() => {
+        if (voiceActive) startListening()
+      }, 800)
+    }
+  }
+
+  utterance.onerror = () => {
+    isSpeaking = false
+    setVoiceStatus("Tap to speak", "idle")
+  }
+
+  voiceSynth.speak(utterance)
+}
+
+function stopSpeaking() {
+  if (voiceSynth) voiceSynth.cancel()
+  isSpeaking = false
+}
+
+// Update the assistant button to open voice overlay
+window.startAssistant = function() {
+  openVoiceAssistant()
+}
+
+window.openVoiceAssistant = openVoiceAssistant
+window.closeVoiceAssistant = closeVoiceAssistant
+window.toggleVoiceListening = toggleVoiceListening
