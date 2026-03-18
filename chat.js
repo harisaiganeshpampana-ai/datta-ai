@@ -224,7 +224,7 @@ function getMoodContext() {
 }
 
 // ── AUTO MOOD DETECT INDICATOR ────────────────────────────────────────────────
-// Shows the #autoMoodPill in the topbar when mood is auto-detected from message
+// Shows ONLY when mood is auto-detected from message text — distinct from manual pill
 function showAutoMoodPill(moodKey) {
   const MOODS = window.MOODS || {}
   const mood = MOODS[moodKey]
@@ -233,44 +233,53 @@ function showAutoMoodPill(moodKey) {
   const pill = document.getElementById("autoMoodPill")
   if (!pill) return
 
-  pill.style.border = `1px solid ${mood.color}55`
-  pill.style.background = mood.bgGlow || `rgba(255,215,0,0.05)`
+  // Small distinct badge — just emoji + "Auto" label, different style from manual
+  pill.style.border = `1px solid ${mood.color}44`
+  pill.style.background = "transparent"
   pill.style.color = mood.color
-  pill.textContent = `🤖 ${mood.emoji} ${mood.label}`
+  pill.style.fontSize = "11px"
+  pill.style.padding = "2px 8px"
+  pill.style.opacity = "0.85"
+  pill.innerHTML = `<span style="font-size:9px;letter-spacing:1px;opacity:0.6;margin-right:3px;font-family:'Rajdhani',sans-serif;">AUTO</span>${mood.emoji}`
   pill.style.display = "flex"
+  pill.style.alignItems = "center"
+  pill.title = `Auto-detected: ${mood.label}`
 
-  // Save last auto detected mood so it persists on reload
+  // Save so it persists on reload
   localStorage.setItem("datta_last_auto_mood", moodKey)
 
-  // Auto hide after 4 seconds
+  // Hide after 8 seconds
   clearTimeout(pill._hideTimer)
   pill._hideTimer = setTimeout(() => {
+    pill.style.transition = "opacity 0.4s"
     pill.style.opacity = "0"
     setTimeout(() => {
       pill.style.display = "none"
-      pill.style.opacity = "1"
+      pill.style.opacity = "0.85"
+      localStorage.removeItem("datta_last_auto_mood")
     }, 400)
-  }, 4000)
+  }, 8000)
 }
 
-// Show auto pill on page load — mirrors current active mood
+// Restore auto pill on page load only if auto-detected mood exists
 function restoreAutoMoodPill() {
   const autoSaved = localStorage.getItem("datta_last_auto_mood")
-  if (!autoSaved) return  // only show if a mood was auto-detected before
-
+  if (!autoSaved) return
   const MOODS = window.MOODS || {}
   const mood = MOODS[autoSaved]
   if (!mood) return
-
   const pill = document.getElementById("autoMoodPill")
   if (!pill) return
-
-  pill.style.border = `1px solid ${mood.color}55`
-  pill.style.background = mood.bgGlow || `rgba(255,215,0,0.05)`
+  pill.style.border = `1px solid ${mood.color}44`
+  pill.style.background = "transparent"
   pill.style.color = mood.color
-  pill.textContent = `🤖 ${mood.emoji} ${mood.label}`
+  pill.style.fontSize = "11px"
+  pill.style.padding = "2px 8px"
+  pill.style.opacity = "0.85"
+  pill.innerHTML = `<span style="font-size:9px;letter-spacing:1px;opacity:0.6;margin-right:3px;font-family:'Rajdhani',sans-serif;">AUTO</span>${mood.emoji}`
   pill.style.display = "flex"
-  pill.style.transition = "all 0.3s ease"
+  pill.style.alignItems = "center"
+  pill.title = `Auto-detected: ${mood.label}`
 }
 
 // Run on load — wait for mood.js to fully load first
