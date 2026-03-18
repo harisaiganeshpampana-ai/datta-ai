@@ -171,15 +171,56 @@ function needsWebSearch(message) {
 function isImageRequest(message) {
   if (!message) return false
   const msg = message.toLowerCase()
-  const triggers = ["generate image","create image","make image","draw","generate photo","create photo","make photo","generate picture","create picture","make picture","generate art","create art","make art","paint","illustrate","image of","picture of","photo of","draw me","sketch"]
+  const triggers = [
+    "generate image", "create image", "make image",
+    "generate a image", "create a image", "make a image",
+    "generate an image", "create an image", "make an image",
+    "generate photo", "create photo", "make photo",
+    "generate a photo", "create a photo", "make a photo",
+    "generate picture", "create picture", "make picture",
+    "generate a picture", "create a picture", "make a picture",
+    "generate art", "create art", "make art",
+    "draw", "paint", "illustrate", "sketch",
+    "image of", "picture of", "photo of",
+    "show me a image", "show me an image", "show image",
+    "genrate", "generat"
+  ]
   return triggers.some(t => msg.includes(t))
 }
 
 function getImagePrompt(message) {
-  let prompt = message
-  const removes = ["generate image of","create image of","make image of","generate a image of","generate photo of","create photo of","generate picture of","create picture of","generate image","create image","make image","generate photo","create photo","generate picture","create picture","draw me a","draw me","draw a","draw","paint a","paint","illustrate","image of","picture of","photo of","generate art of","create art of","generate a","create a","make a","make me","sketch of","sketch a","sketch"]
+  let prompt = message.trim()
+  const removes = [
+    "generate an image of", "create an image of", "make an image of",
+    "generate a image of", "create a image of", "make a image of",
+    "generate image of", "create image of", "make image of",
+    "generate an image", "create an image", "make an image",
+    "generate a image", "create a image", "make a image",
+    "generate image", "create image", "make image",
+    "generate a photo of", "create a photo of",
+    "generate a photo", "create a photo", "generate photo",
+    "generate a picture of", "create a picture of",
+    "generate a picture", "create a picture", "generate picture",
+    "generate a art of", "create a art of",
+    "generate art", "create art", "make art",
+    "draw me a", "draw me an", "draw me", "draw a", "draw an", "draw",
+    "paint a", "paint an", "paint",
+    "illustrate a", "illustrate an", "illustrate",
+    "sketch of a", "sketch of an", "sketch of", "sketch a", "sketch an", "sketch",
+    "image of a", "image of an", "image of",
+    "picture of a", "picture of an", "picture of",
+    "photo of a", "photo of an", "photo of",
+    "show me a image of", "show me an image of",
+    "show me a image", "show me an image", "show image of", "show image",
+    "genrate an", "genrate a", "genrate",
+    "generat an", "generat a", "generat"
+  ]
   removes.sort((a, b) => b.length - a.length)
-  removes.forEach(r => { prompt = prompt.replace(new RegExp(r, "gi"), "") })
+  removes.forEach(r => {
+    const regex = new RegExp("^" + r + "\s*", "i")
+    prompt = prompt.replace(regex, "")
+    prompt = prompt.replace(new RegExp("\s*" + r + "\s*", "gi"), " ")
+  })
   return prompt.trim() || message
 }
 
