@@ -579,7 +579,107 @@
   </div>
 </div>
 
+<!-- MAIN CHAT AREA -->
+<div class="main">
+  <div id="welcomeScreen" class="welcomeScreen">
+    <img src="logo.jpeg" alt="Datta AI" class="welcomeLogo">
+    <div class="welcomeGreeting">Good to see you 👋</div>
+    <h1 class="welcomeTitle">How can I help you today?</h1>
+    <p class="welcomeSub">Think Less. Do More.</p>
+
+    <div class="welcomeBadges">
+      <div class="welcomeBadge"><span>💬</span> AI Chat</div>
+      <div class="welcomeBadge"><span>🎨</span> Image Generation</div>
+      <div class="welcomeBadge"><span>🌐</span> Web Search</div>
+      <div class="welcomeBadge"><span>🎙️</span> Voice Assistant</div>
+    </div>
+
+    <div class="welcomeSuggestLabel">Try asking</div>
+    <div class="welcomeChips">
+      <div class="chip" onclick="fillPrompt('Generate image of a futuristic city at night')">
+        <span class="chipIcon">🎨</span>
+        <div class="chipTitle">Generate an image</div>
+        <div class="chipDesc">Futuristic city at night</div>
+      </div>
+      <div class="chip" onclick="fillPrompt('What are the latest AI news today?')">
+        <span class="chipIcon">🌐</span>
+        <div class="chipTitle">Search the web</div>
+        <div class="chipDesc">Latest AI news today</div>
+      </div>
+      <div class="chip" onclick="fillPrompt('Write a Python script to sort a list of numbers')">
+        <span class="chipIcon">💻</span>
+        <div class="chipTitle">Write code</div>
+        <div class="chipDesc">Python sorting script</div>
+      </div>
+      <div class="chip" onclick="fillPrompt('Explain quantum computing in simple terms')">
+        <span class="chipIcon">🧠</span>
+        <div class="chipTitle">Explain anything</div>
+        <div class="chipDesc">Quantum computing simply</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chatWrapper">
+    <div class="chat" id="chat"></div>
+    <button id="scrollDownBtn">↓</button>
+  </div>
+
+  <div class="inputArea" id="inputArea">
+    <div class="inputWrap" id="inputWrap">
+      <input type="file" id="imageInput" accept="image/*,.pdf,.txt,.csv,.js,.py,.html,.css,.json,.md,.doc,.docx" style="display:none;">
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
+      <input type="file" id="photoInput" accept="image/*" style="display:none;">
+
+      <div id="filePreviewWrap" style="display:none;">
+        <div class="filePreviewChip">
+          <span id="filePreview"></span>
+          <button id="clearFile" onclick="clearFileSelection()">✕</button>
+        </div>
+      </div>
+
+      <div class="inputRow">
+        <button class="plusBtn" id="plusBtn" onclick="togglePlusMenu()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+
+        <input id="message" type="text" placeholder="Message Datta AI..." autocomplete="off">
+
+        <div class="inputRightBtns">
+          <button class="micBtn" id="micBtn" onclick="startAssistant()" title="Voice">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+          </button>
+          <button class="stopBtn" id="stopBtn" onclick="stopGeneration()" style="display:none;" title="Stop">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+            </svg>
+          </button>
+          <button class="sendBtn" id="sendBtn" onclick="send()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="19" x2="12" y2="5"/>
+              <polyline points="5 12 12 5 19 12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- scripts moved to bottom of body -->
+
+<script src="theme.js"></script>
+<script src="mood.js"></script>
+<script src="chat.js?v=11"></script>
+<script src="datta-features.js"></script>
+<script src="datta-features2.js"></script>
 
 <script>
   window.addEventListener("load", function() {
@@ -589,7 +689,7 @@
     }, 3000)
   })
 
-  window.addEventListener("DOMContentLoaded", function() {
+  window.addEventListener("load", function() {
     const hour = new Date().getHours()
     let greet = "Good to see you 👋"
     if (hour < 12) greet = "Good morning ☀️"
@@ -988,7 +1088,7 @@
   })
 
   // On load — restore last chat if returning from settings
-  window.addEventListener('DOMContentLoaded', function() {
+  window.addEventListener('load', function() {
     const returnChat = sessionStorage.getItem('datta_return_chat')
     if (returnChat) {
       sessionStorage.removeItem('datta_return_chat')
@@ -1018,7 +1118,7 @@
     }
   });
 
-  window.addEventListener('DOMContentLoaded', function() {
+  window.addEventListener('load', function() {
     const feedPrompt = localStorage.getItem('datta_feed_prompt')
     if (feedPrompt) {
       localStorage.removeItem('datta_feed_prompt')
@@ -1030,10 +1130,6 @@
     setTimeout(updateTopbarDot, 100);
   });
 </script>
-<script src="theme.js"></script>
-<script src="mood.js"></script>
-<script src="chat.js?v=10"></script>
-<script src="datta-features.js"></script>
-<script src="datta-features2.js"></script>
+
 </body>
 </html>
