@@ -1231,3 +1231,52 @@ window.startAssistant = function() {
 window.openVoiceAssistant = openVoiceAssistant
 window.closeVoiceAssistant = closeVoiceAssistant
 window.toggleVoiceListening = toggleVoiceListening
+
+// VERSION NAMES based on plan
+const planVersions = {
+  free:       { name: "Arambh", sanskrit: "आरंभ", version: "v1.0", emoji: "🌱" },
+  starter:    { name: "Arambh", sanskrit: "आरंभ", version: "v1.0", emoji: "🌱" },
+  basic:      { name: "Shakti", sanskrit: "शक्ति", version: "v2.0", emoji: "⚡" },
+  growth:     { name: "Shakti", sanskrit: "शक्ति", version: "v2.0", emoji: "⚡" },
+  pro:        { name: "Agni",   sanskrit: "अग्नि",  version: "v3.0", emoji: "🔥" },
+  scale:      { name: "Agni",   sanskrit: "अग्नि",  version: "v3.0", emoji: "🔥" },
+  enterprise: { name: "Brahma", sanskrit: "ब्रह्म", version: "v4.0", emoji: "👑" },
+  empire:     { name: "Brahma", sanskrit: "ब्रह्म", version: "v4.0", emoji: "👑" }
+}
+
+async function loadUserVersion() {
+  try {
+    const res = await fetch("https://datta-ai-server.onrender.com/payment/subscription?token=" + getToken())
+    if (!res.ok) return
+    const data = await res.json()
+    const plan = data.plan || "free"
+    const v = planVersions[plan] || planVersions.free
+
+    // Update version tag in sidebar
+    const tag = document.getElementById("versionTag")
+    if (tag) tag.textContent = "DATTA AI " + v.version + " · " + v.name.toUpperCase()
+
+    // Update profile subtitle
+    const sub = document.querySelector(".profileSub")
+    if (sub) sub.textContent = v.emoji + " " + v.name + " " + v.sanskrit
+
+    // Update upgrade button
+    const upgradeBtn = document.querySelector(".upgradeBtn div div:first-child")
+    if (upgradeBtn && plan === "free") {
+      upgradeBtn.textContent = "Upgrade to Agni 🔥"
+    } else if (upgradeBtn) {
+      upgradeBtn.textContent = v.emoji + " " + v.name + " Plan"
+    }
+
+    // Store plan
+    localStorage.setItem("datta_plan", plan)
+
+  } catch(e) {
+    console.log("Version load error:", e.message)
+  }
+}
+
+// Load version on startup
+window.addEventListener("DOMContentLoaded", function() {
+  setTimeout(loadUserVersion, 1000)
+})
