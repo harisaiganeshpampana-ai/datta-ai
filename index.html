@@ -218,12 +218,12 @@
     </div>
 
     <!-- Tabs -->
-    <div class="settingsTabs">
-      <button class="sTab active" onclick="switchSettingsTab('profile')">👤 Profile</button>
-      <button class="sTab" onclick="switchSettingsTab('appearance')">🎨 Appearance</button>
-      <button class="sTab" onclick="switchSettingsTab('language')">🌐 Language</button>
-      <button class="sTab" onclick="switchSettingsTab('notifications')">🔔 Notifications</button>
-      <button class="sTab danger" onclick="switchSettingsTab('danger')">⚠️ Account</button>
+    <div class="settingsTabs" id="settingsTabs">
+      <button class="sTab active" id="stab-profile" onclick="switchSettingsTab('profile')">👤 Profile</button>
+      <button class="sTab" id="stab-appearance" onclick="switchSettingsTab('appearance')">🎨 Appearance</button>
+      <button class="sTab" id="stab-language" onclick="switchSettingsTab('language')">🌐 Language</button>
+      <button class="sTab" id="stab-notifications" onclick="switchSettingsTab('notifications')">🔔 Notifications</button>
+      <button class="sTab danger" id="stab-danger" onclick="switchSettingsTab('danger')">⚠️ Account</button>
     </div>
 
     <!-- Messages -->
@@ -239,6 +239,7 @@
         </div>
       </div>
       <div class="sSection">
+        <div class="sLabel">Change Password</div>
         <div class="sLabel">Current Password</div>
         <input type="password" id="currentPassword" class="sInput" placeholder="Current password">
         <div class="sLabel" style="margin-top:12px;">New Password</div>
