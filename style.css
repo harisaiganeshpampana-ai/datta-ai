@@ -1327,3 +1327,18 @@ body.light #splash { background: #fff; }
 .aiContent {
   max-width: 75%;
 }
+
+/* GENERATED IMAGE DISPLAY */
+.aiBubble img {
+  max-width: 100%;
+  border-radius: 12px;
+  margin-top: 8px;
+  border: 1px solid #2a2a2a;
+  display: block;
+}
+
+.aiBubble img:hover {
+  transform: scale(1.02);
+  transition: transform 0.2s;
+  cursor: zoom-in;
+}
