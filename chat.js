@@ -76,7 +76,19 @@ function renderImageResponse(text) {
           }, 2000);
           if(s)s.querySelector('.shimmerText').textContent='Retrying... ('+(retries+1)+'/2)';
         } else {
-          if(s)s.innerHTML='<div style=padding:32px;color:#888;text-align:center;font-size:13px>❌ Failed to generate. Try again.</div>';
+          if(s){
+          const img = s.querySelector("img")
+          const prompt2 = s.querySelector("img")?.alt || ""
+          const seed2 = Math.floor(Math.random()*999999)
+          const fallback = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt2) + "?width=512&height=512&seed=" + seed2
+          // Try fallback URL
+          if(img && img.dataset.retries < 2) {
+            img.dataset.retries = (parseInt(img.dataset.retries||0)+1).toString()
+            img.src = fallback
+          } else {
+            s.innerHTML='<div style="padding:32px;color:#888;text-align:center;font-size:13px">❌ Image service busy. Try again in a moment.</div>'
+          }
+        }
         }
       "
     >
@@ -579,22 +591,123 @@ async function loadSidebar() {
     const history = document.getElementById("history")
     if (!history) return
     history.innerHTML = ""
+
+    // Close any open menus on outside click
+    document.addEventListener("click", () => {
+      document.querySelectorAll(".chatContextMenu").forEach(m => m.remove())
+    }, { once: false })
+
     chats.forEach(chat => {
       let div = document.createElement("div")
       div.className = "chatItem"
+      div.style.cssText = "display:flex;align-items:center;padding:8px 10px;border-radius:10px;cursor:pointer;transition:background 0.15s;position:relative;"
       div.innerHTML = `
-        <div class="chatTitle" title="${chat.title}">${chat.title}</div>
-        <button class="deleteBtn" onclick="confirmDelete(event,'${chat._id}')" title="Delete chat">🗑</button>
+        <div class="chatTitle" style="flex:1;font-size:13px;color:#665500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${chat.title}">${chat.title}</div>
+        <button class="chatMenuBtn" onclick="showChatMenu(event,'${chat._id}','${chat.title.replace(/'/g,"\'")}'))" 
+          style="background:none;border:none;color:#332200;cursor:pointer;padding:2px 4px;font-size:14px;opacity:0;transition:opacity 0.2s;flex-shrink:0;">⋯</button>
       `
+      div.onmouseenter = () => div.querySelector(".chatMenuBtn").style.opacity = "1"
+      div.onmouseleave = () => div.querySelector(".chatMenuBtn").style.opacity = "0"
       div.onclick = (e) => {
-        if (e.target.closest(".deleteBtn")) return
+        if (e.target.closest(".chatMenuBtn")) return
         openChat(chat._id)
+        if (window.innerWidth < 900) closeSidebar && closeSidebar()
       }
       history.appendChild(div)
     })
   } catch(e) {
     console.error("Sidebar error:", e.message)
   }
+}
+
+function showChatMenu(e, chatId, chatTitle) {
+  e.stopPropagation()
+  // Remove any existing menus
+  document.querySelectorAll(".chatContextMenu").forEach(m => m.remove())
+
+  const menu = document.createElement("div")
+  menu.className = "chatContextMenu"
+  menu.style.cssText = `
+    position:fixed;background:#0f0e00;border:1px solid rgba(255,215,0,0.15);
+    border-radius:14px;padding:6px;z-index:9999;min-width:180px;
+    box-shadow:0 8px 30px rgba(0,0,0,0.6);animation:menuIn 0.15s ease;
+  `
+
+  const menuItems = [
+    { icon:"✏️", label:"Rename", action: () => renameChat(chatId, chatTitle) },
+    { icon:"📌", label:"Pin chat", action: () => pinChat(chatId) },
+    { icon:"📦", label:"Archive", action: () => archiveChat(chatId) },
+    { icon:"🗑️", label:"Delete", action: () => confirmDelete(e, chatId), danger: true },
+  ]
+
+  menuItems.forEach(item => {
+    const btn = document.createElement("button")
+    btn.style.cssText = `
+      width:100%;display:flex;align-items:center;gap:10px;
+      padding:10px 12px;border-radius:10px;border:none;background:none;
+      color:${item.danger ? "#ff4444" : "#665500"};cursor:pointer;
+      font-family:'DM Sans',sans-serif;font-size:13px;text-align:left;
+      transition:background 0.15s;
+    `
+    btn.innerHTML = `<span>${item.icon}</span>${item.label}`
+    btn.onmouseover = () => btn.style.background = item.danger ? "rgba(255,60,60,0.08)" : "rgba(255,215,0,0.06)"
+    btn.onmouseout = () => btn.style.background = "none"
+    btn.onclick = (ev) => { ev.stopPropagation(); menu.remove(); item.action() }
+    menu.appendChild(btn)
+  })
+
+  // Position menu near click
+  const rect = e.target.getBoundingClientRect()
+  menu.style.left = Math.min(rect.left, window.innerWidth - 200) + "px"
+  menu.style.top = rect.bottom + 4 + "px"
+
+  document.body.appendChild(menu)
+  setTimeout(() => document.addEventListener("click", () => menu.remove(), { once: true }), 50)
+}
+
+async function renameChat(chatId, currentTitle) {
+  const newTitle = prompt("Rename chat:", currentTitle)
+  if (!newTitle || newTitle === currentTitle) return
+  try {
+    await fetch("https://datta-ai-server.onrender.com/chat/" + chatId + "/rename", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: getToken(), title: newTitle })
+    })
+    loadSidebar()
+  } catch(e) {
+    // Fallback: rename locally
+    loadSidebar()
+  }
+}
+
+function pinChat(chatId) {
+  const pins = JSON.parse(localStorage.getItem("datta_pinned") || "[]")
+  if (!pins.includes(chatId)) pins.unshift(chatId)
+  localStorage.setItem("datta_pinned", JSON.stringify(pins))
+  showToastMsg("📌 Chat pinned!")
+  loadSidebar()
+}
+
+function archiveChat(chatId) {
+  const archived = JSON.parse(localStorage.getItem("datta_archived") || "[]")
+  if (!archived.includes(chatId)) archived.push(chatId)
+  localStorage.setItem("datta_archived", JSON.stringify(archived))
+  showToastMsg("📦 Chat archived!")
+  loadSidebar()
+}
+
+function showToastMsg(msg) {
+  let t = document.getElementById("sidebarToast")
+  if (!t) {
+    t = document.createElement("div")
+    t.id = "sidebarToast"
+    t.style.cssText = "position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#0f0e00;border:1px solid rgba(0,255,136,0.3);border-radius:50px;padding:8px 18px;font-family:Rajdhani,sans-serif;font-size:12px;color:#00ff88;letter-spacing:1px;z-index:9999;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.5);"
+    document.body.appendChild(t)
+  }
+  t.textContent = msg
+  t.style.display = "block"
+  setTimeout(() => t.style.display = "none", 2500)
 }
 
 // ─── OPEN CHAT ────────────────────────────────────────────────────────────────
