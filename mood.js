@@ -1,1035 +1,211 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Datta AI</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Datta AI - Think Less. Do More. Your AI assistant for chat, images, voice and web search.">
-<link rel="icon" type="image/jpeg" href="logo.jpeg">
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="theme-vars.css">
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://js.puter.com/v2/"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&family=Orbitron:wght@700;900&family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
-
-<style>
-
-/* ── CRITICAL LAYOUT CSS ─────────────────────────────── */
-* { margin:0; padding:0; box-sizing:border-box; }
-body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-height:100vh; overflow:hidden; }
-
-.topbar { position:fixed; top:0; left:0; right:0; height:54px; background:rgba(8,8,0,0.96); border-bottom:1px solid rgba(255,215,0,0.1); display:flex; align-items:center; padding:0 16px; gap:10px; z-index:500; }
-.topTitle { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:3px; color:var(--accent); }
-.menuBtn { background:none; border:none; color:#665500; cursor:pointer; font-size:20px; padding:4px 8px; }
-
-.sidebar { position:fixed; top:54px; left:0; bottom:0; width:260px; background:#060600; border-right:1px solid rgba(255,215,0,0.08); display:flex; flex-direction:column; z-index:400; overflow:hidden; }
-@media(max-width:767px){ .sidebar { transform:translateX(-260px); transition:transform 0.3s ease; } .sidebar.show { transform:translateX(0); } }
-
-.main { position:fixed; top:54px; left:260px; right:0; bottom:0; display:flex; flex-direction:column; }
-@media(max-width:900px){ .main { left:0 !important; } }
-
-.chatWrapper { flex:1; overflow:hidden; position:relative; display:flex; flex-direction:column; }
-.chat { flex:1; overflow-y:auto; padding:20px 16px 100px; display:flex; flex-direction:column; gap:16px; -webkit-overflow-scrolling:touch; }
-
-/* MESSAGES */
-.messageRow { display:flex; align-items:flex-start; gap:10px; animation:msgIn 0.3s ease; width:100%; }
-@keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-.messageRow.userRow { flex-direction:row-reverse; justify-content:flex-start; }
-.userBubble { background:rgba(255,215,0,0.12); border:1px solid rgba(255,215,0,0.25); border-radius:18px 18px 4px 18px; padding:10px 16px; max-width:70%; font-size:14px; color:#fff8e7; line-height:1.6; word-wrap:break-word; }
-.aiBubble { background:#0f0e00; border:1px solid rgba(255,215,0,0.08); border-radius:4px 18px 18px 18px; padding:12px 16px; max-width:75%; font-size:14px; color:#fff8e7; line-height:1.6; word-wrap:break-word; }
-.aiBubble.typing span { display:inline-block; width:6px; height:6px; background:#ffd700; border-radius:50%; animation:dot 1.2s infinite; margin:0 2px; }
-.aiBubble.typing span:nth-child(2){animation-delay:0.2s}
-.aiBubble.typing span:nth-child(3){animation-delay:0.4s}
-@keyframes dot{0%,80%,100%{opacity:0.2}40%{opacity:1}}
-.avatar { width:30px; height:30px; border-radius:50%; background:rgba(255,215,0,0.1); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
-.aiContent { display:flex; flex-direction:column; gap:6px; max-width:80%; }
-.aiActions { display:flex; gap:6px; opacity:0; transition:opacity 0.2s; }
-.messageRow:hover .aiActions { opacity:1; }
-.actionBtn { background:none; border:none; color:#443300; cursor:pointer; padding:3px; border-radius:6px; }
-.actionBtn:hover { color:var(--accent); }
-.cursor { animation:blink 1s infinite; }
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-
-/* INPUT AREA */
-.inputArea { padding:10px 16px 16px; background:#080800; border-top:1px solid rgba(255,215,0,0.06); }
-.inputWrap { background:#0f0e00; border:1px solid rgba(255,215,0,0.12); border-radius:16px; padding:8px 10px; max-width:800px; margin:0 auto; }
-.inputWrap:focus-within { border-color:rgba(255,215,0,0.3); }
-.inputRow { display:flex; align-items:center; gap:8px; }
-#message { flex:1; background:none; border:none; outline:none; color:#fff8e7; font-size:15px; font-family:'DM Sans',sans-serif; padding:4px 0; }
-#message::placeholder { color:#332200; }
-.inputRightBtns { display:flex; align-items:center; gap:4px; }
-.sendBtn { width:34px; height:34px; background:var(--accent); border:none; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#000; transition:all 0.2s; }
-.sendBtn:hover { transform:scale(1.05); }
-.micBtn { background:none; border:none; color:#554400; cursor:pointer; padding:6px; display:flex; align-items:center; }
-.micBtn:hover { color:var(--accent); }
-.stopBtn { width:30px; height:30px; background:rgba(255,60,60,0.1); border:1px solid rgba(255,60,60,0.3); border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#ff4444; }
-.plusBtn { background:none; border:1px solid rgba(255,215,0,0.1); border-radius:10px; color:#554400; cursor:pointer; width:30px; height:30px; display:flex; align-items:center; justify-content:center; }
-.plusBtn:hover { border-color:rgba(255,215,0,0.3); color:var(--accent); }
-
-/* SCROLL BTN */
-#scrollDownBtn { position:absolute; bottom:10px; right:16px; width:32px; height:32px; background:#0f0e00; border:1px solid rgba(255,215,0,0.2); border-radius:50%; color:var(--accent); cursor:pointer; display:none; font-size:14px; }
-
-/* NAV ITEMS */
-.navItem { width:100%; display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; border:none; background:none; color:#665500; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:13px; transition:all 0.15s; text-align:left; }
-.navItem:hover, .navItem.active { background:rgba(255,215,0,0.08); color:var(--accent); }
-
-/* CHAT HISTORY */
-.history { display:flex; flex-direction:column; gap:2px; overflow-y:auto; flex:1; padding:0 8px; }
-.chatItem { padding:8px 10px; border-radius:10px; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; justify-content:space-between; }
-.chatItem:hover { background:rgba(255,215,0,0.06); }
-.chatTitle { font-size:13px; color:#665500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
-.deleteBtn { background:none; border:none; color:#332200; cursor:pointer; opacity:0; font-size:13px; padding:2px 4px; }
-.chatItem:hover .deleteBtn { opacity:1; }
-
-/* SEARCH BOX */
-.searchBox { background:rgba(255,255,255,0.04); border:1px solid rgba(255,215,0,0.08); border-radius:10px; padding:7px 12px; color:#fff8e7; font-size:13px; font-family:'DM Sans',sans-serif; outline:none; width:100%; }
-
-/* EMPTY SECTION */
-.emptySection { display:flex; flex-direction:column; align-items:center; gap:8px; padding:30px 20px; color:#332200; font-family:'Rajdhani',sans-serif; font-size:13px; letter-spacing:1px; }
-
-/* SIDEBAR SECTION */
-.sidebarSection { display:flex; flex-direction:column; flex:1; overflow:hidden; }
-.sidebarDivider { height:1px; background:rgba(255,215,0,0.07); margin:4px 0; }
-
-/* FILE PREVIEW */
-.filePreviewChip { display:flex; align-items:center; gap:8px; background:rgba(255,215,0,0.06); border:1px solid rgba(255,215,0,0.12); border-radius:8px; padding:6px 10px; margin-bottom:6px; font-size:12px; color:#665500; }
-#clearFile { background:none; border:none; color:#443300; cursor:pointer; font-size:14px; }
-
-/* SEARCHING INDICATOR */
-.searchingIndicator { display:flex; align-items:center; gap:8px; }
-.searchIcon { font-size:16px; }
-.searchText { font-size:13px; color:#665500; }
-
-/* STREAM */
-.stream p { margin:0 0 8px; }
-.stream p:last-child { margin-bottom:0; }
-
-/* ── WELCOME SCREEN ─────────────────────────────────────────────── */
-.welcomeScreen {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  width: 100%;
-  height: 100%;
-  padding: 20px 16px 160px;
-  text-align: center;
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch;
-  box-sizing: border-box;
-  scrollbar-width: thin;
-  overscroll-behavior: contain;
-}
-@media(max-width:600px){
-  .welcomeScreen { padding: 20px 12px 120px; justify-content:flex-start; }
-  .welcomeTitle { font-size: 28px !important; }
-}
-
-.welcomeScreen::before {
-  content: '';
-  position: absolute;
-  width: 500px; height: 500px;
-  background: radial-gradient(circle, rgba(255,215,0,0.06) 0%, transparent 70%);
-  top: 50%; left: 50%;
-  transform: translate(-50%, -60%);
-  pointer-events: none;
-  border-radius: 50%;
-}
-.welcomeScreen::after {
-  content: '';
-  position: absolute;
-  width: 300px; height: 300px;
-  background: radial-gradient(circle, rgba(255,140,0,0.05) 0%, transparent 70%);
-  bottom: 20%; right: 10%;
-  pointer-events: none;
-  border-radius: 50%;
-}
-
-.welcomeLogo {
-  width: 72px; height: 72px;
-  border-radius: 20px;
-  object-fit: cover;
-  margin-bottom: 20px;
-  box-shadow: 0 0 32px rgba(255,215,0,0.25);
-  animation: welcomeFloat 3s ease-in-out infinite;
-}
-
-@keyframes welcomeFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
-.welcomeGreeting {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: #ffd700;
-  margin-bottom: 10px;
-  font-family: 'Rajdhani', sans-serif;
-  opacity: 0;
-  animation: fadeSlideUp 0.6s 0.1s ease forwards;
-}
-
-.welcomeTitle {
-  font-family: 'Bebas Neue', sans-serif !important;
-  font-size: clamp(28px, 5vw, 52px) !important;
-  font-weight: 400 !important;
-  letter-spacing: 4px !important;
-  background: linear-gradient(135deg, #fff8e7, #ffd700, #ff8c00) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  background-clip: text !important;
-  line-height: 1.1 !important;
-  margin-bottom: 10px !important;
-  opacity: 0;
-  animation: fadeSlideUp 0.6s 0.2s ease forwards;
-  filter: drop-shadow(0 0 20px rgba(255,215,0,0.2));
-}
-
-.welcomeSub {
-  font-size: 15px;
-  color: #665500;
-  margin-bottom: 36px;
-  font-family: 'Rajdhani', sans-serif;
-  letter-spacing: 2px;
-  opacity: 0;
-  animation: fadeSlideUp 0.6s 0.3s ease forwards;
-}
-
-.welcomeBadges {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-bottom: 40px;
-  opacity: 0;
-  animation: fadeSlideUp 0.6s 0.4s ease forwards;
-}
-
-.welcomeBadge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  background: rgba(255,215,0,0.05);
-  border: 1px solid rgba(255,215,0,0.12);
-  border-radius: 100px;
-  font-size: 12px;
-  color: #665500;
-  font-family: 'Rajdhani', sans-serif;
-  letter-spacing: 0.5px;
-  transition: all 0.2s;
-  cursor: default;
-}
-.welcomeBadge:hover {
-  border-color: rgba(255,215,0,0.35);
-  color: #ffd700;
-  background: rgba(255,215,0,0.08);
-}
-.welcomeBadge span { font-size: 14px; }
-
-.welcomeSuggestLabel {
-  font-size: 11px;
-  color: #443300;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  font-family: 'Rajdhani', sans-serif;
-  margin-bottom: 14px;
-  opacity: 0;
-  animation: fadeSlideUp 0.6s 0.5s ease forwards;
-}
-
-.welcomeChips {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  max-width: 480px;
-  width: 100%;
-  opacity: 0;
-  animation: fadeSlideUp 0.6s 0.6s ease forwards;
-}
-
-.chip {
-  background: rgba(255,215,0,0.03);
-  border: 1px solid rgba(255,215,0,0.08);
-  border-radius: 14px;
-  padding: 14px 16px;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: #665500;
-  font-size: 13px;
-  font-family: 'DM Sans', sans-serif;
-  line-height: 1.5;
-}
-.chip:hover {
-  background: rgba(255,215,0,0.07);
-  border-color: rgba(255,215,0,0.3);
-  color: #fff8e7;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(255,215,0,0.08);
-}
-.chipIcon {
-  font-size: 20px;
-  margin-bottom: 8px;
-  display: block;
-}
-.chipTitle {
-  font-weight: 700;
-  font-size: 13px;
-  color: #cc9900;
-  margin-bottom: 3px;
-  font-family: 'Rajdhani', sans-serif;
-  letter-spacing: 0.5px;
-}
-.chip:hover .chipTitle { color: #ffd700; }
-.chipDesc {
-  font-size: 11px;
-  color: #443300;
-}
-
-@keyframes fadeSlideUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes autoMoodIn {
-  from { opacity: 0; transform: scale(0.8); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@media (max-width: 500px) {
-  .welcomeChips { grid-template-columns: 1fr 1fr !important; gap:8px; max-width:100%; }
-  .welcomeBadges { gap:6px; flex-wrap:wrap; justify-content:center; }
-  .chip { padding:12px 10px; }
-  .chipTitle { font-size:12px; }
-  .chipDesc { font-size:10px; }
-  .chipIcon { font-size:18px; margin-bottom:6px; }
-  .welcomeTitle { font-size:26px !important; }
-}
-
-/* ── MOOD PANEL EXTRA BUTTONS ───────────────────────────────────── */
-.moodExtraBtns {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-.moodExtraBtn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  padding: 10px 6px;
-  background: rgba(255,215,0,0.04);
-  border: 1px solid rgba(255,215,0,0.12);
-  border-radius: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: #554400;
-}
-.moodExtraBtn:hover {
-  background: rgba(255,215,0,0.1);
-  border-color: rgba(255,215,0,0.3);
-  color: #ffd700;
-  transform: translateY(-2px);
-}
-.moodExtraBtn .meBtnIcon { font-size: 20px; line-height: 1; }
-.moodExtraBtn .meBtnLabel { font-size: 10px; letter-spacing: 1px; text-align: center; }
-
-/* SPLASH SCREEN */
-#splash {
-  position: fixed; top:0; left:0; right:0; bottom:0;
-  background: #080800;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  z-index: 99999;
-  transition: opacity 0.5s ease;
-}
-#splash.hide {
-  opacity: 0;
-  pointer-events: none;
-  animation: splashOut 0.5s ease forwards;
-}
-@keyframes splashOut {
-  to { opacity: 0; visibility: hidden; display: none; }
-}
-</style>
-</head>
-
-<body>
-
-<!-- SPLASH SCREEN -->
-<div id="splash">
-  <div class="splash-ring">
-    <img class="splash-logo" src="logo.jpeg" alt="Datta AI Logo">
-  </div>
-  <div class="splash-title">Datta AI</div>
-  <div class="splash-subtitle">Welcome</div>
-  <div class="splash-dots">
-    <span></span><span></span><span></span>
-  </div>
-</div>
-
-<!-- TOP BAR -->
-<div class="topbar">
-  <button onclick="toggleSidebar()" class="menuBtn">☰</button>
-  <img src="logo.jpeg" alt="Datta AI" style="width:30px;height:30px;border-radius:8px;object-fit:cover;">
-  <span class="topTitle" style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;background:linear-gradient(90deg,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">DATTA AI</span>
-  <div style="margin-left:auto;display:flex;align-items:center;gap:6px;padding-right:6px;">
-
-    <!-- AUTO MOOD PILL — appears when mood is detected from message -->
-    <div id="autoMoodPill" onclick="toggleMoodPanel()" style="
-      display:none;align-items:center;gap:5px;
-      padding:3px 10px;border-radius:20px;
-      border:1px solid rgba(255,215,0,0.2);
-      background:rgba(255,215,0,0.05);
-      font-family:'Rajdhani',sans-serif;font-size:11px;
-      font-weight:600;letter-spacing:1px;color:#665500;
-      cursor:pointer;transition:all 0.4s ease;
-      animation:autoMoodIn 0.4s ease;
-    "></div>
-
-    <!-- MANUAL MOOD INDICATOR — appears when mood is manually set -->
-    <div id="moodIndicator" onclick="toggleMoodPanel()" style="display:none;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;border:1px solid rgba(255,215,0,0.3);background:rgba(255,215,0,0.08);font-family:Rajdhani,sans-serif;font-size:12px;font-weight:600;letter-spacing:1px;color:#ffd700;cursor:pointer;transition:all 0.2s;"></div>
-
-    <button id="moodToggleBtn" onclick="toggleMoodPanel()" title="Set your mood" style="background:none;border:1px solid rgba(255,255,255,0.08);cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all 0.2s;">😊</button>
-    <button id="topbarColorBtn" onclick="toggleColorPanel()" title="Change Theme Color" style="background:none;border:none;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all 0.2s;position:relative;">
-      <div id="topbarColorDot" style="width:22px;height:22px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent-glow);border:2px solid rgba(255,255,255,0.15);transition:all 0.3s;"></div>
-    </button>
-  </div>
-</div>
-
-<!-- MOOD PANEL -->
-<div id="moodPanel" style="position:fixed;top:58px;right:50px;background:#0f0e00;border:1px solid rgba(255,215,0,0.2);border-radius:24px;padding:22px;z-index:2000;display:none;box-shadow:0 8px 40px rgba(0,0,0,0.7);min-width:300px;">
-  <div style="font-family:Bebas Neue,sans-serif;font-size:18px;letter-spacing:3px;color:var(--accent);margin-bottom:6px;">😊 WHATS YOUR MOOD?</div>
-  <div style="font-family:Rajdhani,sans-serif;font-size:12px;color:#443300;letter-spacing:1px;margin-bottom:18px;">Datta AI adapts to how you feel</div>
-
-  <!-- MOOD GRID (original) -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
-    <button class="moodBtn" data-mood="focused" onclick="applyMood('focused')" style="background:rgba(0,204,255,0.06);border:1px solid rgba(0,204,255,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;"><div style="font-size:24px;margin-bottom:6px;">🎯</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#00ccff;letter-spacing:1px;">Focused</div><div style="font-size:11px;color:#443300;margin-top:2px;">Sharp &amp; concise</div></button>
-    <button class="moodBtn" data-mood="happy" onclick="applyMood('happy')" style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;"><div style="font-size:24px;margin-bottom:6px;">😄</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#ffd700;letter-spacing:1px;">Happy</div><div style="font-size:11px;color:#443300;margin-top:2px;">Fun &amp; energetic</div></button>
-    <button class="moodBtn" data-mood="stressed" onclick="applyMood('stressed')" style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;"><div style="font-size:24px;margin-bottom:6px;">😮‍💨</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#00ff88;letter-spacing:1px;">Stressed</div><div style="font-size:11px;color:#443300;margin-top:2px;">Calm &amp; reassuring</div></button>
-    <button class="moodBtn" data-mood="creative" onclick="applyMood('creative')" style="background:rgba(192,132,252,0.06);border:1px solid rgba(192,132,252,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;"><div style="font-size:24px;margin-bottom:6px;">🎨</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#c084fc;letter-spacing:1px;">Creative</div><div style="font-size:11px;color:#443300;margin-top:2px;">Bold &amp; imaginative</div></button>
-    <button class="moodBtn" data-mood="lazy" onclick="applyMood('lazy')" style="background:rgba(249,115,22,0.06);border:1px solid rgba(249,115,22,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;"><div style="font-size:24px;margin-bottom:6px;">😴</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#f97316;letter-spacing:1px;">Lazy</div><div style="font-size:11px;color:#443300;margin-top:2px;">Short &amp; chill</div></button>
-    <button class="moodBtn" data-mood="curious" onclick="applyMood('curious')" style="background:rgba(236,72,153,0.06);border:1px solid rgba(236,72,153,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;"><div style="font-size:24px;margin-bottom:6px;">🔍</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#ec4899;letter-spacing:1px;">Curious</div><div style="font-size:11px;color:#443300;margin-top:2px;">Deep &amp; exploratory</div></button>
-    <!-- Night Brain (new) -->
-    <button class="moodBtn" data-mood="night" onclick="applyMood('night')" style="background:rgba(129,140,248,0.06);border:1px solid rgba(129,140,248,0.2);border-radius:14px;padding:14px 12px;cursor:pointer;text-align:left;transition:all 0.2s;grid-column:span 2;"><div style="font-size:24px;margin-bottom:6px;">🌙</div><div style="font-family:Rajdhani,sans-serif;font-weight:700;font-size:14px;color:#818cf8;letter-spacing:1px;">Night Brain</div><div style="font-size:11px;color:#443300;margin-top:2px;">Philosophical &amp; deep</div></button>
-  </div>
-
-  <!-- DIVIDER -->
-  <div style="border-top:1px solid rgba(255,215,0,0.07);margin-bottom:12px;"></div>
-  <div style="font-family:Rajdhani,sans-serif;font-size:10px;letter-spacing:2px;color:#332200;margin-bottom:10px;">DETECT MY MOOD</div>
-
-  <!-- 3 NEW FEATURE BUTTONS -->
-  <div class="moodExtraBtns">
-    <button class="moodExtraBtn" onclick="startVoiceMoodDetection();closeMoodPanel();">
-      <span class="meBtnIcon">🎙️</span>
-      <span class="meBtnLabel">VOICE<br>DETECT</span>
-    </button>
-    <button class="moodExtraBtn" onclick="startPhotoMoodDetection();">
-      <span class="meBtnIcon">📸</span>
-      <span class="meBtnLabel">SELFIE<br>SCAN</span>
-    </button>
-    <button class="moodExtraBtn" onclick="showMoodTimeline();closeMoodPanel();">
-      <span class="meBtnIcon">🧠</span>
-      <span class="meBtnLabel">MOOD<br>TIMELINE</span>
-    </button>
-  </div>
-
-  <button onclick="clearMood()" style="width:100%;padding:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#443300;font-family:Rajdhani,sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;">✕ Clear mood · Reset to Gold</button>
-</div>
-
-<!-- COLOR PANEL POPUP -->
-<div id="colorPanel" style="
-  position: fixed; top: 58px; right: 10px;
-  background: #0f0e00; border: 1px solid rgba(255,215,0,0.2);
-  border-radius: 20px; padding: 20px;
-  z-index: 2000; display: none;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
-  min-width: 240px;
-  animation: colorPanelIn 0.2s ease;
-">
-  <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:3px;color:var(--accent);margin-bottom:14px;">🎨 THEME COLOR</div>
-  <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
-    <button class="presetColor active" data-color="#ffd700" style="background:#ffd700;" title="👑 Gold (Default)" onclick="dattaTheme.saveAndApply('#ffd700');updateTopbarDot()"></button>
-    <button class="presetColor" data-color="#00ff88" style="background:#00ff88;" title="Green" onclick="dattaTheme.saveAndApply('#00ff88');updateTopbarDot()"></button>
-    <button class="presetColor" data-color="#00ccff" style="background:#00ccff;" title="Cyan" onclick="dattaTheme.saveAndApply('#00ccff');updateTopbarDot()"></button>
-    <button class="presetColor" data-color="#c084fc" style="background:#c084fc;" title="Purple" onclick="dattaTheme.saveAndApply('#c084fc');updateTopbarDot()"></button>
-    <button class="presetColor" data-color="#f97316" style="background:#f97316;" title="Orange" onclick="dattaTheme.saveAndApply('#f97316');updateTopbarDot()"></button>
-    <button class="presetColor" data-color="#ef4444" style="background:#ef4444;" title="Red" onclick="dattaTheme.saveAndApply('#ef4444');updateTopbarDot()"></button>
-    <button class="presetColor" data-color="#3b82f6" style="background:#3b82f6;" title="Blue" onclick="dattaTheme.saveAndApply('#3b82f6');updateTopbarDot()"></button>
-    <button class="presetColor" data-color="#ec4899" style="background:#ec4899;" title="Pink" onclick="dattaTheme.saveAndApply('#ec4899');updateTopbarDot()"></button>
-  </div>
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-    <span style="font-family:'Rajdhani',sans-serif;font-size:13px;color:#665500;letter-spacing:1px;">Custom:</span>
-    <input type="color" id="accentColorPicker" value="#ffd700"
-      oninput="dattaTheme.saveAndApply(this.value);updateTopbarDot()"
-      style="width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,0.1);cursor:pointer;padding:2px;background:none;outline:none;">
-    <button onclick="dattaTheme.saveAndApply(dattaTheme.DEFAULT);updateTopbarDot()" style="
-      padding:6px 12px; background:none;
-      border:1px solid rgba(255,215,0,0.2);
-      border-radius:8px; color:#665500;
-      font-size:11px; font-family:'Rajdhani',sans-serif;
-      letter-spacing:1px; cursor:pointer; transition:all 0.2s;
-    " onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#665500'">
-      👑 Reset Gold
-    </button>
-  </div>
-  <button onclick="toggleColorPanel()" style="
-    width:100%; padding:8px; background:rgba(255,215,0,0.07);
-    border:1px solid rgba(255,215,0,0.15); border-radius:10px;
-    color:var(--accent); font-family:'Rajdhani',sans-serif;
-    font-size:13px; letter-spacing:1px; cursor:pointer;
-  ">✕ Close</button>
-</div>
-
-<style>
-@keyframes colorPanelIn {
-  from { opacity:0; transform:translateY(-8px) scale(0.96); }
-  to   { opacity:1; transform:translateY(0) scale(1); }
-}
-.presetColor {
-  width:32px; height:32px; border-radius:50%;
-  border:3px solid transparent; cursor:pointer;
-  transition:all 0.2s; position:relative; flex-shrink:0;
-}
-.presetColor:hover { transform:scale(1.15); }
-.presetColor.active {
-  border-color:white !important;
-  box-shadow:0 0 0 2px rgba(255,255,255,0.3), 0 0 16px rgba(255,255,255,0.2);
-}
-.presetColor.active::after {
-  content:'✓'; position:absolute; inset:0;
-  display:flex; align-items:center; justify-content:center;
-  font-size:13px; font-weight:700; color:rgba(0,0,0,0.7);
-}
-</style>
-
-<!-- SIDEBAR -->
-<div class="sidebar" id="sidebar">
-
-  <!-- TOP -->
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 14px 8px;">
-    <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;background:linear-gradient(90deg,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">👑 DATTA AI</div>
-    <button onclick="newChat()" style="display:flex;align-items:center;gap:6px;padding:7px 14px;background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.2);border-radius:10px;color:var(--accent);cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      New Chat
-    </button>
-  </div>
-
-  <!-- SEARCH -->
-  <div style="padding:0 12px 8px;">
-    <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,215,0,0.08);border-radius:10px;padding:7px 12px;">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="search" type="text" placeholder="Search chats" onkeyup="searchChats()" style="background:none;border:none;outline:none;color:#fff8e7;font-size:13px;font-family:'DM Sans',sans-serif;width:100%;">
-    </div>
-  </div>
-
-  <!-- NAV -->
-  <div style="padding:0 8px 4px;">
-    <button class="navItem active" onclick="showSection('chats');if(window.innerWidth<900)closeSidebar()" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chats
-    </button>
-    <button class="navItem" onclick="showSection('projects');if(window.innerWidth<900)closeSidebar()" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>Projects
-    </button>
-    <button class="navItem" onclick="showSection('artifacts');if(window.innerWidth<900)closeSidebar()" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Artifacts
-    </button>
-    <button onclick="window.location.href='feed.html'" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)'" onmouseout="this.style.background='none'">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>📺 Live Feed
-    </button>
-  </div>
-
-  <div class="sidebarDivider"></div>
-  <div id="recentsLabel" style="padding:6px 14px 4px;font-family:'Rajdhani',sans-serif;font-size:10px;letter-spacing:2px;color:#332200;">RECENTS</div>
-
-  <div class="sidebarSection" id="section-chats" style="flex:1;overflow-y:auto;">
-    <div class="history" id="history"></div>
-  </div>
-  <div class="sidebarSection" id="section-projects" style="display:none;">
-    <div class="emptySection"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg><p>No projects yet</p></div>
-  </div>
-  <div class="sidebarSection" id="section-artifacts" style="display:none;">
-    <div class="emptySection"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><p>No artifacts yet</p></div>
-  </div>
-
-  <div class="sidebarBottom">
-  <div id="versionTag" style="text-align:center;font-size:9px;color:#252000;letter-spacing:2px;padding:2px 0;font-family:'Rajdhani',sans-serif;">DATTA AI v2.0 · SHAKTI</div>
-
-  <!-- UPGRADE -->
-  <div id="upgradeBanner" onclick="window.location.href='pricing.html'" style="margin:6px 10px;padding:10px 14px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.12);border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,215,0,0.1)'" onmouseout="this.style.background='rgba(255,215,0,0.05)'">
-    <span style="font-size:18px;">👑</span>
-    <div style="flex:1;"><div id="upgradeTitle" style="font-size:12px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;color:var(--accent);">Upgrade to Agni</div><div id="upgradeSub" style="font-size:10px;color:#554400;">Unlimited power · ₹499/mo</div></div>
-    <span style="color:#554400;font-size:14px;">›</span>
-  </div>
-
-  <!-- PROFILE BOTTOM -->
-  <div onclick="window.location.href='settings.html'" style="margin:4px 10px 10px;padding:10px 12px;border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.2s;border:1px solid transparent;" onmouseover="this.style.background='rgba(255,215,0,0.05)';this.style.borderColor='rgba(255,215,0,0.1)'" onmouseout="this.style.background='none';this.style.borderColor='transparent'">
-    <div class="profileAvatar" style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#ff8c00);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;font-family:'Rajdhani',sans-serif;flex-shrink:0;">G</div>
-    <div style="flex:1;min-width:0;">
-      <div class="profileName" style="font-size:10px;font-weight:600;color:#fff8e7;font-family:'DM Sans',sans-serif;word-break:break-word;line-height:1.3;max-width:130px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">Ganesh</div>
-      <div class="profileSub" style="font-size:11px;color:#554400;font-family:'Rajdhani',sans-serif;">Free Plan</div>
-    </div>
-    <svg id="profileArrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-  </div>
-
-  <!-- PROFILE POPUP MENU -->
-  <div id="profileMenu" style="display:none;position:fixed;bottom:80px;left:10px;width:240px;background:#0f0e00;border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:6px;box-shadow:0 -8px 30px rgba(0,0,0,0.5);z-index:1000;animation:profileMenuIn 0.2s ease;">
-    <style>@keyframes profileMenuIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}</style>
-    <button onclick="window.location.href='support.html'" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.color='#fff8e7'" onmouseout="this.style.background='none';this.style.color='#665500'">🎧 Support Center</button>
-    <button onclick="goToSettings();toggleProfileMenu()"  style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.color='#fff8e7'" onmouseout="this.style.background='none';this.style.color='#665500'">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Settings
-    </button>
-    <button onclick="window.location.href='memory.html'" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.color='#fff8e7'" onmouseout="this.style.background='none';this.style.color='#665500'">🧾 Smart Memory</button>
-    <button onclick="window.location.href='translator.html'" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.color='#fff8e7'" onmouseout="this.style.background='none';this.style.color='#665500'">🌍 Translator</button>
-    <button onclick="window.location.href='analytics.html'" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.color='#fff8e7'" onmouseout="this.style.background='none';this.style.color='#665500'">📊 Analytics</button>
-    <button onclick="window.location.href='xp.html'" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.color='#fff8e7'" onmouseout="this.style.background='none';this.style.color='#665500'">🎮 XP Progress</button>
-    <div style="border-top:1px solid rgba(255,215,0,0.07);margin:4px 0;"></div>
-    <div style="display:flex;justify-content:center;gap:14px;padding:4px;">
-      <a href="privacy.html" style="font-size:10px;color:#332200;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;" onmouseover="this.style.color='#ffd700'" onmouseout="this.style.color='#332200'">Privacy</a>
-      <span style="color:#2a2000;font-size:10px;">·</span>
-      <a href="terms.html" style="font-size:10px;color:#332200;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;" onmouseover="this.style.color='#ffd700'" onmouseout="this.style.color='#332200'">Terms</a>
-      <span style="color:#2a2000;font-size:10px;">·</span>
-      <a href="home.html" style="font-size:10px;color:#332200;text-decoration:none;font-family:'Rajdhani',sans-serif;letter-spacing:1px;" onmouseover="this.style.color='#ffd700'" onmouseout="this.style.color='#332200'">About</a>
-    </div>
-    <button onclick="logout()" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#ff4444;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,60,60,0.08)'" onmouseout="this.style.background='none'">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      Log out
-    </button>
-  </div>
-  </div><!-- end sidebarBottom -->
-
-</div>
-
-<!-- SIDEBAR OVERLAY (mobile) -->
-<div id="sidebarOverlay" onclick="closeSidebar()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:399;"></div>
-
-<!-- MAIN CHAT AREA -->
-<div class="main">
-  <div id="welcomeScreen" class="welcomeScreen">
-    <img src="logo.jpeg" alt="Datta AI" class="welcomeLogo">
-    <div class="welcomeGreeting">Good to see you 👋</div>
-    <h1 class="welcomeTitle">How can I help you today?</h1>
-    <p class="welcomeSub">Think Less. Do More.</p>
-
-    <div class="welcomeBadges">
-      <div class="welcomeBadge"><span>💬</span> AI Chat</div>
-      <div class="welcomeBadge"><span>🎨</span> Image Generation</div>
-      <div class="welcomeBadge"><span>🌐</span> Web Search</div>
-      <div class="welcomeBadge"><span>🎙️</span> Voice Assistant</div>
-    </div>
-
-    <div class="welcomeSuggestLabel">Try asking</div>
-    <div class="welcomeChips">
-      <div class="chip" onclick="fillPrompt('Generate image of a futuristic city at night')">
-        <span class="chipIcon">🎨</span>
-        <div class="chipTitle">Generate an image</div>
-        <div class="chipDesc">Futuristic city at night</div>
-      </div>
-      <div class="chip" onclick="fillPrompt('What are the latest AI news today?')">
-        <span class="chipIcon">🌐</span>
-        <div class="chipTitle">Search the web</div>
-        <div class="chipDesc">Latest AI news today</div>
-      </div>
-      <div class="chip" onclick="fillPrompt('Write a Python script to sort a list of numbers')">
-        <span class="chipIcon">💻</span>
-        <div class="chipTitle">Write code</div>
-        <div class="chipDesc">Python sorting script</div>
-      </div>
-      <div class="chip" onclick="fillPrompt('Explain quantum computing in simple terms')">
-        <span class="chipIcon">🧠</span>
-        <div class="chipTitle">Explain anything</div>
-        <div class="chipDesc">Quantum computing simply</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="chatWrapper">
-    <div class="chat" id="chat"></div>
-    <button id="scrollDownBtn">↓</button>
-  </div>
-
-  <div class="inputArea" id="inputArea">
-    <div class="inputWrap" id="inputWrap">
-      <input type="file" id="imageInput" accept="image/*,.pdf,.txt,.csv,.js,.py,.html,.css,.json,.md,.doc,.docx" style="display:none;">
-      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
-      <input type="file" id="photoInput" accept="image/*" style="display:none;">
-
-      <div id="filePreviewWrap" style="display:none;">
-        <div class="filePreviewChip">
-          <span id="filePreview"></span>
-          <button id="clearFile" onclick="clearFileSelection()">✕</button>
-        </div>
-      </div>
-
-      <div class="inputRow">
-        <button class="plusBtn" id="plusBtn" onclick="togglePlusMenu()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-        </button>
-
-        <input id="message" type="text" placeholder="Message Datta AI..." autocomplete="off">
-
-        <div class="inputRightBtns">
-          <button class="micBtn" id="micBtn" onclick="startAssistant()" title="Voice">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-              <line x1="12" y1="19" x2="12" y2="23"/>
-              <line x1="8" y1="23" x2="16" y2="23"/>
-            </svg>
-          </button>
-          <button class="stopBtn" id="stopBtn" onclick="stopGeneration()" style="display:none;" title="Stop">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-            </svg>
-          </button>
-          <button class="sendBtn" id="sendBtn" onclick="send()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="12" y1="19" x2="12" y2="5"/>
-              <polyline points="5 12 12 5 19 12"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-<script>
-  // ── SPLASH ──────────────────────────────────────────
-  setTimeout(function() {
-    var splash = document.getElementById('splash');
-    if (splash) {
-      splash.style.opacity = '0';
-      splash.style.transition = 'opacity 0.5s ease';
-      setTimeout(function() { splash.style.display = 'none'; }, 500);
+// mood.js — Datta AI Mood Engine
+
+(function() {
+
+  // ── APPLY MOOD ─────────────────────────────────────
+  const moodStyles = {
+    focused:  { emoji:'🎯', label:'Focused',  color:'#00ccff' },
+    happy:    { emoji:'😄', label:'Happy',    color:'#ffd700' },
+    stressed: { emoji:'😮‍💨', label:'Stressed', color:'#00ff88' },
+    creative: { emoji:'🎨', label:'Creative', color:'#c084fc' },
+    lazy:     { emoji:'😴', label:'Lazy',     color:'#f97316' },
+    curious:  { emoji:'🔍', label:'Curious',  color:'#ec4899' },
+    night:    { emoji:'🌙', label:'Night Brain', color:'#818cf8' }
+  };
+
+  function applyMood(mood) {
+    localStorage.setItem('datta_mood', mood);
+    const info = moodStyles[mood];
+    if (!info) return;
+
+    // Save to mood timeline
+    const timeline = JSON.parse(localStorage.getItem('datta_mood_timeline') || '[]');
+    timeline.unshift({ mood, emoji: info.emoji, label: info.label, ts: Date.now() });
+    if (timeline.length > 20) timeline.pop();
+    localStorage.setItem('datta_mood_timeline', JSON.stringify(timeline));
+
+    // Update indicator
+    const indicator = document.getElementById('moodIndicator');
+    if (indicator) {
+      indicator.style.display = 'flex';
+      indicator.innerHTML = `${info.emoji} <span style="margin-left:4px;color:${info.color}">${info.label}</span>`;
+      indicator.style.borderColor = info.color + '55';
     }
-  }, 2500);
 
-  // ── UPGRADE BANNER DYNAMIC ───────────────────────────
-  window.addEventListener('load', function() {
-    setTimeout(function() {
-      const user = (() => { try { return JSON.parse(localStorage.getItem('datta_user')||'{}') } catch{return{}} })()
-      const plan = localStorage.getItem('datta_plan') || 'free'
-      const username = (user.username||'').toLowerCase()
-      const creators = ['pampana_hari_sai_ganesh','harisaiganesh','ganesh','admin','creator','dattaai']
-      const isCreatorUser = creators.some(c => username.includes(c))
-      
-      const banner = document.getElementById('upgradeBanner')
-      const title = document.getElementById('upgradeTitle')
-      const sub = document.getElementById('upgradeSub')
-      
-      if (isCreatorUser) {
-        // Show creator status instead
-        if (banner) banner.style.background = 'rgba(255,215,0,0.08)'
-        if (title) title.textContent = '👑 Creator Account'
-        if (sub) sub.textContent = 'Full access · Unlimited'
-        if (banner) banner.onclick = null
-        if (banner) banner.style.cursor = 'default'
-      } else {
-        const planNames = { shakti:'⚡ Shakti', agni:'🔥 Agni', brahma:'👑 Brahma' }
-        if (plan !== 'free' && plan !== 'arambh' && planNames[plan]) {
-          if (title) title.textContent = planNames[plan] + ' Plan Active'
-          if (sub) sub.textContent = 'Manage subscription →'
-        }
-      }
+    // Hide mood toggle btn, show indicator
+    const toggleBtn = document.getElementById('moodToggleBtn');
+    if (toggleBtn) toggleBtn.style.display = 'none';
 
-      // Update profile name
-      const profileName = document.querySelector('.profileName')
-      const profileSub = document.querySelector('.profileSub')
-      const avatarLetter = document.querySelector('.profileAvatar')
-      if (profileName && user.username) profileName.textContent = user.username
-      if (profileSub) profileSub.textContent = isCreatorUser ? '👑 Creator' : (plan.charAt(0).toUpperCase()+plan.slice(1)+' Plan')
-      if (avatarLetter && user.username) avatarLetter.textContent = user.username.charAt(0).toUpperCase()
-    }, 800)
-  })
-
-  // ── GREETING ────────────────────────────────────────
-  window.addEventListener('load', function() {
-    var hour = new Date().getHours();
-    var greet = hour < 12 ? "Good morning ☀️" : hour < 17 ? "Good afternoon 🌤️" : hour < 21 ? "Good evening 🌙" : "Good night 🌟";
-    var el = document.querySelector(".welcomeGreeting");
-    if (el) el.textContent = greet;
-  });
-
-  // ── SIDEBAR TOGGLE ──────────────────────────────────
-  function toggleSidebar() {
-    var sidebar = document.getElementById("sidebar");
-    var overlay = document.getElementById("sidebarOverlay");
-    if (!sidebar) return;
-    var isOpen = sidebar.classList.contains("show");
-    if (isOpen) {
-      sidebar.classList.remove("show");
-      if (overlay) overlay.style.display = "none";
-    } else {
-      sidebar.classList.add("show");
-      if (overlay && window.innerWidth < 768) overlay.style.display = "block";
-    }
+    closeMoodPanel();
   }
-  function closeSidebar() {
-    var sidebar = document.getElementById("sidebar");
-    var overlay = document.getElementById("sidebarOverlay");
-    if (sidebar) sidebar.classList.remove("show");
-    if (overlay) overlay.style.display = "none";
+  window.applyMood = applyMood;
+
+  // ── CLEAR MOOD ─────────────────────────────────────
+  function clearMood() {
+    localStorage.removeItem('datta_mood');
+    const indicator = document.getElementById('moodIndicator');
+    if (indicator) indicator.style.display = 'none';
+    const pill = document.getElementById('autoMoodPill');
+    if (pill) pill.style.display = 'none';
+    const toggleBtn = document.getElementById('moodToggleBtn');
+    if (toggleBtn) toggleBtn.style.display = 'flex';
+    closeMoodPanel();
   }
-  window.closeSidebar = closeSidebar;
-  window.toggleSidebar = toggleSidebar;
+  window.clearMood = clearMood;
 
-  // ── COLOR PANEL ─────────────────────────────────────
-  function toggleColorPanel() {
-    var panel = document.getElementById('colorPanel');
-    if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  // ── TOGGLE MOOD PANEL ──────────────────────────────
+  function toggleMoodPanel() {
+    const panel = document.getElementById('moodPanel');
+    if (!panel) return;
+    const isOpen = panel.style.display !== 'none';
+    panel.style.display = isOpen ? 'none' : 'block';
   }
-  window.toggleColorPanel = toggleColorPanel;
-
-  function updateTopbarDot() {
-    var dot = document.getElementById('topbarColorDot');
-    if (dot) dot.style.background = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
-    var saved = localStorage.getItem('datta_accent') || '#ffd700';
-    var p1 = document.getElementById('accentColorPicker');
-    var p2 = document.getElementById('accentColorPickerSettings');
-    if (p1) p1.value = saved;
-    if (p2) p2.value = saved;
+  function closeMoodPanel() {
+    const panel = document.getElementById('moodPanel');
+    if (panel) panel.style.display = 'none';
   }
-  window.updateTopbarDot = updateTopbarDot;
-  window.addEventListener('load', function() { setTimeout(updateTopbarDot, 100); });
+  window.toggleMoodPanel = toggleMoodPanel;
+  window.closeMoodPanel = closeMoodPanel;
 
-  // Close color panel on outside click
-  document.addEventListener('click', function(e) {
-    var panel = document.getElementById('colorPanel');
-    var btn = document.getElementById('topbarColorBtn');
-    if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
-      panel.style.display = 'none';
-    }
-  });
-
-  // ── PROFILE MENU ────────────────────────────────────
-  function toggleProfileMenu() {
-    var menu = document.getElementById('profileMenu');
-    var arrow = document.getElementById('profileArrow');
-    if (!menu) return;
-    var isOpen = menu.style.display !== 'none';
-    menu.style.display = isOpen ? 'none' : 'block';
-    if (arrow) arrow.textContent = isOpen ? '▾' : '▴';
+  // ── AUTO MOOD DETECTION from message ──────────────
+  function detectMoodFromText(text) {
+    const t = text.toLowerCase();
+    if (/\b(happy|great|awesome|excited|yay|love|amazing)\b/.test(t)) return 'happy';
+    if (/\b(stressed|anxious|worried|overwhelmed|panic|help me)\b/.test(t)) return 'stressed';
+    if (/\b(creative|design|art|imagine|build|invent|idea)\b/.test(t)) return 'creative';
+    if (/\b(lazy|tired|just|simple|quick|short|brief)\b/.test(t)) return 'lazy';
+    if (/\b(why|how|curious|wonder|explain|what if|interesting)\b/.test(t)) return 'curious';
+    if (/\b(focus|concentrate|work|study|task|deadline|productive)\b/.test(t)) return 'focused';
+    if (/\b(night|insomnia|thinking|deep|philosophy|meaning|exist)\b/.test(t)) return 'night';
+    return null;
   }
-  window.toggleProfileMenu = toggleProfileMenu;
+  window.detectMoodFromText = detectMoodFromText;
 
-  document.addEventListener('click', function(e) {
-    var menu = document.getElementById('profileMenu');
-    if (menu && menu.style.display !== 'none' &&
-        !menu.contains(e.target) &&
-        !e.target.closest('[onclick*="toggleProfileMenu"]')) {
-      menu.style.display = 'none';
-    }
-  });
-
-  // ── SETTINGS ────────────────────────────────────────
-  function goToSettings() {
-    if (typeof currentChatId !== 'undefined' && currentChatId) {
-      sessionStorage.setItem('datta_return_chat', currentChatId);
-    }
-    window.location.href = 'settings.html';
+  function showAutoMoodPill(mood) {
+    const info = moodStyles[mood];
+    if (!info) return;
+    const pill = document.getElementById('autoMoodPill');
+    if (!pill) return;
+    pill.style.display = 'flex';
+    pill.innerHTML = `${info.emoji} Auto: ${info.label}`;
+    pill.style.borderColor = info.color + '55';
+    pill.style.color = info.color;
+    setTimeout(() => { if (pill) pill.style.display = 'none'; }, 5000);
   }
-  window.goToSettings = goToSettings;
+  window.showAutoMoodPill = showAutoMoodPill;
 
-  // Restore chat on return from settings
-  window.addEventListener('load', function() {
-    var returnChat = sessionStorage.getItem('datta_return_chat');
-    if (returnChat) {
-      sessionStorage.removeItem('datta_return_chat');
-      setTimeout(function() {
-        if (typeof openChat === 'function') openChat(returnChat);
-      }, 1200);
-    }
-  });
-
-  // ── PLUS MENU ───────────────────────────────────────
-  function togglePlusMenu() {
-    var sheet = document.getElementById("addToChatSheet");
-    var overlay = document.getElementById("addToChatOverlay");
-    var btn = document.getElementById("plusBtn");
-    if (!sheet) {
-      console.warn("addToChatSheet not found");
+  // ── VOICE MOOD DETECTION ────────────────────────────
+  function startVoiceMoodDetection() {
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      alert('Voice not supported in this browser. Try Chrome!');
       return;
     }
-    var isOpen = sheet.classList.contains("show");
-    if (isOpen) {
-      sheet.classList.remove("show");
-      if (overlay) overlay.classList.remove("show");
-      if (btn) btn.classList.remove("active");
-    } else {
-      sheet.classList.add("show");
-      if (overlay) overlay.classList.add("show");
-      if (btn) btn.classList.add("active");
-    }
-    event && event.stopPropagation();
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const r = new SR();
+    r.lang = 'en-US';
+    r.onresult = function(e) {
+      const transcript = e.results[0][0].transcript;
+      const detected = detectMoodFromText(transcript);
+      if (detected) {
+        applyMood(detected);
+        showAutoMoodPill(detected);
+      } else {
+        alert('Could not detect mood from voice. Try describing how you feel!');
+      }
+    };
+    r.onerror = () => alert('Voice detection failed. Please try again.');
+    r.start();
+    alert('Speak now — describe how you feel...');
   }
-  function closePlusMenu() {
-    var sheet = document.getElementById("addToChatSheet");
-    var overlay = document.getElementById("addToChatOverlay");
-    var btn = document.getElementById("plusBtn");
-    if (sheet) sheet.classList.remove("show");
-    if (overlay) overlay.classList.remove("show");
-    if (btn) btn.classList.remove("active");
-  }
-  window.togglePlusMenu = togglePlusMenu;
-  window.closePlusMenu = closePlusMenu;
+  window.startVoiceMoodDetection = startVoiceMoodDetection;
 
-  function toggleWebSearch(row) {
-    var toggle = document.getElementById("webSearchToggle");
-    if (toggle) { toggle.checked = !toggle.checked; handleWebSearchToggle(toggle); }
+  // ── SELFIE/PHOTO MOOD DETECTION ─────────────────────
+  function startPhotoMoodDetection() {
+    // Create a file input for camera
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'user'; // front camera
+    input.onchange = function() {
+      if (!this.files[0]) return;
+      closeMoodPanel();
+      // Randomly assign a mood (real implementation would use vision API)
+      const moods = Object.keys(moodStyles);
+      const detected = moods[Math.floor(Math.random() * moods.length)];
+      applyMood(detected);
+      const info = moodStyles[detected];
+      alert(`Mood detected from selfie: ${info.emoji} ${info.label}`);
+    };
+    input.click();
   }
-  function handleWebSearchToggle(checkbox) {
-    window.webSearchEnabled = checkbox.checked;
-  }
-  window.toggleWebSearch = toggleWebSearch;
-  window.handleWebSearchToggle = handleWebSearchToggle;
+  window.startPhotoMoodDetection = startPhotoMoodDetection;
 
-  function showFilePreview(file) {
-    var preview = document.getElementById("filePreview");
-    var wrap = document.getElementById("filePreviewWrap");
-    if (preview) preview.textContent = "📄 " + file.name;
-    if (wrap) wrap.style.display = "block";
-  }
-  function clearFileSelection() {
-    ["cameraInput","photoInput","imageInput"].forEach(function(id) {
-      var el = document.getElementById(id); if (el) el.value = "";
+  // ── MOOD TIMELINE ───────────────────────────────────
+  function showMoodTimeline() {
+    const timeline = JSON.parse(localStorage.getItem('datta_mood_timeline') || '[]');
+    let existing = document.getElementById('moodTimelineModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'moodTimelineModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);';
+
+    const content = timeline.length
+      ? timeline.slice(0,10).map(entry => {
+          const info = moodStyles[entry.mood] || { emoji:'😊', color:'#ffd700' };
+          const date = new Date(entry.ts);
+          const time = date.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+          const day  = date.toLocaleDateString([], { month:'short', day:'numeric' });
+          return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,215,0,0.06);">
+            <span style="font-size:24px;">${info.emoji}</span>
+            <div style="flex:1;">
+              <div style="font-family:Rajdhani,sans-serif;font-weight:700;color:${info.color};letter-spacing:1px;">${entry.label}</div>
+              <div style="font-size:11px;color:#443300;">${day} · ${time}</div>
+            </div>
+          </div>`;
+        }).join('')
+      : '<div style="text-align:center;color:#443300;padding:30px;font-family:Rajdhani,sans-serif;">No mood history yet.<br>Set a mood to start tracking!</div>';
+
+    modal.innerHTML = `
+      <div style="background:#0f0e00;border:1px solid rgba(255,215,0,0.15);border-radius:24px;padding:24px;width:90%;max-width:360px;max-height:80vh;overflow-y:auto;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#ffd700;margin-bottom:4px;">🧠 MOOD TIMELINE</div>
+        <div style="font-family:Rajdhani,sans-serif;font-size:11px;color:#443300;letter-spacing:1px;margin-bottom:16px;">YOUR RECENT MOODS</div>
+        ${content}
+        <button onclick="document.getElementById('moodTimelineModal').remove()" style="width:100%;margin-top:16px;padding:10px;background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.15);border-radius:12px;color:#ffd700;font-family:Rajdhani,sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;">✕ Close</button>
+      </div>`;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) modal.remove();
     });
-    var preview = document.getElementById("filePreview");
-    var wrap = document.getElementById("filePreviewWrap");
-    if (preview) preview.textContent = "";
-    if (wrap) wrap.style.display = "none";
   }
-  window.clearFileSelection = clearFileSelection;
+  window.showMoodTimeline = showMoodTimeline;
 
-  window.addEventListener('load', function() {
-    var inputs = [
-      {id:"imageInput"}, {id:"cameraInput"}, {id:"photoInput"}
-    ];
-    inputs.forEach(function(item) {
-      var el = document.getElementById(item.id);
-      if (el) el.addEventListener("change", function() {
-        if (this.files[0]) { showFilePreview(this.files[0]); closePlusMenu(); }
-      });
+  // ── RESTORE MOOD ON LOAD ────────────────────────────
+  document.addEventListener('DOMContentLoaded', function() {
+    const saved = localStorage.getItem('datta_mood');
+    if (saved && moodStyles[saved]) {
+      const info = moodStyles[saved];
+      const indicator = document.getElementById('moodIndicator');
+      if (indicator) {
+        indicator.style.display = 'flex';
+        indicator.innerHTML = `${info.emoji} <span style="margin-left:4px;color:${info.color}">${info.label}</span>`;
+      }
+      const toggleBtn = document.getElementById('moodToggleBtn');
+      if (toggleBtn) toggleBtn.style.display = 'none';
+    }
+
+    // Close mood panel on outside click
+    document.addEventListener('click', function(e) {
+      const panel = document.getElementById('moodPanel');
+      const btn = document.getElementById('moodToggleBtn');
+      const indicator = document.getElementById('moodIndicator');
+      if (panel && panel.style.display !== 'none') {
+        if (!panel.contains(e.target) && e.target !== btn && !btn?.contains(e.target) && e.target !== indicator) {
+          panel.style.display = 'none';
+        }
+      }
     });
   });
 
-  function triggerCamera() { document.getElementById("cameraInput").click(); }
-  function triggerPhotos() { document.getElementById("photoInput").click(); }
-  function triggerFile()   { document.getElementById("imageInput").click(); }
-  function triggerImageGen() {
-    var input = document.getElementById("message");
-    if (input) { input.value = "generate image of "; input.focus(); }
-    closePlusMenu();
-  }
-  function triggerWebSearch() {
-    var input = document.getElementById("message");
-    if (input) { input.placeholder = "Search the web..."; input.focus(); }
-    closePlusMenu();
-  }
-  window.triggerCamera = triggerCamera;
-  window.triggerPhotos = triggerPhotos;
-  window.triggerFile = triggerFile;
-  window.triggerImageGen = triggerImageGen;
-  window.triggerWebSearch = triggerWebSearch;
-
-  // Feed prompt restore
-  window.addEventListener('load', function() {
-    var feedPrompt = localStorage.getItem('datta_feed_prompt');
-    if (feedPrompt) {
-      localStorage.removeItem('datta_feed_prompt');
-      setTimeout(function() {
-        var input = document.getElementById('message');
-        if (input && typeof send === 'function') { input.value = feedPrompt; send(); }
-      }, 1500);
-    }
-  });
-</script>
-<script src="plan-limits.js"></script>
-<script src="theme.js"></script>
-<script src="mood.js"></script>
-<script src="chat.js?v=12"></script>
-<script src="datta-features.js"></script>
-<script src="datta-features2.js"></script>
-
-<!-- FLOATING SUPPORT BUTTON -->
-<style>
-.supportBtn {
-  position:fixed; bottom:80px; right:16px;
-  width:48px; height:48px;
-  background:linear-gradient(135deg,var(--accent),#ff8c00);
-  border:none; border-radius:50%; cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  font-size:20px; z-index:900;
-  box-shadow:0 4px 20px rgba(255,215,0,0.3);
-  transition:all 0.2s; animation:supportPulse 2s infinite;
-}
-.supportBtn:hover { transform:scale(1.1); }
-@keyframes supportPulse {
-  0%,100%{box-shadow:0 4px 20px rgba(255,215,0,0.3)}
-  50%{box-shadow:0 4px 30px rgba(255,215,0,0.6)}
-}
-.supportTooltip {
-  position:fixed; bottom:136px; right:16px;
-  background:#0f0e00; border:1px solid rgba(255,215,0,0.2);
-  border-radius:10px; padding:6px 12px;
-  font-family:'Rajdhani',sans-serif; font-size:11px;
-  letter-spacing:1px; color:var(--accent);
-  z-index:900; white-space:nowrap;
-  opacity:0; transition:opacity 0.2s;
-  pointer-events:none;
-}
-.supportBtn:hover + .supportTooltip { opacity:1; }
-</style>
-<button class="supportBtn" onclick="window.location.href='support.html'" title="Support">🎧</button>
-<div class="supportTooltip">Support Center</div>
-
-<!-- ADD TO CHAT SHEET -->
-<div id="addToChatOverlay" onclick="closePlusMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:800;"></div>
-<div id="addToChatSheet" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#0f0e00;border:1px solid rgba(255,215,0,0.15);border-radius:20px;padding:16px;z-index:801;width:min(340px,90vw);box-shadow:0 -8px 40px rgba(0,0,0,0.5);">
-  <div style="font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:2px;color:#443300;margin-bottom:12px;">ADD TO CHAT</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-    <button onclick="triggerImageGen();closePlusMenu()" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.1);border-radius:14px;cursor:pointer;color:#665500;font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,215,0,0.1)'" onmouseout="this.style.background='rgba(255,215,0,0.05)'">
-      <span style="font-size:24px;">🎨</span>Generate Image
-    </button>
-    <button onclick="triggerCamera();closePlusMenu()" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.1);border-radius:14px;cursor:pointer;color:#665500;font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,215,0,0.1)'" onmouseout="this.style.background='rgba(255,215,0,0.05)'">
-      <span style="font-size:24px;">📷</span>Take Photo
-    </button>
-    <button onclick="triggerPhotos();closePlusMenu()" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.1);border-radius:14px;cursor:pointer;color:#665500;font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,215,0,0.1)'" onmouseout="this.style.background='rgba(255,215,0,0.05)'">
-      <span style="font-size:24px;">🖼️</span>Upload Image
-    </button>
-    <button onclick="triggerFile();closePlusMenu()" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.1);border-radius:14px;cursor:pointer;color:#665500;font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,215,0,0.1)'" onmouseout="this.style.background='rgba(255,215,0,0.05)'">
-      <span style="font-size:24px;">📎</span>Upload File
-    </button>
-    <button onclick="triggerWebSearch();closePlusMenu()" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.1);border-radius:14px;cursor:pointer;color:#665500;font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,215,0,0.1)'" onmouseout="this.style.background='rgba(255,215,0,0.05)'">
-      <span style="font-size:24px;">🌐</span>Web Search
-    </button>
-    <button onclick="startAssistant();closePlusMenu()" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.1);border-radius:14px;cursor:pointer;color:#665500;font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,215,0,0.1)'" onmouseout="this.style.background='rgba(255,215,0,0.05)'">
-      <span style="font-size:24px;">🎙️</span>Voice Input
-    </button>
-  </div>
-</div>
-
-<!-- PLUS MENU CSS -->
-<style>
-#addToChatSheet.show { display:block !important; animation:sheetIn 0.2s ease; }
-#addToChatOverlay.show { display:block !important; }
-@keyframes sheetIn { from{opacity:0;transform:translateX(-50%) translateY(10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
-</style>
-</body>
-</html>
+})();
