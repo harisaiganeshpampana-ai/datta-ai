@@ -2,853 +2,651 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Settings - Datta AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings | Datta AI</title>
 <link rel="icon" type="image/jpeg" href="logo.jpeg">
+<link rel="stylesheet" href="theme-vars.css">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; font-family:system-ui,Arial,sans-serif; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#080800;color:#fff8e7;font-family:'DM Sans',sans-serif;min-height:100vh;overflow-y:auto}
 
-body {
-  background: #0a0a0a;
-  color: white;
-  min-height: 100vh;
-}
+/* TOPBAR */
+.topbar{position:fixed;top:0;left:0;right:0;height:54px;background:rgba(8,8,0,0.97);border-bottom:1px solid rgba(255,215,0,0.08);display:flex;align-items:center;padding:0 16px;gap:12px;z-index:100;backdrop-filter:blur(20px)}
+.back{background:none;border:none;color:#665500;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:1px;transition:color 0.2s}
+.back:hover{color:var(--accent)}
+.topTitle{font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;color:#fff8e7}
 
-.header {
-  position: sticky;
-  top: 0;
-  background: #111;
-  border-bottom: 1px solid #222;
-  padding: 16px 24px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  z-index: 100;
-}
+.main{padding:66px 16px 60px;max-width:600px;margin:0 auto}
 
-.backBtn {
-  background: #1e1e1e;
-  border: none;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: background 0.2s;
-}
+/* PROFILE CARD */
+.profileCard{display:flex;align-items:center;gap:14px;padding:18px 16px;margin-bottom:8px}
+.pAvatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#ff8c00);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#000;font-family:'Rajdhani',sans-serif;flex-shrink:0}
+.pName{font-size:17px;font-weight:600;color:#fff8e7;margin-bottom:2px}
+.pPlan{font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:1px;color:#665500}
+.pEmail{font-size:12px;color:#443300;margin-top:2px}
 
-.backBtn:hover { background: #2a2a2a; }
+/* SECTION */
+.sectionLabel{font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:2px;color:#443300;padding:16px 16px 6px;text-transform:uppercase}
+.group{background:#0d0c00;border:1px solid rgba(255,215,0,0.07);border-radius:16px;overflow:hidden;margin-bottom:8px}
 
-.headerTitle {
-  font-size: 18px;
-  font-weight: 700;
-}
+/* ROW */
+.row{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer;transition:background 0.15s;border-bottom:1px solid rgba(255,215,0,0.04);position:relative}
+.row:last-child{border-bottom:none}
+.row:hover{background:rgba(255,215,0,0.04)}
+.rowIcon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.rowLeft{flex:1;min-width:0}
+.rowTitle{font-size:14px;font-weight:500;color:#fff8e7;margin-bottom:1px}
+.rowSub{font-size:12px;color:#554400}
+.rowRight{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.rowValue{font-size:13px;color:#554400;font-family:'Rajdhani',sans-serif}
+.rowArrow{color:#332200;font-size:12px}
 
-.container {
-  max-width: 700px;
-  margin: 0 auto;
-  padding: 24px 20px;
-}
+/* TOGGLE SWITCH */
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{display:none}
+.toggleSlider{position:absolute;inset:0;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.15);border-radius:50px;cursor:pointer;transition:0.3s}
+.toggleSlider::before{content:'';position:absolute;width:18px;height:18px;left:2px;top:2px;background:#443300;border-radius:50%;transition:0.3s}
+.toggle input:checked + .toggleSlider{background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4)}
+.toggle input:checked + .toggleSlider::before{transform:translateX(20px);background:var(--accent)}
 
-.userCard {
-  background: #111;
-  border: 1px solid #222;
-  border-radius: 16px;
-  padding: 24px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 28px;
-}
+/* BADGE */
+.badge{padding:2px 10px;border-radius:20px;font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px}
+.badge.gold{background:rgba(255,215,0,0.12);color:var(--accent);border:1px solid rgba(255,215,0,0.2)}
+.badge.green{background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.2)}
+.badge.red{background:rgba(255,60,60,0.1);color:#ff4444;border:1px solid rgba(255,60,60,0.2)}
 
-.userAvatar {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #00ff88, #00ccff);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: 700;
-  color: #000;
-  flex-shrink: 0;
-}
+/* ACCENT COLORS */
+.colorRow{display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px}
+.colorDot{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all 0.2s;flex-shrink:0}
+.colorDot.selected{border-color:#fff;transform:scale(1.15)}
+.colorDot:hover{transform:scale(1.1)}
 
-.userName { font-size: 18px; font-weight: 700; }
-.userEmail { font-size: 13px; color: #666; margin-top: 2px; }
+/* MODAL */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.modal.show{display:flex}
+.mbox{background:#0d0c00;border:1px solid rgba(255,215,0,0.15);border-radius:20px;padding:24px;width:90%;max-width:380px}
+.mTitle{font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;color:var(--accent);margin-bottom:16px}
+.mInput{width:100%;background:#080800;border:1px solid rgba(255,215,0,0.1);border-radius:10px;padding:10px 14px;color:#fff8e7;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:10px;transition:border-color 0.2s}
+.mInput:focus{border-color:rgba(255,215,0,0.3)}
+.mBtns{display:flex;gap:8px;margin-top:4px}
+.mBtn{flex:1;padding:11px;border:none;border-radius:50px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer}
+.mBtn.cancel{background:rgba(255,255,255,0.05);color:#665500}
+.mBtn.confirm{background:linear-gradient(135deg,var(--accent),#ff8c00);color:#000}
+.mBtn.danger{background:rgba(255,60,60,0.1);color:#ff4444;border:1px solid rgba(255,60,60,0.2)}
 
-.section {
-  background: #111;
-  border: 1px solid #222;
-  border-radius: 16px;
-  overflow: hidden;
-  margin-bottom: 16px;
-}
-
-.sectionTitle {
-  font-size: 11px;
-  color: #666;
-  font-weight: 600;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  padding: 16px 20px 8px;
-}
-
-.settingRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid #1a1a1a;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.settingRow:last-child { border-bottom: none; }
-.settingRow:hover { background: #161616; }
-
-.settingLeft { display: flex; align-items: center; gap: 12px; }
-.settingIcon {
-  width: 36px; height: 36px;
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 17px;
-  flex-shrink: 0;
-}
-
-.settingLabel { font-size: 15px; font-weight: 500; }
-.settingDesc { font-size: 12px; color: #666; margin-top: 1px; }
-
-.settingRight {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #555;
-  font-size: 13px;
-}
-
-.arrow { color: #444; font-size: 16px; }
-
-/* Toggle */
-.toggle {
-  position: relative;
-  display: inline-block;
-  width: 44px; height: 24px;
-}
-.toggle input { opacity:0; width:0; height:0; }
-.toggleSlider {
-  position: absolute; inset: 0;
-  background: #2a2a2a;
-  border-radius: 24px;
-  cursor: pointer;
-  transition: 0.3s;
-}
-.toggleSlider::before {
-  content: '';
-  position: absolute;
-  width: 18px; height: 18px;
-  left: 3px; top: 3px;
-  background: white;
-  border-radius: 50%;
-  transition: 0.3s;
-}
-.toggle input:checked + .toggleSlider { background: #00cc6a; }
-.toggle input:checked + .toggleSlider::before { transform: translateX(20px); }
-
-/* Panel overlay */
-.panel {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.7);
-  z-index: 200;
-  display: none;
-  align-items: flex-end;
-  justify-content: center;
-  backdrop-filter: blur(4px);
-}
-
-.panel.show { display: flex; }
-
-.panelBox {
-  background: #111;
-  border: 1px solid #222;
-  border-radius: 20px 20px 0 0;
-  width: 100%;
-  max-width: 700px;
-  max-height: 80vh;
-  overflow-y: auto;
-  padding: 24px;
-  animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-
-.panelHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.panelTitle { font-size: 17px; font-weight: 700; }
-
-.panelClose {
-  background: #1e1e1e;
-  border: none;
-  color: white;
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.formField { margin-bottom: 16px; }
-.formLabel {
-  font-size: 12px;
-  color: #888;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-  display: block;
-}
-
-.formInput {
-  width: 100%;
-  padding: 12px 14px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
-  border-radius: 10px;
-  color: white;
-  font-size: 15px;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.formInput:focus { border-color: #00ff88; }
-
-.saveBtn {
-  width: 100%;
-  padding: 13px;
-  background: linear-gradient(135deg, #00cc6a, #00aaff);
-  border: none;
-  border-radius: 12px;
-  color: white;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-top: 8px;
-  transition: opacity 0.2s;
-}
-
-.saveBtn:hover { opacity: 0.9; }
-.saveBtn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.dangerBtn {
-  width: 100%;
-  padding: 13px;
-  background: #dc2626;
-  border: none;
-  border-radius: 12px;
-  color: white;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-top: 8px;
-  transition: background 0.2s;
-}
-
-.dangerBtn:hover { background: #ef4444; }
-
-.msg {
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  margin-bottom: 14px;
-  display: none;
-}
-
-.msg.success { background: #0a2a1a; border: 1px solid #104410; color: #44ff88; display: block; }
-.msg.error { background: #2a1010; border: 1px solid #441010; color: #ff6666; display: block; }
-
-.themeGrid { display: flex; gap: 10px; margin-bottom: 16px; }
-.themeCard {
-  flex: 1; padding: 14px;
-  border: 2px solid #2a2a2a;
-  border-radius: 12px;
-  cursor: pointer;
-  text-align: center;
-  font-size: 13px;
-  transition: all 0.2s;
-  background: #1a1a1a;
-  color: #aaa;
-}
-.themeCard.active { border-color: #00ff88; color: white; background: #0a2a1a; }
-
-.langGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.langBtn {
-  padding: 12px;
-  background: #1a1a1a;
-  border: 2px solid #2a2a2a;
-  border-radius: 10px;
-  color: #aaa;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: left;
-}
-.langBtn.active { border-color: #00ccff; color: white; background: #0a1a2a; }
-
-.dangerZone {
-  background: #1a0a0a;
-  border: 1px solid #3a1a1a;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
-}
-.dangerTitle { font-size: 14px; font-weight: 600; color: #ef4444; margin-bottom: 4px; }
-.dangerDesc { font-size: 12px; color: #888; margin-bottom: 12px; }
-
-.logoutRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  cursor: pointer;
-  color: #ef4444;
-  font-size: 15px;
-  font-weight: 500;
-  transition: background 0.15s;
-  border-radius: 16px;
-  background: #111;
-  border: 1px solid #222;
-  margin-top: 8px;
-}
-
-.logoutRow:hover { background: #1a0a0a; }
-
-/* LEGAL LINKS FOOTER */
-.legalFooter {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 24px 0 32px;
-  margin-top: 8px;
-}
-.legalLink {
-  font-size: 12px;
-  color: #444;
-  text-decoration: none;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-  transition: color 0.2s;
-}
-.legalLink:hover { color: #00cc88; }
-.legalDot { color: #2a2a2a; font-size: 12px; }
-.legalVersion {
-  font-size: 10px;
-  color: #333;
-  text-align: center;
-  padding-bottom: 16px;
-  letter-spacing: 2px;
-}
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0d0c00;border:1px solid rgba(0,255,136,0.3);border-radius:50px;padding:10px 20px;font-family:'Rajdhani',sans-serif;font-size:12px;color:#00ff88;letter-spacing:1px;z-index:9999;display:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.5)}
+.toast.show{display:block}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <button class="backBtn" onclick="goBack()">
-    ← Back
+<div class="topbar">
+  <button class="back" onclick="window.location.href='index.html'">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
   </button>
-  <div class="headerTitle">Settings</div>
+  <div class="topTitle">Settings</div>
 </div>
 
-<div class="container">
+<div class="main">
 
-  <!-- User Card -->
-  <div class="userCard">
-    <div class="userAvatar" id="userAvatar">G</div>
+  <!-- PROFILE CARD -->
+  <div class="profileCard">
+    <div class="pAvatar" id="avatarLetter">G</div>
     <div>
-      <div class="userName" id="userName">Loading...</div>
-      <div class="userEmail" id="userEmail">Loading...</div>
+      <div class="pName" id="displayName">Ganesh</div>
+      <div class="pEmail" id="displayEmail">—</div>
+      <div class="pPlan"><span class="badge gold" id="planBadge">🌱 ARAMBH</span></div>
     </div>
   </div>
 
-  <!-- Account -->
-  <div class="sectionTitle">ACCOUNT</div>
-  <div class="section">
-    <div class="settingRow" onclick="openPanel('username')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a2a1a;">👤</div>
-        <div>
-          <div class="settingLabel">Change Username</div>
-          <div class="settingDesc">Update your display name</div>
-        </div>
+  <!-- ACCOUNT -->
+  <div class="sectionLabel">Account</div>
+  <div class="group">
+    <div class="row" onclick="openModal('username')">
+      <div class="rowIcon" style="background:rgba(255,215,0,0.08)">👤</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Username</div>
+        <div class="rowSub" id="subUsername">—</div>
       </div>
-      <div class="arrow">›</div>
+      <div class="rowRight"><span class="rowArrow">›</span></div>
     </div>
-    <div class="settingRow" onclick="openPanel('password')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a1a2a;">🔑</div>
-        <div>
-          <div class="settingLabel">Change Password</div>
-          <div class="settingDesc">Update your password</div>
-        </div>
+    <div class="row" onclick="openModal('password')">
+      <div class="rowIcon" style="background:rgba(255,215,0,0.08)">🔒</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Change Password</div>
+        <div class="rowSub">Update your password</div>
       </div>
-      <div class="arrow">›</div>
+      <div class="rowRight"><span class="rowArrow">›</span></div>
     </div>
-  </div>
-
-  <!-- Appearance -->
-  <div class="sectionTitle">APPEARANCE</div>
-  <div class="section">
-    <div class="settingRow" onclick="openPanel('theme')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#2a1a0a;">🎨</div>
-        <div>
-          <div class="settingLabel">Theme</div>
-          <div class="settingDesc" id="themeDesc">Dark mode</div>
-        </div>
+    <div class="row" onclick="window.location.href='pricing.html'">
+      <div class="rowIcon" style="background:rgba(255,215,0,0.08)">👑</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Subscription Plan</div>
+        <div class="rowSub" id="subPlan">Free plan</div>
       </div>
-      <div class="arrow">›</div>
+      <div class="rowRight"><span class="badge gold">UPGRADE</span><span class="rowArrow">›</span></div>
     </div>
-    <div class="settingRow" onclick="openPanel('language')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#0a1a2a;">🌐</div>
-        <div>
-          <div class="settingLabel">AI Response Language</div>
-          <div class="settingDesc" id="langDesc">English</div>
-        </div>
+    <div class="row" onclick="window.location.href='pricing.html'">
+      <div class="rowIcon" style="background:rgba(255,215,0,0.08)">💳</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Billing & Payments</div>
+        <div class="rowSub">Manage your subscription</div>
       </div>
-      <div class="arrow">›</div>
+      <div class="rowRight"><span class="rowArrow">›</span></div>
     </div>
   </div>
 
-  <!-- Preferences -->
-  <div class="sectionTitle">PREFERENCES</div>
-  <div class="section">
-    <div class="settingRow" onclick="void(0)">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#2a2a0a;">🔔</div>
-        <div>
-          <div class="settingLabel">Sound Effects</div>
-          <div class="settingDesc">Play sound on AI response</div>
-        </div>
+  <!-- APPEARANCE -->
+  <div class="sectionLabel">Appearance</div>
+  <div class="group">
+    <div class="row" onclick="toggleTheme()">
+      <div class="rowIcon" style="background:rgba(255,215,0,0.08)">🌙</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Theme</div>
+        <div class="rowSub" id="themeLabel">Dark</div>
       </div>
-      <label class="toggle" onclick="event.stopPropagation()">
-        <input type="checkbox" id="soundToggle" onchange="savePref()">
-        <span class="toggleSlider"></span>
-      </label>
+      <div class="rowRight">
+        <label class="toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="themeToggle" onchange="toggleTheme()">
+          <div class="toggleSlider"></div>
+        </label>
+      </div>
     </div>
-    <div class="settingRow" onclick="void(0)">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a0a2a;">✨</div>
-        <div>
-          <div class="settingLabel">Streaming Text</div>
-          <div class="settingDesc">Show text as AI types</div>
-        </div>
+    <div class="row">
+      <div class="rowIcon" style="background:rgba(255,215,0,0.08)">🎨</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Accent Color</div>
+        <div class="rowSub">Choose your theme color</div>
       </div>
-      <label class="toggle" onclick="event.stopPropagation()">
-        <input type="checkbox" id="streamToggle" checked onchange="savePref()">
-        <span class="toggleSlider"></span>
-      </label>
     </div>
-  </div>
-
-  <!-- Legal -->
-  <div class="sectionTitle">LEGAL</div>
-  <div class="section">
-    <div class="settingRow" onclick="window.location.href='privacy.html'">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#0a1a2a;">🔒</div>
-        <div>
-          <div class="settingLabel">Privacy Policy</div>
-          <div class="settingDesc">How we handle your data</div>
-        </div>
+    <div class="colorRow" id="colorRow"></div>
+    <div class="row">
+      <div class="rowIcon" style="background:rgba(255,215,0,0.08)">🔡</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Font Size</div>
+        <div class="rowSub" id="fontLabel">Medium</div>
       </div>
-      <div class="arrow">›</div>
-    </div>
-    <div class="settingRow" onclick="window.location.href='terms.html'">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a1a0a;">📋</div>
-        <div>
-          <div class="settingLabel">Terms of Service</div>
-          <div class="settingDesc">Rules for using Datta AI</div>
-        </div>
+      <div class="rowRight">
+        <select onchange="setFont(this.value)" id="fontSelect" style="background:#080800;border:1px solid rgba(255,215,0,0.1);border-radius:8px;padding:4px 8px;color:#fff8e7;font-family:'DM Sans',sans-serif;font-size:12px;outline:none">
+          <option value="small">Small</option>
+          <option value="medium" selected>Medium</option>
+          <option value="large">Large</option>
+        </select>
       </div>
-      <div class="arrow">›</div>
-    </div>
-    <div class="settingRow" onclick="window.location.href='home.html'">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a0a1a;">🏠</div>
-        <div>
-          <div class="settingLabel">About Datta AI</div>
-          <div class="settingDesc">Features, pricing & more</div>
-        </div>
-      </div>
-      <div class="arrow">›</div>
     </div>
   </div>
 
-  <!-- Danger Zone -->
-  <div class="sectionTitle">DANGER ZONE</div>
-  <div class="section">
-    <div class="settingRow" onclick="openPanel('deleteChats')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#2a1010;">🗑️</div>
-        <div>
-          <div class="settingLabel" style="color:#ef4444;">Delete All Chats</div>
-          <div class="settingDesc">Permanently delete chat history</div>
-        </div>
+  <!-- AI PREFERENCES -->
+  <div class="sectionLabel">AI Preferences</div>
+  <div class="group">
+    <div class="row" onclick="openModal('language')">
+      <div class="rowIcon" style="background:rgba(0,204,255,0.08)">🌍</div>
+      <div class="rowLeft">
+        <div class="rowTitle">AI Language</div>
+        <div class="rowSub" id="langLabel">English</div>
       </div>
-      <div class="arrow">›</div>
+      <div class="rowRight"><span class="rowArrow">›</span></div>
     </div>
-    <div class="settingRow" onclick="openPanel('deleteAccount')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#2a1010;">❌</div>
-        <div>
-          <div class="settingLabel" style="color:#ef4444;">Delete Account</div>
-          <div class="settingDesc">Permanently delete your account</div>
-        </div>
+    <div class="row" onclick="toggleMood()">
+      <div class="rowIcon" style="background:rgba(255,215,0,0.08)">😊</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Mood-Based AI</div>
+        <div class="rowSub">AI adapts to your mood</div>
       </div>
-      <div class="arrow">›</div>
+      <div class="rowRight">
+        <label class="toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="moodToggle" checked onchange="toggleMood()">
+          <div class="toggleSlider"></div>
+        </label>
+      </div>
+    </div>
+    <div class="row" onclick="toggleMemory()">
+      <div class="rowIcon" style="background:rgba(0,255,136,0.08)">🧾</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Smart Memory</div>
+        <div class="rowSub">Remember facts across chats</div>
+      </div>
+      <div class="rowRight">
+        <label class="toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="memoryToggle" checked onchange="toggleMemory()">
+          <div class="toggleSlider"></div>
+        </label>
+      </div>
+    </div>
+    <div class="row" onclick="toggleBriefing()">
+      <div class="rowIcon" style="background:rgba(255,215,0,0.08)">📅</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Daily Briefing</div>
+        <div class="rowSub">Morning summary every day</div>
+      </div>
+      <div class="rowRight">
+        <label class="toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="briefingToggle" checked onchange="toggleBriefing()">
+          <div class="toggleSlider"></div>
+        </label>
+      </div>
+    </div>
+    <div class="row" onclick="toggleWebSearch()">
+      <div class="rowIcon" style="background:rgba(0,204,255,0.08)">🌐</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Web Search</div>
+        <div class="rowSub">AI searches the web for answers</div>
+      </div>
+      <div class="rowRight">
+        <label class="toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="webToggle" checked onchange="toggleWebSearch()">
+          <div class="toggleSlider"></div>
+        </label>
+      </div>
     </div>
   </div>
 
-  <!-- Logout -->
-  <div class="logoutRow" onclick="logout()">
-    <span>🚪 Log Out</span>
-    <span>›</span>
+  <!-- FEATURES -->
+  <div class="sectionLabel">Features</div>
+  <div class="group">
+    <div class="row" onclick="window.location.href='memory.html'">
+      <div class="rowIcon" style="background:rgba(0,255,136,0.08)">🧾</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Smart Memory</div>
+        <div class="rowSub">View & manage your memories</div>
+      </div>
+      <div class="rowRight"><span class="rowArrow">›</span></div>
+    </div>
+    <div class="row" onclick="window.location.href='analytics.html'">
+      <div class="rowIcon" style="background:rgba(192,132,252,0.08)">📊</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Analytics</div>
+        <div class="rowSub">Your usage stats & insights</div>
+      </div>
+      <div class="rowRight"><span class="rowArrow">›</span></div>
+    </div>
+    <div class="row" onclick="window.location.href='xp.html'">
+      <div class="rowIcon" style="background:rgba(255,215,0,0.08)">🎮</div>
+      <div class="rowLeft">
+        <div class="rowTitle">XP & Progress</div>
+        <div class="rowSub" id="xpLabel">Level 1 · 0 XP</div>
+      </div>
+      <div class="rowRight"><span class="rowArrow">›</span></div>
+    </div>
+    <div class="row" onclick="window.location.href='translator.html'">
+      <div class="rowIcon" style="background:rgba(0,204,255,0.08)">🌍</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Translator</div>
+        <div class="rowSub">Translate text to 24 languages</div>
+      </div>
+      <div class="rowRight"><span class="rowArrow">›</span></div>
+    </div>
   </div>
 
-  <!-- Legal Footer Links -->
-  <div class="legalFooter">
-    <a href="privacy.html" class="legalLink">Privacy Policy</a>
-    <span class="legalDot">·</span>
-    <a href="terms.html" class="legalLink">Terms of Service</a>
-    <span class="legalDot">·</span>
-    <a href="home.html" class="legalLink">About</a>
+  <!-- VOICE -->
+  <div class="sectionLabel">Voice</div>
+  <div class="group">
+    <div class="row" onclick="toggleVoiceRead()">
+      <div class="rowIcon" style="background:rgba(255,215,0,0.08)">🔊</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Read Responses Aloud</div>
+        <div class="rowSub">AI speaks its answers</div>
+      </div>
+      <div class="rowRight">
+        <label class="toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="voiceToggle" onchange="toggleVoiceRead()">
+          <div class="toggleSlider"></div>
+        </label>
+      </div>
+    </div>
+    <div class="row" onclick="openModal('language')">
+      <div class="rowIcon" style="background:rgba(255,215,0,0.08)">🎙️</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Voice Language</div>
+        <div class="rowSub" id="voiceLangLabel">English (India)</div>
+      </div>
+      <div class="rowRight"><span class="rowArrow">›</span></div>
+    </div>
   </div>
-  <div class="legalVersion" id="versionFooter">DATTA AI v2.0 · SHAKTI</div>
+
+  <!-- SUPPORT -->
+  <div class="sectionLabel">Support</div>
+  <div class="group">
+    <div class="row" onclick="window.location.href='support.html'">
+      <div class="rowIcon" style="background:rgba(255,215,0,0.08)">🎧</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Support Center</div>
+        <div class="rowSub">AI bot, tickets, FAQ</div>
+      </div>
+      <div class="rowRight"><span class="rowArrow">›</span></div>
+    </div>
+    <div class="row" onclick="window.location.href='privacy.html'">
+      <div class="rowIcon" style="background:rgba(255,215,0,0.08)">🔐</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Privacy Policy</div>
+        <div class="rowSub">How we handle your data</div>
+      </div>
+      <div class="rowRight"><span class="rowArrow">›</span></div>
+    </div>
+    <div class="row" onclick="window.location.href='terms.html'">
+      <div class="rowIcon" style="background:rgba(255,215,0,0.08)">📄</div>
+      <div class="rowLeft">
+        <div class="rowTitle">Terms of Service</div>
+        <div class="rowSub">Rules and conditions</div>
+      </div>
+      <div class="rowRight"><span class="rowArrow">›</span></div>
+    </div>
+    <div class="row">
+      <div class="rowIcon" style="background:rgba(255,215,0,0.08)">ℹ️</div>
+      <div class="rowLeft">
+        <div class="rowTitle">About Datta AI</div>
+        <div class="rowSub">Version 2.0 · Shakti</div>
+      </div>
+      <div class="rowRight"><span style="font-family:'Rajdhani',sans-serif;font-size:11px;color:#332200;letter-spacing:1px">v2.0</span></div>
+    </div>
+  </div>
+
+  <!-- DANGER ZONE -->
+  <div class="sectionLabel">Account Actions</div>
+  <div class="group">
+    <div class="row" onclick="confirmLogout()">
+      <div class="rowIcon" style="background:rgba(255,100,0,0.08)">🚪</div>
+      <div class="rowLeft">
+        <div class="rowTitle" style="color:#ff8c00">Log Out</div>
+        <div class="rowSub">Sign out of your account</div>
+      </div>
+      <div class="rowRight"><span class="rowArrow" style="color:#ff8c00">›</span></div>
+    </div>
+    <div class="row" onclick="openModal('deleteAccount')">
+      <div class="rowIcon" style="background:rgba(255,60,60,0.08)">🗑️</div>
+      <div class="rowLeft">
+        <div class="rowTitle" style="color:#ff4444">Delete Account</div>
+        <div class="rowSub">Permanently delete all data</div>
+      </div>
+      <div class="rowRight"><span class="rowArrow" style="color:#ff4444">›</span></div>
+    </div>
+  </div>
 
 </div>
 
-<!-- PANELS -->
-
-<!-- Username Panel -->
-<div class="panel" id="panel-username" onclick="closePanel('username')">
-  <div class="panelBox" onclick="event.stopPropagation()">
-    <div class="panelHeader">
-      <div class="panelTitle">Change Username</div>
-      <button class="panelClose" onclick="closePanel('username')">✕</button>
-    </div>
-    <div class="msg" id="msg-username"></div>
-    <div class="formField">
-      <label class="formLabel">New Username</label>
-      <input type="text" id="newUsername" class="formInput" placeholder="Enter new username">
-    </div>
-    <button class="saveBtn" onclick="changeUsername()">Save Username</button>
-  </div>
+<!-- MODALS -->
+<div class="modal" id="modal">
+  <div class="mbox" id="mbox"></div>
 </div>
 
-<!-- Password Panel -->
-<div class="panel" id="panel-password" onclick="closePanel('password')">
-  <div class="panelBox" onclick="event.stopPropagation()">
-    <div class="panelHeader">
-      <div class="panelTitle">Change Password</div>
-      <button class="panelClose" onclick="closePanel('password')">✕</button>
-    </div>
-    <div class="msg" id="msg-password"></div>
-    <div class="formField">
-      <label class="formLabel">Current Password</label>
-      <input type="password" id="currentPassword" class="formInput" placeholder="Current password">
-    </div>
-    <div class="formField">
-      <label class="formLabel">New Password</label>
-      <input type="password" id="newPassword" class="formInput" placeholder="Min 6 characters">
-    </div>
-    <div class="formField">
-      <label class="formLabel">Confirm New Password</label>
-      <input type="password" id="confirmPassword" class="formInput" placeholder="Confirm new password">
-    </div>
-    <button class="saveBtn" onclick="changePassword()">Change Password</button>
-  </div>
-</div>
-
-<!-- Theme Panel -->
-<div class="panel" id="panel-theme" onclick="closePanel('theme')">
-  <div class="panelBox" onclick="event.stopPropagation()">
-    <div class="panelHeader">
-      <div class="panelTitle">Choose Theme</div>
-      <button class="panelClose" onclick="closePanel('theme')">✕</button>
-    </div>
-    <div class="themeGrid">
-      <div class="themeCard" id="theme-dark" onclick="setTheme('dark')">🌙<br>Dark</div>
-      <div class="themeCard" id="theme-light" onclick="setTheme('light')">☀️<br>Light</div>
-    </div>
-  </div>
-</div>
-
-<!-- Language Panel -->
-<div class="panel" id="panel-language" onclick="closePanel('language')">
-  <div class="panelBox" onclick="event.stopPropagation()">
-    <div class="panelHeader">
-      <div class="panelTitle">AI Response Language</div>
-      <button class="panelClose" onclick="closePanel('language')">✕</button>
-    </div>
-    <div class="langGrid">
-      <button class="langBtn" onclick="setLanguage('English')">🇺🇸 English</button>
-      <button class="langBtn" onclick="setLanguage('Hindi')">🇮🇳 Hindi</button>
-      <button class="langBtn" onclick="setLanguage('Telugu')">🇮🇳 Telugu</button>
-      <button class="langBtn" onclick="setLanguage('Tamil')">🇮🇳 Tamil</button>
-      <button class="langBtn" onclick="setLanguage('Spanish')">🇪🇸 Spanish</button>
-      <button class="langBtn" onclick="setLanguage('French')">🇫🇷 French</button>
-      <button class="langBtn" onclick="setLanguage('Arabic')">🇸🇦 Arabic</button>
-      <button class="langBtn" onclick="setLanguage('Chinese')">🇨🇳 Chinese</button>
-      <button class="langBtn" onclick="setLanguage('Japanese')">🇯🇵 Japanese</button>
-      <button class="langBtn" onclick="setLanguage('German')">🇩🇪 German</button>
-    </div>
-  </div>
-</div>
-
-<!-- Delete Chats Panel -->
-<div class="panel" id="panel-deleteChats" onclick="closePanel('deleteChats')">
-  <div class="panelBox" onclick="event.stopPropagation()">
-    <div class="panelHeader">
-      <div class="panelTitle">Delete All Chats</div>
-      <button class="panelClose" onclick="closePanel('deleteChats')">✕</button>
-    </div>
-    <div class="msg" id="msg-deleteChats"></div>
-    <div class="dangerZone">
-      <div class="dangerTitle">Warning!</div>
-      <div class="dangerDesc">This will permanently delete ALL your chat history. This cannot be undone.</div>
-      <button class="dangerBtn" onclick="deleteAllChats()">Yes, Delete All Chats</button>
-    </div>
-  </div>
-</div>
-
-<!-- Delete Account Panel -->
-<div class="panel" id="panel-deleteAccount" onclick="closePanel('deleteAccount')">
-  <div class="panelBox" onclick="event.stopPropagation()">
-    <div class="panelHeader">
-      <div class="panelTitle">Delete Account</div>
-      <button class="panelClose" onclick="closePanel('deleteAccount')">✕</button>
-    </div>
-    <div class="msg" id="msg-deleteAccount"></div>
-    <div class="dangerZone">
-      <div class="dangerTitle">This cannot be undone!</div>
-      <div class="dangerDesc">All your data, chats, and account will be permanently deleted.</div>
-      <div class="formField">
-        <label class="formLabel">Enter Password to Confirm</label>
-        <input type="password" id="deletePassword" class="formInput" placeholder="Your password">
-      </div>
-      <button class="dangerBtn" onclick="deleteAccount()">Delete My Account Forever</button>
-    </div>
-  </div>
-</div>
+<div class="toast" id="toast"></div>
 
 <script>
-const SERVER = "https://datta-ai-server.onrender.com"
-
-function getToken() {
-  return localStorage.getItem("datta_token") || ""
+// ── HELPERS ────────────────────────────────────────
+function getUser() { try { return JSON.parse(localStorage.getItem('datta_user')||'{}') } catch { return {} } }
+function getToken() { return localStorage.getItem('datta_token')||'' }
+function showToast(msg, color='#00ff88') {
+  const t = document.getElementById('toast')
+  t.textContent = msg
+  t.style.color = color
+  t.style.borderColor = color+'44'
+  t.classList.add('show')
+  setTimeout(()=>t.classList.remove('show'), 3000)
 }
 
-function getUser() {
-  try {
-    const raw = localStorage.getItem("datta_user")
-    if (raw && raw !== "null") return JSON.parse(raw)
-  } catch(e) {}
-  return null
-}
-
-window.addEventListener("load", function() {
-  const token = getToken()
-  if (!token) {
-    window.location.href = "login.html"
-    return
-  }
-
+// ── INIT ───────────────────────────────────────────
+function init() {
   const user = getUser()
-  if (user) {
-    document.getElementById("userAvatar").textContent = (user.username || "U")[0].toUpperCase()
-    document.getElementById("userName").textContent = user.username || "User"
-    document.getElementById("userEmail").textContent = user.email || (user.isGuest ? "Guest Account" : "")
+  const name = user.username || 'User'
+  const email = user.email || ''
+  const plan = localStorage.getItem('datta_plan') || 'arambh'
+
+  // Profile
+  document.getElementById('avatarLetter').textContent = name.charAt(0).toUpperCase()
+  document.getElementById('displayName').textContent = name
+  document.getElementById('displayEmail').textContent = email
+  document.getElementById('subUsername').textContent = name
+
+  // Plan badge
+  const planNames = { arambh:'🌱 ARAMBH', shakti:'⚡ SHAKTI', agni:'🔥 AGNI', brahma:'👑 BRAHMA', free:'🌱 ARAMBH' }
+  const planSubs = { arambh:'Free plan · 50 msg/hr', shakti:'₹249/mo · 150 msg/hr', agni:'₹599/mo · 500 msg/hr', brahma:'₹1199/mo · 1000 msg/hr', free:'Free plan' }
+  document.getElementById('planBadge').textContent = planNames[plan] || '🌱 ARAMBH'
+  document.getElementById('subPlan').textContent = planSubs[plan] || 'Free plan'
+
+  // XP
+  const xp = JSON.parse(localStorage.getItem('datta_xp')||'{}')
+  const levels = [{n:'Beginner',xp:0},{n:'Explorer',xp:100},{n:'Thinker',xp:300},{n:'Creator',xp:600},{n:'Mastermind',xp:1000},{n:'Legend',xp:2000},{n:'Brahma',xp:5000}]
+  const totalXP = xp.totalXP || 0
+  let curLevel = levels[0]
+  for (const l of levels) { if (totalXP >= l.xp) curLevel = l; else break }
+  document.getElementById('xpLabel').textContent = `${curLevel.n} · ${totalXP} XP`
+
+  // Language
+  const lang = localStorage.getItem('datta_language') || 'English'
+  document.getElementById('langLabel').textContent = lang
+  document.getElementById('voiceLangLabel').textContent = lang + ' (India)'
+
+  // Font
+  const font = localStorage.getItem('datta_fontSize') || 'medium'
+  document.getElementById('fontSelect').value = font
+  document.getElementById('fontLabel').textContent = font.charAt(0).toUpperCase()+font.slice(1)
+
+  // Toggles
+  document.getElementById('moodToggle').checked = localStorage.getItem('datta_mood_enabled') !== 'false'
+  document.getElementById('memoryToggle').checked = localStorage.getItem('datta_memory_enabled') !== 'false'
+  document.getElementById('briefingToggle').checked = localStorage.getItem('datta_briefing_enabled') !== 'false'
+  document.getElementById('webToggle').checked = localStorage.getItem('datta_websearch_enabled') !== 'false'
+  document.getElementById('voiceToggle').checked = localStorage.getItem('datta_voice_read') === 'true'
+
+  // Theme
+  const isDark = localStorage.getItem('datta_theme') !== 'light'
+  document.getElementById('themeToggle').checked = !isDark
+  document.getElementById('themeLabel').textContent = isDark ? 'Dark' : 'Light'
+
+  // Colors
+  renderColors()
+}
+
+// ── COLORS ─────────────────────────────────────────
+const COLORS = [
+  {name:'Gold',value:'#ffd700'},{name:'Orange',value:'#ff8c00'},
+  {name:'Red',value:'#ef4444'},{name:'Purple',value:'#c084fc'},
+  {name:'Blue',value:'#3b82f6'},{name:'Cyan',value:'#00ccff'},
+  {name:'Green',value:'#22c55e'},{name:'Pink',value:'#ec4899'},
+]
+function renderColors() {
+  const saved = localStorage.getItem('datta_accent') || '#ffd700'
+  const row = document.getElementById('colorRow')
+  row.innerHTML = COLORS.map(c => `
+    <div class="colorDot ${c.value===saved?'selected':''}"
+      style="background:${c.value}"
+      title="${c.name}"
+      onclick="setColor('${c.value}')">
+    </div>`).join('')
+  // Custom color picker
+  row.innerHTML += `<input type="color" value="${saved}" title="Custom" onchange="setColor(this.value)"
+    style="width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,215,0,0.2);cursor:pointer;padding:0;background:none;">`
+}
+function setColor(val) {
+  localStorage.setItem('datta_accent', val)
+  document.documentElement.style.setProperty('--accent', val)
+  renderColors()
+  showToast('✅ Color updated!')
+}
+
+// ── THEME ──────────────────────────────────────────
+function toggleTheme() {
+  const isLight = document.getElementById('themeToggle').checked
+  localStorage.setItem('datta_theme', isLight ? 'light' : 'dark')
+  document.getElementById('themeLabel').textContent = isLight ? 'Light' : 'Dark'
+  showToast(isLight ? '☀️ Light mode' : '🌙 Dark mode')
+}
+
+// ── FONT ───────────────────────────────────────────
+function setFont(val) {
+  localStorage.setItem('datta_fontSize', val)
+  document.getElementById('fontLabel').textContent = val.charAt(0).toUpperCase()+val.slice(1)
+  showToast('✅ Font size saved!')
+}
+
+// ── TOGGLES ────────────────────────────────────────
+function toggleMood() {
+  const v = document.getElementById('moodToggle').checked
+  localStorage.setItem('datta_mood_enabled', v)
+  showToast(v ? '😊 Mood AI enabled' : '😐 Mood AI disabled')
+}
+function toggleMemory() {
+  const v = document.getElementById('memoryToggle').checked
+  localStorage.setItem('datta_memory_enabled', v)
+  showToast(v ? '🧾 Memory enabled' : '🧾 Memory disabled')
+}
+function toggleBriefing() {
+  const v = document.getElementById('briefingToggle').checked
+  localStorage.setItem('datta_briefing_enabled', v)
+  showToast(v ? '📅 Briefing enabled' : '📅 Briefing disabled')
+}
+function toggleWebSearch() {
+  const v = document.getElementById('webToggle').checked
+  localStorage.setItem('datta_websearch_enabled', v)
+  showToast(v ? '🌐 Web search on' : '🌐 Web search off')
+}
+function toggleVoiceRead() {
+  const v = document.getElementById('voiceToggle').checked
+  localStorage.setItem('datta_voice_read', v)
+  showToast(v ? '🔊 Voice read on' : '🔇 Voice read off')
+}
+
+// ── MODALS ─────────────────────────────────────────
+function openModal(type) {
+  const modal = document.getElementById('modal')
+  const box = document.getElementById('mbox')
+  const user = getUser()
+
+  const LANGS = ['English','Hindi','Telugu','Tamil','Kannada','Malayalam','Bengali','Marathi','Gujarati','Punjabi','Urdu','Spanish','French','German','Arabic','Chinese','Japanese','Korean','Portuguese','Russian','Italian','Turkish','Indonesian','Vietnamese']
+
+  const templates = {
+    username: `
+      <div class="mTitle">✏️ CHANGE USERNAME</div>
+      <input class="mInput" id="mi1" placeholder="New username" value="${user.username||''}">
+      <div class="mBtns">
+        <button class="mBtn cancel" onclick="closeModal()">Cancel</button>
+        <button class="mBtn confirm" onclick="saveUsername()">Save</button>
+      </div>`,
+    password: `
+      <div class="mTitle">🔒 CHANGE PASSWORD</div>
+      <input class="mInput" id="mi1" type="password" placeholder="Current password">
+      <input class="mInput" id="mi2" type="password" placeholder="New password">
+      <input class="mInput" id="mi3" type="password" placeholder="Confirm new password">
+      <div class="mBtns">
+        <button class="mBtn cancel" onclick="closeModal()">Cancel</button>
+        <button class="mBtn confirm" onclick="savePassword()">Update</button>
+      </div>`,
+    language: `
+      <div class="mTitle">🌍 SELECT LANGUAGE</div>
+      <select class="mInput" id="mi1" style="cursor:pointer">
+        ${LANGS.map(l=>`<option ${l===localStorage.getItem('datta_language')?'selected':''}>${l}</option>`).join('')}
+      </select>
+      <div class="mBtns">
+        <button class="mBtn cancel" onclick="closeModal()">Cancel</button>
+        <button class="mBtn confirm" onclick="saveLanguage()">Save</button>
+      </div>`,
+    deleteAccount: `
+      <div class="mTitle" style="color:#ff4444">⚠️ DELETE ACCOUNT</div>
+      <p style="font-size:13px;color:#665500;margin-bottom:14px;line-height:1.6">This will permanently delete all your chats, memories and data. This cannot be undone.</p>
+      <input class="mInput" id="mi1" type="password" placeholder="Enter password to confirm">
+      <div class="mBtns">
+        <button class="mBtn cancel" onclick="closeModal()">Cancel</button>
+        <button class="mBtn danger" onclick="deleteAccount()">Delete Forever</button>
+      </div>`,
   }
 
-  const theme = localStorage.getItem("datta_theme") || "dark"
-  document.getElementById("themeDesc").textContent = theme === "dark" ? "Dark mode" : "Light mode"
-  document.getElementById("theme-" + theme).classList.add("active")
-
-  const lang = localStorage.getItem("datta_language") || "English"
-  document.getElementById("langDesc").textContent = lang
-  document.querySelectorAll(".langBtn").forEach(b => {
-    if (b.textContent.includes(lang)) b.classList.add("active")
-  })
-
-  const prefs = JSON.parse(localStorage.getItem("datta_notif") || "{}")
-  document.getElementById("soundToggle").checked = prefs.sound || false
-  document.getElementById("streamToggle").checked = prefs.stream !== false
-
-  if (theme === "light") document.body.style.background = "#f5f5f5"
-
-  // Load version from plan
-  const plan = localStorage.getItem("datta_plan") || "free"
-  const versions = {
-    free: "v1.0 · ARAMBH", starter: "v1.0 · ARAMBH",
-    basic: "v2.0 · SHAKTI", growth: "v2.0 · SHAKTI",
-    pro: "v3.0 · AGNI", scale: "v3.0 · AGNI",
-    enterprise: "v4.0 · BRAHMA", empire: "v4.0 · BRAHMA"
-  }
-  const vTag = document.getElementById("versionFooter")
-  if (vTag) vTag.textContent = "DATTA AI " + (versions[plan] || "v2.0 · SHAKTI")
-})
-
-function goBack() {
-  window.location.href = "index.html"
+  box.innerHTML = templates[type] || ''
+  modal.classList.add('show')
+  modal.onclick = (e) => { if(e.target===modal) closeModal() }
 }
 
-function openPanel(name) {
-  document.getElementById("panel-" + name).classList.add("show")
+function closeModal() {
+  document.getElementById('modal').classList.remove('show')
 }
 
-function closePanel(name) {
-  document.getElementById("panel-" + name).classList.remove("show")
-}
-
-function showMsg(id, text, type) {
-  const el = document.getElementById("msg-" + id)
-  if (!el) return
-  el.textContent = text
-  el.className = "msg " + type
-  setTimeout(() => { el.className = "msg"; el.textContent = "" }, 3000)
-}
-
-async function changeUsername() {
-  const val = document.getElementById("newUsername").value.trim()
-  if (!val || val.length < 3) return showMsg("username", "Username must be at least 3 characters", "error")
-
+async function saveUsername() {
+  const newName = document.getElementById('mi1').value.trim()
+  if (!newName) return showToast('❌ Enter a username', '#ff4444')
   try {
-    const res = await fetch(SERVER + "/auth/update-username", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: val, token: getToken() })
-    })
+    const fd = new FormData()
+    fd.append('token', getToken())
+    fd.append('username', newName)
+    const res = await fetch('https://datta-ai-server.onrender.com/update-username', { method:'POST', body:fd })
     const data = await res.json()
-    if (!res.ok) return showMsg("username", data.error || "Failed", "error")
-
-    const user = getUser() || {}
-    user.username = val
-    localStorage.setItem("datta_user", JSON.stringify(user))
-    document.getElementById("userName").textContent = val
-    document.getElementById("userAvatar").textContent = val[0].toUpperCase()
-    showMsg("username", "Username updated!", "success")
-    setTimeout(() => closePanel("username"), 1500)
-  } catch(e) {
-    showMsg("username", "Server error", "error")
-  }
+    if (data.success) {
+      const user = getUser()
+      user.username = newName
+      localStorage.setItem('datta_user', JSON.stringify(user))
+      closeModal()
+      init()
+      showToast('✅ Username updated!')
+    } else showToast('❌ '+(data.error||'Failed'), '#ff4444')
+  } catch { showToast('❌ Connection error', '#ff4444') }
 }
 
-async function changePassword() {
-  const current = document.getElementById("currentPassword").value
-  const newPass = document.getElementById("newPassword").value
-  const confirm = document.getElementById("confirmPassword").value
-
-  if (!current || !newPass || !confirm) return showMsg("password", "Fill all fields", "error")
-  if (newPass.length < 6) return showMsg("password", "Min 6 characters", "error")
-  if (newPass !== confirm) return showMsg("password", "Passwords don't match", "error")
-
+async function savePassword() {
+  const cur = document.getElementById('mi1').value
+  const nw = document.getElementById('mi2').value
+  const cf = document.getElementById('mi3').value
+  if (!cur||!nw||!cf) return showToast('❌ Fill all fields', '#ff4444')
+  if (nw !== cf) return showToast('❌ Passwords do not match', '#ff4444')
+  if (nw.length < 6) return showToast('❌ Min 6 characters', '#ff4444')
   try {
-    const res = await fetch(SERVER + "/auth/change-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentPassword: current, newPassword: newPass, token: getToken() })
-    })
+    const fd = new FormData()
+    fd.append('token', getToken())
+    fd.append('old_password', cur)
+    fd.append('new_password', nw)
+    const res = await fetch('https://datta-ai-server.onrender.com/change-password', { method:'POST', body:fd })
     const data = await res.json()
-    if (!res.ok) return showMsg("password", data.error || "Failed", "error")
-    showMsg("password", "Password changed!", "success")
-    document.getElementById("currentPassword").value = ""
-    document.getElementById("newPassword").value = ""
-    document.getElementById("confirmPassword").value = ""
-    setTimeout(() => closePanel("password"), 1500)
-  } catch(e) {
-    showMsg("password", "Server error", "error")
-  }
+    if (data.success) { closeModal(); showToast('✅ Password updated!') }
+    else showToast('❌ '+(data.error||'Failed'), '#ff4444')
+  } catch { showToast('❌ Connection error', '#ff4444') }
 }
 
-function setTheme(theme) {
-  localStorage.setItem("datta_theme", theme)
-  document.querySelectorAll(".themeCard").forEach(c => c.classList.remove("active"))
-  document.getElementById("theme-" + theme).classList.add("active")
-  document.getElementById("themeDesc").textContent = theme === "dark" ? "Dark mode" : "Light mode"
-  setTimeout(() => closePanel("theme"), 500)
-}
-
-function setLanguage(lang) {
-  localStorage.setItem("datta_language", lang)
-  document.querySelectorAll(".langBtn").forEach(b => {
-    b.classList.toggle("active", b.textContent.includes(lang))
-  })
-  document.getElementById("langDesc").textContent = lang
-  setTimeout(() => closePanel("language"), 500)
-}
-
-function savePref() {
-  localStorage.setItem("datta_notif", JSON.stringify({
-    sound: document.getElementById("soundToggle").checked,
-    stream: document.getElementById("streamToggle").checked
-  }))
-}
-
-async function deleteAllChats() {
-  try {
-    const res = await fetch(SERVER + "/chats/all?token=" + getToken(), { method: "DELETE" })
-    if (!res.ok) return showMsg("deleteChats", "Failed to delete", "error")
-    showMsg("deleteChats", "All chats deleted!", "success")
-    setTimeout(() => closePanel("deleteChats"), 1500)
-  } catch(e) {
-    showMsg("deleteChats", "Server error", "error")
-  }
+function saveLanguage() {
+  const lang = document.getElementById('mi1').value
+  localStorage.setItem('datta_language', lang)
+  document.getElementById('langLabel').textContent = lang
+  document.getElementById('voiceLangLabel').textContent = lang + ' (India)'
+  closeModal()
+  showToast('✅ Language set to '+lang)
 }
 
 async function deleteAccount() {
-  const password = document.getElementById("deletePassword").value
-  if (!password) return showMsg("deleteAccount", "Enter your password", "error")
-
+  const pass = document.getElementById('mi1').value
+  if (!pass) return showToast('❌ Enter your password', '#ff4444')
   try {
-    const res = await fetch(SERVER + "/auth/delete-account", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password, token: getToken() })
-    })
+    const fd = new FormData()
+    fd.append('token', getToken())
+    fd.append('password', pass)
+    const res = await fetch('https://datta-ai-server.onrender.com/delete-account', { method:'POST', body:fd })
     const data = await res.json()
-    if (!res.ok) return showMsg("deleteAccount", data.error || "Failed", "error")
-    localStorage.clear()
-    window.location.href = "login.html"
-  } catch(e) {
-    showMsg("deleteAccount", "Server error", "error")
-  }
+    if (data.success) {
+      localStorage.clear()
+      window.location.href = 'login.html'
+    } else showToast('❌ '+(data.error||'Wrong password'), '#ff4444')
+  } catch { showToast('❌ Connection error', '#ff4444') }
+}
+
+function confirmLogout() {
+  const box = document.getElementById('mbox')
+  box.innerHTML = `
+    <div class="mTitle" style="color:#ff8c00">🚪 LOG OUT</div>
+    <p style="font-size:13px;color:#665500;margin-bottom:20px;">Are you sure you want to log out?</p>
+    <div class="mBtns">
+      <button class="mBtn cancel" onclick="closeModal()">Cancel</button>
+      <button class="mBtn confirm" onclick="logout()">Log Out</button>
+    </div>`
+  document.getElementById('modal').classList.add('show')
+  document.getElementById('modal').onclick = (e) => { if(e.target===document.getElementById('modal')) closeModal() }
 }
 
 function logout() {
-  if (!confirm("Are you sure you want to logout?")) return
-  localStorage.removeItem("datta_token")
-  localStorage.removeItem("datta_user")
-  window.location.href = "login.html"
+  localStorage.removeItem('datta_token')
+  localStorage.removeItem('datta_user')
+  window.location.href = 'login.html'
 }
-</script>
 
+// Init page
+init()
+</script>
 </body>
 </html>
