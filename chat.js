@@ -126,7 +126,7 @@ async function regenerateImage(prompt, btn) {
   btn.disabled = true
   btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 0.6s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Generating...'
   const seed = Math.floor(Math.random() * 999999)
-  const newUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&enhance=true&seed=" + seed
+  const newUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed
   const shimmer = wrap.querySelector(".dattaShimmer")
   const img = wrap.querySelector(".dattaImg")
   const actions = wrap.querySelector(".dattaImgActions")
@@ -412,7 +412,7 @@ async function send() {
       .trim()
     if (!prompt) prompt = text
     const seed = Math.floor(Math.random() * 999999)
-    const imgUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&enhance=true&seed=" + seed
+    const imgUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed
     const fakeResponse = `DATTA_IMAGE_START\n![${prompt}](${imgUrl})\nPROMPT:${prompt}\nDATTA_IMAGE_END`
     setTimeout(() => {
       aiDiv.innerHTML = `
@@ -601,9 +601,16 @@ async function loadSidebar() {
       let div = document.createElement("div")
       div.className = "chatItem"
       div.style.cssText = "display:flex;align-items:center;padding:8px 10px;border-radius:10px;cursor:pointer;transition:background 0.15s;position:relative;"
+      // Clean title - remove system instruction prefixes
+      let cleanTitle = chat.title || "New Chat"
+      if (cleanTitle.startsWith("[STRICT") || cleanTitle.startsWith("[MOOD") || cleanTitle.startsWith("[RESPONSE")) {
+        cleanTitle = "Chat " + new Date().toLocaleDateString()
+      }
+      cleanTitle = cleanTitle.replace(/^\[.*?\]:\s*/g, "").trim() || "New Chat"
+
       div.innerHTML = `
-        <div class="chatTitle" style="flex:1;font-size:13px;color:#665500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${chat.title}">${chat.title}</div>
-        <button class="chatMenuBtn" onclick="showChatMenu(event,'${chat._id}','${chat.title.replace(/'/g,"\'")}'))" 
+        <div class="chatTitle" style="flex:1;font-size:13px;color:#665500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${cleanTitle}">${cleanTitle}</div>
+        <button class="chatMenuBtn" data-id="${chat._id}" data-title="${cleanTitle.substring(0,50)}" onclick="showChatMenu(event,this.dataset.id,this.dataset.title)" 
           style="background:none;border:none;color:#332200;cursor:pointer;padding:2px 4px;font-size:14px;opacity:0;transition:opacity 0.2s;flex-shrink:0;">⋯</button>
       `
       div.onmouseenter = () => div.querySelector(".chatMenuBtn").style.opacity = "1"
