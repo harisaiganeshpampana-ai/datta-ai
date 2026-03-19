@@ -3,6 +3,146 @@
 // ║  Fixed: badges, chips, newChat, recents, username   ║
 // ╚══════════════════════════════════════════════════════╝
 
+// ── SELF-CONTAINED PLAN CHECKER ───────────────────────
+// Works independently — no need to wait for plan-limits.js
+var DATTA_PLAN_FEATURES = {
+  arambh: { aiChat:true, webSearch:true, liveFeed:true, voiceAssistant:true,
+            moodAI:false, imageGen:false, fileUpload:false, smartMemory:false,
+            analytics:false, dailyBriefing:false, translator:false,
+            emotionalSupport:false, xpGamification:false, selfieMood:false },
+  shakti: { aiChat:true, webSearch:true, liveFeed:true, voiceAssistant:true,
+            moodAI:true, imageGen:true, fileUpload:false, smartMemory:true,
+            analytics:true, dailyBriefing:true, translator:true,
+            emotionalSupport:true, xpGamification:true, selfieMood:false },
+  agni:   { aiChat:true, webSearch:true, liveFeed:true, voiceAssistant:true,
+            moodAI:true, imageGen:true, fileUpload:true, smartMemory:true,
+            analytics:true, dailyBriefing:true, translator:true,
+            emotionalSupport:true, xpGamification:true, selfieMood:true },
+  brahma: { aiChat:true, webSearch:true, liveFeed:true, voiceAssistant:true,
+            moodAI:true, imageGen:true, fileUpload:true, smartMemory:true,
+            analytics:true, dailyBriefing:true, translator:true,
+            emotionalSupport:true, xpGamification:true, selfieMood:true }
+};
+var DATTA_PLAN_LIMITS = {
+  arambh: { msgsPerHr:50,  cooldownMin:60, imagesPerDay:3   },
+  shakti: { msgsPerHr:150, cooldownMin:45, imagesPerDay:10  },
+  agni:   { msgsPerHr:500, cooldownMin:30, imagesPerDay:20  },
+  brahma: { msgsPerHr:1000,cooldownMin:15, imagesPerDay:100 }
+};
+function _isCreator() {
+  try {
+    var u = (JSON.parse(localStorage.getItem('datta_user')||'{}').username||'').toLowerCase();
+    return ['pampana_hari_sai_ganesh','harisaiganesh','ganesh','admin','creator','dattaai'].some(function(c){return u.indexOf(c)!==-1});
+  } catch(e){return false;}
+}
+function _getPlan() {
+  var k = localStorage.getItem('datta_plan')||'arambh';
+  return DATTA_PLAN_FEATURES[k] ? k : 'arambh';
+}
+function _canUse(feature) {
+  if (_isCreator()) return true;
+  var plan = _getPlan();
+  return DATTA_PLAN_FEATURES[plan] && DATTA_PLAN_FEATURES[plan][feature] === true;
+}
+function _canSendMsg() {
+  if (_isCreator()) return {ok:true};
+  var plan = _getPlan();
+  var limits = DATTA_PLAN_LIMITS[plan];
+  var today = new Date().toDateString();
+  var usage = {};
+  try { usage = JSON.parse(localStorage.getItem('datta_usage')||'{}'); } catch(e){}
+  if (usage.date !== today) {
+    usage = {date:today, msgs:0, images:0, msgsThisHour:0, hourStart:Date.now()};
+    localStorage.setItem('datta_usage', JSON.stringify(usage));
+  }
+  if (Date.now() - (usage.hourStart||0) > 3600000) {
+    usage.msgsThisHour = 0; usage.hourStart = Date.now();
+    localStorage.setItem('datta_usage', JSON.stringify(usage));
+  }
+  if ((usage.msgsThisHour||0) >= limits.msgsPerHr) {
+    var resetIn = Math.ceil((usage.hourStart + 3600000 - Date.now()) / 60000);
+    return {ok:false, reason:'msg_limit', resetIn:resetIn, limit:limits.msgsPerHr};
+  }
+  return {ok:true};
+}
+function _canGenImg() {
+  if (_isCreator()) return {ok:true};
+  if (!_canUse('imageGen')) return {ok:false, reason:'not_in_plan', feature:'imageGen'};
+  var plan = _getPlan();
+  var today = new Date().toDateString();
+  var usage = {};
+  try { usage = JSON.parse(localStorage.getItem('datta_usage')||'{}'); } catch(e){}
+  if (usage.date !== today) usage = {date:today, imgs:0};
+  if ((usage.images||0) >= DATTA_PLAN_LIMITS[plan].imagesPerDay) {
+    return {ok:false, reason:'img_limit', limit:DATTA_PLAN_LIMITS[plan].imagesPerDay};
+  }
+  return {ok:true};
+}
+function _recordMsg() {
+  if (_isCreator()) return;
+  var usage = {};
+  try { usage = JSON.parse(localStorage.getItem('datta_usage')||'{}'); } catch(e){}
+  if (usage.date !== new Date().toDateString()) usage = {date:new Date().toDateString(), msgs:0, images:0, msgsThisHour:0, hourStart:Date.now()};
+  usage.msgsThisHour = (usage.msgsThisHour||0)+1;
+  usage.msgs = (usage.msgs||0)+1;
+  localStorage.setItem('datta_usage', JSON.stringify(usage));
+}
+function _recordImg() {
+  if (_isCreator()) return;
+  var usage = {};
+  try { usage = JSON.parse(localStorage.getItem('datta_usage')||'{}'); } catch(e){}
+  if (usage.date !== new Date().toDateString()) usage = {date:new Date().toDateString(), msgs:0, images:0, msgsThisHour:0, hourStart:Date.now()};
+  usage.images = (usage.images||0)+1;
+  localStorage.setItem('datta_usage', JSON.stringify(usage));
+}
+function _showUpgrade(reason, feature) {
+  var FEATURE_NAMES = {
+    moodAI:'😊 Mood-based AI', imageGen:'🎨 Image Generation',
+    fileUpload:'📎 File Upload', smartMemory:'🧾 Smart Memory',
+    analytics:'📊 Analytics', translator:'🌍 Translator',
+    xpGamification:'🎮 XP Gamification', selfieMood:'📸 Selfie Mood',
+    dailyBriefing:'📅 Daily Briefing'
+  };
+  var UNLOCK = {moodAI:'Shakti',imageGen:'Shakti',fileUpload:'Agni',
+    smartMemory:'Shakti',analytics:'Shakti',translator:'Shakti',
+    xpGamification:'Shakti',selfieMood:'Agni',dailyBriefing:'Shakti'};
+  var plan = _getPlan();
+  var PNAMES = {arambh:'🌱 Arambh',shakti:'⚡ Shakti',agni:'🔥 Agni',brahma:'👑 Brahma'};
+  var PLIMITS = {arambh:{msgsPerHr:50,imagesPerDay:3},shakti:{msgsPerHr:150,imagesPerDay:10},agni:{msgsPerHr:500,imagesPerDay:20},brahma:{msgsPerHr:1000,imagesPerDay:100}};
+  var icon='🔒', title='LOCKED', desc='', sub='';
+  if (reason==='msg_limit') {
+    var check = _canSendMsg();
+    icon='💬'; title='MESSAGE LIMIT REACHED';
+    desc='Used all '+PLIMITS[plan].msgsPerHr+' messages/hr on '+PNAMES[plan]+' plan.';
+    sub='Resets in ~'+(check.resetIn||60)+' min. Upgrade for more!';
+  } else if (reason==='img_limit') {
+    icon='🎨'; title='IMAGE LIMIT REACHED';
+    desc='Used all '+PLIMITS[plan].imagesPerDay+' images/day on '+PNAMES[plan]+'.';
+    sub='Upgrade for more daily images!';
+  } else {
+    var fname = FEATURE_NAMES[feature]||feature;
+    var uplan = UNLOCK[feature]||'Shakti';
+    icon='🔒'; title=fname+' LOCKED';
+    desc='Requires '+uplan+' plan or higher.';
+    sub='You are on '+PNAMES[plan]+'. Upgrade to unlock!';
+  }
+  document.getElementById('_upgradeModal')&&document.getElementById('_upgradeModal').remove();
+  var m = document.createElement('div');
+  m.id='_upgradeModal';
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:99999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);';
+  m.innerHTML='<div style="background:#0f0e00;border:1px solid rgba(255,215,0,0.25);border-radius:24px;padding:28px 24px;width:90%;max-width:320px;text-align:center;">'
+    +'<div style="font-size:48px;margin-bottom:10px">'+icon+'</div>'
+    +'<div style="font-family:sans-serif;font-size:15px;font-weight:700;color:#ffd700;margin-bottom:8px;letter-spacing:1px">'+title+'</div>'
+    +'<div style="font-size:13px;color:#665500;margin-bottom:4px">'+desc+'</div>'
+    +'<div style="font-size:12px;color:#443300;margin-bottom:20px">'+sub+'</div>'
+    +'<button onclick="window.location.href='pricing.html'" style="width:100%;padding:13px;background:linear-gradient(135deg,#ffd700,#ff8c00);border:none;border-radius:50px;color:#000;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;">👑 UPGRADE NOW</button>'
+    +'<button onclick="document.getElementById('_upgradeModal').remove()" style="width:100%;padding:10px;background:none;border:1px solid rgba(255,215,0,0.15);border-radius:50px;color:#665500;font-size:12px;cursor:pointer;">Maybe later</button>'
+    +'</div>';
+  document.body.appendChild(m);
+  m.addEventListener('click',function(e){if(e.target===m)m.remove();});
+}
+
+
 const SERVER = "https://datta-ai-server.onrender.com";
 
 let messages = [];
@@ -66,11 +206,11 @@ async function send() {
 
   // ── PLAN LIMIT CHECKS ──────────────────────────────
   if (typeof canSendMessage === "function") {
-    const msgCheck = canSendMessage();
+    const msgCheck = _canSendMsg();
     if (!msgCheck.ok) {
       isGenerating = false;
       hideStop();
-      if (typeof showUpgradeModal === "function") showUpgradeModal("msg_limit");
+      if (typeof showUpgradeModal === "function") _showUpgrade("msg_limit");
       return;
     }
   }
@@ -86,12 +226,12 @@ async function send() {
       removeTyping(typingId);
       const loadId = addTypingWithText("🎨 Generating image...");
       // Check image generation permission
-      if (typeof canGenerateImage === "function") {
-        const imgCheck = canGenerateImage();
+      if (true) {
+        const imgCheck = _canGenImg();
         if (!imgCheck.ok) {
           removeTyping(typingId);
           isGenerating = false; hideStop();
-          if (typeof showUpgradeModal === "function") showUpgradeModal(imgCheck.reason, "imageGen");
+          if (typeof showUpgradeModal === "function") _showUpgrade(imgCheck.reason, "imageGen");
           return;
         }
       }
@@ -116,8 +256,8 @@ async function send() {
       messages.push({ role: "assistant", content: reply });
     }
 
-    if (typeof recordMessageSent === "function") recordMessageSent();
-    if (typeof recordImageGenerated === "function" && isImageReq) recordImageGenerated();
+    _recordMsg();
+    if (isImageReq) _recordImg();
     if (typeof addXP === "function") addXP(5, "Message sent");
     saveChat();
 
@@ -170,7 +310,7 @@ async function callChatAPI(userMessage) {
 function getMoodSystemPrompt() {
   if (localStorage.getItem("datta_mood_enabled") === "false") return "";
   // Mood AI only for Shakti and above
-  if (typeof canUseFeature === "function" && !canUseFeature("moodAI")) return "";
+  if (!_canUse("moodAI")) return "";
   const mood = localStorage.getItem("datta_mood") || "";
   const lang = localStorage.getItem("datta_language") || "English";
   const langNote = lang !== "English" ? ` Always respond in ${lang}.` : "";
@@ -466,12 +606,12 @@ document.addEventListener("DOMContentLoaded", function() {
     const page = match ? match[1] : null;
     if (page && navLocks[page]) {
       const feature = navLocks[page];
-      if (typeof canUseFeature === "function" && !canUseFeature(feature)) {
+      if (!_canUse(feature)) {
         el.style.opacity = "0.35";
         el.style.cursor = "not-allowed";
         el.addEventListener("click", function(e) {
           e.preventDefault(); e.stopPropagation();
-          if (typeof showUpgradeModal === "function") showUpgradeModal("not_in_plan", feature);
+          if (typeof showUpgradeModal === "function") _showUpgrade("not_in_plan", feature);
         }, true);
       }
     }
