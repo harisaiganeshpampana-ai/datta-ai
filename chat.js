@@ -1,48 +1,54 @@
 // ╔══════════════════════════════════════════════════════╗
-// ║        DATTA AI — chat.js  v13 (FIXED ROUTES)       ║
-// ║  Uses correct /chat endpoint with FormData + token  ║
+// ║        DATTA AI — chat.js  v14                      ║
+// ║  Fixed: badges, chips, newChat, recents, username   ║
 // ╚══════════════════════════════════════════════════════╝
 
 const SERVER = "https://datta-ai-server.onrender.com";
 
-// ── STATE ──────────────────────────────────────────────
 let messages = [];
 let isGenerating = false;
 let controller = null;
 let currentChatId = null;
 window.webSearchEnabled = false;
 
-// ── FILL PROMPT (welcome badges & chips) ───────────────
+// ── FILL PROMPT ────────────────────────────────────────
 function fillPrompt(text) {
   const input = document.getElementById("message");
   if (!input) return;
   input.value = text;
   input.focus();
   hideWelcome();
+  // Auto send if it's a complete prompt (not a prefix)
+  if (!text.endsWith(" ")) setTimeout(() => send(), 100);
 }
 window.fillPrompt = fillPrompt;
 
 function hideWelcome() {
   const ws = document.getElementById("welcomeScreen");
-  if (ws) ws.style.display = "none";
+  if (ws) { ws.style.display = "none"; ws.style.opacity = "0"; }
 }
 
 function showWelcome() {
   const ws = document.getElementById("welcomeScreen");
-  if (ws) ws.style.display = "flex";
+  if (ws) { ws.style.display = "flex"; ws.style.opacity = "1"; }
   const chat = document.getElementById("chat");
   if (chat) chat.innerHTML = "";
   messages = [];
+  currentChatId = null;
 }
 
+// ── NEW CHAT ───────────────────────────────────────────
 function newChat() {
-  currentChatId = null;
-  messages = [];
+  if (isGenerating && controller) controller.abort();
+  isGenerating = false;
+  hideStop();
   showWelcome();
+  const input = document.getElementById("message");
+  if (input) { input.value = ""; input.focus(); }
 }
 window.newChat = newChat;
 
-// ── SEND MESSAGE ───────────────────────────────────────
+// ── SEND ───────────────────────────────────────────────
 async function send() {
   const input = document.getElementById("message");
   const text = (input?.value || "").trim();
@@ -58,48 +64,38 @@ async function send() {
   const typingId = addTyping();
   showStop();
 
-  const lower = text.toLowerCase();
-  const isImageRequest = /\b(generate|create|draw|make|paint|design)\b.*\bimage\b|\bimage of\b/i.test(text);
-  const isSearchRequest = window.webSearchEnabled ||
-    localStorage.getItem('datta_websearch_enabled') !== 'false' &&
-    /\b(search|latest|news|today|current|who is|what is happening|2025|2026)\b/i.test(text);
+  const isImageReq = /\b(generate|create|draw|make|paint|design)\b.*\bimage\b|\bimage of\b/i.test(text);
+  const webSearchOn = window.webSearchEnabled || localStorage.getItem("datta_websearch_enabled") !== "false";
+  const isSearchReq = webSearchOn && /\b(search|latest|news|today|current|who is|what is happening|weather|price|stock)\b/i.test(text);
 
   try {
     controller = new AbortController();
 
-    if (isImageRequest) {
-      // ── IMAGE GENERATION ──────────────────────────────
+    if (isImageReq) {
       removeTyping(typingId);
       const loadId = addTypingWithText("🎨 Generating image...");
       const imgPrompt = text.replace(/generate|create|draw|make|paint|design|image of|an image|a picture/gi,"").trim() || text;
-
-      // Use Pollinations free API (no key needed)
       const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imgPrompt)}?width=512&height=512&nologo=true&seed=${Date.now()}`;
       removeTyping(loadId);
       addImageMessage(imageUrl, imgPrompt);
       messages.push({ role: "assistant", content: `[Generated image: ${imgPrompt}]` });
 
-    } else if (isSearchRequest) {
-      // ── WEB SEARCH via /chat with search instruction ──
+    } else if (isSearchReq) {
       removeTyping(typingId);
       const searchId = addTypingWithText("🌐 Searching the web...");
-      const searchPrompt = `Search the web and answer this question with current information: ${text}`;
-      const reply = await callChatAPI(searchPrompt);
+      const reply = await callChatAPI("Search the web and answer with current information: " + text);
       removeTyping(searchId);
       addMessage("ai", reply);
       messages.push({ role: "assistant", content: reply });
 
     } else {
-      // ── NORMAL AI CHAT ────────────────────────────────
       removeTyping(typingId);
       const reply = await callChatAPI(text);
       addMessage("ai", reply);
       messages.push({ role: "assistant", content: reply });
     }
 
-    // Award XP
     if (typeof addXP === "function") addXP(5, "Message sent");
-    // Auto-save chat
     saveChat();
 
   } catch (err) {
@@ -116,12 +112,10 @@ async function send() {
 }
 window.send = send;
 
-// ── CORE API CALL — uses /chat with FormData + token ───
+// ── CALL /chat API ─────────────────────────────────────
 async function callChatAPI(userMessage) {
   const token = localStorage.getItem("datta_token") || "";
   const moodPrompt = getMoodSystemPrompt();
-
-  // Build the full message with mood context
   const fullMessage = moodPrompt
     ? `[System: ${moodPrompt}]\n\nUser: ${userMessage}`
     : userMessage;
@@ -136,52 +130,39 @@ async function callChatAPI(userMessage) {
     signal: controller ? controller.signal : undefined
   });
 
-  if (!res.ok) {
-    throw new Error(`Server error: ${res.status}`);
-  }
+  if (!res.ok) throw new Error(`Server ${res.status}`);
 
-  // Handle streaming response (same as support.html and translator.html)
   const reader = res.body.getReader();
   const dec = new TextDecoder();
   let reply = "";
-
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
     reply += dec.decode(value);
   }
-
-  // Strip the CHATID suffix your backend appends
-  reply = reply.split("CHATID")[0].trim();
-
-  return reply || "I'm here to help!";
+  return reply.split("CHATID")[0].trim() || "I'm here to help!";
 }
 
-// ── MOOD SYSTEM PROMPT ─────────────────────────────────
+// ── MOOD PROMPT ────────────────────────────────────────
 function getMoodSystemPrompt() {
-  const moodEnabled = localStorage.getItem("datta_mood_enabled") !== "false";
-  if (!moodEnabled) return "";
-
+  if (localStorage.getItem("datta_mood_enabled") === "false") return "";
   const mood = localStorage.getItem("datta_mood") || "";
   const lang = localStorage.getItem("datta_language") || "English";
   const langNote = lang !== "English" ? ` Always respond in ${lang}.` : "";
-
   const moods = {
-    focused:  "Be sharp, concise and direct. No fluff.",
-    happy:    "Be fun, energetic and enthusiastic! Use emojis.",
-    stressed: "Be calm, reassuring and gentle. Step by step.",
-    creative: "Be bold, imaginative and think outside the box!",
-    lazy:     "Keep it super short and chill. Minimal words.",
-    curious:  "Go deep! Explore ideas thoroughly with examples.",
-    night:    "Be philosophical and thoughtful. Deep thinking mode."
+    focused:"Be sharp, concise and direct. No fluff.",
+    happy:"Be fun, energetic and enthusiastic! Use emojis.",
+    stressed:"Be calm, reassuring and gentle. Step by step.",
+    creative:"Be bold, imaginative and think outside the box!",
+    lazy:"Keep it super short and chill. Minimal words.",
+    curious:"Go deep! Explore ideas thoroughly with examples.",
+    night:"Be philosophical and thoughtful. Deep thinking mode."
   };
-
   const base = "You are Datta AI, a smart helpful assistant created by Ganesh (Pampana Hari Sai Ganesh).";
-  const moodInstr = moods[mood] || "";
-  return `${base} ${moodInstr}${langNote}`.trim();
+  return `${base} ${moods[mood]||""}${langNote}`.trim();
 }
 
-// ── STOP GENERATION ────────────────────────────────────
+// ── STOP ───────────────────────────────────────────────
 function stopGeneration() {
   if (controller) controller.abort();
   isGenerating = false;
@@ -190,23 +171,22 @@ function stopGeneration() {
 window.stopGeneration = stopGeneration;
 
 function showStop() {
-  const stop = document.getElementById("stopBtn");
-  const send = document.getElementById("sendBtn");
-  if (stop) stop.style.display = "flex";
-  if (send) send.style.display = "none";
+  const s = document.getElementById("stopBtn");
+  const b = document.getElementById("sendBtn");
+  if (s) s.style.display = "flex";
+  if (b) b.style.display = "none";
 }
 function hideStop() {
-  const stop = document.getElementById("stopBtn");
-  const send = document.getElementById("sendBtn");
-  if (stop) stop.style.display = "none";
-  if (send) send.style.display = "flex";
+  const s = document.getElementById("stopBtn");
+  const b = document.getElementById("sendBtn");
+  if (s) s.style.display = "none";
+  if (b) b.style.display = "flex";
 }
 
-// ── ADD MESSAGES ───────────────────────────────────────
+// ── ADD USER/AI MESSAGE ────────────────────────────────
 function addMessage(role, text) {
   const chat = document.getElementById("chat");
   if (!chat) return;
-
   const row = document.createElement("div");
   row.className = "messageRow" + (role === "user" ? " userRow" : "");
 
@@ -222,43 +202,50 @@ function addMessage(role, text) {
 
     const bubble = document.createElement("div");
     bubble.className = "aiBubble stream";
-    if (typeof marked !== "undefined") {
-      bubble.innerHTML = marked.parse(text);
-    } else {
-      bubble.innerHTML = text.replace(/\n/g, "<br>");
-    }
+    bubble.innerHTML = typeof marked !== "undefined"
+      ? marked.parse(text)
+      : text.replace(/\n/g,"<br>");
 
-    // Read aloud if enabled
     if (localStorage.getItem("datta_voice_read") === "true") {
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = "en-US";
-      window.speechSynthesis.speak(utter);
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = getLangCode();
+      window.speechSynthesis.speak(u);
     }
 
     const actions = document.createElement("div");
     actions.className = "aiActions";
-    actions.innerHTML = `
-      <button class="actionBtn" title="Copy" onclick="navigator.clipboard.writeText(this.closest('.aiContent').querySelector('.aiBubble').textContent).then(()=>{this.textContent='✅';setTimeout(()=>this.textContent='📋',1500)})">📋</button>
-      <button class="actionBtn" title="Read aloud" onclick="speakText(this)">🔊</button>
-    `;
-    actions.querySelector('[title="Read aloud"]')._text = text;
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "actionBtn";
+    copyBtn.title = "Copy";
+    copyBtn.textContent = "📋";
+    copyBtn.onclick = () => {
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.textContent = "✅";
+        setTimeout(() => copyBtn.textContent = "📋", 1500);
+      });
+    };
+    const speakBtn = document.createElement("button");
+    speakBtn.className = "actionBtn";
+    speakBtn.title = "Read aloud";
+    speakBtn.textContent = "🔊";
+    speakBtn.onclick = () => speakText(speakBtn, text);
+    actions.appendChild(copyBtn);
+    actions.appendChild(speakBtn);
 
     const content = document.createElement("div");
     content.className = "aiContent";
     content.appendChild(bubble);
     content.appendChild(actions);
-
     row.appendChild(avatar);
     row.appendChild(content);
   }
-
   chat.appendChild(row);
   scrollToBottom();
   return row;
 }
 window.addMessage = addMessage;
 
-// ── ADD IMAGE MESSAGE ──────────────────────────────────
+// ── ADD IMAGE ──────────────────────────────────────────
 function addImageMessage(url, prompt) {
   const chat = document.getElementById("chat");
   if (!chat) return;
@@ -269,13 +256,11 @@ function addImageMessage(url, prompt) {
     <div class="aiContent">
       <div class="aiBubble" style="padding:10px;">
         <div style="font-size:12px;color:#665500;margin-bottom:8px;font-family:'Rajdhani',sans-serif;letter-spacing:1px;">🎨 Generated Image</div>
-        <img src="${url}" alt="${prompt}"
-          style="max-width:300px;width:100%;border-radius:12px;display:block;border:1px solid rgba(255,215,0,0.15);"
-          onerror="this.parentElement.innerHTML='⚠️ Image failed to load. Try a different prompt.'"
-        />
+        <img src="${url}" alt="${prompt}" style="max-width:300px;width:100%;border-radius:12px;display:block;border:1px solid rgba(255,215,0,0.15);"
+          onerror="this.parentElement.innerHTML='⚠️ Image failed. Try a different prompt.'" />
         <div style="font-size:11px;color:#443300;margin-top:6px;">${prompt}</div>
-        <a href="${url}" download="datta-ai-image.jpg" target="_blank"
-          style="display:inline-block;margin-top:8px;font-size:11px;color:#ffd700;font-family:'Rajdhani',sans-serif;letter-spacing:1px;text-decoration:none;border:1px solid rgba(255,215,0,0.2);padding:4px 10px;border-radius:8px;">
+        <a href="${url}" download="datta-ai.jpg" target="_blank"
+          style="display:inline-block;margin-top:8px;font-size:11px;color:#ffd700;font-family:'Rajdhani',sans-serif;text-decoration:none;border:1px solid rgba(255,215,0,0.2);padding:4px 10px;border-radius:8px;">
           ⬇️ Download
         </a>
       </div>
@@ -284,154 +269,100 @@ function addImageMessage(url, prompt) {
   scrollToBottom();
 }
 
-// ── TYPING INDICATORS ──────────────────────────────────
+// ── TYPING ─────────────────────────────────────────────
 function addTyping() {
-  const id = "typing_" + Date.now();
+  const id = "t_" + Date.now();
   const chat = document.getElementById("chat");
   if (!chat) return id;
   const row = document.createElement("div");
-  row.className = "messageRow";
-  row.id = id;
+  row.className = "messageRow"; row.id = id;
   row.innerHTML = `<div class="avatar">✦</div><div class="aiContent"><div class="aiBubble typing"><span></span><span></span><span></span></div></div>`;
   chat.appendChild(row);
   scrollToBottom();
   return id;
 }
-
 function addTypingWithText(label) {
-  const id = "typing_" + Date.now();
+  const id = "t_" + Date.now();
   const chat = document.getElementById("chat");
   if (!chat) return id;
   const row = document.createElement("div");
-  row.className = "messageRow";
-  row.id = id;
-  row.innerHTML = `
-    <div class="avatar">✦</div>
-    <div class="aiContent">
-      <div class="aiBubble">
-        <div class="searchingIndicator">
-          <span class="searchIcon">${label.split(" ")[0]}</span>
-          <span class="searchText">${label.split(" ").slice(1).join(" ")}</span>
-          <span style="display:inline-flex;gap:3px;margin-left:4px;">
-            <span style="width:5px;height:5px;background:#ffd700;border-radius:50%;animation:dot 1.2s infinite;"></span>
-            <span style="width:5px;height:5px;background:#ffd700;border-radius:50%;animation:dot 1.2s 0.2s infinite;"></span>
-            <span style="width:5px;height:5px;background:#ffd700;border-radius:50%;animation:dot 1.2s 0.4s infinite;"></span>
-          </span>
-        </div>
-      </div>
-    </div>`;
+  row.className = "messageRow"; row.id = id;
+  row.innerHTML = `<div class="avatar">✦</div><div class="aiContent"><div class="aiBubble"><span style="font-size:14px;">${label}</span><span style="display:inline-flex;gap:3px;margin-left:6px;"><span style="width:4px;height:4px;background:#ffd700;border-radius:50%;animation:dot 1.2s infinite;"></span><span style="width:4px;height:4px;background:#ffd700;border-radius:50%;animation:dot 1.2s 0.2s infinite;"></span><span style="width:4px;height:4px;background:#ffd700;border-radius:50%;animation:dot 1.2s 0.4s infinite;"></span></span></div></div>`;
   chat.appendChild(row);
   scrollToBottom();
   return id;
 }
-
-function removeTyping(id) {
-  const el = document.getElementById(id);
-  if (el) el.remove();
-}
+function removeTyping(id) { document.getElementById(id)?.remove(); }
 
 // ── SCROLL ─────────────────────────────────────────────
 function scrollToBottom() {
   const chat = document.getElementById("chat");
   if (chat) chat.scrollTo({ top: chat.scrollHeight, behavior: "smooth" });
-  const btn = document.getElementById("scrollDownBtn");
-  if (btn) btn.style.display = "none";
 }
-
 window.addEventListener("load", function() {
   const chat = document.getElementById("chat");
   const btn = document.getElementById("scrollDownBtn");
   if (!chat || !btn) return;
-  chat.addEventListener("scroll", function() {
-    const dist = chat.scrollHeight - chat.scrollTop - chat.clientHeight;
-    btn.style.display = dist > 100 ? "flex" : "none";
+  chat.addEventListener("scroll", () => {
+    btn.style.display = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) > 100 ? "flex" : "none";
   });
-  btn.addEventListener("click", function() {
-    chat.scrollTo({ top: chat.scrollHeight, behavior: "smooth" });
-  });
+  btn.addEventListener("click", () => chat.scrollTo({ top: chat.scrollHeight, behavior: "smooth" }));
 });
 
-// ── SPEAK TEXT ─────────────────────────────────────────
-function speakText(btn) {
-  const text = btn._text || "";
-  if (!text) return;
-  if (window.speechSynthesis.speaking) {
-    window.speechSynthesis.cancel();
-    btn.textContent = "🔊";
-    return;
-  }
-  const utter = new SpeechSynthesisUtterance(text);
+// ── VOICE ──────────────────────────────────────────────
+function getLangCode() {
   const lang = localStorage.getItem("datta_language") || "English";
-  const langMap = {Hindi:"hi-IN",Telugu:"te-IN",Tamil:"ta-IN",Spanish:"es-ES",French:"fr-FR",Arabic:"ar-SA",Chinese:"zh-CN",Japanese:"ja-JP",German:"de-DE"};
-  utter.lang = langMap[lang] || "en-US";
-  utter.onend = () => btn.textContent = "🔊";
+  const map = {Hindi:"hi-IN",Telugu:"te-IN",Tamil:"ta-IN",Spanish:"es-ES",French:"fr-FR",Arabic:"ar-SA",Chinese:"zh-CN",Japanese:"ja-JP",German:"de-DE",Kannada:"kn-IN",Malayalam:"ml-IN",Bengali:"bn-IN"};
+  return map[lang] || "en-US";
+}
+function speakText(btn, text) {
+  if (window.speechSynthesis.speaking) { window.speechSynthesis.cancel(); btn.textContent = "🔊"; return; }
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = getLangCode();
+  u.onend = () => btn.textContent = "🔊";
   btn.textContent = "⏹️";
-  window.speechSynthesis.speak(utter);
+  window.speechSynthesis.speak(u);
 }
 window.speakText = speakText;
 
-// ── VOICE INPUT ────────────────────────────────────────
 function startAssistant() {
   if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-    alert("Voice not supported. Please use Chrome!");
-    return;
+    alert("Voice not supported. Please use Chrome!"); return;
   }
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const r = new SR();
-  const lang = localStorage.getItem("datta_language") || "English";
-  const langMap = {Hindi:"hi-IN",Telugu:"te-IN",Tamil:"ta-IN",Spanish:"es-ES",French:"fr-FR",Arabic:"ar-SA",Chinese:"zh-CN",Japanese:"ja-JP",German:"de-DE"};
-  r.lang = langMap[lang] || "en-US";
-  const micBtn = document.getElementById("micBtn");
-  if (micBtn) { micBtn.style.color = "#ffd700"; }
-  r.onresult = (e) => {
-    if (micBtn) micBtn.style.color = "";
-    const transcript = e.results[0][0].transcript;
+  r.lang = getLangCode();
+  const mic = document.getElementById("micBtn");
+  if (mic) mic.style.color = "#ffd700";
+  r.onresult = e => {
+    if (mic) mic.style.color = "";
     const input = document.getElementById("message");
-    if (input) input.value = transcript;
+    if (input) input.value = e.results[0][0].transcript;
     send();
   };
-  r.onerror = () => { if (micBtn) micBtn.style.color = ""; };
-  r.onend = () => { if (micBtn) micBtn.style.color = ""; };
+  r.onerror = r.onend = () => { if (mic) mic.style.color = ""; };
   r.start();
 }
 window.startAssistant = startAssistant;
 
-// ── ENTER KEY ──────────────────────────────────────────
-document.addEventListener("DOMContentLoaded", function() {
-  const input = document.getElementById("message");
-  if (input) {
-    input.addEventListener("keydown", function(e) {
-      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
-    });
-  }
+// ── CHAT HISTORY — saves with real topic title ─────────
+function generateTitle(text) {
+  // Use first user message, clean it up, max 45 chars
+  const clean = text.replace(/[^\w\s,?!]/g,"").trim();
+  return clean.length > 45 ? clean.slice(0, 42) + "..." : clean || "New Chat";
+}
 
-  // Make welcome badges clickable
-  const badgeActions = {
-    "AI Chat": () => { document.getElementById("message")?.focus(); },
-    "Image Generation": () => fillPrompt("Generate image of "),
-    "Web Search": () => fillPrompt("Search the web for "),
-    "Voice Assistant": () => startAssistant()
-  };
-  document.querySelectorAll(".welcomeBadge").forEach(badge => {
-    const label = badge.textContent.trim();
-    const action = Object.keys(badgeActions).find(k => label.includes(k));
-    if (action) {
-      badge.style.cursor = "pointer";
-      badge.addEventListener("click", badgeActions[action]);
-    }
-  });
-});
-
-// ── CHAT HISTORY ───────────────────────────────────────
 function saveChat() {
   if (!messages.length) return;
   const id = currentChatId || ("chat_" + Date.now());
   currentChatId = id;
-  const title = messages[0]?.content?.slice(0, 40) || "New Chat";
+  // Use the first user message as the title
+  const firstUserMsg = messages.find(m => m.role === "user");
+  const title = generateTitle(firstUserMsg?.content || "New Chat");
   const chats = JSON.parse(localStorage.getItem("datta_chats") || "{}");
   chats[id] = { id, title, messages, ts: Date.now() };
   localStorage.setItem("datta_chats", JSON.stringify(chats));
-  if (typeof renderHistory === "function") renderHistory();
+  renderHistory();
 }
 window.saveChat = saveChat;
 
@@ -441,13 +372,13 @@ function renderHistory() {
   const chats = JSON.parse(localStorage.getItem("datta_chats") || "{}");
   const sorted = Object.values(chats).sort((a, b) => b.ts - a.ts);
   if (!sorted.length) {
-    container.innerHTML = `<div class="emptySection" style="font-size:12px;padding:20px;text-align:center;color:#332200;">No chats yet</div>`;
+    container.innerHTML = `<div style="padding:20px 14px;font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:1px;color:#332200;text-align:center;">No chats yet<br><span style="font-size:10px;opacity:0.6;">Start a conversation!</span></div>`;
     return;
   }
   container.innerHTML = sorted.map(c => `
-    <div class="chatItem" onclick="openChat('${c.id}')">
-      <span class="chatTitle">${c.title}</span>
-      <button class="deleteBtn" onclick="deleteChat('${c.id}',event)">✕</button>
+    <div class="chatItem" onclick="openChat('${c.id}')" title="${c.title}">
+      <span class="chatTitle" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.title}</span>
+      <button class="deleteBtn" onclick="deleteChat('${c.id}',event)" style="flex-shrink:0;">✕</button>
     </div>`).join("");
 }
 window.renderHistory = renderHistory;
@@ -479,6 +410,7 @@ function deleteChat(id, e) {
 }
 window.deleteChat = deleteChat;
 
+// ── LOGOUT ─────────────────────────────────────────────
 function logout() {
   localStorage.removeItem("datta_token");
   localStorage.removeItem("datta_user");
@@ -486,6 +418,75 @@ function logout() {
 }
 window.logout = logout;
 
-window.addEventListener("load", function() {
+// ── DOM READY — wire up all buttons ───────────────────
+document.addEventListener("DOMContentLoaded", function() {
+  // Enter key
+  const input = document.getElementById("message");
+  if (input) {
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+    });
+  }
+
+  // Welcome BADGES — make clickable
+  document.querySelectorAll(".welcomeBadge").forEach(badge => {
+    const label = badge.textContent.trim();
+    badge.style.cursor = "pointer";
+    badge.style.transition = "all 0.2s";
+    if (label.includes("AI Chat")) {
+      badge.onclick = () => { hideWelcome(); input?.focus(); };
+    } else if (label.includes("Image Generation")) {
+      badge.onclick = () => {
+        hideWelcome();
+        if (input) { input.value = "Generate image of "; input.focus(); }
+      };
+    } else if (label.includes("Web Search")) {
+      badge.onclick = () => {
+        hideWelcome();
+        if (input) { input.value = "Search the web for "; input.focus(); }
+      };
+    } else if (label.includes("Voice")) {
+      badge.onclick = () => startAssistant();
+    }
+  });
+
+  // Welcome CHIPS — already have onclick="fillPrompt(...)" in HTML
+  // But ensure they also hide welcome
+  document.querySelectorAll(".chip").forEach(chip => {
+    const orig = chip.onclick;
+    chip.addEventListener("click", () => { hideWelcome(); });
+  });
+
+  // Load history
   renderHistory();
+
+  // Update profile username in sidebar — show full name
+  setTimeout(() => {
+    try {
+      const user = JSON.parse(localStorage.getItem("datta_user") || "{}");
+      const username = user.username || user.name || "User";
+      const profileName = document.querySelector(".profileName");
+      const profileAvatar = document.querySelector(".profileAvatar");
+      const profileSub = document.querySelector(".profileSub");
+
+      if (profileName) {
+        // Show full username, allow wrapping
+        profileName.textContent = username;
+        profileName.style.whiteSpace = "normal";
+        profileName.style.wordBreak = "break-word";
+        profileName.style.maxWidth = "130px";
+        profileName.style.lineHeight = "1.2";
+        profileName.style.fontSize = username.length > 16 ? "11px" : "13px";
+      }
+      if (profileAvatar) profileAvatar.textContent = username.charAt(0).toUpperCase();
+
+      const plan = localStorage.getItem("datta_plan") || "arambh";
+      const planLabels = {arambh:"🌱 Free",shakti:"⚡ Shakti",agni:"🔥 Agni",brahma:"👑 Brahma",free:"🌱 Free"};
+      const creators = ["pampana_hari_sai_ganesh","harisaiganesh","ganesh","admin","creator","dattaai"];
+      const isCreator = creators.some(c => username.toLowerCase().includes(c));
+      if (profileSub) profileSub.textContent = isCreator ? "👑 Creator" : (planLabels[plan] || "Free");
+    } catch(e) {}
+  }, 500);
 });
+
+window.addEventListener("load", renderHistory);
