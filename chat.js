@@ -580,7 +580,8 @@ function detectTextLanguage(text) {
 // ── IMAGE GENERATION FALLBACK (Pollinations) ─────────────────────────────────
 function generateWithPollinations(prompt, aiDiv) {
   const seed = Math.floor(Math.random() * 999999)
-  const imgUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed
+  // Use flux-schnell - fastest model (2-3 seconds vs 10-15 for standard flux)
+  const imgUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
   const fakeResponse = "DATTA_IMAGE_START\n![" + prompt + "](" + imgUrl + ")\nPROMPT:" + prompt + "\nDATTA_IMAGE_END"
   setTimeout(() => {
     if (aiDiv) {
@@ -592,6 +593,7 @@ function generateWithPollinations(prompt, aiDiv) {
     loadSidebar()
   }, 500)
 }
+
 window.generateWithPollinations = generateWithPollinations
 // ─── LOAD SIDEBAR ─────────────────────────────────────────────────────────────
 async function loadSidebar() {
@@ -628,7 +630,7 @@ async function loadSidebar() {
       div.innerHTML = `
         <div class="chatTitle" style="flex:1;font-size:13px;color:#665500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${cleanTitle}">${cleanTitle}</div>
         <button class="chatMenuBtn" data-id="${chat._id}" data-title="${cleanTitle.substring(0,50)}" onclick="showChatMenu(event,this.dataset.id,this.dataset.title)" 
-          style="background:none;border:none;color:#332200;cursor:pointer;padding:2px 4px;font-size:14px;opacity:0;transition:opacity 0.2s;flex-shrink:0;">⋯</button>
+          style="background:none;border:none;color:#665500;cursor:pointer;padding:4px 6px;font-size:16px;opacity:0;transition:opacity 0.2s;flex-shrink:0;border-radius:6px;">⋯</button>
       `
       div.onmouseenter = () => div.querySelector(".chatMenuBtn").style.opacity = "1"
       div.onmouseleave = () => div.querySelector(".chatMenuBtn").style.opacity = "0"
@@ -661,7 +663,7 @@ function showChatMenu(e, chatId, chatTitle) {
     { icon:"✏️", label:"Rename", action: () => renameChat(chatId, chatTitle) },
     { icon:"📌", label:"Pin chat", action: () => pinChat(chatId) },
     { icon:"📦", label:"Archive", action: () => archiveChat(chatId) },
-    { icon:"🗑️", label:"Delete", action: () => confirmDelete(e, chatId), danger: true },
+    { icon:"🗑️", label:"Delete", action: () => confirmDeleteChat(chatId), danger: true },
   ]
 
   menuItems.forEach(item => {
@@ -796,10 +798,40 @@ async function openChat(chatId) {
 
 // ─── DELETE CHAT ──────────────────────────────────────────────────────────────
 async function deleteChat(e, id) {
-  e.stopPropagation()
+  if (e) e.stopPropagation()
   await fetch("https://datta-ai-server.onrender.com/chat/" + id + "?token=" + getToken(), { method: "DELETE" })
   loadSidebar()
 }
+
+function confirmDeleteChat(id) {
+  // Show confirm popup
+  const existing = document.getElementById("deleteConfirmPopup")
+  if (existing) existing.remove()
+
+  const popup = document.createElement("div")
+  popup.id = "deleteConfirmPopup"
+  popup.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);"
+  popup.innerHTML = `
+    <div style="background:#0f0e00;border:1px solid rgba(255,60,60,0.2);border-radius:18px;padding:24px;max-width:300px;width:90%;text-align:center;">
+      <div style="font-size:32px;margin-bottom:10px">🗑️</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:#fff8e7;margin-bottom:8px">Delete Chat?</div>
+      <div style="font-size:13px;color:#665500;margin-bottom:20px;">This chat will be permanently deleted.</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="document.getElementById('deleteConfirmPopup').remove()" 
+          style="flex:1;padding:11px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.1);border-radius:50px;color:#665500;font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;">
+          Cancel
+        </button>
+        <button onclick="deleteChat(null,'${id}');document.getElementById('deleteConfirmPopup').remove()" 
+          style="flex:1;padding:11px;background:rgba(255,60,60,0.1);border:1px solid rgba(255,60,60,0.3);border-radius:50px;color:#ff4444;font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;">
+          Delete
+        </button>
+      </div>
+    </div>
+  `
+  document.body.appendChild(popup)
+  popup.onclick = (e) => { if (e.target === popup) popup.remove() }
+}
+window.confirmDeleteChat = confirmDeleteChat
 
 // ─── COPY TEXT ────────────────────────────────────────────────────────────────
 function copyText(btn) {
