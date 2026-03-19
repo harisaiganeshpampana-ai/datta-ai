@@ -380,7 +380,7 @@ const MOOD_PLAYLISTS = {
 
 let playerVisible = false
 
-function  {
+function toggleMusicPlayer() {
   let player = document.getElementById("moodMusicPlayer")
   if (player) {
     playerVisible = !playerVisible
