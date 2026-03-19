@@ -380,7 +380,7 @@ const MOOD_PLAYLISTS = {
 
 let playerVisible = false
 
-function showMusicPlayer() {
+function  {
   let player = document.getElementById("moodMusicPlayer")
   if (player) {
     playerVisible = !playerVisible
@@ -747,7 +747,6 @@ document.addEventListener("DOMContentLoaded", function() {
       <div style="display:flex;gap:4px;">
         <button onclick="showMemoryPanel()" title="Memory" style="width:28px;height:28px;background:none;border:1px solid rgba(0,255,136,0.2);border-radius:7px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🧾</button>
         <button onclick="showTranslatorPanel()" title="Translate" style="width:28px;height:28px;background:none;border:1px solid rgba(0,204,255,0.2);border-radius:7px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🌍</button>
-        <button onclick="showMusicPlayer()" title="Music" style="width:28px;height:28px;background:none;border:1px solid rgba(236,72,153,0.2);border-radius:7px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🎵</button>
         <button onclick="showAnalyticsDashboard()" title="Stats" style="width:28px;height:28px;background:none;border:1px solid rgba(192,132,252,0.2);border-radius:7px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;">📊</button>
         <button onclick="showXPPanel()" title="XP" style="width:28px;height:28px;background:none;border:1px solid rgba(255,215,0,0.2);border-radius:7px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🎮</button>
       </div>
