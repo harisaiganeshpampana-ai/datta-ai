@@ -31,7 +31,7 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
 @media(max-width:900px){ .main { left:0; } }
 
 .chatWrapper { flex:1; overflow:hidden; position:relative; }
-.chat { height:100%; overflow-y:auto; padding:20px 16px 20px; display:flex; flex-direction:column; gap:16px; }
+.chat { height:100%; overflow-y:auto; padding:20px 16px 100px; display:flex; flex-direction:column; gap:16px; -webkit-overflow-scrolling:touch; }
 
 /* MESSAGES */
 .messageRow { display:flex; align-items:flex-start; gap:10px; animation:msgIn 0.3s ease; width:100%; }
@@ -422,7 +422,7 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
       <span class="meBtnIcon">🎙️</span>
       <span class="meBtnLabel">VOICE<br>DETECT</span>
     </button>
-    <button class="moodExtraBtn" onclick="startPhotoMoodDetection();closeMoodPanel();">
+    <button class="moodExtraBtn" onclick="startPhotoMoodDetection();">
       <span class="meBtnIcon">📸</span>
       <span class="meBtnLabel">SELFIE<br>SCAN</span>
     </button>
@@ -579,7 +579,6 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
     </button>
     <button onclick="window.location.href='memory.html'" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.color='#fff8e7'" onmouseout="this.style.background='none';this.style.color='#665500'">🧾 Smart Memory</button>
     <button onclick="window.location.href='translator.html'" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.color='#fff8e7'" onmouseout="this.style.background='none';this.style.color='#665500'">🌍 Translator</button>
-    <button onclick="window.location.href='music.html'" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.color='#fff8e7'" onmouseout="this.style.background='none';this.style.color='#665500'">🎵 Music Player</button>
     <button onclick="window.location.href='analytics.html'" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.color='#fff8e7'" onmouseout="this.style.background='none';this.style.color='#665500'">📊 Analytics</button>
     <button onclick="window.location.href='xp.html'" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.color='#fff8e7'" onmouseout="this.style.background='none';this.style.color='#665500'">🎮 XP Progress</button>
     <div style="border-top:1px solid rgba(255,215,0,0.07);margin:4px 0;"></div>
