@@ -1,13 +1,8 @@
 // ╔══════════════════════════════════════════════════════╗
-// ║           DATTA AI — chat.js  v12 (FIXED)           ║
-// ║  Connects to your Render backend (datta-ai-server)  ║
+// ║        DATTA AI — chat.js  v13 (FIXED ROUTES)       ║
+// ║  Uses correct /chat endpoint with FormData + token  ║
 // ╚══════════════════════════════════════════════════════╝
 
-// ── CONFIG ─────────────────────────────────────────────
-// Change this to your Render backend URL
-// ⚠️ Replace this with your EXACT Render backend URL
-// From your screenshot, the service is: datta-ai-server
-// Find your full URL at: dashboard.render.com → datta-ai-server → top of page
 const SERVER = "https://datta-ai-server.onrender.com";
 
 // ── STATE ──────────────────────────────────────────────
@@ -15,7 +10,6 @@ let messages = [];
 let isGenerating = false;
 let controller = null;
 let currentChatId = null;
-let webSearchEnabled = false;
 window.webSearchEnabled = false;
 
 // ── FILL PROMPT (welcome badges & chips) ───────────────
@@ -28,13 +22,11 @@ function fillPrompt(text) {
 }
 window.fillPrompt = fillPrompt;
 
-// ── HIDE WELCOME SCREEN ────────────────────────────────
 function hideWelcome() {
   const ws = document.getElementById("welcomeScreen");
   if (ws) ws.style.display = "none";
 }
 
-// ── SHOW WELCOME SCREEN ────────────────────────────────
 function showWelcome() {
   const ws = document.getElementById("welcomeScreen");
   if (ws) ws.style.display = "flex";
@@ -43,7 +35,6 @@ function showWelcome() {
   messages = [];
 }
 
-// ── NEW CHAT ───────────────────────────────────────────
 function newChat() {
   currentChatId = null;
   messages = [];
@@ -67,10 +58,11 @@ async function send() {
   const typingId = addTyping();
   showStop();
 
-  // Detect intent
   const lower = text.toLowerCase();
   const isImageRequest = /\b(generate|create|draw|make|paint|design)\b.*\bimage\b|\bimage of\b/i.test(text);
-  const isSearchRequest = webSearchEnabled || /\b(search|latest|news|today|current|who is|what is happening|2025|2026)\b/i.test(text);
+  const isSearchRequest = window.webSearchEnabled ||
+    localStorage.getItem('datta_websearch_enabled') !== 'false' &&
+    /\b(search|latest|news|today|current|who is|what is happening|2025|2026)\b/i.test(text);
 
   try {
     controller = new AbortController();
@@ -79,65 +71,41 @@ async function send() {
       // ── IMAGE GENERATION ──────────────────────────────
       removeTyping(typingId);
       const loadId = addTypingWithText("🎨 Generating image...");
-      const imgPrompt = text.replace(/generate|create|draw|make|paint|design|image of|an image|a picture/gi, "").trim() || text;
+      const imgPrompt = text.replace(/generate|create|draw|make|paint|design|image of|an image|a picture/gi,"").trim() || text;
 
-      const res = await fetch(`${SERVER}/api/image`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: imgPrompt }),
-        signal: controller.signal
-      });
-
+      // Use Pollinations free API (no key needed)
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imgPrompt)}?width=512&height=512&nologo=true&seed=${Date.now()}`;
       removeTyping(loadId);
-
-      if (res.ok) {
-        const data = await res.json();
-        const url = data.url || data.image || data.imageUrl;
-        if (url) {
-          addImageMessage(url, imgPrompt);
-        } else {
-          addMessage("ai", "⚠️ Image generated but URL missing. Try again!");
-        }
-      } else {
-        // Fallback: use Pollinations (free, no key needed)
-        const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imgPrompt)}?width=512&height=512&nologo=true`;
-        addImageMessage(fallbackUrl, imgPrompt);
-      }
+      addImageMessage(imageUrl, imgPrompt);
+      messages.push({ role: "assistant", content: `[Generated image: ${imgPrompt}]` });
 
     } else if (isSearchRequest) {
-      // ── WEB SEARCH ────────────────────────────────────
+      // ── WEB SEARCH via /chat with search instruction ──
       removeTyping(typingId);
       const searchId = addTypingWithText("🌐 Searching the web...");
-
-      const res = await fetch(`${SERVER}/api/search`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: text }),
-        signal: controller.signal
-      });
-
+      const searchPrompt = `Search the web and answer this question with current information: ${text}`;
+      const reply = await callChatAPI(searchPrompt);
       removeTyping(searchId);
-
-      if (res.ok) {
-        const data = await res.json();
-        const reply = data.answer || data.result || data.response || JSON.stringify(data);
-        addMessage("ai", reply);
-        messages.push({ role: "assistant", content: reply });
-      } else {
-        // Fallback to normal AI chat if search fails
-        await doAIChat(text, typingId);
-      }
+      addMessage("ai", reply);
+      messages.push({ role: "assistant", content: reply });
 
     } else {
-      // ── AI CHAT (Groq) ────────────────────────────────
+      // ── NORMAL AI CHAT ────────────────────────────────
       removeTyping(typingId);
-      await doAIChat(text, null);
+      const reply = await callChatAPI(text);
+      addMessage("ai", reply);
+      messages.push({ role: "assistant", content: reply });
     }
+
+    // Award XP
+    if (typeof addXP === "function") addXP(5, "Message sent");
+    // Auto-save chat
+    saveChat();
 
   } catch (err) {
     removeTyping(typingId);
     if (err.name !== "AbortError") {
-      addMessage("ai", "⚠️ Could not reach the server. Check your internet or try again.");
+      addMessage("ai", "⚠️ Could not reach the server. Please try again.");
       console.error("Datta AI error:", err);
     }
   }
@@ -148,94 +116,69 @@ async function send() {
 }
 window.send = send;
 
-// ── CORE AI CHAT via Render/Groq ───────────────────────
-async function doAIChat(userText, existingTypingId) {
-  const typingId = existingTypingId || addTyping();
-
-  // Get mood system prompt
+// ── CORE API CALL — uses /chat with FormData + token ───
+async function callChatAPI(userMessage) {
+  const token = localStorage.getItem("datta_token") || "";
   const moodPrompt = getMoodSystemPrompt();
 
-  const payload = {
-    messages: messages,
-    system: moodPrompt || "You are Datta AI, a helpful, smart and friendly assistant. Be concise and clear."
-  };
+  // Build the full message with mood context
+  const fullMessage = moodPrompt
+    ? `[System: ${moodPrompt}]\n\nUser: ${userMessage}`
+    : userMessage;
 
-  try {
-    const res = await fetch(`${SERVER}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: controller ? controller.signal : undefined
-    });
+  const fd = new FormData();
+  fd.append("message", fullMessage);
+  fd.append("token", token);
 
-    removeTyping(typingId);
-
-    if (res.ok) {
-      const data = await res.json();
-      const reply = data.reply || data.message || data.content || data.text || "I'm here! How can I help?";
-      addMessage("ai", reply);
-      messages.push({ role: "assistant", content: reply });
-    } else {
-      // Fallback: direct Groq API (if backend fails)
-      await doDirectGroqChat(typingId);
-    }
-  } catch (e) {
-    removeTyping(typingId);
-    throw e;
-  }
-}
-
-// ── FALLBACK: Direct AI (no backend needed) ────────────
-async function doDirectGroqChat() {
-  // Uses a free public proxy approach
-  const moodPrompt = getMoodSystemPrompt();
-  const systemMsg = moodPrompt || "You are Datta AI, a helpful smart assistant created by Ganesh. Be concise, friendly and helpful.";
-
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const res = await fetch(`${SERVER}/chat`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      // Note: In production, this should go through your backend!
-      // This is only a fallback.
-    },
-    body: JSON.stringify({
-      model: "llama3-8b-8192",
-      messages: [
-        { role: "system", content: systemMsg },
-        ...messages
-      ],
-      max_tokens: 1024,
-      temperature: 0.7
-    }),
+    body: fd,
     signal: controller ? controller.signal : undefined
   });
 
-  if (res.ok) {
-    const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content || "I'm here to help!";
-    addMessage("ai", reply);
-    messages.push({ role: "assistant", content: reply });
-  } else {
-    addMessage("ai", "⚠️ AI is temporarily unavailable. Please try again in a moment.");
+  if (!res.ok) {
+    throw new Error(`Server error: ${res.status}`);
   }
+
+  // Handle streaming response (same as support.html and translator.html)
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let reply = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    reply += dec.decode(value);
+  }
+
+  // Strip the CHATID suffix your backend appends
+  reply = reply.split("CHATID")[0].trim();
+
+  return reply || "I'm here to help!";
 }
 
-// ── GET MOOD SYSTEM PROMPT ─────────────────────────────
+// ── MOOD SYSTEM PROMPT ─────────────────────────────────
 function getMoodSystemPrompt() {
+  const moodEnabled = localStorage.getItem("datta_mood_enabled") !== "false";
+  if (!moodEnabled) return "";
+
   const mood = localStorage.getItem("datta_mood") || "";
   const lang = localStorage.getItem("datta_language") || "English";
   const langNote = lang !== "English" ? ` Always respond in ${lang}.` : "";
+
   const moods = {
-    focused:  "Be sharp, concise and direct. No fluff. Get to the point immediately.",
-    happy:    "Be fun, energetic and enthusiastic! Use emojis and keep it upbeat! 🎉",
-    stressed: "Be calm, reassuring and gentle. Use soothing language. Take it step by step.",
-    creative: "Be bold, imaginative and think outside the box! Use vivid language.",
-    lazy:     "Keep responses super short and chill. Minimal words, max value. 😎",
-    curious:  "Go deep! Explore ideas thoroughly with examples and interesting tangents.",
-    night:    "Be philosophical, thoughtful and deep. Perfect for late-night pondering. 🌙"
+    focused:  "Be sharp, concise and direct. No fluff.",
+    happy:    "Be fun, energetic and enthusiastic! Use emojis.",
+    stressed: "Be calm, reassuring and gentle. Step by step.",
+    creative: "Be bold, imaginative and think outside the box!",
+    lazy:     "Keep it super short and chill. Minimal words.",
+    curious:  "Go deep! Explore ideas thoroughly with examples.",
+    night:    "Be philosophical and thoughtful. Deep thinking mode."
   };
+
+  const base = "You are Datta AI, a smart helpful assistant created by Ganesh (Pampana Hari Sai Ganesh).";
   const moodInstr = moods[mood] || "";
-  return `You are Datta AI, a smart helpful assistant created by Ganesh (Pampana Hari Sai Ganesh). ${moodInstr}${langNote}`;
+  return `${base} ${moodInstr}${langNote}`.trim();
 }
 
 // ── STOP GENERATION ────────────────────────────────────
@@ -246,7 +189,6 @@ function stopGeneration() {
 }
 window.stopGeneration = stopGeneration;
 
-// ── UI HELPERS ─────────────────────────────────────────
 function showStop() {
   const stop = document.getElementById("stopBtn");
   const send = document.getElementById("sendBtn");
@@ -260,7 +202,7 @@ function hideStop() {
   if (send) send.style.display = "flex";
 }
 
-// ── ADD USER/AI MESSAGE ────────────────────────────────
+// ── ADD MESSAGES ───────────────────────────────────────
 function addMessage(role, text) {
   const chat = document.getElementById("chat");
   if (!chat) return;
@@ -280,21 +222,25 @@ function addMessage(role, text) {
 
     const bubble = document.createElement("div");
     bubble.className = "aiBubble stream";
-    // Render markdown if available
     if (typeof marked !== "undefined") {
       bubble.innerHTML = marked.parse(text);
     } else {
-      bubble.textContent = text;
+      bubble.innerHTML = text.replace(/\n/g, "<br>");
     }
 
-    // Action buttons
+    // Read aloud if enabled
+    if (localStorage.getItem("datta_voice_read") === "true") {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "en-US";
+      window.speechSynthesis.speak(utter);
+    }
+
     const actions = document.createElement("div");
     actions.className = "aiActions";
     actions.innerHTML = `
-      <button class="actionBtn" title="Copy" onclick="copyText(this)">📋</button>
+      <button class="actionBtn" title="Copy" onclick="navigator.clipboard.writeText(this.closest('.aiContent').querySelector('.aiBubble').textContent).then(()=>{this.textContent='✅';setTimeout(()=>this.textContent='📋',1500)})">📋</button>
       <button class="actionBtn" title="Read aloud" onclick="speakText(this)">🔊</button>
     `;
-    actions.querySelector('[title="Copy"]')._text = text;
     actions.querySelector('[title="Read aloud"]')._text = text;
 
     const content = document.createElement("div");
@@ -316,7 +262,6 @@ window.addMessage = addMessage;
 function addImageMessage(url, prompt) {
   const chat = document.getElementById("chat");
   if (!chat) return;
-
   const row = document.createElement("div");
   row.className = "messageRow";
   row.innerHTML = `
@@ -334,8 +279,7 @@ function addImageMessage(url, prompt) {
           ⬇️ Download
         </a>
       </div>
-    </div>
-  `;
+    </div>`;
   chat.appendChild(row);
   scrollToBottom();
 }
@@ -348,13 +292,7 @@ function addTyping() {
   const row = document.createElement("div");
   row.className = "messageRow";
   row.id = id;
-  row.innerHTML = `
-    <div class="avatar">✦</div>
-    <div class="aiContent">
-      <div class="aiBubble typing">
-        <span></span><span></span><span></span>
-      </div>
-    </div>`;
+  row.innerHTML = `<div class="avatar">✦</div><div class="aiContent"><div class="aiBubble typing"><span></span><span></span><span></span></div></div>`;
   chat.appendChild(row);
   scrollToBottom();
   return id;
@@ -392,52 +330,26 @@ function removeTyping(id) {
   if (el) el.remove();
 }
 
-// ── SCROLL TO BOTTOM (THE FIX!) ────────────────────────
+// ── SCROLL ─────────────────────────────────────────────
 function scrollToBottom() {
-  // Scroll both the chat div and the welcomeScreen
   const chat = document.getElementById("chat");
-  const ws = document.getElementById("welcomeScreen");
-  const chatWrapper = document.querySelector(".chatWrapper");
-
-  if (chat) {
-    chat.scrollTop = chat.scrollHeight;
-    // Smooth scroll
-    chat.scrollTo({ top: chat.scrollHeight, behavior: "smooth" });
-  }
-  if (chatWrapper) {
-    chatWrapper.scrollTop = chatWrapper.scrollHeight;
-  }
-
-  // Show/hide scroll down button
+  if (chat) chat.scrollTo({ top: chat.scrollHeight, behavior: "smooth" });
   const btn = document.getElementById("scrollDownBtn");
   if (btn) btn.style.display = "none";
 }
 
-// ── SCROLL DOWN BUTTON LOGIC ───────────────────────────
-window.addEventListener("load", function () {
+window.addEventListener("load", function() {
   const chat = document.getElementById("chat");
   const btn = document.getElementById("scrollDownBtn");
   if (!chat || !btn) return;
-
-  chat.addEventListener("scroll", function () {
-    const distFromBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight;
-    btn.style.display = distFromBottom > 100 ? "flex" : "none";
+  chat.addEventListener("scroll", function() {
+    const dist = chat.scrollHeight - chat.scrollTop - chat.clientHeight;
+    btn.style.display = dist > 100 ? "flex" : "none";
   });
-
-  btn.addEventListener("click", function () {
+  btn.addEventListener("click", function() {
     chat.scrollTo({ top: chat.scrollHeight, behavior: "smooth" });
   });
 });
-
-// ── COPY TEXT ──────────────────────────────────────────
-function copyText(btn) {
-  const text = btn._text || btn.closest(".aiContent")?.querySelector(".aiBubble")?.textContent || "";
-  navigator.clipboard.writeText(text).then(() => {
-    btn.textContent = "✅";
-    setTimeout(() => (btn.textContent = "📋"), 1500);
-  });
-}
-window.copyText = copyText;
 
 // ── SPEAK TEXT ─────────────────────────────────────────
 function speakText(btn) {
@@ -449,8 +361,10 @@ function speakText(btn) {
     return;
   }
   const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = "en-US";
-  utter.onend = () => (btn.textContent = "🔊");
+  const lang = localStorage.getItem("datta_language") || "English";
+  const langMap = {Hindi:"hi-IN",Telugu:"te-IN",Tamil:"ta-IN",Spanish:"es-ES",French:"fr-FR",Arabic:"ar-SA",Chinese:"zh-CN",Japanese:"ja-JP",German:"de-DE"};
+  utter.lang = langMap[lang] || "en-US";
+  utter.onend = () => btn.textContent = "🔊";
   btn.textContent = "⏹️";
   window.speechSynthesis.speak(utter);
 }
@@ -459,19 +373,16 @@ window.speakText = speakText;
 // ── VOICE INPUT ────────────────────────────────────────
 function startAssistant() {
   if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-    alert("Voice not supported. Please use Chrome browser!");
+    alert("Voice not supported. Please use Chrome!");
     return;
   }
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const r = new SR();
   const lang = localStorage.getItem("datta_language") || "English";
-  const langMap = { Hindi: "hi-IN", Telugu: "te-IN", Tamil: "ta-IN", Spanish: "es-ES", French: "fr-FR", Arabic: "ar-SA", Chinese: "zh-CN", Japanese: "ja-JP", German: "de-DE" };
+  const langMap = {Hindi:"hi-IN",Telugu:"te-IN",Tamil:"ta-IN",Spanish:"es-ES",French:"fr-FR",Arabic:"ar-SA",Chinese:"zh-CN",Japanese:"ja-JP",German:"de-DE"};
   r.lang = langMap[lang] || "en-US";
-  r.interimResults = false;
-
   const micBtn = document.getElementById("micBtn");
-  if (micBtn) micBtn.style.color = "#ffd700";
-
+  if (micBtn) { micBtn.style.color = "#ffd700"; }
   r.onresult = (e) => {
     if (micBtn) micBtn.style.color = "";
     const transcript = e.results[0][0].transcript;
@@ -479,7 +390,6 @@ function startAssistant() {
     if (input) input.value = transcript;
     send();
   };
-
   r.onerror = () => { if (micBtn) micBtn.style.color = ""; };
   r.onend = () => { if (micBtn) micBtn.style.color = ""; };
   r.start();
@@ -487,25 +397,21 @@ function startAssistant() {
 window.startAssistant = startAssistant;
 
 // ── ENTER KEY ──────────────────────────────────────────
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function() {
   const input = document.getElementById("message");
   if (input) {
-    input.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        send();
-      }
+    input.addEventListener("keydown", function(e) {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
     });
   }
 
-  // Fix welcome badges — make them clickable
+  // Make welcome badges clickable
   const badgeActions = {
-    "AI Chat": () => { document.getElementById("message")?.focus(); hideWelcome(); },
+    "AI Chat": () => { document.getElementById("message")?.focus(); },
     "Image Generation": () => fillPrompt("Generate image of "),
     "Web Search": () => fillPrompt("Search the web for "),
     "Voice Assistant": () => startAssistant()
   };
-
   document.querySelectorAll(".welcomeBadge").forEach(badge => {
     const label = badge.textContent.trim();
     const action = Object.keys(badgeActions).find(k => label.includes(k));
@@ -516,7 +422,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
-// ── CHAT HISTORY (localStorage) ────────────────────────
+// ── CHAT HISTORY ───────────────────────────────────────
 function saveChat() {
   if (!messages.length) return;
   const id = currentChatId || ("chat_" + Date.now());
@@ -525,17 +431,17 @@ function saveChat() {
   const chats = JSON.parse(localStorage.getItem("datta_chats") || "{}");
   chats[id] = { id, title, messages, ts: Date.now() };
   localStorage.setItem("datta_chats", JSON.stringify(chats));
-  renderHistory();
+  if (typeof renderHistory === "function") renderHistory();
 }
 window.saveChat = saveChat;
 
 function renderHistory() {
-  const container = document.getElementById("chatHistory");
+  const container = document.getElementById("history");
   if (!container) return;
   const chats = JSON.parse(localStorage.getItem("datta_chats") || "{}");
   const sorted = Object.values(chats).sort((a, b) => b.ts - a.ts);
   if (!sorted.length) {
-    container.innerHTML = `<div class="emptySection">No chats yet</div>`;
+    container.innerHTML = `<div class="emptySection" style="font-size:12px;padding:20px;text-align:center;color:#332200;">No chats yet</div>`;
     return;
   }
   container.innerHTML = sorted.map(c => `
@@ -559,6 +465,7 @@ function openChat(id) {
     if (m.role === "user") addMessage("user", m.content);
     else if (m.role === "assistant") addMessage("ai", m.content);
   });
+  if (window.innerWidth < 900 && typeof closeSidebar === "function") closeSidebar();
 }
 window.openChat = openChat;
 
@@ -572,19 +479,13 @@ function deleteChat(id, e) {
 }
 window.deleteChat = deleteChat;
 
-// Auto-save after each AI reply
-const _origAddMsg = addMessage;
-window.addEventListener("load", function () {
-  renderHistory();
-});
-
-// Save chat periodically when active
-setInterval(() => { if (messages.length) saveChat(); }, 10000);
-
-// ── LOGOUT ─────────────────────────────────────────────
 function logout() {
-  localStorage.removeItem("datta_user");
   localStorage.removeItem("datta_token");
+  localStorage.removeItem("datta_user");
   window.location.href = "login.html";
 }
 window.logout = logout;
+
+window.addEventListener("load", function() {
+  renderHistory();
+});
