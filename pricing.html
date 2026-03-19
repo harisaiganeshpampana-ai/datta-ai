@@ -187,7 +187,41 @@ const PLANS = [
 ]
 
 let yearly = false
-const curPlan = localStorage.getItem('datta_plan') || 'free'
+
+// ── GET CURRENT PLAN CORRECTLY ─────────────────────────
+function getCurPlan() {
+  const stored = localStorage.getItem('datta_plan')
+  // Only valid plan keys are accepted
+  const validKeys = ['arambh','shakti','agni','brahma']
+  if (stored && validKeys.includes(stored)) return stored
+  return null // null = no plan selected yet
+}
+
+let curPlan = getCurPlan()
+
+// ── CHECK IF NEW USER (no plan selected yet) ──────────
+const isNewUser = !curPlan
+if (isNewUser) {
+  // Show a welcome banner telling them to pick a plan
+  document.addEventListener('DOMContentLoaded', function() {
+    const hero = document.querySelector('.hero')
+    if (hero) {
+      hero.insertAdjacentHTML('afterend', `
+        <div id="chooseBanner" style="
+          background:linear-gradient(135deg,rgba(0,255,136,0.08),rgba(255,215,0,0.05));
+          border:1px solid rgba(0,255,136,0.3);
+          border-radius:16px;padding:14px 20px;
+          margin-bottom:24px;text-align:center;
+          font-family:'Rajdhani',sans-serif;
+          animation:bannerPulse 2s ease-in-out infinite;
+        ">
+          <div style="font-size:20px;margin-bottom:4px;">👋 Welcome to Datta AI!</div>
+          <div style="font-size:13px;color:#00ff88;letter-spacing:1px;">Please choose a plan to get started. You can always upgrade later.</div>
+          <style>@keyframes bannerPulse{0%,100%{box-shadow:0 0 0 rgba(0,255,136,0)}50%{box-shadow:0 0 20px rgba(0,255,136,0.15)}}</style>
+        </div>`)
+    }
+  })
+}
 
 function toggleBilling() {
   yearly = document.getElementById('btgl').checked
@@ -203,39 +237,66 @@ function render() {
     const price = yearly ? p.yp : p.mp
     const period = yearly ? '/yr' : '/mo'
     const limits = yearly ? p.ylimits : p.limits
-    const isCur = curPlan===p.key||(p.free&&(curPlan==='free'||curPlan==='arambh'||!curPlan))
+
+    // ── FIXED isCur logic ──────────────────────────────
+    // Only show "current plan" if this EXACT plan key is stored
+    // Arambh matches: stored is 'arambh' or 'free'
+    // Others match: stored === their key exactly
+    let isCur = false
+    if (curPlan) {
+      if (p.free) {
+        isCur = (curPlan === 'arambh' || curPlan === 'free')
+      } else {
+        isCur = (curPlan === p.key)
+      }
+    }
+
     const showBonus = yearly && p.ybonus && p.ybonus.length > 0
 
     const d = document.createElement('div')
     d.className = 'card'+(p.popular?' popular':'')+(p.brahma?' brahma':'')
+
+    // Button label & style
+    let btnLabel, btnClass
+    if (isCur) {
+      btnLabel = '✓ CURRENT PLAN'
+      btnClass = p.free ? 'free' : p.brahma ? 'purple' : 'gold'
+    } else if (p.free) {
+      btnLabel = isNewUser ? '🌱 START FOR FREE' : 'GET STARTED FREE'
+      btnClass = 'free'
+    } else {
+      btnLabel = isNewUser ? `🚀 CHOOSE ${p.name.toUpperCase()}` : 'UPGRADE NOW →'
+      btnClass = p.brahma ? 'purple' : 'gold'
+    }
+
     d.innerHTML = `
-      ${p.popular?'<div class="popBadge">⭐ MOST POPULAR</div>':''}
-      ${isCur?'<div class="curBadge">✓ YOUR CURRENT PLAN</div>':''}
+      ${p.popular ? '<div class="popBadge">⭐ MOST POPULAR</div>' : ''}
+      ${isCur ? '<div class="curBadge">✓ YOUR CURRENT PLAN</div>' : ''}
       <div class="planEmoji">${p.emoji}</div>
       <div class="planName" style="color:${p.color}">${p.name}</div>
       <div class="planSkt">${p.sanskrit}</div>
       <div class="priceWrap">
-        <span class="price" style="color:${p.color}">${price===0?'FREE':'₹'+price.toLocaleString('en-IN')}</span>
-        ${price>0?`<span class="prd">${period}</span>`:''}
-        ${yearly&&p.savings?`<div class="savings">🎉 ${p.savings}</div>`:''}
+        <span class="price" style="color:${p.color}">${price===0 ? 'FREE' : '₹'+price.toLocaleString('en-IN')}</span>
+        ${price > 0 ? `<span class="prd">${period}</span>` : ''}
+        ${yearly && p.savings ? `<div class="savings">🎉 ${p.savings}</div>` : ''}
       </div>
       <div class="limits">
         <div class="lp"><span>💬</span>${limits.msg}</div>
         <div class="lp"><span>🎨</span>${limits.img}</div>
       </div>
-      ${showBonus?`
+      ${showBonus ? `
         <div class="yearExtra show">
           <div class="yearExtraTitle">⭐ YEARLY EXCLUSIVE BENEFITS</div>
           ${p.ybonus.map(b=>`<div class="yearExtraItem"><span style="color:var(--accent)">+</span>${b}</div>`).join('')}
-        </div>`:''}
+        </div>` : ''}
       <ul class="feats">
         ${p.mfeats.map(f=>`<li><span class="t">✓</span>${f}</li>`).join('')}
         ${p.mlocked.map(f=>`<li class="locked"><span class="x">✕</span>${f}</li>`).join('')}
       </ul>
-      <button class="planBtn ${p.free?'free':p.brahma?'purple':'gold'}"
+      <button class="planBtn ${btnClass}"
         onclick="buy('${p.key}')"
-        ${isCur?'disabled':''}>
-        ${isCur?'✓ CURRENT PLAN':p.free?'GET STARTED FREE':'UPGRADE NOW →'}
+        ${isCur ? 'disabled' : ''}>
+        ${btnLabel}
       </button>
     `
     g.appendChild(d)
@@ -243,10 +304,24 @@ function render() {
 }
 
 function buy(key) {
-  const p = PLANS.find(x=>x.key===key)
-  if (!p||p.free){window.location.href='index.html';return}
-  const planId = yearly?p.yid:p.mid
-  const period = yearly?'yearly':'monthly'
+  const p = PLANS.find(x => x.key === key)
+  if (!p) return
+
+  // FREE plan — just set it and go
+  if (p.free) {
+    localStorage.setItem('datta_plan', 'arambh')
+    curPlan = 'arambh'
+    // Show confirmation then redirect
+    document.getElementById('mdesc').textContent =
+      'You are on the Free (Arambh) plan. Enjoy AI Chat, Web Search and Live Feed!'
+    document.getElementById('modal').classList.add('show')
+    render()
+    return
+  }
+
+  // Paid plan — open Razorpay
+  const planId = yearly ? p.yid : p.mid
+  const period = yearly ? 'yearly' : 'monthly'
   const user = (()=>{try{return JSON.parse(localStorage.getItem('datta_user')||'{}')}catch{return{}}})()
 
   const rzp = new Razorpay({
@@ -256,27 +331,34 @@ function buy(key) {
     description: `${p.name} ${period} — ${p.sanskrit}`,
     image: 'https://harisaiganeshpampana-ai.github.io/datta-ai/logo.jpeg',
     handler: function(res) {
+      // Save plan locally
       localStorage.setItem('datta_plan', p.key)
+      curPlan = p.key
+
+      // Update on server
       const token = localStorage.getItem('datta_token')
       if (token) {
-        fetch('https://datta-ai-server.onrender.com/payment/update-plan',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({token,plan:p.key,period,paymentId:res.razorpay_payment_id})
+        fetch('https://datta-ai-server.onrender.com/payment/update-plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, plan: p.key, period, paymentId: res.razorpay_payment_id })
         }).catch(()=>{})
       }
+
+      // Show success
       document.getElementById('mdesc').textContent =
-        `Welcome to ${p.name} ${p.sanskrit}! Your ${period} plan is now active. Enjoy all features!`
+        `🎉 Welcome to ${p.name} (${p.sanskrit})! Your ${period} plan is now active. Enjoy all features!`
       document.getElementById('modal').classList.add('show')
+      render() // Re-render to show "✓ CURRENT PLAN" on correct card
     },
-    prefill:{name:user.username||'',email:user.email||''},
-    theme:{color:'#ffd700'}
+    prefill: { name: user.username || '', email: user.email || '' },
+    theme: { color: '#ffd700' }
   })
   rzp.open()
 }
 
 function buyLifetime() {
-  window.open('https://rzp.io/l/plink_SStdBNXqDXbMDx','_blank')
+  window.open('https://rzp.io/l/plink_SStdBNXqDXbMDx', '_blank')
 }
 
 render()
