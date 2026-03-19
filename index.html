@@ -9,7 +9,6 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="theme-vars.css">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://js.puter.com/v2/"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -381,9 +380,11 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <button onclick="toggleSidebar()" class="menuBtn">☰</button>
-  <img src="logo.jpeg" alt="Datta AI" style="width:30px;height:30px;border-radius:8px;object-fit:cover;">
-  <span class="topTitle" style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;background:linear-gradient(90deg,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">DATTA AI</span>
+  <button onclick="toggleSidebar()" class="menuBtn" style="background:none;border:none;color:#665500;cursor:pointer;font-size:18px;padding:4px 8px;flex-shrink:0;">☰</button>
+  <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+    <img src="logo.jpeg" alt="" style="width:24px;height:24px;border-radius:6px;object-fit:cover;flex-shrink:0;">
+    <span style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;background:linear-gradient(90deg,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap;">DATTA AI</span>
+  </div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:6px;padding-right:6px;">
 
     <!-- AUTO MOOD PILL — appears when mood is detected from message -->
