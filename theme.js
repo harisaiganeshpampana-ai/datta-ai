@@ -1,57 +1,53 @@
-/* ═══════════════════════════════════════════
-   DATTA AI — THEME COLOR SYSTEM
-   Default: Gold #ffd700
-   Saves to localStorage as 'datta_accent'
-═══════════════════════════════════════════ */
-
+// theme.js — Datta AI Theme Engine
 (function() {
   const DEFAULT = '#ffd700';
 
   function hexToRgb(hex) {
-    const r = parseInt(hex.slice(1,3),16);
-    const g = parseInt(hex.slice(3,5),16);
-    const b = parseInt(hex.slice(5,7),16);
-    return `${r},${g},${b}`;
+    hex = hex.replace('#','');
+    if (hex.length === 3) hex = hex.split('').map(x=>x+x).join('');
+    const n = parseInt(hex, 16);
+    return [(n>>16)&255,(n>>8)&255,n&255].join(',');
   }
 
-  function applyAccent(color) {
-    const rgb = hexToRgb(color);
+  function applyColor(color) {
+    if (!color || color === 'undefined') color = DEFAULT;
     const r = document.documentElement;
-
-    // Derive darker shade for backgrounds
-    const dark = color + '22';
-    const mid  = color + '44';
-
-    r.style.setProperty('--accent',       color);
-    r.style.setProperty('--accent-rgb',   rgb);
-    r.style.setProperty('--accent-dark',  `rgba(${rgb},0.08)`);
-    r.style.setProperty('--accent-mid',   `rgba(${rgb},0.20)`);
-    r.style.setProperty('--accent-glow',  `rgba(${rgb},0.35)`);
-    r.style.setProperty('--accent-border',`rgba(${rgb},0.25)`);
-
-    // Update picker UI if open
-    const picker = document.getElementById('accentColorPicker');
-    if (picker) picker.value = color;
-
-    // Update active preset button
-    document.querySelectorAll('.presetColor').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.color === color);
-    });
+    r.style.setProperty('--accent', color);
+    r.style.setProperty('--accent-rgb', hexToRgb(color));
+    r.style.setProperty('--accent-dark', `rgba(${hexToRgb(color)},0.08)`);
+    r.style.setProperty('--accent-mid',  `rgba(${hexToRgb(color)},0.20)`);
+    r.style.setProperty('--accent-glow', `rgba(${hexToRgb(color)},0.35)`);
+    r.style.setProperty('--accent-border',`rgba(${hexToRgb(color)},0.25)`);
   }
 
   function saveAndApply(color) {
     localStorage.setItem('datta_accent', color);
-    applyAccent(color);
+    applyColor(color);
+    document.querySelectorAll('.presetColor').forEach(b => {
+      b.classList.toggle('active', b.dataset.color === color);
+    });
+    document.querySelectorAll('#accentColorPicker,#accentColorPickerSettings').forEach(el => {
+      if (el) el.value = color;
+    });
   }
 
-  function loadAccent() {
-    const saved = localStorage.getItem('datta_accent') || DEFAULT;
-    applyAccent(saved);
-  }
+  // Apply immediately to prevent color flash
+  applyColor(localStorage.getItem('datta_accent') || DEFAULT);
 
-  // Expose globally
-  window.dattaTheme = { applyAccent, saveAndApply, loadAccent, DEFAULT };
+  window.dattaTheme = { saveAndApply, applyColor, DEFAULT };
 
-  // Auto-load on script execution
-  loadAccent();
+  document.addEventListener('DOMContentLoaded', function() {
+    const color = localStorage.getItem('datta_accent') || DEFAULT;
+    saveAndApply(color);
+
+    // Dark/light theme
+    const theme = localStorage.getItem('datta_theme') || 'dark';
+    if (theme === 'light') {
+      document.documentElement.setAttribute('data-theme','light');
+    }
+
+    // Font size
+    const fontSizes = { small:'13px', medium:'15px', large:'17px' };
+    document.body.style.fontSize = fontSizes[localStorage.getItem('datta_font')] || '15px';
+  });
 })();
