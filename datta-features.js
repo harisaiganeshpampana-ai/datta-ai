@@ -389,6 +389,13 @@ window.trackMessage = trackMessage
 // ═══════════════════════════════════════════════════════════════
 
 async function showDailyBriefing() {
+  // Skip briefing for new users with less than 5 messages
+  const totalMsgs = (() => { 
+    try { return JSON.parse(localStorage.getItem('datta_xp')||'{}').history?.length || 0 } 
+    catch { return 0 } 
+  })()
+  if (totalMsgs < 5) return
+
   const today = new Date().toDateString()
   const lastShown = localStorage.getItem("datta_briefing_shown")
   if (lastShown === today) return // only once per day
