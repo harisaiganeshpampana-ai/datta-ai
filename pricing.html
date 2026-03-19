@@ -2,821 +2,284 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Datta AI - Plans</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-* { margin:0; padding:0; box-sizing:border-box; font-family:system-ui,Arial,sans-serif; }
-
-body {
-  background: #0a0a0a;
-  color: white;
-  min-height: 100vh;
-}
-
-.header {
-  position: sticky;
-  top: 0;
-  background: #111;
-  border-bottom: 1px solid #222;
-  padding: 16px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  z-index: 100;
-}
-
-.backBtn {
-  background: #1e1e1e;
-  border: none;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.2s;
-}
-.backBtn:hover { background: #2a2a2a; }
-
-.headerTitle {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.currentPlan {
-  font-size: 13px;
-  color: #00ff88;
-  background: #0a2a1a;
-  padding: 6px 12px;
-  border-radius: 20px;
-  border: 1px solid #00ff8844;
-}
-
-.hero {
-  text-align: center;
-  padding: 60px 20px 40px;
-}
-
-.heroTitle {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 52px;
-  letter-spacing: 4px;
-  background: linear-gradient(135deg, #00ff88, #00ccff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 12px;
-}
-
-.heroSub {
-  font-size: 16px;
-  color: #666;
-  max-width: 500px;
-  margin: 0 auto 32px;
-}
-
-.billingToggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 50px;
-}
-
-.toggleLabel {
-  font-size: 14px;
-  color: #888;
-  cursor: pointer;
-}
-
-.toggleLabel.active { color: white; font-weight: 600; }
-
-.toggleSwitch {
-  position: relative;
-  width: 52px;
-  height: 28px;
-}
-
-.toggleSwitch input { opacity: 0; width: 0; height: 0; }
-
-.toggleTrack {
-  position: absolute;
-  inset: 0;
-  background: #1e1e1e;
-  border-radius: 28px;
-  cursor: pointer;
-  transition: 0.3s;
-  border: 1px solid #333;
-}
-
-.toggleTrack::before {
-  content: '';
-  position: absolute;
-  width: 22px; height: 22px;
-  left: 3px; top: 2px;
-  background: white;
-  border-radius: 50%;
-  transition: 0.3s;
-}
-
-.toggleSwitch input:checked + .toggleTrack { background: #00cc6a; border-color: #00cc6a; }
-.toggleSwitch input:checked + .toggleTrack::before { transform: translateX(24px); }
-
-.saveBadge {
-  background: #00ff8822;
-  color: #00ff88;
-  border: 1px solid #00ff8844;
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 20px;
-  font-weight: 600;
-}
-
-.plansGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 20px 60px;
-}
-
-@media (max-width: 900px) {
-  .plansGrid { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 500px) {
-  .plansGrid { grid-template-columns: 1fr; }
-  .heroTitle { font-size: 28px; }
-}
-
-.planCard {
-  background: #111;
-  border: 1px solid #222;
-  border-radius: 20px;
-  padding: 28px 22px;
-  position: relative;
-  transition: transform 0.2s, border-color 0.2s;
-}
-
-.planCard:hover {
-  transform: translateY(-4px);
-}
-
-.planCard.popular {
-  border-color: #00ff88;
-  background: linear-gradient(180deg, #0a2a1a, #111);
-}
-
-.popularBadge {
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: linear-gradient(135deg, #00ff88, #00ccff);
-  color: #000;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 4px 14px;
-  border-radius: 20px;
-  white-space: nowrap;
-}
-
-.planIcon { font-size: 28px; margin-bottom: 12px; }
-
-.planName {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-
-.planDesc {
-  font-size: 13px;
-  color: #666;
-  margin-bottom: 20px;
-  line-height: 1.4;
-}
-
-.planPrice {
-  margin-bottom: 24px;
-}
-
-.price {
-  font-size: 36px;
-  font-weight: 800;
-  color: white;
-}
-
-.pricePeriod {
-  font-size: 13px;
-  color: #666;
-  margin-left: 4px;
-}
-
-.priceOriginal {
-  font-size: 14px;
-  color: #555;
-  text-decoration: line-through;
-  margin-top: 2px;
-}
-
-.planFeatures {
-  list-style: none;
-  margin-bottom: 24px;
-}
-
-.planFeatures li {
-  font-size: 13px;
-  color: #aaa;
-  padding: 6px 0;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  border-bottom: 1px solid #1a1a1a;
-}
-
-.planFeatures li:last-child { border-bottom: none; }
-
-.checkIcon { color: #00ff88; flex-shrink: 0; font-size: 14px; }
-.crossIcon { color: #555; flex-shrink: 0; font-size: 14px; }
-
-.planBtn {
-  width: 100%;
-  padding: 13px;
-  border: none;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.planBtn.free {
-  background: #1e1e1e;
-  color: #aaa;
-  border: 1px solid #333;
-}
-
-.planBtn.free:hover { background: #2a2a2a; color: white; }
-
-.planBtn.basic {
-  background: #1a1a2a;
-  color: #88aaff;
-  border: 1px solid #3344aa;
-}
-
-.planBtn.basic:hover { background: #2a2a4a; }
-
-.planBtn.pro {
-  background: linear-gradient(135deg, #00cc6a, #00aaff);
-  color: white;
-}
-
-.planBtn.pro:hover { opacity: 0.9; }
-
-.planBtn.enterprise {
-  background: linear-gradient(135deg, #aa44ff, #ff4488);
-  color: white;
-}
-
-.planBtn.enterprise:hover { opacity: 0.9; }
-
-.planBtn.current {
-  background: #0a2a1a;
-  color: #00ff88;
-  border: 1px solid #00ff8844;
-  cursor: default;
-}
-
-/* PAYMENT MODAL */
-.payModal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.8);
-  z-index: 200;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(6px);
-  padding: 20px;
-}
-
-.payModal.show { display: flex; }
-
-.payBox {
-  background: #111;
-  border: 1px solid #222;
-  border-radius: 24px;
-  padding: 32px;
-  width: 100%;
-  max-width: 420px;
-  animation: popIn 0.25s ease forwards;
-}
-
-@keyframes popIn {
-  from { transform: scale(0.9); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-.payHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.payTitle { font-size: 20px; font-weight: 700; }
-.payClose {
-  background: #1e1e1e;
-  border: none;
-  color: white;
-  width: 30px; height: 30px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.payPlanInfo {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.payPlanName { font-size: 16px; font-weight: 600; }
-.payPlanPrice { font-size: 20px; font-weight: 800; color: #00ff88; }
-
-.payMethods {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.payMethodBtn {
-  width: 100%;
-  padding: 14px;
-  border-radius: 12px;
-  border: 1px solid #2a2a2a;
-  background: #1a1a1a;
-  color: white;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  transition: all 0.2s;
-}
-
-.payMethodBtn:hover { background: #222; border-color: #444; }
-
-.payMethodBtn.razorpay { border-color: #2563eb44; }
-.payMethodBtn.razorpay:hover { background: #0a1a3a; border-color: #2563eb; }
-
-.payMethodBtn.stripe { border-color: #6366f144; }
-.payMethodBtn.stripe:hover { background: #0a0a2a; border-color: #6366f1; }
-
-.payNote {
-  font-size: 12px;
-  color: #555;
-  text-align: center;
-}
-
-.msg {
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  margin-bottom: 14px;
-}
-
-.msg.success { background: #0a2a1a; border: 1px solid #104410; color: #44ff88; }
-.msg.error { background: #2a1010; border: 1px solid #441010; color: #ff6666; }
-
-.faqSection {
-  max-width: 700px;
-  margin: 0 auto;
-  padding: 0 20px 60px;
-}
-
-.faqTitle {
-  font-size: 24px;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.faqItem {
-  background: #111;
-  border: 1px solid #222;
-  border-radius: 12px;
-  margin-bottom: 10px;
-  overflow: hidden;
-}
-
-.faqQ {
-  padding: 16px 20px;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.faqA {
-  padding: 0 20px 16px;
-  font-size: 13px;
-  color: #888;
-  line-height: 1.6;
-  display: none;
-}
-
-.faqItem.open .faqA { display: block; }
-.faqArrow { transition: transform 0.2s; color: #555; }
-.faqItem.open .faqArrow { transform: rotate(180deg); }
-</style>
-
-<!-- Razorpay SDK -->
+<title>Pricing | Datta AI</title>
+<link rel="icon" type="image/jpeg" href="logo.jpeg">
+<link rel="stylesheet" href="theme-vars.css">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<!-- Stripe SDK -->
-<script src="https://js.stripe.com/v3/"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#080800;color:#fff8e7;font-family:'DM Sans',sans-serif;min-height:100vh}
+.topbar{position:fixed;top:0;left:0;right:0;height:54px;background:rgba(8,8,0,0.96);border-bottom:1px solid rgba(255,215,0,0.1);display:flex;align-items:center;padding:0 16px;gap:12px;z-index:100;backdrop-filter:blur(20px)}
+.back{background:none;border:none;color:#665500;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:1px}
+.back:hover{color:var(--accent)}
+.pageTitle{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;background:linear-gradient(90deg,#ffd700,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.main{padding:74px 16px 80px;max-width:1100px;margin:0 auto}
+.hero{text-align:center;margin-bottom:28px}
+.hero h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,5vw,54px);letter-spacing:4px;background:linear-gradient(135deg,#fff8e7,#ffd700,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.hero p{color:#665500;font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:2px}
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+.billingWrap{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:32px;flex-wrap:wrap}
+.blbl{font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:1px;color:#443300;transition:color 0.2s}
+.blbl.on{color:var(--accent);font-weight:700}
+.tgl{position:relative;width:52px;height:28px;cursor:pointer}
+.tgl input{display:none}
+.tglS{position:absolute;inset:0;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:50px;transition:0.3s}
+.tglS::before{content:'';position:absolute;width:20px;height:20px;left:3px;top:3px;background:var(--accent);border-radius:50%;transition:0.3s}
+.tgl input:checked + .tglS::before{transform:translateX(24px)}
+.savePill{background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);border-radius:20px;padding:3px 12px;font-family:'Rajdhani',sans-serif;font-size:11px;color:#00ff88;letter-spacing:1px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:14px;margin-bottom:24px}
+
+.card{background:#0f0e00;border:1px solid rgba(255,215,0,0.08);border-radius:20px;padding:22px;position:relative;transition:all 0.3s;display:flex;flex-direction:column}
+.card:hover{transform:translateY(-4px);box-shadow:0 14px 40px rgba(0,0,0,0.5)}
+.card.popular{border-color:rgba(255,215,0,0.3);background:linear-gradient(160deg,rgba(255,215,0,0.05),rgba(255,140,0,0.02))}
+.card.brahma{border-color:rgba(192,132,252,0.3);background:linear-gradient(160deg,rgba(192,132,252,0.06),rgba(129,140,248,0.02))}
+.popBadge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,var(--accent),#ff8c00);color:#000;font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;padding:3px 14px;border-radius:20px;white-space:nowrap}
+.curBadge{display:inline-block;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);border-radius:20px;padding:2px 10px;font-family:'Rajdhani',sans-serif;font-size:10px;color:#00ff88;letter-spacing:1px;margin-bottom:6px}
+
+.planEmoji{font-size:28px;margin-bottom:6px}
+.planName{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;margin-bottom:2px}
+.planSkt{font-family:'Rajdhani',sans-serif;font-size:10px;letter-spacing:2px;color:#332200;margin-bottom:12px}
+
+.priceWrap{margin-bottom:14px}
+.price{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:2px}
+.prd{font-family:'Rajdhani',sans-serif;font-size:12px;color:#443300;letter-spacing:1px}
+.savings{display:inline-block;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.2);border-radius:10px;padding:2px 8px;font-family:'Rajdhani',sans-serif;font-size:10px;color:#00ff88;letter-spacing:1px;margin-top:4px}
+
+.limits{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.lp{display:flex;align-items:center;gap:7px;background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.07);border-radius:8px;padding:5px 10px;font-size:11px;color:#665500}
+
+.feats{list-style:none;margin-bottom:18px;display:flex;flex-direction:column;gap:6px;flex:1}
+.feats li{font-size:12px;color:#665500;display:flex;align-items:flex-start;gap:6px;line-height:1.4}
+.feats li.locked{color:#2a2000}
+.feats li .t{color:#00ff88;flex-shrink:0;font-size:11px;margin-top:1px;font-weight:700}
+.feats li .x{color:#2a2000;flex-shrink:0;font-size:11px;margin-top:1px}
+.yearExtra{background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.1);border-radius:10px;padding:8px 10px;margin-bottom:14px;display:none}
+.yearExtra.show{display:block}
+.yearExtraTitle{font-family:'Rajdhani',sans-serif;font-size:9px;letter-spacing:2px;color:#443300;margin-bottom:6px}
+.yearExtraItem{font-size:11px;color:var(--accent);display:flex;align-items:center;gap:5px;margin-bottom:3px}
+
+.planBtn{width:100%;padding:12px;border:none;border-radius:50px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.2s;margin-top:auto}
+.planBtn.free{background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);color:var(--accent)}
+.planBtn.gold{background:linear-gradient(135deg,var(--accent),#ff8c00);color:#000}
+.planBtn.purple{background:linear-gradient(135deg,#c084fc,#818cf8);color:#000}
+.planBtn.gold:hover,.planBtn.purple:hover{transform:scale(1.02);box-shadow:0 4px 20px rgba(255,215,0,0.2)}
+.planBtn:disabled{opacity:0.5;cursor:not-allowed;transform:none!important}
+
+.lifetime{background:linear-gradient(135deg,rgba(255,215,0,0.07),rgba(255,140,0,0.04));border:1px solid rgba(255,215,0,0.2);border-radius:20px;padding:28px;text-align:center;position:relative;overflow:hidden}
+.lifetime::before{content:'';position:absolute;top:-40%;left:-40%;width:180%;height:180%;background:radial-gradient(circle,rgba(255,215,0,0.05),transparent 60%);pointer-events:none}
+.ltTitle{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:4px;color:var(--accent);margin-bottom:4px}
+.ltPrice{font-family:'Bebas Neue',sans-serif;font-size:46px;background:linear-gradient(135deg,#ffd700,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+.ltDesc{color:#665500;font-size:13px;margin-bottom:16px;line-height:1.6}
+.ltFeats{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:20px}
+.ltFeat{background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.12);border-radius:20px;padding:4px 12px;font-size:12px;color:#665500}
+.ltBtn{display:inline-flex;align-items:center;gap:8px;padding:14px 40px;background:linear-gradient(135deg,var(--accent),#ff8c00);border:none;border-radius:50px;color:#000;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.2s}
+.ltBtn:hover{transform:scale(1.03);box-shadow:0 6px 24px rgba(255,215,0,0.4)}
+
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.modal.show{display:flex}
+.mbox{background:#0a0900;border:1px solid rgba(255,215,0,0.2);border-radius:24px;padding:32px;text-align:center;max-width:360px;width:90%}
+.mbtn{width:100%;padding:13px;background:linear-gradient(135deg,var(--accent),#ff8c00);border:none;border-radius:50px;color:#000;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;cursor:pointer;margin-top:16px}
+
+@media(max-width:600px){.grid{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
-
-<div class="header">
-  <button class="backBtn" onclick="window.location.href='index.html'">← Back</button>
-  <div class="headerTitle">Datta AI Plans</div>
-  <div class="currentPlan" id="currentPlanBadge">Free Plan</div>
+<div class="topbar">
+  <button class="back" onclick="window.location.href='index.html'">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Back
+  </button>
+  <div class="pageTitle">👑 Datta AI Pricing</div>
 </div>
 
-<div class="hero">
-  <div class="heroTitle">Choose Your Path</div>
-  <div style="font-size:12px;color:#555;letter-spacing:2px;margin-bottom:12px;font-family:'Rajdhani',sans-serif;">DATTA AI v2.0 SHAKTI</div>
-  <div class="heroSub">From Arambh to Brahma — find the path that matches your ambition</div>
+<div class="main">
+  <div class="hero">
+    <h1>Choose Your Plan</h1>
+    <p>UNLOCK THE FULL POWER OF DATTA AI</p>
+  </div>
 
-  <div class="billingToggle">
-    <span class="toggleLabel active" id="monthlyLabel">Monthly</span>
-    <label class="toggleSwitch">
-      <input type="checkbox" id="billingToggle" onchange="toggleBilling()">
-      <span class="toggleTrack"></span>
+  <div class="billingWrap">
+    <span class="blbl on" id="mlbl">MONTHLY</span>
+    <label class="tgl">
+      <input type="checkbox" id="btgl" onchange="toggleBilling()">
+      <div class="tglS"></div>
     </label>
-    <span class="toggleLabel" id="yearlyLabel">Yearly</span>
-    <span class="saveBadge">Save 40%</span>
+    <span class="blbl" id="ylbl">YEARLY</span>
+    <span class="savePill">💰 SAVE UP TO 60%</span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="lifetime">
+    <div class="ltTitle">💰 LIFETIME ACCESS</div>
+    <div class="ltPrice">₹20,000</div>
+    <div class="ltDesc">Pay once. Use forever. All Brahma features included.<br>No monthly charges. No renewals ever.</div>
+    <div class="ltFeats">
+      <span class="ltFeat">✓ All features forever</span>
+      <span class="ltFeat">✓ Free upgrades</span>
+      <span class="ltFeat">✓ VIP support</span>
+      <span class="ltFeat">✓ Custom AI personality</span>
+      <span class="ltFeat">✓ API access</span>
+      <span class="ltFeat">✓ White-label option</span>
+      <span class="ltFeat">✓ No recurring fees</span>
+    </div>
+    <button class="ltBtn" onclick="buyLifetime()">💰 GET LIFETIME ACCESS</button>
   </div>
 </div>
 
-<div class="plansGrid">
-
-  <!-- FREE -->
-  <div class="planCard" id="plan-free">
-    <div class="planIcon">🌱</div>
-    <div class="planName">Arambh <span style="font-size:11px;color:#666;font-family:system-ui">आरंभ</span></div>
-    <div class="planDesc">The beginning of your AI journey</div>
-    <div class="planPrice">
-      <span class="price">₹0</span>
-      <span class="pricePeriod">/month</span>
-    </div>
-    <ul class="planFeatures">
-      <li><span class="checkIcon">✓</span> 50 messages/hour</li>
-      <li><span class="checkIcon">✓</span> Basic AI responses</li>
-      <li><span class="checkIcon">✓</span> 5 image generations/day</li>
-      <li><span class="checkIcon">✓</span> Web search (5/day)</li>
-      <li><span class="crossIcon">✗</span> Fast responses</li>
-      <li><span class="crossIcon">✗</span> Custom AI personality</li>
-      <li><span class="crossIcon">✗</span> Priority support</li>
-    </ul>
-    <button class="planBtn free current" id="btn-free">Current Plan</button>
-  </div>
-
-  <!-- BASIC -->
-  <div class="planCard" id="plan-basic">
-    <div class="planIcon">⚡</div>
-    <div class="planName">Shakti <span style="font-size:11px;color:#888;font-family:system-ui">शक्ति</span></div>
-    <div class="planDesc">Unleash your power with Datta AI</div>
-    <div class="planPrice">
-      <span class="price" id="basicPrice">₹199</span>
-      <span class="pricePeriod">/month</span>
-      <div class="priceOriginal" id="basicOriginal" style="display:none">₹399/month</div>
-    </div>
-    <ul class="planFeatures">
-      <li><span class="checkIcon">✓</span> 100 messages/hour</li>
-      <li><span class="checkIcon">✓</span> Faster AI responses</li>
-      <li><span class="checkIcon">✓</span> 20 image generations/day</li>
-      <li><span class="checkIcon">✓</span> Web search (unlimited)</li>
-      <li><span class="checkIcon">✓</span> Chat history export</li>
-      <li><span class="crossIcon">✗</span> Custom AI personality</li>
-      <li><span class="crossIcon">✗</span> Priority support</li>
-    </ul>
-    <button class="planBtn basic" onclick="openPayment('basic')">Get Shakti</button>
-  </div>
-
-  <!-- PRO -->
-  <div class="planCard popular" id="plan-pro">
-    <div class="popularBadge">Most Popular</div>
-    <div class="planIcon">🔥</div>
-    <div class="planName">Agni <span style="font-size:11px;color:#aaffcc;font-family:system-ui">अग्नि</span></div>
-    <div class="planDesc">Burn through tasks at lightning speed</div>
-    <div class="planPrice">
-      <span class="price" id="proPrice">₹499</span>
-      <span class="pricePeriod">/month</span>
-      <div class="priceOriginal" id="proOriginal" style="display:none">₹999/month</div>
-    </div>
-    <ul class="planFeatures">
-      <li><span class="checkIcon">✓</span> Unlimited messages</li>
-      <li><span class="checkIcon">✓</span> Fastest AI responses</li>
-      <li><span class="checkIcon">✓</span> Unlimited image generation</li>
-      <li><span class="checkIcon">✓</span> Web search (unlimited)</li>
-      <li><span class="checkIcon">✓</span> Custom AI personality</li>
-      <li><span class="checkIcon">✓</span> Priority support</li>
-      <li><span class="checkIcon">✓</span> Early access to features</li>
-    </ul>
-    <button class="planBtn pro" onclick="openPayment('pro')">Get Agni</button>
-  </div>
-
-  <!-- ENTERPRISE -->
-  <div class="planCard" id="plan-enterprise">
-    <div class="planIcon">👑</div>
-    <div class="planName">Brahma <span style="font-size:11px;color:#ffaacc;font-family:system-ui">ब्रह्म</span></div>
-    <div class="planDesc">Create your AI empire</div>
-    <div class="planPrice">
-      <span class="price" id="enterprisePrice">₹1499</span>
-      <span class="pricePeriod">/month</span>
-      <div class="priceOriginal" id="enterpriseOriginal" style="display:none">₹2999/month</div>
-    </div>
-    <ul class="planFeatures">
-      <li><span class="checkIcon">✓</span> Everything in Pro</li>
-      <li><span class="checkIcon">✓</span> 10 team members</li>
-      <li><span class="checkIcon">✓</span> Custom AI training</li>
-      <li><span class="checkIcon">✓</span> API access</li>
-      <li><span class="checkIcon">✓</span> Dedicated support</li>
-      <li><span class="checkIcon">✓</span> Custom integrations</li>
-      <li><span class="checkIcon">✓</span> SLA guarantee</li>
-    </ul>
-    <button class="planBtn enterprise" onclick="openPayment('enterprise')">Get Brahma</button>
-  </div>
-
-</div>
-
-<!-- FAQ -->
-<div class="faqSection">
-  <div class="faqTitle">Frequently Asked Questions</div>
-
-  <div class="faqItem" onclick="toggleFaq(this)">
-    <div class="faqQ">Can I cancel anytime? <span class="faqArrow">▼</span></div>
-    <div class="faqA">Yes! You can cancel your subscription at any time. You'll continue to have access until the end of your billing period.</div>
-  </div>
-
-  <div class="faqItem" onclick="toggleFaq(this)">
-    <div class="faqQ">What payment methods are accepted? <span class="faqArrow">▼</span></div>
-    <div class="faqA">We accept UPI, Credit/Debit cards, Net Banking via Razorpay (India), and all major cards internationally via Stripe.</div>
-  </div>
-
-  <div class="faqItem" onclick="toggleFaq(this)">
-    <div class="faqQ">Is there a free trial for paid plans? <span class="faqArrow">▼</span></div>
-    <div class="faqA">The Free plan lets you try Datta AI with 50 messages/hour. You can upgrade anytime to unlock more features.</div>
-  </div>
-
-  <div class="faqItem" onclick="toggleFaq(this)">
-    <div class="faqQ">What is Custom AI Personality? <span class="faqArrow">▼</span></div>
-    <div class="faqA">Pro and Enterprise users can customize how Datta AI responds — set its tone, language style, and expertise areas to match your needs.</div>
-  </div>
-
-</div>
-
-<!-- PAYMENT MODAL -->
-<div class="payModal" id="payModal">
-  <div class="payBox">
-    <div class="payHeader">
-      <div class="payTitle">Complete Payment</div>
-      <button class="payClose" onclick="closePayment()">✕</button>
-    </div>
-
-    <div id="payMsg"></div>
-
-    <div class="payPlanInfo">
-      <div>
-        <div class="payPlanName" id="payPlanName">Agni Plan</div>
-        <div style="font-size:12px;color:#666;">Monthly subscription</div>
-      </div>
-      <div class="payPlanPrice" id="payPlanPrice">₹499</div>
-    </div>
-
-    <div class="payMethods">
-      <button class="payMethodBtn razorpay" onclick="payWithRazorpay()">
-        <img src="https://razorpay.com/favicon.ico" width="20" height="20" onerror="this.style.display='none'">
-        Pay with Razorpay (UPI / Card)
-      </button>
-      <button class="payMethodBtn stripe" onclick="payWithStripe()">
-        <img src="https://stripe.com/favicon.ico" width="20" height="20" onerror="this.style.display='none'">
-        Pay with Stripe (International)
-      </button>
-    </div>
-
-    <div class="payNote">🔒 Secure payment. Cancel anytime.</div>
+<div class="modal" id="modal">
+  <div class="mbox">
+    <div style="font-size:52px;margin-bottom:10px">🎉</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;color:var(--accent);margin-bottom:8px">PAYMENT SUCCESS!</div>
+    <div style="color:#665500;font-size:13px;line-height:1.6" id="mdesc">Your plan is now active!</div>
+    <button class="mbtn" onclick="window.location.href='index.html'">START USING DATTA AI 🚀</button>
   </div>
 </div>
 
+<script src="theme.js"></script>
 <script>
-const SERVER = "https://datta-ai-server.onrender.com"
+const KEY = 'rzp_live_SSsrUFm9q6HTM3'
 
-let isYearly = false
-let selectedPlan = null
-
-const prices = {
-  monthly: { basic: 199, pro: 499, enterprise: 1499 },
-  yearly:  { basic: 1434, pro: 3594, enterprise: 10794 }
-}
-
-const pricesUSD = {
-  monthly: { basic: 3, pro: 6, enterprise: 18 },
-  yearly:  { basic: 22, pro: 43, enterprise: 130 }
-}
-
-function getToken() {
-  return localStorage.getItem("datta_token") || ""
-}
-
-function getUser() {
-  try {
-    const raw = localStorage.getItem("datta_user")
-    if (raw && raw !== "null") return JSON.parse(raw)
-  } catch(e) {}
-  return null
-}
-
-window.addEventListener("load", function() {
-  if (!getToken()) {
-    window.location.href = "login.html"
-    return
+const PLANS = [
+  {
+    key:'arambh', name:'Arambh', sanskrit:'आरंभ', emoji:'🌱', color:'#00ff88',
+    mp:0, yp:0, mid:null, yid:null, free:true,
+    limits:{ msg:'50 msg/hr · 1hr cooldown', img:'3 images/day' },
+    ylimits:{ msg:'50 msg/hr · 1hr cooldown', img:'3 images/day' },
+    mfeats:['AI Chat (basic)','Web Search','Live Feed news'],
+    mlocked:['Mood-based AI 😊','Image Generation','Voice Assistant','File Upload','Smart Memory','Analytics','Daily Briefing','Translator','Emotional Support','XP Gamification'],
+    ybonus:[],
+  },
+  {
+    key:'shakti', name:'Shakti', sanskrit:'शक्ति', emoji:'⚡', color:'#ffd700',
+    mp:249, yp:1199, mid:'plan_SStVaQQyLX4bT9', yid:'plan_SStWnga9wSFsU1',
+    savings:'Save ₹1789/yr · 60% OFF 🔥',
+    limits:{ msg:'150 msg/hr · 45min cooldown', img:'10 images/day' },
+    ylimits:{ msg:'200 msg/hr · 45min cooldown', img:'15 images/day' },
+    mfeats:['AI Chat + Mood-based AI 😊','Web Search','Image Generation','Voice Assistant','Live Feed news','Smart Memory 🧾','Analytics 📊','Daily Briefing 📅','Translator 🌍','Emotional Support 🫂','XP Gamification 🎮'],
+    mlocked:['File Upload','Selfie Mood Detect','AI Personality Evolution','Priority Support','Early Access'],
+    ybonus:['Extra messages (200/hr)','Extra images (15/day)','Dedicated support 🎯','60% cheaper than monthly'],
+  },
+  {
+    key:'agni', name:'Agni', sanskrit:'अग्नि', emoji:'🔥', color:'#ff8c00',
+    mp:599, yp:5499, mid:'plan_SStXBYvQZT0OeN', yid:'plan_SStXaF0AEkL4LL',
+    popular:true,
+    savings:'Save ₹1689/yr · 23% OFF + 1 FREE month',
+    limits:{ msg:'500 msg/hr · 30min cooldown', img:'20 images/day' },
+    ylimits:{ msg:'600 msg/hr · 30min cooldown', img:'30 images/day' },
+    mfeats:['Everything in Shakti ✓','File Upload 📎','Selfie Mood Detection 📸','AI Personality Evolution 🧬','Priority Support ⚡','Early Access to Features 🚀'],
+    mlocked:['VIP Support 24/7','Custom AI Personality','White-label Option','API Access'],
+    ybonus:['Extra messages (600/hr)','Extra images (30/day)','Priority support upgrade ⚡','Early access to ALL features 🚀','1 FREE month included 🎁','23% cheaper than monthly'],
+  },
+  {
+    key:'brahma', name:'Brahma', sanskrit:'ब्रह्म', emoji:'👑', color:'#c084fc',
+    mp:1199, yp:9999, mid:'plan_SStXuYWwVkwJ2B', yid:'plan_SStYCkbrCaGWTz',
+    brahma:true,
+    savings:'Save ₹4389/yr · 30% OFF + 2 FREE months',
+    limits:{ msg:'1000 msg/hr · 15min cooldown', img:'100 images/day' },
+    ylimits:{ msg:'1500 msg/hr · 15min cooldown', img:'150 images/day' },
+    mfeats:['Everything in Agni ✓','Fastest AI Responses ⚡','VIP Support 24/7 👑','Custom AI Personality 🤖','White-label Option 🏷️','API Access 🔌','Early Access to ALL features'],
+    mlocked:[],
+    ybonus:['Extra messages (1500/hr)','Extra images (150/day)','VIP support upgrade 👑','Early access guaranteed 🚀','2 FREE months included 🎁🎁','API access priority 🔌','30% cheaper than monthly'],
   }
-  const user = getUser()
-  const plan = localStorage.getItem("datta_plan") || "free"
-  document.getElementById("currentPlanBadge").textContent = plan.charAt(0).toUpperCase() + plan.slice(1) + " Plan"
-  highlightCurrentPlan(plan)
-})
+]
 
-function highlightCurrentPlan(plan) {
-  document.querySelectorAll(".planBtn").forEach(b => {
-    if (b.classList.contains("current")) {
-      b.classList.remove("current")
-      b.textContent = b.textContent.replace("Current Plan", "Get " + b.closest(".planCard").querySelector(".planName").textContent)
-    }
-  })
-  const btn = document.getElementById("btn-" + plan)
-  if (btn) {
-    btn.classList.add("current")
-    btn.textContent = "Current Plan"
-  }
-}
+let yearly = false
+const curPlan = localStorage.getItem('datta_plan') || 'free'
 
 function toggleBilling() {
-  isYearly = document.getElementById("billingToggle").checked
-  document.getElementById("monthlyLabel").classList.toggle("active", !isYearly)
-  document.getElementById("yearlyLabel").classList.toggle("active", isYearly)
-
-  const period = isYearly ? "yearly" : "monthly"
-
-  document.getElementById("basicPrice").textContent = "Rs." + prices[period].basic
-  document.getElementById("proPrice").textContent = "Rs." + prices[period].pro
-  document.getElementById("enterprisePrice").textContent = "Rs." + prices[period].enterprise
-
-  document.getElementById("basicOriginal").style.display = isYearly ? "block" : "none"
-  document.getElementById("proOriginal").style.display = isYearly ? "block" : "none"
-  document.getElementById("enterpriseOriginal").style.display = isYearly ? "block" : "none"
+  yearly = document.getElementById('btgl').checked
+  document.getElementById('mlbl').classList.toggle('on', !yearly)
+  document.getElementById('ylbl').classList.toggle('on', yearly)
+  render()
 }
 
-function openPayment(plan) {
-  selectedPlan = plan
-  const period = isYearly ? "yearly" : "monthly"
-  const price = prices[period][plan]
-  const planNames = { basic: "Basic", pro: "Pro", enterprise: "Enterprise" }
+function render() {
+  const g = document.getElementById('grid')
+  g.innerHTML = ''
+  PLANS.forEach(p => {
+    const price = yearly ? p.yp : p.mp
+    const period = yearly ? '/yr' : '/mo'
+    const limits = yearly ? p.ylimits : p.limits
+    const isCur = curPlan===p.key||(p.free&&(curPlan==='free'||curPlan==='arambh'||!curPlan))
+    const showBonus = yearly && p.ybonus && p.ybonus.length > 0
 
-  document.getElementById("payPlanName").textContent = planNames[plan] + " Plan (" + (isYearly ? "Yearly" : "Monthly") + ")"
-  document.getElementById("payPlanPrice").textContent = "Rs." + price
-  document.getElementById("payMsg").innerHTML = ""
-  document.getElementById("payModal").classList.add("show")
+    const d = document.createElement('div')
+    d.className = 'card'+(p.popular?' popular':'')+(p.brahma?' brahma':'')
+    d.innerHTML = `
+      ${p.popular?'<div class="popBadge">⭐ MOST POPULAR</div>':''}
+      ${isCur?'<div class="curBadge">✓ YOUR CURRENT PLAN</div>':''}
+      <div class="planEmoji">${p.emoji}</div>
+      <div class="planName" style="color:${p.color}">${p.name}</div>
+      <div class="planSkt">${p.sanskrit}</div>
+      <div class="priceWrap">
+        <span class="price" style="color:${p.color}">${price===0?'FREE':'₹'+price.toLocaleString('en-IN')}</span>
+        ${price>0?`<span class="prd">${period}</span>`:''}
+        ${yearly&&p.savings?`<div class="savings">🎉 ${p.savings}</div>`:''}
+      </div>
+      <div class="limits">
+        <div class="lp"><span>💬</span>${limits.msg}</div>
+        <div class="lp"><span>🎨</span>${limits.img}</div>
+      </div>
+      ${showBonus?`
+        <div class="yearExtra show">
+          <div class="yearExtraTitle">⭐ YEARLY EXCLUSIVE BENEFITS</div>
+          ${p.ybonus.map(b=>`<div class="yearExtraItem"><span style="color:var(--accent)">+</span>${b}</div>`).join('')}
+        </div>`:''}
+      <ul class="feats">
+        ${p.mfeats.map(f=>`<li><span class="t">✓</span>${f}</li>`).join('')}
+        ${p.mlocked.map(f=>`<li class="locked"><span class="x">✕</span>${f}</li>`).join('')}
+      </ul>
+      <button class="planBtn ${p.free?'free':p.brahma?'purple':'gold'}"
+        onclick="buy('${p.key}')"
+        ${isCur?'disabled':''}>
+        ${isCur?'✓ CURRENT PLAN':p.free?'GET STARTED FREE':'UPGRADE NOW →'}
+      </button>
+    `
+    g.appendChild(d)
+  })
 }
 
-function closePayment() {
-  document.getElementById("payModal").classList.remove("show")
-}
+function buy(key) {
+  const p = PLANS.find(x=>x.key===key)
+  if (!p||p.free){window.location.href='index.html';return}
+  const planId = yearly?p.yid:p.mid
+  const period = yearly?'yearly':'monthly'
+  const user = (()=>{try{return JSON.parse(localStorage.getItem('datta_user')||'{}')}catch{return{}}})()
 
-function showPayMsg(text, type) {
-  const el = document.getElementById("payMsg")
-  el.innerHTML = "<div class='msg " + type + "'>" + text + "</div>"
-}
-
-function payWithRazorpay() {
-  const period = isYearly ? "yearly" : "monthly"
-  const amount = prices[period][selectedPlan] * 100
-  const user = getUser() || {}
-
-  const options = {
-    key: "YOUR_RAZORPAY_KEY_ID",
-    amount: amount,
-    currency: "INR",
-    name: "Datta AI",
-    description: selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1) + " Plan",
-    image: "https://harisaiganeshpampana-ai.github.io/datta-ai/logo.jpeg",
-    prefill: {
-      name: user.username || "",
-      email: user.email || ""
-    },
-    theme: { color: "#00ff88" },
-    handler: function(response) {
-      activatePlan(selectedPlan, "razorpay", response.razorpay_payment_id)
-    },
-    modal: {
-      ondismiss: function() {
-        showPayMsg("Payment cancelled.", "error")
+  const rzp = new Razorpay({
+    key: KEY,
+    plan_id: planId,
+    name: 'Datta AI',
+    description: `${p.name} ${period} — ${p.sanskrit}`,
+    image: 'https://harisaiganeshpampana-ai.github.io/datta-ai/logo.jpeg',
+    handler: function(res) {
+      localStorage.setItem('datta_plan', p.key)
+      const token = localStorage.getItem('datta_token')
+      if (token) {
+        fetch('https://datta-ai-server.onrender.com/payment/update-plan',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({token,plan:p.key,period,paymentId:res.razorpay_payment_id})
+        }).catch(()=>{})
       }
-    }
-  }
-
-  const rzp = new Razorpay(options)
+      document.getElementById('mdesc').textContent =
+        `Welcome to ${p.name} ${p.sanskrit}! Your ${period} plan is now active. Enjoy all features!`
+      document.getElementById('modal').classList.add('show')
+    },
+    prefill:{name:user.username||'',email:user.email||''},
+    theme:{color:'#ffd700'}
+  })
   rzp.open()
 }
 
-function payWithStripe() {
-  showPayMsg("Redirecting to Stripe...", "success")
-  const period = isYearly ? "yearly" : "monthly"
-  const amountUSD = pricesUSD[period][selectedPlan]
-
-  fetch(SERVER + "/payment/stripe-session", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      token: getToken(),
-      plan: selectedPlan,
-      period: period,
-      amount: amountUSD
-    })
-  })
-  .then(r => r.json())
-  .then(data => {
-    if (data.url) {
-      window.location.href = data.url
-    } else {
-      showPayMsg(data.error || "Payment failed", "error")
-    }
-  })
-  .catch(() => showPayMsg("Server error. Try again.", "error"))
+function buyLifetime() {
+  window.open('https://rzp.io/l/plink_SStdBNXqDXbMDx','_blank')
 }
 
-function activatePlan(plan, method, paymentId) {
-  fetch(SERVER + "/payment/activate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      token: getToken(),
-      plan: plan,
-      method: method,
-      paymentId: paymentId,
-      period: isYearly ? "yearly" : "monthly"
-    })
-  })
-  .then(r => r.json())
-  .then(data => {
-    if (data.success) {
-      localStorage.setItem("datta_plan", plan)
-      document.getElementById("currentPlanBadge").textContent = plan.charAt(0).toUpperCase() + plan.slice(1) + " Plan"
-      highlightCurrentPlan(plan)
-      closePayment()
-      showSuccessScreen(plan)
-    } else {
-      showPayMsg(data.error || "Activation failed", "error")
-    }
-  })
-  .catch(() => showPayMsg("Server error", "error"))
-}
-
-function showSuccessScreen(plan) {
-  document.body.innerHTML += `
-    <div style="position:fixed;inset:0;background:#0a0a0a;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;">
-      <div style="font-size:60px;margin-bottom:20px;">🎉</div>
-      <div style="font-size:28px;font-weight:800;background:linear-gradient(135deg,#00ff88,#00ccff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;">Welcome to ${plan.charAt(0).toUpperCase() + plan.slice(1)}!</div>
-      <div style="color:#888;margin-bottom:32px;">Your plan has been activated successfully.</div>
-      <button onclick="window.location.href='index.html'" style="padding:14px 32px;background:linear-gradient(135deg,#00cc6a,#00aaff);border:none;border-radius:12px;color:white;font-size:16px;font-weight:700;cursor:pointer;">Start Chatting →</button>
-    </div>
-  `
-}
-
-function toggleFaq(item) {
-  item.classList.toggle("open")
-}
+render()
 </script>
-
 </body>
 </html>
