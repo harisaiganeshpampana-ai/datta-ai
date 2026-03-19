@@ -606,9 +606,30 @@ async function openChat(chatId) {
   const messages = await res.json()
   messages.forEach(m => {
     if (m.role === "user") {
+      // Strip system instructions - only show actual user text
+      let displayMsg = m.content || ""
+      if (displayMsg.includes("[STRICT INSTRUCTION]") || displayMsg.includes("[MOOD INSTRUCTION") || displayMsg.includes("[RESPONSE LENGTH")) {
+        // Extract only the last non-instruction line (real user message)
+        const lines = displayMsg.split("\n")
+        for (let i = lines.length - 1; i >= 0; i--) {
+          const line = lines[i].trim()
+          if (line && !line.startsWith("[STRICT") && !line.startsWith("[MOOD") && !line.startsWith("[RESPONSE") && !line.startsWith("[EVOLVED") && !line.startsWith("[SMART")) {
+            displayMsg = line
+            break
+          }
+        }
+        // Also try splitting by double newline
+        if (displayMsg.includes("[STRICT") || displayMsg.includes("[MOOD")) {
+          const parts = m.content.split("\n\n")
+          const lastPart = parts[parts.length - 1].trim()
+          if (lastPart && !lastPart.startsWith("[")) {
+            displayMsg = lastPart
+          }
+        }
+      }
       chatBox.innerHTML += `
         <div class="messageRow userRow">
-          <div class="userBubble">${m.content}</div>
+          <div class="userBubble">${displayMsg}</div>
           <div class="avatar">🧑</div>
         </div>
       `
