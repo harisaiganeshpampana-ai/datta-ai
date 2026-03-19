@@ -14,6 +14,11 @@
   };
 
   function applyMood(mood) {
+    // Mood AI requires Shakti plan or higher
+    if (typeof canUseFeature === "function" && !canUseFeature("moodAI")) {
+      if (typeof showUpgradeModal === "function") showUpgradeModal("not_in_plan", "moodAI");
+      return;
+    }
     localStorage.setItem('datta_mood', mood);
     const info = moodStyles[mood];
     if (!info) return;
@@ -121,6 +126,10 @@
 
   // ── SELFIE/PHOTO MOOD DETECTION ─────────────────────
   function startPhotoMoodDetection() {
+    if (typeof canUseFeature === "function" && !canUseFeature("selfieMood")) {
+      if (typeof showUpgradeModal === "function") showUpgradeModal("not_in_plan", "selfieMood");
+      return;
+    }
     // Create a file input for camera
     const input = document.createElement('input');
     input.type = 'file';
