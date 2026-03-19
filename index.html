@@ -114,12 +114,13 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
   justify-content: flex-start;
   width: 100%;
   height: 100%;
-  padding: 30px 24px 140px;
+  padding: 20px 16px 160px;
   text-align: center;
-  overflow-y: auto;
+  overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
   box-sizing: border-box;
   scrollbar-width: thin;
+  overscroll-behavior: contain;
 }
 @media(max-width:600px){
   .welcomeScreen { padding: 20px 12px 120px; justify-content:flex-start; }
@@ -301,8 +302,13 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
 }
 
 @media (max-width: 500px) {
-  .welcomeChips { grid-template-columns: 1fr; }
-  .welcomeBadges { gap: 6px; }
+  .welcomeChips { grid-template-columns: 1fr 1fr !important; gap:8px; max-width:100%; }
+  .welcomeBadges { gap:6px; flex-wrap:wrap; justify-content:center; }
+  .chip { padding:12px 10px; }
+  .chipTitle { font-size:12px; }
+  .chipDesc { font-size:10px; }
+  .chipIcon { font-size:18px; margin-bottom:6px; }
+  .welcomeTitle { font-size:26px !important; }
 }
 
 /* ── MOOD PANEL EXTRA BUTTONS ───────────────────────────────────── */
