@@ -112,14 +112,15 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
   height: 100%;
-  padding: 20px 24px 120px;
+  padding: 30px 24px 140px;
   text-align: center;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   box-sizing: border-box;
+  scrollbar-width: thin;
 }
 @media(max-width:600px){
   .welcomeScreen { padding: 20px 12px 120px; justify-content:flex-start; }
@@ -559,9 +560,9 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
   <div id="versionTag" style="text-align:center;font-size:9px;color:#252000;letter-spacing:2px;padding:2px 0;font-family:'Rajdhani',sans-serif;">DATTA AI v2.0 · SHAKTI</div>
 
   <!-- UPGRADE -->
-  <div onclick="window.location.href='pricing.html'" style="margin:6px 10px;padding:10px 14px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.12);border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,215,0,0.1)'" onmouseout="this.style.background='rgba(255,215,0,0.05)'">
+  <div id="upgradeBanner" onclick="window.location.href='pricing.html'" style="margin:6px 10px;padding:10px 14px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.12);border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,215,0,0.1)'" onmouseout="this.style.background='rgba(255,215,0,0.05)'">
     <span style="font-size:18px;">👑</span>
-    <div style="flex:1;"><div style="font-size:12px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;color:var(--accent);">Upgrade to Agni</div><div style="font-size:10px;color:#554400;">Unlimited power · ₹499/mo</div></div>
+    <div style="flex:1;"><div id="upgradeTitle" style="font-size:12px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;color:var(--accent);">Upgrade to Agni</div><div id="upgradeSub" style="font-size:10px;color:#554400;">Unlimited power · ₹499/mo</div></div>
     <span style="color:#554400;font-size:14px;">›</span>
   </div>
 
@@ -712,6 +713,44 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
       setTimeout(function() { splash.style.display = 'none'; }, 500);
     }
   }, 2500);
+
+  // ── UPGRADE BANNER DYNAMIC ───────────────────────────
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      const user = (() => { try { return JSON.parse(localStorage.getItem('datta_user')||'{}') } catch{return{}} })()
+      const plan = localStorage.getItem('datta_plan') || 'free'
+      const username = (user.username||'').toLowerCase()
+      const creators = ['pampana_hari_sai_ganesh','harisaiganesh','ganesh','admin','creator','dattaai']
+      const isCreatorUser = creators.some(c => username.includes(c))
+      
+      const banner = document.getElementById('upgradeBanner')
+      const title = document.getElementById('upgradeTitle')
+      const sub = document.getElementById('upgradeSub')
+      
+      if (isCreatorUser) {
+        // Show creator status instead
+        if (banner) banner.style.background = 'rgba(255,215,0,0.08)'
+        if (title) title.textContent = '👑 Creator Account'
+        if (sub) sub.textContent = 'Full access · Unlimited'
+        if (banner) banner.onclick = null
+        if (banner) banner.style.cursor = 'default'
+      } else {
+        const planNames = { shakti:'⚡ Shakti', agni:'🔥 Agni', brahma:'👑 Brahma' }
+        if (plan !== 'free' && plan !== 'arambh' && planNames[plan]) {
+          if (title) title.textContent = planNames[plan] + ' Plan Active'
+          if (sub) sub.textContent = 'Manage subscription →'
+        }
+      }
+
+      // Update profile name
+      const profileName = document.querySelector('.profileName')
+      const profileSub = document.querySelector('.profileSub')
+      const avatarLetter = document.querySelector('.profileAvatar')
+      if (profileName && user.username) profileName.textContent = user.username
+      if (profileSub) profileSub.textContent = isCreatorUser ? '👑 Creator' : (plan.charAt(0).toUpperCase()+plan.slice(1)+' Plan')
+      if (avatarLetter && user.username) avatarLetter.textContent = user.username.charAt(0).toUpperCase()
+    }, 800)
+  })
 
   // ── GREETING ────────────────────────────────────────
   window.addEventListener('load', function() {
