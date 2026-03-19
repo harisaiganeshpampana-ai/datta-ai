@@ -415,7 +415,8 @@ const SERVER = "https://datta-ai-server.onrender.com"
         localStorage.setItem("datta_user", decodeURIComponent(userStr))
       } catch(e) {}
     }
-    window.location.replace("index.html")
+    const hasPlan = localStorage.getItem("datta_plan")
+      window.location.replace(hasPlan ? "index.html" : "pricing.html")
   }
 })()
 
@@ -505,7 +506,12 @@ async function handleLogin() {
     localStorage.setItem("datta_token", data.token)
     localStorage.setItem("datta_user", JSON.stringify(data.user))
     showMsg("Login successful! Redirecting...", "success")
-    setTimeout(() => window.location.href = "index.html", 1000)
+    setTimeout(() => {
+      // New user (no plan yet) → go to pricing to pick plan
+      // Returning user (has plan) → go straight to chat
+      const hasPlan = localStorage.getItem("datta_plan")
+      window.location.href = hasPlan ? "index.html" : "pricing.html"
+    }, 1000)
 
   } catch (e) {
     showMsg("Server error. Please try again.", "error")
@@ -547,7 +553,10 @@ async function handleSignup() {
     localStorage.setItem("datta_token", data.token)
     localStorage.setItem("datta_user", JSON.stringify(data.user))
     showMsg("Account created! Redirecting...", "success")
-    setTimeout(() => window.location.href = "index.html", 1000)
+    setTimeout(() => {
+      // Brand new account → always go to pricing first
+      window.location.href = "pricing.html"
+    }, 1000)
 
   } catch (e) {
     showMsg("Server error. Please try again.", "error")
@@ -616,7 +625,10 @@ async function handlePhone() {
       localStorage.setItem("datta_token", data.token)
       localStorage.setItem("datta_user", JSON.stringify(data.user))
       showMsg("Verified! Redirecting...", "success")
-      setTimeout(() => window.location.href = "index.html", 1000)
+      setTimeout(() => {
+        const hasPlan = localStorage.getItem("datta_plan")
+        window.location.href = hasPlan ? "index.html" : "pricing.html"
+      }, 1000)
     } catch (e) {
       showMsg("Server error", "error")
       btn.disabled = false
@@ -655,7 +667,8 @@ function handleGoogleCallback() {
 
       // Clean URL and redirect immediately
       window.history.replaceState({}, document.title, window.location.pathname)
-      window.location.replace("index.html")
+      const hasPlan = localStorage.getItem("datta_plan")
+      window.location.replace(hasPlan ? "index.html" : "pricing.html")
     } catch (e) {
       console.error("Callback error:", e)
       showMsg("Login error. Please try again.", "error")
@@ -669,6 +682,7 @@ function handleGuest() {
   const guestUser = { username: "Guest", email: "", isGuest: true, id: guestId }
   localStorage.setItem("datta_token", "guest_" + guestId)
   localStorage.setItem("datta_user", JSON.stringify(guestUser))
+  localStorage.setItem("datta_plan", "arambh")  // guests get free plan
   window.location.href = "index.html"
 }
 
