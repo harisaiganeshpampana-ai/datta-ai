@@ -1,0 +1,115 @@
+/* ══════════════════════════════════════════════
+   DATTA AI — SCROLL FIX (add to style.css)
+   ══════════════════════════════════════════════ */
+
+/* Make the overall layout flex column correctly */
+body {
+  overflow: hidden !important;
+}
+
+.main {
+  position: fixed !important;
+  top: 54px !important;
+  left: 260px !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+/* On mobile, sidebar hidden so main takes full width */
+@media (max-width: 900px) {
+  .main {
+    left: 0 !important;
+  }
+}
+
+/* Chat wrapper fills remaining space */
+.chatWrapper {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  position: relative !important;
+  min-height: 0 !important;
+}
+
+/* THE KEY SCROLL FIX: chat div must scroll */
+.chat {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+  padding: 20px 16px 120px !important; /* extra bottom padding so messages don't hide behind input */
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  min-height: 0 !important;
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar styling */
+.chat::-webkit-scrollbar {
+  width: 4px;
+}
+.chat::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat::-webkit-scrollbar-thumb {
+  background: rgba(255, 215, 0, 0.15);
+  border-radius: 4px;
+}
+.chat::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 215, 0, 0.3);
+}
+
+/* Welcome screen also scrollable on small screens */
+.welcomeScreen {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding-bottom: 140px !important;
+}
+
+/* Input area stays fixed at bottom */
+.inputArea {
+  position: fixed !important;
+  bottom: 16px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: calc(100% - 32px) !important;
+  max-width: 720px !important;
+  z-index: 200 !important;
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+/* Scroll-down button */
+#scrollDownBtn {
+  position: absolute !important;
+  bottom: 80px !important;
+  right: 16px !important;
+  width: 36px !important;
+  height: 36px !important;
+  background: rgba(255, 215, 0, 0.1) !important;
+  border: 1px solid rgba(255, 215, 0, 0.25) !important;
+  border-radius: 50% !important;
+  color: #ffd700 !important;
+  cursor: pointer !important;
+  display: none !important; /* shown via JS */
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 16px !important;
+  z-index: 150 !important;
+  transition: all 0.2s !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4) !important;
+}
+#scrollDownBtn:hover {
+  background: rgba(255, 215, 0, 0.2) !important;
+  transform: scale(1.05) !important;
+}
+#scrollDownBtn.visible {
+  display: flex !important;
+}
