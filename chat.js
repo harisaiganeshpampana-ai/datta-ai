@@ -64,6 +64,17 @@ async function send() {
   const typingId = addTyping();
   showStop();
 
+  // ── PLAN LIMIT CHECKS ──────────────────────────────
+  if (typeof canSendMessage === "function") {
+    const msgCheck = canSendMessage();
+    if (!msgCheck.ok) {
+      isGenerating = false;
+      hideStop();
+      if (typeof showUpgradeModal === "function") showUpgradeModal("msg_limit");
+      return;
+    }
+  }
+
   const isImageReq = /\b(generate|create|draw|make|paint|design)\b.*\bimage\b|\bimage of\b/i.test(text);
   const webSearchOn = window.webSearchEnabled || localStorage.getItem("datta_websearch_enabled") !== "false";
   const isSearchReq = webSearchOn && /\b(search|latest|news|today|current|who is|what is happening|weather|price|stock)\b/i.test(text);
@@ -74,6 +85,16 @@ async function send() {
     if (isImageReq) {
       removeTyping(typingId);
       const loadId = addTypingWithText("🎨 Generating image...");
+      // Check image generation permission
+      if (typeof canGenerateImage === "function") {
+        const imgCheck = canGenerateImage();
+        if (!imgCheck.ok) {
+          removeTyping(typingId);
+          isGenerating = false; hideStop();
+          if (typeof showUpgradeModal === "function") showUpgradeModal(imgCheck.reason, "imageGen");
+          return;
+        }
+      }
       const imgPrompt = text.replace(/generate|create|draw|make|paint|design|image of|an image|a picture/gi,"").trim() || text;
       const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imgPrompt)}?width=512&height=512&nologo=true&seed=${Date.now()}`;
       removeTyping(loadId);
@@ -95,6 +116,8 @@ async function send() {
       messages.push({ role: "assistant", content: reply });
     }
 
+    if (typeof recordMessageSent === "function") recordMessageSent();
+    if (typeof recordImageGenerated === "function" && isImageReq) recordImageGenerated();
     if (typeof addXP === "function") addXP(5, "Message sent");
     saveChat();
 
