@@ -576,6 +576,23 @@ function detectTextLanguage(text) {
   return getLangCode(localStorage.getItem("datta_language") || "English")
 }
 
+
+// ── IMAGE GENERATION FALLBACK (Pollinations) ─────────────────────────────────
+function generateWithPollinations(prompt, aiDiv) {
+  const seed = Math.floor(Math.random() * 999999)
+  const imgUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed
+  const fakeResponse = "DATTA_IMAGE_START\n![" + prompt + "](" + imgUrl + ")\nPROMPT:" + prompt + "\nDATTA_IMAGE_END"
+  setTimeout(() => {
+    if (aiDiv) {
+      aiDiv.innerHTML = "<div class='avatar'>🎨</div><div class='aiContent'>" + renderImageResponse(fakeResponse) + "</div>"
+      const chatBox = document.getElementById("chat")
+      if (chatBox) chatBox.scrollTop = chatBox.scrollHeight
+    }
+    hideStopBtn()
+    loadSidebar()
+  }, 500)
+}
+window.generateWithPollinations = generateWithPollinations
 // ─── LOAD SIDEBAR ─────────────────────────────────────────────────────────────
 async function loadSidebar() {
   try {
