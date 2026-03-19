@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Support | Datta AI</title>
+<link rel="icon" type="image/jpeg" href="logo.jpeg">
+<link rel="stylesheet" href="theme-vars.css">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#080800;color:#fff8e7;font-family:'DM Sans',sans-serif;min-height:100vh;overflow-y:auto}
+.topbar{position:fixed;top:0;left:0;right:0;height:54px;background:rgba(8,8,0,0.96);border-bottom:1px solid rgba(255,215,0,0.1);display:flex;align-items:center;padding:0 16px;gap:12px;z-index:100;backdrop-filter:blur(20px)}
+.back{background:none;border:none;color:#665500;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:1px}
+.back:hover{color:var(--accent)}
+.pageTitle{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;background:linear-gradient(90deg,#ffd700,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.main{padding:70px 16px 60px;max-width:800px;margin:0 auto}
+
+/* HERO */
+.hero{text-align:center;margin-bottom:32px}
+.hero h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,5vw,48px);letter-spacing:4px;background:linear-gradient(135deg,#fff8e7,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.hero p{color:#665500;font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:2px}
+
+/* TABS */
+.tabs{display:flex;gap:8px;margin-bottom:24px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 18px;background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.1);border-radius:50px;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;color:#554400;cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0}
+.tab:hover{border-color:rgba(255,215,0,0.25);color:var(--accent)}
+.tab.active{background:rgba(255,215,0,0.1);border-color:var(--accent);color:var(--accent)}
+
+/* SECTIONS */
+.section{display:none}
+.section.active{display:block}
+
+/* AI SUPPORT BOT */
+.botChat{background:#0f0e00;border:1px solid rgba(255,215,0,0.1);border-radius:16px;padding:16px;margin-bottom:16px;height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.botMsg{display:flex;gap:8px;align-items:flex-start}
+.botMsg.user{flex-direction:row-reverse}
+.botBubble{background:#1a1800;border:1px solid rgba(255,215,0,0.08);border-radius:14px 14px 14px 4px;padding:10px 14px;max-width:75%;font-size:13px;color:#fff8e7;line-height:1.6}
+.userBubble2{background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.2);border-radius:14px 14px 4px 14px;padding:10px 14px;max-width:75%;font-size:13px;color:#fff8e7;line-height:1.6}
+.botAvatar{width:28px;height:28px;border-radius:50%;background:rgba(255,215,0,0.1);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.botInput{display:flex;gap:8px}
+.botInput input{flex:1;background:#0f0e00;border:1px solid rgba(255,215,0,0.12);border-radius:50px;padding:10px 16px;color:#fff8e7;font-size:13px;font-family:'DM Sans',sans-serif;outline:none}
+.botInput input:focus{border-color:rgba(255,215,0,0.3)}
+.botSend{padding:10px 20px;background:linear-gradient(135deg,var(--accent),#ff8c00);border:none;border-radius:50px;color:#000;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer}
+.typing{display:flex;gap:4px;padding:8px 14px;background:#1a1800;border-radius:14px;width:fit-content}
+.typing span{width:6px;height:6px;background:#ffd700;border-radius:50%;animation:dot 1.2s infinite}
+.typing span:nth-child(2){animation-delay:0.2s}
+.typing span:nth-child(3){animation-delay:0.4s}
+@keyframes dot{0%,80%,100%{opacity:0.2}40%{opacity:1}}
+
+/* TICKET SYSTEM */
+.ticketForm{background:#0f0e00;border:1px solid rgba(255,215,0,0.1);border-radius:16px;padding:20px;margin-bottom:16px}
+.formGroup{margin-bottom:14px}
+.formLabel{font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:2px;color:#443300;margin-bottom:6px;display:block}
+.formInput{width:100%;background:#080800;border:1px solid rgba(255,215,0,0.1);border-radius:10px;padding:10px 14px;color:#fff8e7;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.2s}
+.formInput:focus{border-color:rgba(255,215,0,0.3)}
+textarea.formInput{height:100px;resize:vertical}
+select.formInput{cursor:pointer}
+.submitBtn{width:100%;padding:12px;background:linear-gradient(135deg,var(--accent),#ff8c00);border:none;border-radius:50px;color:#000;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.2s}
+.submitBtn:hover{transform:scale(1.01);box-shadow:0 4px 20px rgba(255,215,0,0.25)}
+.tickets{display:flex;flex-direction:column;gap:10px}
+.ticketCard{background:#0f0e00;border:1px solid rgba(255,215,0,0.08);border-radius:12px;padding:14px}
+.ticketTop{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.ticketId{font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:1px;color:#443300}
+.ticketStatus{padding:2px 10px;border-radius:20px;font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px}
+.status-open{background:rgba(255,215,0,0.1);color:#ffd700;border:1px solid rgba(255,215,0,0.2)}
+.status-resolved{background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.2)}
+.ticketTitle{font-size:13px;color:#fff8e7;margin-bottom:4px}
+.ticketDate{font-size:11px;color:#332200}
+
+/* FAQ */
+.faqSearch{display:flex;align-items:center;gap:8px;background:#0f0e00;border:1px solid rgba(255,215,0,0.1);border-radius:50px;padding:10px 16px;margin-bottom:16px}
+.faqSearch input{flex:1;background:none;border:none;outline:none;color:#fff8e7;font-size:13px;font-family:'DM Sans',sans-serif}
+.faqSearch input::placeholder{color:#332200}
+.faqItem{background:#0f0e00;border:1px solid rgba(255,215,0,0.08);border-radius:12px;margin-bottom:8px;overflow:hidden;cursor:pointer;transition:border-color 0.2s}
+.faqItem:hover{border-color:rgba(255,215,0,0.2)}
+.faqItem.open{border-color:rgba(255,215,0,0.25)}
+.faqQ{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#fff8e7;font-weight:500}
+.faqArrow{color:#443300;transition:transform 0.2s;font-size:12px}
+.faqItem.open .faqArrow{transform:rotate(180deg);color:var(--accent)}
+.faqA{padding:0 16px;max-height:0;overflow:hidden;transition:all 0.3s ease;font-size:13px;color:#665500;line-height:1.7}
+.faqItem.open .faqA{padding:0 16px 14px;max-height:300px}
+
+/* CONTACT FORM */
+.contactGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.contactCard{background:#0f0e00;border:1px solid rgba(255,215,0,0.08);border-radius:14px;padding:18px;text-align:center;cursor:pointer;transition:all 0.2s}
+.contactCard:hover{border-color:rgba(255,215,0,0.25);transform:translateY(-2px)}
+.contactIcon{font-size:28px;margin-bottom:8px}
+.contactTitle{font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;color:var(--accent);margin-bottom:4px}
+.contactDesc{font-size:11px;color:#443300}
+@media(max-width:500px){.contactGrid{grid-template-columns:1fr}}
+
+/* SUCCESS TOAST */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#0f0e00;border:1px solid rgba(0,255,136,0.3);border-radius:50px;padding:10px 20px;font-family:'Rajdhani',sans-serif;font-size:13px;color:#00ff88;letter-spacing:1px;z-index:9999;display:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.5)}
+.toast.show{display:block;animation:toastIn 0.3s ease}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button class="back" onclick="window.location.href='index.html'">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Back
+  </button>
+  <div class="pageTitle">🎧 Support Center</div>
+</div>
+
+<div class="main">
+  <div class="hero">
+    <h1>How Can We Help?</h1>
+    <p>AI SUPPORT · TICKETS · FAQ · CONTACT</p>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('bot')">🤖 AI Support</button>
+    <button class="tab" onclick="showTab('ticket')">🎫 My Tickets</button>
+    <button class="tab" onclick="showTab('faq')">❓ FAQ</button>
+    <button class="tab" onclick="showTab('contact')">📬 Contact</button>
+  </div>
+
+  <!-- AI SUPPORT BOT -->
+  <div class="section active" id="tab-bot">
+    <div class="botChat" id="botChat">
+      <div class="botMsg">
+        <div class="botAvatar">🤖</div>
+        <div class="botBubble">Namaste! 🙏 I'm Datta AI Support Bot. I can help you in any language — English, Telugu, Hindi, or any other. How can I help you today?</div>
+      </div>
+      <div class="botMsg">
+        <div class="botAvatar">🤖</div>
+        <div class="botBubble">You can ask me about: billing, features, account issues, technical problems, or anything else about Datta AI!</div>
+      </div>
+    </div>
+    <div class="botInput">
+      <input type="text" id="botMsgInput" placeholder="Type your question in any language..." onkeydown="if(event.key==='Enter')sendBotMsg()">
+      <button class="botSend" onclick="sendBotMsg()">Send →</button>
+    </div>
+  </div>
+
+  <!-- TICKET SYSTEM -->
+  <div class="section" id="tab-ticket">
+    <div class="ticketForm">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;color:var(--accent);margin-bottom:16px;">🎫 RAISE A TICKET</div>
+      <div class="formGroup">
+        <label class="formLabel">ISSUE TYPE</label>
+        <select class="formInput" id="ticketType">
+          <option value="">Select issue type...</option>
+          <option>Payment / Billing</option>
+          <option>Account / Login</option>
+          <option>Feature Not Working</option>
+          <option>Subscription Issue</option>
+          <option>Bug Report</option>
+          <option>Feature Request</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="formGroup">
+        <label class="formLabel">SUBJECT</label>
+        <input type="text" class="formInput" id="ticketSubject" placeholder="Brief description of your issue...">
+      </div>
+      <div class="formGroup">
+        <label class="formLabel">DESCRIBE YOUR ISSUE</label>
+        <textarea class="formInput" id="ticketDesc" placeholder="Please describe your issue in detail. You can write in any language..."></textarea>
+      </div>
+      <div class="formGroup">
+        <label class="formLabel">YOUR EMAIL (for updates)</label>
+        <input type="email" class="formInput" id="ticketEmail" placeholder="your@email.com">
+      </div>
+      <button class="submitBtn" onclick="submitTicket()">🎫 SUBMIT TICKET</button>
+    </div>
+
+    <div style="font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:2px;color:#332200;margin-bottom:10px;">YOUR TICKETS</div>
+    <div class="tickets" id="ticketsList"></div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="section" id="tab-faq">
+    <div class="faqSearch">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="Search FAQ in any language..." oninput="searchFAQ(this.value)">
+    </div>
+    <div id="faqList"></div>
+  </div>
+
+  <!-- CONTACT -->
+  <div class="section" id="tab-contact">
+    <div class="contactGrid">
+      <div class="contactCard" onclick="showTab('bot')">
+        <div class="contactIcon">🤖</div>
+        <div class="contactTitle">AI SUPPORT BOT</div>
+        <div class="contactDesc">Get instant answers in any language 24/7</div>
+      </div>
+      <div class="contactCard" onclick="showTab('ticket')">
+        <div class="contactIcon">🎫</div>
+        <div class="contactTitle">RAISE A TICKET</div>
+        <div class="contactDesc">For complex issues needing human review</div>
+      </div>
+      <div class="contactCard" onclick="window.location.href='mailto:support@dattaai.in'">
+        <div class="contactIcon">📧</div>
+        <div class="contactTitle">EMAIL SUPPORT</div>
+        <div class="contactDesc">support@dattaai.in · Reply in 24hrs</div>
+      </div>
+      <div class="contactCard" onclick="showTab('faq')">
+        <div class="contactIcon">❓</div>
+        <div class="contactTitle">FAQ</div>
+        <div class="contactDesc">Browse common questions & answers</div>
+      </div>
+    </div>
+
+    <!-- CONTACT FORM -->
+    <div class="ticketForm">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;color:var(--accent);margin-bottom:16px;">📬 SEND US A MESSAGE</div>
+      <div class="formGroup">
+        <label class="formLabel">YOUR NAME</label>
+        <input type="text" class="formInput" id="contactName" placeholder="Your name...">
+      </div>
+      <div class="formGroup">
+        <label class="formLabel">YOUR EMAIL</label>
+        <input type="email" class="formInput" id="contactEmail" placeholder="your@email.com">
+      </div>
+      <div class="formGroup">
+        <label class="formLabel">MESSAGE</label>
+        <textarea class="formInput" id="contactMsg" placeholder="Write your message in any language..."></textarea>
+      </div>
+      <button class="submitBtn" onclick="submitContact()">📬 SEND MESSAGE</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── TABS ─────────────────────────────────────────
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'))
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+  document.getElementById('tab-'+id).classList.add('active')
+  document.querySelectorAll('.tab').forEach(t => {
+    if(t.textContent.toLowerCase().includes(id==='bot'?'ai':id==='ticket'?'ticket':id==='faq'?'faq':'contact')) 
+      t.classList.add('active')
+  })
+}
+
+// ── TOAST ────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast')
+  t.textContent = msg
+  t.classList.add('show')
+  setTimeout(() => t.classList.remove('show'), 3000)
+}
+
+// ── AI SUPPORT BOT ───────────────────────────────
+async function sendBotMsg() {
+  const input = document.getElementById('botMsgInput')
+  const text = input.value.trim()
+  if (!text) return
+  input.value = ''
+
+  const chat = document.getElementById('botChat')
+
+  // Add user message
+  chat.innerHTML += `
+    <div class="botMsg user">
+      <div class="botAvatar">😊</div>
+      <div class="userBubble2">${text}</div>
+    </div>`
+
+  // Show typing
+  const typingId = 'typing_' + Date.now()
+  chat.innerHTML += `
+    <div class="botMsg" id="${typingId}">
+      <div class="botAvatar">🤖</div>
+      <div class="typing"><span></span><span></span><span></span></div>
+    </div>`
+  chat.scrollTop = chat.scrollHeight
+
+  try {
+    const token = localStorage.getItem('datta_token') || ''
+    const fd = new FormData()
+    fd.append('message', `You are Datta AI's customer support assistant. Be helpful, friendly and concise. Answer in the same language the user writes in. Only answer questions related to Datta AI — features, pricing, billing, account, technical issues. If unrelated, politely redirect. User question: ${text}`)
+    fd.append('token', token)
+
+    const res = await fetch('https://datta-ai-server.onrender.com/chat', { method:'POST', body:fd })
+    const reader = res.body.getReader()
+    const dec = new TextDecoder()
+    let reply = ''
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      reply += dec.decode(value)
+    }
+    reply = reply.split('CHATID')[0].trim()
+
+    document.getElementById(typingId)?.remove()
+    chat.innerHTML += `
+      <div class="botMsg">
+        <div class="botAvatar">🤖</div>
+        <div class="botBubble">${reply}</div>
+      </div>`
+  } catch(e) {
+    document.getElementById(typingId)?.remove()
+    chat.innerHTML += `
+      <div class="botMsg">
+        <div class="botAvatar">🤖</div>
+        <div class="botBubble">Sorry, I'm having trouble connecting. Please try again or raise a ticket! 🎫</div>
+      </div>`
+  }
+  chat.scrollTop = chat.scrollHeight
+}
+
+// ── TICKET SYSTEM ────────────────────────────────
+function getTickets() {
+  try { return JSON.parse(localStorage.getItem('datta_tickets') || '[]') } catch { return [] }
+}
+
+function saveTickets(tickets) {
+  localStorage.setItem('datta_tickets', JSON.stringify(tickets))
+}
+
+function submitTicket() {
+  const type = document.getElementById('ticketType').value
+  const subject = document.getElementById('ticketSubject').value.trim()
+  const desc = document.getElementById('ticketDesc').value.trim()
+  const email = document.getElementById('ticketEmail').value.trim()
+
+  if (!type || !subject || !desc) {
+    showToast('❌ Please fill all required fields!')
+    return
+  }
+
+  const tickets = getTickets()
+  const ticket = {
+    id: 'TKT' + Date.now().toString().slice(-6),
+    type, subject, desc, email,
+    status: 'open',
+    date: new Date().toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'}),
+    time: new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'})
+  }
+  tickets.unshift(ticket)
+  saveTickets(tickets)
+
+  // Clear form
+  document.getElementById('ticketType').value = ''
+  document.getElementById('ticketSubject').value = ''
+  document.getElementById('ticketDesc').value = ''
+  document.getElementById('ticketEmail').value = ''
+
+  renderTickets()
+  showToast('✅ Ticket ' + ticket.id + ' submitted!')
+}
+
+function renderTickets() {
+  const tickets = getTickets()
+  const list = document.getElementById('ticketsList')
+  if (tickets.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:24px;color:#332200;font-family:Rajdhani,sans-serif;font-size:13px;letter-spacing:1px;">No tickets yet</div>'
+    return
+  }
+  list.innerHTML = tickets.map(t => `
+    <div class="ticketCard">
+      <div class="ticketTop">
+        <div class="ticketId">#${t.id} · ${t.type}</div>
+        <div class="ticketStatus status-${t.status}">${t.status.toUpperCase()}</div>
+      </div>
+      <div class="ticketTitle">${t.subject}</div>
+      <div class="ticketDate">${t.date} at ${t.time}</div>
+    </div>`).join('')
+}
+
+// ── FAQ ──────────────────────────────────────────
+const FAQS = [
+  { q:'How do I upgrade my plan?', a:'Go to Profile → Upgrade to Agni, or visit the Pricing page. Click Upgrade Now and complete payment via Razorpay (UPI, card, netbanking supported).' },
+  { q:'What is the difference between plans?', a:'Arambh is free with basic chat. Shakti unlocks mood-based AI, images, voice. Agni adds file upload, priority support. Brahma adds VIP support, custom AI personality, API access.' },
+  { q:'How does the mood system work?', a:'Datta AI adapts its personality based on your mood. Select a mood from the 😊 button or let it auto-detect from your messages. Available from Shakti plan onwards.' },
+  { q:'Can I cancel my subscription anytime?', a:'Yes! You can cancel anytime from your Razorpay dashboard or by contacting support. You keep access until the end of your billing period.' },
+  { q:'What languages does Datta AI support?', a:'Datta AI supports 24+ languages including English, Hindi, Telugu, Tamil, Kannada, Malayalam, Bengali, Spanish, French, Arabic, Chinese, Japanese and more.' },
+  { q:'How does image generation work?', a:'Type "generate image of [description]" or use the + button → Generate Image. Images are created by AI. Free plan: 3/day, Shakti: 10/day, Agni: 20/day, Brahma: 100/day.' },
+  { q:'What is Smart Memory?', a:'Smart Memory automatically saves facts you share (name, work, location, goals) and uses them in future chats so Datta AI always knows you personally. Available from Shakti plan.' },
+  { q:'How do I reset my password?', a:'Go to Settings → Change Password. Enter your current password and set a new one. Minimum 6 characters required.' },
+  { q:'Is my data safe?', a:'Yes. Your chats are encrypted and stored securely. We never sell your data. Read our Privacy Policy for full details.' },
+  { q:'What is the message limit?', a:'Arambh: 50 msg/hr with 1hr cooldown. Shakti: 150 msg/hr with 45min cooldown. Agni: 500 msg/hr with 30min cooldown. Brahma: 1000 msg/hr with 15min cooldown.' },
+  { q:'How does the voice assistant work?', a:'Click the 🎙️ mic button to speak. Datta AI listens, converts to text, sends the message and reads back the response. Supports all languages.' },
+  { q:'What is the Lifetime plan?', a:'Pay ₹20,000 once and get all Brahma features forever with no monthly charges, free upgrades, VIP support, and API access.' },
+  { q:'मैं Datta AI को हिंदी में कैसे उपयोग करूं?', a:'Settings → Language → Hindi चुनें। फिर Datta AI हिंदी में जवाब देगा। आप हिंदी में टाइप भी कर सकते हैं।' },
+  { q:'Datta AI ని Telugu లో ఎలా వాడాలి?', a:'Settings → Language → Telugu ని select చేయండి. Datta AI Telugu లో respond చేస్తుంది. మీరు Telugu లో కూడా type చేయవచ్చు.' },
+  { q:'How do I delete my account?', a:'Go to Settings → Account → Delete Account. Enter your password to confirm. This permanently deletes all your data and cannot be undone.' },
+]
+
+function renderFAQ(filter='') {
+  const list = document.getElementById('faqList')
+  const filtered = filter ? FAQS.filter(f => 
+    f.q.toLowerCase().includes(filter.toLowerCase()) || 
+    f.a.toLowerCase().includes(filter.toLowerCase())
+  ) : FAQS
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:24px;color:#332200;font-family:Rajdhani,sans-serif;font-size:13px;letter-spacing:1px;">No results found</div>'
+    return
+  }
+
+  list.innerHTML = filtered.map((f, i) => `
+    <div class="faqItem" onclick="toggleFAQ(this)" id="faq${i}">
+      <div class="faqQ">${f.q}<span class="faqArrow">▼</span></div>
+      <div class="faqA">${f.a}</div>
+    </div>`).join('')
+}
+
+function toggleFAQ(el) {
+  el.classList.toggle('open')
+}
+
+function searchFAQ(val) {
+  renderFAQ(val)
+}
+
+// ── CONTACT FORM ─────────────────────────────────
+function submitContact() {
+  const name = document.getElementById('contactName').value.trim()
+  const email = document.getElementById('contactEmail').value.trim()
+  const msg = document.getElementById('contactMsg').value.trim()
+
+  if (!name || !email || !msg) {
+    showToast('❌ Please fill all fields!')
+    return
+  }
+
+  // Save locally and show confirmation
+  const contacts = JSON.parse(localStorage.getItem('datta_contacts') || '[]')
+  contacts.push({ name, email, msg, date: new Date().toISOString() })
+  localStorage.setItem('datta_contacts', JSON.stringify(contacts))
+
+  document.getElementById('contactName').value = ''
+  document.getElementById('contactEmail').value = ''
+  document.getElementById('contactMsg').value = ''
+
+  showToast('✅ Message sent! We will respond within 24 hours.')
+}
+
+// ── INIT ─────────────────────────────────────────
+renderFAQ()
+renderTickets()
+</script>
+</body>
+</html>
