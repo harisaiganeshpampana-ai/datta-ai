@@ -380,11 +380,11 @@ const MOOD_PLAYLISTS = {
 
 let playerVisible = false
 
-function toggleMusicPlayer() {
+function showMusicPlayer() {
   let player = document.getElementById("moodMusicPlayer")
   if (player) {
-    playerVisible = !playerVisible
-    player.style.transform = playerVisible ? "translateY(0)" : "translateY(calc(100% - 44px))"
+    playerVisible = true
+    player.style.transform = "translateY(0)"
     return
   }
 
