@@ -15,8 +15,8 @@
 
   function applyMood(mood) {
     // Mood AI requires Shakti plan or higher
-    if (typeof canUseFeature === "function" && !canUseFeature("moodAI")) {
-      if (typeof showUpgradeModal === "function") showUpgradeModal("not_in_plan", "moodAI");
+    if (typeof _canUse === "function" && !_canUse("moodAI")) {
+      if (typeof _showUpgrade === "function") _showUpgrade("not_in_plan", "moodAI");
       return;
     }
     localStorage.setItem('datta_mood', mood);
@@ -126,8 +126,8 @@
 
   // ── SELFIE/PHOTO MOOD DETECTION ─────────────────────
   function startPhotoMoodDetection() {
-    if (typeof canUseFeature === "function" && !canUseFeature("selfieMood")) {
-      if (typeof showUpgradeModal === "function") showUpgradeModal("not_in_plan", "selfieMood");
+    if (typeof _canUse === "function" && !_canUse("selfieMood")) {
+      if (typeof _showUpgrade === "function") _showUpgrade("not_in_plan", "selfieMood");
       return;
     }
     // Create a file input for camera
