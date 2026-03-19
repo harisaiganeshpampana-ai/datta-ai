@@ -1,3 +1,33 @@
+// ── CREATOR/ADMIN BYPASS ─────────────────────────────────────────────────────
+// These usernames get unlimited access - no plan limits
+const CREATOR_ACCOUNTS = [
+  'pampana_hari_sai_ganesh',
+  'harisaiganesh',
+  'ganesh',
+  'admin',
+  'creator',
+  'dattaai'
+]
+
+function isCreator() {
+  try {
+    const user = JSON.parse(localStorage.getItem('datta_user') || '{}')
+    const username = (user.username || '').toLowerCase().trim()
+    const token = localStorage.getItem('datta_token') || ''
+    // Check if username matches creator accounts
+    return CREATOR_ACCOUNTS.some(c => username.includes(c.toLowerCase())) || 
+           username === 'admin' ||
+           localStorage.getItem('datta_is_creator') === 'true'
+  } catch { return false }
+}
+
+// Set creator status on load
+if (isCreator()) {
+  localStorage.setItem('datta_plan', 'brahma')
+  localStorage.setItem('datta_is_creator', 'true')
+  console.log('👑 Creator mode active - unlimited access')
+}
+
 // ── DATTA AI PLAN LIMITS ENFORCEMENT ─────────────────────────────────────────
 
 const PLAN_LIMITS = {
@@ -60,6 +90,7 @@ function getMessageUsage() {
 }
 
 function canSendMessage() {
+  if (isCreator()) return { allowed: true, remaining: 99999 }
   const limits = getPlanLimits()
   const usage = getMessageUsage()
   const now = Date.now()
@@ -109,6 +140,7 @@ function getImageUsage() {
 }
 
 function canGenerateImage() {
+  if (isCreator()) return { allowed: true, remaining: 99999 }
   const limits = getPlanLimits()
   const usage = getImageUsage()
   const today = new Date().toDateString()
@@ -134,14 +166,17 @@ function recordImage() {
 
 // ── MOOD SYSTEM CHECK ─────────────────────────────
 function canUseMood() {
+  if (isCreator()) return true
   return getPlanLimits().moodSystem
 }
 
 function canUploadFile() {
+  if (isCreator()) return true
   return getPlanLimits().fileUpload
 }
 
 function canUseMemory() {
+  if (isCreator()) return true
   return getPlanLimits().smartMemory
 }
 
@@ -208,6 +243,7 @@ function showUpgradePopup(reason, details) {
 
 // ── APPLY MOOD RESTRICTIONS ───────────────────────
 function applyPlanRestrictions() {
+  if (isCreator()) return // No restrictions for creator
   const limits = getPlanLimits()
 
   // Hide mood button for Arambh
@@ -275,6 +311,7 @@ function updateLimitDisplay() {
 }
 
 // ── EXPORTS ───────────────────────────────────────
+window.isCreator = isCreator
 window.canSendMessage = canSendMessage
 window.recordMessage = recordMessage
 window.canGenerateImage = canGenerateImage
