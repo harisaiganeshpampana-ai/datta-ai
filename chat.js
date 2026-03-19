@@ -169,6 +169,8 @@ async function callChatAPI(userMessage) {
 // ── MOOD PROMPT ────────────────────────────────────────
 function getMoodSystemPrompt() {
   if (localStorage.getItem("datta_mood_enabled") === "false") return "";
+  // Mood AI only for Shakti and above
+  if (typeof canUseFeature === "function" && !canUseFeature("moodAI")) return "";
   const mood = localStorage.getItem("datta_mood") || "";
   const lang = localStorage.getItem("datta_language") || "English";
   const langNote = lang !== "English" ? ` Always respond in ${lang}.` : "";
@@ -450,6 +452,30 @@ document.addEventListener("DOMContentLoaded", function() {
       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
     });
   }
+
+  // Lock sidebar nav items based on plan
+  const navLocks = {
+    'memory.html':    'smartMemory',
+    'analytics.html': 'analytics',
+    'translator.html':'translator',
+    'xp.html':        'xpGamification',
+    'feed.html':      'liveFeed',
+  };
+  document.querySelectorAll('[onclick*=".html"]').forEach(el => {
+    const match = el.getAttribute('onclick')?.match(/href='([^']+\.html)'/);
+    const page = match ? match[1] : null;
+    if (page && navLocks[page]) {
+      const feature = navLocks[page];
+      if (typeof canUseFeature === "function" && !canUseFeature(feature)) {
+        el.style.opacity = "0.35";
+        el.style.cursor = "not-allowed";
+        el.addEventListener("click", function(e) {
+          e.preventDefault(); e.stopPropagation();
+          if (typeof showUpgradeModal === "function") showUpgradeModal("not_in_plan", feature);
+        }, true);
+      }
+    }
+  });
 
   // Welcome BADGES — make clickable
   document.querySelectorAll(".welcomeBadge").forEach(badge => {
