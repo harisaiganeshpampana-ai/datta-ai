@@ -165,7 +165,7 @@ async function doAIChat(userText, existingTypingId) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-      signal: controller
+      signal: controller ? controller.signal : undefined
     });
 
     removeTyping(typingId);
@@ -207,7 +207,7 @@ async function doDirectGroqChat() {
       max_tokens: 1024,
       temperature: 0.7
     }),
-    signal: controller
+    signal: controller ? controller.signal : undefined
   });
 
   if (res.ok) {
