@@ -28,9 +28,11 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
 .chatWrapper { flex:1; overflow:hidden; position:relative; display:flex; flex-direction:column; }
 .chat { flex:1; overflow-y:auto; padding:20px 16px 100px; display:flex; flex-direction:column; gap:16px; }
 
+/* MESSAGE ALIGNMENT - USER RIGHT, AI LEFT */
 .messageRow { display:flex; align-items:flex-start; gap:10px; animation:msgIn 0.3s ease; width:100%; }
-@keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-.messageRow.userRow { flex-direction:row-reverse; }
+.messageRow.user { justify-content:flex-end; }
+.messageRow.ai { justify-content:flex-start; }
+
 .userBubble { background:rgba(255,215,0,0.12); border:1px solid rgba(255,215,0,0.25); border-radius:18px 18px 4px 18px; padding:10px 16px; max-width:70%; color:#fff8e7; word-wrap:break-word; font-family:'Cormorant Garamond',serif; font-size:15px; }
 .aiBubble { background:#0f0e00; border:1px solid rgba(255,215,0,0.08); border-radius:4px 18px 18px 18px; padding:12px 16px; max-width:75%; color:#fff8e7; font-family:'Nunito',sans-serif; font-size:14px; line-height:1.6; }
 .aiBubble.typing span { display:inline-block; width:6px; height:6px; background:#ffd700; border-radius:50%; animation:dot 1.2s infinite; margin:0 2px; }
@@ -38,10 +40,10 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
 .aiBubble.typing span:nth-child(3){animation-delay:0.4s}
 @keyframes dot{0%,80%,100%{opacity:0.2}40%{opacity:1}}
 .avatar { width:30px; height:30px; border-radius:50%; background:rgba(255,215,0,0.1); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
-.aiActions { display:flex; gap:6px; opacity:0; transition:opacity 0.2s; }
-.messageRow:hover .aiActions { opacity:1; }
-.actionBtn { background:none; border:none; color:#443300; cursor:pointer; padding:3px; border-radius:6px; }
-.actionBtn:hover { color:#ffd700; }
+.avatar.user { order:2; background:rgba(255,215,0,0.2); }
+.avatar.ai { order:1; background:rgba(100,100,255,0.1); }
+
+@keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 .cursor { animation:blink 1s infinite; }
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 
@@ -70,7 +72,7 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
 .welcomeLogo { width:72px; height:72px; border-radius:20px; margin-bottom:20px; }
 .welcomeTitle { font-size:32px; font-family:'Bebas Neue',sans-serif; background:linear-gradient(135deg,#fff8e7,#ffd700); -webkit-background-clip:text;-webkit-text-fill-color:transparent; }
 .welcomeChips { display:grid; grid-template-columns:1fr 1fr; gap:10px; max-width:480px; margin-top:20px; }
-.chip { background:rgba(255,215,0,0.03); border:1px solid rgba(255,215,0,0.08); border-radius:14px; padding:12px; cursor:pointer; }
+.chip { background:rgba(255,215,0,0.03); border:1px solid rgba(255,215,0,0.08); border-radius:14px; padding:12px; cursor:pointer; text-align:center; }
 .chip:hover { background:rgba(255,215,0,0.07); border-color:rgba(255,215,0,0.3); }
 
 .projectItem { padding:12px; background:rgba(255,215,0,0.03); border:1px solid rgba(255,215,0,0.08); border-radius:10px; cursor:pointer; margin-bottom:8px; }
@@ -178,40 +180,6 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
   color: #000;
   font-weight: 600;
 }
-.modal-btn-create:hover {
-  transform: scale(1.02);
-}
-
-/* Project Header in Sidebar */
-.project-header {
-  padding: 12px 14px;
-  background: rgba(255,215,0,0.08);
-  border-bottom: 1px solid rgba(255,215,0,0.15);
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.project-header-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #ffd700;
-  font-family: 'Rajdhani', sans-serif;
-  letter-spacing: 1px;
-}
-.project-header-close {
-  background: none;
-  border: none;
-  color: #665500;
-  cursor: pointer;
-  font-size: 14px;
-  padding: 4px 8px;
-  border-radius: 6px;
-}
-.project-header-close:hover {
-  background: rgba(255,215,0,0.1);
-  color: #ffd700;
-}
 </style>
 </head>
 
@@ -224,36 +192,29 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
     <span style="font-family:'Bebas Neue';font-size:16px;background:linear-gradient(90deg,#ffd700,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">DATTA AI</span>
   </div>
   <div style="margin-left:auto;display:flex;gap:6px;">
-    <button id="moodToggleBtn" onclick="toggleMoodPanel()" style="background:none;border:1px solid rgba(255,255,255,0.08);width:32px;height:32px;border-radius:50%;cursor:pointer;">😊</button>
+    <button id="moodToggleBtn" onclick="showToast('Mood panel coming soon!')" style="background:none;border:1px solid rgba(255,255,255,0.08);width:32px;height:32px;border-radius:50%;cursor:pointer;">😊</button>
   </div>
 </div>
 
 <div class="sidebar" id="sidebar">
   <div style="padding:16px 14px 8px; display:flex; justify-content:space-between; align-items:center;">
     <div style="font-family:'Bebas Neue';font-size:20px;">👑 DATTA AI</div>
-    <!-- NEW CHAT BUTTON - HIDE COMPLETELY WHEN PROJECT IS OPEN -->
-    <button id="newChatBtn" style="padding:6px 12px; background:rgba(255,215,0,0.1); border:1px solid rgba(255,215,0,0.2); border-radius:8px; color:#ffd700; cursor:pointer;">+ New Chat</button>
+    <button id="newChatBtn" onclick="window.createStandaloneChat()" style="padding:6px 12px; background:rgba(255,215,0,0.1); border:1px solid rgba(255,215,0,0.2); border-radius:8px; color:#ffd700; cursor:pointer;">+ New Chat</button>
   </div>
 
   <div style="padding:0 12px 8px;">
     <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:7px 12px;">
-      <input id="search" type="text" placeholder="Search chats" onkeyup="searchChats()" style="background:none; border:none; outline:none; color:#fff8e7; width:100%;">
+      <input id="search" type="text" placeholder="Search chats" onkeyup="window.searchChats()" style="background:none; border:none; outline:none; color:#fff8e7; width:100%;">
     </div>
   </div>
 
   <div style="padding:0 8px 4px;">
-    <button class="navItem active" onclick="showSection('chats')">💬 Chats</button>
-    <button class="navItem" onclick="showSection('projects'); loadProjects()">📁 Projects</button>
-    <button class="navItem" onclick="showSection('artifacts'); loadArtifacts()">📦 Artifacts</button>
+    <button class="navItem active" onclick="window.showSection('chats')">💬 Chats</button>
+    <button class="navItem" onclick="window.showSection('projects'); window.loadProjects()">📁 Projects</button>
+    <button class="navItem" onclick="window.showSection('artifacts'); window.loadArtifacts()">📦 Artifacts</button>
   </div>
 
   <div id="recentsLabel" style="padding:8px 14px 4px; font-size:10px; color:#332200;">RECENTS</div>
-
-  <!-- Project Header (shows when a project is open) -->
-  <div id="projectHeader" style="display:none;" class="project-header">
-    <span class="project-header-title" id="projectHeaderTitle">📁 Project</span>
-    <button class="project-header-close" onclick="closeProject()">✕ Close Project</button>
-  </div>
 
   <div id="section-chats" class="sidebarSection" style="flex:1; overflow-y:auto;">
     <div class="history" id="history"></div>
@@ -264,7 +225,7 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
   <div class="sidebarBottom">
     <div id="versionTag" style="text-align:center; font-size:9px; color:#252000;">DATTA AI v2.0 · SHAKTI</div>
     
-    <div onclick="toggleProfileMenu()" style="margin:8px 0; padding:8px; display:flex; align-items:center; gap:8px; cursor:pointer;">
+    <div onclick="window.toggleProfileMenu()" style="margin:8px 0; padding:8px; display:flex; align-items:center; gap:8px; cursor:pointer;">
       <div class="profileAvatar" id="profileAvatar">G</div>
       <div style="flex:1; min-width:0;">
         <div class="profileName" id="profileName">Loading...</div>
@@ -275,7 +236,7 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
     
     <div id="profileMenu" style="display:none; position:fixed; bottom:80px; left:10px; width:200px; background:#0f0e00; border:1px solid rgba(255,215,0,0.15); border-radius:10px; padding:5px; z-index:1000;">
       <button onclick="window.location.href='settings.html'" style="width:100%; padding:8px; background:none; border:none; color:#665500; cursor:pointer; text-align:left;">⚙️ Settings</button>
-      <button onclick="logout()" style="width:100%; padding:8px; background:none; border:none; color:#ff4444; cursor:pointer; text-align:left;">🚪 Logout</button>
+      <button onclick="window.logout()" style="width:100%; padding:8px; background:none; border:none; color:#ff4444; cursor:pointer; text-align:left;">🚪 Logout</button>
     </div>
   </div>
 </div>
@@ -286,826 +247,29 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
     <h1 class="welcomeTitle">How can I help you today?</h1>
     <p class="welcomeSub">Think Less. Do More.</p>
     <div class="welcomeChips">
-      <div class="chip" onclick="fillPrompt('Generate image of a futuristic city')">🎨 Generate image</div>
-      <div class="chip" onclick="fillPrompt('What are the latest AI news?')">🌐 Search the web</div>
-      <div class="chip" onclick="fillPrompt('Write Python code to sort numbers')">💻 Write code</div>
-      <div class="chip" onclick="fillPrompt('Explain quantum computing simply')">🧠 Explain anything</div>
+      <div class="chip" onclick="window.fillPrompt('Generate image of a futuristic city')">🎨 Generate image</div>
+      <div class="chip" onclick="window.fillPrompt('What are the latest AI news?')">🌐 Search the web</div>
+      <div class="chip" onclick="window.fillPrompt('Write Python code to sort numbers')">💻 Write code</div>
+      <div class="chip" onclick="window.fillPrompt('Explain quantum computing simply')">🧠 Explain anything</div>
     </div>
   </div>
 
   <div class="chatWrapper">
     <div class="chat" id="chat"></div>
-    <button id="scrollDownBtn" onclick="scrollToBottom()">↓</button>
+    <button id="scrollDownBtn" onclick="window.scrollToBottom()">↓</button>
   </div>
 
   <div class="inputArea">
     <div class="inputWrap">
       <div class="inputRow">
-        <button class="plusBtn" onclick="togglePlusMenu()">+</button>
+        <button class="plusBtn" onclick="window.showToast('Upload coming soon!')">+</button>
         <input id="message" type="text" placeholder="Message Datta AI..." autocomplete="off">
-        <button class="micBtn" onclick="startVoiceInput()">🎤</button>
-        <button class="sendBtn" onclick="sendMessage()">➤</button>
+        <button class="micBtn" onclick="window.startVoiceInput()">🎤</button>
+        <button class="sendBtn" onclick="window.sendMessage()">➤</button>
       </div>
     </div>
   </div>
 </div>
-
-<script>
-// ============================================
-// AUTHENTICATION
-// ============================================
-function getToken() { return localStorage.getItem("datta_token") || ""; }
-function getUser() { try { return JSON.parse(localStorage.getItem("datta_user") || "null"); } catch(e) { return null; } }
-
-if (!getToken()) { window.location.href = "login.html"; }
-window.dattaUser = getUser();
-
-// ============================================
-// GLOBAL VARIABLES
-// ============================================
-let currentProject = null;      // ID of currently open project
-let currentChat = null;         // Current chat object
-let allChats = [];              // Standalone chats (not in projects)
-let projects = [];
-let projectPasswords = {};
-
-// ============================================
-// LOAD DATA FROM STORAGE
-// ============================================
-function loadAllData() {
-  projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
-  projectPasswords = JSON.parse(localStorage.getItem('datta_project_passwords') || '{}');
-  allChats = JSON.parse(localStorage.getItem('datta_standalone_chats') || '[]');
-  console.log("Data loaded - Projects:", projects.length, "Standalone chats:", allChats.length);
-}
-
-function saveProjects() {
-  localStorage.setItem('datta_projects', JSON.stringify(projects));
-  console.log("Projects saved:", projects.length);
-}
-
-function saveStandaloneChats() {
-  localStorage.setItem('datta_standalone_chats', JSON.stringify(allChats));
-}
-
-// ============================================
-// UTILITY FUNCTIONS
-// ============================================
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-function showToast(msg) {
-  let t = document.getElementById("toastMsg");
-  if (!t) {
-    t = document.createElement("div");
-    t.id = "toastMsg";
-    t.style.cssText = "position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#0f0e00;border:1px solid #00ff88;border-radius:50px;padding:8px 18px;color:#00ff88;z-index:9999;";
-    document.body.appendChild(t);
-  }
-  t.textContent = msg;
-  t.style.display = "block";
-  setTimeout(() => t.style.display = "none", 2000);
-}
-
-function scrollToBottom() {
-  const chat = document.getElementById('chat');
-  if (chat) chat.scrollTop = chat.scrollHeight;
-}
-
-function toggleSidebar() {
-  document.getElementById("sidebar").classList.toggle("show");
-}
-
-function showSection(section) {
-  document.getElementById("section-chats").style.display = section === "chats" ? "block" : "none";
-  document.getElementById("section-projects").style.display = section === "projects" ? "block" : "none";
-  document.getElementById("section-artifacts").style.display = section === "artifacts" ? "block" : "none";
-  document.querySelectorAll(".navItem").forEach((btn, i) => btn.classList.toggle("active", i === ["chats","projects","artifacts"].indexOf(section)));
-  
-  if (section === "chats") {
-    loadChatsList();
-  }
-}
-
-function searchChats() {
-  const query = document.getElementById("search").value.toLowerCase();
-  document.querySelectorAll(".chatItem").forEach(item => {
-    const title = item.querySelector(".chatTitle")?.textContent.toLowerCase() || "";
-    item.style.display = title.includes(query) ? "flex" : "none";
-  });
-}
-
-function togglePlusMenu() {
-  showToast("📎 Upload coming soon!");
-}
-
-// ============================================
-// NEW CHAT HANDLER - NO NEW CHAT IN PROJECTS
-// ============================================
-function handleNewChatClick() {
-  if (currentProject) {
-    // Project lo unnapudu - New Chat button HIDE cheyali, so ee function call avvakudadu
-    showToast("Projects lo new chat option ledu. Project lo chat create cheyataniki, project open chesi type cheyandi.");
-    return;
-  } else {
-    // Normal mode lo standalone chat create cheyyali
-    createStandaloneChat();
-  }
-}
-
-function createStandaloneChat() {
-  const newChat = {
-    id: 'chat_' + Date.now(),
-    title: 'New Chat',
-    messages: [],
-    created: Date.now(),
-    standalone: true
-  };
-  
-  allChats.unshift(newChat);
-  saveStandaloneChats();
-  
-  currentChat = newChat;
-  
-  document.getElementById("chat").innerHTML = "";
-  document.getElementById("welcomeScreen").style.display = "flex";
-  
-  const welcomeTitle = document.querySelector("#welcomeScreen .welcomeTitle");
-  if (welcomeTitle) welcomeTitle.innerHTML = "How can I help you today?";
-  
-  const welcomeSub = document.querySelector("#welcomeScreen .welcomeSub");
-  if (welcomeSub) welcomeSub.innerHTML = "Think Less. Do More.";
-  
-  loadChatsList();
-  showToast("✨ New chat created");
-}
-
-// ============================================
-// CHAT FUNCTIONS
-// ============================================
-function openChat(chat) {
-  currentChat = chat;
-  const chatBox = document.getElementById("chat");
-  chatBox.innerHTML = "";
-  document.getElementById("welcomeScreen").style.display = "none";
-  
-  if (chat.messages && chat.messages.length > 0) {
-    chat.messages.forEach(msg => {
-      if (msg.role === 'user') {
-        chatBox.innerHTML += `<div class="messageRow userRow"><div class="userBubble">${escapeHtml(msg.content)}</div><div class="avatar">🧑</div></div>`;
-      } else {
-        chatBox.innerHTML += `<div class="messageRow"><div class="avatar">🤖</div><div class="aiBubble">${marked.parse(msg.content)}</div></div>`;
-      }
-    });
-  }
-  scrollToBottom();
-}
-
-function loadChatsList() {
-  const historyContainer = document.getElementById("history");
-  if (!historyContainer) return;
-  
-  historyContainer.innerHTML = '';
-  
-  if (currentProject) {
-    // Show chats from current project
-    const project = projects.find(p => p.id === currentProject);
-    if (!project) return;
-    
-    if (!project.chats || project.chats.length === 0) {
-      historyContainer.innerHTML = `<div class="emptySection">💬 No chats in this project<br><span style="font-size:12px;">Start typing to create a new chat</span></div>`;
-      return;
-    }
-    
-    project.chats.forEach(chat => {
-      const div = document.createElement("div");
-      div.className = "chatItem";
-      div.innerHTML = `
-        <div class="chatTitle">${escapeHtml(chat.title || "New Chat")}</div>
-        <button class="deleteBtn" onclick="event.stopPropagation();deleteChat('${chat.id}')">🗑️</button>
-      `;
-      div.onclick = () => openChat(chat);
-      historyContainer.appendChild(div);
-    });
-  } else {
-    // Show standalone chats
-    if (allChats.length === 0) {
-      historyContainer.innerHTML = `<div class="emptySection">💬 No chats yet<br><button onclick="createStandaloneChat()" style="margin-top:10px;padding:8px 16px;background:#ffd70020;border:1px solid #ffd70040;border-radius:10px;color:#ffd700;cursor:pointer;">+ New Chat</button></div>`;
-      return;
-    }
-    
-    allChats.forEach(chat => {
-      const div = document.createElement("div");
-      div.className = "chatItem";
-      div.innerHTML = `
-        <div class="chatTitle">${escapeHtml(chat.title || "New Chat")}</div>
-        <button class="deleteBtn" onclick="event.stopPropagation();deleteChat('${chat.id}')">🗑️</button>
-      `;
-      div.onclick = () => openChat(chat);
-      historyContainer.appendChild(div);
-    });
-  }
-}
-
-function deleteChat(chatId) {
-  if (!confirm("Delete this chat?")) return;
-  
-  if (currentProject) {
-    const project = projects.find(p => p.id === currentProject);
-    if (project) {
-      project.chats = project.chats.filter(c => c.id !== chatId);
-      saveProjects();
-      
-      if (currentChat?.id === chatId) {
-        currentChat = null;
-        document.getElementById("chat").innerHTML = "";
-        document.getElementById("welcomeScreen").style.display = "flex";
-      }
-      loadChatsList();
-      showToast("🗑️ Chat deleted");
-    }
-  } else {
-    allChats = allChats.filter(c => c.id !== chatId);
-    saveStandaloneChats();
-    
-    if (currentChat?.id === chatId) {
-      currentChat = null;
-      document.getElementById("chat").innerHTML = "";
-      document.getElementById("welcomeScreen").style.display = "flex";
-    }
-    loadChatsList();
-    showToast("🗑️ Chat deleted");
-  }
-}
-
-// ============================================
-// PROJECTS FUNCTIONS
-// ============================================
-
-function showCreateProjectModal() {
-  const existing = document.querySelector('.modal-overlay');
-  if (existing) existing.remove();
-  
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  modal.innerHTML = `
-    <div class="modal-content">
-      <div class="modal-title">Create Project</div>
-      <div class="modal-subtitle">Give your project a name to organize your chats</div>
-      <input type="text" id="projectNameInput" class="modal-input" placeholder="Project name" autocomplete="off">
-      <div class="modal-suggestions">
-        <div class="suggestion-chip" onclick="document.getElementById('projectNameInput').value='Party planning'">🎉 Party planning</div>
-        <div class="suggestion-chip" onclick="document.getElementById('projectNameInput').value='Homework'">📚 Homework</div>
-        <div class="suggestion-chip" onclick="document.getElementById('projectNameInput').value='Investing'">📈 Investing</div>
-        <div class="suggestion-chip" onclick="document.getElementById('projectNameInput').value='Writing'">✍️ Writing</div>
-      </div>
-      <div class="modal-buttons">
-        <button class="modal-btn modal-btn-cancel" onclick="closeModal()">Cancel</button>
-        <button class="modal-btn modal-btn-create" onclick="createProjectFromModal()">Create Project</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-  
-  setTimeout(() => {
-    const input = document.getElementById('projectNameInput');
-    if (input) input.focus();
-  }, 100);
-}
-
-function closeModal() {
-  const modal = document.querySelector('.modal-overlay');
-  if (modal) modal.remove();
-}
-
-function createProjectFromModal() {
-  const input = document.getElementById('projectNameInput');
-  const name = input?.value.trim();
-  if (!name) {
-    showToast("Please enter a project name");
-    return;
-  }
-  
-  createProjectWithName(name);
-  closeModal();
-}
-
-function createProjectWithName(name) {
-  const lockProject = confirm(`Lock "${name}" with a password?`);
-  let password = null;
-  if (lockProject) {
-    password = prompt("Set a password for this project:");
-    if (!password) return;
-  }
-  
-  const newProject = {
-    id: 'project_' + Date.now(),
-    name: name,
-    chats: [],  // Initially empty chats
-    locked: lockProject,
-    created: Date.now()
-  };
-  
-  projects.push(newProject);
-  saveProjects();
-  
-  if (password) {
-    projectPasswords[newProject.id] = password;
-    localStorage.setItem('datta_project_passwords', JSON.stringify(projectPasswords));
-  }
-  
-  loadProjects();
-  showToast(`📁 Project "${name}" created`);
-  
-  // Automatically open the new project
-  openProject(newProject.id);
-}
-
-function loadProjects() {
-  const container = document.getElementById("section-projects");
-  if (!container) return;
-  
-  if (projects.length === 0) {
-    container.innerHTML = `
-      <div class="emptySection">
-        📁 No projects yet
-        <button onclick="showCreateProjectModal()" style="margin-top:12px;padding:10px 20px;background:#ffd70020;border:1px solid #ffd70040;border-radius:10px;color:#ffd700;cursor:pointer;">+ Create Project</button>
-      </div>
-    `;
-    return;
-  }
-  
-  container.innerHTML = `
-    <button onclick="showCreateProjectModal()" style="width:100%;padding:10px;margin-bottom:12px;background:#ffd70010;border:1px solid #ffd70020;border-radius:10px;color:#ffd700;cursor:pointer;">+ New Project</button>
-    ${projects.map(project => `
-      <div class="projectItem ${currentProject === project.id ? 'projectActive' : ''}" onclick="openProject('${project.id}')">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span>${project.locked ? '🔒' : '📁'}</span>
-          <div style="flex:1;">
-            <div style="font-weight:600;">${escapeHtml(project.name)}</div>
-            <div style="font-size:10px;color:#665500;">${project.chats?.length || 0} chats</div>
-          </div>
-          <div style="display:flex;gap:5px;">
-            ${project.locked ? `<button onclick="event.stopPropagation();unlockProject('${project.id}')" style="background:none;border:none;color:#ffd700;cursor:pointer;">🔓</button>` : 
-                               `<button onclick="event.stopPropagation();lockProject('${project.id}')" style="background:none;border:none;color:#665500;cursor:pointer;">🔒</button>`}
-            <button onclick="event.stopPropagation();renameProject('${project.id}')" style="background:none;border:none;color:#665500;cursor:pointer;">✏️</button>
-            <button onclick="event.stopPropagation();deleteProject('${project.id}')" style="background:none;border:none;color:#ff6666;cursor:pointer;">🗑️</button>
-          </div>
-        </div>
-      </div>
-    `).join('')}
-  `;
-}
-
-function openProject(projectId) {
-  // Reload projects from storage to ensure latest data
-  loadAllData();
-  
-  const project = projects.find(p => p.id === projectId);
-  if (!project) {
-    showToast("Project not found");
-    return;
-  }
-  
-  if (project.locked) {
-    const password = prompt(`Project "${project.name}" is locked. Enter password:`);
-    if (!password || projectPasswords[projectId] !== password) {
-      showToast("❌ Incorrect password!");
-      return;
-    }
-  }
-  
-  currentProject = projectId;
-  localStorage.setItem('datta_current_project', projectId);
-  
-  // IMPORTANT: Hide the New Chat button completely when in project
-  const newChatBtn = document.getElementById("newChatBtn");
-  if (newChatBtn) {
-    newChatBtn.style.display = "none";  // HIDE THE BUTTON
-  }
-  
-  // Show project header in sidebar
-  const projectHeader = document.getElementById("projectHeader");
-  const projectHeaderTitle = document.getElementById("projectHeaderTitle");
-  if (projectHeader && projectHeaderTitle) {
-    projectHeaderTitle.innerHTML = `📁 ${escapeHtml(project.name)}`;
-    projectHeader.style.display = "flex";
-  }
-  
-  // Clear current chat
-  currentChat = null;
-  document.getElementById("chat").innerHTML = "";
-  document.getElementById("welcomeScreen").style.display = "flex";
-  
-  // Update welcome title
-  const welcomeTitle = document.querySelector("#welcomeScreen .welcomeTitle");
-  if (welcomeTitle) welcomeTitle.innerHTML = `📁 ${escapeHtml(project.name)}`;
-  
-  const welcomeSub = document.querySelector("#welcomeScreen .welcomeSub");
-  if (welcomeSub) welcomeSub.innerHTML = "Start typing to create a new chat in this project";
-  
-  // Load chats for this project
-  loadChatsList();
-  loadProjects(); // Update active state
-  showToast(`📁 Opened project: ${project.name}`);
-}
-
-function closeProject() {
-  currentProject = null;
-  currentChat = null;
-  localStorage.removeItem('datta_current_project');
-  
-  // IMPORTANT: Show the New Chat button again when exiting project
-  const newChatBtn = document.getElementById("newChatBtn");
-  if (newChatBtn) {
-    newChatBtn.style.display = "flex";  // SHOW THE BUTTON AGAIN
-  }
-  
-  // Hide project header
-  const projectHeader = document.getElementById("projectHeader");
-  if (projectHeader) projectHeader.style.display = "none";
-  
-  // Reset welcome screen
-  const welcomeTitle = document.querySelector("#welcomeScreen .welcomeTitle");
-  if (welcomeTitle) welcomeTitle.innerHTML = "How can I help you today?";
-  
-  const welcomeSub = document.querySelector("#welcomeScreen .welcomeSub");
-  if (welcomeSub) welcomeSub.innerHTML = "Think Less. Do More.";
-  
-  document.getElementById("chat").innerHTML = "";
-  document.getElementById("welcomeScreen").style.display = "flex";
-  
-  // Load standalone chats
-  loadChatsList();
-  loadProjects();
-  showToast("📁 Closed project");
-}
-
-function lockProject(projectId) {
-  const password = prompt("Set password to lock this project:");
-  if (!password) return;
-  
-  const project = projects.find(p => p.id === projectId);
-  if (project) {
-    project.locked = true;
-    projectPasswords[projectId] = password;
-    saveProjects();
-    localStorage.setItem('datta_project_passwords', JSON.stringify(projectPasswords));
-    loadProjects();
-    if (currentProject === projectId) closeProject();
-    showToast(`🔒 Project "${project.name}" locked`);
-  }
-}
-
-function unlockProject(projectId) {
-  const project = projects.find(p => p.id === projectId);
-  if (!project) return;
-  
-  const password = prompt(`Enter password to unlock "${project.name}":`);
-  if (projectPasswords[projectId] !== password) {
-    showToast("❌ Incorrect password!");
-    return;
-  }
-  
-  project.locked = false;
-  saveProjects();
-  loadProjects();
-  showToast(`🔓 Project "${project.name}" unlocked`);
-}
-
-function renameProject(projectId) {
-  const project = projects.find(p => p.id === projectId);
-  if (!project) return;
-  
-  const newName = prompt("New project name:", project.name);
-  if (!newName) return;
-  
-  project.name = newName.trim();
-  saveProjects();
-  loadProjects();
-  
-  if (currentProject === projectId) {
-    const projectHeaderTitle = document.getElementById("projectHeaderTitle");
-    if (projectHeaderTitle) projectHeaderTitle.innerHTML = `📁 ${escapeHtml(project.name)}`;
-    
-    const welcomeTitle = document.querySelector("#welcomeScreen .welcomeTitle");
-    if (welcomeTitle) welcomeTitle.innerHTML = `📁 ${escapeHtml(project.name)}`;
-  }
-  
-  showToast(`✏️ Renamed to "${project.name}"`);
-}
-
-function deleteProject(projectId) {
-  if (!confirm("Delete this project? All chats inside will be lost!")) return;
-  
-  projects = projects.filter(p => p.id !== projectId);
-  saveProjects();
-  delete projectPasswords[projectId];
-  localStorage.setItem('datta_project_passwords', JSON.stringify(projectPasswords));
-  
-  if (currentProject === projectId) closeProject();
-  loadProjects();
-  showToast("🗑️ Project deleted");
-}
-
-// ============================================
-// SEND MESSAGE FUNCTION - SAVES TO PROJECT
-// ============================================
-async function sendMessage() {
-  const input = document.getElementById("message");
-  const text = input.value.trim();
-  if (!text) return;
-  
-  input.value = "";
-  
-  // CRITICAL: If in a project and no chat exists, create a new chat automatically
-  if (currentProject && !currentChat) {
-    const project = projects.find(p => p.id === currentProject);
-    if (project) {
-      // Create new chat automatically
-      const newChat = {
-        id: 'chat_' + Date.now(),
-        title: text.substring(0, 40),
-        messages: [],
-        created: Date.now()
-      };
-      
-      project.chats = project.chats || [];
-      project.chats.unshift(newChat);
-      saveProjects();
-      currentChat = newChat;
-      loadChatsList();
-    }
-  }
-  
-  // Save user message to current chat
-  if (currentChat) {
-    currentChat.messages = currentChat.messages || [];
-    currentChat.messages.push({ role: 'user', content: text, timestamp: Date.now() });
-    if (currentChat.title === 'New Chat') {
-      currentChat.title = text.substring(0, 40);
-    }
-    
-    // Save to storage
-    if (currentProject) {
-      const project = projects.find(p => p.id === currentProject);
-      if (project) {
-        const chatIndex = project.chats.findIndex(c => c.id === currentChat.id);
-        if (chatIndex !== -1) project.chats[chatIndex] = currentChat;
-        saveProjects();
-        console.log("Message saved to project:", project.name, "Chat:", currentChat.title);
-      }
-    } else {
-      const chatIndex = allChats.findIndex(c => c.id === currentChat.id);
-      if (chatIndex !== -1) allChats[chatIndex] = currentChat;
-      saveStandaloneChats();
-    }
-    loadChatsList();
-  }
-  
-  const chatBox = document.getElementById("chat");
-  document.getElementById("welcomeScreen").style.display = "none";
-  
-  // Add user message
-  chatBox.innerHTML += `<div class="messageRow userRow"><div class="userBubble">${escapeHtml(text)}</div><div class="avatar">🧑</div></div>`;
-  scrollToBottom();
-  
-  // Add typing indicator
-  const aiId = 'ai_' + Date.now();
-  chatBox.innerHTML += `<div class="messageRow" id="${aiId}"><div class="avatar">🤖</div><div class="aiBubble typing"><span></span><span></span><span></span></div></div>`;
-  scrollToBottom();
-  
-  // Send to backend
-  const formData = new FormData();
-  formData.append('message', text);
-  formData.append('token', getToken());
-  formData.append('language', localStorage.getItem('datta_language') || 'English');
-  
-  try {
-    const response = await fetch('https://datta-ai-server.onrender.com/chat', { method: 'POST', body: formData });
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let fullText = "";
-    const aiDiv = document.getElementById(aiId);
-    
-    if (aiDiv) {
-      aiDiv.innerHTML = `<div class="avatar">🤖</div><div class="aiBubble"><span class="stream"></span></div>`;
-    }
-    
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value);
-      fullText += chunk;
-      
-      const streamSpan = aiDiv?.querySelector('.stream');
-      if (streamSpan) {
-        streamSpan.innerHTML = marked.parse(fullText) + '<span class="cursor">▌</span>';
-        scrollToBottom();
-      }
-    }
-    
-    const streamSpan = aiDiv?.querySelector('.stream');
-    if (streamSpan) streamSpan.innerHTML = marked.parse(fullText);
-    
-    // Save AI response
-    if (currentChat) {
-      currentChat.messages.push({ role: 'assistant', content: fullText, timestamp: Date.now() });
-      
-      if (currentProject) {
-        const project = projects.find(p => p.id === currentProject);
-        if (project) {
-          const chatIndex = project.chats.findIndex(c => c.id === currentChat.id);
-          if (chatIndex !== -1) project.chats[chatIndex] = currentChat;
-          saveProjects();
-          console.log("AI response saved to project");
-        }
-      } else {
-        const chatIndex = allChats.findIndex(c => c.id === currentChat.id);
-        if (chatIndex !== -1) allChats[chatIndex] = currentChat;
-        saveStandaloneChats();
-      }
-      loadChatsList();
-    }
-    
-  } catch (error) {
-    const aiDiv = document.getElementById(aiId);
-    if (aiDiv) {
-      aiDiv.innerHTML = `<div class="avatar">🤖</div><div class="aiBubble" style="color:#ff8888;">⚠️ Connection error. Please try again.</div>`;
-    }
-  }
-}
-
-// ============================================
-// ARTIFACTS FUNCTIONS
-// ============================================
-let artifacts = [];
-
-function loadArtifacts() {
-  artifacts = JSON.parse(localStorage.getItem('datta_artifacts') || '[]');
-  const container = document.getElementById("section-artifacts");
-  if (!container) return;
-  
-  if (artifacts.length === 0) {
-    container.innerHTML = `<div class="emptySection">📦 No artifacts yet<br><button onclick="createNewArtifact()" style="margin-top:10px;padding:8px 16px;background:#ffd70020;border:1px solid #ffd70040;border-radius:10px;color:#ffd700;cursor:pointer;">+ Create Artifact</button></div>`;
-    return;
-  }
-  
-  container.innerHTML = `
-    <button onclick="createNewArtifact()" style="width:100%;padding:10px;margin-bottom:12px;background:#ffd70010;border:1px solid #ffd70020;border-radius:10px;color:#ffd700;cursor:pointer;">+ New Artifact</button>
-    ${artifacts.map(artifact => `
-      <div class="projectItem" style="display:flex;align-items:center;gap:10px;">
-        <span>${artifact.type === 'image' ? '🎨' : artifact.type === 'code' ? '💻' : '📄'}</span>
-        <div style="flex:1;">
-          <div style="font-weight:600;">${escapeHtml(artifact.name)}</div>
-          <div style="font-size:10px;color:#665500;">${new Date(artifact.created).toLocaleDateString()}</div>
-        </div>
-        <button onclick="deleteArtifact('${artifact.id}')" style="background:none;border:none;color:#ff6666;cursor:pointer;">🗑️</button>
-      </div>
-    `).join('')}
-  `;
-}
-
-function createNewArtifact() {
-  const type = prompt("Type (image/code/document):", "image");
-  if (!type) return;
-  const name = prompt("Artifact name:", "My Artifact");
-  if (!name) return;
-  
-  artifacts.push({
-    id: 'artifact_' + Date.now(),
-    name: name.trim(),
-    type: type.toLowerCase(),
-    created: Date.now()
-  });
-  localStorage.setItem('datta_artifacts', JSON.stringify(artifacts));
-  loadArtifacts();
-  showToast(`✨ Artifact "${name}" created`);
-}
-
-function deleteArtifact(id) {
-  if (!confirm("Delete this artifact?")) return;
-  artifacts = artifacts.filter(a => a.id !== id);
-  localStorage.setItem('datta_artifacts', JSON.stringify(artifacts));
-  loadArtifacts();
-  showToast("🗑️ Artifact deleted");
-}
-
-// ============================================
-// OTHER FUNCTIONS
-// ============================================
-function fillPrompt(text) {
-  document.getElementById("message").value = text;
-  sendMessage();
-}
-
-function startVoiceInput() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    showToast("Speech recognition not supported");
-    return;
-  }
-  const recognition = new SpeechRecognition();
-  recognition.lang = "en-IN";
-  recognition.onresult = (e) => {
-    document.getElementById("message").value = e.results[0][0].transcript;
-    sendMessage();
-  };
-  recognition.start();
-}
-
-function toggleMoodPanel() {
-  showToast("Mood panel coming soon!");
-}
-
-function toggleProfileMenu() {
-  const menu = document.getElementById("profileMenu");
-  menu.style.display = menu.style.display === "none" ? "block" : "none";
-}
-
-function logout() {
-  localStorage.clear();
-  window.location.href = "login.html";
-}
-
-// ============================================
-// INITIALIZATION
-// ============================================
-window.addEventListener('load', () => {
-  // Load all data
-  loadAllData();
-  
-  // Restore current project
-  const savedProject = localStorage.getItem('datta_current_project');
-  if (savedProject) {
-    const project = projects.find(p => p.id === savedProject);
-    if (project && !project.locked) {
-      openProject(savedProject);
-    } else {
-      loadChatsList();
-    }
-  } else {
-    loadChatsList();
-  }
-  
-  // Update profile
-  const user = getUser();
-  if (user) {
-    document.getElementById("profileName").textContent = user.username || user.email || "User";
-    document.getElementById("profileAvatar").textContent = (user.username || "U")[0].toUpperCase();
-  }
-  
-  // Enter key
-  document.getElementById("message").addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-  
-  // Hide splash
-  setTimeout(() => {
-    const splash = document.getElementById("splash");
-    if (splash) splash.style.display = "none";
-  }, 2000);
-  
-  loadProjects();
-  loadArtifacts();
-  showToast("✨ Datta AI Ready!");
-});
-
-// Make functions global
-window.handleNewChatClick = handleNewChatClick;
-window.createStandaloneChat = createStandaloneChat;
-window.openChat = openChat;
-window.deleteChat = deleteChat;
-window.openProject = openProject;
-window.closeProject = closeProject;
-window.lockProject = lockProject;
-window.unlockProject = unlockProject;
-window.renameProject = renameProject;
-window.deleteProject = deleteProject;
-window.showCreateProjectModal = showCreateProjectModal;
-window.createProjectFromModal = createProjectFromModal;
-window.closeModal = closeModal;
-window.loadProjects = loadProjects;
-window.loadArtifacts = loadArtifacts;
-window.createNewArtifact = createNewArtifact;
-window.deleteArtifact = deleteArtifact;
-window.sendMessage = sendMessage;
-window.fillPrompt = fillPrompt;
-window.startVoiceInput = startVoiceInput;
-window.toggleMoodPanel = toggleMoodPanel;
-window.toggleProfileMenu = toggleProfileMenu;
-window.scrollToBottom = scrollToBottom;
-window.toggleSidebar = toggleSidebar;
-window.showSection = showSection;
-window.searchChats = searchChats;
-window.logout = logout;
-</script>
 
 <div id="splash" style="position:fixed;inset:0;background:#080800;display:flex;align-items:center;justify-content:center;z-index:99999;flex-direction:column;">
   <img src="logo.jpeg" style="width:80px;height:80px;border-radius:20px;">
@@ -1113,5 +277,6 @@ window.logout = logout;
   <p>Loading...</p>
 </div>
 
+<script src="chat.js?v=15"></script>
 </body>
 </html>
