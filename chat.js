@@ -554,9 +554,6 @@ function detectTextLanguage(text) {
 
 // ── IMAGE GENERATION FALLBACK (Pollinations) ─────────────────────────────────
 async function generateWithPollinations(prompt, aiDiv) {
-  // Try server-side generation first (most reliable)
-  // Then fallback to direct Pollinations
-  
   const showImg = (imgUrl) => {
     const fakeResponse = "DATTA_IMAGE_START\n![" + prompt + "](" + imgUrl + ")\nPROMPT:" + prompt + "\nDATTA_IMAGE_END"
     if (aiDiv) {
@@ -568,34 +565,47 @@ async function generateWithPollinations(prompt, aiDiv) {
     loadSidebar()
   }
 
-  const showError = () => {
-    if (aiDiv) aiDiv.innerHTML = "<div class='avatar'>🎨</div><div class='aiBubble' style='color:#ff4444'>❌ Image generation failed. Please try again.</div>"
-    hideStopBtn()
-  }
-
-  // Method 1: Server-side HF generation (most reliable, no CORS)
+  // Try server HF first
   try {
     const fd = new FormData()
     fd.append("prompt", prompt)
     fd.append("token", getToken())
     const res = await Promise.race([
       fetch("https://datta-ai-server.onrender.com/generate-image", { method:"POST", body:fd }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 30000))
+      new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 25000))
     ])
     if (res.ok) {
       const data = await res.json()
       if (data.imageUrl) { showImg(data.imageUrl); return }
     }
   } catch(e) {
-    console.warn("Server image failed:", e.message)
+    console.warn("Server HF failed:", e.message)
   }
 
-  // Method 2: Pollinations direct (fast fallback)
+  // Fallback: Try multiple Pollinations URLs
   const seed = Math.floor(Math.random() * 999999)
+  const seed2 = Math.floor(Math.random() * 999999)
+  // Try flux-schnell first, then turbo, then standard
   const urls = [
     "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed,
-    "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=512&height=512&nologo=true&model=turbo&seed=" + seed,
+    "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=768&height=768&nologo=true&model=turbo&seed=" + seed2,
+    "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?nologo=true&seed=" + seed,
   ]
+  
+  // Test each URL with a quick HEAD check
+  for (const url of urls) {
+    try {
+      const test = await Promise.race([
+        fetch(url, { method: "HEAD", mode: "no-cors" }),
+        new Promise((_, r) => setTimeout(() => r(new Error("timeout")), 5000))
+      ])
+      showImg(url)
+      return
+    } catch(e) {
+      continue
+    }
+  }
+  // If all fail, just show first URL anyway (image tag will handle retry)
   showImg(urls[0])
 }
 
