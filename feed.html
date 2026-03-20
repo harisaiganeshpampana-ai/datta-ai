@@ -251,35 +251,38 @@ async function fetchReddit(sub, c) {
 
 async function fetchGNews() {
   try {
-    // Free RSS feeds via rss2json - no key needed
     const feeds = [
-      { url: 'https://feeds.feedburner.com/TechCrunch', cat: 'Tech & AI' },
-      { url: 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml', cat: 'World' },
       { url: 'https://feeds.bbci.co.uk/news/technology/rss.xml', cat: 'Tech & AI' },
       { url: 'https://feeds.bbci.co.uk/news/world/rss.xml', cat: 'World' },
       { url: 'https://feeds.bbci.co.uk/news/business/rss.xml', cat: 'Finance' },
+      { url: 'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml', cat: 'Science' },
+      { url: 'https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml', cat: 'Entertainment' },
+      { url: 'https://feeds.bbci.co.uk/sport/rss.xml', cat: 'Sports' },
       { url: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms', cat: 'India' },
+      { url: 'https://feeds.feedburner.com/TechCrunch', cat: 'Tech & AI' },
     ]
     const items = []
+    const API = 'https://api.rss2json.com/v1/api.json?count=6&rss_url='
     await Promise.allSettled(feeds.map(async feed => {
       try {
-        const res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(feed.url) + '&count=5')
+        const res = await fetch(API + encodeURIComponent(feed.url))
+        if (!res.ok) return
         const data = await res.json()
-        if (data.items) {
+        if (data.status === 'ok' && data.items) {
           data.items.forEach(item => {
             items.push({
               title: item.title,
               link: item.link,
-              source: data.feed?.title || feed.cat,
+              source: data.feed?.title || 'BBC News',
               cat: feed.cat,
-              img: item.enclosure?.link || item.thumbnail || null,
-              time: new Date(item.pubDate).getTime()
+              img: item.thumbnail || item.enclosure?.link || null,
+              time: new Date(item.pubDate).getTime() || Date.now()
             })
           })
         }
       } catch(e) {}
     }))
-    return items
+    return items.sort((a,b) => b.time - a.time)
   } catch(e) { return [] }
 }
 
@@ -327,11 +330,10 @@ async function loadAll() {
   document.getElementById('info').textContent = '⏳ Loading live stories...'
   showSkels()
 
-  const [hn, reddit, gnews] = await Promise.allSettled([fetchHN(), fetchAllReddit(), fetchGNews()])
+  const [hn, gnews] = await Promise.allSettled([fetchHN(), fetchGNews()])
 
   all = [
     ...(hn.status==='fulfilled' ? hn.value : []),
-    ...(reddit.status==='fulfilled' ? reddit.value : []),
     ...(gnews.status==='fulfilled' ? gnews.value : [])
   ]
 
