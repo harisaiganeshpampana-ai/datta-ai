@@ -406,6 +406,9 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
   </div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:6px;padding-right:6px;">
 
+    <!-- THEME BUTTON -->
+    <button id="themeBtn" onclick="showThemePicker()" title="Change Theme" style="background:none;border:1px solid var(--border);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">🌑</button>
+
     <!-- AUTO MOOD PILL — appears when mood is detected from message -->
     <div id="autoMoodPill" onclick="toggleMoodPanel()" style="
       display:none;align-items:center;gap:5px;
