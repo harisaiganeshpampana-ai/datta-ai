@@ -83,6 +83,104 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
 .profileAvatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#ffd700,#ff8c00); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#000; flex-shrink:0; }
 
 #scrollDownBtn { position:absolute; bottom:80px; right:20px; width:32px; height:32px; background:#0f0e00; border:1px solid rgba(255,215,0,0.2); border-radius:50%; color:#ffd700; cursor:pointer; display:none; }
+
+/* Modal Styles - Like ChatGPT */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal-content {
+  background: #0f0e00;
+  border: 1px solid rgba(255,215,0,0.2);
+  border-radius: 24px;
+  width: 90%;
+  max-width: 500px;
+  padding: 24px;
+  animation: modalIn 0.3s ease;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.modal-title {
+  font-size: 24px;
+  font-family: 'Bebas Neue', sans-serif;
+  margin-bottom: 8px;
+  color: #ffd700;
+}
+.modal-subtitle {
+  font-size: 13px;
+  color: #665500;
+  margin-bottom: 20px;
+}
+.modal-input {
+  width: 100%;
+  padding: 12px;
+  background: #1a1a0a;
+  border: 1px solid rgba(255,215,0,0.2);
+  border-radius: 12px;
+  color: #fff8e7;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+.modal-input:focus {
+  outline: none;
+  border-color: #ffd700;
+}
+.modal-suggestions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.suggestion-chip {
+  background: rgba(255,215,0,0.08);
+  border: 1px solid rgba(255,215,0,0.15);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.suggestion-chip:hover {
+  background: rgba(255,215,0,0.15);
+  border-color: #ffd700;
+}
+.modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+.modal-btn {
+  padding: 8px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.modal-btn-cancel {
+  background: none;
+  border: 1px solid rgba(255,215,0,0.2);
+  color: #665500;
+}
+.modal-btn-create {
+  background: #ffd700;
+  border: none;
+  color: #000;
+  font-weight: 600;
+}
+.modal-btn-create:hover {
+  transform: scale(1.02);
+}
 </style>
 </head>
 
@@ -182,7 +280,6 @@ function getToken() { return localStorage.getItem("datta_token") || ""; }
 function getUser() { try { return JSON.parse(localStorage.getItem("datta_user") || "null"); } catch(e) { return null; } }
 
 if (!getToken()) { window.location.href = "login.html"; }
-
 window.dattaUser = getUser();
 
 // ============================================
@@ -190,7 +287,6 @@ window.dattaUser = getUser();
 // ============================================
 let currentProject = null;
 let currentProjectChat = null;
-let currentChatHistory = [];
 let projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
 let projectPasswords = JSON.parse(localStorage.getItem('datta_project_passwords') || '{}');
 
@@ -240,6 +336,10 @@ function searchChats() {
   });
 }
 
+function togglePlusMenu() {
+  showToast("📎 Upload coming soon!");
+}
+
 // ============================================
 // CHAT FUNCTIONS
 // ============================================
@@ -248,9 +348,9 @@ function createNewChat() {
     newChatInProject();
   } else {
     // Create standalone chat
-    currentChatHistory = [];
     document.getElementById("chat").innerHTML = "";
     document.getElementById("welcomeScreen").style.display = "flex";
+    currentProjectChat = null;
     showToast("✨ New chat created");
   }
 }
@@ -274,7 +374,6 @@ function newChatInProject() {
     project.chats.unshift(newChat);
     localStorage.setItem('datta_projects', JSON.stringify(projects));
     currentProjectChat = newChat;
-    currentChatHistory = newChat.messages;
     
     document.getElementById("chat").innerHTML = "";
     document.getElementById("welcomeScreen").style.display = "flex";
@@ -285,7 +384,6 @@ function newChatInProject() {
 
 function openChat(chat) {
   currentProjectChat = chat;
-  currentChatHistory = chat.messages;
   const chatBox = document.getElementById("chat");
   chatBox.innerHTML = "";
   document.getElementById("welcomeScreen").style.display = "none";
@@ -301,19 +399,107 @@ function openChat(chat) {
 }
 
 // ============================================
-// PROJECTS FUNCTIONS (Like ChatGPT)
+// PROJECTS FUNCTIONS - Like ChatGPT Modal
 // ============================================
+
+function showCreateProjectModal() {
+  // Remove existing modal if any
+  const existing = document.querySelector('.modal-overlay');
+  if (existing) existing.remove();
+  
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-title">Create Project</div>
+      <div class="modal-subtitle">Give your project a name to organize your chats</div>
+      <input type="text" id="projectNameInput" class="modal-input" placeholder="Project name" autocomplete="off">
+      <div class="modal-suggestions">
+        <div class="suggestion-chip" onclick="document.getElementById('projectNameInput').value='Party planning'">🎉 Party planning</div>
+        <div class="suggestion-chip" onclick="document.getElementById('projectNameInput').value='Homework'">📚 Homework</div>
+        <div class="suggestion-chip" onclick="document.getElementById('projectNameInput').value='Investing'">📈 Investing</div>
+        <div class="suggestion-chip" onclick="document.getElementById('projectNameInput').value='Writing'">✍️ Writing</div>
+      </div>
+      <div class="modal-buttons">
+        <button class="modal-btn modal-btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="modal-btn modal-btn-create" onclick="createProjectFromModal()">Create Project</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  
+  // Focus input
+  setTimeout(() => {
+    const input = document.getElementById('projectNameInput');
+    if (input) input.focus();
+  }, 100);
+}
+
+function closeModal() {
+  const modal = document.querySelector('.modal-overlay');
+  if (modal) modal.remove();
+}
+
+function createProjectFromModal() {
+  const input = document.getElementById('projectNameInput');
+  const name = input?.value.trim();
+  if (!name) {
+    showToast("Please enter a project name");
+    return;
+  }
+  
+  createProjectWithName(name);
+  closeModal();
+}
+
+function createProjectWithName(name) {
+  // Optional: Ask for password
+  const lockProject = confirm(`Lock "${name}" with a password?`);
+  let password = null;
+  if (lockProject) {
+    password = prompt("Set a password for this project:");
+    if (!password) return;
+  }
+  
+  const newProject = {
+    id: 'project_' + Date.now(),
+    name: name,
+    chats: [],
+    locked: lockProject,
+    created: Date.now()
+  };
+  
+  projects.push(newProject);
+  localStorage.setItem('datta_projects', JSON.stringify(projects));
+  
+  if (password) {
+    projectPasswords[newProject.id] = password;
+    localStorage.setItem('datta_project_passwords', JSON.stringify(projectPasswords));
+  }
+  
+  loadProjects();
+  showToast(`📁 Project "${name}" created`);
+  
+  // Automatically open the new project
+  openProject(newProject.id);
+}
+
 function loadProjects() {
   const container = document.getElementById("section-projects");
   if (!container) return;
   
   if (projects.length === 0) {
-    container.innerHTML = `<div class="emptySection">📁 No projects yet<br><button onclick="createNewProject()" style="margin-top:10px;padding:8px 16px;background:#ffd70020;border:1px solid #ffd70040;border-radius:10px;color:#ffd700;cursor:pointer;">+ Create Project</button></div>`;
+    container.innerHTML = `
+      <div class="emptySection">
+        📁 No projects yet
+        <button onclick="showCreateProjectModal()" style="margin-top:12px;padding:10px 20px;background:#ffd70020;border:1px solid #ffd70040;border-radius:10px;color:#ffd700;cursor:pointer;">+ Create Project</button>
+      </div>
+    `;
     return;
   }
   
   container.innerHTML = `
-    <button onclick="createNewProject()" style="width:100%;padding:10px;margin-bottom:12px;background:#ffd70010;border:1px solid #ffd70020;border-radius:10px;color:#ffd700;cursor:pointer;">+ New Project</button>
+    <button onclick="showCreateProjectModal()" style="width:100%;padding:10px;margin-bottom:12px;background:#ffd70010;border:1px solid #ffd70020;border-radius:10px;color:#ffd700;cursor:pointer;">+ New Project</button>
     ${projects.map(project => `
       <div class="projectItem ${currentProject === project.id ? 'projectActive' : ''}" onclick="openProject('${project.id}')">
         <div style="display:flex;align-items:center;gap:10px;">
@@ -334,37 +520,6 @@ function loadProjects() {
   `;
 }
 
-function createNewProject() {
-  const name = prompt("Enter project name:", "My Project");
-  if (!name) return;
-  
-  const lock = confirm("Lock this project with password?");
-  let password = null;
-  if (lock) {
-    password = prompt("Set password:");
-    if (!password) return;
-  }
-  
-  const newProject = {
-    id: 'project_' + Date.now(),
-    name: name.trim(),
-    chats: [],
-    locked: lock,
-    created: Date.now()
-  };
-  
-  projects.push(newProject);
-  localStorage.setItem('datta_projects', JSON.stringify(projects));
-  
-  if (password) {
-    projectPasswords[newProject.id] = password;
-    localStorage.setItem('datta_project_passwords', JSON.stringify(projectPasswords));
-  }
-  
-  loadProjects();
-  showToast(`📁 Project "${name}" created`);
-}
-
 function openProject(projectId) {
   const project = projects.find(p => p.id === projectId);
   if (!project) return;
@@ -380,8 +535,23 @@ function openProject(projectId) {
   currentProject = projectId;
   localStorage.setItem('datta_current_project', projectId);
   
-  // Update UI to show project mode
-  document.getElementById("recentsLabel").innerHTML = `📁 ${escapeHtml(project.name)} <button onclick="closeProject()" style="margin-left:8px;background:none;border:none;color:#665500;cursor:pointer;">✕</button>`;
+  // Update UI - Show project header with close button
+  const recentsLabel = document.getElementById("recentsLabel");
+  if (recentsLabel) {
+    recentsLabel.innerHTML = `📁 ${escapeHtml(project.name)} <button onclick="closeProject()" style="margin-left:8px;background:none;border:none;color:#665500;cursor:pointer;">✕</button>`;
+  }
+  
+  // Show project welcome screen
+  const welcomeScreen = document.getElementById("welcomeScreen");
+  if (welcomeScreen) {
+    welcomeScreen.style.display = "flex";
+    const welcomeTitle = welcomeScreen.querySelector(".welcomeTitle");
+    if (welcomeTitle) welcomeTitle.innerHTML = `📁 ${escapeHtml(project.name)}`;
+    const welcomeSub = welcomeScreen.querySelector(".welcomeSub");
+    if (welcomeSub) welcomeSub.innerHTML = "Chats in this project will appear here";
+  }
+  
+  document.getElementById("chat").innerHTML = "";
   
   loadProjectChats(project);
   loadProjects(); // Update active state
@@ -434,10 +604,21 @@ function closeProject() {
   currentProject = null;
   currentProjectChat = null;
   localStorage.removeItem('datta_current_project');
-  document.getElementById("recentsLabel").innerHTML = "RECENTS";
+  
+  const recentsLabel = document.getElementById("recentsLabel");
+  if (recentsLabel) recentsLabel.innerHTML = "RECENTS";
+  
+  const welcomeScreen = document.getElementById("welcomeScreen");
+  if (welcomeScreen) {
+    welcomeScreen.style.display = "flex";
+    const welcomeTitle = welcomeScreen.querySelector(".welcomeTitle");
+    if (welcomeTitle) welcomeTitle.innerHTML = "How can I help you today?";
+    const welcomeSub = welcomeScreen.querySelector(".welcomeSub");
+    if (welcomeSub) welcomeSub.innerHTML = "Think Less. Do More.";
+  }
+  
   document.getElementById("history").innerHTML = "";
   document.getElementById("chat").innerHTML = "";
-  document.getElementById("welcomeScreen").style.display = "flex";
   loadProjects();
   showToast("📁 Closed project");
 }
@@ -485,7 +666,8 @@ function renameProject(projectId) {
   localStorage.setItem('datta_projects', JSON.stringify(projects));
   loadProjects();
   if (currentProject === projectId) {
-    document.getElementById("recentsLabel").innerHTML = `📁 ${escapeHtml(project.name)} <button onclick="closeProject()">✕</button>`;
+    const recentsLabel = document.getElementById("recentsLabel");
+    if (recentsLabel) recentsLabel.innerHTML = `📁 ${escapeHtml(project.name)} <button onclick="closeProject()">✕</button>`;
   }
   showToast(`✏️ Renamed to "${project.name}"`);
 }
@@ -527,9 +709,6 @@ async function sendMessage() {
       localStorage.setItem('datta_projects', JSON.stringify(projects));
       loadProjectChats(project);
     }
-  } else if (!currentProject) {
-    // Standalone chat (not in project)
-    currentChatHistory.push({ role: 'user', content: text });
   }
   
   const chatBox = document.getElementById("chat");
@@ -586,8 +765,6 @@ async function sendMessage() {
         if (chatIndex !== -1) project.chats[chatIndex] = currentProjectChat;
         localStorage.setItem('datta_projects', JSON.stringify(projects));
       }
-    } else if (!currentProject) {
-      currentChatHistory.push({ role: 'assistant', content: fullText });
     }
     
   } catch (error) {
@@ -693,7 +870,7 @@ function logout() {
 // INITIALIZATION
 // ============================================
 window.addEventListener('load', () => {
-  // Load projects
+  // Load data
   projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
   projectPasswords = JSON.parse(localStorage.getItem('datta_project_passwords') || '{}');
   artifacts = JSON.parse(localStorage.getItem('datta_artifacts') || '[]');
@@ -748,7 +925,9 @@ window.lockProject = lockProject;
 window.unlockProject = unlockProject;
 window.renameProject = renameProject;
 window.deleteProject = deleteProject;
-window.createNewProject = createNewProject;
+window.showCreateProjectModal = showCreateProjectModal;
+window.createProjectFromModal = createProjectFromModal;
+window.closeModal = closeModal;
 window.loadProjects = loadProjects;
 window.loadArtifacts = loadArtifacts;
 window.createNewArtifact = createNewArtifact;
