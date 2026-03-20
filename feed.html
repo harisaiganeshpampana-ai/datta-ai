@@ -227,7 +227,9 @@ const SUBS = [
 ]
 
 async function fetchReddit(sub, c) {
-  const res = await fetch(`https://www.reddit.com/r/${sub}/hot.json?limit=5`)
+  // Use CORS proxy for Reddit
+  const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(`https://www.reddit.com/r/${sub}/hot.json?limit=5`)
+  const res = await fetch(proxyUrl)
   const data = await res.json()
   return (data?.data?.children||[])
     .filter(p => !p.data.stickied && p.data.title)
@@ -245,6 +247,40 @@ async function fetchReddit(sub, c) {
       big: false,
       score: p.data.score
     }))
+}
+
+async function fetchGNews() {
+  try {
+    // Free RSS feeds via rss2json - no key needed
+    const feeds = [
+      { url: 'https://feeds.feedburner.com/TechCrunch', cat: 'Tech & AI' },
+      { url: 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml', cat: 'World' },
+      { url: 'https://feeds.bbci.co.uk/news/technology/rss.xml', cat: 'Tech & AI' },
+      { url: 'https://feeds.bbci.co.uk/news/world/rss.xml', cat: 'World' },
+      { url: 'https://feeds.bbci.co.uk/news/business/rss.xml', cat: 'Finance' },
+      { url: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms', cat: 'India' },
+    ]
+    const items = []
+    await Promise.allSettled(feeds.map(async feed => {
+      try {
+        const res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(feed.url) + '&count=5')
+        const data = await res.json()
+        if (data.items) {
+          data.items.forEach(item => {
+            items.push({
+              title: item.title,
+              link: item.link,
+              source: data.feed?.title || feed.cat,
+              cat: feed.cat,
+              img: item.enclosure?.link || item.thumbnail || null,
+              time: new Date(item.pubDate).getTime()
+            })
+          })
+        }
+      } catch(e) {}
+    }))
+    return items
+  } catch(e) { return [] }
 }
 
 async function fetchAllReddit() {
@@ -291,11 +327,12 @@ async function loadAll() {
   document.getElementById('info').textContent = '⏳ Loading live stories...'
   showSkels()
 
-  const [hn, reddit] = await Promise.allSettled([fetchHN(), fetchAllReddit()])
+  const [hn, reddit, gnews] = await Promise.allSettled([fetchHN(), fetchAllReddit(), fetchGNews()])
 
   all = [
     ...(hn.status==='fulfilled' ? hn.value : []),
-    ...(reddit.status==='fulfilled' ? reddit.value : [])
+    ...(reddit.status==='fulfilled' ? reddit.value : []),
+    ...(gnews.status==='fulfilled' ? gnews.value : [])
   ]
 
   all.sort((a,b) => (b.big?1:0)-(a.big?1:0))
