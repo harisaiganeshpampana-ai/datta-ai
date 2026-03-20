@@ -1058,11 +1058,15 @@ if (scrollBtn) {
 
 // ─── WELCOME HELPERS ──────────────────────────────────────────────────────────
 function hideWelcome() {
+  const cw = document.querySelector(".chatWrapper")
+  if (cw) cw.style.pointerEvents = "auto"
   const w = document.getElementById("welcomeScreen")
   if (w) w.style.display = "none"
 }
 
 function showWelcome() {
+  const cw = document.querySelector(".chatWrapper")
+  if (cw) cw.style.pointerEvents = "none"
   const w = document.getElementById("welcomeScreen")
   if (w) w.style.display = "block"
 }
