@@ -11,7 +11,9 @@ async function syncProjectsFromServer() {
     if (!token) return
     const res = await fetch(SERVER + "/projects?token=" + token)
     if (!res.ok) return
-    const serverProjects = await res.json()
+    const text = await res.text()
+    if (!text || text.trim().startsWith('<')) return // HTML error page
+    const serverProjects = JSON.parse(text)
     // Merge server projects with local
     const local = getProjects()
     const merged = serverProjects.map(sp => {
@@ -46,7 +48,8 @@ async function saveProjectToServer(project) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, name: project.name, instructions: project.instructions, color: project.color, chats: project.chats, pinnedChats: project.pinnedChats })
       })
-      return await res.json()
+      const t1 = await res.text()
+      return t1.startsWith('<') ? null : JSON.parse(t1)
     } else {
       // Create new
       const res = await fetch(SERVER + "/projects", {
@@ -54,7 +57,8 @@ async function saveProjectToServer(project) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, name: project.name, instructions: project.instructions, color: project.color })
       })
-      const data = await res.json()
+      const t2 = await res.text()
+      const data = t2.startsWith('<') ? {} : JSON.parse(t2)
       if (data._id) {
         // Save serverId back to local
         const projects = getProjects()
