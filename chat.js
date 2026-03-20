@@ -1,3 +1,56 @@
+// ============================================
+// AUTHENTICATION HELPERS - UPDATED
+// ============================================
+function getToken() {
+  return localStorage.getItem("datta_token") || ""
+}
+
+function getUser() {
+  try {
+    const raw = localStorage.getItem("datta_user")
+    if (raw && raw !== "null" && raw !== "undefined") return JSON.parse(raw)
+  } catch(e) {}
+  return null
+}
+
+// Auth check - redirect if not logged in
+if (!getToken()) {
+  window.location.href = "login.html"
+}
+
+// Store globally
+window.dattaToken = getToken()
+window.dattaUser = getUser()
+
+// Enhanced fetch wrapper with auth headers
+const originalFetch = window.fetch;
+window.fetch = function(url, options = {}) {
+  const token = getToken();
+  if (token && (url.includes('datta-ai-server') || url.includes('render.com'))) {
+    options.headers = options.headers || {};
+    options.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return originalFetch(url, options);
+};
+
+// Update profile on load
+window.addEventListener("DOMContentLoaded", function() {
+  const user = getUser();
+  if (user) {
+    const nameEl = document.querySelector(".profileName")
+    const avatarEl = document.querySelector(".profileAvatar")
+    const subEl = document.querySelector(".profileSub")
+    if (nameEl) nameEl.textContent = user.username || user.email || "User"
+    if (avatarEl) avatarEl.textContent = (user.username || "U")[0].toUpperCase()
+    
+    // Update plan display
+    const plan = localStorage.getItem("datta_plan") || "free"
+    const planNames = { shakti: '⚡ Shakti', agni: '🔥 Agni', brahma: '👑 Brahma', free: 'Free', arambh: 'Free' }
+    if (subEl && !user.isCreator) subEl.textContent = planNames[plan] || 'Free Plan'
+    if (subEl && user.isCreator) subEl.textContent = '👑 Creator'
+  }
+})
+
 // STOP GENERATION
 function showStopBtn() {
   const stop = document.getElementById("stopBtn")
@@ -147,41 +200,9 @@ window.likeImage = likeImage
 window.dislikeImage = dislikeImage
 window.renderImageResponse = renderImageResponse
 
-// AUTH CHECK
-function getToken() {
-  return localStorage.getItem("datta_token") || ""
-}
-
-function getUser() {
-  try {
-    const raw = localStorage.getItem("datta_user")
-    if (raw && raw !== "null" && raw !== "undefined") return JSON.parse(raw)
-  } catch(e) {}
-  return null
-}
-
-if (!getToken()) {
-  window.location.href = "login.html"
-}
-
-const datta_token = getToken()
-const datta_user = getUser()
-
-window.addEventListener("DOMContentLoaded", function() {
-  if (datta_user) {
-    const nameEl = document.querySelector(".profileName")
-    const avatarEl = document.querySelector(".profileAvatar")
-    const subEl = document.querySelector(".profileSub")
-    if (nameEl) nameEl.textContent = datta_user.username || "User"
-    if (avatarEl) avatarEl.textContent = (datta_user.username || "U")[0].toUpperCase()
-    if (subEl) subEl.textContent = datta_user.isGuest ? "Guest" : (datta_user.email || "Free Plan")
-  }
-})
-
 const chatBox = document.getElementById("chat")
 const sendBtn = document.querySelector(".send")
 const scrollBtn = document.getElementById("scrollDownBtn")
-
 
 function getAuthHeaders() {
   return { "Authorization": "Bearer " + getToken() }
@@ -212,7 +233,6 @@ function getMoodContext() {
 }
 
 // ── AUTO MOOD DETECT INDICATOR ────────────────────────────────────────────────
-// Shows ONLY when mood is auto-detected from message text — distinct from manual pill
 function showAutoMoodPill(moodKey) {
   const MOODS = window.MOODS || {}
   const mood = MOODS[moodKey]
@@ -221,7 +241,6 @@ function showAutoMoodPill(moodKey) {
   const pill = document.getElementById("autoMoodPill")
   if (!pill) return
 
-  // Small distinct badge — just emoji + "Auto" label, different style from manual
   pill.style.border = `1px solid ${mood.color}44`
   pill.style.background = "transparent"
   pill.style.color = mood.color
@@ -233,10 +252,8 @@ function showAutoMoodPill(moodKey) {
   pill.style.alignItems = "center"
   pill.title = `Auto-detected: ${mood.label}`
 
-  // Save so it persists on reload
   localStorage.setItem("datta_last_auto_mood", moodKey)
 
-  // Hide after 8 seconds
   clearTimeout(pill._hideTimer)
   pill._hideTimer = setTimeout(() => {
     pill.style.transition = "opacity 0.4s"
@@ -249,7 +266,6 @@ function showAutoMoodPill(moodKey) {
   }, 8000)
 }
 
-// Restore auto pill on page load only if auto-detected mood exists
 function restoreAutoMoodPill() {
   const autoSaved = localStorage.getItem("datta_last_auto_mood")
   if (!autoSaved) return
@@ -270,12 +286,10 @@ function restoreAutoMoodPill() {
   pill.title = `Auto-detected: ${mood.label}`
 }
 
-// Run on load — wait for mood.js to fully load first
 window.addEventListener("DOMContentLoaded", function() {
   setTimeout(restoreAutoMoodPill, 1500)
 })
 
-// Also try again after full page load
 window.addEventListener("load", function() {
   setTimeout(restoreAutoMoodPill, 500)
 })
@@ -309,7 +323,6 @@ async function send() {
   const text = input.value.trim()
   if (!text && !file) return
 
-  // Auto detect mood from message
   if (window.dattaAutoDetectMood && text) {
     const detected = window.dattaAutoDetectMood(text)
     if (detected) showAutoMoodPill(detected)
@@ -498,8 +511,6 @@ async function send() {
 }
 
 // ─── LANGUAGE HELPERS ────────────────────────────────────────────────────────
-
-// Map language name to BCP-47 code for SpeechRecognition
 function getLangCode(langName) {
   const map = {
     "English": "en-IN",
@@ -533,30 +544,24 @@ function getLangCode(langName) {
   return map[langName] || "en-IN"
 }
 
-// Auto-detect language from text script
 function detectTextLanguage(text) {
   if (!text) return getLangCode(localStorage.getItem("datta_language") || "English")
-  if (/[ऀ-ॿ]/.test(text)) return "hi-IN"   // Hindi/Devanagari
-  if (/[ఀ-౿]/.test(text)) return "te-IN"   // Telugu
-  if (/[஀-௿]/.test(text)) return "ta-IN"   // Tamil
-  if (/[ಀ-೿]/.test(text)) return "kn-IN"   // Kannada
-  if (/[ഀ-ൿ]/.test(text)) return "ml-IN"   // Malayalam
-  if (/[ঀ-৿]/.test(text)) return "bn-IN"   // Bengali
-  if (/[؀-ۿ]/.test(text)) return "ar-SA"   // Arabic/Urdu
-  if (/[一-鿿]/.test(text)) return "zh-CN"   // Chinese
-  if (/[぀-ヿ]/.test(text)) return "ja-JP"   // Japanese
-  if (/[가-힯]/.test(text)) return "ko-KR"   // Korean
-  if (/[Ѐ-ӿ]/.test(text)) return "ru-RU"   // Russian
-  // Default to user's selected language
+  if (/[ऀ-ॿ]/.test(text)) return "hi-IN"
+  if (/[ఀ-౿]/.test(text)) return "te-IN"
+  if (/[஀-௿]/.test(text)) return "ta-IN"
+  if (/[ಀ-೿]/.test(text)) return "kn-IN"
+  if (/[ഀ-ൿ]/.test(text)) return "ml-IN"
+  if (/[ঀ-৿]/.test(text)) return "bn-IN"
+  if (/[؀-ۿ]/.test(text)) return "ar-SA"
+  if (/[一-鿿]/.test(text)) return "zh-CN"
+  if (/[぀-ヿ]/.test(text)) return "ja-JP"
+  if (/[가-힯]/.test(text)) return "ko-KR"
+  if (/[Ѐ-ӿ]/.test(text)) return "ru-RU"
   return getLangCode(localStorage.getItem("datta_language") || "English")
 }
 
-
-// ── IMAGE GENERATION FALLBACK (Pollinations) ─────────────────────────────────
+// ── IMAGE GENERATION FALLBACK ─────────────────────────────────────────────────
 async function generateWithPollinations(prompt, aiDiv) {
-  // Try server-side generation first (most reliable)
-  // Then fallback to direct Pollinations
-  
   const showImg = (imgUrl) => {
     const fakeResponse = "DATTA_IMAGE_START\n![" + prompt + "](" + imgUrl + ")\nPROMPT:" + prompt + "\nDATTA_IMAGE_END"
     if (aiDiv) {
@@ -573,7 +578,6 @@ async function generateWithPollinations(prompt, aiDiv) {
     hideStopBtn()
   }
 
-  // Method 1: Server-side HF generation (most reliable, no CORS)
   try {
     const fd = new FormData()
     fd.append("prompt", prompt)
@@ -590,7 +594,6 @@ async function generateWithPollinations(prompt, aiDiv) {
     console.warn("Server image failed:", e.message)
   }
 
-  // Method 2: Pollinations direct (fast fallback)
   const seed = Math.floor(Math.random() * 999999)
   const urls = [
     "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed,
@@ -600,6 +603,7 @@ async function generateWithPollinations(prompt, aiDiv) {
 }
 
 window.generateWithPollinations = generateWithPollinations
+
 // ─── LOAD SIDEBAR ─────────────────────────────────────────────────────────────
 async function loadSidebar() {
   try {
@@ -616,7 +620,6 @@ async function loadSidebar() {
     if (!history) return
     history.innerHTML = ""
 
-    // Close any open menus on outside click
     document.addEventListener("click", () => {
       document.querySelectorAll(".chatContextMenu").forEach(m => m.remove())
     }, { once: false })
@@ -625,7 +628,6 @@ async function loadSidebar() {
       let div = document.createElement("div")
       div.className = "chatItem"
       div.style.cssText = "display:flex;align-items:center;padding:8px 10px;border-radius:10px;cursor:pointer;transition:background 0.15s;position:relative;"
-      // Clean title - remove system instruction prefixes
       let cleanTitle = chat.title || "New Chat"
       if (cleanTitle.startsWith("[STRICT") || cleanTitle.startsWith("[MOOD") || cleanTitle.startsWith("[RESPONSE")) {
         cleanTitle = "Chat " + new Date().toLocaleDateString()
@@ -653,7 +655,6 @@ async function loadSidebar() {
 
 function showChatMenu(e, chatId, chatTitle) {
   e.stopPropagation()
-  // Remove any existing menus
   document.querySelectorAll(".chatContextMenu").forEach(m => m.remove())
 
   const menu = document.createElement("div")
@@ -687,7 +688,6 @@ function showChatMenu(e, chatId, chatTitle) {
     menu.appendChild(btn)
   })
 
-  // Position menu near click
   const rect = e.target.getBoundingClientRect()
   menu.style.left = Math.min(rect.left, window.innerWidth - 200) + "px"
   menu.style.top = rect.bottom + 4 + "px"
@@ -707,7 +707,6 @@ async function renameChat(chatId, currentTitle) {
     })
     loadSidebar()
   } catch(e) {
-    // Fallback: rename locally
     loadSidebar()
   }
 }
@@ -750,10 +749,8 @@ async function openChat(chatId) {
   const messages = await res.json()
   messages.forEach(m => {
     if (m.role === "user") {
-      // Strip system instructions - only show actual user text
       let displayMsg = m.content || ""
       if (displayMsg.includes("[STRICT INSTRUCTION]") || displayMsg.includes("[MOOD INSTRUCTION") || displayMsg.includes("[RESPONSE LENGTH")) {
-        // Extract only the last non-instruction line (real user message)
         const lines = displayMsg.split("\n")
         for (let i = lines.length - 1; i >= 0; i--) {
           const line = lines[i].trim()
@@ -762,7 +759,6 @@ async function openChat(chatId) {
             break
           }
         }
-        // Also try splitting by double newline
         if (displayMsg.includes("[STRICT") || displayMsg.includes("[MOOD")) {
           const parts = m.content.split("\n\n")
           const lastPart = parts[parts.length - 1].trim()
@@ -809,7 +805,6 @@ async function deleteChat(e, id) {
 }
 
 function confirmDeleteChat(id) {
-  // Show confirm popup
   const existing = document.getElementById("deleteConfirmPopup")
   if (existing) existing.remove()
 
@@ -904,14 +899,13 @@ async function regenerateFrom(btn) {
   lucide.createIcons()
 }
 
-// ─── MIC BUTTON — directly listens into input box (like Claude) ───────────────
+// ─── MIC BUTTON — directly listens into input box ───────────────────────────────
 let inlineListening = false
 let inlineRecognition = null
 
 function startAssistant() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
   if (!SpeechRecognition) {
-    // Fallback to voice overlay if not supported
     openVoiceAssistant()
     return
   }
@@ -926,7 +920,6 @@ function startAssistant() {
 
   inlineListening = true
 
-  // Visual feedback on mic button
   if (micBtn) {
     micBtn.style.color = "#ff4444"
     micBtn.style.background = "rgba(255,60,60,0.1)"
@@ -934,7 +927,6 @@ function startAssistant() {
     micBtn.title = "Listening... (click to stop)"
   }
 
-  // Show listening indicator inside input
   if (input) {
     input.placeholder = "🎤 Listening..."
     input.style.borderColor = "rgba(255,60,60,0.3)"
@@ -958,7 +950,6 @@ function startAssistant() {
 
   inlineRecognition.onend = function() {
     stopInlineListening()
-    // Auto-send if there's text
     const text = document.getElementById("message")?.value.trim()
     if (text) {
       setTimeout(() => send(), 300)
@@ -1016,11 +1007,13 @@ function scrollBottom() {
   chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: "smooth" })
 }
 
-chatBox.addEventListener("scroll", () => {
-  const distFromBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight
-  userScrolledUp = distFromBottom > 100
-  if (scrollBtn) scrollBtn.style.display = userScrolledUp ? "block" : "none"
-})
+if (chatBox) {
+  chatBox.addEventListener("scroll", () => {
+    const distFromBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight
+    userScrolledUp = distFromBottom > 100
+    if (scrollBtn) scrollBtn.style.display = userScrolledUp ? "block" : "none"
+  })
+}
 
 if (scrollBtn) {
   scrollBtn.addEventListener("click", () => {
@@ -1063,19 +1056,15 @@ document.querySelectorAll(".suggestBtn").forEach(btn => {
 })
 
 // ─── ENTER KEY ────────────────────────────────────────────────────────────────
-document.getElementById("message").addEventListener("keydown", function (e) {
-  if (e.key === "Enter") {
-    e.preventDefault()
-    send()
-  }
-})
-
-// ─── SIDEBAR TOGGLE ───────────────────────────────────────────────────────────
-function toggleSidebar() {
-  const sidebar = document.querySelector(".sidebar")
-  sidebar.classList.toggle("show")
+const messageInput = document.getElementById("message")
+if (messageInput) {
+  messageInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      send()
+    }
+  })
 }
-window.toggleSidebar = toggleSidebar
 
 // ─── SAVE CHAT TITLE ─────────────────────────────────────────────────────────
 function saveChatTitle(title) {
@@ -1117,10 +1106,11 @@ function showSection(name) {
 }
 window.showSection = showSection
 
-// LOGOUT
+// LOGOUT (override if exists)
 function logout() {
   localStorage.removeItem("datta_token")
   localStorage.removeItem("datta_user")
+  localStorage.removeItem("datta_plan")
   window.location.href = "login.html"
 }
 window.logout = logout
@@ -1166,13 +1156,9 @@ function clearSettingsMsg() {
 }
 
 function loadSettingsUI() {
-  let user = {}
-  try {
-    const raw = localStorage.getItem("datta_user")
-    if (raw && raw !== "null") user = JSON.parse(raw)
-  } catch(e) {}
+  let user = getUser()
   const usernameInput = document.getElementById("newUsername")
-  if (usernameInput) usernameInput.placeholder = user.username || "Enter new username"
+  if (usernameInput) usernameInput.placeholder = user?.username || "Enter new username"
   const theme = localStorage.getItem("datta_theme") || "dark"
   setTheme(theme, true)
   const lang = localStorage.getItem("datta_language") || "English"
@@ -1195,11 +1181,11 @@ async function changeUsername() {
     const res = await fetch("https://datta-ai-server.onrender.com/auth/update-username", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: newUsername, token: datta_token })
+      body: JSON.stringify({ username: newUsername, token: getToken() })
     })
     const data = await res.json()
     if (!res.ok) return showSettingsMsg(data.error || "Failed to update", "error")
-    const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
+    const user = getUser()
     user.username = newUsername
     localStorage.setItem("datta_user", JSON.stringify(user))
     const nameEl = document.querySelector(".profileName")
@@ -1223,7 +1209,7 @@ async function changePassword() {
     const res = await fetch("https://datta-ai-server.onrender.com/auth/change-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentPassword: current, newPassword: newPass, token: datta_token })
+      body: JSON.stringify({ currentPassword: current, newPassword: newPass, token: getToken() })
     })
     const data = await res.json()
     if (!res.ok) return showSettingsMsg(data.error || "Failed to change password", "error")
@@ -1298,7 +1284,7 @@ async function deleteAccount() {
     const res = await fetch("https://datta-ai-server.onrender.com/auth/delete-account", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password, token: datta_token })
+      body: JSON.stringify({ password, token: getToken() })
     })
     const data = await res.json()
     if (!res.ok) return showSettingsMsg(data.error || "Failed to delete account", "error")
@@ -1536,7 +1522,6 @@ function speakText2(text) {
   utterance.pitch = 1.0
   utterance.volume = 1.0
   const voices = voiceSynth.getVoices()
-  // Find best voice for detected language
   const langCode = detectedLang2.split("-")[0]
   const preferred = voices.find(v => v.lang === detectedLang2 && !v.name.includes("Male"))
     || voices.find(v => v.lang.startsWith(langCode) && !v.name.includes("Male"))
@@ -1586,13 +1571,7 @@ async function loadUserVersion() {
     const tag = document.getElementById("versionTag")
     if (tag) tag.textContent = "DATTA AI " + v.version + " · " + v.name.toUpperCase()
     const sub = document.querySelector(".profileSub")
-    if (sub) sub.textContent = v.emoji + " " + v.name + " " + v.sanskrit
-    const upgradeBtn = document.querySelector(".upgradeBtn div div:first-child")
-    if (upgradeBtn && plan === "free") {
-      upgradeBtn.textContent = "Upgrade to Agni 🔥"
-    } else if (upgradeBtn) {
-      upgradeBtn.textContent = v.emoji + " " + v.name + " Plan"
-    }
+    if (sub && !getUser()?.isCreator) sub.textContent = v.emoji + " " + v.name + " " + v.sanskrit
     localStorage.setItem("datta_plan", plan)
   } catch(e) {
     console.log("Version load error:", e.message)
