@@ -405,7 +405,13 @@ async function send() {
   controller = new AbortController()
   const formData = new FormData()
   const moodPrefix = buildMoodPrefix()
-  const messageWithMood = moodPrefix ? moodPrefix + text : text
+  // Add project instructions if active project
+  let projectPrefix = ''
+  if (typeof getActiveProjectInstructions === 'function') {
+    const projInstr = getActiveProjectInstructions()
+    if (projInstr) projectPrefix = '[PROJECT CONTEXT: ' + projInstr + ']\n\n'
+  }
+  const messageWithMood = projectPrefix + (moodPrefix ? moodPrefix + text : text)
   formData.append("message", messageWithMood)
   formData.append("chatId", currentChatId || "")
   formData.append("token", getToken())
