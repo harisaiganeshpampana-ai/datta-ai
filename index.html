@@ -960,15 +960,22 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
     if (typeof showNewProjectModal === 'function') {
       showNewProjectModal()
     } else {
-      // Inline fallback modal
-      const name = prompt('Project name:')
-      if (!name) return
-      const projects = JSON.parse(localStorage.getItem('datta_projects_v2') || '[]')
-      projects.unshift({ id: Date.now(), name, instructions:'', color:'#ffd700', chats:[], pinnedChats:[], createdAt: new Date().toISOString() })
-      localStorage.setItem('datta_projects_v2', JSON.stringify(projects))
-      if (typeof loadProjectsSection === 'function') loadProjectsSection()
-      if (typeof showSection === 'function') showSection('projects')
-      alert('Project "' + name + '" created!')
+      // Simple fallback - show inline modal without alert
+      var existing = document.getElementById('simpleProjectModal')
+      if (existing) existing.remove()
+      var m = document.createElement('div')
+      m.id = 'simpleProjectModal'
+      m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;'
+      m.innerHTML = '<div style="background:#0f0e00;border:1px solid rgba(255,215,0,0.2);border-radius:20px;padding:24px;width:100%;max-width:380px;">' +
+        '<div style="font-family:Bebas Neue,sans-serif;font-size:20px;letter-spacing:3px;color:#ffd700;margin-bottom:14px;">📁 NEW PROJECT</div>' +
+        '<input id="spName" type="text" placeholder="Project name..." style="width:100%;padding:10px 14px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);border-radius:10px;color:#fff8e7;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:14px;">' +
+        '<div style="display:flex;gap:8px;">' +
+        '<button onclick="document.getElementById('simpleProjectModal').remove()" style="flex:1;padding:10px;background:none;border:1px solid rgba(255,215,0,0.1);border-radius:50px;color:#665500;cursor:pointer;font-family:Rajdhani,sans-serif;font-size:13px;">Cancel</button>' +
+        '<button onclick="var n=document.getElementById('spName').value.trim();if(!n)return;var ps=JSON.parse(localStorage.getItem('datta_projects_v2')||'[]');var p={id:Date.now(),name:n,instructions:'',color:'#ffd700',chats:[],pinnedChats:[],createdAt:new Date().toISOString()};ps.unshift(p);localStorage.setItem('datta_projects_v2',JSON.stringify(ps));document.getElementById('simpleProjectModal').remove();if(typeof loadProjectsSection==='function')loadProjectsSection();if(typeof showSection==='function')showSection('projects');if(typeof openProjectPanel==='function')openProjectPanel(p.id);" style="flex:2;padding:10px;background:linear-gradient(135deg,#ffd700,#ff8c00);border:none;border-radius:50px;color:#000;font-family:Rajdhani,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">CREATE</button>' +
+        '</div></div>'
+      document.body.appendChild(m)
+      m.onclick = function(e) { if(e.target===m) m.remove() }
+      setTimeout(function(){ document.getElementById('spName') && document.getElementById('spName').focus() }, 100)
     }
   }
   window.createNewProject = createNewProject
