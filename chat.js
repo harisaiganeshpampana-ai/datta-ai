@@ -39,75 +39,50 @@ function renderImageResponse(text) {
 
   const altText = imgMatch[1] || "Generated Image"
   const imgUrl = imgMatch[2]
-  const prompt = promptMatch ? promptMatch[1].trim() : altText
+  const prompt = (promptMatch ? promptMatch[1].trim() : altText).substring(0, 100)
   const uid = "ig" + Date.now()
+  const safePrompt = prompt.replace(/'/g, "").replace(/"/g, "")
 
-  return `<div class="dattaImgWrap" id="${uid}">
-  <div class="dattaImgLabel" id="${uid}lbl">
-    <span class="dattaImgIcon">🎨</span>
-    <span>Creating your image...</span>
+  // Build HTML - show image directly, no hidden display trick
+  return `<div class="dattaImgWrap" id="${uid}" style="max-width:400px;">
+  <div style="font-family:Rajdhani,sans-serif;font-size:11px;letter-spacing:1px;color:#cc88ff;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+    <span>🎨</span><span id="${uid}lbl">Creating image...</span>
   </div>
-  <div class="dattaImgBox">
-    <div class="dattaShimmer" id="${uid}shimmer">
-      <div class="shimmerOrb"></div>
-      <div class="shimmerText">Generating with AI...</div>
+  <div style="position:relative;border-radius:12px;overflow:hidden;background:#1a0a2a;min-height:200px;display:flex;align-items:center;justify-content:center;">
+    <div id="${uid}spin" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:2;">
+      <div style="width:40px;height:40px;border:3px solid rgba(200,100,255,0.2);border-top-color:#cc88ff;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+      <div style="font-size:12px;color:#cc88ff;font-family:Rajdhani,sans-serif;">Generating...</div>
     </div>
-    <img src="${imgUrl}" alt="${altText}" class="dattaImg" style="display:none;opacity:0;"
+    <img id="${uid}img" src="${imgUrl}" alt="${altText}"
+      style="width:100%;border-radius:12px;display:block;min-height:200px;object-fit:cover;"
       onload="
-        var w=document.getElementById('${uid}');
-        var s=document.getElementById('${uid}shimmer');
-        var l=document.getElementById('${uid}lbl');
-        var a=document.getElementById('${uid}actions');
-        if(s)s.style.display='none';
-        if(l)l.innerHTML='<span class=dattaImgIcon>✨</span><span>${prompt}</span>';
-        if(a)a.style.display='flex';
-        this.style.display='block';
-        setTimeout(function(){var img=document.querySelector('#${uid} .dattaImg');if(img)img.style.opacity='1';},10);
+        var spin=document.getElementById('${uid}spin');
+        var lbl=document.getElementById('${uid}lbl');
+        var act=document.getElementById('${uid}act');
+        if(spin)spin.style.display='none';
+        if(lbl)lbl.textContent='${safePrompt}';
+        if(act)act.style.display='flex';
+        this.style.minHeight='auto';
       "
       onerror="
-        var img=this;
-        var s=document.getElementById('${uid}shimmer');
-        var retries=parseInt(img.dataset.retries||0);
-        if(retries < 2){
-          img.dataset.retries=retries+1;
-          setTimeout(function(){
-            var seed=Math.floor(Math.random()*999999);
-            img.src=img.src.replace(/seed=\d+/,'seed='+seed);
-          }, 2000);
-          if(s)s.querySelector('.shimmerText').textContent='Retrying... ('+(retries+1)+'/2)';
+        var retries=parseInt(this.dataset.retries||0);
+        var spin=document.getElementById('${uid}spin');
+        if(retries<2){
+          this.dataset.retries=retries+1;
+          var seed=Math.floor(Math.random()*999999);
+          if(spin)spin.querySelector('div:last-child').textContent='Retrying '+(retries+1)+'/2...';
+          setTimeout(()=>{
+            this.src='https://image.pollinations.ai/prompt/'+encodeURIComponent('${safePrompt}')+'?width=1024&height=1024&nologo=true&seed='+seed;
+          },1500);
         } else {
-          if(s){
-          const img = s.querySelector("img")
-          const prompt2 = s.querySelector("img")?.alt || ""
-          const seed2 = Math.floor(Math.random()*999999)
-          const fallback = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt2) + "?width=512&height=512&seed=" + seed2
-          // Try fallback URL
-          if(img && img.dataset.retries < 2) {
-            img.dataset.retries = (parseInt(img.dataset.retries||0)+1).toString()
-            img.src = fallback
-          } else {
-            s.innerHTML='<div style="padding:32px;color:#888;text-align:center;font-size:13px">❌ Image service busy. Try again in a moment.</div>'
-          }
-        }
+          if(spin)spin.innerHTML='<div style=color:#ff4444;font-size:13px>❌ Failed. Try again.</div>';
         }
       "
     >
   </div>
-  <div class="dattaImgActions" id="${uid}actions" style="display:none;">
-    <button class="dattaImgBtn" onclick="downloadImage('${imgUrl}','${prompt}')">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Download
-    </button>
-    <button class="dattaImgBtn" onclick="regenerateImage('${prompt}',this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-      Regenerate
-    </button>
-    <button class="dattaImgBtn likeImgBtn" onclick="likeImage(this)" title="Like">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
-    </button>
-    <button class="dattaImgBtn dislikeImgBtn" onclick="dislikeImage(this)" title="Dislike">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
-    </button>
+  <div id="${uid}act" style="display:none;gap:8px;margin-top:10px;flex-wrap:wrap;">
+    <button onclick="regenerateImage('${safePrompt}',this)" style="padding:6px 14px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:20px;color:#cc9900;font-family:Rajdhani,sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;">🔄 Regenerate</button>
+    <button onclick="downloadImage('${imgUrl}','${safePrompt}')" style="padding:6px 14px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:20px;color:#cc9900;font-family:Rajdhani,sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;">⬇️ Download</button>
   </div>
 </div>`
 }
@@ -579,51 +554,49 @@ function detectTextLanguage(text) {
 
 // ── IMAGE GENERATION FALLBACK (Pollinations) ─────────────────────────────────
 async function generateWithPollinations(prompt, aiDiv) {
-  const HF_KEY = ["hf_vAmVot","CwGfjggq","ZsSLsqQN","uSJIQZcOSEvf"].join("")
-
-  // Show loading
-  if (aiDiv) {
-    aiDiv.innerHTML = "<div class='avatar'>🎨</div><div class='aiBubble' style='color:#cc88ff;display:flex;align-items:center;gap:8px;'><span>🎨</span><span>Generating image with AI...</span></div>"
-    const cb = document.getElementById("chat")
-    if (cb) cb.scrollTop = cb.scrollHeight
+  // Try server-side generation first (most reliable)
+  // Then fallback to direct Pollinations
+  
+  const showImg = (imgUrl) => {
+    const fakeResponse = "DATTA_IMAGE_START\n![" + prompt + "](" + imgUrl + ")\nPROMPT:" + prompt + "\nDATTA_IMAGE_END"
+    if (aiDiv) {
+      aiDiv.innerHTML = "<div class='avatar'>🎨</div><div class='aiContent'>" + renderImageResponse(fakeResponse) + "</div>"
+      const cb = document.getElementById("chat")
+      if (cb) cb.scrollTop = cb.scrollHeight
+    }
+    hideStopBtn()
+    loadSidebar()
   }
 
+  const showError = () => {
+    if (aiDiv) aiDiv.innerHTML = "<div class='avatar'>🎨</div><div class='aiBubble' style='color:#ff4444'>❌ Image generation failed. Please try again.</div>"
+    hideStopBtn()
+  }
+
+  // Method 1: Server-side HF generation (most reliable, no CORS)
   try {
-    const response = await fetch(
-      "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer " + HF_KEY,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ inputs: prompt })
-      }
-    )
-    if (!response.ok) throw new Error("Status " + response.status)
-    const blob = await response.blob()
-    const imgUrl = URL.createObjectURL(blob)
-    const fakeResponse = "DATTA_IMAGE_START\n![" + prompt + "](" + imgUrl + ")\nPROMPT:" + prompt + "\nDATTA_IMAGE_END"
-    if (aiDiv) {
-      aiDiv.innerHTML = "<div class='avatar'>🎨</div><div class='aiContent'>" + renderImageResponse(fakeResponse) + "</div>"
-      const cb = document.getElementById("chat")
-      if (cb) cb.scrollTop = cb.scrollHeight
+    const fd = new FormData()
+    fd.append("prompt", prompt)
+    fd.append("token", getToken())
+    const res = await Promise.race([
+      fetch("https://datta-ai-server.onrender.com/generate-image", { method:"POST", body:fd }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 30000))
+    ])
+    if (res.ok) {
+      const data = await res.json()
+      if (data.imageUrl) { showImg(data.imageUrl); return }
     }
-    hideStopBtn()
-    loadSidebar()
-  } catch(err) {
-    console.warn("HF failed, using Pollinations:", err.message)
-    const seed = Math.floor(Math.random() * 999999)
-    const imgUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
-    const fakeResponse = "DATTA_IMAGE_START\n![" + prompt + "](" + imgUrl + ")\nPROMPT:" + prompt + "\nDATTA_IMAGE_END"
-    if (aiDiv) {
-      aiDiv.innerHTML = "<div class='avatar'>🎨</div><div class='aiContent'>" + renderImageResponse(fakeResponse) + "</div>"
-      const cb = document.getElementById("chat")
-      if (cb) cb.scrollTop = cb.scrollHeight
-    }
-    hideStopBtn()
-    loadSidebar()
+  } catch(e) {
+    console.warn("Server image failed:", e.message)
   }
+
+  // Method 2: Pollinations direct (fast fallback)
+  const seed = Math.floor(Math.random() * 999999)
+  const urls = [
+    "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed,
+    "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=512&height=512&nologo=true&model=turbo&seed=" + seed,
+  ]
+  showImg(urls[0])
 }
 
 window.generateWithPollinations = generateWithPollinations
