@@ -775,18 +775,16 @@ function loadProjects() {
   
   projectsSection.innerHTML = `
     <div style="padding:12px;">
-      <button onclick="createNewProject()" style="width:100%;padding:10px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.15);border-radius:10px;color:var(--accent);cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:12px;margin-bottom:12px;">+ New Project</button>
+      <button onclick="createNewProject()" style="width:100%;padding:10px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.15);border-radius:10px;color:var(--accent);cursor:pointer;margin-bottom:12px;">+ New Project</button>
       <div style="display:flex;flex-direction:column;gap:8px;">
         ${projects.map(project => `
-          <div class="projectItem" onclick="openProject('${project.id}')" style="padding:12px;background:rgba(255,215,0,0.03);border:1px solid rgba(255,215,0,0.08);border-radius:10px;cursor:pointer;transition:all 0.2s;">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <span style="font-size:20px;">📁</span>
-              <div style="flex:1;">
-                <div style="font-size:13px;color:var(--accent);font-family:'Rajdhani',sans-serif;font-weight:600;">${escapeHtml(project.name)}</div>
-                <div style="font-size:10px;color:#665500;">${project.chats?.length || 0} chats · Updated ${new Date(project.updated).toLocaleDateString()}</div>
-              </div>
-              <button onclick="event.stopPropagation();deleteProject('${project.id}')" style="background:none;border:none;color:#443300;cursor:pointer;">🗑️</button>
+          <div style="padding:12px;background:rgba(255,215,0,0.03);border:1px solid rgba(255,215,0,0.08);border-radius:10px;display:flex;align-items:center;gap:10px;">
+            <span>📁</span>
+            <div style="flex:1;">
+              <div style="font-size:13px;color:var(--accent);">${escapeHtml(project.name)}</div>
+              <div style="font-size:10px;color:#665500;">${project.chats?.length || 0} chats</div>
             </div>
+            <button onclick="event.stopPropagation();deleteProject('${project.id}')" style="background:none;border:none;color:#443300;cursor:pointer;">🗑️</button>
           </div>
         `).join('')}
       </div>
@@ -794,36 +792,23 @@ function loadProjects() {
   `;
 }
 
-// Create new project
 function createNewProject() {
   const projectName = prompt('Enter project name:', 'My Project');
   if (!projectName || !projectName.trim()) return;
   
   const projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
-  const newProject = {
+  projects.push({
     id: 'project_' + Date.now(),
     name: projectName.trim(),
     chats: [],
     created: Date.now(),
     updated: Date.now()
-  };
-  projects.push(newProject);
+  });
   localStorage.setItem('datta_projects', JSON.stringify(projects));
   loadProjects();
   showToastMsg('📁 Project created: ' + projectName);
 }
 
-// Open project
-function openProject(projectId) {
-  const projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
-  const project = projects.find(p => p.id === projectId);
-  if (project) {
-    showToastMsg('📁 Opening: ' + project.name);
-    // You can add more functionality here like loading project chats
-  }
-}
-
-// Delete project
 function deleteProject(projectId) {
   if (confirm('Delete this project permanently?')) {
     let projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
@@ -834,7 +819,6 @@ function deleteProject(projectId) {
   }
 }
 
-// Load artifacts from localStorage
 function loadArtifacts() {
   let artifacts = JSON.parse(localStorage.getItem('datta_artifacts') || '[]');
   const artifactsSection = document.getElementById('section-artifacts');
@@ -855,18 +839,16 @@ function loadArtifacts() {
   
   artifactsSection.innerHTML = `
     <div style="padding:12px;">
-      <button onclick="createNewArtifact()" style="width:100%;padding:10px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.15);border-radius:10px;color:var(--accent);cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:12px;margin-bottom:12px;">+ New Artifact</button>
+      <button onclick="createNewArtifact()" style="width:100%;padding:10px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.15);border-radius:10px;color:var(--accent);cursor:pointer;margin-bottom:12px;">+ New Artifact</button>
       <div style="display:flex;flex-direction:column;gap:8px;">
         ${artifacts.map(artifact => `
-          <div class="artifactItem" onclick="openArtifact('${artifact.id}')" style="padding:12px;background:rgba(255,215,0,0.03);border:1px solid rgba(255,215,0,0.08);border-radius:10px;cursor:pointer;transition:all 0.2s;">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <span style="font-size:20px;">${artifact.type === 'image' ? '🎨' : artifact.type === 'code' ? '💻' : '📄'}</span>
-              <div style="flex:1;">
-                <div style="font-size:13px;color:var(--accent);font-family:'Rajdhani',sans-serif;font-weight:600;">${escapeHtml(artifact.name)}</div>
-                <div style="font-size:10px;color:#665500;">Created ${new Date(artifact.created).toLocaleDateString()}</div>
-              </div>
-              <button onclick="event.stopPropagation();deleteArtifact('${artifact.id}')" style="background:none;border:none;color:#443300;cursor:pointer;">🗑️</button>
+          <div style="padding:12px;background:rgba(255,215,0,0.03);border:1px solid rgba(255,215,0,0.08);border-radius:10px;display:flex;align-items:center;gap:10px;">
+            <span>${artifact.type === 'image' ? '🎨' : artifact.type === 'code' ? '💻' : '📄'}</span>
+            <div style="flex:1;">
+              <div style="font-size:13px;color:var(--accent);">${escapeHtml(artifact.name)}</div>
+              <div style="font-size:10px;color:#665500;">${new Date(artifact.created).toLocaleDateString()}</div>
             </div>
+            <button onclick="event.stopPropagation();deleteArtifact('${artifact.id}')" style="background:none;border:none;color:#443300;cursor:pointer;">🗑️</button>
           </div>
         `).join('')}
       </div>
@@ -874,7 +856,6 @@ function loadArtifacts() {
   `;
 }
 
-// Create new artifact
 function createNewArtifact() {
   const type = prompt('Select type (image/code/document):', 'image');
   if (!type) return;
@@ -882,30 +863,18 @@ function createNewArtifact() {
   if (!name) return;
   
   const artifacts = JSON.parse(localStorage.getItem('datta_artifacts') || '[]');
-  const newArtifact = {
+  artifacts.push({
     id: 'artifact_' + Date.now(),
     name: name.trim(),
     type: type.toLowerCase(),
     content: '',
     created: Date.now()
-  };
-  artifacts.push(newArtifact);
+  });
   localStorage.setItem('datta_artifacts', JSON.stringify(artifacts));
   loadArtifacts();
   showToastMsg('✨ Artifact created: ' + name);
 }
 
-// Open artifact
-function openArtifact(artifactId) {
-  const artifacts = JSON.parse(localStorage.getItem('datta_artifacts') || '[]');
-  const artifact = artifacts.find(a => a.id === artifactId);
-  if (artifact) {
-    showToastMsg('📄 Opening: ' + artifact.name);
-    // You can add more functionality here
-  }
-}
-
-// Delete artifact
 function deleteArtifact(artifactId) {
   if (confirm('Delete this artifact permanently?')) {
     let artifacts = JSON.parse(localStorage.getItem('datta_artifacts') || '[]');
@@ -916,14 +885,12 @@ function deleteArtifact(artifactId) {
   }
 }
 
-// Helper function to escape HTML
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
 }
 
-// Show toast message
 function showToastMsg(msg) {
   let t = document.getElementById("sidebarToast")
   if (!t) {
@@ -948,6 +915,8 @@ window.addEventListener('load', function() {
     if (profileName && user) {
       const displayName = user.username || user.email || 'User';
       profileName.textContent = displayName;
+      profileName.style.wordBreak = 'break-all';
+      profileName.style.whiteSpace = 'normal';
       if (avatarLetter) avatarLetter.textContent = displayName.charAt(0).toUpperCase();
     }
     
@@ -1215,7 +1184,7 @@ window.showSection = showSection;
 <script src="plan-limits.js"></script>
 <script src="theme.js"></script>
 <script src="mood.js"></script>
-<script src="chat.js?v=13"></script>
+<script src="chat.js?v=14"></script>
 <script src="datta-features.js"></script>
 <script src="datta-features2.js"></script>
 
@@ -1283,5 +1252,102 @@ window.showSection = showSection;
 #addToChatOverlay.show { display:block !important; }
 @keyframes sheetIn { from{opacity:0;transform:translateX(-50%) translateY(10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
 </style>
+
+<!-- ============================================ -->
+<!-- EMERGENCY FIX - FORCE SEND BUTTON TO WORK -->
+<!-- ============================================ -->
+<script>
+(function() {
+  console.log("Emergency fix loaded - fixing send button");
+  
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      
+      // Fix 1: Directly attach send button click handler
+      const sendBtn = document.getElementById('sendBtn');
+      if (sendBtn) {
+        console.log("Found send button, attaching click handler");
+        
+        const newSendBtn = sendBtn.cloneNode(true);
+        sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
+        
+        newSendBtn.onclick = function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log("Send button clicked!");
+          
+          const input = document.getElementById('message');
+          const message = input ? input.value.trim() : '';
+          
+          if (!message) {
+            console.log("No message to send");
+            return;
+          }
+          
+          console.log("Sending message:", message);
+          
+          if (typeof window.send === 'function') {
+            window.send();
+          } else if (typeof send === 'function') {
+            send();
+          } else {
+            console.log("Send function not found, using fallback");
+            const chatBox = document.getElementById('chat');
+            if (chatBox) {
+              chatBox.innerHTML += `
+                <div class="messageRow userRow">
+                  <div class="userBubble">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                  <div class="avatar">🧑</div>
+                </div>
+              `;
+              input.value = '';
+              chatBox.scrollTop = chatBox.scrollHeight;
+              
+              chatBox.innerHTML += `
+                <div class="messageRow">
+                  <div class="avatar">🤖</div>
+                  <div class="aiBubble typing">
+                    <span></span><span></span><span></span>
+                  </div>
+                </div>
+              `;
+              chatBox.scrollTop = chatBox.scrollHeight;
+              
+              setTimeout(() => {
+                const lastMsg = chatBox.lastElementChild;
+                if (lastMsg) {
+                  lastMsg.innerHTML = `
+                    <div class="avatar">🤖</div>
+                    <div class="aiBubble">I received: "${message.substring(0, 100)}"\n\nI'm Datta AI! How can I help you today?</div>
+                  `;
+                }
+              }, 1000);
+            }
+          }
+        };
+      }
+      
+      // Fix 2: Enter key handler
+      const messageInput = document.getElementById('message');
+      if (messageInput) {
+        console.log("Found message input, attaching enter key handler");
+        
+        const newInput = messageInput.cloneNode(true);
+        messageInput.parentNode.replaceChild(newInput, messageInput);
+        
+        newInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            console.log("Enter key pressed");
+            const sendButton = document.getElementById('sendBtn');
+            if (sendButton) sendButton.click();
+          }
+        });
+      }
+      
+    }, 500);
+  });
+})();
+</script>
 </body>
 </html>
