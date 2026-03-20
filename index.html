@@ -945,15 +945,38 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
     if (typeof newChat === 'function') newChat()
     else window.location.reload()
   }
-  // createNewProject - works even if projects.js not loaded yet
   function createNewProject() {
     if (typeof showNewProjectModal === "function") {
       showNewProjectModal()
-    } else {
-      showSimpleProjectModal()
+      return
     }
+    // Inline modal - no external dependency
+    var d = document.createElement("div")
+    d.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;"
+    var b = document.createElement("div")
+    b.style.cssText = "background:#0f0e00;border:1px solid rgba(255,215,0,0.2);border-radius:20px;padding:24px;width:100%;max-width:380px;"
+    b.innerHTML = "<div style='font-family:Bebas Neue,sans-serif;font-size:20px;letter-spacing:3px;color:#ffd700;margin-bottom:14px;'>NEW PROJECT</div><input id='pni' type='text' placeholder='Project name...' style='width:100%;padding:10px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);border-radius:10px;color:#fff8e7;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:14px;'><div style='display:flex;gap:8px;'><button id='pnc' style='flex:1;padding:10px;background:none;border:1px solid rgba(255,215,0,0.1);border-radius:50px;color:#665500;cursor:pointer;font-size:13px;'>Cancel</button><button id='pns' style='flex:2;padding:10px;background:linear-gradient(135deg,#ffd700,#ff8c00);border:none;border-radius:50px;color:#000;font-weight:700;cursor:pointer;font-size:13px;'>CREATE</button></div>"
+    d.appendChild(b)
+    document.body.appendChild(d)
+    setTimeout(function() { var i = document.getElementById("pni"); if(i) i.focus() }, 100)
+    document.getElementById("pnc").onclick = function() { d.remove() }
+    document.getElementById("pns").onclick = function() {
+      var name = (document.getElementById("pni") || {}).value || ""
+      name = name.trim()
+      if (!name) return
+      try {
+        var ps = JSON.parse(localStorage.getItem("datta_projects_v2") || "[]")
+        var p = { id: Date.now(), name: name, instructions: "", color: "#ffd700", chats: [], createdAt: new Date().toISOString() }
+        ps.unshift(p)
+        localStorage.setItem("datta_projects_v2", JSON.stringify(ps))
+      } catch(e) {}
+      d.remove()
+      if (typeof showSection === "function") showSection("projects")
+      if (typeof renderProjectsList === "function") renderProjectsList()
+      if (typeof loadProjectsSection === "function") loadProjectsSection()
+    }
+    d.onclick = function(e) { if (e.target === d) d.remove() }
   }
-
   window.createNewProject = createNewProject
 
   function _oldCreateNewProject() {
