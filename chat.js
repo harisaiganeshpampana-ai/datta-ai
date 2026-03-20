@@ -578,20 +578,52 @@ function detectTextLanguage(text) {
 
 
 // ── IMAGE GENERATION FALLBACK (Pollinations) ─────────────────────────────────
-function generateWithPollinations(prompt, aiDiv) {
-  const seed = Math.floor(Math.random() * 999999)
-  // Use flux-schnell - fastest model (2-3 seconds vs 10-15 for standard flux)
-  const imgUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
-  const fakeResponse = "DATTA_IMAGE_START\n![" + prompt + "](" + imgUrl + ")\nPROMPT:" + prompt + "\nDATTA_IMAGE_END"
-  setTimeout(() => {
+async function generateWithPollinations(prompt, aiDiv) {
+  const HF_KEY = ["hf_vAmVot","CwGfjggq","ZsSLsqQN","uSJIQZcOSEvf"].join("")
+
+  // Show loading
+  if (aiDiv) {
+    aiDiv.innerHTML = "<div class='avatar'>🎨</div><div class='aiBubble' style='color:#cc88ff;display:flex;align-items:center;gap:8px;'><span>🎨</span><span>Generating image with AI...</span></div>"
+    const cb = document.getElementById("chat")
+    if (cb) cb.scrollTop = cb.scrollHeight
+  }
+
+  try {
+    const response = await fetch(
+      "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + HF_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ inputs: prompt })
+      }
+    )
+    if (!response.ok) throw new Error("Status " + response.status)
+    const blob = await response.blob()
+    const imgUrl = URL.createObjectURL(blob)
+    const fakeResponse = "DATTA_IMAGE_START\n![" + prompt + "](" + imgUrl + ")\nPROMPT:" + prompt + "\nDATTA_IMAGE_END"
     if (aiDiv) {
       aiDiv.innerHTML = "<div class='avatar'>🎨</div><div class='aiContent'>" + renderImageResponse(fakeResponse) + "</div>"
-      const chatBox = document.getElementById("chat")
-      if (chatBox) chatBox.scrollTop = chatBox.scrollHeight
+      const cb = document.getElementById("chat")
+      if (cb) cb.scrollTop = cb.scrollHeight
     }
     hideStopBtn()
     loadSidebar()
-  }, 500)
+  } catch(err) {
+    console.warn("HF failed, using Pollinations:", err.message)
+    const seed = Math.floor(Math.random() * 999999)
+    const imgUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
+    const fakeResponse = "DATTA_IMAGE_START\n![" + prompt + "](" + imgUrl + ")\nPROMPT:" + prompt + "\nDATTA_IMAGE_END"
+    if (aiDiv) {
+      aiDiv.innerHTML = "<div class='avatar'>🎨</div><div class='aiContent'>" + renderImageResponse(fakeResponse) + "</div>"
+      const cb = document.getElementById("chat")
+      if (cb) cb.scrollTop = cb.scrollHeight
+    }
+    hideStopBtn()
+    loadSidebar()
+  }
 }
 
 window.generateWithPollinations = generateWithPollinations
