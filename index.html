@@ -945,39 +945,103 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
     if (typeof newChat === 'function') newChat()
     else window.location.reload()
   }
-  function createNewProject() {
-    if (typeof showNewProjectModal === "function") {
-      showNewProjectModal()
-      return
-    }
-    // Inline modal - no external dependency
-    var d = document.createElement("div")
-    d.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;"
-    var b = document.createElement("div")
-    b.style.cssText = "background:#0f0e00;border:1px solid rgba(255,215,0,0.2);border-radius:20px;padding:24px;width:100%;max-width:380px;"
-    b.innerHTML = "<div style='font-family:Bebas Neue,sans-serif;font-size:20px;letter-spacing:3px;color:#ffd700;margin-bottom:14px;'>NEW PROJECT</div><input id='pni' type='text' placeholder='Project name...' style='width:100%;padding:10px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);border-radius:10px;color:#fff8e7;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:14px;'><div style='display:flex;gap:8px;'><button id='pnc' style='flex:1;padding:10px;background:none;border:1px solid rgba(255,215,0,0.1);border-radius:50px;color:#665500;cursor:pointer;font-size:13px;'>Cancel</button><button id='pns' style='flex:2;padding:10px;background:linear-gradient(135deg,#ffd700,#ff8c00);border:none;border-radius:50px;color:#000;font-weight:700;cursor:pointer;font-size:13px;'>CREATE</button></div>"
-    d.appendChild(b)
-    document.body.appendChild(d)
-    setTimeout(function() { var i = document.getElementById("pni"); if(i) i.focus() }, 100)
-    document.getElementById("pnc").onclick = function() { d.remove() }
-    document.getElementById("pns").onclick = function() {
-      var name = (document.getElementById("pni") || {}).value || ""
-      name = name.trim()
-      if (!name) return
-      try {
-        var ps = JSON.parse(localStorage.getItem("datta_projects_v2") || "[]")
-        var p = { id: Date.now(), name: name, instructions: "", color: "#ffd700", chats: [], createdAt: new Date().toISOString() }
-        ps.unshift(p)
-        localStorage.setItem("datta_projects_v2", JSON.stringify(ps))
-      } catch(e) {}
-      d.remove()
-      if (typeof showSection === "function") showSection("projects")
-      if (typeof renderProjectsList === "function") renderProjectsList()
-      if (typeof loadProjectsSection === "function") loadProjectsSection()
-    }
-    d.onclick = function(e) { if (e.target === d) d.remove() }
+  function doCreateProject() {
+    var name = document.getElementById("pni") ? document.getElementById("pni").value.trim() : "";
+    if (!name) return;
+    var ps = [];
+    try { ps = JSON.parse(localStorage.getItem("datta_projects_v2") || "[]"); } catch(e) {}
+    ps.unshift({ id: Date.now(), name: name, instructions: "", color: "#ffd700", chats: [], createdAt: new Date().toISOString() });
+    localStorage.setItem("datta_projects_v2", JSON.stringify(ps));
+    var modal = document.getElementById("newProjModal");
+    if (modal) modal.remove();
+    if (typeof showSection === "function") showSection("projects");
+    if (typeof loadProjectsSection === "function") loadProjectsSection();
   }
-  window.createNewProject = createNewProject
+  function closeNewProjModal() {
+    var modal = document.getElementById("newProjModal");
+    if (modal) modal.remove();
+  }
+  function createNewProject() {
+    if (typeof showNewProjectModal === "function") { showNewProjectModal(); return; }
+    closeNewProjModal();
+    var modal = document.createElement("div");
+    modal.id = "newProjModal";
+    modal.style.position = "fixed";
+    modal.style.inset = "0";
+    modal.style.background = "rgba(0,0,0,0.85)";
+    modal.style.zIndex = "99999";
+    modal.style.display = "flex";
+    modal.style.alignItems = "center";
+    modal.style.justifyContent = "center";
+    modal.style.padding = "16px";
+    var box = document.createElement("div");
+    box.style.background = "#0f0e00";
+    box.style.border = "1px solid rgba(255,215,0,0.2)";
+    box.style.borderRadius = "20px";
+    box.style.padding = "24px";
+    box.style.width = "100%";
+    box.style.maxWidth = "380px";
+    var title = document.createElement("div");
+    title.style.fontFamily = "Bebas Neue, sans-serif";
+    title.style.fontSize = "20px";
+    title.style.letterSpacing = "3px";
+    title.style.color = "#ffd700";
+    title.style.marginBottom = "14px";
+    title.textContent = "NEW PROJECT";
+    var inp = document.createElement("input");
+    inp.id = "pni";
+    inp.type = "text";
+    inp.placeholder = "Project name...";
+    inp.style.width = "100%";
+    inp.style.padding = "10px";
+    inp.style.background = "rgba(255,215,0,0.05)";
+    inp.style.border = "1px solid rgba(255,215,0,0.15)";
+    inp.style.borderRadius = "10px";
+    inp.style.color = "#fff8e7";
+    inp.style.fontSize = "13px";
+    inp.style.outline = "none";
+    inp.style.boxSizing = "border-box";
+    inp.style.marginBottom = "14px";
+    inp.onkeydown = function(e) { if (e.key === "Enter") doCreateProject(); };
+    var btns = document.createElement("div");
+    btns.style.display = "flex";
+    btns.style.gap = "8px";
+    var cancelBtn = document.createElement("button");
+    cancelBtn.textContent = "Cancel";
+    cancelBtn.style.flex = "1";
+    cancelBtn.style.padding = "10px";
+    cancelBtn.style.background = "none";
+    cancelBtn.style.border = "1px solid rgba(255,215,0,0.1)";
+    cancelBtn.style.borderRadius = "50px";
+    cancelBtn.style.color = "#665500";
+    cancelBtn.style.cursor = "pointer";
+    cancelBtn.style.fontSize = "13px";
+    cancelBtn.onclick = closeNewProjModal;
+    var createBtn = document.createElement("button");
+    createBtn.textContent = "CREATE";
+    createBtn.style.flex = "2";
+    createBtn.style.padding = "10px";
+    createBtn.style.background = "linear-gradient(135deg,#ffd700,#ff8c00)";
+    createBtn.style.border = "none";
+    createBtn.style.borderRadius = "50px";
+    createBtn.style.color = "#000";
+    createBtn.style.fontWeight = "700";
+    createBtn.style.cursor = "pointer";
+    createBtn.style.fontSize = "13px";
+    createBtn.onclick = doCreateProject;
+    btns.appendChild(cancelBtn);
+    btns.appendChild(createBtn);
+    box.appendChild(title);
+    box.appendChild(inp);
+    box.appendChild(btns);
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+    modal.onclick = function(e) { if (e.target === modal) closeNewProjModal(); };
+    setTimeout(function() { inp.focus(); }, 100);
+  }
+  window.createNewProject = createNewProject;
+  window.doCreateProject = doCreateProject;
+  window.closeNewProjModal = closeNewProjModal;
 
   function _oldCreateNewProject() {
     const name = prompt('Project name:')
