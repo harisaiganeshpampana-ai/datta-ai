@@ -2,6 +2,94 @@
 
 const PROJECTS_KEY = 'datta_projects_v2'
 
+const SERVER = "https://datta-ai-server.onrender.com"
+
+// ── SERVER SYNC ───────────────────────────────────────────────────────────────
+async function syncProjectsFromServer() {
+  try {
+    const token = typeof getToken === 'function' ? getToken() : localStorage.getItem('datta_token')
+    if (!token) return
+    const res = await fetch(SERVER + "/projects?token=" + token)
+    if (!res.ok) return
+    const serverProjects = await res.json()
+    // Merge server projects with local
+    const local = getProjects()
+    const merged = serverProjects.map(sp => {
+      const local_p = local.find(lp => lp.serverId === sp._id)
+      return {
+        id: local_p?.id || Date.now() + Math.random(),
+        serverId: sp._id,
+        name: sp.name,
+        instructions: sp.instructions,
+        color: sp.color,
+        chats: sp.chats || [],
+        pinnedChats: sp.pinnedChats || [],
+        createdAt: sp.createdAt
+      }
+    })
+    // Keep local-only projects too
+    const serverIds = merged.map(p => p.serverId)
+    const localOnly = local.filter(lp => !lp.serverId)
+    saveProjects([...merged, ...localOnly])
+    loadProjectsSection()
+  } catch(e) { console.warn("Project sync failed:", e.message) }
+}
+
+async function saveProjectToServer(project) {
+  try {
+    const token = typeof getToken === 'function' ? getToken() : localStorage.getItem('datta_token')
+    if (!token) return null
+    if (project.serverId) {
+      // Update existing
+      const res = await fetch(SERVER + "/projects/" + project.serverId, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, name: project.name, instructions: project.instructions, color: project.color, chats: project.chats, pinnedChats: project.pinnedChats })
+      })
+      return await res.json()
+    } else {
+      // Create new
+      const res = await fetch(SERVER + "/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, name: project.name, instructions: project.instructions, color: project.color })
+      })
+      const data = await res.json()
+      if (data._id) {
+        // Save serverId back to local
+        const projects = getProjects()
+        const p = projects.find(p => p.id == project.id)
+        if (p) { p.serverId = data._id; saveProjects(projects) }
+      }
+      return data
+    }
+  } catch(e) { console.warn("Save to server failed:", e.message); return null }
+}
+
+async function deleteProjectFromServer(serverId) {
+  try {
+    const token = typeof getToken === 'function' ? getToken() : localStorage.getItem('datta_token')
+    if (!token || !serverId) return
+    await fetch(SERVER + "/projects/" + serverId + "?token=" + token, { method: "DELETE" })
+  } catch(e) {}
+}
+
+async function syncChatToServer(projectId, chatId, chatTitle) {
+  try {
+    const project = getProject(projectId)
+    if (!project?.serverId) return
+    const token = typeof getToken === 'function' ? getToken() : localStorage.getItem('datta_token')
+    if (!token) return
+    await fetch(SERVER + "/projects/" + project.serverId + "/add-chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, chatId, chatTitle })
+    })
+  } catch(e) {}
+}
+
+
+
 function getProjects() {
   try { return JSON.parse(localStorage.getItem(PROJECTS_KEY) || '[]') }
   catch { return [] }
@@ -29,11 +117,15 @@ function createProject(name, instructions) {
   }
   projects.unshift(project)
   saveProjects(projects)
+  // Sync to server
+  saveProjectToServer(project)
   return project
 }
 
 // ── DELETE PROJECT ────────────────────────────────────────────────────────────
 function deleteProject(id) {
+  const project = getProject(id)
+  if (project?.serverId) deleteProjectFromServer(project.serverId)
   const projects = getProjects().filter(p => p.id != id)
   saveProjects(projects)
   loadProjectsSection()
@@ -51,7 +143,7 @@ function renameProject(id, newName) {
 function updateProjectInstructions(id, instructions) {
   const projects = getProjects()
   const p = projects.find(p => p.id == id)
-  if (p) { p.instructions = instructions; saveProjects(projects) }
+  if (p) { p.instructions = instructions; saveProjects(projects); saveProjectToServer(p) }
 }
 
 // ── ADD CHAT TO PROJECT ───────────────────────────────────────────────────────
@@ -62,6 +154,7 @@ function addChatToProject(projectId, chatId, chatTitle) {
   if (!p.chats.find(c => c.id === chatId)) {
     p.chats.unshift({ id: chatId, title: chatTitle, addedAt: new Date().toISOString() })
     saveProjects(projects)
+    syncChatToServer(projectId, chatId, chatTitle)
   }
 }
 
@@ -378,8 +471,13 @@ window.showAddChatToProjectPanel = showAddChatToProjectPanel
 window.loadProjectsSection = loadProjectsSection
 window.getActiveProjectInstructions = getActiveProjectInstructions
 window.showProjectToast = showProjectToast
+window.syncProjectsFromServer = syncProjectsFromServer
+window.saveProjectToServer = saveProjectToServer
 
-// Auto load on page
+// Auto load and sync on page
 document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(loadProjectsSection, 500)
+  setTimeout(() => {
+    syncProjectsFromServer()
+    loadProjectsSection()
+  }, 1000)
 })
