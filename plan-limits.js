@@ -14,8 +14,8 @@ function isCreator() {
 
 // ── PLAN DEFINITIONS ─────────────────────────────
 const PLANS = {
-  free:    { msgs:50, cooldown:60, imgs:3,   mood:false, voice:false, memory:false, upload:false, translate:false, analytics:false, briefing:false, xp:false },
-  arambh:  { msgs:50, cooldown:60, imgs:3,   mood:false, voice:false, memory:false, upload:false, translate:false, analytics:false, briefing:false, xp:false },
+  free:    { msgs:50, cooldown:60, imgs:3,   mood:false, voice:true,  memory:false, upload:true,  translate:false, analytics:false, briefing:false, xp:false },
+  arambh:  { msgs:50, cooldown:60, imgs:3,   mood:false, voice:true,  memory:false, upload:true,  translate:false, analytics:false, briefing:false, xp:false },
   shakti:  { msgs:150,cooldown:45, imgs:10,  mood:true,  voice:true,  memory:true,  upload:false, translate:true,  analytics:true,  briefing:true,  xp:true  },
   agni:    { msgs:500,cooldown:30, imgs:20,  mood:true,  voice:true,  memory:true,  upload:true,  translate:true,  analytics:true,  briefing:true,  xp:true  },
   brahma:  { msgs:1000,cooldown:15,imgs:100, mood:true,  voice:true,  memory:true,  upload:true,  translate:true,  analytics:true,  briefing:true,  xp:true  },
