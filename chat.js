@@ -800,7 +800,7 @@ async function openChat(chatId) {
       }
       chatBox.innerHTML += `
         <div class="messageRow userRow">
-          <div class="userBubble">${displayMsg}</div>
+          <div class="userBubble" style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:500;letter-spacing:0.3px;">${displayMsg}</div>
           <div class="avatar">🧑</div>
         </div>
       `
@@ -809,7 +809,7 @@ async function openChat(chatId) {
         <div class="messageRow">
           <div class="avatar">🤖</div>
           <div class="aiContent">
-            <div class="aiBubble">${marked.parse(m.content)}</div>
+            <div class="aiBubble" style="font-family:'Nunito',sans-serif;font-size:14px;letter-spacing:0.2px;">${marked.parse(m.content)}</div>
             <div class="aiActions">
               <button class="actionBtn" title="Copy" onclick="copyText(this)"><i data-lucide="copy"></i></button>
               <button class="actionBtn" title="Speak" onclick="speakText(this)"><i data-lucide="volume-2"></i></button>
