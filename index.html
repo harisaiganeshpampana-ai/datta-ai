@@ -231,7 +231,7 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
 <div class="sidebar" id="sidebar">
   <div style="padding:16px 14px 8px; display:flex; justify-content:space-between; align-items:center;">
     <div style="font-family:'Bebas Neue';font-size:20px;">👑 DATTA AI</div>
-    <button onclick="createNewChat()" id="newChatBtn" style="padding:6px 12px; background:rgba(255,215,0,0.1); border:1px solid rgba(255,215,0,0.2); border-radius:8px; color:#ffd700; cursor:pointer;">+ New Chat</button>
+    <button id="newChatBtn" onclick="handleNewChatClick()" style="padding:6px 12px; background:rgba(255,215,0,0.1); border:1px solid rgba(255,215,0,0.2); border-radius:8px; color:#ffd700; cursor:pointer;">+ New Chat</button>
   </div>
 
   <div style="padding:0 12px 8px;">
@@ -251,7 +251,7 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
   <!-- Project Header (shows when a project is open) -->
   <div id="projectHeader" style="display:none;" class="project-header">
     <span class="project-header-title" id="projectHeaderTitle">📁 Project</span>
-    <button class="project-header-close" onclick="closeProject()">✕ Close</button>
+    <button class="project-header-close" onclick="closeProject()">✕ Close Project</button>
   </div>
 
   <div id="section-chats" class="sidebarSection" style="flex:1; overflow-y:auto;">
@@ -325,8 +325,27 @@ window.dattaUser = getUser();
 let currentProject = null;      // ID of currently open project
 let currentChat = null;         // Current chat object
 let allChats = [];              // Standalone chats (not in projects)
-let projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
-let projectPasswords = JSON.parse(localStorage.getItem('datta_project_passwords') || '{}');
+let projects = [];
+let projectPasswords = {};
+
+// ============================================
+// LOAD DATA FROM STORAGE
+// ============================================
+function loadAllData() {
+  projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
+  projectPasswords = JSON.parse(localStorage.getItem('datta_project_passwords') || '{}');
+  allChats = JSON.parse(localStorage.getItem('datta_standalone_chats') || '[]');
+  console.log("Data loaded - Projects:", projects.length, "Standalone chats:", allChats.length);
+}
+
+function saveProjects() {
+  localStorage.setItem('datta_projects', JSON.stringify(projects));
+  console.log("Projects saved:", projects.length);
+}
+
+function saveStandaloneChats() {
+  localStorage.setItem('datta_standalone_chats', JSON.stringify(allChats));
+}
 
 // ============================================
 // UTILITY FUNCTIONS
@@ -365,7 +384,6 @@ function showSection(section) {
   document.getElementById("section-artifacts").style.display = section === "artifacts" ? "block" : "none";
   document.querySelectorAll(".navItem").forEach((btn, i) => btn.classList.toggle("active", i === ["chats","projects","artifacts"].indexOf(section)));
   
-  // Refresh the view
   if (section === "chats") {
     loadChatsList();
   }
@@ -384,72 +402,97 @@ function togglePlusMenu() {
 }
 
 // ============================================
-// CHAT FUNCTIONS
+// NEW CHAT HANDLER - CRITICAL FIX
 // ============================================
-function createNewChat() {
+function handleNewChatClick() {
   if (currentProject) {
-    // Create chat inside current project
-    const newChatObj = {
-      id: 'chat_' + Date.now(),
-      title: 'New Chat',
-      messages: [],
-      created: Date.now()
-    };
-    
-    const project = projects.find(p => p.id === currentProject);
-    if (project) {
-      project.chats = project.chats || [];
-      project.chats.unshift(newChatObj);
-      localStorage.setItem('datta_projects', JSON.stringify(projects));
-      currentChat = newChatObj;
-      
-      // Clear chat area and show welcome
-      document.getElementById("chat").innerHTML = "";
-      document.getElementById("welcomeScreen").style.display = "flex";
-      
-      // Update the welcome title to show project name
-      const welcomeTitle = document.querySelector("#welcomeScreen .welcomeTitle");
-      if (welcomeTitle) welcomeTitle.innerHTML = `📁 ${escapeHtml(project.name)}`;
-      
-      loadChatsList(); // Refresh sidebar
-      showToast(`✨ New chat created in "${project.name}"`);
-    }
+    // We are INSIDE a project - Create new chat INSIDE this project
+    createNewChatInProject();
   } else {
-    // Create standalone chat
-    const newChatObj = {
-      id: 'chat_' + Date.now(),
-      title: 'New Chat',
-      messages: [],
-      created: Date.now(),
-      standalone: true
-    };
-    allChats.unshift(newChatObj);
-    localStorage.setItem('datta_standalone_chats', JSON.stringify(allChats));
-    currentChat = newChatObj;
-    
-    document.getElementById("chat").innerHTML = "";
-    document.getElementById("welcomeScreen").style.display = "flex";
-    const welcomeTitle = document.querySelector("#welcomeScreen .welcomeTitle");
-    if (welcomeTitle) welcomeTitle.innerHTML = "How can I help you today?";
-    
-    loadChatsList();
-    showToast("✨ New chat created");
+    // We are in NORMAL mode - Create standalone chat
+    createStandaloneChat();
   }
 }
 
+function createNewChatInProject() {
+  const project = projects.find(p => p.id === currentProject);
+  if (!project) {
+    showToast("Project not found");
+    return;
+  }
+  
+  const newChat = {
+    id: 'chat_' + Date.now(),
+    title: 'New Chat',
+    messages: [],
+    created: Date.now()
+  };
+  
+  project.chats = project.chats || [];
+  project.chats.unshift(newChat);
+  saveProjects();
+  
+  currentChat = newChat;
+  
+  // Clear chat area and show welcome with project name
+  document.getElementById("chat").innerHTML = "";
+  document.getElementById("welcomeScreen").style.display = "flex";
+  
+  const welcomeTitle = document.querySelector("#welcomeScreen .welcomeTitle");
+  if (welcomeTitle) welcomeTitle.innerHTML = `📁 ${escapeHtml(project.name)}`;
+  
+  const welcomeSub = document.querySelector("#welcomeScreen .welcomeSub");
+  if (welcomeSub) welcomeSub.innerHTML = "Chats in this project will appear here";
+  
+  loadChatsList();
+  showToast(`✨ New chat created in "${project.name}"`);
+}
+
+function createStandaloneChat() {
+  const newChat = {
+    id: 'chat_' + Date.now(),
+    title: 'New Chat',
+    messages: [],
+    created: Date.now(),
+    standalone: true
+  };
+  
+  allChats.unshift(newChat);
+  saveStandaloneChats();
+  
+  currentChat = newChat;
+  
+  document.getElementById("chat").innerHTML = "";
+  document.getElementById("welcomeScreen").style.display = "flex";
+  
+  const welcomeTitle = document.querySelector("#welcomeScreen .welcomeTitle");
+  if (welcomeTitle) welcomeTitle.innerHTML = "How can I help you today?";
+  
+  const welcomeSub = document.querySelector("#welcomeScreen .welcomeSub");
+  if (welcomeSub) welcomeSub.innerHTML = "Think Less. Do More.";
+  
+  loadChatsList();
+  showToast("✨ New chat created");
+}
+
+// ============================================
+// CHAT FUNCTIONS
+// ============================================
 function openChat(chat) {
   currentChat = chat;
   const chatBox = document.getElementById("chat");
   chatBox.innerHTML = "";
   document.getElementById("welcomeScreen").style.display = "none";
   
-  chat.messages.forEach(msg => {
-    if (msg.role === 'user') {
-      chatBox.innerHTML += `<div class="messageRow userRow"><div class="userBubble">${escapeHtml(msg.content)}</div><div class="avatar">🧑</div></div>`;
-    } else {
-      chatBox.innerHTML += `<div class="messageRow"><div class="avatar">🤖</div><div class="aiBubble">${marked.parse(msg.content)}</div></div>`;
-    }
-  });
+  if (chat.messages && chat.messages.length > 0) {
+    chat.messages.forEach(msg => {
+      if (msg.role === 'user') {
+        chatBox.innerHTML += `<div class="messageRow userRow"><div class="userBubble">${escapeHtml(msg.content)}</div><div class="avatar">🧑</div></div>`;
+      } else {
+        chatBox.innerHTML += `<div class="messageRow"><div class="avatar">🤖</div><div class="aiBubble">${marked.parse(msg.content)}</div></div>`;
+      }
+    });
+  }
   scrollToBottom();
 }
 
@@ -465,7 +508,7 @@ function loadChatsList() {
     if (!project) return;
     
     if (!project.chats || project.chats.length === 0) {
-      historyContainer.innerHTML = `<div class="emptySection">💬 No chats in this project<br><button onclick="createNewChat()" style="margin-top:10px;padding:8px 16px;background:#ffd70020;border:1px solid #ffd70040;border-radius:10px;color:#ffd700;cursor:pointer;">+ New Chat</button></div>`;
+      historyContainer.innerHTML = `<div class="emptySection">💬 No chats in this project<br><button onclick="createNewChatInProject()" style="margin-top:10px;padding:8px 16px;background:#ffd70020;border:1px solid #ffd70040;border-radius:10px;color:#ffd700;cursor:pointer;">+ New Chat in Project</button></div>`;
       return;
     }
     
@@ -481,10 +524,8 @@ function loadChatsList() {
     });
   } else {
     // Show standalone chats
-    allChats = JSON.parse(localStorage.getItem('datta_standalone_chats') || '[]');
-    
     if (allChats.length === 0) {
-      historyContainer.innerHTML = `<div class="emptySection">💬 No chats yet<br><button onclick="createNewChat()" style="margin-top:10px;padding:8px 16px;background:#ffd70020;border:1px solid #ffd70040;border-radius:10px;color:#ffd700;cursor:pointer;">+ New Chat</button></div>`;
+      historyContainer.innerHTML = `<div class="emptySection">💬 No chats yet<br><button onclick="createStandaloneChat()" style="margin-top:10px;padding:8px 16px;background:#ffd70020;border:1px solid #ffd70040;border-radius:10px;color:#ffd700;cursor:pointer;">+ New Chat</button></div>`;
       return;
     }
     
@@ -508,7 +549,7 @@ function deleteChat(chatId) {
     const project = projects.find(p => p.id === currentProject);
     if (project) {
       project.chats = project.chats.filter(c => c.id !== chatId);
-      localStorage.setItem('datta_projects', JSON.stringify(projects));
+      saveProjects();
       
       if (currentChat?.id === chatId) {
         currentChat = null;
@@ -520,7 +561,7 @@ function deleteChat(chatId) {
     }
   } else {
     allChats = allChats.filter(c => c.id !== chatId);
-    localStorage.setItem('datta_standalone_chats', JSON.stringify(allChats));
+    saveStandaloneChats();
     
     if (currentChat?.id === chatId) {
       currentChat = null;
@@ -601,7 +642,7 @@ function createProjectWithName(name) {
   };
   
   projects.push(newProject);
-  localStorage.setItem('datta_projects', JSON.stringify(projects));
+  saveProjects();
   
   if (password) {
     projectPasswords[newProject.id] = password;
@@ -618,8 +659,6 @@ function createProjectWithName(name) {
 function loadProjects() {
   const container = document.getElementById("section-projects");
   if (!container) return;
-  
-  projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
   
   if (projects.length === 0) {
     container.innerHTML = `
@@ -654,8 +693,14 @@ function loadProjects() {
 }
 
 function openProject(projectId) {
+  // Reload projects from storage to ensure latest data
+  loadAllData();
+  
   const project = projects.find(p => p.id === projectId);
-  if (!project) return;
+  if (!project) {
+    showToast("Project not found");
+    return;
+  }
   
   if (project.locked) {
     const password = prompt(`Project "${project.name}" is locked. Enter password:`);
@@ -676,14 +721,13 @@ function openProject(projectId) {
     projectHeader.style.display = "flex";
   }
   
-  // Update new chat button text
+  // Update new chat button text (but functionality is handled by handleNewChatClick)
   const newChatBtn = document.getElementById("newChatBtn");
   if (newChatBtn) {
-    newChatBtn.innerHTML = '+ New Chat';
-    newChatBtn.title = `Create chat in ${project.name}`;
+    newChatBtn.innerHTML = '+ New Chat in Project';
   }
   
-  // Clear current chat and show welcome
+  // Clear current chat
   currentChat = null;
   document.getElementById("chat").innerHTML = "";
   document.getElementById("welcomeScreen").style.display = "flex";
@@ -738,7 +782,7 @@ function lockProject(projectId) {
   if (project) {
     project.locked = true;
     projectPasswords[projectId] = password;
-    localStorage.setItem('datta_projects', JSON.stringify(projects));
+    saveProjects();
     localStorage.setItem('datta_project_passwords', JSON.stringify(projectPasswords));
     loadProjects();
     if (currentProject === projectId) closeProject();
@@ -757,7 +801,7 @@ function unlockProject(projectId) {
   }
   
   project.locked = false;
-  localStorage.setItem('datta_projects', JSON.stringify(projects));
+  saveProjects();
   loadProjects();
   showToast(`🔓 Project "${project.name}" unlocked`);
 }
@@ -770,7 +814,7 @@ function renameProject(projectId) {
   if (!newName) return;
   
   project.name = newName.trim();
-  localStorage.setItem('datta_projects', JSON.stringify(projects));
+  saveProjects();
   loadProjects();
   
   if (currentProject === projectId) {
@@ -788,7 +832,7 @@ function deleteProject(projectId) {
   if (!confirm("Delete this project? All chats inside will be lost!")) return;
   
   projects = projects.filter(p => p.id !== projectId);
-  localStorage.setItem('datta_projects', JSON.stringify(projects));
+  saveProjects();
   delete projectPasswords[projectId];
   localStorage.setItem('datta_project_passwords', JSON.stringify(projectPasswords));
   
@@ -809,6 +853,7 @@ async function sendMessage() {
   
   // Save user message to current chat
   if (currentChat) {
+    currentChat.messages = currentChat.messages || [];
     currentChat.messages.push({ role: 'user', content: text, timestamp: Date.now() });
     if (currentChat.title === 'New Chat') {
       currentChat.title = text.substring(0, 40);
@@ -820,12 +865,12 @@ async function sendMessage() {
       if (project) {
         const chatIndex = project.chats.findIndex(c => c.id === currentChat.id);
         if (chatIndex !== -1) project.chats[chatIndex] = currentChat;
-        localStorage.setItem('datta_projects', JSON.stringify(projects));
+        saveProjects();
       }
     } else {
       const chatIndex = allChats.findIndex(c => c.id === currentChat.id);
       if (chatIndex !== -1) allChats[chatIndex] = currentChat;
-      localStorage.setItem('datta_standalone_chats', JSON.stringify(allChats));
+      saveStandaloneChats();
     }
     loadChatsList();
   }
@@ -884,12 +929,12 @@ async function sendMessage() {
         if (project) {
           const chatIndex = project.chats.findIndex(c => c.id === currentChat.id);
           if (chatIndex !== -1) project.chats[chatIndex] = currentChat;
-          localStorage.setItem('datta_projects', JSON.stringify(projects));
+          saveProjects();
         }
       } else {
         const chatIndex = allChats.findIndex(c => c.id === currentChat.id);
         if (chatIndex !== -1) allChats[chatIndex] = currentChat;
-        localStorage.setItem('datta_standalone_chats', JSON.stringify(allChats));
+        saveStandaloneChats();
       }
       loadChatsList();
     }
@@ -905,13 +950,12 @@ async function sendMessage() {
 // ============================================
 // ARTIFACTS FUNCTIONS
 // ============================================
-let artifacts = JSON.parse(localStorage.getItem('datta_artifacts') || '[]');
+let artifacts = [];
 
 function loadArtifacts() {
+  artifacts = JSON.parse(localStorage.getItem('datta_artifacts') || '[]');
   const container = document.getElementById("section-artifacts");
   if (!container) return;
-  
-  artifacts = JSON.parse(localStorage.getItem('datta_artifacts') || '[]');
   
   if (artifacts.length === 0) {
     container.innerHTML = `<div class="emptySection">📦 No artifacts yet<br><button onclick="createNewArtifact()" style="margin-top:10px;padding:8px 16px;background:#ffd70020;border:1px solid #ffd70040;border-radius:10px;color:#ffd700;cursor:pointer;">+ Create Artifact</button></div>`;
@@ -999,11 +1043,8 @@ function logout() {
 // INITIALIZATION
 // ============================================
 window.addEventListener('load', () => {
-  // Load data
-  projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
-  projectPasswords = JSON.parse(localStorage.getItem('datta_project_passwords') || '{}');
-  allChats = JSON.parse(localStorage.getItem('datta_standalone_chats') || '[]');
-  artifacts = JSON.parse(localStorage.getItem('datta_artifacts') || '[]');
+  // Load all data
+  loadAllData();
   
   // Restore current project
   const savedProject = localStorage.getItem('datta_current_project');
@@ -1039,19 +1080,15 @@ window.addEventListener('load', () => {
     if (splash) splash.style.display = "none";
   }, 2000);
   
-  // Greeting
-  const hour = new Date().getHours();
-  const greet = hour < 12 ? "Good morning ☀️" : hour < 17 ? "Good afternoon 🌤️" : hour < 21 ? "Good evening 🌙" : "Good night 🌟";
-  const greetEl = document.querySelector(".welcomeGreeting");
-  if (greetEl) greetEl.textContent = greet;
-  
   loadProjects();
   loadArtifacts();
   showToast("✨ Datta AI Ready!");
 });
 
 // Make functions global
-window.createNewChat = createNewChat;
+window.handleNewChatClick = handleNewChatClick;
+window.createNewChatInProject = createNewChatInProject;
+window.createStandaloneChat = createStandaloneChat;
 window.openChat = openChat;
 window.deleteChat = deleteChat;
 window.openProject = openProject;
