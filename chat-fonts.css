@@ -15,7 +15,9 @@
 .aiBubble h1,
 .aiBubble h2,
 .aiBubble h3,
-.aiBubble span:not(.cursor):not(.searchText) {
+.aiBubble td,
+.aiBubble th,
+.aiBubble span:not(.cursor):not(.searchText):not(.shimmerText) {
   font-family: 'Nunito', Arial, sans-serif !important;
   font-size: 14px !important;
   font-weight: 400 !important;
