@@ -191,11 +191,10 @@ function getImagePrompt(message) {
   return prompt.trim() || message
 }
 
-// ── ALL-ROUNDER SYSTEM PROMPT ─────────────────────────────────────────────────
+// ── SYSTEM PROMPT ─────────────────────────────────────────────────────────────
 function getSystemPrompt(language, hasSearch) {
   const langNote = language && language !== "English" ? ` Always respond in ${language}.` : ""
   const searchNote = hasSearch ? " Use the web search results provided to give accurate, up-to-date answers. Always cite sources." : ""
-
   return `You are Datta AI — a powerful, all-rounder AI assistant like Claude or ChatGPT. You can do ANYTHING.
 
 CORE RULES:
@@ -208,25 +207,7 @@ CORE RULES:
 7. For creative writing: be vivid and complete
 8. NEVER say "I can't do that" — always find a way to help
 9. Format code in proper markdown code blocks with language specified
-10. Be smart, helpful and thorough like a senior expert
-
-WHAT YOU CAN DO:
-- Build complete websites (HTML/CSS/JS) ✅
-- Write full code in ANY language (Python, JS, Java, C++, etc.) ✅  
-- Explain anything clearly ✅
-- Answer any question on any topic ✅
-- Help with math, science, history, geography ✅
-- Write essays, stories, emails, reports ✅
-- Analyze and debug code ✅
-- Give step-by-step tutorials ✅
-- Help with business, marketing, strategy ✅
-- Medical/legal info (with disclaimer) ✅
-- Web search results integration ✅
-- Image analysis ✅
-
-For PDF content requests, provide well-structured text content the user can save.
-For code: ALWAYS provide 100% complete, working, copy-paste ready code.
-For websites: ALWAYS provide complete single-file HTML with embedded CSS and JS.${langNote}${searchNote}`
+10. Be smart, helpful and thorough like a senior expert${langNote}${searchNote}`
 }
 
 // ── GOOGLE OAUTH ──────────────────────────────────────────────────────────────
@@ -297,7 +278,7 @@ app.post("/auth/verify-otp", async (req, res) => {
     let user = await User.findOne({ phone })
     if (!user) user = await User.create({ username: "user_" + phone.slice(-4), phone })
     res.json({ token: generateToken(user), user: { id: user._id, username: user.username } })
-  } catch (err) { res.status(500).json({ error: "Server error" }) }
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
 app.get("/auth/google", passport.authenticate("google", { scope: ["profile","email"] }))
@@ -371,6 +352,63 @@ app.post("/payment/activate", authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
+// ── IMAGE GENERATION ENDPOINT (Server-side HF) ────────────────────────────────
+app.post("/generate-image", upload.none(), authMiddleware, async (req, res) => {
+  try {
+    const prompt = req.body.prompt
+    if (!prompt) return res.status(400).json({ error: "No prompt provided" })
+
+    const HF_KEY = process.env.HF_API_KEY
+    if (!HF_KEY) {
+      // Fallback to Pollinations if no HF key
+      const seed = Math.floor(Math.random() * 999999)
+      const imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
+      return res.json({ imageUrl, source: "pollinations" })
+    }
+
+    console.log("🎨 Generating image for:", prompt)
+
+    const response = await fetch(
+      "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + HF_KEY,
+          "Content-Type": "application/json",
+          "x-wait-for-model": "true"
+        },
+        body: JSON.stringify({
+          inputs: prompt,
+          parameters: { num_inference_steps: 4, width: 1024, height: 1024 }
+        })
+      }
+    )
+
+    if (!response.ok) {
+      const errText = await response.text()
+      console.error("HF Error:", response.status, errText)
+      // Fallback to Pollinations on HF error
+      const seed = Math.floor(Math.random() * 999999)
+      const imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
+      return res.json({ imageUrl, source: "pollinations_fallback" })
+    }
+
+    const arrayBuffer = await response.arrayBuffer()
+    const base64 = Buffer.from(arrayBuffer).toString("base64")
+    const imageUrl = "data:image/jpeg;base64," + base64
+
+    console.log("✅ Image generated successfully")
+    res.json({ imageUrl, source: "huggingface" })
+
+  } catch (err) {
+    console.error("Image generation error:", err.message)
+    // Fallback to Pollinations
+    const seed = Math.floor(Math.random() * 999999)
+    const imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(req.body.prompt || "art") + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
+    res.json({ imageUrl, source: "pollinations_fallback" })
+  }
+})
+
 // ── MAIN CHAT ROUTE ───────────────────────────────────────────────────────────
 app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
   try {
@@ -382,11 +420,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
 
     if (!message && !file) return res.status(400).json({ error: "No message or file" })
 
-    // Get user plan
     const sub = await Subscription.findOne({ userId: userId, active: true }).catch(() => null)
     const userPlan = sub ? sub.plan : "free"
 
-    // Rate limiting
     if (isImageRequest(message)) {
       const imgCheck = checkAndUpdateLimit(userId, userPlan, "images")
       if (!imgCheck.allowed) {
@@ -399,7 +435,6 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       }
     }
 
-    // Find or create chat
     let chat = null
     if (chatId && chatId !== "" && chatId !== "null" && chatId !== "undefined") {
       try { chat = await Chat.findOne({ _id: chatId, userId: userId }) } catch (e) { chat = null }
@@ -418,16 +453,47 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     res.setHeader("x-chat-id", chat._id.toString())
     res.setHeader("Content-Type", "text/plain; charset=utf-8")
 
-    // ── IMAGE GENERATION (Client-side via Pollinations) ────────────────────
+    // ── IMAGE GENERATION ──────────────────────────────────────────────────
     if (message && isImageRequest(message)) {
       const imagePrompt = getImagePrompt(message)
-      const seed = Math.floor(Math.random() * 999999)
-      // Use multiple URL formats for reliability
-      const encodedPrompt = encodeURIComponent(imagePrompt)
-      const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&enhance=true&seed=${seed}&model=flux`
 
-      const responseText = `DATTA_IMAGE_START\n![${imagePrompt}](${imageUrl})\nPROMPT:${imagePrompt}\nDATTA_IMAGE_END`
+      // Try server-side HF generation
+      let imageUrl = null
+      const HF_KEY = process.env.HF_API_KEY
+      if (HF_KEY) {
+        try {
+          const hfRes = await fetch(
+            "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
+            {
+              method: "POST",
+              headers: {
+                "Authorization": "Bearer " + HF_KEY,
+                "Content-Type": "application/json",
+                "x-wait-for-model": "true"
+              },
+              body: JSON.stringify({
+                inputs: imagePrompt,
+                parameters: { num_inference_steps: 4, width: 1024, height: 1024 }
+              })
+            }
+          )
+          if (hfRes.ok) {
+            const buf = await hfRes.arrayBuffer()
+            const b64 = Buffer.from(buf).toString("base64")
+            imageUrl = "data:image/jpeg;base64," + b64
+          }
+        } catch(e) {
+          console.warn("HF image error:", e.message)
+        }
+      }
 
+      // Fallback to Pollinations
+      if (!imageUrl) {
+        const seed = Math.floor(Math.random() * 999999)
+        imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
+      }
+
+      const responseText = "DATTA_IMAGE_START\n![" + imagePrompt + "](" + imageUrl + ")\nPROMPT:" + imagePrompt + "\nDATTA_IMAGE_END"
       res.write(responseText)
       chat.messages.push({ role: "assistant", content: responseText })
       await chat.save()
@@ -439,14 +505,11 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // ── WEB SEARCH ────────────────────────────────────────────────────────
     let searchContext = ""
     if (message && needsWebSearch(message) && process.env.TAVILY_API_KEY) {
-      console.log("🔍 Searching web for:", message)
       const results = await webSearch(message)
-      if (results) {
-        searchContext = "\n\n[Web Search Results - Today's Data]\n" + results + "\n[End of Search Results]"
-      }
+      if (results) searchContext = "\n\n[Web Search Results]\n" + results + "\n[End of Search Results]"
     }
 
-    // ── BUILD MESSAGE HISTORY ─────────────────────────────────────────────
+    // ── BUILD HISTORY ─────────────────────────────────────────────────────
     const history = chat.messages.slice(0, -1).slice(-10).map(m => ({
       role: m.role === "assistant" ? "assistant" : "user",
       content: m.content
@@ -459,39 +522,24 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       const base64 = file.buffer.toString("base64")
       userContent = [
         { type: "text", text: (message || "Analyze this image in detail.") + searchContext },
-        { type: "image_url", image_url: { url: `data:${file.mimetype};base64,${base64}` } }
+        { type: "image_url", image_url: { url: "data:" + file.mimetype + ";base64," + base64 } }
       ]
     } else if (file) {
       try {
         const fileContent = file.buffer.toString("utf-8")
-        userContent = (message ? message + "\n\n" : "") + `[File: ${file.originalname}]\n\n${fileContent}` + searchContext
+        userContent = (message ? message + "\n\n" : "") + "[File: " + file.originalname + "]\n\n" + fileContent + searchContext
       } catch (e) {
-        userContent = (message ? message + "\n\n" : "") + `[File: ${file.originalname}]` + searchContext
+        userContent = (message ? message + "\n\n" : "") + "[File: " + file.originalname + "]" + searchContext
       }
     } else {
       userContent = message + searchContext
     }
 
-    // ── CHOOSE MODEL ──────────────────────────────────────────────────────
-    // Use vision model for images, best model for everything else
-    const model = isImageFile
-      ? "meta-llama/llama-4-scout-17b-16e-instruct"
-      : "llama-3.3-70b-versatile"
-
-    // ── DETERMINE MAX TOKENS ──────────────────────────────────────────────
+    const model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : "llama-3.3-70b-versatile"
     const msg = message.toLowerCase()
-    const needsLongResponse =
-      msg.includes("website") || msg.includes("code") || msg.includes("full") ||
-      msg.includes("complete") || msg.includes("build") || msg.includes("create") ||
-      msg.includes("write") || msg.includes("essay") || msg.includes("explain") ||
-      msg.includes("html") || msg.includes("css") || msg.includes("javascript") ||
-      msg.includes("python") || msg.includes("program") || msg.includes("script") ||
-      msg.includes("pdf") || msg.includes("document") || msg.includes("report") ||
-      msg.includes("story") || msg.includes("article") || msg.includes("tutorial")
+    const needsLong = msg.includes("website") || msg.includes("code") || msg.includes("full") || msg.includes("complete") || msg.includes("build") || msg.includes("create") || msg.includes("write") || msg.includes("essay") || msg.includes("html") || msg.includes("python") || msg.includes("program") || msg.includes("story") || msg.includes("article")
+    const maxTokens = isImageFile ? 1024 : (needsLong ? 8000 : 1024)
 
-    const maxTokens = isImageFile ? 1024 : (needsLongResponse ? 8000 : 1024)
-
-    // ── STREAM RESPONSE ───────────────────────────────────────────────────
     const stream = await groq.chat.completions.create({
       model,
       messages: [
@@ -512,12 +560,11 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
 
     chat.messages.push({ role: "assistant", content: full })
 
-    // ── AUTO TITLE GENERATION ─────────────────────────────────────────────
     if (chat.messages.length === 4 || chat.title === "New conversation") {
       try {
         const titleRes = await groq.chat.completions.create({
           model: "llama-3.3-70b-versatile",
-          messages: [{ role: "user", content: `Generate a very short title (max 5 words, no quotes, no punctuation) for a conversation about: "${message}". Just the title.` }],
+          messages: [{ role: "user", content: "Generate a very short title (max 5 words, no quotes) for: \"" + message + "\". Just the title." }],
           max_tokens: 15,
           temperature: 0.5
         })
@@ -579,4 +626,4 @@ app.get("/", (req, res) => res.json({ status: "✅ Datta AI Server Running", ver
 app.get("/health", (req, res) => res.json({ status: "ok", uptime: process.uptime() }))
 
 const PORT = process.env.PORT || 3000
-app.listen(PORT, () => console.log(`🚀 Datta AI Server running on port ${PORT}`))
+app.listen(PORT, () => console.log("🚀 Datta AI Server running on port " + PORT))
