@@ -677,7 +677,7 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
     </div>
 
     <div class="welcomeSuggestLabel">Try asking</div>
-    <div class="welcomeChips">
+    <div class="welcomeChips" style="display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px;width:100%;">
       <div class="chip" onclick="fillPrompt('Generate image of a futuristic city at night')">
         <span class="chipIcon">🎨</span>
         <div class="chipTitle">Generate an image</div>
@@ -759,6 +759,12 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
 <script>
   // ── SPLASH ──────────────────────────────────────────
   setTimeout(function() {
+      // Fix 7: Update theme button
+      const themeBtn = document.getElementById('themeBtn')
+      const themeEmojis = { dark:'🌑', light:'☀️', gray:'🩶', midnight:'🌌', sepia:'📜' }
+      const currentTheme = localStorage.getItem('datta_theme') || 'dark'
+      if (themeBtn) themeBtn.textContent = themeEmojis[currentTheme] || '🌑'
+      setTimeout(function() {
     var splash = document.getElementById('splash');
     if (splash) {
       splash.style.opacity = '0';
@@ -781,17 +787,21 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
       const sub = document.getElementById('upgradeSub')
       
       if (isCreatorUser) {
-        // Show creator status instead
         if (banner) banner.style.background = 'rgba(255,215,0,0.08)'
         if (title) title.textContent = '👑 Creator Account'
         if (sub) sub.textContent = 'Full access · Unlimited'
         if (banner) banner.onclick = null
         if (banner) banner.style.cursor = 'default'
       } else {
-        const planNames = { shakti:'⚡ Shakti', agni:'🔥 Agni', brahma:'👑 Brahma' }
-        if (plan !== 'free' && plan !== 'arambh' && planNames[plan]) {
-          if (title) title.textContent = planNames[plan] + ' Plan Active'
-          if (sub) sub.textContent = 'Manage subscription →'
+        // Show correct upgrade path based on current plan
+        const upgradeTo = { free:'⚡ Shakti', arambh:'⚡ Shakti', shakti:'🔥 Agni', agni:'👑 Brahma', brahma:null }
+        const upgradePrice = { free:'₹249/mo', arambh:'₹249/mo', shakti:'₹599/mo', agni:'₹1199/mo' }
+        const next = upgradeTo[plan]
+        if (next) {
+          if (title) title.textContent = 'Upgrade to ' + next
+          if (sub) sub.textContent = 'Unlock more · ' + upgradePrice[plan]
+        } else {
+          if (banner) banner.style.display = 'none'
         }
       }
 
@@ -800,7 +810,7 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
       const profileSub = document.querySelector('.profileSub')
       const avatarLetter = document.querySelector('.profileAvatar')
       if (profileName && user.username) profileName.textContent = user.username
-      if (profileSub) profileSub.textContent = isCreatorUser ? '👑 Creator' : (plan.charAt(0).toUpperCase()+plan.slice(1)+' Plan')
+      if (profileSub) profileSub.textContent = isCreatorUser ? '👑 Creator' : ((plan==='free'?'Arambh':plan.charAt(0).toUpperCase()+plan.slice(1))+' Plan')
       if (avatarLetter && user.username) avatarLetter.textContent = user.username.charAt(0).toUpperCase()
     }, 800)
   })
