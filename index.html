@@ -584,12 +584,12 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
     </button>
 
     <!-- New Project -->
-    <button class="navItem" onclick="showNewProjectModal()" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)'" onmouseout="this.style.background='none'">
+    <button class="navItem" onclick="if(typeof showNewProjectModal==='function')showNewProjectModal();else alert('Please wait for page to fully load')" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)'" onmouseout="this.style.background='none'">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>New project
     </button>
 
     <!-- Projects -->
-    <button class="navItem" onclick="showSection('projects');loadProjectsSection();if(window.innerWidth<900)closeSidebar()" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)'" onmouseout="this.style.background='none'">
+    <button class="navItem" onclick="showSection('projects');if(typeof loadProjectsSection==='function')loadProjectsSection();if(window.innerWidth<900)closeSidebar()" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)'" onmouseout="this.style.background='none'">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Project
     </button>
 
