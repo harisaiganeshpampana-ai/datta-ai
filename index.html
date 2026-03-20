@@ -954,38 +954,6 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
     }
   }
 
-  function showSimpleProjectModal() {
-    document.getElementById("simpleProjectModal") && document.getElementById("simpleProjectModal").remove()
-    var m = document.createElement("div")
-    m.id = "simpleProjectModal"
-    m.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;"
-    var box = document.createElement("div")
-    box.style.cssText = "background:#0f0e00;border:1px solid rgba(255,215,0,0.2);border-radius:20px;padding:24px;width:100%;max-width:380px;"
-    box.innerHTML = "<div style='font-family:Bebas Neue,sans-serif;font-size:20px;letter-spacing:3px;color:#ffd700;margin-bottom:14px;'>NEW PROJECT</div>" +
-      "<input id='spNameInput' type='text' placeholder='Project name...' style='width:100%;padding:10px 14px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);border-radius:10px;color:#fff8e7;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:14px;'>" +
-      "<div style='display:flex;gap:8px;'>" +
-      "<button id='spCancelBtn' style='flex:1;padding:10px;background:none;border:1px solid rgba(255,215,0,0.1);border-radius:50px;color:#665500;cursor:pointer;font-size:13px;'>Cancel</button>" +
-      "<button id='spCreateBtn' style='flex:2;padding:10px;background:linear-gradient(135deg,#ffd700,#ff8c00);border:none;border-radius:50px;color:#000;font-weight:700;cursor:pointer;font-size:13px;'>CREATE</button>" +
-      "</div>"
-    m.appendChild(box)
-    document.body.appendChild(m)
-    setTimeout(function() { document.getElementById("spNameInput") && document.getElementById("spNameInput").focus() }, 100)
-    document.getElementById("spCancelBtn").onclick = function() { m.remove() }
-    document.getElementById("spCreateBtn").onclick = function() {
-      var name = document.getElementById("spNameInput").value.trim()
-      if (!name) return
-      var projects = JSON.parse(localStorage.getItem("datta_projects_v2") || "[]")
-      var p = { id: Date.now(), name: name, instructions: "", color: "#ffd700", chats: [], pinnedChats: [], createdAt: new Date().toISOString() }
-      projects.unshift(p)
-      localStorage.setItem("datta_projects_v2", JSON.stringify(projects))
-      m.remove()
-      if (typeof loadProjectsSection === "function") loadProjectsSection()
-      if (typeof showSection === "function") showSection("projects")
-      if (typeof openProjectPanel === "function") setTimeout(function() { openProjectPanel(p.id) }, 200)
-    }
-    m.onclick = function(e) { if (e.target === m) m.remove() }
-  }
-
   window.createNewProject = createNewProject
 
   function _oldCreateNewProject() {
