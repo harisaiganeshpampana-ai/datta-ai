@@ -562,10 +562,7 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>New chat
     </button>
 
-    <!-- Images -->
-    <button class="navItem" onclick="fillPromptAndSend('generate image of ');if(window.innerWidth<900)closeSidebar()" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)'" onmouseout="this.style.background='none'">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Images
-    </button>
+
 
     <!-- Apps / Tools -->
     <button class="navItem" onclick="showAppsPanel();if(window.innerWidth<900)closeSidebar()" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)'" onmouseout="this.style.background='none'">
@@ -589,10 +586,7 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Project
     </button>
 
-    <!-- Live Feed -->
-    <button class="navItem" onclick="window.location.href='feed.html'" style="width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;color:#665500;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.06)'" onmouseout="this.style.background='none'">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>📺 Live Feed
-    </button>
+
 
   </div>
 
@@ -671,18 +665,14 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
 
     <div class="welcomeBadges">
       <div class="welcomeBadge" onclick="var m=document.getElementById('message');if(m){m.focus();}" style="cursor:pointer"><span>💬</span> AI Chat</div>
-      <div class="welcomeBadge" onclick="var m=document.getElementById('message');if(m){m.value='generate image of ';m.focus();}" style="cursor:pointer"><span>🎨</span> Image Generation</div>
+
       <div class="welcomeBadge" onclick="var m=document.getElementById('message');if(m){m.value='search the web for ';m.focus();}" style="cursor:pointer"><span>🌐</span> Web Search</div>
       <div class="welcomeBadge" onclick="if(typeof startAssistant==='function')startAssistant();else document.getElementById('micBtn').click();" style="cursor:pointer"><span>🎙️</span> Voice Assistant</div>
     </div>
 
     <div class="welcomeSuggestLabel">Try asking</div>
     <div class="welcomeChips" style="display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px;width:100%;">
-      <div class="chip" onclick="fillPrompt('Generate image of a futuristic city at night')">
-        <span class="chipIcon">🎨</span>
-        <div class="chipTitle">Generate an image</div>
-        <div class="chipDesc">Futuristic city at night</div>
-      </div>
+
       <div class="chip" onclick="fillPrompt('What are the latest AI news today?')">
         <span class="chipIcon">🌐</span>
         <div class="chipTitle">Search the web</div>
@@ -957,27 +947,45 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
   }
   // createNewProject - works even if projects.js not loaded yet
   function createNewProject() {
-    if (typeof showNewProjectModal === 'function') {
+    if (typeof showNewProjectModal === "function") {
       showNewProjectModal()
     } else {
-      // Simple fallback - show inline modal without alert
-      var existing = document.getElementById('simpleProjectModal')
-      if (existing) existing.remove()
-      var m = document.createElement('div')
-      m.id = 'simpleProjectModal'
-      m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;'
-      m.innerHTML = '<div style="background:#0f0e00;border:1px solid rgba(255,215,0,0.2);border-radius:20px;padding:24px;width:100%;max-width:380px;">' +
-        '<div style="font-family:Bebas Neue,sans-serif;font-size:20px;letter-spacing:3px;color:#ffd700;margin-bottom:14px;">📁 NEW PROJECT</div>' +
-        '<input id="spName" type="text" placeholder="Project name..." style="width:100%;padding:10px 14px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);border-radius:10px;color:#fff8e7;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:14px;">' +
-        '<div style="display:flex;gap:8px;">' +
-        '<button onclick="document.getElementById('simpleProjectModal').remove()" style="flex:1;padding:10px;background:none;border:1px solid rgba(255,215,0,0.1);border-radius:50px;color:#665500;cursor:pointer;font-family:Rajdhani,sans-serif;font-size:13px;">Cancel</button>' +
-        '<button onclick="var n=document.getElementById('spName').value.trim();if(!n)return;var ps=JSON.parse(localStorage.getItem('datta_projects_v2')||'[]');var p={id:Date.now(),name:n,instructions:'',color:'#ffd700',chats:[],pinnedChats:[],createdAt:new Date().toISOString()};ps.unshift(p);localStorage.setItem('datta_projects_v2',JSON.stringify(ps));document.getElementById('simpleProjectModal').remove();if(typeof loadProjectsSection==='function')loadProjectsSection();if(typeof showSection==='function')showSection('projects');if(typeof openProjectPanel==='function')openProjectPanel(p.id);" style="flex:2;padding:10px;background:linear-gradient(135deg,#ffd700,#ff8c00);border:none;border-radius:50px;color:#000;font-family:Rajdhani,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">CREATE</button>' +
-        '</div></div>'
-      document.body.appendChild(m)
-      m.onclick = function(e) { if(e.target===m) m.remove() }
-      setTimeout(function(){ document.getElementById('spName') && document.getElementById('spName').focus() }, 100)
+      showSimpleProjectModal()
     }
   }
+
+  function showSimpleProjectModal() {
+    document.getElementById("simpleProjectModal") && document.getElementById("simpleProjectModal").remove()
+    var m = document.createElement("div")
+    m.id = "simpleProjectModal"
+    m.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;"
+    var box = document.createElement("div")
+    box.style.cssText = "background:#0f0e00;border:1px solid rgba(255,215,0,0.2);border-radius:20px;padding:24px;width:100%;max-width:380px;"
+    box.innerHTML = "<div style='font-family:Bebas Neue,sans-serif;font-size:20px;letter-spacing:3px;color:#ffd700;margin-bottom:14px;'>NEW PROJECT</div>" +
+      "<input id='spNameInput' type='text' placeholder='Project name...' style='width:100%;padding:10px 14px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);border-radius:10px;color:#fff8e7;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:14px;'>" +
+      "<div style='display:flex;gap:8px;'>" +
+      "<button id='spCancelBtn' style='flex:1;padding:10px;background:none;border:1px solid rgba(255,215,0,0.1);border-radius:50px;color:#665500;cursor:pointer;font-size:13px;'>Cancel</button>" +
+      "<button id='spCreateBtn' style='flex:2;padding:10px;background:linear-gradient(135deg,#ffd700,#ff8c00);border:none;border-radius:50px;color:#000;font-weight:700;cursor:pointer;font-size:13px;'>CREATE</button>" +
+      "</div>"
+    m.appendChild(box)
+    document.body.appendChild(m)
+    setTimeout(function() { document.getElementById("spNameInput") && document.getElementById("spNameInput").focus() }, 100)
+    document.getElementById("spCancelBtn").onclick = function() { m.remove() }
+    document.getElementById("spCreateBtn").onclick = function() {
+      var name = document.getElementById("spNameInput").value.trim()
+      if (!name) return
+      var projects = JSON.parse(localStorage.getItem("datta_projects_v2") || "[]")
+      var p = { id: Date.now(), name: name, instructions: "", color: "#ffd700", chats: [], pinnedChats: [], createdAt: new Date().toISOString() }
+      projects.unshift(p)
+      localStorage.setItem("datta_projects_v2", JSON.stringify(projects))
+      m.remove()
+      if (typeof loadProjectsSection === "function") loadProjectsSection()
+      if (typeof showSection === "function") showSection("projects")
+      if (typeof openProjectPanel === "function") setTimeout(function() { openProjectPanel(p.id) }, 200)
+    }
+    m.onclick = function(e) { if (e.target === m) m.remove() }
+  }
+
   window.createNewProject = createNewProject
 
   function _oldCreateNewProject() {
