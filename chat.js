@@ -43,7 +43,6 @@ window.addEventListener("DOMContentLoaded", function() {
     if (nameEl) nameEl.textContent = user.username || user.email || "User"
     if (avatarEl) avatarEl.textContent = (user.username || "U")[0].toUpperCase()
     
-    // Update plan display
     const plan = localStorage.getItem("datta_plan") || "free"
     const planNames = { shakti: '⚡ Shakti', agni: '🔥 Agni', brahma: '👑 Brahma', free: 'Free', arambh: 'Free' }
     if (subEl && !user.isCreator) subEl.textContent = planNames[plan] || 'Free Plan'
@@ -80,62 +79,205 @@ function stopGeneration() {
 
 window.stopGeneration = stopGeneration
 
-// RENDER IMAGE RESPONSE
+// ============================================
+// IMPROVED IMAGE GENERATION
+// ============================================
+
+async function generateImage(prompt, aiDiv) {
+  // Clean the prompt
+  let cleanPrompt = prompt
+    .replace(/generate image of|create image of|make image of|generate photo of|create photo of|make photo of|generate picture of|create picture of|picture of|photo of|image of|draw me a|draw me|draw a|draw|illustrate a|illustrate|sketch a|sketch|paint a|paint|generate art of|create art of|make art of/gi, "")
+    .trim()
+  
+  if (!cleanPrompt) cleanPrompt = prompt
+  
+  // Encode for URL
+  const encodedPrompt = encodeURIComponent(cleanPrompt)
+  const timestamp = Date.now()
+  const seed = Math.floor(Math.random() * 999999)
+  
+  // Multiple fallback URLs
+  const imageUrls = [
+    `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&seed=${seed}&timestamp=${timestamp}`,
+    `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&model=flux&seed=${seed}`,
+    `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&model=turbo&seed=${seed}`,
+    `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${seed}`
+  ]
+  
+  // Try server-side generation first
+  try {
+    const formData = new FormData()
+    formData.append("prompt", cleanPrompt)
+    formData.append("token", getToken())
+    
+    const res = await fetch("https://datta-ai-server.onrender.com/generate-image", {
+      method: "POST",
+      body: formData
+    })
+    
+    if (res.ok) {
+      const data = await res.json()
+      if (data.imageUrl) {
+        displayImageInChat(cleanPrompt, data.imageUrl, aiDiv)
+        return
+      }
+    }
+  } catch(e) {
+    console.log("Server image failed, trying direct:", e.message)
+  }
+  
+  // Try direct Pollinations with multiple attempts
+  for (let i = 0; i < imageUrls.length; i++) {
+    const url = imageUrls[i]
+    const success = await testImageUrl(url, cleanPrompt, aiDiv, i + 1, imageUrls.length)
+    if (success) return
+  }
+  
+  // If all fail, show error
+  if (aiDiv) {
+    aiDiv.innerHTML = `
+      <div class="avatar">🎨</div>
+      <div class="aiContent">
+        <div class="aiBubble" style="color:#ff8888; background:#2a0a0a;">
+          ⚠️ Image generation failed. Please try again with a different prompt.<br>
+          <small>Prompt: "${cleanPrompt.substring(0, 50)}..."</small>
+        </div>
+      </div>
+    `
+    const chat = document.getElementById("chat")
+    if (chat) chat.scrollTop = chat.scrollHeight
+  }
+  hideStopBtn()
+  loadSidebar()
+}
+
+function testImageUrl(url, prompt, aiDiv, attempt, total) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    const timeout = setTimeout(() => {
+      img.onload = null
+      img.onerror = null
+      resolve(false)
+    }, 8000)
+    
+    img.onload = () => {
+      clearTimeout(timeout)
+      displayImageInChat(prompt, url, aiDiv)
+      resolve(true)
+    }
+    
+    img.onerror = () => {
+      clearTimeout(timeout)
+      if (aiDiv && attempt < total) {
+        const bubble = aiDiv.querySelector(".aiBubble")
+        if (bubble) {
+          bubble.innerHTML = `<span style="color:#cc88ff;">🎨 Attempt ${attempt + 1}/${total}... Trying again</span>`
+        }
+      }
+      resolve(false)
+    }
+    
+    img.src = url + "&test=" + Date.now()
+  })
+}
+
+function displayImageInChat(prompt, imageUrl, aiDiv) {
+  const uid = "img_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6)
+  
+  if (aiDiv) {
+    aiDiv.innerHTML = `
+      <div class="avatar">🎨</div>
+      <div class="aiContent">
+        <div class="dattaImgWrap" id="${uid}" style="max-width:400px;">
+          <div style="font-family:Rajdhani,sans-serif;font-size:11px;letter-spacing:1px;color:#cc88ff;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+            <span>🎨</span>
+            <span>${prompt.substring(0, 50)}${prompt.length > 50 ? '...' : ''}</span>
+          </div>
+          <div style="position:relative;border-radius:12px;overflow:hidden;background:#1a0a2a;">
+            <img src="${imageUrl}" alt="${prompt}"
+              style="width:100%;border-radius:12px;display:block;cursor:pointer;"
+              onclick="window.open('${imageUrl}', '_blank')"
+              onerror="this.onerror=null; this.src='https://placehold.co/400x400/1a0a2a/cc88ff?text=Failed+to+load+image'; this.alt='Failed to load';"
+            >
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+            <button onclick="regenerateImage('${prompt.replace(/'/g, "\\'")}', this)" 
+              style="padding:6px 14px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:20px;color:#cc9900;font-family:Rajdhani,sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;">
+              🔄 Regenerate
+            </button>
+            <button onclick="downloadImage('${imageUrl}','${prompt.replace(/'/g, "\\'")}')" 
+              style="padding:6px 14px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:20px;color:#cc9900;font-family:Rajdhani,sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;">
+              ⬇️ Download
+            </button>
+          </div>
+        </div>
+      </div>
+    `
+    const chat = document.getElementById("chat")
+    if (chat) chat.scrollTop = chat.scrollHeight
+  }
+  
+  hideStopBtn()
+  loadSidebar()
+}
+
+// RENDER IMAGE RESPONSE - IMPROVED
 function renderImageResponse(text) {
   let cleanText = text
   if (text.includes("DATTA_IMAGE_START")) {
     cleanText = text.replace("DATTA_IMAGE_START\n", "").replace("\nDATTA_IMAGE_END", "")
   }
+  
   const imgMatch = cleanText.match(/!\[([^\]]*)\]\(([^)]+)\)/)
   const promptMatch = cleanText.match(/PROMPT:(.+)/) || cleanText.match(/\*Prompt: ([^*]+)\*/)
-  if (!imgMatch) return marked.parse(text)
+  
+  if (!imgMatch) {
+    return marked.parse(text)
+  }
 
   const altText = imgMatch[1] || "Generated Image"
-  const imgUrl = imgMatch[2]
+  let imgUrl = imgMatch[2]
   const prompt = (promptMatch ? promptMatch[1].trim() : altText).substring(0, 100)
   const uid = "ig" + Date.now()
   const safePrompt = prompt.replace(/'/g, "").replace(/"/g, "")
 
-  // Build HTML - show image directly, no hidden display trick
+  // Add cache busting to URL
+  if (!imgUrl.includes('timestamp=') && !imgUrl.includes('t=')) {
+    imgUrl += (imgUrl.includes('?') ? '&' : '?') + 't=' + Date.now()
+  }
+
   return `<div class="dattaImgWrap" id="${uid}" style="max-width:400px;">
   <div style="font-family:Rajdhani,sans-serif;font-size:11px;letter-spacing:1px;color:#cc88ff;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
-    <span>🎨</span><span id="${uid}lbl">Creating image...</span>
+    <span>🎨</span><span id="${uid}lbl">${safePrompt}</span>
   </div>
-  <div style="position:relative;border-radius:12px;overflow:hidden;background:#1a0a2a;min-height:200px;display:flex;align-items:center;justify-content:center;">
-    <div id="${uid}spin" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:2;">
-      <div style="width:40px;height:40px;border:3px solid rgba(200,100,255,0.2);border-top-color:#cc88ff;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
-      <div style="font-size:12px;color:#cc88ff;font-family:Rajdhani,sans-serif;">Generating...</div>
-    </div>
+  <div style="position:relative;border-radius:12px;overflow:hidden;background:#1a0a2a;min-height:200px;">
     <img id="${uid}img" src="${imgUrl}" alt="${altText}"
-      style="width:100%;border-radius:12px;display:block;min-height:200px;object-fit:cover;"
-      onload="
-        var spin=document.getElementById('${uid}spin');
-        var lbl=document.getElementById('${uid}lbl');
-        var act=document.getElementById('${uid}act');
-        if(spin)spin.style.display='none';
-        if(lbl)lbl.textContent='${safePrompt}';
-        if(act)act.style.display='flex';
-        this.style.minHeight='auto';
-      "
+      style="width:100%;border-radius:12px;display:block;cursor:pointer;"
+      onclick="window.open('${imgUrl}', '_blank')"
       onerror="
+        var img=this;
         var retries=parseInt(this.dataset.retries||0);
-        var spin=document.getElementById('${uid}spin');
-        if(retries<2){
+        if(retries<3){
           this.dataset.retries=retries+1;
-          var seed=Math.floor(Math.random()*999999);
-          if(spin)spin.querySelector('div:last-child').textContent='Retrying '+(retries+1)+'/2...';
           setTimeout(()=>{
-            this.src='https://image.pollinations.ai/prompt/'+encodeURIComponent('${safePrompt}')+'?width=1024&height=1024&nologo=true&seed='+seed;
-          },1500);
+            img.src='${imgUrl}&retry='+retries;
+          },1000);
         } else {
-          if(spin)spin.innerHTML='<div style=color:#ff4444;font-size:13px>❌ Failed. Try again.</div>';
+          this.src='https://placehold.co/400x400/1a0a2a/cc88ff?text=Failed+to+load+image';
+          this.alt='Failed to load image';
         }
       "
     >
   </div>
-  <div id="${uid}act" style="display:none;gap:8px;margin-top:10px;flex-wrap:wrap;">
-    <button onclick="regenerateImage('${safePrompt}',this)" style="padding:6px 14px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:20px;color:#cc9900;font-family:Rajdhani,sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;">🔄 Regenerate</button>
-    <button onclick="downloadImage('${imgUrl}','${safePrompt}')" style="padding:6px 14px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:20px;color:#cc9900;font-family:Rajdhani,sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;">⬇️ Download</button>
+  <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+    <button onclick="regenerateImage('${safePrompt}',this)" 
+      style="padding:6px 14px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:20px;color:#cc9900;font-family:Rajdhani,sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;">
+      🔄 Regenerate
+    </button>
+    <button onclick="downloadImage('${imgUrl}','${safePrompt}')" 
+      style="padding:6px 14px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:20px;color:#cc9900;font-family:Rajdhani,sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;">
+      ⬇️ Download
+    </button>
   </div>
 </div>`
 }
@@ -151,62 +293,47 @@ function downloadImage(url, prompt) {
 async function regenerateImage(prompt, btn) {
   const wrap = btn.closest(".dattaImgWrap")
   if (!wrap) return
+  
   btn.disabled = true
-  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 0.6s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Generating...'
+  btn.innerHTML = '<span style="animation:spin 0.6s linear infinite;">⏳</span> Generating...'
+  
+  const encodedPrompt = encodeURIComponent(prompt)
   const seed = Math.floor(Math.random() * 999999)
-  const newUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed
-  const shimmer = wrap.querySelector(".dattaShimmer")
-  const img = wrap.querySelector(".dattaImg")
-  const actions = wrap.querySelector(".dattaImgActions")
-  const label = wrap.querySelector(".dattaImgLabel")
-  if (shimmer) { shimmer.style.display = "flex"; shimmer.querySelector(".shimmerText").textContent = "Regenerating..." }
-  if (img) { img.style.display = "none"; img.style.opacity = "0"; img.dataset.retries = "0" }
-  if (actions) actions.style.display = "none"
-  if (label) label.innerHTML = '<span class="dattaImgIcon">🎨</span><span>Regenerating...</span>'
-  img.onload = () => {
-    if (shimmer) shimmer.style.display = "none"
-    if (actions) actions.style.display = "flex"
-    if (label) label.innerHTML = '<span class="dattaImgIcon">✨</span><span>' + prompt + '</span>'
-    img.style.display = "block"
-    setTimeout(() => { img.style.opacity = "1" }, 10)
-    btn.disabled = false
-    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Regenerate'
+  const timestamp = Date.now()
+  
+  const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&seed=${seed}&timestamp=${timestamp}`
+  
+  const img = wrap.querySelector("img")
+  const label = wrap.querySelector("div:first-child span:last-child")
+  
+  if (label) label.textContent = prompt.substring(0, 50) + (prompt.length > 50 ? '...' : '')
+  
+  if (img) {
+    img.onload = () => {
+      btn.disabled = false
+      btn.innerHTML = '🔄 Regenerate'
+    }
+    img.onerror = () => {
+      btn.disabled = false
+      btn.innerHTML = '🔄 Retry'
+      img.src = `https://placehold.co/400x400/1a0a2a/cc88ff?text=Failed+to+load`
+    }
+    img.src = imageUrl
   }
-  img.onerror = () => {
-    if (shimmer) shimmer.innerHTML = '<div style="padding:32px;color:#888;text-align:center;font-size:13px">❌ Failed. Try again.</div>'
-    btn.disabled = false
-    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Regenerate'
+  
+  const downloadBtn = wrap.querySelector("button[onclick*='downloadImage']")
+  if (downloadBtn) {
+    downloadBtn.setAttribute("onclick", `downloadImage('${imageUrl}','${prompt.replace(/'/g, "\\'")}')`)
   }
-  img.src = newUrl
 }
 
-function likeImage(btn) {
-  const isActive = btn.classList.toggle("active")
-  btn.style.color = isActive ? "var(--accent)" : ""
-  const dislike = btn.closest(".dattaImgActions").querySelector(".dislikeImgBtn")
-  if (dislike) { dislike.classList.remove("active"); dislike.style.color = "" }
-}
-
-function dislikeImage(btn) {
-  const isActive = btn.classList.toggle("active")
-  btn.style.color = isActive ? "#ff4444" : ""
-  const like = btn.closest(".dattaImgActions").querySelector(".likeImgBtn")
-  if (like) { like.classList.remove("active"); like.style.color = "" }
-}
-
-window.downloadImage = downloadImage
+window.generateImage = generateImage
 window.regenerateImage = regenerateImage
-window.likeImage = likeImage
-window.dislikeImage = dislikeImage
+window.downloadImage = downloadImage
 window.renderImageResponse = renderImageResponse
 
 const chatBox = document.getElementById("chat")
-const sendBtn = document.querySelector(".send")
 const scrollBtn = document.getElementById("scrollDownBtn")
-
-function getAuthHeaders() {
-  return { "Authorization": "Bearer " + getToken() }
-}
 
 let currentChatId = null
 let controller = null
@@ -294,7 +421,7 @@ window.addEventListener("load", function() {
   setTimeout(restoreAutoMoodPill, 500)
 })
 
-// ── FIXED buildMoodPrefix — with strict length control ────────────────────────
+// ── buildMoodPrefix ──────────────────────────────────────────────────────────
 function buildMoodPrefix() {
   const mood = getMoodContext()
 
@@ -368,9 +495,11 @@ async function send() {
   if (willGenImage) {
     aiDiv.innerHTML = `
       <div class="avatar">🎨</div>
-      <div class="aiBubble searchingIndicator" style="background:#1a0a2a!important;border-color:#4a1a6a!important;">
-        <span class="searchIcon">🎨</span>
-        <span class="searchText" style="color:#cc88ff;">Generating image...</span>
+      <div class="aiBubble" style="background:#1a0a2a; color:#cc88ff; text-align:center;">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+          <div style="width:40px;height:40px;border:3px solid rgba(200,100,255,0.2);border-top-color:#cc88ff;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+          <span>🎨 Generating "${text.substring(0, 50)}..."</span>
+        </div>
       </div>
     `
   } else if (willSearch) {
@@ -393,24 +522,14 @@ async function send() {
   chatBox.scrollTop = chatBox.scrollHeight
   showStopBtn()
 
-  // CLIENT-SIDE IMAGE GENERATION
+  // CLIENT-SIDE IMAGE GENERATION - IMPROVED
   if (willGenImage) {
     let prompt = text
       .replace(/generate image of|create image of|make image of|generate photo of|create photo of|make photo of|generate picture of|create picture of|picture of|photo of|image of|draw me a|draw me|draw a|draw|illustrate a|illustrate|sketch a|sketch|paint a|paint|generate art of|create art of|make art of/gi, "")
       .trim()
     if (!prompt) prompt = text
-    const seed = Math.floor(Math.random() * 999999)
-    const imgUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed
-    const fakeResponse = `DATTA_IMAGE_START\n![${prompt}](${imgUrl})\nPROMPT:${prompt}\nDATTA_IMAGE_END`
-    setTimeout(() => {
-      aiDiv.innerHTML = `
-        <div class="avatar">🎨</div>
-        <div class="aiContent">${renderImageResponse(fakeResponse)}</div>
-      `
-      chatBox.scrollTop = chatBox.scrollHeight
-      hideStopBtn()
-      loadSidebar()
-    }, 800)
+    
+    await generateImage(prompt, aiDiv)
     return
   }
 
@@ -482,7 +601,7 @@ async function send() {
         span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>'
       }
       scrollBottom()
-      lucide.createIcons()
+      if (typeof lucide !== 'undefined') lucide.createIcons()
     }
 
     const isImgResponse = streamText.includes("pollinations.ai") || streamText.includes("DATTA_IMAGE")
@@ -492,7 +611,7 @@ async function send() {
     } else {
       span.innerHTML = marked.parse(streamText)
     }
-    lucide.createIcons()
+    if (typeof lucide !== 'undefined') lucide.createIcons()
     hideStopBtn()
     loadSidebar()
 
@@ -560,50 +679,6 @@ function detectTextLanguage(text) {
   return getLangCode(localStorage.getItem("datta_language") || "English")
 }
 
-// ── IMAGE GENERATION FALLBACK ─────────────────────────────────────────────────
-async function generateWithPollinations(prompt, aiDiv) {
-  const showImg = (imgUrl) => {
-    const fakeResponse = "DATTA_IMAGE_START\n![" + prompt + "](" + imgUrl + ")\nPROMPT:" + prompt + "\nDATTA_IMAGE_END"
-    if (aiDiv) {
-      aiDiv.innerHTML = "<div class='avatar'>🎨</div><div class='aiContent'>" + renderImageResponse(fakeResponse) + "</div>"
-      const cb = document.getElementById("chat")
-      if (cb) cb.scrollTop = cb.scrollHeight
-    }
-    hideStopBtn()
-    loadSidebar()
-  }
-
-  const showError = () => {
-    if (aiDiv) aiDiv.innerHTML = "<div class='avatar'>🎨</div><div class='aiBubble' style='color:#ff4444'>❌ Image generation failed. Please try again.</div>"
-    hideStopBtn()
-  }
-
-  try {
-    const fd = new FormData()
-    fd.append("prompt", prompt)
-    fd.append("token", getToken())
-    const res = await Promise.race([
-      fetch("https://datta-ai-server.onrender.com/generate-image", { method:"POST", body:fd }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 30000))
-    ])
-    if (res.ok) {
-      const data = await res.json()
-      if (data.imageUrl) { showImg(data.imageUrl); return }
-    }
-  } catch(e) {
-    console.warn("Server image failed:", e.message)
-  }
-
-  const seed = Math.floor(Math.random() * 999999)
-  const urls = [
-    "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed,
-    "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=512&height=512&nologo=true&model=turbo&seed=" + seed,
-  ]
-  showImg(urls[0])
-}
-
-window.generateWithPollinations = generateWithPollinations
-
 // ─── LOAD SIDEBAR ─────────────────────────────────────────────────────────────
 async function loadSidebar() {
   try {
@@ -644,7 +719,7 @@ async function loadSidebar() {
       div.onclick = (e) => {
         if (e.target.closest(".chatMenuBtn")) return
         openChat(chat._id)
-        if (window.innerWidth < 900) closeSidebar && closeSidebar()
+        if (window.innerWidth < 900 && typeof closeSidebar === 'function') closeSidebar()
       }
       history.appendChild(div)
     })
@@ -794,7 +869,7 @@ async function openChat(chatId) {
     }
   })
   scrollBottom()
-  lucide.createIcons()
+  if (typeof lucide !== 'undefined') lucide.createIcons()
 }
 
 // ─── DELETE CHAT ──────────────────────────────────────────────────────────────
@@ -896,10 +971,10 @@ async function regenerateFrom(btn) {
     scrollBottom()
   }
   span.innerHTML = marked.parse(streamText)
-  lucide.createIcons()
+  if (typeof lucide !== 'undefined') lucide.createIcons()
 }
 
-// ─── MIC BUTTON — directly listens into input box ───────────────────────────────
+// ─── MIC BUTTON ───────────────────────────────────────────────────────────────
 let inlineListening = false
 let inlineRecognition = null
 
@@ -989,22 +1064,10 @@ function stopInlineListening() {
 
 window.stopInlineListening = stopInlineListening
 
-// ─── TOGGLE MENU ─────────────────────────────────────────────────────────────
-function toggleMenu(e, id) {
-  e.stopPropagation()
-  document.querySelectorAll(".chatMenu").forEach(m => m.style.display = "none")
-  const menu = document.getElementById("menu-" + id)
-  if (menu) menu.style.display = "block"
-}
-
-window.onclick = () => {
-  document.querySelectorAll(".chatMenu").forEach(m => m.style.display = "none")
-}
-
 // ─── SCROLL ───────────────────────────────────────────────────────────────────
 function scrollBottom() {
   if (userScrolledUp) return
-  chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: "smooth" })
+  if (chatBox) chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: "smooth" })
 }
 
 if (chatBox) {
@@ -1039,32 +1102,12 @@ function showWelcome() {
 
 // ─── FILL PROMPT ──────────────────────────────────────────────────────────────
 function fillPrompt(text) {
-  document.getElementById("message").value = text
+  const input = document.getElementById("message")
+  if (input) input.value = text
   hideWelcome()
   send()
 }
 window.fillPrompt = fillPrompt
-
-// ─── SUGGEST BUTTONS ──────────────────────────────────────────────────────────
-document.querySelectorAll(".suggestBtn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const text = btn.getAttribute("data-text")
-    document.getElementById("message").value = text
-    hideWelcome()
-    send()
-  })
-})
-
-// ─── ENTER KEY ────────────────────────────────────────────────────────────────
-const messageInput = document.getElementById("message")
-if (messageInput) {
-  messageInput.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      e.preventDefault()
-      send()
-    }
-  })
-}
 
 // ─── SAVE CHAT TITLE ─────────────────────────────────────────────────────────
 function saveChatTitle(title) {
@@ -1078,7 +1121,8 @@ function saveChatTitle(title) {
 
 // ─── SEARCH CHATS ────────────────────────────────────────────────────────────
 function searchChats() {
-  const query = document.getElementById("search").value.toLowerCase()
+  const query = document.getElementById("search")?.value.toLowerCase()
+  if (!query) return
   document.querySelectorAll(".chatItem").forEach(item => {
     const title = item.querySelector(".chatTitle")?.textContent.toLowerCase() || ""
     item.style.display = title.includes(query) ? "" : "none"
@@ -1106,7 +1150,7 @@ function showSection(name) {
 }
 window.showSection = showSection
 
-// LOGOUT (override if exists)
+// LOGOUT
 function logout() {
   localStorage.removeItem("datta_token")
   localStorage.removeItem("datta_user")
@@ -1115,9 +1159,9 @@ function logout() {
 }
 window.logout = logout
 
-// ── SETTINGS ─────────────────────────────────────────────────────────────────
+// ── SETTINGS FUNCTIONS ───────────────────────────────────────────────────────
 function openSettings() {
-  event.stopPropagation()
+  if (event) event.stopPropagation()
   const modal = document.getElementById("settingsModal")
   if (!modal) return
   modal.classList.add("show")
@@ -1138,13 +1182,16 @@ function closeSettings() {
 function switchSettingsTab(tab) {
   document.querySelectorAll(".sTab").forEach(t => t.classList.remove("active"))
   document.querySelectorAll(".sTabContent").forEach(c => c.classList.remove("active"))
-  document.querySelector(".sTab[onclick=\"switchSettingsTab('" + tab + "')\"]").classList.add("active")
-  document.getElementById("tab-" + tab).classList.add("active")
+  const activeTab = document.querySelector(`.sTab[onclick="switchSettingsTab('${tab}')"]`)
+  if (activeTab) activeTab.classList.add("active")
+  const content = document.getElementById("tab-" + tab)
+  if (content) content.classList.add("active")
   clearSettingsMsg()
 }
 
 function showSettingsMsg(text, type) {
   const el = document.getElementById("settingsMsg")
+  if (!el) return
   el.textContent = text
   el.className = "settingsMsg " + type
   setTimeout(() => { el.className = "settingsMsg"; el.textContent = "" }, 3000)
@@ -1226,19 +1273,24 @@ function setTheme(theme, silent) {
   localStorage.setItem("datta_theme", theme)
   if (theme === "light") {
     document.body.classList.add("light")
-    document.getElementById("themeDark")?.classList.remove("active")
-    document.getElementById("themeLight")?.classList.add("active")
+    const darkBtn = document.getElementById("themeDark")
+    const lightBtn = document.getElementById("themeLight")
+    if (darkBtn) darkBtn.classList.remove("active")
+    if (lightBtn) lightBtn.classList.add("active")
   } else {
     document.body.classList.remove("light")
-    document.getElementById("themeDark")?.classList.add("active")
-    document.getElementById("themeLight")?.classList.remove("active")
+    const darkBtn = document.getElementById("themeDark")
+    const lightBtn = document.getElementById("themeLight")
+    if (darkBtn) darkBtn.classList.add("active")
+    if (lightBtn) lightBtn.classList.remove("active")
   }
   if (!silent) showSettingsMsg("Theme changed to " + theme + " mode!", "success")
 }
 
 function setFontSize(size) {
-  document.querySelectorAll(".fontBtn").forEach(b => b.classList.remove("active"))
-  event.target.classList.add("active")
+  const btns = document.querySelectorAll(".fontBtn")
+  btns.forEach(b => b.classList.remove("active"))
+  if (event && event.target) event.target.classList.add("active")
   const sizes = { small: "13px", medium: "15px", large: "17px" }
   document.documentElement.style.setProperty("--chat-font-size", sizes[size])
   document.querySelectorAll(".aiBubble, .userBubble").forEach(el => el.style.fontSize = sizes[size])
@@ -1254,9 +1306,9 @@ function saveLanguage() {
 
 function saveNotifSettings() {
   const settings = {
-    sound: document.getElementById("soundToggle").checked,
-    notif: document.getElementById("notifToggle").checked,
-    stream: document.getElementById("streamToggle").checked
+    sound: document.getElementById("soundToggle")?.checked || false,
+    notif: document.getElementById("notifToggle")?.checked || false,
+    stream: document.getElementById("streamToggle")?.checked !== false
   }
   localStorage.setItem("datta_notif", JSON.stringify(settings))
 }
@@ -1266,7 +1318,7 @@ async function deleteAllChats() {
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/chats/all?token=" + getToken(), { method: "DELETE" })
     if (!res.ok) return showSettingsMsg("Failed to delete chats", "error")
-    chatBox.innerHTML = ""
+    if (chatBox) chatBox.innerHTML = ""
     currentChatId = null
     showWelcome()
     loadSidebar()
@@ -1295,13 +1347,39 @@ async function deleteAccount() {
   }
 }
 
-;(function() {
-  const theme = localStorage.getItem("datta_theme") || "dark"
-  if (theme === "light") document.body.classList.add("light")
-  const lang = localStorage.getItem("datta_language")
-  if (lang) window.dattaLanguage = lang
-})()
+// LIKE / DISLIKE
+function likeMsg(btn) {
+  const wasActive = btn.classList.contains("active")
+  const row = btn.closest(".aiActions")
+  if (row) {
+    row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => {
+      b.classList.remove("active")
+      b.style.color = ""
+    })
+  }
+  if (!wasActive) {
+    btn.classList.add("active")
+    btn.style.color = "var(--accent)"
+  }
+}
 
+function dislikeMsg(btn) {
+  const wasActive = btn.classList.contains("active")
+  const row = btn.closest(".aiActions")
+  if (row) {
+    row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => {
+      b.classList.remove("active")
+      b.style.color = ""
+    })
+  }
+  if (!wasActive) {
+    btn.classList.add("active")
+    btn.style.color = "#ff4444"
+  }
+}
+
+window.likeMsg = likeMsg
+window.dislikeMsg = dislikeMsg
 window.openSettings = openSettings
 window.closeSettings = closeSettings
 window.switchSettingsTab = switchSettingsTab
@@ -1313,36 +1391,6 @@ window.saveLanguage = saveLanguage
 window.saveNotifSettings = saveNotifSettings
 window.deleteAllChats = deleteAllChats
 window.deleteAccount = deleteAccount
-
-// LIKE / DISLIKE
-function likeMsg(btn) {
-  const wasActive = btn.classList.contains("active")
-  const row = btn.closest(".aiActions")
-  row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => {
-    b.classList.remove("active")
-    b.style.color = ""
-  })
-  if (!wasActive) {
-    btn.classList.add("active")
-    btn.style.color = "var(--accent)"
-  }
-}
-
-function dislikeMsg(btn) {
-  const wasActive = btn.classList.contains("active")
-  const row = btn.closest(".aiActions")
-  row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => {
-    b.classList.remove("active")
-    b.style.color = ""
-  })
-  if (!wasActive) {
-    btn.classList.add("active")
-    btn.style.color = "#ff4444"
-  }
-}
-
-window.likeMsg = likeMsg
-window.dislikeMsg = dislikeMsg
 
 // ── VOICE ASSISTANT ──────────────────────────────────────────────────────────
 let voiceRecognition = null
@@ -1486,21 +1534,23 @@ async function processVoiceQuery(query) {
       .trim()
     setVoiceText(cleanText.substring(0, 100) + (cleanText.length > 100 ? "..." : ""))
     const aiEmoji = window.dattaMoodEmoji || "🤖"
-    chatBox.innerHTML += `
-      <div class="messageRow userRow">
-        <div class="userBubble">🎤 ${query}</div>
-        <div class="avatar">🧑</div>
-      </div>
-    `
-    chatBox.innerHTML += `
-      <div class="messageRow">
-        <div class="avatar">${aiEmoji}</div>
-        <div class="aiContent">
-          <div class="aiBubble">${marked.parse(fullText.split("CHATID")[0])}</div>
+    if (chatBox) {
+      chatBox.innerHTML += `
+        <div class="messageRow userRow">
+          <div class="userBubble">🎤 ${query}</div>
+          <div class="avatar">🧑</div>
         </div>
-      </div>
-    `
-    chatBox.scrollTop = chatBox.scrollHeight
+      `
+      chatBox.innerHTML += `
+        <div class="messageRow">
+          <div class="avatar">${aiEmoji}</div>
+          <div class="aiContent">
+            <div class="aiBubble">${marked.parse(fullText.split("CHATID")[0])}</div>
+          </div>
+        </div>
+      `
+      chatBox.scrollTop = chatBox.scrollHeight
+    }
     loadSidebar()
     speakText2(cleanText)
   } catch (err) {
@@ -1571,7 +1621,8 @@ async function loadUserVersion() {
     const tag = document.getElementById("versionTag")
     if (tag) tag.textContent = "DATTA AI " + v.version + " · " + v.name.toUpperCase()
     const sub = document.querySelector(".profileSub")
-    if (sub && !getUser()?.isCreator) sub.textContent = v.emoji + " " + v.name + " " + v.sanskrit
+    const user = getUser()
+    if (sub && !user?.isCreator) sub.textContent = v.emoji + " " + v.name + " " + v.sanskrit
     localStorage.setItem("datta_plan", plan)
   } catch(e) {
     console.log("Version load error:", e.message)
@@ -1581,3 +1632,8 @@ async function loadUserVersion() {
 window.addEventListener("DOMContentLoaded", function() {
   setTimeout(loadUserVersion, 1000)
 })
+
+// Add CSS animation for spin
+const style = document.createElement('style')
+style.textContent = `@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`
+document.head.appendChild(style)
