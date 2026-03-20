@@ -970,7 +970,18 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
         ${p.name}
       </div>`).join('')
   }
-  function openProject(id) { alert('Project feature coming soon!') }
+  function openProject(id) {
+    // Show project chats
+    const projects = JSON.parse(localStorage.getItem('datta_projects') || '[]')
+    const project = projects.find(p => p.id == id)
+    if (!project) return
+    // Show toast instead of alert
+    const toast = document.createElement('div')
+    toast.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#0f0e00;border:1px solid rgba(255,215,0,0.2);border-radius:50px;padding:10px 20px;font-family:Rajdhani,sans-serif;font-size:13px;letter-spacing:1px;color:#ffd700;z-index:9999;white-space:nowrap;'
+    toast.textContent = '📁 ' + project.name + ' — Project chats coming soon!'
+    document.body.appendChild(toast)
+    setTimeout(() => toast.remove(), 2500)
+  }
   function showAppsPanel() {
     document.getElementById('upgradePopup')?.remove()
     const panel = document.createElement('div')
