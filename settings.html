@@ -2,6 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+  <meta name="description" content="Datta AI - Your intelligent AI assistant for chat, image generation, voice, web search and more. Think Less. Do More.">
+  <meta name="keywords" content="Datta AI, AI assistant, AI chat, image generation, voice assistant, web search, AI India">
+  <meta name="author" content="Datta AI">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="Datta AI - Think Less. Do More.">
+  <meta property="og:description" content="Your intelligent AI assistant for chat, image generation, voice, web search and more.">
+  <meta property="og:image" content="https://harisaiganeshpampana-ai.github.io/datta-ai/logo.jpeg">
+  <meta property="og:url" content="https://harisaiganeshpampana-ai.github.io/datta-ai/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Datta AI - Think Less. Do More.">
+  <meta name="twitter:description" content="Your intelligent AI assistant. Chat, images, voice & more.">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Settings | Datta AI</title>
 <link rel="icon" type="image/jpeg" href="logo.jpeg">
@@ -10,7 +22,8 @@
 <script src="theme.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#080800;color:#fff8e7;font-family:'DM Sans',sans-serif;min-height:100vh;overflow-y:auto}
+html,body{overflow-y:auto;-webkit-overflow-scrolling:touch}
+body{background:#080800;color:#fff8e7;font-family:'DM Sans',sans-serif;min-height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
 
 /* TOPBAR */
 .topbar{position:fixed;top:0;left:0;right:0;height:54px;background:rgba(8,8,0,0.97);border-bottom:1px solid rgba(255,215,0,0.08);display:flex;align-items:center;padding:0 16px;gap:12px;z-index:100;backdrop-filter:blur(20px)}
@@ -142,17 +155,15 @@ body{background:#080800;color:#fff8e7;font-family:'DM Sans',sans-serif;min-heigh
   <!-- APPEARANCE -->
   <div class="sectionLabel">Appearance</div>
   <div class="group">
-    <div class="row" onclick="toggleTheme()">
-      <div class="rowIcon" style="background:rgba(255,215,0,0.08)">🌙</div>
+    <div class="row" onclick="showThemePicker()">
+      <div class="rowIcon" style="background:rgba(255,215,0,0.08)" id="themeRowIcon">🌑</div>
       <div class="rowLeft">
         <div class="rowTitle">Theme</div>
         <div class="rowSub" id="themeLabel">Dark</div>
       </div>
-      <div class="rowRight">
-        <label class="toggle" onclick="event.stopPropagation()">
-          <input type="checkbox" id="themeToggle" onchange="toggleTheme()">
-          <div class="toggleSlider"></div>
-        </label>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <div id="themePreviewDots" style="display:flex;gap:4px;"></div>
+        <span class="rowArrow">›</span>
       </div>
     </div>
     <div class="row">
@@ -644,6 +655,25 @@ function logout() {
   localStorage.removeItem('datta_user')
   window.location.href = 'login.html'
 }
+
+// Init theme display
+function initThemeDisplay() {
+  const current = localStorage.getItem('datta_theme') || 'dark'
+  const themes = { dark:{emoji:'🌑',label:'Dark'}, light:{emoji:'☀️',label:'Light'}, gray:{emoji:'🩶',label:'Gray'}, midnight:{emoji:'🌌',label:'Midnight'}, sepia:{emoji:'📜',label:'Sepia'} }
+  const t = themes[current] || themes.dark
+  const label = document.getElementById('themeLabel')
+  const icon = document.getElementById('themeRowIcon')
+  const dots = document.getElementById('themePreviewDots')
+  if (label) label.textContent = t.label
+  if (icon) icon.textContent = t.emoji
+  if (dots) {
+    const bgs = { dark:'#080800', light:'#ffffff', gray:'#1e1e1e', midnight:'#0a0f1e', sepia:'#f4ede4' }
+    dots.innerHTML = Object.entries(bgs).map(([key, bg]) => 
+      `<div onclick="event.stopPropagation();applyTheme('${key}');initThemeDisplay()" style="width:18px;height:18px;border-radius:50%;background:${bg};border:2px solid ${key===current?'var(--accent)':'var(--border)'};cursor:pointer;" title="${key}"></div>`
+    ).join('')
+  }
+}
+initThemeDisplay()
 
 // Init page
 init()
