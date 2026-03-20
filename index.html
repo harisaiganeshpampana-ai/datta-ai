@@ -1175,7 +1175,7 @@ window.addEventListener("load", function() {
       return
     }
     sec.innerHTML = projects.map(function(p) {
-      return '<div onclick="if(typeof openProjectPanel===\'function\'){openProjectPanel('+p.id+')}else{openSavedProject('+p.id+')}" style="display:flex;align-items:center;gap:8px;padding:9px 12px;margin:2px 8px;border-radius:10px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'rgba(255,215,0,0.05)\'" onmouseout="this.style.background=\'none\'">' +
+      return '<div onclick="if(typeof openProjectPage===\'function\'){openProjectPage('+p.id+')}else if(typeof openProjectPanel===\'function\'){openProjectPanel('+p.id+')}" style="display:flex;align-items:center;gap:8px;padding:9px 12px;margin:2px 8px;border-radius:10px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'rgba(255,215,0,0.05)\'" onmouseout="this.style.background=\'none\'">' +
         '<div style="width:8px;height:8px;border-radius:50%;background:'+(p.color||'#ffd700')+';flex-shrink:0;"></div>' +
         '<div style="flex:1;font-size:13px;color:#665500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+p.name+'</div>' +
         '<div style="font-size:10px;color:#332200;font-family:Rajdhani,sans-serif;">'+(p.chats||[]).length+' chats</div>' +
@@ -1328,6 +1328,7 @@ window.addEventListener("load", function() {
   });
 </script>
 <script src="plan-limits.js"></script>
+<script src="project-page.js"></script>
 <script src="projects.js" onerror="console.warn('projects.js not found - upload it to GitHub')"></script>
 <script src="theme.js"></script>
 <script src="mood.js"></script>
