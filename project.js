@@ -226,9 +226,9 @@ function submitNewProject() {
   document.getElementById('projectModal')?.remove()
   loadProjectsSection()
   showSection('projects')
-  // Show success toast
   showProjectToast('📁 Project "' + project.name + '" created!')
-  openProjectPanel(project.id)
+  // Small delay so modal fully closes before panel opens
+  setTimeout(() => openProjectPanel(project.id), 200)
 }
 
 // ── OPEN PROJECT PANEL (sidebar) ──────────────────────────────────────────────
