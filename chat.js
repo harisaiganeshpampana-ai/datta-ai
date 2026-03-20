@@ -1,4 +1,67 @@
 // ============================================
+// FORCE SEND FUNCTION TO BE GLOBAL
+// ============================================
+console.log("Chat.js loading...");
+
+// Helper for HTML escaping
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Fallback send function
+window.forceSend = function() {
+  console.log("Force send called");
+  const input = document.getElementById('message');
+  const message = input ? input.value.trim() : '';
+  
+  if (!message) return;
+  
+  const chatBox = document.getElementById('chat');
+  if (!chatBox) return;
+  
+  // Add user message
+  chatBox.innerHTML += `
+    <div class="messageRow userRow">
+      <div class="userBubble">${escapeHtml(message)}</div>
+      <div class="avatar">🧑</div>
+    </div>
+  `;
+  
+  input.value = '';
+  chatBox.scrollTop = chatBox.scrollHeight;
+  
+  // Add AI typing indicator
+  chatBox.innerHTML += `
+    <div class="messageRow">
+      <div class="avatar">🤖</div>
+      <div class="aiBubble typing">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  `;
+  chatBox.scrollTop = chatBox.scrollHeight;
+  
+  // Call the real send if it exists
+  if (typeof window.realSend === 'function') {
+    window.realSend(message);
+  } else {
+    // Fallback response
+    setTimeout(() => {
+      const typingMsg = chatBox.querySelector('.typing');
+      if (typingMsg && typingMsg.closest('.messageRow')) {
+        const row = typingMsg.closest('.messageRow');
+        row.innerHTML = `
+          <div class="avatar">🤖</div>
+          <div class="aiBubble">Hello! I'm Datta AI. Your message was: "${escapeHtml(message.substring(0, 100))}"\n\nI'm ready to help! What would you like to do?</div>
+        `;
+      }
+    }, 1000);
+  }
+};
+
+// ============================================
 // AUTHENTICATION HELPERS
 // ============================================
 function getToken() {
@@ -39,7 +102,11 @@ window.addEventListener("DOMContentLoaded", function() {
     const nameEl = document.querySelector(".profileName")
     const avatarEl = document.querySelector(".profileAvatar")
     const subEl = document.querySelector(".profileSub")
-    if (nameEl) nameEl.textContent = user.username || user.email || "User"
+    if (nameEl) {
+      nameEl.textContent = user.username || user.email || "User"
+      nameEl.style.wordBreak = 'break-all';
+      nameEl.style.whiteSpace = 'normal';
+    }
     if (avatarEl) avatarEl.textContent = (user.username || "U")[0].toUpperCase()
     
     const plan = localStorage.getItem("datta_plan") || "free"
@@ -140,7 +207,7 @@ async function generateImage(prompt, aiDiv) {
     `
   }
   hideStopBtn()
-  loadSidebar()
+  if (typeof loadSidebar === 'function') loadSidebar()
 }
 
 function testImageUrl(url, prompt, aiDiv, attempt, total) {
@@ -178,10 +245,10 @@ function displayImageInChat(prompt, imageUrl, aiDiv) {
         <div class="dattaImgWrap" style="max-width:400px;">
           <div style="font-family:Rajdhani,sans-serif;font-size:11px;letter-spacing:1px;color:#cc88ff;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
             <span>🎨</span>
-            <span>${prompt.substring(0, 50)}${prompt.length > 50 ? '...' : ''}</span>
+            <span>${escapeHtml(prompt.substring(0, 50))}${prompt.length > 50 ? '...' : ''}</span>
           </div>
           <div style="position:relative;border-radius:12px;overflow:hidden;background:#1a0a2a;">
-            <img src="${imageUrl}" alt="${prompt}"
+            <img src="${imageUrl}" alt="${escapeHtml(prompt)}"
               style="width:100%;border-radius:12px;display:block;cursor:pointer;"
               onclick="window.open('${imageUrl}', '_blank')"
               onerror="this.onerror=null; this.src='https://placehold.co/400x400/1a0a2a/cc88ff?text=Failed+to+load';"
@@ -204,7 +271,7 @@ function displayImageInChat(prompt, imageUrl, aiDiv) {
     if (chat) chat.scrollTop = chat.scrollHeight
   }
   hideStopBtn()
-  loadSidebar()
+  if (typeof loadSidebar === 'function') loadSidebar()
 }
 
 function renderImageResponse(text) {
@@ -224,10 +291,10 @@ function renderImageResponse(text) {
 
   return `<div class="dattaImgWrap" style="max-width:400px;">
   <div style="font-family:Rajdhani,sans-serif;font-size:11px;letter-spacing:1px;color:#cc88ff;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
-    <span>🎨</span><span>${safePrompt}</span>
+    <span>🎨</span><span>${escapeHtml(safePrompt)}</span>
   </div>
   <div style="border-radius:12px;overflow:hidden;background:#1a0a2a;">
-    <img src="${imgUrl}" alt="${altText}"
+    <img src="${imgUrl}" alt="${escapeHtml(altText)}"
       style="width:100%;border-radius:12px;display:block;cursor:pointer;"
       onclick="window.open('${imgUrl}', '_blank')"
       onerror="this.src='https://placehold.co/400x400/1a0a2a/cc88ff?text=Failed+to+load';"
@@ -380,10 +447,10 @@ function buildMoodPrefix() {
 }
 
 // ============================================
-// SEND FUNCTION - FIXED
+// SEND FUNCTION - MAIN
 // ============================================
 async function send() {
-  console.log("send() called") // Debug log
+  console.log("send() called")
   
   const input = document.getElementById("message")
   if (!input) {
@@ -399,16 +466,13 @@ async function send() {
   
   console.log("Sending:", text)
   
-  // Clear input
   input.value = ""
   
-  // Auto detect mood
   if (window.dattaAutoDetectMood && text) {
     const detected = window.dattaAutoDetectMood(text)
     if (detected) showAutoMoodPill(detected)
   }
   
-  // Save chat title if new chat
   if (!currentChatId) {
     let title = text.substring(0, 40)
     if (text.length > 40) title += "..."
@@ -420,7 +484,6 @@ async function send() {
   
   const moodEmoji = window.dattaMoodEmoji ? window.dattaMoodEmoji + " " : ""
   
-  // Add user message to chat
   if (chatBox) {
     chatBox.innerHTML += `
       <div class="messageRow userRow">
@@ -431,12 +494,10 @@ async function send() {
     chatBox.scrollTop = chatBox.scrollHeight
   }
   
-  // Check if it's an image generation request
   const willGenImage = imageTriggers.some(t => text.toLowerCase().includes(t))
   const willSearch = ["latest","news","search","find","what is","who is","weather","today","update"].some(t => text.toLowerCase().includes(t))
   const aiAvatarEmoji = window.dattaMoodEmoji || "🤖"
   
-  // Create AI message div
   let aiDiv = document.createElement("div")
   aiDiv.className = "messageRow"
   
@@ -473,7 +534,6 @@ async function send() {
   }
   showStopBtn()
   
-  // Handle image generation
   if (willGenImage) {
     let prompt = text
       .replace(/generate image of|create image of|make image of|draw|paint|illustrate|sketch/gi, "")
@@ -483,7 +543,6 @@ async function send() {
     return
   }
   
-  // Server call for chat
   controller = new AbortController()
   const formData = new FormData()
   const moodPrefix = buildMoodPrefix()
@@ -504,7 +563,6 @@ async function send() {
     const chatIdFromHeader = res.headers.get("x-chat-id")
     if (!currentChatId && chatIdFromHeader) currentChatId = chatIdFromHeader
     
-    // Update AI div for streaming
     aiDiv.innerHTML = `
       <div class="avatar">${aiAvatarEmoji}</div>
       <div class="aiContent">
@@ -560,7 +618,7 @@ async function send() {
     }
     
     hideStopBtn()
-    loadSidebar()
+    if (typeof loadSidebar === 'function') loadSidebar()
     
   } catch (err) {
     console.error("Send error:", err)
@@ -581,12 +639,6 @@ window.send = send
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
-function escapeHtml(text) {
-  const div = document.createElement('div')
-  div.textContent = text
-  return div.innerHTML
-}
-
 function hideWelcome() {
   const cw = document.querySelector(".chatWrapper")
   if (cw) cw.style.pointerEvents = "auto"
@@ -614,7 +666,7 @@ function saveChatTitle(title) {
   if (!history) return
   const div = document.createElement("div")
   div.className = "chatItem"
-  div.innerHTML = `<span class="chatTitle">${title}</span>`
+  div.innerHTML = `<span class="chatTitle">${escapeHtml(title)}</span>`
   history.prepend(div)
 }
 
@@ -841,7 +893,7 @@ function startAssistant() {
 window.startAssistant = startAssistant
 
 // ============================================
-// PROJECTS & ARTIFACTS
+// PROJECTS & ARTIFACTS (from index.html)
 // ============================================
 function loadProjects() {
   let projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
@@ -1004,11 +1056,11 @@ window.openChat = openChat
 
 // Load all data on page load
 window.addEventListener('load', function() {
+  console.log("Chat.js loaded - initializing")
   loadSidebar()
   loadProjects()
   loadArtifacts()
   
-  // Make sure send button works
   const sendBtn = document.getElementById("sendBtn")
   if (sendBtn) {
     sendBtn.onclick = function(e) {
@@ -1024,3 +1076,5 @@ window.addEventListener('load', function() {
 const style = document.createElement('style')
 style.textContent = `@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`
 document.head.appendChild(style)
+
+console.log("Chat.js loaded successfully")
