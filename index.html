@@ -1254,100 +1254,185 @@ window.showSection = showSection;
 </style>
 
 <!-- ============================================ -->
-<!-- EMERGENCY FIX - FORCE SEND BUTTON TO WORK -->
+<!-- DIRECT SEND BUTTON FIX - PASTE HERE -->
 <!-- ============================================ -->
 <script>
+// ============================================
+// DIRECT SEND BUTTON FIX - WORKING VERSION
+// ============================================
 (function() {
-  console.log("Emergency fix loaded - fixing send button");
+  console.log("🔧 FIX: Setting up send button...");
   
-  window.addEventListener('load', function() {
-    setTimeout(function() {
+  // Function to send message directly
+  function sendMessage() {
+    console.log("✅ Send button clicked!");
+    
+    const input = document.getElementById('message');
+    if (!input) {
+      console.error("❌ Input not found!");
+      return;
+    }
+    
+    const message = input.value.trim();
+    if (!message) {
+      console.log("No message to send");
+      return;
+    }
+    
+    console.log("📤 Sending:", message);
+    
+    // Clear input
+    input.value = '';
+    
+    // Get chat box
+    const chatBox = document.getElementById('chat');
+    if (!chatBox) {
+      console.error("Chat box not found!");
+      return;
+    }
+    
+    // Add user message
+    chatBox.innerHTML += `
+      <div class="messageRow userRow">
+        <div class="userBubble">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+        <div class="avatar">🧑</div>
+      </div>
+    `;
+    chatBox.scrollTop = chatBox.scrollHeight;
+    
+    // Hide welcome screen
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    if (welcomeScreen) welcomeScreen.style.display = 'none';
+    
+    // Add AI typing indicator
+    const aiId = 'ai_' + Date.now();
+    chatBox.innerHTML += `
+      <div class="messageRow" id="${aiId}">
+        <div class="avatar">🤖</div>
+        <div class="aiBubble typing">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    `;
+    chatBox.scrollTop = chatBox.scrollHeight;
+    
+    // Send to backend
+    const token = localStorage.getItem('datta_token') || '';
+    const formData = new FormData();
+    formData.append('message', message);
+    formData.append('token', token);
+    formData.append('language', localStorage.getItem('datta_language') || 'English');
+    
+    fetch('https://datta-ai-server.onrender.com/chat', {
+      method: 'POST',
+      body: formData
+    })
+    .then(async response => {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+      const aiDiv = document.getElementById(aiId);
       
-      // Fix 1: Directly attach send button click handler
-      const sendBtn = document.getElementById('sendBtn');
-      if (sendBtn) {
-        console.log("Found send button, attaching click handler");
-        
-        const newSendBtn = sendBtn.cloneNode(true);
-        sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
-        
-        newSendBtn.onclick = function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log("Send button clicked!");
-          
-          const input = document.getElementById('message');
-          const message = input ? input.value.trim() : '';
-          
-          if (!message) {
-            console.log("No message to send");
-            return;
-          }
-          
-          console.log("Sending message:", message);
-          
-          if (typeof window.send === 'function') {
-            window.send();
-          } else if (typeof send === 'function') {
-            send();
-          } else {
-            console.log("Send function not found, using fallback");
-            const chatBox = document.getElementById('chat');
-            if (chatBox) {
-              chatBox.innerHTML += `
-                <div class="messageRow userRow">
-                  <div class="userBubble">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-                  <div class="avatar">🧑</div>
-                </div>
-              `;
-              input.value = '';
-              chatBox.scrollTop = chatBox.scrollHeight;
-              
-              chatBox.innerHTML += `
-                <div class="messageRow">
-                  <div class="avatar">🤖</div>
-                  <div class="aiBubble typing">
-                    <span></span><span></span><span></span>
-                  </div>
-                </div>
-              `;
-              chatBox.scrollTop = chatBox.scrollHeight;
-              
-              setTimeout(() => {
-                const lastMsg = chatBox.lastElementChild;
-                if (lastMsg) {
-                  lastMsg.innerHTML = `
-                    <div class="avatar">🤖</div>
-                    <div class="aiBubble">I received: "${message.substring(0, 100)}"\n\nI'm Datta AI! How can I help you today?</div>
-                  `;
-                }
-              }, 1000);
-            }
-          }
-        };
+      if (aiDiv) {
+        aiDiv.innerHTML = `
+          <div class="avatar">🤖</div>
+          <div class="aiBubble">
+            <span class="stream"></span>
+          </div>
+        `;
       }
       
-      // Fix 2: Enter key handler
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        
+        if (chunk.includes('CHATID')) {
+          const parts = chunk.split('CHATID');
+          fullText += parts[0];
+        } else {
+          fullText += chunk;
+        }
+        
+        const streamSpan = aiDiv?.querySelector('.stream');
+        if (streamSpan) {
+          if (typeof marked !== 'undefined') {
+            streamSpan.innerHTML = marked.parse(fullText) + '<span class="cursor">▌</span>';
+          } else {
+            streamSpan.innerHTML = fullText + '<span class="cursor">▌</span>';
+          }
+          chatBox.scrollTop = chatBox.scrollHeight;
+        }
+      }
+      
+      const streamSpan = aiDiv?.querySelector('.stream');
+      if (streamSpan) {
+        if (typeof marked !== 'undefined') {
+          streamSpan.innerHTML = marked.parse(fullText);
+        } else {
+          streamSpan.innerHTML = fullText;
+        }
+      }
+      
+      // Save chat
+      if (typeof loadSidebar === 'function') loadSidebar();
+    })
+    .catch(error => {
+      console.error("Error:", error);
+      const aiDiv = document.getElementById(aiId);
+      if (aiDiv) {
+        aiDiv.innerHTML = `
+          <div class="avatar">🤖</div>
+          <div class="aiBubble" style="color:#ff8888;">
+            ⚠️ Sorry, I couldn't connect. Please try again.
+          </div>
+        `;
+      }
+    });
+  }
+  
+  // Wait for page to load
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      // Fix send button
+      const sendBtn = document.getElementById('sendBtn');
+      if (sendBtn) {
+        console.log("✅ Found send button");
+        sendBtn.onclick = function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          sendMessage();
+          return false;
+        };
+        console.log("✅ Send button attached!");
+      } else {
+        console.log("❌ Send button not found!");
+      }
+      
+      // Fix enter key
       const messageInput = document.getElementById('message');
       if (messageInput) {
-        console.log("Found message input, attaching enter key handler");
-        
-        const newInput = messageInput.cloneNode(true);
-        messageInput.parentNode.replaceChild(newInput, messageInput);
-        
-        newInput.addEventListener('keydown', function(e) {
+        console.log("✅ Found message input");
+        messageInput.addEventListener('keydown', function(e) {
           if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             console.log("Enter key pressed");
-            const sendButton = document.getElementById('sendBtn');
-            if (sendButton) sendButton.click();
+            sendMessage();
           }
         });
+        console.log("✅ Enter key attached!");
       }
       
+      // Fix chips
+      document.querySelectorAll('.chip').forEach(chip => {
+        chip.style.cursor = 'pointer';
+      });
+      
+      console.log("✅ All fixes applied!");
     }, 500);
   });
 })();
 </script>
+
 </body>
 </html>
