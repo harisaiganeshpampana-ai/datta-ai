@@ -386,6 +386,61 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
 
 <body>
 
+<!-- ============================================ -->
+<!-- AUTHENTICATION GUARD - PROTECT THE PAGE -->
+<!-- ============================================ -->
+<script>
+(function() {
+  // Check if user is logged in
+  const token = localStorage.getItem('datta_token');
+  const userStr = localStorage.getItem('datta_user');
+  let user = null;
+  
+  try {
+    if (userStr && userStr !== 'null') {
+      user = JSON.parse(userStr);
+    }
+  } catch(e) {}
+  
+  // If no token or no user, redirect to login
+  if (!token || !user) {
+    sessionStorage.setItem('redirectAfterLogin', window.location.href);
+    window.location.href = 'login.html';
+    return;
+  }
+  
+  // Store user info globally
+  window.dattaUser = user;
+  window.dattaToken = token;
+})();
+
+// Enhanced logout function
+function logout() {
+  localStorage.removeItem('datta_token');
+  localStorage.removeItem('datta_user');
+  localStorage.removeItem('datta_plan');
+  sessionStorage.removeItem('redirectAfterLogin');
+  const isGuest = window.dattaUser?.isGuest;
+  if (isGuest) {
+    localStorage.removeItem('datta_chats');
+    localStorage.removeItem('currentChatId');
+  }
+  window.location.href = 'login.html';
+}
+window.logout = logout;
+
+// Update all API calls to include auth token
+const originalFetch = window.fetch;
+window.fetch = function(url, options = {}) {
+  const token = localStorage.getItem('datta_token');
+  if (token && (url.includes('datta-ai-server') || url.includes('render.com') || url.includes('/api/'))) {
+    options.headers = options.headers || {};
+    options.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return originalFetch(url, options);
+};
+</script>
+
 <!-- SPLASH SCREEN -->
 <div id="splash">
   <div class="splash-ring">
@@ -598,10 +653,10 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
   </div>
 
   <!-- PROFILE BOTTOM -->
-  <div onclick="window.location.href='settings.html'" style="margin:4px 10px 10px;padding:10px 12px;border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.2s;border:1px solid transparent;" onmouseover="this.style.background='rgba(255,215,0,0.05)';this.style.borderColor='rgba(255,215,0,0.1)'" onmouseout="this.style.background='none';this.style.borderColor='transparent'">
+  <div onclick="toggleProfileMenu()" style="margin:4px 10px 10px;padding:10px 12px;border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.2s;border:1px solid transparent;" onmouseover="this.style.background='rgba(255,215,0,0.05)';this.style.borderColor='rgba(255,215,0,0.1)'" onmouseout="this.style.background='none';this.style.borderColor='transparent'">
     <div class="profileAvatar" style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#ff8c00);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;font-family:'Rajdhani',sans-serif;flex-shrink:0;">G</div>
     <div style="flex:1;min-width:0;">
-      <div class="profileName" style="font-size:10px;font-weight:600;color:#fff8e7;font-family:'DM Sans',sans-serif;word-break:break-word;line-height:1.3;max-width:130px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">Ganesh</div>
+      <div class="profileName" style="font-size:10px;font-weight:600;color:#fff8e7;font-family:'DM Sans',sans-serif;word-break:break-word;line-height:1.3;max-width:130px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">Loading...</div>
       <div class="profileSub" style="font-size:11px;color:#554400;font-family:'Rajdhani',sans-serif;">Free Plan</div>
     </div>
     <svg id="profileArrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
@@ -735,6 +790,34 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
 
 
 <script>
+  // Update profile with real user data
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      const user = window.dattaUser;
+      const profileName = document.querySelector('.profileName');
+      const profileSub = document.querySelector('.profileSub');
+      const avatarLetter = document.querySelector('.profileAvatar');
+      
+      if (profileName && user) {
+        const displayName = user.username || user.email || 'User';
+        profileName.textContent = displayName;
+        if (avatarLetter) avatarLetter.textContent = displayName.charAt(0).toUpperCase();
+      }
+      
+      const plan = localStorage.getItem('datta_plan') || 'free';
+      const isCreator = user?.isCreator || false;
+      
+      if (profileSub) {
+        if (isCreator) {
+          profileSub.textContent = '👑 Creator';
+        } else {
+          const planNames = { shakti: '⚡ Shakti Plan', agni: '🔥 Agni Plan', brahma: '👑 Brahma Plan', free: 'Free Plan', arambh: 'Free Plan' };
+          profileSub.textContent = planNames[plan] || 'Free Plan';
+        }
+      }
+    }, 100);
+  });
+
   // ── SPLASH ──────────────────────────────────────────
   setTimeout(function() {
     var splash = document.getElementById('splash');
@@ -748,7 +831,7 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
   // ── UPGRADE BANNER DYNAMIC ───────────────────────────
   window.addEventListener('load', function() {
     setTimeout(function() {
-      const user = (() => { try { return JSON.parse(localStorage.getItem('datta_user')||'{}') } catch{return{}} })()
+      const user = window.dattaUser || {};
       const plan = localStorage.getItem('datta_plan') || 'free'
       const username = (user.username||'').toLowerCase()
       const creators = ['pampana_hari_sai_ganesh','harisaiganesh','ganesh','admin','creator','dattaai']
@@ -759,7 +842,6 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
       const sub = document.getElementById('upgradeSub')
       
       if (isCreatorUser) {
-        // Show creator status instead
         if (banner) banner.style.background = 'rgba(255,215,0,0.08)'
         if (title) title.textContent = '👑 Creator Account'
         if (sub) sub.textContent = 'Full access · Unlimited'
@@ -772,14 +854,6 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
           if (sub) sub.textContent = 'Manage subscription →'
         }
       }
-
-      // Update profile name
-      const profileName = document.querySelector('.profileName')
-      const profileSub = document.querySelector('.profileSub')
-      const avatarLetter = document.querySelector('.profileAvatar')
-      if (profileName && user.username) profileName.textContent = user.username
-      if (profileSub) profileSub.textContent = isCreatorUser ? '👑 Creator' : (plan.charAt(0).toUpperCase()+plan.slice(1)+' Plan')
-      if (avatarLetter && user.username) avatarLetter.textContent = user.username.charAt(0).toUpperCase()
     }, 800)
   })
 
