@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://harisaiganeshpampana-ai.github.io/datta-ai/sitemap.xml
