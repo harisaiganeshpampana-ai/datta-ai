@@ -382,18 +382,58 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
   to { opacity: 0; visibility: hidden; display: none; }
 }
 
-/* Project & Artifact Items */
-.projectItem, .artifactItem {
-  padding: 12px;
-  background: rgba(255,215,0,0.03);
-  border: 1px solid rgba(255,215,0,0.08);
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s;
+/* Project Styles */
+.projectLocked {
+  position: relative;
+  opacity: 0.7;
 }
-.projectItem:hover, .artifactItem:hover {
-  background: rgba(255,215,0,0.08);
-  border-color: rgba(255,215,0,0.2);
+.lockOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+.lockOverlay button {
+  background: rgba(255,215,0,0.2);
+  border: 1px solid rgba(255,215,0,0.3);
+  padding: 6px 12px;
+  border-radius: 20px;
+  color: #ffd700;
+  cursor: pointer;
+  font-size: 11px;
+}
+.projectActive {
+  background: rgba(255,215,0,0.15) !important;
+  border-color: rgba(255,215,0,0.3) !important;
+}
+.projectHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: rgba(255,215,0,0.05);
+  border-bottom: 1px solid rgba(255,215,0,0.1);
+}
+.projectActions {
+  display: flex;
+  gap: 8px;
+}
+.projectActions button {
+  background: none;
+  border: none;
+  color: #665500;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.projectActions button:hover {
+  background: rgba(255,215,0,0.1);
+  color: var(--accent);
 }
 </style>
 </head>
@@ -736,7 +776,7 @@ window.fetch = function(url, options = {}) {
               <rect x="3" y="3" width="18" height="18" rx="2"/>
             </svg>
           </button>
-          <button class="sendBtn" id="sendBtn" onclick="send()">
+          <button class="sendBtn" id="sendBtn" onclick="sendMessage()" style="background:var(--accent);">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <line x1="12" y1="19" x2="12" y2="5"/>
               <polyline points="5 12 12 5 19 12"/>
@@ -750,10 +790,181 @@ window.fetch = function(url, options = {}) {
 
 <script>
 // ============================================
-// PROJECTS & ARTIFACTS MANAGEMENT
+// HELPER FUNCTIONS
+// ============================================
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function showToastMsg(msg) {
+  let t = document.getElementById("sidebarToast")
+  if (!t) {
+    t = document.createElement("div")
+    t.id = "sidebarToast"
+    t.style.cssText = "position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#0f0e00;border:1px solid rgba(0,255,136,0.3);border-radius:50px;padding:8px 18px;font-family:Rajdhani,sans-serif;font-size:12px;color:#00ff88;letter-spacing:1px;z-index:9999;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.5);"
+    document.body.appendChild(t)
+  }
+  t.textContent = msg
+  t.style.display = "block"
+  setTimeout(() => t.style.display = "none", 2500)
+}
+
+function hideWelcome() {
+  const cw = document.querySelector(".chatWrapper")
+  if (cw) cw.style.pointerEvents = "auto"
+  const w = document.getElementById("welcomeScreen")
+  if (w) w.style.display = "none"
+}
+
+function showWelcome() {
+  const cw = document.querySelector(".chatWrapper")
+  if (cw) cw.style.pointerEvents = "none"
+  const w = document.getElementById("welcomeScreen")
+  if (w) w.style.display = "block"
+}
+
+function fillPrompt(text) {
+  const input = document.getElementById("message")
+  if (input) input.value = text
+  hideWelcome()
+  sendMessage()
+}
+window.fillPrompt = fillPrompt;
+
+function toggleSidebar() {
+  var sidebar = document.getElementById("sidebar");
+  var overlay = document.getElementById("sidebarOverlay");
+  if (!sidebar) return;
+  var isOpen = sidebar.classList.contains("show");
+  if (isOpen) {
+    sidebar.classList.remove("show");
+    if (overlay) overlay.style.display = "none";
+  } else {
+    sidebar.classList.add("show");
+    if (overlay && window.innerWidth < 768) overlay.style.display = "block";
+  }
+}
+function closeSidebar() {
+  var sidebar = document.getElementById("sidebar");
+  var overlay = document.getElementById("sidebarOverlay");
+  if (sidebar) sidebar.classList.remove("show");
+  if (overlay) overlay.style.display = "none";
+}
+window.closeSidebar = closeSidebar;
+window.toggleSidebar = toggleSidebar;
+
+function toggleColorPanel() {
+  var panel = document.getElementById('colorPanel');
+  if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+window.toggleColorPanel = toggleColorPanel;
+
+function updateTopbarDot() {
+  var dot = document.getElementById('topbarColorDot');
+  if (dot) dot.style.background = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+}
+window.updateTopbarDot = updateTopbarDot;
+
+function toggleProfileMenu() {
+  var menu = document.getElementById('profileMenu');
+  var arrow = document.getElementById('profileArrow');
+  if (!menu) return;
+  var isOpen = menu.style.display !== 'none';
+  menu.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.textContent = isOpen ? '▾' : '▴';
+}
+window.toggleProfileMenu = toggleProfileMenu;
+
+function goToSettings() {
+  window.location.href = 'settings.html';
+}
+window.goToSettings = goToSettings;
+
+function togglePlusMenu() {
+  var sheet = document.getElementById("addToChatSheet");
+  var overlay = document.getElementById("addToChatOverlay");
+  if (!sheet) return;
+  var isOpen = sheet.classList.contains("show");
+  if (isOpen) {
+    sheet.classList.remove("show");
+    if (overlay) overlay.classList.remove("show");
+  } else {
+    sheet.classList.add("show");
+    if (overlay) overlay.classList.add("show");
+  }
+  event && event.stopPropagation();
+}
+function closePlusMenu() {
+  var sheet = document.getElementById("addToChatSheet");
+  var overlay = document.getElementById("addToChatOverlay");
+  if (sheet) sheet.classList.remove("show");
+  if (overlay) overlay.classList.remove("show");
+}
+window.togglePlusMenu = togglePlusMenu;
+window.closePlusMenu = closePlusMenu;
+
+function showFilePreview(file) {
+  var preview = document.getElementById("filePreview");
+  var wrap = document.getElementById("filePreviewWrap");
+  if (preview) preview.textContent = "📄 " + file.name;
+  if (wrap) wrap.style.display = "block";
+}
+function clearFileSelection() {
+  ["cameraInput","photoInput","imageInput"].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.value = "";
+  });
+  var preview = document.getElementById("filePreview");
+  var wrap = document.getElementById("filePreviewWrap");
+  if (preview) preview.textContent = "";
+  if (wrap) wrap.style.display = "none";
+}
+window.clearFileSelection = clearFileSelection;
+
+function triggerCamera() { document.getElementById("cameraInput").click(); }
+function triggerPhotos() { document.getElementById("photoInput").click(); }
+function triggerFile()   { document.getElementById("imageInput").click(); }
+function triggerImageGen() {
+  var input = document.getElementById("message");
+  if (input) { input.value = "generate image of "; input.focus(); }
+  closePlusMenu();
+}
+function triggerWebSearch() {
+  var input = document.getElementById("message");
+  if (input) { input.placeholder = "Search the web..."; input.focus(); }
+  closePlusMenu();
+}
+window.triggerCamera = triggerCamera;
+window.triggerPhotos = triggerPhotos;
+window.triggerFile = triggerFile;
+window.triggerImageGen = triggerImageGen;
+window.triggerWebSearch = triggerWebSearch;
+
+function showSection(name) {
+  document.querySelectorAll(".sidebarSection").forEach(s => s.style.display = "none");
+  const el = document.getElementById("section-" + name);
+  if (el) el.style.display = "flex";
+  document.querySelectorAll(".navItem").forEach(b => b.classList.remove("active"));
+  const btns = document.querySelectorAll(".navItem");
+  const idx = ["chats","projects","artifacts"].indexOf(name);
+  if (btns[idx]) btns[idx].classList.add("active");
+  const showRecents = name === "chats";
+  const recentsLabel = document.getElementById("recentsLabel");
+  const search = document.getElementById("search");
+  if (recentsLabel) recentsLabel.style.display = showRecents ? "block" : "none";
+  if (search) search.style.display = showRecents ? "block" : "none";
+}
+window.showSection = showSection;
+
+// ============================================
+// COMPLETE PROJECTS SYSTEM WITH LOCK
 // ============================================
 
-// Load projects from localStorage
+let currentProject = null;
+let projectPasswords = JSON.parse(localStorage.getItem('datta_project_passwords') || '{}');
+let currentProjectChat = null;
+
 function loadProjects() {
   let projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
   const projectsSection = document.getElementById('section-projects');
@@ -767,7 +978,7 @@ function loadProjects() {
           <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
         </svg>
         <p>No projects yet</p>
-        <button onclick="createNewProject()" style="margin-top:12px;padding:8px 16px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.2);border-radius:10px;color:var(--accent);cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:12px;">+ Create New Project</button>
+        <button onclick="createNewProject()" style="margin-top:12px;padding:8px 16px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.2);border-radius:10px;color:var(--accent);cursor:pointer;">+ Create New Project</button>
       </div>
     `;
     return;
@@ -778,46 +989,348 @@ function loadProjects() {
       <button onclick="createNewProject()" style="width:100%;padding:10px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.15);border-radius:10px;color:var(--accent);cursor:pointer;margin-bottom:12px;">+ New Project</button>
       <div style="display:flex;flex-direction:column;gap:8px;">
         ${projects.map(project => `
-          <div style="padding:12px;background:rgba(255,215,0,0.03);border:1px solid rgba(255,215,0,0.08);border-radius:10px;display:flex;align-items:center;gap:10px;">
-            <span>📁</span>
-            <div style="flex:1;">
-              <div style="font-size:13px;color:var(--accent);">${escapeHtml(project.name)}</div>
-              <div style="font-size:10px;color:#665500;">${project.chats?.length || 0} chats</div>
+          <div class="projectItem ${currentProject === project.id ? 'projectActive' : ''}" 
+               data-project-id="${project.id}"
+               style="padding:12px;background:rgba(255,215,0,0.03);border:1px solid rgba(255,215,0,0.08);border-radius:10px;cursor:pointer;transition:all 0.2s;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:20px;">${project.locked ? '🔒' : '📁'}</span>
+              <div style="flex:1;">
+                <div style="font-size:13px;color:var(--accent);font-weight:600;">${escapeHtml(project.name)}</div>
+                <div style="font-size:10px;color:#665500;">${project.chats?.length || 0} chats · ${project.locked ? '🔒 Locked' : '🔓 Unlocked'}</div>
+              </div>
+              <div style="display:flex;gap:5px;">
+                ${project.locked ? `<button onclick="event.stopPropagation();unlockProject('${project.id}')" style="background:none;border:none;color:#ffd700;cursor:pointer;" title="Unlock">🔓</button>` : 
+                                   `<button onclick="event.stopPropagation();lockProject('${project.id}')" style="background:none;border:none;color:#665500;cursor:pointer;" title="Lock">🔒</button>`}
+                <button onclick="event.stopPropagation();renameProject('${project.id}')" style="background:none;border:none;color:#665500;cursor:pointer;" title="Rename">✏️</button>
+                <button onclick="event.stopPropagation();deleteProject('${project.id}')" style="background:none;border:none;color:#ff6666;cursor:pointer;" title="Delete">🗑️</button>
+              </div>
             </div>
-            <button onclick="event.stopPropagation();deleteProject('${project.id}')" style="background:none;border:none;color:#443300;cursor:pointer;">🗑️</button>
           </div>
         `).join('')}
       </div>
     </div>
   `;
+  
+  document.querySelectorAll('.projectItem').forEach(el => {
+    el.onclick = (e) => {
+      if (e.target.tagName === 'BUTTON') return;
+      const projectId = el.dataset.projectId;
+      openProject(projectId);
+    };
+  });
 }
 
 function createNewProject() {
   const projectName = prompt('Enter project name:', 'My Project');
   if (!projectName || !projectName.trim()) return;
   
+  const lockProject = confirm('Do you want to lock this project with a password?');
+  let password = null;
+  
+  if (lockProject) {
+    password = prompt('Set a password for this project:', '');
+    if (!password) return;
+  }
+  
   const projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
-  projects.push({
+  const newProject = {
     id: 'project_' + Date.now(),
     name: projectName.trim(),
     chats: [],
+    locked: lockProject,
     created: Date.now(),
     updated: Date.now()
+  };
+  
+  projects.push(newProject);
+  localStorage.setItem('datta_projects', JSON.stringify(projects));
+  
+  if (password) {
+    projectPasswords[newProject.id] = password;
+    localStorage.setItem('datta_project_passwords', JSON.stringify(projectPasswords));
+  }
+  
+  loadProjects();
+  showToastMsg('📁 Project created: ' + projectName + (lockProject ? ' (Password protected)' : ''));
+}
+
+function openProject(projectId) {
+  const projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
+  const project = projects.find(p => p.id === projectId);
+  
+  if (!project) {
+    showToastMsg('Project not found');
+    return;
+  }
+  
+  if (project.locked) {
+    const password = prompt(`Project "${project.name}" is locked. Enter password:`);
+    if (!password) return;
+    
+    const storedPass = projectPasswords[projectId];
+    if (storedPass !== password) {
+      showToastMsg('❌ Incorrect password!');
+      return;
+    }
+  }
+  
+  currentProject = projectId;
+  localStorage.setItem('datta_current_project', projectId);
+  
+  const recentsLabel = document.getElementById('recentsLabel');
+  if (recentsLabel) {
+    recentsLabel.innerHTML = `📁 PROJECT: ${escapeHtml(project.name)} <button onclick="closeProject()" style="margin-left:8px;background:none;border:none;color:#665500;cursor:pointer;">✕</button>`;
+  }
+  
+  loadProjectChats(project);
+  loadProjects();
+  showToastMsg(`📁 Opened project: ${project.name}`);
+}
+
+function loadProjectChats(project) {
+  const history = document.getElementById('history');
+  if (!history) return;
+  
+  history.innerHTML = '';
+  
+  if (!project.chats || project.chats.length === 0) {
+    history.innerHTML = `
+      <div class="emptySection">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="1.5">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <p>No chats in this project</p>
+        <button onclick="newChatInProject()" style="margin-top:12px;padding:8px 16px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.2);border-radius:10px;color:var(--accent);cursor:pointer;">+ New Chat in Project</button>
+      </div>
+    `;
+    return;
+  }
+  
+  project.chats.forEach(chat => {
+    let div = document.createElement("div")
+    div.className = "chatItem"
+    div.style.cssText = "display:flex;align-items:center;padding:8px 10px;border-radius:10px;cursor:pointer;transition:background 0.15s;"
+    let cleanTitle = chat.title || "New Chat"
+    
+    div.innerHTML = `
+      <div class="chatTitle" style="flex:1;font-size:13px;color:#665500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(cleanTitle)}</div>
+      <button class="deleteBtn" onclick="event.stopPropagation();deleteChatFromProject('${chat.id}')" style="background:none;border:none;color:#443300;cursor:pointer;">🗑️</button>
+    `
+    div.onclick = () => {
+      openChatFromProject(chat);
+      if (window.innerWidth < 900 && typeof closeSidebar === 'function') closeSidebar()
+    }
+    history.appendChild(div)
   });
+}
+
+function newChatInProject() {
+  if (!currentProject) {
+    showToastMsg('Please open a project first');
+    return;
+  }
+  
+  const projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
+  const project = projects.find(p => p.id === currentProject);
+  
+  if (!project) return;
+  
+  const newChat = {
+    id: 'chat_' + Date.now(),
+    title: 'New Chat',
+    messages: [],
+    created: Date.now()
+  };
+  
+  project.chats = project.chats || [];
+  project.chats.unshift(newChat);
+  project.updated = Date.now();
+  
+  localStorage.setItem('datta_projects', JSON.stringify(projects));
+  loadProjectChats(project);
+  
+  const chatBox = document.getElementById('chat');
+  if (chatBox) chatBox.innerHTML = '';
+  showWelcome();
+  currentProjectChat = newChat;
+  
+  showToastMsg('✨ New chat created in project: ' + project.name);
+}
+
+function openChatFromProject(chat) {
+  const chatBox = document.getElementById('chat');
+  if (!chatBox) return;
+  
+  chatBox.innerHTML = '';
+  hideWelcome();
+  currentProjectChat = chat;
+  
+  chat.messages.forEach(msg => {
+    if (msg.role === 'user') {
+      chatBox.innerHTML += `
+        <div class="messageRow userRow">
+          <div class="userBubble">${escapeHtml(msg.content)}</div>
+          <div class="avatar">🧑</div>
+        </div>
+      `;
+    } else {
+      chatBox.innerHTML += `
+        <div class="messageRow">
+          <div class="avatar">🤖</div>
+          <div class="aiBubble">${marked.parse(msg.content)}</div>
+        </div>
+      `;
+    }
+  });
+  
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function saveMessageToProject(role, content) {
+  if (!currentProject || !currentProjectChat) return;
+  
+  const projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
+  const project = projects.find(p => p.id === currentProject);
+  
+  if (project && currentProjectChat) {
+    currentProjectChat.messages.push({ role, content, timestamp: Date.now() });
+    
+    if (role === 'user' && currentProjectChat.title === 'New Chat') {
+      currentProjectChat.title = content.substring(0, 40);
+    }
+    
+    const chatIndex = project.chats.findIndex(c => c.id === currentProjectChat.id);
+    if (chatIndex !== -1) {
+      project.chats[chatIndex] = currentProjectChat;
+    }
+    
+    project.updated = Date.now();
+    localStorage.setItem('datta_projects', JSON.stringify(projects));
+    loadProjectChats(project);
+  }
+}
+
+function lockProject(projectId) {
+  const password = prompt('Set a password to lock this project:');
+  if (!password) return;
+  
+  const projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
+  const project = projects.find(p => p.id === projectId);
+  
+  if (project) {
+    project.locked = true;
+    projectPasswords[projectId] = password;
+    localStorage.setItem('datta_projects', JSON.stringify(projects));
+    localStorage.setItem('datta_project_passwords', JSON.stringify(projectPasswords));
+    loadProjects();
+    
+    if (currentProject === projectId) {
+      closeProject();
+    }
+    
+    showToastMsg('🔒 Project locked: ' + project.name);
+  }
+}
+
+function unlockProject(projectId) {
+  const projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
+  const project = projects.find(p => p.id === projectId);
+  
+  if (!project) return;
+  
+  const storedPass = projectPasswords[projectId];
+  const password = prompt(`Enter password to unlock "${project.name}":`);
+  
+  if (storedPass !== password) {
+    showToastMsg('❌ Incorrect password!');
+    return;
+  }
+  
+  project.locked = false;
   localStorage.setItem('datta_projects', JSON.stringify(projects));
   loadProjects();
-  showToastMsg('📁 Project created: ' + projectName);
+  showToastMsg('🔓 Project unlocked: ' + project.name);
+}
+
+function renameProject(projectId) {
+  const projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
+  const project = projects.find(p => p.id === projectId);
+  
+  if (!project) return;
+  
+  const newName = prompt('Enter new project name:', project.name);
+  if (!newName || newName.trim() === '') return;
+  
+  project.name = newName.trim();
+  localStorage.setItem('datta_projects', JSON.stringify(projects));
+  loadProjects();
+  
+  if (currentProject === projectId) {
+    const recentsLabel = document.getElementById('recentsLabel');
+    if (recentsLabel) {
+      recentsLabel.innerHTML = `📁 PROJECT: ${escapeHtml(project.name)} <button onclick="closeProject()" style="margin-left:8px;background:none;border:none;color:#665500;cursor:pointer;">✕</button>`;
+    }
+  }
+  
+  showToastMsg('✏️ Project renamed to: ' + project.name);
 }
 
 function deleteProject(projectId) {
-  if (confirm('Delete this project permanently?')) {
-    let projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
-    projects = projects.filter(p => p.id !== projectId);
+  if (!confirm('Delete this project permanently? All chats inside will be lost!')) return;
+  
+  let projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
+  projects = projects.filter(p => p.id !== projectId);
+  localStorage.setItem('datta_projects', JSON.stringify(projects));
+  
+  delete projectPasswords[projectId];
+  localStorage.setItem('datta_project_passwords', JSON.stringify(projectPasswords));
+  
+  if (currentProject === projectId) {
+    closeProject();
+  }
+  
+  loadProjects();
+  showToastMsg('🗑️ Project deleted');
+}
+
+function closeProject() {
+  currentProject = null;
+  currentProjectChat = null;
+  localStorage.removeItem('datta_current_project');
+  
+  const recentsLabel = document.getElementById('recentsLabel');
+  if (recentsLabel) recentsLabel.innerHTML = 'RECENTS';
+  
+  if (typeof loadSidebar === 'function') loadSidebar();
+  
+  showToastMsg('📁 Closed project');
+}
+
+function deleteChatFromProject(chatId) {
+  if (!confirm('Delete this chat?')) return;
+  
+  const projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
+  const project = projects.find(p => p.id === currentProject);
+  
+  if (project) {
+    project.chats = project.chats.filter(c => c.id !== chatId);
     localStorage.setItem('datta_projects', JSON.stringify(projects));
-    loadProjects();
-    showToastMsg('🗑️ Project deleted');
+    loadProjectChats(project);
+    
+    if (currentProjectChat?.id === chatId) {
+      const chatBox = document.getElementById('chat');
+      if (chatBox) chatBox.innerHTML = '';
+      showWelcome();
+      currentProjectChat = null;
+    }
+    
+    showToastMsg('🗑️ Chat deleted');
   }
 }
+
+// ============================================
+// ARTIFACTS FUNCTIONS
+// ============================================
 
 function loadArtifacts() {
   let artifacts = JSON.parse(localStorage.getItem('datta_artifacts') || '[]');
@@ -831,7 +1344,7 @@ function loadArtifacts() {
           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
         </svg>
         <p>No artifacts yet</p>
-        <button onclick="createNewArtifact()" style="margin-top:12px;padding:8px 16px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.2);border-radius:10px;color:var(--accent);cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:12px;">+ Create New Artifact</button>
+        <button onclick="createNewArtifact()" style="margin-top:12px;padding:8px 16px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.2);border-radius:10px;color:var(--accent);cursor:pointer;">+ Create New Artifact</button>
       </div>
     `;
     return;
@@ -885,308 +1398,217 @@ function deleteArtifact(artifactId) {
   }
 }
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
+// ============================================
+// SEND MESSAGE FUNCTION
+// ============================================
 
-function showToastMsg(msg) {
-  let t = document.getElementById("sidebarToast")
-  if (!t) {
-    t = document.createElement("div")
-    t.id = "sidebarToast"
-    t.style.cssText = "position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#0f0e00;border:1px solid rgba(0,255,136,0.3);border-radius:50px;padding:8px 18px;font-family:Rajdhani,sans-serif;font-size:12px;color:#00ff88;letter-spacing:1px;z-index:9999;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.5);"
-    document.body.appendChild(t)
+async function sendMessage() {
+  console.log("sendMessage called");
+  
+  const input = document.getElementById("message");
+  if (!input) return;
+  
+  const text = input.value.trim();
+  if (!text) return;
+  
+  input.value = "";
+  
+  // Save to project if in a project
+  if (currentProject && currentProjectChat) {
+    saveMessageToProject('user', text);
   }
-  t.textContent = msg
-  t.style.display = "block"
-  setTimeout(() => t.style.display = "none", 2500)
-}
-
-// Update profile with real user data
-window.addEventListener('load', function() {
-  setTimeout(function() {
-    const user = window.dattaUser;
-    const profileName = document.querySelector('.profileName');
-    const profileSub = document.querySelector('.profileSub');
-    const avatarLetter = document.querySelector('.profileAvatar');
+  
+  const chatBox = document.getElementById("chat");
+  if (!chatBox) return;
+  
+  // Add user message
+  chatBox.innerHTML += `
+    <div class="messageRow userRow">
+      <div class="userBubble">${escapeHtml(text)}</div>
+      <div class="avatar">🧑</div>
+    </div>
+  `;
+  chatBox.scrollTop = chatBox.scrollHeight;
+  
+  // Hide welcome screen
+  hideWelcome();
+  
+  // Add AI typing indicator
+  const aiId = 'ai_' + Date.now();
+  chatBox.innerHTML += `
+    <div class="messageRow" id="${aiId}">
+      <div class="avatar">🤖</div>
+      <div class="aiBubble typing">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  `;
+  chatBox.scrollTop = chatBox.scrollHeight;
+  
+  // Send to backend
+  const token = localStorage.getItem('datta_token') || '';
+  const formData = new FormData();
+  formData.append('message', text);
+  formData.append('token', token);
+  formData.append('language', localStorage.getItem('datta_language') || 'English');
+  
+  try {
+    const response = await fetch('https://datta-ai-server.onrender.com/chat', {
+      method: 'POST',
+      body: formData
+    });
     
-    if (profileName && user) {
-      const displayName = user.username || user.email || 'User';
-      profileName.textContent = displayName;
-      profileName.style.wordBreak = 'break-all';
-      profileName.style.whiteSpace = 'normal';
-      if (avatarLetter) avatarLetter.textContent = displayName.charAt(0).toUpperCase();
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+    const aiDiv = document.getElementById(aiId);
+    
+    if (aiDiv) {
+      aiDiv.innerHTML = `
+        <div class="avatar">🤖</div>
+        <div class="aiBubble">
+          <span class="stream"></span>
+        </div>
+      `;
     }
     
-    const plan = localStorage.getItem('datta_plan') || 'free';
-    const isCreator = user?.isCreator || false;
-    
-    if (profileSub) {
-      if (isCreator) {
-        profileSub.textContent = '👑 Creator';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value);
+      
+      if (chunk.includes('CHATID')) {
+        const parts = chunk.split('CHATID');
+        fullText += parts[0];
       } else {
-        const planNames = { shakti: '⚡ Shakti Plan', agni: '🔥 Agni Plan', brahma: '👑 Brahma Plan', free: 'Free Plan', arambh: 'Free Plan' };
-        profileSub.textContent = planNames[plan] || 'Free Plan';
+        fullText += chunk;
+      }
+      
+      const streamSpan = aiDiv?.querySelector('.stream');
+      if (streamSpan) {
+        if (typeof marked !== 'undefined') {
+          streamSpan.innerHTML = marked.parse(fullText) + '<span class="cursor">▌</span>';
+        } else {
+          streamSpan.innerHTML = fullText + '<span class="cursor">▌</span>';
+        }
+        chatBox.scrollTop = chatBox.scrollHeight;
       }
     }
-  }, 100);
-});
-
-// ── SPLASH ──────────────────────────────────────────
-setTimeout(function() {
-  var splash = document.getElementById('splash');
-  if (splash) {
-    splash.style.opacity = '0';
-    splash.style.transition = 'opacity 0.5s ease';
-    setTimeout(function() { splash.style.display = 'none'; }, 500);
-  }
-}, 2500);
-
-// ── UPGRADE BANNER DYNAMIC ───────────────────────────
-window.addEventListener('load', function() {
-  setTimeout(function() {
-    const user = window.dattaUser || {};
-    const plan = localStorage.getItem('datta_plan') || 'free'
-    const username = (user.username||'').toLowerCase()
-    const creators = ['pampana_hari_sai_ganesh','harisaiganesh','ganesh','admin','creator','dattaai']
-    const isCreatorUser = creators.some(c => username.includes(c))
     
-    const banner = document.getElementById('upgradeBanner')
-    const title = document.getElementById('upgradeTitle')
-    const sub = document.getElementById('upgradeSub')
-    
-    if (isCreatorUser) {
-      if (banner) banner.style.background = 'rgba(255,215,0,0.08)'
-      if (title) title.textContent = '👑 Creator Account'
-      if (sub) sub.textContent = 'Full access · Unlimited'
-      if (banner) banner.onclick = null
-      if (banner) banner.style.cursor = 'default'
-    } else {
-      const planNames = { shakti:'⚡ Shakti', agni:'🔥 Agni', brahma:'👑 Brahma' }
-      if (plan !== 'free' && plan !== 'arambh' && planNames[plan]) {
-        if (title) title.textContent = planNames[plan] + ' Plan Active'
-        if (sub) sub.textContent = 'Manage subscription →'
+    const streamSpan = aiDiv?.querySelector('.stream');
+    if (streamSpan) {
+      if (typeof marked !== 'undefined') {
+        streamSpan.innerHTML = marked.parse(fullText);
+      } else {
+        streamSpan.innerHTML = fullText;
       }
     }
-  }, 800)
-})
-
-// ── GREETING ────────────────────────────────────────
-window.addEventListener('load', function() {
-  var hour = new Date().getHours();
-  var greet = hour < 12 ? "Good morning ☀️" : hour < 17 ? "Good afternoon 🌤️" : hour < 21 ? "Good evening 🌙" : "Good night 🌟";
-  var el = document.querySelector(".welcomeGreeting");
-  if (el) el.textContent = greet;
-});
-
-// ── SIDEBAR TOGGLE ──────────────────────────────────
-function toggleSidebar() {
-  var sidebar = document.getElementById("sidebar");
-  var overlay = document.getElementById("sidebarOverlay");
-  if (!sidebar) return;
-  var isOpen = sidebar.classList.contains("show");
-  if (isOpen) {
-    sidebar.classList.remove("show");
-    if (overlay) overlay.style.display = "none";
-  } else {
-    sidebar.classList.add("show");
-    if (overlay && window.innerWidth < 768) overlay.style.display = "block";
+    
+    // Save AI response to project
+    if (currentProject && currentProjectChat) {
+      saveMessageToProject('assistant', fullText);
+    }
+    
+  } catch (error) {
+    console.error("Error:", error);
+    const aiDiv = document.getElementById(aiId);
+    if (aiDiv) {
+      aiDiv.innerHTML = `
+        <div class="avatar">🤖</div>
+        <div class="aiBubble" style="color:#ff8888;">
+          ⚠️ Sorry, I couldn't connect. Please try again.
+        </div>
+      `;
+    }
   }
 }
-function closeSidebar() {
-  var sidebar = document.getElementById("sidebar");
-  var overlay = document.getElementById("sidebarOverlay");
-  if (sidebar) sidebar.classList.remove("show");
-  if (overlay) overlay.style.display = "none";
-}
-window.closeSidebar = closeSidebar;
-window.toggleSidebar = toggleSidebar;
 
-// ── COLOR PANEL ─────────────────────────────────────
-function toggleColorPanel() {
-  var panel = document.getElementById('colorPanel');
-  if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-}
-window.toggleColorPanel = toggleColorPanel;
+window.sendMessage = sendMessage;
 
-function updateTopbarDot() {
-  var dot = document.getElementById('topbarColorDot');
-  if (dot) dot.style.background = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
-  var saved = localStorage.getItem('datta_accent') || '#ffd700';
-  var p1 = document.getElementById('accentColorPicker');
-  var p2 = document.getElementById('accentColorPickerSettings');
-  if (p1) p1.value = saved;
-  if (p2) p2.value = saved;
-}
-window.updateTopbarDot = updateTopbarDot;
-window.addEventListener('load', function() { setTimeout(updateTopbarDot, 100); });
+// ============================================
+// VOICE ASSISTANT
+// ============================================
 
-// Close color panel on outside click
-document.addEventListener('click', function(e) {
-  var panel = document.getElementById('colorPanel');
-  var btn = document.getElementById('topbarColorBtn');
-  if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
-    panel.style.display = 'none';
-  }
-});
-
-// ── PROFILE MENU ────────────────────────────────────
-function toggleProfileMenu() {
-  var menu = document.getElementById('profileMenu');
-  var arrow = document.getElementById('profileArrow');
-  if (!menu) return;
-  var isOpen = menu.style.display !== 'none';
-  menu.style.display = isOpen ? 'none' : 'block';
-  if (arrow) arrow.textContent = isOpen ? '▾' : '▴';
-}
-window.toggleProfileMenu = toggleProfileMenu;
-
-document.addEventListener('click', function(e) {
-  var menu = document.getElementById('profileMenu');
-  if (menu && menu.style.display !== 'none' &&
-      !menu.contains(e.target) &&
-      !e.target.closest('[onclick*="toggleProfileMenu"]')) {
-    menu.style.display = 'none';
-  }
-});
-
-// ── SETTINGS ────────────────────────────────────────
-function goToSettings() {
-  if (typeof currentChatId !== 'undefined' && currentChatId) {
-    sessionStorage.setItem('datta_return_chat', currentChatId);
-  }
-  window.location.href = 'settings.html';
-}
-window.goToSettings = goToSettings;
-
-// Restore chat on return from settings
-window.addEventListener('load', function() {
-  var returnChat = sessionStorage.getItem('datta_return_chat');
-  if (returnChat) {
-    sessionStorage.removeItem('datta_return_chat');
-    setTimeout(function() {
-      if (typeof openChat === 'function') openChat(returnChat);
-    }, 1200);
-  }
-});
-
-// ── PLUS MENU ───────────────────────────────────────
-function togglePlusMenu() {
-  var sheet = document.getElementById("addToChatSheet");
-  var overlay = document.getElementById("addToChatOverlay");
-  var btn = document.getElementById("plusBtn");
-  if (!sheet) {
-    console.warn("addToChatSheet not found");
+function startAssistant() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert("Speech recognition not supported in this browser");
     return;
   }
-  var isOpen = sheet.classList.contains("show");
-  if (isOpen) {
-    sheet.classList.remove("show");
-    if (overlay) overlay.classList.remove("show");
-    if (btn) btn.classList.remove("active");
-  } else {
-    sheet.classList.add("show");
-    if (overlay) overlay.classList.add("show");
-    if (btn) btn.classList.add("active");
-  }
-  event && event.stopPropagation();
+  
+  const recognition = new SpeechRecognition();
+  recognition.lang = "en-IN";
+  recognition.onresult = (event) => {
+    const text = event.results[0][0].transcript;
+    const input = document.getElementById("message");
+    if (input) input.value = text;
+    sendMessage();
+  };
+  recognition.start();
 }
-function closePlusMenu() {
-  var sheet = document.getElementById("addToChatSheet");
-  var overlay = document.getElementById("addToChatOverlay");
-  var btn = document.getElementById("plusBtn");
-  if (sheet) sheet.classList.remove("show");
-  if (overlay) overlay.classList.remove("show");
-  if (btn) btn.classList.remove("active");
-}
-window.togglePlusMenu = togglePlusMenu;
-window.closePlusMenu = closePlusMenu;
+window.startAssistant = startAssistant;
 
-function showFilePreview(file) {
-  var preview = document.getElementById("filePreview");
-  var wrap = document.getElementById("filePreviewWrap");
-  if (preview) preview.textContent = "📄 " + file.name;
-  if (wrap) wrap.style.display = "block";
-}
-function clearFileSelection() {
-  ["cameraInput","photoInput","imageInput"].forEach(function(id) {
-    var el = document.getElementById(id); if (el) el.value = "";
-  });
-  var preview = document.getElementById("filePreview");
-  var wrap = document.getElementById("filePreviewWrap");
-  if (preview) preview.textContent = "";
-  if (wrap) wrap.style.display = "none";
-}
-window.clearFileSelection = clearFileSelection;
+// ============================================
+// INITIALIZATION
+// ============================================
 
 window.addEventListener('load', function() {
-  var inputs = [
-    {id:"imageInput"}, {id:"cameraInput"}, {id:"photoInput"}
-  ];
-  inputs.forEach(function(item) {
-    var el = document.getElementById(item.id);
-    if (el) el.addEventListener("change", function() {
-      if (this.files[0]) { showFilePreview(this.files[0]); closePlusMenu(); }
+  console.log("Page loaded - initializing...");
+  
+  // Load projects and artifacts
+  loadProjects();
+  loadArtifacts();
+  
+  // Restore current project if exists
+  const savedProject = localStorage.getItem('datta_current_project');
+  if (savedProject) {
+    const projects = JSON.parse(localStorage.getItem('datta_projects') || '[]');
+    const project = projects.find(p => p.id === savedProject);
+    if (project && !project.locked) {
+      openProject(savedProject);
+    }
+  }
+  
+  // Update profile name
+  const user = window.dattaUser;
+  const profileName = document.querySelector('.profileName');
+  const avatarLetter = document.querySelector('.profileAvatar');
+  if (profileName && user) {
+    const displayName = user.username || user.email || 'User';
+    profileName.textContent = displayName;
+    if (avatarLetter) avatarLetter.textContent = displayName.charAt(0).toUpperCase();
+  }
+  
+  // Fix enter key
+  const messageInput = document.getElementById('message');
+  if (messageInput) {
+    messageInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
     });
-  });
-});
-
-function triggerCamera() { document.getElementById("cameraInput").click(); }
-function triggerPhotos() { document.getElementById("photoInput").click(); }
-function triggerFile()   { document.getElementById("imageInput").click(); }
-function triggerImageGen() {
-  var input = document.getElementById("message");
-  if (input) { input.value = "generate image of "; input.focus(); }
-  closePlusMenu();
-}
-function triggerWebSearch() {
-  var input = document.getElementById("message");
-  if (input) { input.placeholder = "Search the web..."; input.focus(); }
-  closePlusMenu();
-}
-window.triggerCamera = triggerCamera;
-window.triggerPhotos = triggerPhotos;
-window.triggerFile = triggerFile;
-window.triggerImageGen = triggerImageGen;
-window.triggerWebSearch = triggerWebSearch;
-
-// Feed prompt restore
-window.addEventListener('load', function() {
-  var feedPrompt = localStorage.getItem('datta_feed_prompt');
-  if (feedPrompt) {
-    localStorage.removeItem('datta_feed_prompt');
-    setTimeout(function() {
-      var input = document.getElementById('message');
-      if (input && typeof send === 'function') { input.value = feedPrompt; send(); }
-    }, 1500);
   }
+  
+  // Greeting
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? "Good morning ☀️" : hour < 17 ? "Good afternoon 🌤️" : hour < 21 ? "Good evening 🌙" : "Good night 🌟";
+  const greetEl = document.querySelector(".welcomeGreeting");
+  if (greetEl) greetEl.textContent = greet;
+  
+  // Splash screen
+  setTimeout(function() {
+    var splash = document.getElementById('splash');
+    if (splash) {
+      splash.style.opacity = '0';
+      splash.style.transition = 'opacity 0.5s ease';
+      setTimeout(function() { splash.style.display = 'none'; }, 500);
+    }
+  }, 2500);
+  
+  console.log("✅ All systems initialized!");
 });
-
-// SHOW SIDEBAR SECTION
-function showSection(name) {
-  document.querySelectorAll(".sidebarSection").forEach(s => s.style.display = "none");
-  const el = document.getElementById("section-" + name);
-  if (el) el.style.display = "flex";
-  document.querySelectorAll(".navItem").forEach(b => b.classList.remove("active"));
-  const btns = document.querySelectorAll(".navItem");
-  const idx = ["chats","projects","artifacts"].indexOf(name);
-  if (btns[idx]) btns[idx].classList.add("active");
-  const showRecents = name === "chats";
-  const recentsLabel = document.getElementById("recentsLabel");
-  const search = document.getElementById("search");
-  if (recentsLabel) recentsLabel.style.display = showRecents ? "block" : "none";
-  if (search) search.style.display = showRecents ? "block" : "none";
-}
-window.showSection = showSection;
 </script>
-<script src="plan-limits.js"></script>
-<script src="theme.js"></script>
-<script src="mood.js"></script>
-<script src="chat.js?v=14"></script>
-<script src="datta-features.js"></script>
-<script src="datta-features2.js"></script>
 
 <!-- FLOATING SUPPORT BUTTON -->
 <style>
@@ -1252,187 +1674,5 @@ window.showSection = showSection;
 #addToChatOverlay.show { display:block !important; }
 @keyframes sheetIn { from{opacity:0;transform:translateX(-50%) translateY(10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
 </style>
-
-<!-- ============================================ -->
-<!-- DIRECT SEND BUTTON FIX - PASTE HERE -->
-<!-- ============================================ -->
-<script>
-// ============================================
-// DIRECT SEND BUTTON FIX - WORKING VERSION
-// ============================================
-(function() {
-  console.log("🔧 FIX: Setting up send button...");
-  
-  // Function to send message directly
-  function sendMessage() {
-    console.log("✅ Send button clicked!");
-    
-    const input = document.getElementById('message');
-    if (!input) {
-      console.error("❌ Input not found!");
-      return;
-    }
-    
-    const message = input.value.trim();
-    if (!message) {
-      console.log("No message to send");
-      return;
-    }
-    
-    console.log("📤 Sending:", message);
-    
-    // Clear input
-    input.value = '';
-    
-    // Get chat box
-    const chatBox = document.getElementById('chat');
-    if (!chatBox) {
-      console.error("Chat box not found!");
-      return;
-    }
-    
-    // Add user message
-    chatBox.innerHTML += `
-      <div class="messageRow userRow">
-        <div class="userBubble">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-        <div class="avatar">🧑</div>
-      </div>
-    `;
-    chatBox.scrollTop = chatBox.scrollHeight;
-    
-    // Hide welcome screen
-    const welcomeScreen = document.getElementById('welcomeScreen');
-    if (welcomeScreen) welcomeScreen.style.display = 'none';
-    
-    // Add AI typing indicator
-    const aiId = 'ai_' + Date.now();
-    chatBox.innerHTML += `
-      <div class="messageRow" id="${aiId}">
-        <div class="avatar">🤖</div>
-        <div class="aiBubble typing">
-          <span></span><span></span><span></span>
-        </div>
-      </div>
-    `;
-    chatBox.scrollTop = chatBox.scrollHeight;
-    
-    // Send to backend
-    const token = localStorage.getItem('datta_token') || '';
-    const formData = new FormData();
-    formData.append('message', message);
-    formData.append('token', token);
-    formData.append('language', localStorage.getItem('datta_language') || 'English');
-    
-    fetch('https://datta-ai-server.onrender.com/chat', {
-      method: 'POST',
-      body: formData
-    })
-    .then(async response => {
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let fullText = '';
-      const aiDiv = document.getElementById(aiId);
-      
-      if (aiDiv) {
-        aiDiv.innerHTML = `
-          <div class="avatar">🤖</div>
-          <div class="aiBubble">
-            <span class="stream"></span>
-          </div>
-        `;
-      }
-      
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value);
-        
-        if (chunk.includes('CHATID')) {
-          const parts = chunk.split('CHATID');
-          fullText += parts[0];
-        } else {
-          fullText += chunk;
-        }
-        
-        const streamSpan = aiDiv?.querySelector('.stream');
-        if (streamSpan) {
-          if (typeof marked !== 'undefined') {
-            streamSpan.innerHTML = marked.parse(fullText) + '<span class="cursor">▌</span>';
-          } else {
-            streamSpan.innerHTML = fullText + '<span class="cursor">▌</span>';
-          }
-          chatBox.scrollTop = chatBox.scrollHeight;
-        }
-      }
-      
-      const streamSpan = aiDiv?.querySelector('.stream');
-      if (streamSpan) {
-        if (typeof marked !== 'undefined') {
-          streamSpan.innerHTML = marked.parse(fullText);
-        } else {
-          streamSpan.innerHTML = fullText;
-        }
-      }
-      
-      // Save chat
-      if (typeof loadSidebar === 'function') loadSidebar();
-    })
-    .catch(error => {
-      console.error("Error:", error);
-      const aiDiv = document.getElementById(aiId);
-      if (aiDiv) {
-        aiDiv.innerHTML = `
-          <div class="avatar">🤖</div>
-          <div class="aiBubble" style="color:#ff8888;">
-            ⚠️ Sorry, I couldn't connect. Please try again.
-          </div>
-        `;
-      }
-    });
-  }
-  
-  // Wait for page to load
-  window.addEventListener('load', function() {
-    setTimeout(function() {
-      // Fix send button
-      const sendBtn = document.getElementById('sendBtn');
-      if (sendBtn) {
-        console.log("✅ Found send button");
-        sendBtn.onclick = function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          sendMessage();
-          return false;
-        };
-        console.log("✅ Send button attached!");
-      } else {
-        console.log("❌ Send button not found!");
-      }
-      
-      // Fix enter key
-      const messageInput = document.getElementById('message');
-      if (messageInput) {
-        console.log("✅ Found message input");
-        messageInput.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            console.log("Enter key pressed");
-            sendMessage();
-          }
-        });
-        console.log("✅ Enter key attached!");
-      }
-      
-      // Fix chips
-      document.querySelectorAll('.chip').forEach(chip => {
-        chip.style.cursor = 'pointer';
-      });
-      
-      console.log("✅ All fixes applied!");
-    }, 500);
-  });
-})();
-</script>
-
 </body>
 </html>
