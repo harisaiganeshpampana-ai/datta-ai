@@ -262,27 +262,35 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
 }
 
 .welcomeChips {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
-  max-width: 480px;
+  max-width: 600px;
   width: 100%;
   opacity: 0;
   animation: fadeSlideUp 0.6s 0.6s ease forwards;
 }
 
 .chip {
-  background: rgba(255,215,0,0.03);
-  border: 1px solid rgba(255,215,0,0.08);
-  border-radius: 14px;
-  padding: 14px 16px;
-  text-align: left;
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 50px;
+  padding: 10px 18px;
+  text-align: center;
   cursor: pointer;
   transition: all 0.2s;
-  color: #665500;
+  color: rgba(255,255,255,0.7);
   font-size: 13px;
   font-family: 'DM Sans', sans-serif;
   line-height: 1.5;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
 }
 .chip:hover {
   background: rgba(255,215,0,0.07);
@@ -381,10 +389,114 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
 @keyframes splashOut {
   to { opacity: 0; visibility: hidden; display: none; }
 }
+
+/* ── PARTICLES ─────────────────────────────────────── */
+#particles-bg {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0;
+  animation: floatUp linear infinite;
+}
+@keyframes floatUp {
+  0%   { opacity: 0; transform: translateY(0) scale(0.5); }
+  10%  { opacity: 0.6; }
+  90%  { opacity: 0.3; }
+  100% { opacity: 0; transform: translateY(-100vh) scale(1.2); }
+}
+
+/* ── GLASSMORPHISM CARDS ────────────────────────────── */
+.chip {
+  background: rgba(255,255,255,0.07) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.2) !important;
+}
+.chip:hover {
+  background: rgba(255,255,255,0.13) !important;
+  border-color: rgba(255,215,0,0.4) !important;
+  color: #fff !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 32px rgba(255,215,0,0.1) !important;
+}
+.chip .chipTitle { color: rgba(255,255,255,0.9) !important; }
+.chip .chipDesc { color: rgba(255,255,255,0.5) !important; font-size:11px; }
+.chip .chipIcon { font-size: 16px !important; margin-bottom: 0 !important; }
+
+/* ── WELCOME BADGES GLASS ────────────────────────────── */
+.welcomeBadge {
+  background: rgba(255,255,255,0.06) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  color: rgba(255,255,255,0.6) !important;
+}
+.welcomeBadge:hover {
+  background: rgba(255,215,0,0.15) !important;
+  color: #ffd700 !important;
+  border-color: rgba(255,215,0,0.3) !important;
+}
+
+/* ── WELCOME TITLE GLOW ─────────────────────────────── */
+.welcomeTitle {
+  text-shadow: 0 0 40px rgba(255,215,0,0.3), 0 0 80px rgba(255,140,0,0.15);
+}
+
 </style>
 </head>
 
 <body>
+
+<div id="particles-bg"></div>
+<script>
+// ── PARTICLES ─────────────────────────────────────────────────────
+(function() {
+  var bg = document.getElementById("particles-bg")
+  if (!bg) return
+  var colors = ["#ffd700","#ff8c00","#ffffff","#ffa500","#ffed4a"]
+  for (var i = 0; i < 35; i++) {
+    (function(i) {
+      setTimeout(function() {
+        var p = document.createElement("div")
+        p.className = "particle"
+        var size = Math.random() * 4 + 2
+        p.style.width = size + "px"
+        p.style.height = size + "px"
+        p.style.left = Math.random() * 100 + "vw"
+        p.style.bottom = "-20px"
+        p.style.background = colors[Math.floor(Math.random() * colors.length)]
+        p.style.animationDuration = (Math.random() * 10 + 8) + "s"
+        p.style.animationDelay = (Math.random() * 5) + "s"
+        bg.appendChild(p)
+      }, i * 200)
+    })(i)
+  }
+})()
+
+// ── UPDATE GREETING WITH USER NAME ───────────────────────────────
+window.addEventListener("load", function() {
+  setTimeout(function() {
+    try {
+      var user = JSON.parse(localStorage.getItem("datta_user") || "{}")
+      var name = user.username || user.name || ""
+      if (name) {
+        var greet = document.querySelector(".welcomeGreeting")
+        if (greet) {
+          var time = new Date().getHours()
+          var tod = time < 12 ? "Morning" : time < 17 ? "Afternoon" : "Evening"
+          greet.textContent = "Good " + tod + ", " + name.split("_")[0] + " 👋"
+        }
+      }
+    } catch(e) {}
+  }, 600)
+})
+</script>
 
 <!-- SPLASH SCREEN -->
 <div id="splash">
@@ -670,13 +782,12 @@ body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-
       <div class="welcomeBadge" onclick="if(typeof startAssistant==='function')startAssistant();else document.getElementById('micBtn').click();" style="cursor:pointer"><span>🎙️</span> Voice Assistant</div>
     </div>
 
-    <div class="welcomeSuggestLabel">Try asking</div>
+    <div class="welcomeSuggestLabel" style="font-size:11px;letter-spacing:2px;color:rgba(255,255,255,0.3);margin-bottom:4px;">TRY ASKING</div>
     <div class="welcomeChips" style="display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px;width:100%;">
 
       <div class="chip" onclick="fillPrompt('What are the latest AI news today?')">
         <span class="chipIcon">🌐</span>
         <div class="chipTitle">Search the web</div>
-        <div class="chipDesc">Latest AI news today</div>
       </div>
       <div class="chip" onclick="fillPrompt('Write a Python script to sort a list of numbers')">
         <span class="chipIcon">💻</span>
