@@ -1,752 +1,348 @@
-// ── DATTA AI PROJECTS SYSTEM ──────────────────────────────────────────────────
+// ╔══════════════════════════════════════════════════════╗
+// ║         DATTA AI — projects.js (COMPLETE)           ║
+// ║  Full projects feature: create, chat, manage        ║
+// ╚══════════════════════════════════════════════════════╝
 
-const PROJECTS_KEY = 'datta_projects_v2';
-const SERVER = "https://datta-ai-server.onrender.com";
-
-// ── UTILITY FUNCTIONS ───────────────────────────────────────────────────────
-function generateId() {
-  // Use performance.now() with Math.random() to prevent collisions [^19^]
-  return Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-}
-
-function isLocalStorageAvailable() {
-  try {
-    const testKey = '__storage_test__';
-    localStorage.setItem(testKey, testKey);
-    localStorage.removeItem(testKey);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
-// ── SERVER SYNC ───────────────────────────────────────────────────────────────
-async function syncProjectsFromServer() {
-  try {
-    const token = typeof getToken === 'function' ? getToken() : localStorage.getItem('datta_token');
-    if (!token) return;
-    
-    const res = await fetch(SERVER + "/projects?token=" + token);
-    if (!res.ok) return;
-    
-    const text = await res.text();
-    if (!text || text.trim().startsWith('<')) return; // HTML error page
-    
-    const serverProjects = JSON.parse(text);
-    
-    // Merge server projects with local
-    const local = getProjects();
-    const merged = serverProjects.map(sp => {
-      const local_p = local.find(lp => lp.serverId === sp._id);
-      return {
-        id: local_p?.id || generateId(),
-        serverId: sp._id,
-        name: sp.name,
-        instructions: sp.instructions,
-        color: sp.color,
-        chats: sp.chats || [],
-        pinnedChats: sp.pinnedChats || [],
-        createdAt: sp.createdAt
-      };
-    });
-    
-    // Keep local-only projects too
-    const serverIds = merged.map(p => p.serverId);
-    const localOnly = local.filter(lp => !lp.serverId);
-    
-    saveProjects([...merged, ...localOnly]);
-    loadProjectsSection();
-  } catch(e) { 
-    console.warn("Project sync failed:", e.message);
-  }
-}
-
-async function saveProjectToServer(project) {
-  try {
-    const token = typeof getToken === 'function' ? getToken() : localStorage.getItem('datta_token');
-    if (!token) return null;
-    
-    if (project.serverId) {
-      // Update existing
-      const res = await fetch(SERVER + "/projects/" + project.serverId, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          token, 
-          name: project.name, 
-          instructions: project.instructions, 
-          color: project.color, 
-          chats: project.chats, 
-          pinnedChats: project.pinnedChats 
-        })
-      });
-      const t1 = await res.text();
-      return t1.startsWith('<') ? null : JSON.parse(t1);
-    } else {
-      // Create new
-      const res = await fetch(SERVER + "/projects", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          token, 
-          name: project.name, 
-          instructions: project.instructions, 
-          color: project.color 
-        })
-      });
-      const t2 = await res.text();
-      const data = t2.startsWith('<') ? {} : JSON.parse(t2);
-      
-      if (data._id) {
-        // Save serverId back to local
-        const projects = getProjects();
-        const p = projects.find(p => p.id === project.id);
-        if (p) { 
-          p.serverId = data._id; 
-          saveProjects(projects);
-        }
-      }
-      return data;
-    }
-  } catch(e) { 
-    console.warn("Save to server failed:", e.message); 
-    return null;
-  }
-}
-
-async function deleteProjectFromServer(serverId) {
-  try {
-    const token = typeof getToken === 'function' ? getToken() : localStorage.getItem('datta_token');
-    if (!token || !serverId) return;
-    await fetch(SERVER + "/projects/" + serverId + "?token=" + token, { method: "DELETE" });
-  } catch(e) {}
-}
-
-async function syncChatToServer(projectId, chatId, chatTitle) {
-  try {
-    const project = getProject(projectId);
-    if (!project?.serverId) return;
-    
-    const token = typeof getToken === 'function' ? getToken() : localStorage.getItem('datta_token');
-    if (!token) return;
-    
-    await fetch(SERVER + "/projects/" + project.serverId + "/add-chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, chatId, chatTitle })
-    });
-  } catch(e) {}
-}
-
-// ── LOCAL STORAGE OPERATIONS ──────────────────────────────────────────────────
+// ── PROJECT STORAGE ────────────────────────────────────
 function getProjects() {
-  if (!isLocalStorageAvailable()) return [];
-  try { 
-    return JSON.parse(localStorage.getItem(PROJECTS_KEY) || '[]');
-  } catch { 
-    return []; 
-  }
+  try { return JSON.parse(localStorage.getItem('datta_projects') || '[]'); }
+  catch(e) { return []; }
 }
-
 function saveProjects(projects) {
-  if (!isLocalStorageAvailable()) {
-    console.warn('localStorage not available');
-    return;
-  }
-  try {
-    localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
-  } catch (e) {
-    console.error('Failed to save projects:', e);
-  }
+  localStorage.setItem('datta_projects', JSON.stringify(projects));
 }
-
 function getProject(id) {
   return getProjects().find(p => p.id === id) || null;
 }
-
-// ── CREATE PROJECT ────────────────────────────────────────────────────────────
-function createProject(name, instructions) {
+function saveProject(project) {
   const projects = getProjects();
-  const project = {
-    id: generateId(), // Fixed: Using collision-safe ID generation [^19^]
-    name: name.trim(),
-    instructions: instructions || '',
-    chats: [],
-    pinnedChats: [],
-    createdAt: new Date().toISOString(),
-    color: ['#ffd700','#ff8c00','#00ff88','#00bfff','#ff69b4','#a855f7'][projects.length % 6]
-  };
-  
-  projects.unshift(project);
+  const idx = projects.findIndex(p => p.id === project.id);
+  if (idx >= 0) projects[idx] = project;
+  else projects.unshift(project);
   saveProjects(projects);
-  
-  // Sync to server (async, don't wait)
-  saveProjectToServer(project).catch(e => console.warn('Server sync failed:', e));
-  
-  return project;
 }
-
-// ── DELETE PROJECT ────────────────────────────────────────────────────────────
 function deleteProject(id) {
-  const project = getProject(id);
-  if (project?.serverId) deleteProjectFromServer(project.serverId);
-  
-  const projects = getProjects().filter(p => p.id !== id);
-  saveProjects(projects);
-  loadProjectsSection();
+  saveProjects(getProjects().filter(p => p.id !== id));
 }
 
-// ── RENAME PROJECT ────────────────────────────────────────────────────────────
-function renameProject(id, newName) {
+// ── RENDER PROJECTS SIDEBAR ────────────────────────────
+function renderProjects() {
+  const container = document.getElementById('section-projects');
+  if (!container) return;
   const projects = getProjects();
-  const p = projects.find(p => p.id === id);
-  if (p) { 
-    p.name = newName; 
-    saveProjects(projects);
-    saveProjectToServer(p).catch(console.warn);
-  }
-  loadProjectsSection();
-}
 
-// ── UPDATE INSTRUCTIONS ───────────────────────────────────────────────────────
-function updateProjectInstructions(id, instructions) {
-  const projects = getProjects();
-  const p = projects.find(p => p.id === id);
-  if (p) { 
-    p.instructions = instructions; 
-    saveProjects(projects);
-    saveProjectToServer(p).catch(console.warn);
-  }
-}
-
-// ── ADD CHAT TO PROJECT ───────────────────────────────────────────────────────
-function addChatToProject(projectId, chatId, chatTitle) {
-  const projects = getProjects();
-  const p = projects.find(p => p.id === projectId);
-  if (!p) return;
-  
-  if (!p.chats.find(c => c.id === chatId)) {
-    p.chats.unshift({ 
-      id: chatId, 
-      title: chatTitle, 
-      addedAt: new Date().toISOString() 
-    });
-    saveProjects(projects);
-    syncChatToServer(projectId, chatId, chatTitle).catch(console.warn);
-  }
-}
-
-// ── PIN CHAT IN PROJECT ───────────────────────────────────────────────────────
-function pinChatInProject(projectId, chatId) {
-  const projects = getProjects();
-  const p = projects.find(p => p.id === projectId);
-  if (!p) return;
-  
-  if (!p.pinnedChats) p.pinnedChats = [];
-  
-  if (p.pinnedChats.includes(chatId)) {
-    p.pinnedChats = p.pinnedChats.filter(id => id !== chatId);
-  } else {
-    p.pinnedChats.unshift(chatId);
-  }
-  
-  saveProjects(projects);
-  saveProjectToServer(p).catch(console.warn);
-  openProjectPanel(projectId);
-}
-
-// ── SHOW NEW PROJECT MODAL ────────────────────────────────────────────────────
-function showNewProjectModal() {
-  // Remove existing modal if any
-  const existingModal = document.getElementById('projectModal');
-  if (existingModal) existingModal.remove();
-  
-  const modal = document.createElement('div');
-  modal.id = 'projectModal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:16px;';
-  
-  modal.innerHTML = `
-    <div id="projectModalContent" style="background:#0f0e00;border:1px solid rgba(255,215,0,0.2);border-radius:20px;padding:24px;width:100%;max-width:420px;box-shadow:0 25px 50px rgba(0,0,0,0.5);">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:#ffd700;margin-bottom:6px;">📁 NEW PROJECT</div>
-      <div style="font-size:12px;color:#443300;margin-bottom:20px;">Organize your chats with a shared AI context</div>
-      
-      <div style="margin-bottom:14px;">
-        <div style="font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:2px;color:#443300;margin-bottom:6px;">PROJECT NAME *</div>
-        <input id="projNameInput" type="text" placeholder="e.g. Work Research, Story Writing..." maxlength="50"
-          style="width:100%;padding:10px 14px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);border-radius:10px;color:#fff8e7;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;box-sizing:border-box;transition:border-color 0.2s;"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();submitNewProject();}">
-      </div>
-
-      <div style="margin-bottom:20px;">
-        <div style="font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:2px;color:#443300;margin-bottom:6px;">AI INSTRUCTIONS <span style="color:#332200">(optional)</span></div>
-        <textarea id="projInstrInput" placeholder="e.g. You are helping me with my startup. Always be concise and business-focused..." rows="3"
-          style="width:100%;padding:10px 14px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);border-radius:10px;color:#fff8e7;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;resize:none;box-sizing:border-box;transition:border-color 0.2s;"></textarea>
-        <div style="font-size:11px;color:#332200;margin-top:4px;">This context will be given to AI for every chat in this project</div>
-      </div>
-
-      <div style="display:flex;gap:8px;">
-        <button id="cancelProjectBtn"
-          style="flex:1;padding:11px;background:none;border:1px solid rgba(255,215,0,0.1);border-radius:50px;color:#554400;font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;transition:all 0.2s;">
-          Cancel
+  if (!projects.length) {
+    container.innerHTML = `
+      <div style="padding:16px 12px;">
+        <button onclick="openNewProjectModal()" style="width:100%;padding:10px;background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.2);border-radius:12px;color:var(--accent);font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+          <span style="font-size:16px;">+</span> New Project
         </button>
-        <button id="createProjectBtn"
-          style="flex:2;padding:11px;background:linear-gradient(135deg,#ffd700,#ff8c00);border:none;border-radius:50px;color:#000;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:transform 0.1s,box-shadow 0.2s;box-shadow:0 4px 15px rgba(255,140,0,0.3);">
-          CREATE PROJECT
-        </button>
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
-  
-  // Add event listeners properly (safer than inline onclick)
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.remove();
-    }
-  });
-  
-  document.getElementById('cancelProjectBtn').addEventListener('click', () => {
-    modal.remove();
-  });
-  
-  document.getElementById('createProjectBtn').addEventListener('click', submitNewProject);
-  
-  // Focus with slight delay to ensure DOM is ready
-  setTimeout(() => {
-    const input = document.getElementById('projNameInput');
-    if (input) input.focus();
-  }, 50);
-}
-
-function submitNewProject() {
-  // Get input elements first
-  const nameInput = document.getElementById('projNameInput');
-  const instrInput = document.getElementById('projInstrInput');
-  
-  // Validate elements exist [^17^]
-  if (!nameInput) {
-    console.error('Project name input not found');
-    return;
-  }
-  
-  const name = nameInput.value?.trim();
-  const instructions = instrInput?.value?.trim() || '';
-  
-  // Validate name
-  if (!name) {
-    nameInput.style.borderColor = '#ff4444';
-    nameInput.style.boxShadow = '0 0 0 2px rgba(255,68,68,0.2)';
-    nameInput.focus();
-    
-    // Reset error styling after 2 seconds
-    setTimeout(() => {
-      nameInput.style.borderColor = 'rgba(255,215,0,0.15)';
-      nameInput.style.boxShadow = 'none';
-    }, 2000);
-    return;
-  }
-  
-  // Create project BEFORE removing modal (critical fix!)
-  let project;
-  try {
-    project = createProject(name, instructions);
-  } catch (e) {
-    console.error('Failed to create project:', e);
-    showProjectToast('❌ Failed to create project');
-    return;
-  }
-  
-  // Now remove modal
-  const modal = document.getElementById('projectModal');
-  if (modal) modal.remove();
-  
-  // Update UI
-  loadProjectsSection();
-  
-  // Show projects section if function exists
-  if (typeof showSection === 'function') {
-    showSection('projects');
-  }
-  
-  showProjectToast('📁 Project "' + project.name + '" created!');
-  
-  // Open project page/panel
-  setTimeout(() => {
-    if (typeof openProjectPage === 'function') {
-      openProjectPage(project.id);
-    } else if (typeof openProjectPanel === 'function') {
-      openProjectPanel(project.id);
-    }
-  }, 200);
-}
-
-// ── OPEN PROJECT PANEL (sidebar) ──────────────────────────────────────────────
-function openProjectPanel(id) {
-  const project = getProject(id);
-  if (!project) {
-    console.error('Project not found:', id);
-    return;
-  }
-
-  // Set active project
-  window.activeProjectId = id;
-  localStorage.setItem('datta_active_project', id);
-
-  // Remove existing panel
-  const existingPanel = document.getElementById('projectPanelOverlay');
-  if (existingPanel) existingPanel.remove();
-  
-  const panel = document.createElement('div');
-  panel.id = 'projectPanelOverlay';
-  panel.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:5000;backdrop-filter:blur(4px);';
-
-  const pinnedIds = project.pinnedChats || [];
-  const pinnedChats = project.chats.filter(c => pinnedIds.includes(c.id));
-  const regularChats = project.chats.filter(c => !pinnedIds.includes(c.id));
-
-  panel.innerHTML = `
-    <div id="projectPanel" style="position:absolute;left:0;top:0;bottom:0;width:280px;max-width:85vw;background:#0a0900;border-right:1px solid rgba(255,215,0,0.12);display:flex;flex-direction:column;animation:slideInLeft 0.2s ease;">
-      <style>@keyframes slideInLeft{from{transform:translateX(-100%)}to{transform:translateX(0)}}</style>
-      
-      <!-- Header -->
-      <div style="padding:16px;border-bottom:1px solid rgba(255,215,0,0.08);display:flex;align-items:center;gap:10px;">
-        <div style="width:10px;height:10px;border-radius:50%;background:${project.color};flex-shrink:0;"></div>
-        <div style="flex:1;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:#fff8e7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(project.name)}</div>
-        <button id="closePanelBtn" style="background:none;border:none;color:#443300;cursor:pointer;font-size:18px;padding:2px;transition:color 0.2s;">✕</button>
-      </div>
-
-      <!-- Instructions badge -->
-      ${project.instructions ? `
-        <div style="margin:10px 12px;padding:8px 12px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.1);border-radius:10px;">
-          <div style="font-family:'Rajdhani',sans-serif;font-size:10px;letter-spacing:2px;color:#443300;margin-bottom:4px;">AI INSTRUCTIONS</div>
-          <div style="font-size:11px;color:#554400;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">${escapeHtml(project.instructions)}</div>
-        </div>` : ''}
-
-      <!-- Action buttons -->
-      <div style="padding:8px 12px;display:flex;gap:6px;">
-        <button id="newChatBtn" style="flex:1;padding:8px;background:linear-gradient(135deg,#ffd700,#ff8c00);border:none;border-radius:20px;color:#000;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:transform 0.1s;">+ NEW CHAT</button>
-        <button id="editInstrBtn" style="padding:8px 10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.1);border-radius:20px;color:#665500;font-size:12px;cursor:pointer;transition:all 0.2s;" title="Edit instructions">⚙️</button>
-        <button id="deleteProjBtn" style="padding:8px 10px;background:rgba(255,60,60,0.06);border:1px solid rgba(255,60,60,0.1);border-radius:20px;color:#ff4444;font-size:12px;cursor:pointer;transition:all 0.2s;" title="Delete project">🗑️</button>
-      </div>
-
-      <div style="flex:1;overflow-y:auto;padding:0 8px 16px;">
-        ${pinnedChats.length ? `
-          <div style="font-family:'Rajdhani',sans-serif;font-size:10px;letter-spacing:2px;color:#332200;padding:8px 6px 4px;">📌 PINNED</div>
-          ${pinnedChats.map(c => projectChatItem(c, id, true)).join('')}
-          <div style="height:1px;background:rgba(255,215,0,0.06);margin:8px 4px;"></div>` : ''}
-        
-        ${regularChats.length ? `
-          <div style="font-family:'Rajdhani',sans-serif;font-size:10px;letter-spacing:2px;color:#332200;padding:8px 6px 4px;">💬 CHATS</div>
-          ${regularChats.map(c => projectChatItem(c, id, false)).join('')}` : 
-          `<div style="text-align:center;padding:30px 16px;color:#332200;font-size:13px;">No chats yet.<br>Click "+ NEW CHAT" to start!</div>`}
-      </div>
-
-      <!-- Add existing chat -->
-      <div style="padding:10px 12px;border-top:1px solid rgba(255,215,0,0.06);">
-        <button id="addExistingChatBtn" style="width:100%;padding:8px;background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.08);border-radius:10px;color:#443300;font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:1px;cursor:pointer;transition:all 0.2s;">
-          + ADD EXISTING CHAT
-        </button>
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(panel);
-  
-  // Add event listeners
-  document.getElementById('closePanelBtn').addEventListener('click', () => {
-    panel.remove();
-    window.activeProjectId = null;
-  });
-  
-  document.getElementById('newChatBtn').addEventListener('click', () => startChatInProject(id));
-  document.getElementById('editInstrBtn').addEventListener('click', () => editProjectInstructions(id));
-  document.getElementById('deleteProjBtn').addEventListener('click', () => confirmDeleteProject(id));
-  document.getElementById('addExistingChatBtn').addEventListener('click', () => showAddChatToProjectPanel(id));
-  
-  panel.addEventListener('click', (e) => {
-    if (e.target === panel) {
-      panel.remove();
-      window.activeProjectId = null;
-    }
-  });
-}
-
-function projectChatItem(chat, projectId, isPinned) {
-  const escapedTitle = escapeHtml(chat.title || 'Untitled Chat');
-  return `
-    <div class="project-chat-item" style="display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:8px;cursor:pointer;transition:background 0.15s;" 
-      data-chat-id="${chat.id}">
-      <div class="chat-title" 
-        style="flex:1;font-size:12px;color:#665500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-        ${isPinned ? '📌 ' : ''}${escapedTitle}
-      </div>
-      <button class="pin-btn" data-chat-id="${chat.id}" data-project-id="${projectId}"
-        style="background:none;border:none;color:${isPinned?'#ffd700':'#332200'};cursor:pointer;font-size:12px;padding:2px;flex-shrink:0;transition:transform 0.1s;" 
-        title="${isPinned?'Unpin':'Pin'}">📌</button>
-    </div>`;
-}
-
-// ── UTILITY: ESCAPE HTML ──────────────────────────────────────────────────────
-function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// ── START CHAT IN PROJECT ─────────────────────────────────────────────────────
-function startChatInProject(projectId) {
-  window.activeProjectId = projectId;
-  localStorage.setItem('datta_active_project', projectId);
-  
-  const panel = document.getElementById('projectPanelOverlay');
-  if (panel) panel.remove();
-  
-  if (typeof startNewChat === 'function') {
-    startNewChat();
-  }
-  
-  const project = getProject(projectId);
-  if (project) showProjectToast('💬 Chatting in: ' + project.name);
-}
-
-// ── EDIT INSTRUCTIONS ─────────────────────────────────────────────────────────
-function editProjectInstructions(id) {
-  const project = getProject(id);
-  if (!project) return;
-  
-  const existingModal = document.getElementById('editInstrModal');
-  if (existingModal) existingModal.remove();
-  
-  const modal = document.createElement('div');
-  modal.id = 'editInstrModal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px;';
-  
-  modal.innerHTML = `
-    <div style="background:#0f0e00;border:1px solid rgba(255,215,0,0.2);border-radius:20px;padding:24px;width:100%;max-width:420px;">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:#ffd700;margin-bottom:14px;">⚙️ AI INSTRUCTIONS</div>
-      <textarea id="editInstrText" rows="6" style="width:100%;padding:12px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);border-radius:10px;color:#fff8e7;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;resize:none;box-sizing:border-box;">${escapeHtml(project.instructions || '')}</textarea>
-      <div style="font-size:11px;color:#332200;margin:8px 0 16px;">These instructions guide the AI in every chat within this project.</div>
-      <div style="display:flex;gap:8px;">
-        <button id="cancelInstrBtn" style="flex:1;padding:10px;background:none;border:1px solid rgba(255,215,0,0.1);border-radius:50px;color:#554400;font-family:'Rajdhani',sans-serif;font-size:13px;cursor:pointer;transition:all 0.2s;">Cancel</button>
-        <button id="saveInstrBtn" style="flex:2;padding:10px;background:linear-gradient(135deg,#ffd700,#ff8c00);border:none;border-radius:50px;color:#000;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all 0.2s;">SAVE</button>
-      </div>
-    </div>`;
-    
-  document.body.appendChild(modal);
-  
-  document.getElementById('cancelInstrBtn').addEventListener('click', () => modal.remove());
-  document.getElementById('saveInstrBtn').addEventListener('click', () => saveProjectInstructions(id));
-  
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) modal.remove();
-  });
-}
-
-function saveProjectInstructions(id) {
-  const textarea = document.getElementById('editInstrText');
-  if (!textarea) return;
-  
-  const text = textarea.value || '';
-  updateProjectInstructions(id, text);
-  
-  const modal = document.getElementById('editInstrModal');
-  if (modal) modal.remove();
-  
-  showProjectToast('✅ Instructions saved!');
-  openProjectPanel(id);
-}
-
-// ── CONFIRM DELETE ────────────────────────────────────────────────────────────
-function confirmDeleteProject(id) {
-  const project = getProject(id);
-  if (!project) return;
-  
-  const existingModal = document.getElementById('delProjModal');
-  if (existingModal) existingModal.remove();
-  
-  const modal = document.createElement('div');
-  modal.id = 'delProjModal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px;';
-  
-  modal.innerHTML = `
-    <div style="background:#0f0e00;border:1px solid rgba(255,60,60,0.2);border-radius:20px;padding:24px;max-width:300px;width:90%;text-align:center;">
-      <div style="font-size:36px;margin-bottom:10px">🗑️</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:#fff8e7;margin-bottom:8px;">Delete Project?</div>
-      <div style="font-size:13px;color:#665500;margin-bottom:20px;">"${escapeHtml(project.name)}" will be permanently deleted. Chats inside will remain.</div>
-      <div style="display:flex;gap:8px;">
-        <button id="cancelDelBtn" style="flex:1;padding:11px;background:none;border:1px solid rgba(255,215,0,0.1);border-radius:50px;color:#665500;font-family:'Rajdhani',sans-serif;font-size:13px;cursor:pointer;transition:all 0.2s;">Cancel</button>
-        <button id="confirmDelBtn" style="flex:1;padding:11px;background:rgba(255,60,60,0.1);border:1px solid rgba(255,60,60,0.3);border-radius:50px;color:#ff4444;font-family:'Rajdhani',sans-serif;font-size:13px;cursor:pointer;transition:all 0.2s;">Delete</button>
-      </div>
-    </div>`;
-    
-  document.body.appendChild(modal);
-  
-  document.getElementById('cancelDelBtn').addEventListener('click', () => modal.remove());
-  document.getElementById('confirmDelBtn').addEventListener('click', () => {
-    deleteProject(id);
-    modal.remove();
-    const panel = document.getElementById('projectPanelOverlay');
-    if (panel) panel.remove();
-  });
-}
-
-// ── ADD EXISTING CHAT TO PROJECT ──────────────────────────────────────────────
-async function showAddChatToProjectPanel(projectId) {
-  try {
-    const token = typeof getToken === 'function' ? getToken() : localStorage.getItem('datta_token') || '';
-    const res = await fetch("https://datta-ai-server.onrender.com/chats?token=" + token);
-    
-    if (!res.ok) throw new Error('Failed to fetch chats');
-    
-    const chats = await res.json();
-    const project = getProject(projectId);
-    const alreadyAdded = (project?.chats || []).map(c => c.id);
-    const available = chats.filter(c => !alreadyAdded.includes(c._id));
-
-    const existingModal = document.getElementById('addChatModal');
-    if (existingModal) existingModal.remove();
-    
-    const modal = document.createElement('div');
-    modal.id = 'addChatModal';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);';
-    
-    modal.innerHTML = `
-      <div style="background:#0f0e00;border:1px solid rgba(255,215,0,0.15);border-radius:24px 24px 0 0;padding:20px;width:100%;max-width:500px;max-height:70vh;display:flex;flex-direction:column;animation:slideUp 0.3s ease;">
-        <style>@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}</style>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#ffd700;margin-bottom:12px;text-align:center;">ADD CHAT TO PROJECT</div>
-        <div style="flex:1;overflow-y:auto;">
-          ${available.length === 0 ? '<div style="text-align:center;color:#443300;padding:20px;">All chats already in project!</div>' :
-            available.map(c => `
-              <div class="available-chat-item" data-chat-id="${c._id}" data-chat-title="${escapeHtml(c.title || 'Chat').replace(/"/g, '&quot;')}"
-                style="padding:10px 12px;margin:4px 0;background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.08);border-radius:10px;cursor:pointer;font-size:13px;color:#665500;transition:background 0.15s;">
-                💬 ${escapeHtml(c.title || 'Chat')}
-              </div>`).join('')}
+        <div style="text-align:center;padding:30px 10px;color:#332200;font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:1px;">
+          <div style="font-size:28px;margin-bottom:8px;opacity:0.4;">📁</div>
+          No projects yet<br>
+          <span style="font-size:10px;opacity:0.6;">Organize chats by topic</span>
         </div>
-        <button id="closeAddChatBtn" style="margin-top:12px;width:100%;padding:11px;background:none;border:1px solid rgba(255,215,0,0.1);border-radius:50px;color:#554400;font-family:'Rajdhani',sans-serif;font-size:13px;cursor:pointer;transition:all 0.2s;">Close</button>
-      </div>`;
-      
-    document.body.appendChild(modal);
-    
-    // Add click handlers for chat items
-    document.querySelectorAll('.available-chat-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const chatId = item.dataset.chatId;
-        const chatTitle = item.dataset.chatTitle;
-        addChatToProject(projectId, chatId, chatTitle);
-        modal.remove();
-        openProjectPanel(projectId);
-      });
-    });
-    
-    document.getElementById('closeAddChatBtn').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) modal.remove();
-    });
-    
-  } catch(e) {
-    console.error('Failed to load chats:', e);
-    showProjectToast('❌ Could not load chats');
-  }
-}
-
-// ── LOAD PROJECTS SECTION IN SIDEBAR ─────────────────────────────────────────
-function loadProjectsSection() {
-  const sec = document.getElementById('section-projects');
-  if (!sec) return;
-  
-  const projects = getProjects();
-  
-  if (projects.length === 0) {
-    sec.innerHTML = `
-      <div style="text-align:center;padding:30px 16px;">
-        <div style="font-size:32px;margin-bottom:10px">📁</div>
-        <div style="font-size:13px;color:#443300;line-height:1.6">No projects yet.<br>Click "New project" to organize your chats!</div>
       </div>`;
     return;
   }
-  
-  sec.innerHTML = projects.map(p => `
-    <div class="project-item" data-project-id="${p.id}" style="display:flex;align-items:center;gap:8px;padding:9px 12px;margin:2px 8px;border-radius:10px;cursor:pointer;transition:background 0.15s;">
-      <div style="width:8px;height:8px;border-radius:50%;background:${p.color};flex-shrink:0;"></div>
-      <div style="flex:1;font-size:13px;color:#665500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(p.name)}</div>
-      <div style="font-size:10px;color:#332200;font-family:'Rajdhani',sans-serif;">${p.chats.length} chats</div>
-    </div>`).join('');
-    
-  // Add click handlers
-  document.querySelectorAll('.project-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const projectId = item.dataset.projectId;
-      if (typeof openProjectPage === 'function') {
-        openProjectPage(projectId);
-      } else {
-        openProjectPanel(projectId);
-      }
-    });
-    
-    item.addEventListener('mouseenter', () => {
-      item.style.background = 'rgba(255,215,0,0.05)';
-    });
-    item.addEventListener('mouseleave', () => {
-      item.style.background = 'none';
-    });
+
+  const icons = ['📁','🚀','💡','🎯','🔬','📝','🎨','💼','🌐','⚡'];
+  container.innerHTML = `
+    <div style="padding:8px 12px 4px;">
+      <button onclick="openNewProjectModal()" style="width:100%;padding:8px;background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.2);border-radius:10px;color:var(--accent);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:6px;">
+        <span>+</span> New Project
+      </button>
+      ${projects.map(p => `
+        <div class="projectItem" onclick="openProject('${p.id}')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;cursor:pointer;transition:all 0.15s;margin-bottom:2px;border:1px solid transparent;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.borderColor='rgba(255,215,0,0.1)'" onmouseout="this.style.background='none';this.style.borderColor='transparent'">
+          <span style="font-size:16px;flex-shrink:0;">${p.icon || '📁'}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;color:#fff8e7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</div>
+            <div style="font-size:10px;color:#332200;font-family:'Rajdhani',sans-serif;">${(p.chats||[]).length} chats</div>
+          </div>
+          <button onclick="event.stopPropagation();deleteProjectConfirm('${p.id}')" style="background:none;border:none;color:#332200;cursor:pointer;padding:2px 4px;border-radius:4px;font-size:12px;opacity:0;" onmouseover="this.style.opacity='1';this.style.color='#ff4444'" onmouseout="this.style.opacity='0'">✕</button>
+        </div>`).join('')}
+    </div>`;
+}
+window.renderProjects = renderProjects;
+
+// ── NEW PROJECT MODAL ──────────────────────────────────
+function openNewProjectModal() {
+  document.getElementById('_projectModal')?.remove();
+  const icons = ['📁','🚀','💡','🎯','🔬','📝','🎨','💼','🌐','⚡','🧠','🔥','⭐','🎮','🏆'];
+  let selectedIcon = '📁';
+
+  const modal = document.createElement('div');
+  modal.id = '_projectModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);';
+  modal.innerHTML = `
+    <div style="background:#0f0e00;border:1px solid rgba(255,215,0,0.2);border-radius:24px;padding:24px;width:90%;max-width:360px;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--accent);margin-bottom:16px;">📁 NEW PROJECT</div>
+
+      <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:#443300;letter-spacing:2px;margin-bottom:8px;">PROJECT NAME</div>
+      <input id="_projName" placeholder="e.g. My App, Research, Work..." style="width:100%;background:#080800;border:1px solid rgba(255,215,0,0.15);border-radius:10px;padding:10px 14px;color:#fff8e7;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:14px;"
+        onkeydown="if(event.key==='Enter') createProject()">
+
+      <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:#443300;letter-spacing:2px;margin-bottom:8px;">DESCRIPTION (optional)</div>
+      <input id="_projDesc" placeholder="What is this project about?" style="width:100%;background:#080800;border:1px solid rgba(255,215,0,0.15);border-radius:10px;padding:10px 14px;color:#fff8e7;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:14px;">
+
+      <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:#443300;letter-spacing:2px;margin-bottom:8px;">CHOOSE ICON</div>
+      <div id="_iconGrid" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;">
+        ${icons.map(icon => `
+          <button onclick="selectIcon('${icon}',this)" data-icon="${icon}" style="width:36px;height:36px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.1);border-radius:8px;cursor:pointer;font-size:18px;transition:all 0.15s;${icon==='📁'?'background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);':''}">${icon}</button>`).join('')}
+      </div>
+
+      <div style="display:flex;gap:8px;">
+        <button onclick="document.getElementById('_projectModal').remove()" style="flex:1;padding:11px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:50px;color:#665500;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;">Cancel</button>
+        <button onclick="createProject()" style="flex:2;padding:11px;background:linear-gradient(135deg,var(--accent),#ff8c00);border:none;border-radius:50px;color:#000;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;">Create Project →</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+  setTimeout(() => document.getElementById('_projName')?.focus(), 100);
+}
+window.openNewProjectModal = openNewProjectModal;
+
+function selectIcon(icon, btn) {
+  document.querySelectorAll('#_iconGrid button').forEach(b => {
+    b.style.background = 'rgba(255,215,0,0.05)';
+    b.style.borderColor = 'rgba(255,215,0,0.1)';
   });
+  btn.style.background = 'rgba(255,215,0,0.15)';
+  btn.style.borderColor = 'rgba(255,215,0,0.4)';
+  window._selectedIcon = icon;
 }
+window.selectIcon = selectIcon;
 
-// ── GET ACTIVE PROJECT INSTRUCTIONS (for chat) ────────────────────────────────
-function getActiveProjectInstructions() {
-  const id = window.activeProjectId || localStorage.getItem('datta_active_project');
-  if (!id) return null;
-  const project = getProject(id);
-  return project?.instructions || null;
-}
-
-// ── TOAST ─────────────────────────────────────────────────────────────────────
-function showProjectToast(msg) {
-  let t = document.getElementById('projectToast');
-  if (!t) {
-    t = document.createElement('div');
-    t.id = 'projectToast';
-    t.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#0f0e00;border:1px solid rgba(255,215,0,0.2);border-radius:50px;padding:8px 18px;font-family:Rajdhani,sans-serif;font-size:12px;letter-spacing:1px;color:#ffd700;z-index:99999;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.5);transition:opacity 0.3s;opacity:0;';
-    document.body.appendChild(t);
+function createProject() {
+  const name = document.getElementById('_projName')?.value.trim();
+  if (!name) {
+    document.getElementById('_projName').style.borderColor = 'rgba(255,60,60,0.5)';
+    return;
   }
-  
-  t.textContent = msg;
-  t.style.opacity = '1';
-  t.style.display = 'block';
-  
-  clearTimeout(t._t);
-  t._t = setTimeout(() => { 
-    t.style.opacity = '0'; 
-    setTimeout(() => t.style.display = 'none', 300);
-  }, 2500);
+  const desc = document.getElementById('_projDesc')?.value.trim() || '';
+  const icon = window._selectedIcon || '📁';
+  const project = {
+    id: 'proj_' + Date.now(),
+    name, desc, icon,
+    chats: [],
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  };
+  saveProject(project);
+  document.getElementById('_projectModal')?.remove();
+  renderProjects();
+  // Switch to projects section
+  if (typeof showSection === 'function') showSection('projects');
+  // Open the project immediately
+  openProject(project.id);
 }
-
-// ── EXPORTS ───────────────────────────────────────────────────────────────────
 window.createProject = createProject;
-window.deleteProject = deleteProject;
-window.renameProject = renameProject;
-window.openProjectPanel = openProjectPanel;
-window.startChatInProject = startChatInProject;
-window.showNewProjectModal = showNewProjectModal;
-window.submitNewProject = submitNewProject;
-window.addChatToProject = addChatToProject;
-window.pinChatInProject = pinChatInProject;
-window.editProjectInstructions = editProjectInstructions;
-window.saveProjectInstructions = saveProjectInstructions;
-window.confirmDeleteProject = confirmDeleteProject;
-window.showAddChatToProjectPanel = showAddChatToProjectPanel;
-window.loadProjectsSection = loadProjectsSection;
-window.getActiveProjectInstructions = getActiveProjectInstructions;
-window.showProjectToast = showProjectToast;
-window.syncProjectsFromServer = syncProjectsFromServer;
-window.saveProjectToServer = saveProjectToServer;
 
-// Auto load and sync on page load
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => {
-    syncProjectsFromServer();
-    loadProjectsSection();
-  }, 1000);
+// ── OPEN PROJECT ───────────────────────────────────────
+function openProject(projectId) {
+  const project = getProject(projectId);
+  if (!project) return;
+
+  window._currentProjectId = projectId;
+
+  // Show welcome screen with project context
+  const ws = document.getElementById('welcomeScreen');
+  const chatEl = document.getElementById('chat');
+
+  if (ws) {
+    ws.style.display = 'flex';
+    ws.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;width:100%;padding:20px 16px 140px;text-align:center;">
+        <div style="font-size:52px;margin-bottom:12px;animation:welcomeFloat 3s ease-in-out infinite;">${project.icon}</div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:3px;color:#443300;margin-bottom:6px;">PROJECT</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:3px;background:linear-gradient(135deg,#fff8e7,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;">${project.name}</div>
+        ${project.desc ? `<div style="font-size:13px;color:#443300;margin-bottom:20px;max-width:400px;">${project.desc}</div>` : '<div style="margin-bottom:20px;"></div>'}
+
+        <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;justify-content:center;">
+          <div style="padding:5px 14px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.12);border-radius:20px;font-family:'Rajdhani',sans-serif;font-size:11px;color:#665500;letter-spacing:1px;">
+            💬 ${project.chats.length} chats
+          </div>
+          <div style="padding:5px 14px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.12);border-radius:20px;font-family:'Rajdhani',sans-serif;font-size:11px;color:#665500;letter-spacing:1px;">
+            📅 ${new Date(project.createdAt).toLocaleDateString()}
+          </div>
+          <button onclick="editProject('${project.id}')" style="padding:5px 14px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.12);border-radius:20px;font-family:'Rajdhani',sans-serif;font-size:11px;color:#665500;letter-spacing:1px;cursor:pointer;">✏️ Edit</button>
+        </div>
+
+        ${project.chats.length > 0 ? `
+          <div style="width:100%;max-width:500px;margin-bottom:20px;">
+            <div style="font-family:'Rajdhani',sans-serif;font-size:10px;letter-spacing:2px;color:#332200;margin-bottom:10px;text-align:left;">RECENT CHATS IN THIS PROJECT</div>
+            ${project.chats.slice(0,4).map(chatId => {
+              const allChats = JSON.parse(localStorage.getItem('datta_chats')||'{}');
+              const chat = allChats[chatId];
+              if (!chat) return '';
+              return `<div onclick="openChat('${chatId}')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,215,0,0.03);border:1px solid rgba(255,215,0,0.07);border-radius:12px;cursor:pointer;margin-bottom:6px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.07)'" onmouseout="this.style.background='rgba(255,215,0,0.03)'">
+                <span style="font-size:14px;">💬</span>
+                <span style="font-size:13px;color:#665500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${chat.title||'Chat'}</span>
+              </div>`;
+            }).join('')}
+          </div>` : ''}
+
+        <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:#332200;letter-spacing:2px;margin-bottom:12px;">START A NEW CHAT IN THIS PROJECT</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:480px;width:100%;">
+          <div class="chip" onclick="startProjectChat('What should I work on in the ${project.name} project?')" style="background:rgba(255,215,0,0.03);border:1px solid rgba(255,215,0,0.08);border-radius:14px;padding:14px 16px;text-align:left;cursor:pointer;transition:all 0.2s;color:#665500;" onmouseover="this.style.background='rgba(255,215,0,0.07)';this.style.borderColor='rgba(255,215,0,0.3)'" onmouseout="this.style.background='rgba(255,215,0,0.03)';this.style.borderColor='rgba(255,215,0,0.08)'">
+            <div style="font-size:20px;margin-bottom:6px;">🎯</div>
+            <div style="font-weight:700;font-size:13px;color:#cc9900;">Plan tasks</div>
+            <div style="font-size:11px;color:#443300;margin-top:2px;">What to work on</div>
+          </div>
+          <div class="chip" onclick="startProjectChat('Summarize the key ideas for ${project.name}')" style="background:rgba(255,215,0,0.03);border:1px solid rgba(255,215,0,0.08);border-radius:14px;padding:14px 16px;text-align:left;cursor:pointer;transition:all 0.2s;color:#665500;" onmouseover="this.style.background='rgba(255,215,0,0.07)';this.style.borderColor='rgba(255,215,0,0.3)'" onmouseout="this.style.background='rgba(255,215,0,0.03)';this.style.borderColor='rgba(255,215,0,0.08)'">
+            <div style="font-size:20px;margin-bottom:6px;">📝</div>
+            <div style="font-weight:700;font-size:13px;color:#cc9900;">Summarize</div>
+            <div style="font-size:11px;color:#443300;margin-top:2px;">Key ideas</div>
+          </div>
+          <div class="chip" onclick="startProjectChat('Help me brainstorm ideas for ${project.name}')" style="background:rgba(255,215,0,0.03);border:1px solid rgba(255,215,0,0.08);border-radius:14px;padding:14px 16px;text-align:left;cursor:pointer;transition:all 0.2s;color:#665500;" onmouseover="this.style.background='rgba(255,215,0,0.07)';this.style.borderColor='rgba(255,215,0,0.3)'" onmouseout="this.style.background='rgba(255,215,0,0.03)';this.style.borderColor='rgba(255,215,0,0.08)'">
+            <div style="font-size:20px;margin-bottom:6px;">💡</div>
+            <div style="font-weight:700;font-size:13px;color:#cc9900;">Brainstorm</div>
+            <div style="font-size:11px;color:#443300;margin-top:2px;">New ideas</div>
+          </div>
+          <div class="chip" onclick="startProjectChat('What are the next steps for ${project.name}?')" style="background:rgba(255,215,0,0.03);border:1px solid rgba(255,215,0,0.08);border-radius:14px;padding:14px 16px;text-align:left;cursor:pointer;transition:all 0.2s;color:#665500;" onmouseover="this.style.background='rgba(255,215,0,0.07)';this.style.borderColor='rgba(255,215,0,0.3)'" onmouseout="this.style.background='rgba(255,215,0,0.03)';this.style.borderColor='rgba(255,215,0,0.08)'">
+            <div style="font-size:20px;margin-bottom:6px;">🚀</div>
+            <div style="font-weight:700;font-size:13px;color:#cc9900;">Next steps</div>
+            <div style="font-size:11px;color:#443300;margin-top:2px;">Action plan</div>
+          </div>
+        </div>
+      </div>`;
+  }
+  if (chatEl) chatEl.innerHTML = '';
+
+  // Update input placeholder
+  const input = document.getElementById('message');
+  if (input) input.placeholder = `Chat in "${project.name}"...`;
+
+  // Close sidebar on mobile
+  if (window.innerWidth < 900 && typeof closeSidebar === 'function') closeSidebar();
+}
+window.openProject = openProject;
+
+// ── START CHAT IN PROJECT ──────────────────────────────
+function startProjectChat(prompt) {
+  const input = document.getElementById('message');
+  const ws = document.getElementById('welcomeScreen');
+  if (ws) ws.style.display = 'none';
+  if (input) {
+    input.value = prompt;
+    if (typeof send === 'function') send();
+  }
+}
+window.startProjectChat = startProjectChat;
+
+// ── EDIT PROJECT ───────────────────────────────────────
+function editProject(projectId) {
+  const project = getProject(projectId);
+  if (!project) return;
+
+  document.getElementById('_projectModal')?.remove();
+  const icons = ['📁','🚀','💡','🎯','🔬','📝','🎨','💼','🌐','⚡','🧠','🔥','⭐','🎮','🏆'];
+
+  const modal = document.createElement('div');
+  modal.id = '_projectModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);';
+  modal.innerHTML = `
+    <div style="background:#0f0e00;border:1px solid rgba(255,215,0,0.2);border-radius:24px;padding:24px;width:90%;max-width:360px;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--accent);margin-bottom:16px;">✏️ EDIT PROJECT</div>
+
+      <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:#443300;letter-spacing:2px;margin-bottom:8px;">PROJECT NAME</div>
+      <input id="_projName" value="${project.name}" style="width:100%;background:#080800;border:1px solid rgba(255,215,0,0.15);border-radius:10px;padding:10px 14px;color:#fff8e7;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:14px;">
+
+      <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:#443300;letter-spacing:2px;margin-bottom:8px;">DESCRIPTION</div>
+      <input id="_projDesc" value="${project.desc||''}" placeholder="What is this project about?" style="width:100%;background:#080800;border:1px solid rgba(255,215,0,0.15);border-radius:10px;padding:10px 14px;color:#fff8e7;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:14px;">
+
+      <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:#443300;letter-spacing:2px;margin-bottom:8px;">ICON</div>
+      <div id="_iconGrid" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;">
+        ${icons.map(icon => `
+          <button onclick="selectIcon('${icon}',this)" data-icon="${icon}" style="width:36px;height:36px;background:${icon===project.icon?'rgba(255,215,0,0.15)':'rgba(255,215,0,0.05)'};border:1px solid ${icon===project.icon?'rgba(255,215,0,0.4)':'rgba(255,215,0,0.1)'};border-radius:8px;cursor:pointer;font-size:18px;transition:all 0.15s;">${icon}</button>`).join('')}
+      </div>
+
+      <div style="display:flex;gap:8px;">
+        <button onclick="document.getElementById('_projectModal').remove()" style="flex:1;padding:11px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:50px;color:#665500;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;">Cancel</button>
+        <button onclick="updateProject('${projectId}')" style="flex:2;padding:11px;background:linear-gradient(135deg,var(--accent),#ff8c00);border:none;border-radius:50px;color:#000;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;">Save Changes</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  window._selectedIcon = project.icon;
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+}
+window.editProject = editProject;
+
+function updateProject(projectId) {
+  const name = document.getElementById('_projName')?.value.trim();
+  if (!name) return;
+  const project = getProject(projectId);
+  if (!project) return;
+  project.name = name;
+  project.desc = document.getElementById('_projDesc')?.value.trim() || '';
+  project.icon = window._selectedIcon || project.icon;
+  project.updatedAt = Date.now();
+  saveProject(project);
+  document.getElementById('_projectModal')?.remove();
+  renderProjects();
+  openProject(projectId);
+}
+window.updateProject = updateProject;
+
+// ── DELETE PROJECT ─────────────────────────────────────
+function deleteProjectConfirm(projectId) {
+  const project = getProject(projectId);
+  if (!project) return;
+
+  document.getElementById('_delModal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = '_delModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);';
+  modal.innerHTML = `
+    <div style="background:#0f0e00;border:1px solid rgba(255,60,60,0.2);border-radius:24px;padding:24px;width:90%;max-width:320px;text-align:center;">
+      <div style="font-size:40px;margin-bottom:10px;">🗑️</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#ff4444;margin-bottom:8px;">DELETE PROJECT</div>
+      <div style="font-size:13px;color:#665500;margin-bottom:6px;">Delete "<strong style="color:#fff8e7;">${project.name}</strong>"?</div>
+      <div style="font-size:12px;color:#443300;margin-bottom:20px;">This won't delete the chats inside.</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="document.getElementById('_delModal').remove()" style="flex:1;padding:11px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:50px;color:#665500;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Cancel</button>
+        <button onclick="confirmDeleteProject('${projectId}')" style="flex:1;padding:11px;background:rgba(255,60,60,0.15);border:1px solid rgba(255,60,60,0.3);border-radius:50px;color:#ff4444;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Delete</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+}
+window.deleteProjectConfirm = deleteProjectConfirm;
+
+function confirmDeleteProject(projectId) {
+  deleteProject(projectId);
+  document.getElementById('_delModal')?.remove();
+  if (window._currentProjectId === projectId) {
+    window._currentProjectId = null;
+    if (typeof newChat === 'function') newChat();
+  }
+  renderProjects();
+}
+window.confirmDeleteProject = confirmDeleteProject;
+
+// ── SAVE CHAT TO CURRENT PROJECT ───────────────────────
+// Called after each chat save if a project is active
+const _origSaveChat = window.saveChat;
+window.addEventListener('load', function() {
+  const origSave = window.saveChat;
+  if (origSave) {
+    window.saveChat = function() {
+      origSave.apply(this, arguments);
+      // If a project is active, link this chat to it
+      if (window._currentProjectId && window.currentChatId) {
+        const project = getProject(window._currentProjectId);
+        if (project && !project.chats.includes(window.currentChatId)) {
+          project.chats.unshift(window.currentChatId);
+          project.updatedAt = Date.now();
+          saveProject(project);
+          renderProjects();
+        }
+      }
+    };
+  }
+});
+
+// ── INIT ───────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  renderProjects();
 });
