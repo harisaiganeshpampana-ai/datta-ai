@@ -1,348 +1,608 @@
-// ╔══════════════════════════════════════════════════════╗
-// ║         DATTA AI — projects.js (COMPLETE)           ║
-// ║  Full projects feature: create, chat, manage        ║
-// ╚══════════════════════════════════════════════════════╝
+// ============================================================
+//  DATTA AI — Projects System (projects.js)
+//  Drop-in replacement. Works with localStorage.
+//  Matches Datta AI gold/dark theme.
+// ============================================================
 
-// ── PROJECT STORAGE ────────────────────────────────────
-function getProjects() {
-  try { return JSON.parse(localStorage.getItem('datta_projects') || '[]'); }
-  catch(e) { return []; }
-}
-function saveProjects(projects) {
-  localStorage.setItem('datta_projects', JSON.stringify(projects));
-}
-function getProject(id) {
-  return getProjects().find(p => p.id === id) || null;
-}
-function saveProject(project) {
-  const projects = getProjects();
-  const idx = projects.findIndex(p => p.id === project.id);
-  if (idx >= 0) projects[idx] = project;
-  else projects.unshift(project);
-  saveProjects(projects);
-}
-function deleteProject(id) {
-  saveProjects(getProjects().filter(p => p.id !== id));
-}
+const ProjectsSystem = (() => {
 
-// ── RENDER PROJECTS SIDEBAR ────────────────────────────
-function renderProjects() {
-  const container = document.getElementById('section-projects');
-  if (!container) return;
-  const projects = getProjects();
+  // ── Storage helpers ────────────────────────────────────────
+  const STORE_KEY = 'datta_projects';
 
-  if (!projects.length) {
-    container.innerHTML = `
-      <div style="padding:16px 12px;">
-        <button onclick="openNewProjectModal()" style="width:100%;padding:10px;background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.2);border-radius:12px;color:var(--accent);font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
-          <span style="font-size:16px;">+</span> New Project
-        </button>
-        <div style="text-align:center;padding:30px 10px;color:#332200;font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:1px;">
-          <div style="font-size:28px;margin-bottom:8px;opacity:0.4;">📁</div>
-          No projects yet<br>
-          <span style="font-size:10px;opacity:0.6;">Organize chats by topic</span>
-        </div>
-      </div>`;
-    return;
+  function loadAll() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; }
+    catch { return []; }
   }
 
-  const icons = ['📁','🚀','💡','🎯','🔬','📝','🎨','💼','🌐','⚡'];
-  container.innerHTML = `
-    <div style="padding:8px 12px 4px;">
-      <button onclick="openNewProjectModal()" style="width:100%;padding:8px;background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.2);border-radius:10px;color:var(--accent);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:6px;">
-        <span>+</span> New Project
-      </button>
-      ${projects.map(p => `
-        <div class="projectItem" onclick="openProject('${p.id}')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;cursor:pointer;transition:all 0.15s;margin-bottom:2px;border:1px solid transparent;" onmouseover="this.style.background='rgba(255,215,0,0.06)';this.style.borderColor='rgba(255,215,0,0.1)'" onmouseout="this.style.background='none';this.style.borderColor='transparent'">
-          <span style="font-size:16px;flex-shrink:0;">${p.icon || '📁'}</span>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:13px;color:#fff8e7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</div>
-            <div style="font-size:10px;color:#332200;font-family:'Rajdhani',sans-serif;">${(p.chats||[]).length} chats</div>
-          </div>
-          <button onclick="event.stopPropagation();deleteProjectConfirm('${p.id}')" style="background:none;border:none;color:#332200;cursor:pointer;padding:2px 4px;border-radius:4px;font-size:12px;opacity:0;" onmouseover="this.style.opacity='1';this.style.color='#ff4444'" onmouseout="this.style.opacity='0'">✕</button>
-        </div>`).join('')}
-    </div>`;
-}
-window.renderProjects = renderProjects;
-
-// ── NEW PROJECT MODAL ──────────────────────────────────
-function openNewProjectModal() {
-  document.getElementById('_projectModal')?.remove();
-  const icons = ['📁','🚀','💡','🎯','🔬','📝','🎨','💼','🌐','⚡','🧠','🔥','⭐','🎮','🏆'];
-  let selectedIcon = '📁';
-
-  const modal = document.createElement('div');
-  modal.id = '_projectModal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);';
-  modal.innerHTML = `
-    <div style="background:#0f0e00;border:1px solid rgba(255,215,0,0.2);border-radius:24px;padding:24px;width:90%;max-width:360px;">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--accent);margin-bottom:16px;">📁 NEW PROJECT</div>
-
-      <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:#443300;letter-spacing:2px;margin-bottom:8px;">PROJECT NAME</div>
-      <input id="_projName" placeholder="e.g. My App, Research, Work..." style="width:100%;background:#080800;border:1px solid rgba(255,215,0,0.15);border-radius:10px;padding:10px 14px;color:#fff8e7;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:14px;"
-        onkeydown="if(event.key==='Enter') createProject()">
-
-      <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:#443300;letter-spacing:2px;margin-bottom:8px;">DESCRIPTION (optional)</div>
-      <input id="_projDesc" placeholder="What is this project about?" style="width:100%;background:#080800;border:1px solid rgba(255,215,0,0.15);border-radius:10px;padding:10px 14px;color:#fff8e7;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:14px;">
-
-      <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:#443300;letter-spacing:2px;margin-bottom:8px;">CHOOSE ICON</div>
-      <div id="_iconGrid" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;">
-        ${icons.map(icon => `
-          <button onclick="selectIcon('${icon}',this)" data-icon="${icon}" style="width:36px;height:36px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.1);border-radius:8px;cursor:pointer;font-size:18px;transition:all 0.15s;${icon==='📁'?'background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);':''}">${icon}</button>`).join('')}
-      </div>
-
-      <div style="display:flex;gap:8px;">
-        <button onclick="document.getElementById('_projectModal').remove()" style="flex:1;padding:11px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:50px;color:#665500;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;">Cancel</button>
-        <button onclick="createProject()" style="flex:2;padding:11px;background:linear-gradient(135deg,var(--accent),#ff8c00);border:none;border-radius:50px;color:#000;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;">Create Project →</button>
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
-  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
-  setTimeout(() => document.getElementById('_projName')?.focus(), 100);
-}
-window.openNewProjectModal = openNewProjectModal;
-
-function selectIcon(icon, btn) {
-  document.querySelectorAll('#_iconGrid button').forEach(b => {
-    b.style.background = 'rgba(255,215,0,0.05)';
-    b.style.borderColor = 'rgba(255,215,0,0.1)';
-  });
-  btn.style.background = 'rgba(255,215,0,0.15)';
-  btn.style.borderColor = 'rgba(255,215,0,0.4)';
-  window._selectedIcon = icon;
-}
-window.selectIcon = selectIcon;
-
-function createProject() {
-  const name = document.getElementById('_projName')?.value.trim();
-  if (!name) {
-    document.getElementById('_projName').style.borderColor = 'rgba(255,60,60,0.5)';
-    return;
+  function saveAll(projects) {
+    localStorage.setItem(STORE_KEY, JSON.stringify(projects));
   }
-  const desc = document.getElementById('_projDesc')?.value.trim() || '';
-  const icon = window._selectedIcon || '📁';
-  const project = {
-    id: 'proj_' + Date.now(),
-    name, desc, icon,
-    chats: [],
-    createdAt: Date.now(),
-    updatedAt: Date.now()
-  };
-  saveProject(project);
-  document.getElementById('_projectModal')?.remove();
-  renderProjects();
-  // Switch to projects section
-  if (typeof showSection === 'function') showSection('projects');
-  // Open the project immediately
-  openProject(project.id);
-}
-window.createProject = createProject;
 
-// ── OPEN PROJECT ───────────────────────────────────────
-function openProject(projectId) {
-  const project = getProject(projectId);
-  if (!project) return;
-
-  window._currentProjectId = projectId;
-
-  // Show welcome screen with project context
-  const ws = document.getElementById('welcomeScreen');
-  const chatEl = document.getElementById('chat');
-
-  if (ws) {
-    ws.style.display = 'flex';
-    ws.innerHTML = `
-      <div style="display:flex;flex-direction:column;align-items:center;width:100%;padding:20px 16px 140px;text-align:center;">
-        <div style="font-size:52px;margin-bottom:12px;animation:welcomeFloat 3s ease-in-out infinite;">${project.icon}</div>
-        <div style="font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:3px;color:#443300;margin-bottom:6px;">PROJECT</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:3px;background:linear-gradient(135deg,#fff8e7,var(--accent),#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;">${project.name}</div>
-        ${project.desc ? `<div style="font-size:13px;color:#443300;margin-bottom:20px;max-width:400px;">${project.desc}</div>` : '<div style="margin-bottom:20px;"></div>'}
-
-        <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;justify-content:center;">
-          <div style="padding:5px 14px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.12);border-radius:20px;font-family:'Rajdhani',sans-serif;font-size:11px;color:#665500;letter-spacing:1px;">
-            💬 ${project.chats.length} chats
-          </div>
-          <div style="padding:5px 14px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.12);border-radius:20px;font-family:'Rajdhani',sans-serif;font-size:11px;color:#665500;letter-spacing:1px;">
-            📅 ${new Date(project.createdAt).toLocaleDateString()}
-          </div>
-          <button onclick="editProject('${project.id}')" style="padding:5px 14px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.12);border-radius:20px;font-family:'Rajdhani',sans-serif;font-size:11px;color:#665500;letter-spacing:1px;cursor:pointer;">✏️ Edit</button>
-        </div>
-
-        ${project.chats.length > 0 ? `
-          <div style="width:100%;max-width:500px;margin-bottom:20px;">
-            <div style="font-family:'Rajdhani',sans-serif;font-size:10px;letter-spacing:2px;color:#332200;margin-bottom:10px;text-align:left;">RECENT CHATS IN THIS PROJECT</div>
-            ${project.chats.slice(0,4).map(chatId => {
-              const allChats = JSON.parse(localStorage.getItem('datta_chats')||'{}');
-              const chat = allChats[chatId];
-              if (!chat) return '';
-              return `<div onclick="openChat('${chatId}')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,215,0,0.03);border:1px solid rgba(255,215,0,0.07);border-radius:12px;cursor:pointer;margin-bottom:6px;transition:all 0.15s;text-align:left;" onmouseover="this.style.background='rgba(255,215,0,0.07)'" onmouseout="this.style.background='rgba(255,215,0,0.03)'">
-                <span style="font-size:14px;">💬</span>
-                <span style="font-size:13px;color:#665500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${chat.title||'Chat'}</span>
-              </div>`;
-            }).join('')}
-          </div>` : ''}
-
-        <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:#332200;letter-spacing:2px;margin-bottom:12px;">START A NEW CHAT IN THIS PROJECT</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:480px;width:100%;">
-          <div class="chip" onclick="startProjectChat('What should I work on in the ${project.name} project?')" style="background:rgba(255,215,0,0.03);border:1px solid rgba(255,215,0,0.08);border-radius:14px;padding:14px 16px;text-align:left;cursor:pointer;transition:all 0.2s;color:#665500;" onmouseover="this.style.background='rgba(255,215,0,0.07)';this.style.borderColor='rgba(255,215,0,0.3)'" onmouseout="this.style.background='rgba(255,215,0,0.03)';this.style.borderColor='rgba(255,215,0,0.08)'">
-            <div style="font-size:20px;margin-bottom:6px;">🎯</div>
-            <div style="font-weight:700;font-size:13px;color:#cc9900;">Plan tasks</div>
-            <div style="font-size:11px;color:#443300;margin-top:2px;">What to work on</div>
-          </div>
-          <div class="chip" onclick="startProjectChat('Summarize the key ideas for ${project.name}')" style="background:rgba(255,215,0,0.03);border:1px solid rgba(255,215,0,0.08);border-radius:14px;padding:14px 16px;text-align:left;cursor:pointer;transition:all 0.2s;color:#665500;" onmouseover="this.style.background='rgba(255,215,0,0.07)';this.style.borderColor='rgba(255,215,0,0.3)'" onmouseout="this.style.background='rgba(255,215,0,0.03)';this.style.borderColor='rgba(255,215,0,0.08)'">
-            <div style="font-size:20px;margin-bottom:6px;">📝</div>
-            <div style="font-weight:700;font-size:13px;color:#cc9900;">Summarize</div>
-            <div style="font-size:11px;color:#443300;margin-top:2px;">Key ideas</div>
-          </div>
-          <div class="chip" onclick="startProjectChat('Help me brainstorm ideas for ${project.name}')" style="background:rgba(255,215,0,0.03);border:1px solid rgba(255,215,0,0.08);border-radius:14px;padding:14px 16px;text-align:left;cursor:pointer;transition:all 0.2s;color:#665500;" onmouseover="this.style.background='rgba(255,215,0,0.07)';this.style.borderColor='rgba(255,215,0,0.3)'" onmouseout="this.style.background='rgba(255,215,0,0.03)';this.style.borderColor='rgba(255,215,0,0.08)'">
-            <div style="font-size:20px;margin-bottom:6px;">💡</div>
-            <div style="font-weight:700;font-size:13px;color:#cc9900;">Brainstorm</div>
-            <div style="font-size:11px;color:#443300;margin-top:2px;">New ideas</div>
-          </div>
-          <div class="chip" onclick="startProjectChat('What are the next steps for ${project.name}?')" style="background:rgba(255,215,0,0.03);border:1px solid rgba(255,215,0,0.08);border-radius:14px;padding:14px 16px;text-align:left;cursor:pointer;transition:all 0.2s;color:#665500;" onmouseover="this.style.background='rgba(255,215,0,0.07)';this.style.borderColor='rgba(255,215,0,0.3)'" onmouseout="this.style.background='rgba(255,215,0,0.03)';this.style.borderColor='rgba(255,215,0,0.08)'">
-            <div style="font-size:20px;margin-bottom:6px;">🚀</div>
-            <div style="font-weight:700;font-size:13px;color:#cc9900;">Next steps</div>
-            <div style="font-size:11px;color:#443300;margin-top:2px;">Action plan</div>
-          </div>
-        </div>
-      </div>`;
+  function genId() {
+    return 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
   }
-  if (chatEl) chatEl.innerHTML = '';
 
-  // Update input placeholder
-  const input = document.getElementById('message');
-  if (input) input.placeholder = `Chat in "${project.name}"...`;
-
-  // Close sidebar on mobile
-  if (window.innerWidth < 900 && typeof closeSidebar === 'function') closeSidebar();
-}
-window.openProject = openProject;
-
-// ── START CHAT IN PROJECT ──────────────────────────────
-function startProjectChat(prompt) {
-  const input = document.getElementById('message');
-  const ws = document.getElementById('welcomeScreen');
-  if (ws) ws.style.display = 'none';
-  if (input) {
-    input.value = prompt;
-    if (typeof send === 'function') send();
-  }
-}
-window.startProjectChat = startProjectChat;
-
-// ── EDIT PROJECT ───────────────────────────────────────
-function editProject(projectId) {
-  const project = getProject(projectId);
-  if (!project) return;
-
-  document.getElementById('_projectModal')?.remove();
-  const icons = ['📁','🚀','💡','🎯','🔬','📝','🎨','💼','🌐','⚡','🧠','🔥','⭐','🎮','🏆'];
-
-  const modal = document.createElement('div');
-  modal.id = '_projectModal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);';
-  modal.innerHTML = `
-    <div style="background:#0f0e00;border:1px solid rgba(255,215,0,0.2);border-radius:24px;padding:24px;width:90%;max-width:360px;">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--accent);margin-bottom:16px;">✏️ EDIT PROJECT</div>
-
-      <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:#443300;letter-spacing:2px;margin-bottom:8px;">PROJECT NAME</div>
-      <input id="_projName" value="${project.name}" style="width:100%;background:#080800;border:1px solid rgba(255,215,0,0.15);border-radius:10px;padding:10px 14px;color:#fff8e7;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:14px;">
-
-      <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:#443300;letter-spacing:2px;margin-bottom:8px;">DESCRIPTION</div>
-      <input id="_projDesc" value="${project.desc||''}" placeholder="What is this project about?" style="width:100%;background:#080800;border:1px solid rgba(255,215,0,0.15);border-radius:10px;padding:10px 14px;color:#fff8e7;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:14px;">
-
-      <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:#443300;letter-spacing:2px;margin-bottom:8px;">ICON</div>
-      <div id="_iconGrid" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;">
-        ${icons.map(icon => `
-          <button onclick="selectIcon('${icon}',this)" data-icon="${icon}" style="width:36px;height:36px;background:${icon===project.icon?'rgba(255,215,0,0.15)':'rgba(255,215,0,0.05)'};border:1px solid ${icon===project.icon?'rgba(255,215,0,0.4)':'rgba(255,215,0,0.1)'};border-radius:8px;cursor:pointer;font-size:18px;transition:all 0.15s;">${icon}</button>`).join('')}
-      </div>
-
-      <div style="display:flex;gap:8px;">
-        <button onclick="document.getElementById('_projectModal').remove()" style="flex:1;padding:11px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:50px;color:#665500;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;">Cancel</button>
-        <button onclick="updateProject('${projectId}')" style="flex:2;padding:11px;background:linear-gradient(135deg,var(--accent),#ff8c00);border:none;border-radius:50px;color:#000;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;">Save Changes</button>
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
-  window._selectedIcon = project.icon;
-  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
-}
-window.editProject = editProject;
-
-function updateProject(projectId) {
-  const name = document.getElementById('_projName')?.value.trim();
-  if (!name) return;
-  const project = getProject(projectId);
-  if (!project) return;
-  project.name = name;
-  project.desc = document.getElementById('_projDesc')?.value.trim() || '';
-  project.icon = window._selectedIcon || project.icon;
-  project.updatedAt = Date.now();
-  saveProject(project);
-  document.getElementById('_projectModal')?.remove();
-  renderProjects();
-  openProject(projectId);
-}
-window.updateProject = updateProject;
-
-// ── DELETE PROJECT ─────────────────────────────────────
-function deleteProjectConfirm(projectId) {
-  const project = getProject(projectId);
-  if (!project) return;
-
-  document.getElementById('_delModal')?.remove();
-  const modal = document.createElement('div');
-  modal.id = '_delModal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);';
-  modal.innerHTML = `
-    <div style="background:#0f0e00;border:1px solid rgba(255,60,60,0.2);border-radius:24px;padding:24px;width:90%;max-width:320px;text-align:center;">
-      <div style="font-size:40px;margin-bottom:10px;">🗑️</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#ff4444;margin-bottom:8px;">DELETE PROJECT</div>
-      <div style="font-size:13px;color:#665500;margin-bottom:6px;">Delete "<strong style="color:#fff8e7;">${project.name}</strong>"?</div>
-      <div style="font-size:12px;color:#443300;margin-bottom:20px;">This won't delete the chats inside.</div>
-      <div style="display:flex;gap:8px;">
-        <button onclick="document.getElementById('_delModal').remove()" style="flex:1;padding:11px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:50px;color:#665500;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Cancel</button>
-        <button onclick="confirmDeleteProject('${projectId}')" style="flex:1;padding:11px;background:rgba(255,60,60,0.15);border:1px solid rgba(255,60,60,0.3);border-radius:50px;color:#ff4444;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Delete</button>
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
-  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
-}
-window.deleteProjectConfirm = deleteProjectConfirm;
-
-function confirmDeleteProject(projectId) {
-  deleteProject(projectId);
-  document.getElementById('_delModal')?.remove();
-  if (window._currentProjectId === projectId) {
-    window._currentProjectId = null;
-    if (typeof newChat === 'function') newChat();
-  }
-  renderProjects();
-}
-window.confirmDeleteProject = confirmDeleteProject;
-
-// ── SAVE CHAT TO CURRENT PROJECT ───────────────────────
-// Called after each chat save if a project is active
-const _origSaveChat = window.saveChat;
-window.addEventListener('load', function() {
-  const origSave = window.saveChat;
-  if (origSave) {
-    window.saveChat = function() {
-      origSave.apply(this, arguments);
-      // If a project is active, link this chat to it
-      if (window._currentProjectId && window.currentChatId) {
-        const project = getProject(window._currentProjectId);
-        if (project && !project.chats.includes(window.currentChatId)) {
-          project.chats.unshift(window.currentChatId);
-          project.updatedAt = Date.now();
-          saveProject(project);
-          renderProjects();
-        }
-      }
+  // ── CRUD ───────────────────────────────────────────────────
+  function createProject(name, instructions = '') {
+    const projects = loadAll();
+    const p = {
+      id: genId(),
+      name: name.trim() || 'Untitled Project',
+      instructions: instructions.trim(),
+      chats: [],           // [{id, title, messages:[]}]
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
     };
+    projects.unshift(p);
+    saveAll(projects);
+    return p;
   }
-});
 
-// ── INIT ───────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
-  renderProjects();
-});
+  function getProject(id) {
+    return loadAll().find(p => p.id === id) || null;
+  }
+
+  function updateProject(id, changes) {
+    const projects = loadAll();
+    const idx = projects.findIndex(p => p.id === id);
+    if (idx === -1) return null;
+    projects[idx] = { ...projects[idx], ...changes, updatedAt: Date.now() };
+    saveAll(projects);
+    return projects[idx];
+  }
+
+  function deleteProject(id) {
+    const projects = loadAll().filter(p => p.id !== id);
+    saveAll(projects);
+  }
+
+  function addChatToProject(projectId, chatTitle = 'New Chat') {
+    const projects = loadAll();
+    const idx = projects.findIndex(p => p.id === projectId);
+    if (idx === -1) return null;
+    const chat = { id: genId(), title: chatTitle, messages: [], createdAt: Date.now() };
+    projects[idx].chats.unshift(chat);
+    projects[idx].updatedAt = Date.now();
+    saveAll(projects);
+    return chat;
+  }
+
+  function deleteChatFromProject(projectId, chatId) {
+    const projects = loadAll();
+    const idx = projects.findIndex(p => p.id === projectId);
+    if (idx === -1) return;
+    projects[idx].chats = projects[idx].chats.filter(c => c.id !== chatId);
+    projects[idx].updatedAt = Date.now();
+    saveAll(projects);
+  }
+
+  function renameChatInProject(projectId, chatId, newTitle) {
+    const projects = loadAll();
+    const pIdx = projects.findIndex(p => p.id === projectId);
+    if (pIdx === -1) return;
+    const cIdx = projects[pIdx].chats.findIndex(c => c.id === chatId);
+    if (cIdx === -1) return;
+    projects[pIdx].chats[cIdx].title = newTitle.trim() || 'Untitled Chat';
+    projects[pIdx].updatedAt = Date.now();
+    saveAll(projects);
+  }
+
+  // ── UI ─────────────────────────────────────────────────────
+  function injectStyles() {
+    if (document.getElementById('datta-proj-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'datta-proj-styles';
+    style.textContent = `
+      /* ── overlay ── */
+      #datta-proj-overlay {
+        position: fixed; inset: 0; z-index: 9999;
+        background: rgba(0,0,0,.72);
+        backdrop-filter: blur(6px);
+        display: flex; align-items: center; justify-content: center;
+        opacity: 0; pointer-events: none;
+        transition: opacity .25s ease;
+      }
+      #datta-proj-overlay.open { opacity: 1; pointer-events: all; }
+
+      /* ── modal shell ── */
+      #datta-proj-modal {
+        background: #111;
+        border: 1px solid #c9a227;
+        border-radius: 16px;
+        width: min(96vw, 860px);
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 0 60px rgba(201,162,39,.18);
+        transform: translateY(24px) scale(.97);
+        transition: transform .28s cubic-bezier(.34,1.56,.64,1);
+        font-family: 'Segoe UI', sans-serif;
+        color: #f0e6c8;
+      }
+      #datta-proj-overlay.open #datta-proj-modal {
+        transform: translateY(0) scale(1);
+      }
+
+      /* ── header ── */
+      .dp-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 18px 24px;
+        border-bottom: 1px solid #2a2a2a;
+        background: #0d0d0d;
+      }
+      .dp-header h2 {
+        font-size: 1.1rem; font-weight: 700; color: #c9a227;
+        margin: 0; letter-spacing: .04em;
+      }
+      .dp-header-btns { display: flex; gap: 10px; align-items: center; }
+
+      /* ── body: two-pane layout ── */
+      .dp-body {
+        display: grid;
+        grid-template-columns: 230px 1fr;
+        flex: 1; overflow: hidden;
+      }
+
+      /* ── left pane ── */
+      .dp-left {
+        border-right: 1px solid #1e1e1e;
+        display: flex; flex-direction: column;
+        background: #0d0d0d;
+        overflow: hidden;
+      }
+      .dp-left-top {
+        padding: 14px 14px 10px;
+        border-bottom: 1px solid #1e1e1e;
+      }
+      .dp-proj-list {
+        flex: 1; overflow-y: auto; padding: 8px 8px;
+      }
+      .dp-proj-list::-webkit-scrollbar { width: 4px; }
+      .dp-proj-list::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+      .dp-proj-item {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 12px; border-radius: 10px; cursor: pointer;
+        margin-bottom: 4px; gap: 8px;
+        transition: background .15s;
+      }
+      .dp-proj-item:hover { background: #1a1a1a; }
+      .dp-proj-item.active { background: #1f1a08; border: 1px solid #c9a22755; }
+      .dp-proj-item-name {
+        font-size: .85rem; font-weight: 600; color: #e0cc98;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        flex: 1;
+      }
+      .dp-proj-item-del {
+        background: none; border: none; cursor: pointer;
+        color: #555; font-size: .85rem; padding: 2px 5px;
+        border-radius: 5px; transition: color .15s, background .15s;
+        flex-shrink: 0;
+      }
+      .dp-proj-item-del:hover { color: #e55; background: #2a1010; }
+
+      .dp-empty-msg {
+        color: #444; font-size: .8rem; text-align: center;
+        padding: 28px 10px;
+      }
+
+      /* ── right pane ── */
+      .dp-right {
+        display: flex; flex-direction: column;
+        overflow: hidden; background: #111;
+      }
+      .dp-right-placeholder {
+        flex: 1; display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        color: #333; gap: 10px;
+      }
+      .dp-right-placeholder span { font-size: 2.4rem; }
+      .dp-right-placeholder p { font-size: .85rem; }
+
+      /* ── project detail view ── */
+      .dp-detail { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+      .dp-detail-header {
+        padding: 16px 20px 12px;
+        border-bottom: 1px solid #1e1e1e;
+        display: flex; align-items: center; justify-content: space-between;
+      }
+      .dp-detail-header input {
+        background: none; border: none; outline: none;
+        font-size: 1rem; font-weight: 700; color: #c9a227;
+        font-family: inherit; width: 60%;
+      }
+      .dp-detail-header input::placeholder { color: #444; }
+
+      .dp-instructions-wrap {
+        padding: 12px 20px;
+        border-bottom: 1px solid #1a1a1a;
+      }
+      .dp-instructions-label {
+        font-size: .72rem; color: #888; letter-spacing: .06em;
+        text-transform: uppercase; margin-bottom: 6px;
+      }
+      .dp-instructions-area {
+        width: 100%; box-sizing: border-box;
+        background: #0d0d0d; border: 1px solid #2a2a2a;
+        border-radius: 8px; color: #c8b87a; font-family: inherit;
+        font-size: .82rem; padding: 10px 12px; resize: none;
+        min-height: 72px; outline: none;
+        transition: border-color .2s;
+      }
+      .dp-instructions-area:focus { border-color: #c9a22788; }
+      .dp-instructions-area::placeholder { color: #333; }
+
+      /* ── chats inside project ── */
+      .dp-chats-section {
+        flex: 1; display: flex; flex-direction: column; overflow: hidden;
+      }
+      .dp-chats-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 20px 6px;
+      }
+      .dp-chats-label { font-size: .72rem; color: #888; text-transform: uppercase; letter-spacing: .06em; }
+      .dp-chat-list {
+        flex: 1; overflow-y: auto; padding: 0 14px 14px;
+      }
+      .dp-chat-list::-webkit-scrollbar { width: 4px; }
+      .dp-chat-list::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 4px; }
+
+      .dp-chat-item {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 12px; border-radius: 9px;
+        margin-bottom: 5px; gap: 8px;
+        background: #161616;
+        border: 1px solid transparent;
+        cursor: pointer; transition: border-color .15s, background .15s;
+      }
+      .dp-chat-item:hover { border-color: #c9a22740; background: #1a1a1a; }
+      .dp-chat-item-info { flex: 1; overflow: hidden; }
+      .dp-chat-item-title {
+        font-size: .83rem; font-weight: 600; color: #ddd;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .dp-chat-item-date { font-size: .7rem; color: #444; margin-top: 2px; }
+      .dp-chat-item-actions { display: flex; gap: 4px; }
+      .dp-chat-btn {
+        background: none; border: none; cursor: pointer; padding: 3px 6px;
+        border-radius: 5px; font-size: .78rem; color: #555;
+        transition: color .15s, background .15s;
+      }
+      .dp-chat-btn:hover { color: #c9a227; background: #1f1a08; }
+      .dp-chat-btn.del:hover { color: #e55; background: #2a1010; }
+
+      .dp-no-chats { color: #333; font-size: .8rem; padding: 20px; text-align: center; }
+
+      /* ── create project form ── */
+      #datta-create-proj-form {
+        display: none;
+        flex-direction: column; gap: 12px;
+        padding: 18px 20px;
+        border-bottom: 1px solid #1e1e1e;
+        background: #0d0d0d;
+      }
+      #datta-create-proj-form.show { display: flex; }
+      #datta-create-proj-form input,
+      #datta-create-proj-form textarea {
+        background: #141414; border: 1px solid #2a2a2a;
+        border-radius: 8px; color: #f0e6c8; font-family: inherit;
+        font-size: .85rem; padding: 10px 12px; outline: none;
+        transition: border-color .2s;
+      }
+      #datta-create-proj-form input:focus,
+      #datta-create-proj-form textarea:focus { border-color: #c9a22799; }
+      #datta-create-proj-form input::placeholder,
+      #datta-create-proj-form textarea::placeholder { color: #333; }
+      #datta-create-proj-form textarea { resize: none; min-height: 64px; }
+      .dp-form-btns { display: flex; gap: 8px; }
+
+      /* ── buttons ── */
+      .dp-btn {
+        border: none; border-radius: 8px; cursor: pointer;
+        font-family: inherit; font-size: .82rem; font-weight: 600;
+        padding: 8px 16px; transition: all .18s;
+      }
+      .dp-btn-gold {
+        background: linear-gradient(135deg,#c9a227,#e8c84a);
+        color: #111;
+      }
+      .dp-btn-gold:hover { filter: brightness(1.12); transform: translateY(-1px); }
+      .dp-btn-ghost {
+        background: #1e1e1e; color: #888; border: 1px solid #2a2a2a;
+      }
+      .dp-btn-ghost:hover { background: #252525; color: #bbb; }
+      .dp-btn-icon {
+        background: none; border: none; cursor: pointer; padding: 6px 10px;
+        border-radius: 7px; font-size: .9rem; color: #777;
+        transition: background .15s, color .15s;
+      }
+      .dp-btn-icon:hover { background: #1a1a1a; color: #c9a227; }
+      .dp-btn-close {
+        background: none; border: none; cursor: pointer;
+        color: #555; font-size: 1.2rem; padding: 2px 8px;
+        border-radius: 6px; transition: color .15s;
+      }
+      .dp-btn-close:hover { color: #e55; }
+
+      /* ── toast ── */
+      #datta-proj-toast {
+        position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
+        background: #1f1a08; border: 1px solid #c9a227;
+        color: #e8c84a; border-radius: 10px;
+        padding: 10px 22px; font-size: .83rem; font-weight: 600;
+        opacity: 0; pointer-events: none; z-index: 10000;
+        transition: opacity .2s, transform .2s;
+      }
+      #datta-proj-toast.show {
+        opacity: 1; transform: translateX(-50%) translateY(0);
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function toast(msg) {
+    let t = document.getElementById('datta-proj-toast');
+    if (!t) { t = document.createElement('div'); t.id = 'datta-proj-toast'; document.body.appendChild(t); }
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  function fmtDate(ts) {
+    const d = new Date(ts);
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  // ── Render helpers ─────────────────────────────────────────
+  let _activeProjectId = null;
+
+  function renderProjectList(container) {
+    const projects = loadAll();
+    if (!projects.length) {
+      container.innerHTML = '<p class="dp-empty-msg">No projects yet.<br>Create one above 👆</p>';
+      return;
+    }
+    container.innerHTML = projects.map(p => `
+      <div class="dp-proj-item ${p.id === _activeProjectId ? 'active' : ''}"
+           data-pid="${p.id}" tabindex="0" role="button"
+           aria-label="Open project ${p.name}">
+        <span class="dp-proj-item-name" title="${p.name}">📁 ${p.name}</span>
+        <button class="dp-proj-item-del" data-del="${p.id}" title="Delete project">🗑</button>
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.dp-proj-item').forEach(el => {
+      el.addEventListener('click', e => {
+        if (e.target.dataset.del) return;
+        _activeProjectId = el.dataset.pid;
+        renderAll();
+      });
+    });
+    container.querySelectorAll('.dp-proj-item-del').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        if (!confirm('Delete this project and all its chats?')) return;
+        deleteProject(btn.dataset.del);
+        if (_activeProjectId === btn.dataset.del) _activeProjectId = null;
+        renderAll();
+        toast('Project deleted');
+      });
+    });
+  }
+
+  function renderDetail(container) {
+    if (!_activeProjectId) {
+      container.innerHTML = `
+        <div class="dp-right-placeholder">
+          <span>📁</span>
+          <p>Select a project to view details</p>
+        </div>`;
+      return;
+    }
+    const p = getProject(_activeProjectId);
+    if (!p) { container.innerHTML = ''; return; }
+
+    container.innerHTML = `
+      <div class="dp-detail">
+        <div class="dp-detail-header">
+          <input id="dp-proj-name-input" value="${p.name}" placeholder="Project name…" maxlength="60"/>
+          <div style="display:flex;gap:8px">
+            <button class="dp-btn dp-btn-ghost" id="dp-save-proj-btn" style="font-size:.78rem;padding:6px 14px">💾 Save</button>
+          </div>
+        </div>
+
+        <div class="dp-instructions-wrap">
+          <div class="dp-instructions-label">🧠 Project Instructions</div>
+          <textarea id="dp-proj-instr" class="dp-instructions-area"
+            placeholder="Add custom instructions for this project (e.g. always reply in Telugu, focus on coding, etc.)…"
+          >${p.instructions}</textarea>
+        </div>
+
+        <div class="dp-chats-section">
+          <div class="dp-chats-header">
+            <span class="dp-chats-label">💬 Chats (${p.chats.length})</span>
+            <button class="dp-btn dp-btn-gold" id="dp-add-chat-btn" style="font-size:.75rem;padding:6px 13px">+ New Chat</button>
+          </div>
+          <div class="dp-chat-list" id="dp-chat-list"></div>
+        </div>
+      </div>
+    `;
+
+    // save name + instructions
+    container.querySelector('#dp-save-proj-btn').onclick = () => {
+      const name = container.querySelector('#dp-proj-name-input').value;
+      const instructions = container.querySelector('#dp-proj-instr').value;
+      updateProject(_activeProjectId, { name, instructions });
+      renderAll();
+      toast('Project saved ✓');
+    };
+
+    // add chat
+    container.querySelector('#dp-add-chat-btn').onclick = () => {
+      const title = prompt('Chat name:', 'New Chat');
+      if (title === null) return;
+      addChatToProject(_activeProjectId, title || 'New Chat');
+      renderAll();
+      toast('Chat added ✓');
+    };
+
+    renderChatList(container.querySelector('#dp-chat-list'), p);
+  }
+
+  function renderChatList(container, p) {
+    if (!p.chats.length) {
+      container.innerHTML = '<p class="dp-no-chats">No chats yet. Create one above.</p>';
+      return;
+    }
+    container.innerHTML = p.chats.map(c => `
+      <div class="dp-chat-item" data-cid="${c.id}">
+        <div class="dp-chat-item-info">
+          <div class="dp-chat-item-title">💬 ${c.title}</div>
+          <div class="dp-chat-item-date">${fmtDate(c.createdAt)}</div>
+        </div>
+        <div class="dp-chat-item-actions">
+          <button class="dp-chat-btn rename-chat" data-cid="${c.id}" title="Rename">✏️</button>
+          <button class="dp-chat-btn del del-chat" data-cid="${c.id}" title="Delete">🗑</button>
+        </div>
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.rename-chat').forEach(btn => {
+      btn.onclick = () => {
+        const chat = p.chats.find(c => c.id === btn.dataset.cid);
+        const newTitle = prompt('Rename chat:', chat?.title || '');
+        if (!newTitle) return;
+        renameChatInProject(_activeProjectId, btn.dataset.cid, newTitle);
+        renderAll();
+        toast('Chat renamed ✓');
+      };
+    });
+
+    container.querySelectorAll('.del-chat').forEach(btn => {
+      btn.onclick = () => {
+        if (!confirm('Delete this chat?')) return;
+        deleteChatFromProject(_activeProjectId, btn.dataset.cid);
+        renderAll();
+        toast('Chat deleted');
+      };
+    });
+  }
+
+  // ── main render loop ───────────────────────────────────────
+  function renderAll() {
+    const listEl = document.getElementById('dp-proj-list-inner');
+    const detailEl = document.getElementById('dp-proj-detail');
+    if (listEl) renderProjectList(listEl);
+    if (detailEl) renderDetail(detailEl);
+  }
+
+  // ── Build modal DOM ────────────────────────────────────────
+  function buildModal() {
+    if (document.getElementById('datta-proj-overlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'datta-proj-overlay';
+    overlay.innerHTML = `
+      <div id="datta-proj-modal" role="dialog" aria-modal="true" aria-label="Datta AI Projects">
+        <div class="dp-header">
+          <h2>👑 Projects</h2>
+          <div class="dp-header-btns">
+            <button class="dp-btn dp-btn-gold" id="dp-new-proj-btn">+ New Project</button>
+            <button class="dp-btn-close" id="dp-close-btn" title="Close">✕</button>
+          </div>
+        </div>
+
+        <!-- create project inline form -->
+        <div id="datta-create-proj-form">
+          <input id="dp-new-name" placeholder="Project name…" maxlength="60" autocomplete="off"/>
+          <textarea id="dp-new-instr" placeholder="Instructions (optional)…" rows="2"></textarea>
+          <div class="dp-form-btns">
+            <button class="dp-btn dp-btn-gold" id="dp-create-confirm">Create</button>
+            <button class="dp-btn dp-btn-ghost" id="dp-create-cancel">Cancel</button>
+          </div>
+        </div>
+
+        <div class="dp-body">
+          <div class="dp-left">
+            <div class="dp-proj-list" id="dp-proj-list-inner"></div>
+          </div>
+          <div class="dp-right" id="dp-proj-detail"></div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    // open / close
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+    document.getElementById('dp-close-btn').onclick = closeModal;
+
+    // new project
+    const form = document.getElementById('datta-create-proj-form');
+    document.getElementById('dp-new-proj-btn').onclick = () => {
+      form.classList.toggle('show');
+      if (form.classList.contains('show')) document.getElementById('dp-new-name').focus();
+    };
+    document.getElementById('dp-create-cancel').onclick = () => form.classList.remove('show');
+    document.getElementById('dp-create-confirm').onclick = () => {
+      const name = document.getElementById('dp-new-name').value;
+      const instr = document.getElementById('dp-new-instr').value;
+      if (!name.trim()) { toast('Please enter a project name'); return; }
+      const p = createProject(name, instr);
+      _activeProjectId = p.id;
+      form.classList.remove('show');
+      document.getElementById('dp-new-name').value = '';
+      document.getElementById('dp-new-instr').value = '';
+      renderAll();
+      toast('Project created ✓');
+    };
+
+    // keyboard: Escape to close
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
+    });
+  }
+
+  function openModal() {
+    buildModal();
+    renderAll();
+    requestAnimationFrame(() => {
+      document.getElementById('datta-proj-overlay').classList.add('open');
+    });
+  }
+
+  function closeModal() {
+    const overlay = document.getElementById('datta-proj-overlay');
+    if (overlay) overlay.classList.remove('open');
+  }
+
+  // ── Public API ─────────────────────────────────────────────
+  function init() {
+    injectStyles();
+
+    // Wire up ANY element with data-datta-projects or id="projects-btn"
+    document.addEventListener('click', e => {
+      const trigger = e.target.closest('[data-datta-projects], #projects-btn, .projects-btn');
+      if (trigger) openModal();
+    });
+
+    // Also wire sidebar "Project" / "New project" text if present
+    document.querySelectorAll('*').forEach(el => {
+      if (el.childNodes.length === 1 &&
+          el.childNodes[0].nodeType === 3 &&
+          /^new project$/i.test(el.textContent.trim())) {
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', openModal);
+      }
+    });
+  }
+
+  return { init, open: openModal, close: closeModal, createProject, getProject, loadAll };
+})();
+
+// Auto-init when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', ProjectsSystem.init);
+} else {
+  ProjectsSystem.init();
+}
