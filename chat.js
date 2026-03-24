@@ -181,7 +181,6 @@ const chatBox = document.getElementById("chat")
 const sendBtn = document.querySelector(".send")
 const scrollBtn = document.getElementById("scrollDownBtn")
 
-
 function getAuthHeaders() {
   return { "Authorization": "Bearer " + getToken() }
 }
@@ -202,7 +201,6 @@ function newChat() {
   currentChatId = null
   chatBox.innerHTML = ""
   chatBox.scrollTop = 0
-  // Clear project context when starting a new chat
   activeProjectId = null
   activeProjectChatId = null
   var banner = document.getElementById('projectChatBanner')
@@ -220,10 +218,8 @@ function showAutoMoodPill(moodKey) {
   const MOODS = window.MOODS || {}
   const mood = MOODS[moodKey]
   if (!mood) return
-
   const pill = document.getElementById("autoMoodPill")
   if (!pill) return
-
   pill.style.border = `1px solid ${mood.color}44`
   pill.style.background = "transparent"
   pill.style.color = mood.color
@@ -234,9 +230,7 @@ function showAutoMoodPill(moodKey) {
   pill.style.display = "flex"
   pill.style.alignItems = "center"
   pill.title = `Auto-detected: ${mood.label}`
-
   localStorage.setItem("datta_last_auto_mood", moodKey)
-
   clearTimeout(pill._hideTimer)
   pill._hideTimer = setTimeout(() => {
     pill.style.transition = "opacity 0.4s"
@@ -277,8 +271,25 @@ window.addEventListener("load", function() {
   setTimeout(restoreAutoMoodPill, 500)
 })
 
+// ── BUILD MOOD PREFIX — WITH DATE/TIME FIX ────────────────────────────────────
 function buildMoodPrefix() {
   const mood = getMoodContext()
+
+  // ── CURRENT DATE & YEAR INJECTION (fixes wrong year/iPhone bug) ──
+  const now = new Date()
+  const dateStr = now.toLocaleDateString("en-IN", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric"
+  })
+  const timeStr = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+  const year = now.getFullYear()
+  const month = now.toLocaleString("en-IN", { month: "long" })
+
+  const dateInstruction = `[CURRENT DATE & TIME — ALWAYS USE THIS]:
+Today is ${dateStr}, ${timeStr} IST.
+Current year: ${year}. Current month: ${month}.
+If anyone asks what year/date/time it is, always answer using the above.
+The iPhone 17 series was announced in ${year}. Always give answers relevant to ${year}.
+You are NOT limited to old training data — trust this date context above all else.\n\n`
 
   const lengthRule = `[RESPONSE LENGTH RULE — ALWAYS FOLLOW THIS]:
 - Keep answers SHORT and CONCISE by default.
@@ -288,8 +299,8 @@ function buildMoodPrefix() {
 - Never pad answers with filler phrases or unnecessary enthusiasm.
 - Match your response length strictly to what was asked.\n\n`
 
-  if (!mood) return "[STRICT INSTRUCTION]: " + lengthRule
-  return "[STRICT INSTRUCTION]: " + lengthRule + "[MOOD INSTRUCTION - FOLLOW THIS STRICTLY]: " + mood + "\n\n"
+  if (!mood) return "[STRICT INSTRUCTION]: " + dateInstruction + lengthRule
+  return "[STRICT INSTRUCTION]: " + dateInstruction + lengthRule + "[MOOD INSTRUCTION - FOLLOW THIS STRICTLY]: " + mood + "\n\n"
 }
 
 // ─── SEND MESSAGE ─────────────────────────────────────────────────────────────
@@ -405,7 +416,6 @@ async function send() {
     const projInstr = getActiveProjectInstructions()
     if (projInstr) projectPrefix = '[PROJECT CONTEXT: ' + projInstr + ']\n\n'
   }
-  // Add project name to context if inside a project chat
   if (activeProjectId && window.DattaProjects) {
     var proj = window.DattaProjects.getProject(activeProjectId)
     if (proj && !projectPrefix) {
@@ -430,7 +440,6 @@ async function send() {
     const chatIdFromHeader = res.headers.get("x-chat-id")
     if (!currentChatId && chatIdFromHeader) currentChatId = chatIdFromHeader
 
-    // ── Save serverChatId into project chat on first message ──────────────────
     if (activeProjectId && activeProjectChatId && currentChatId) {
       try {
         var pList = JSON.parse(localStorage.getItem('datta_projects_v2') || '[]')
@@ -451,7 +460,6 @@ async function send() {
         console.warn('Project chat save error:', saveErr)
       }
     }
-    // ─────────────────────────────────────────────────────────────────────────
 
     aiDiv.innerHTML = `
       <div class="avatar">${aiAvatarEmoji}</div>
@@ -527,7 +535,7 @@ async function send() {
   }
 }
 
-// ─── LANGUAGE HELPERS ────────────────────────────────────────────────────────
+// ─── LANGUAGE HELPERS ─────────────────────────────────────────────────────────
 function getLangCode(langName) {
   const map = {
     "English": "en-IN", "Hindi": "hi-IN", "Telugu": "te-IN", "Tamil": "ta-IN",
@@ -557,7 +565,7 @@ function detectTextLanguage(text) {
   return getLangCode(localStorage.getItem("datta_language") || "English")
 }
 
-// ── IMAGE GENERATION ─────────────────────────────────────────────────────────
+// ── IMAGE GENERATION ──────────────────────────────────────────────────────────
 async function generateWithPollinations(prompt, aiDiv) {
   const showImg = (imgUrl) => {
     const fakeResponse = "DATTA_IMAGE_START\n![" + prompt + "](" + imgUrl + ")\nPROMPT:" + prompt + "\nDATTA_IMAGE_END"
@@ -569,7 +577,6 @@ async function generateWithPollinations(prompt, aiDiv) {
     hideStopBtn()
     loadSidebar()
   }
-
   try {
     const fd = new FormData()
     fd.append("prompt", prompt)
@@ -583,15 +590,13 @@ async function generateWithPollinations(prompt, aiDiv) {
       if (data.imageUrl) { showImg(data.imageUrl); return }
     }
   } catch(e) { console.warn("Server HF failed:", e.message) }
-
   const seed = Math.floor(Math.random() * 999999)
   const imgUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
   showImg(imgUrl)
 }
-
 window.generateWithPollinations = generateWithPollinations
 
-// ─── LOAD SIDEBAR ─────────────────────────────────────────────────────────────
+// ─── LOAD SIDEBAR ──────────────────────────────────────────────────────────────
 async function loadSidebar() {
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/chats?token=" + getToken())
@@ -616,14 +621,14 @@ async function loadSidebar() {
       div.className = "chatItem"
       div.style.cssText = "display:flex;align-items:center;padding:8px 10px;border-radius:10px;cursor:pointer;transition:background 0.15s;position:relative;"
       let cleanTitle = chat.title || "New Chat"
-      if (cleanTitle.startsWith("[STRICT") || cleanTitle.startsWith("[MOOD") || cleanTitle.startsWith("[RESPONSE")) {
+      if (cleanTitle.startsWith("[STRICT") || cleanTitle.startsWith("[MOOD") || cleanTitle.startsWith("[RESPONSE") || cleanTitle.startsWith("[CURRENT DATE")) {
         cleanTitle = "Chat " + new Date().toLocaleDateString()
       }
       cleanTitle = cleanTitle.replace(/^\[.*?\]:\s*/g, "").trim() || "New Chat"
 
       div.innerHTML = `
         <div class="chatTitle" style="flex:1;font-size:13px;color:#665500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${cleanTitle}">${cleanTitle}</div>
-        <button class="chatMenuBtn" data-id="${chat._id}" data-title="${cleanTitle.substring(0,50)}" onclick="showChatMenu(event,this.dataset.id,this.dataset.title)" 
+        <button class="chatMenuBtn" data-id="${chat._id}" data-title="${cleanTitle.substring(0,50)}" onclick="showChatMenu(event,this.dataset.id,this.dataset.title)"
           style="background:none;border:none;color:#665500;cursor:pointer;padding:4px 6px;font-size:16px;opacity:0;transition:opacity 0.2s;flex-shrink:0;border-radius:6px;">⋯</button>
       `
       div.onmouseenter = () => div.querySelector(".chatMenuBtn").style.opacity = "1"
@@ -643,42 +648,27 @@ async function loadSidebar() {
 function showChatMenu(e, chatId, chatTitle) {
   e.stopPropagation()
   document.querySelectorAll(".chatContextMenu").forEach(m => m.remove())
-
   const menu = document.createElement("div")
   menu.className = "chatContextMenu"
-  menu.style.cssText = `
-    position:fixed;background:#0f0e00;border:1px solid rgba(255,215,0,0.15);
-    border-radius:14px;padding:6px;z-index:9999;min-width:180px;
-    box-shadow:0 8px 30px rgba(0,0,0,0.6);animation:menuIn 0.15s ease;
-  `
-
+  menu.style.cssText = `position:fixed;background:#0f0e00;border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:6px;z-index:9999;min-width:180px;box-shadow:0 8px 30px rgba(0,0,0,0.6);animation:menuIn 0.15s ease;`
   const menuItems = [
     { icon:"✏️", label:"Rename", action: () => renameChat(chatId, chatTitle) },
     { icon:"📌", label:"Pin chat", action: () => pinChat(chatId) },
     { icon:"📦", label:"Archive", action: () => archiveChat(chatId) },
     { icon:"🗑️", label:"Delete", action: () => confirmDeleteChat(chatId), danger: true },
   ]
-
   menuItems.forEach(item => {
     const btn = document.createElement("button")
-    btn.style.cssText = `
-      width:100%;display:flex;align-items:center;gap:10px;
-      padding:10px 12px;border-radius:10px;border:none;background:none;
-      color:${item.danger ? "#ff4444" : "#665500"};cursor:pointer;
-      font-family:'DM Sans',sans-serif;font-size:13px;text-align:left;
-      transition:background 0.15s;
-    `
+    btn.style.cssText = `width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:${item.danger ? "#ff4444" : "#665500"};cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;text-align:left;transition:background 0.15s;`
     btn.innerHTML = `<span>${item.icon}</span>${item.label}`
     btn.onmouseover = () => btn.style.background = item.danger ? "rgba(255,60,60,0.08)" : "rgba(255,215,0,0.06)"
     btn.onmouseout = () => btn.style.background = "none"
     btn.onclick = (ev) => { ev.stopPropagation(); menu.remove(); item.action() }
     menu.appendChild(btn)
   })
-
   const rect = e.target.getBoundingClientRect()
   menu.style.left = Math.min(rect.left, window.innerWidth - 200) + "px"
   menu.style.top = rect.bottom + 4 + "px"
-
   document.body.appendChild(menu)
   setTimeout(() => document.addEventListener("click", () => menu.remove(), { once: true }), 50)
 }
@@ -693,9 +683,7 @@ async function renameChat(chatId, currentTitle) {
       body: JSON.stringify({ token: getToken(), title: newTitle })
     })
     loadSidebar()
-  } catch(e) {
-    loadSidebar()
-  }
+  } catch(e) { loadSidebar() }
 }
 
 function pinChat(chatId) {
@@ -727,7 +715,7 @@ function showToastMsg(msg) {
   setTimeout(() => t.style.display = "none", 2500)
 }
 
-// ─── OPEN CHAT ────────────────────────────────────────────────────────────────
+// ─── OPEN CHAT ─────────────────────────────────────────────────────────────────
 async function openChat(chatId) {
   currentChatId = chatId
   chatBox.innerHTML = ""
@@ -737,16 +725,16 @@ async function openChat(chatId) {
   messages.forEach(m => {
     if (m.role === "user") {
       let displayMsg = m.content || ""
-      if (displayMsg.includes("[STRICT INSTRUCTION]") || displayMsg.includes("[MOOD INSTRUCTION") || displayMsg.includes("[RESPONSE LENGTH")) {
+      if (displayMsg.includes("[STRICT INSTRUCTION]") || displayMsg.includes("[MOOD INSTRUCTION") || displayMsg.includes("[RESPONSE LENGTH") || displayMsg.includes("[CURRENT DATE")) {
         const lines = displayMsg.split("\n")
         for (let i = lines.length - 1; i >= 0; i--) {
           const line = lines[i].trim()
-          if (line && !line.startsWith("[STRICT") && !line.startsWith("[MOOD") && !line.startsWith("[RESPONSE") && !line.startsWith("[EVOLVED") && !line.startsWith("[SMART") && !line.startsWith("[PROJECT")) {
+          if (line && !line.startsWith("[STRICT") && !line.startsWith("[MOOD") && !line.startsWith("[RESPONSE") && !line.startsWith("[CURRENT") && !line.startsWith("[EVOLVED") && !line.startsWith("[SMART") && !line.startsWith("[PROJECT")) {
             displayMsg = line
             break
           }
         }
-        if (displayMsg.includes("[STRICT") || displayMsg.includes("[MOOD")) {
+        if (displayMsg.includes("[STRICT") || displayMsg.includes("[MOOD") || displayMsg.includes("[CURRENT")) {
           const parts = m.content.split("\n\n")
           const lastPart = parts[parts.length - 1].trim()
           if (lastPart && !lastPart.startsWith("[")) {
@@ -784,7 +772,7 @@ async function openChat(chatId) {
   lucide.createIcons()
 }
 
-// ─── DELETE CHAT ──────────────────────────────────────────────────────────────
+// ─── DELETE CHAT ───────────────────────────────────────────────────────────────
 async function deleteChat(e, id) {
   if (e) e.stopPropagation()
   await fetch("https://datta-ai-server.onrender.com/chat/" + id + "?token=" + getToken(), { method: "DELETE" })
@@ -794,7 +782,6 @@ async function deleteChat(e, id) {
 function confirmDeleteChat(id) {
   const existing = document.getElementById("deleteConfirmPopup")
   if (existing) existing.remove()
-
   const popup = document.createElement("div")
   popup.id = "deleteConfirmPopup"
   popup.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);"
@@ -804,14 +791,10 @@ function confirmDeleteChat(id) {
       <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:#fff8e7;margin-bottom:8px">Delete Chat?</div>
       <div style="font-size:13px;color:#665500;margin-bottom:20px;">This chat will be permanently deleted.</div>
       <div style="display:flex;gap:8px;">
-        <button onclick="document.getElementById('deleteConfirmPopup').remove()" 
-          style="flex:1;padding:11px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.1);border-radius:50px;color:#665500;font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;">
-          Cancel
-        </button>
-        <button onclick="deleteChat(null,'${id}');document.getElementById('deleteConfirmPopup').remove()" 
-          style="flex:1;padding:11px;background:rgba(255,60,60,0.1);border:1px solid rgba(255,60,60,0.3);border-radius:50px;color:#ff4444;font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;">
-          Delete
-        </button>
+        <button onclick="document.getElementById('deleteConfirmPopup').remove()"
+          style="flex:1;padding:11px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.1);border-radius:50px;color:#665500;font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;">Cancel</button>
+        <button onclick="deleteChat(null,'${id}');document.getElementById('deleteConfirmPopup').remove()"
+          style="flex:1;padding:11px;background:rgba(255,60,60,0.1);border:1px solid rgba(255,60,60,0.3);border-radius:50px;color:#ff4444;font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;">Delete</button>
       </div>
     </div>
   `
@@ -820,13 +803,12 @@ function confirmDeleteChat(id) {
 }
 window.confirmDeleteChat = confirmDeleteChat
 
-// ─── COPY TEXT ────────────────────────────────────────────────────────────────
+// ─── COPY / SPEAK ──────────────────────────────────────────────────────────────
 function copyText(btn) {
   const text = btn.closest(".aiContent").querySelector(".aiBubble").innerText
   navigator.clipboard.writeText(text)
 }
 
-// ─── SPEAK TEXT ───────────────────────────────────────────────────────────────
 function speakText(btn) {
   const text = btn.closest(".aiContent").querySelector(".aiBubble").innerText
   const speech = new SpeechSynthesisUtterance(text)
@@ -838,10 +820,7 @@ function speakText(btn) {
   speechSynthesis.speak(speech)
 }
 
-// ─── STOP VOICE ───────────────────────────────────────────────────────────────
-function stopVoice() {
-  speechSynthesis.cancel()
-}
+function stopVoice() { speechSynthesis.cancel() }
 
 // ─── REGENERATE ───────────────────────────────────────────────────────────────
 async function regenerateFrom(btn) {
@@ -861,9 +840,7 @@ async function regenerateFrom(btn) {
   formData.append("language", localStorage.getItem("datta_language") || "English")
   if (window.dattaMoodLabel) formData.append("mood", window.dattaMoodLabel)
   const res = await fetch("https://datta-ai-server.onrender.com/chat", {
-    method: "POST",
-    signal: controller.signal,
-    body: formData
+    method: "POST", signal: controller.signal, body: formData
   })
   const reader = res.body.getReader()
   const decoder = new TextDecoder()
@@ -886,68 +863,41 @@ async function regenerateFrom(btn) {
   lucide.createIcons()
 }
 
-// ─── MIC BUTTON ───────────────────────────────────────────────────────────────
+// ─── MIC / VOICE INPUT ────────────────────────────────────────────────────────
 let inlineListening = false
 let inlineRecognition = null
 
 function startAssistant() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-  if (!SpeechRecognition) {
-    openVoiceAssistant()
-    return
-  }
-
-  if (inlineListening) {
-    stopInlineListening()
-    return
-  }
-
+  if (!SpeechRecognition) { openVoiceAssistant(); return }
+  if (inlineListening) { stopInlineListening(); return }
   const input = document.getElementById("message")
   const micBtn = document.getElementById("micBtn")
-
   inlineListening = true
-
-  if (micBtn) {
-    micBtn.style.color = "#ff4444"
-    micBtn.style.background = "rgba(255,60,60,0.1)"
-    micBtn.style.borderColor = "rgba(255,60,60,0.3)"
-    micBtn.title = "Listening... (click to stop)"
-  }
-
-  if (input) {
-    input.placeholder = "🎤 Listening..."
-    input.style.borderColor = "rgba(255,60,60,0.3)"
-  }
-
+  if (micBtn) { micBtn.style.color = "#ff4444"; micBtn.style.background = "rgba(255,60,60,0.1)"; micBtn.style.borderColor = "rgba(255,60,60,0.3)"; micBtn.title = "Listening... (click to stop)" }
+  if (input) { input.placeholder = "🎤 Listening..."; input.style.borderColor = "rgba(255,60,60,0.3)" }
   inlineRecognition = new SpeechRecognition()
   inlineRecognition.lang = getLangCode(localStorage.getItem("datta_language") || "English")
   inlineRecognition.continuous = false
   inlineRecognition.interimResults = true
   inlineRecognition.maxAlternatives = 1
-
   inlineRecognition.onresult = function(e) {
-    let interim = ""
-    let final = ""
+    let interim = "", final = ""
     for (let i = e.resultIndex; i < e.results.length; i++) {
       if (e.results[i].isFinal) final += e.results[i][0].transcript
       else interim += e.results[i][0].transcript
     }
     if (input) input.value = final || interim
   }
-
   inlineRecognition.onend = function() {
     stopInlineListening()
     const text = document.getElementById("message")?.value.trim()
-    if (text) {
-      setTimeout(() => send(), 300)
-    }
+    if (text) setTimeout(() => send(), 300)
   }
-
   inlineRecognition.onerror = function(e) {
     stopInlineListening()
     if (input) input.placeholder = "Message Datta AI..."
   }
-
   inlineRecognition.start()
 }
 
@@ -955,28 +905,13 @@ function stopInlineListening() {
   inlineListening = false
   const micBtn = document.getElementById("micBtn")
   const input = document.getElementById("message")
-
-  if (inlineRecognition) {
-    try { inlineRecognition.stop() } catch(e) {}
-    inlineRecognition = null
-  }
-
-  if (micBtn) {
-    micBtn.style.color = ""
-    micBtn.style.background = ""
-    micBtn.style.borderColor = ""
-    micBtn.title = "Voice"
-  }
-
-  if (input) {
-    input.placeholder = "Message Datta AI..."
-    input.style.borderColor = ""
-  }
+  if (inlineRecognition) { try { inlineRecognition.stop() } catch(e) {}; inlineRecognition = null }
+  if (micBtn) { micBtn.style.color = ""; micBtn.style.background = ""; micBtn.style.borderColor = ""; micBtn.title = "Voice" }
+  if (input) { input.placeholder = "Message Datta AI..."; input.style.borderColor = "" }
 }
-
 window.stopInlineListening = stopInlineListening
 
-// ─── TOGGLE MENU ─────────────────────────────────────────────────────────────
+// ─── TOGGLE / SCROLL / WELCOME ────────────────────────────────────────────────
 function toggleMenu(e, id) {
   e.stopPropagation()
   document.querySelectorAll(".chatMenu").forEach(m => m.style.display = "none")
@@ -984,11 +919,8 @@ function toggleMenu(e, id) {
   if (menu) menu.style.display = "block"
 }
 
-window.onclick = () => {
-  document.querySelectorAll(".chatMenu").forEach(m => m.style.display = "none")
-}
+window.onclick = () => { document.querySelectorAll(".chatMenu").forEach(m => m.style.display = "none") }
 
-// ─── SCROLL ───────────────────────────────────────────────────────────────────
 function scrollBottom() {
   if (userScrolledUp) return
   chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: "smooth" })
@@ -1001,13 +933,9 @@ chatBox.addEventListener("scroll", () => {
 })
 
 if (scrollBtn) {
-  scrollBtn.addEventListener("click", () => {
-    userScrolledUp = false
-    scrollBottom()
-  })
+  scrollBtn.addEventListener("click", () => { userScrolledUp = false; scrollBottom() })
 }
 
-// ─── WELCOME HELPERS ──────────────────────────────────────────────────────────
 function hideWelcome() {
   const cw = document.querySelector(".chatWrapper")
   if (cw) cw.style.pointerEvents = "auto"
@@ -1022,7 +950,6 @@ function showWelcome() {
   if (w) w.style.display = "block"
 }
 
-// ─── FILL PROMPT ──────────────────────────────────────────────────────────────
 function fillPrompt(text) {
   document.getElementById("message").value = text
   hideWelcome()
@@ -1030,7 +957,6 @@ function fillPrompt(text) {
 }
 window.fillPrompt = fillPrompt
 
-// ─── SUGGEST BUTTONS ──────────────────────────────────────────────────────────
 document.querySelectorAll(".suggestBtn").forEach(btn => {
   btn.addEventListener("click", () => {
     const text = btn.getAttribute("data-text")
@@ -1040,22 +966,16 @@ document.querySelectorAll(".suggestBtn").forEach(btn => {
   })
 })
 
-// ─── ENTER KEY ────────────────────────────────────────────────────────────────
-document.getElementById("message").addEventListener("keydown", function (e) {
-  if (e.key === "Enter") {
-    e.preventDefault()
-    send()
-  }
+document.getElementById("message").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") { e.preventDefault(); send() }
 })
 
-// ─── SIDEBAR TOGGLE ───────────────────────────────────────────────────────────
 function toggleSidebar() {
   const sidebar = document.querySelector(".sidebar")
   sidebar.classList.toggle("show")
 }
 window.toggleSidebar = toggleSidebar
 
-// ─── SAVE CHAT TITLE ─────────────────────────────────────────────────────────
 function saveChatTitle(title) {
   const history = document.getElementById("history")
   if (!history) return
@@ -1065,7 +985,6 @@ function saveChatTitle(title) {
   history.prepend(div)
 }
 
-// ─── SEARCH CHATS ────────────────────────────────────────────────────────────
 function searchChats() {
   const query = document.getElementById("search").value.toLowerCase()
   document.querySelectorAll(".chatItem").forEach(item => {
@@ -1074,11 +993,9 @@ function searchChats() {
   })
 }
 
-// ─── INIT ─────────────────────────────────────────────────────────────────────
 window.send = send
 loadSidebar()
 
-// SHOW SIDEBAR SECTION
 function showSection(name) {
   document.querySelectorAll(".sidebarSection").forEach(s => s.style.display = "none")
   const el = document.getElementById("section-" + name)
@@ -1095,7 +1012,6 @@ function showSection(name) {
 }
 window.showSection = showSection
 
-// LOGOUT
 function logout() {
   localStorage.removeItem("datta_token")
   localStorage.removeItem("datta_user")
@@ -1103,7 +1019,7 @@ function logout() {
 }
 window.logout = logout
 
-// ── SETTINGS ─────────────────────────────────────────────────────────────────
+// ── SETTINGS ──────────────────────────────────────────────────────────────────
 function openSettings() {
   event.stopPropagation()
   const modal = document.getElementById("settingsModal")
@@ -1185,9 +1101,7 @@ async function changeUsername() {
     if (nameEl) nameEl.textContent = newUsername
     if (avatarEl) avatarEl.textContent = newUsername[0].toUpperCase()
     showSettingsMsg("Username updated successfully!", "success")
-  } catch (e) {
-    showSettingsMsg("Server error. Try again.", "error")
-  }
+  } catch(e) { showSettingsMsg("Server error. Try again.", "error") }
 }
 
 async function changePassword() {
@@ -1209,9 +1123,7 @@ async function changePassword() {
     document.getElementById("newPassword").value = ""
     document.getElementById("confirmPassword").value = ""
     showSettingsMsg("Password changed successfully!", "success")
-  } catch (e) {
-    showSettingsMsg("Server error. Try again.", "error")
-  }
+  } catch(e) { showSettingsMsg("Server error. Try again.", "error") }
 }
 
 function setTheme(theme, silent) {
@@ -1263,9 +1175,7 @@ async function deleteAllChats() {
     showWelcome()
     loadSidebar()
     showSettingsMsg("All chats deleted!", "success")
-  } catch (e) {
-    showSettingsMsg("Server error. Try again.", "error")
-  }
+  } catch(e) { showSettingsMsg("Server error. Try again.", "error") }
 }
 
 async function deleteAccount() {
@@ -1282,9 +1192,7 @@ async function deleteAccount() {
     if (!res.ok) return showSettingsMsg(data.error || "Failed to delete account", "error")
     localStorage.clear()
     window.location.href = "login.html"
-  } catch (e) {
-    showSettingsMsg("Server error. Try again.", "error")
-  }
+  } catch(e) { showSettingsMsg("Server error. Try again.", "error") }
 }
 
 ;(function() {
@@ -1306,37 +1214,24 @@ window.saveNotifSettings = saveNotifSettings
 window.deleteAllChats = deleteAllChats
 window.deleteAccount = deleteAccount
 
-// LIKE / DISLIKE
 function likeMsg(btn) {
   const wasActive = btn.classList.contains("active")
   const row = btn.closest(".aiActions")
-  row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => {
-    b.classList.remove("active")
-    b.style.color = ""
-  })
-  if (!wasActive) {
-    btn.classList.add("active")
-    btn.style.color = "var(--accent)"
-  }
+  row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => { b.classList.remove("active"); b.style.color = "" })
+  if (!wasActive) { btn.classList.add("active"); btn.style.color = "var(--accent)" }
 }
 
 function dislikeMsg(btn) {
   const wasActive = btn.classList.contains("active")
   const row = btn.closest(".aiActions")
-  row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => {
-    b.classList.remove("active")
-    b.style.color = ""
-  })
-  if (!wasActive) {
-    btn.classList.add("active")
-    btn.style.color = "#ff4444"
-  }
+  row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => { b.classList.remove("active"); b.style.color = "" })
+  if (!wasActive) { btn.classList.add("active"); btn.style.color = "#ff4444" }
 }
 
 window.likeMsg = likeMsg
 window.dislikeMsg = dislikeMsg
 
-// ── VOICE ASSISTANT ──────────────────────────────────────────────────────────
+// ── VOICE ASSISTANT ───────────────────────────────────────────────────────────
 let voiceRecognition = null
 let voiceSynth = window.speechSynthesis
 let isListening = false
@@ -1419,10 +1314,7 @@ function startListening() {
 
 function stopListening() {
   isListening = false
-  if (voiceRecognition) {
-    try { voiceRecognition.stop() } catch(e) {}
-    voiceRecognition = null
-  }
+  if (voiceRecognition) { try { voiceRecognition.stop() } catch(e) {}; voiceRecognition = null }
   setVoiceStatus("Tap to speak", "idle")
 }
 
@@ -1446,11 +1338,7 @@ async function processVoiceQuery(query) {
     formData.append("voice", "true")
     if (window.dattaMoodLabel) formData.append("mood", window.dattaMoodLabel)
     const res = await fetch("https://datta-ai-server.onrender.com/chat", { method: "POST", body: formData })
-    if (!res.ok) {
-      speakText2("Sorry, I encountered an error. Please try again.")
-      setVoiceStatus("Error. Tap to try again.", "idle")
-      return
-    }
+    if (!res.ok) { speakText2("Sorry, I encountered an error. Please try again."); setVoiceStatus("Error. Tap to try again.", "idle"); return }
     const chatIdFromHeader = res.headers.get("x-chat-id")
     if (!currentChatId && chatIdFromHeader) currentChatId = chatIdFromHeader
     const reader = res.body.getReader()
@@ -1464,9 +1352,7 @@ async function processVoiceQuery(query) {
         const parts = chunk.split("CHATID")
         fullText += parts[0]
         currentChatId = parts[1]
-      } else {
-        fullText += chunk
-      }
+      } else { fullText += chunk }
     }
     const cleanText = fullText
       .replace(/!\[.*?\]\(.*?\)/g, "I generated an image for you.")
@@ -1478,24 +1364,12 @@ async function processVoiceQuery(query) {
       .trim()
     setVoiceText(cleanText.substring(0, 100) + (cleanText.length > 100 ? "..." : ""))
     const aiEmoji = window.dattaMoodEmoji || "🤖"
-    chatBox.innerHTML += `
-      <div class="messageRow userRow">
-        <div class="userBubble">🎤 ${query}</div>
-        <div class="avatar">🧑</div>
-      </div>
-    `
-    chatBox.innerHTML += `
-      <div class="messageRow">
-        <div class="avatar">${aiEmoji}</div>
-        <div class="aiContent">
-          <div class="aiBubble">${marked.parse(fullText.split("CHATID")[0])}</div>
-        </div>
-      </div>
-    `
+    chatBox.innerHTML += `<div class="messageRow userRow"><div class="userBubble">🎤 ${query}</div><div class="avatar">🧑</div></div>`
+    chatBox.innerHTML += `<div class="messageRow"><div class="avatar">${aiEmoji}</div><div class="aiContent"><div class="aiBubble">${marked.parse(fullText.split("CHATID")[0])}</div></div></div>`
     chatBox.scrollTop = chatBox.scrollHeight
     loadSidebar()
     speakText2(cleanText)
-  } catch (err) {
+  } catch(err) {
     console.error("Voice query error:", err)
     speakText2("Sorry, something went wrong.")
     setVoiceStatus("Error. Tap to try again.", "idle")
@@ -1522,10 +1396,7 @@ function speakText2(text) {
   if (preferred) utterance.voice = preferred
   utterance.onend = () => {
     isSpeaking = false
-    if (voiceActive) {
-      setVoiceStatus("Tap to speak", "idle")
-      setTimeout(() => { if (voiceActive) startListening() }, 800)
-    }
+    if (voiceActive) { setVoiceStatus("Tap to speak", "idle"); setTimeout(() => { if (voiceActive) startListening() }, 800) }
   }
   utterance.onerror = () => { isSpeaking = false; setVoiceStatus("Tap to speak", "idle") }
   voiceSynth.speak(utterance)
@@ -1571,19 +1442,15 @@ async function loadUserVersion() {
       upgradeBtn.textContent = v.emoji + " " + v.name + " Plan"
     }
     localStorage.setItem("datta_plan", plan)
-  } catch(e) {
-    console.log("Version load error:", e.message)
-  }
+  } catch(e) { console.log("Version load error:", e.message) }
 }
 
 window.addEventListener("DOMContentLoaded", function() {
   setTimeout(loadUserVersion, 1000)
 })
 
-
 // ═══════════════════════════════════════════════════════════════════════════════
-//  PROJECT CHAT INTEGRATION FIX
-//  Listens for datta:openProjectChat event fired by projects.js
+//  PROJECT CHAT INTEGRATION
 // ═══════════════════════════════════════════════════════════════════════════════
 
 var activeProjectId = null
@@ -1594,21 +1461,18 @@ window.addEventListener('datta:openProjectChat', function(e) {
   activeProjectId = detail.projectId
   activeProjectChatId = detail.chatId
 
-  // Check if this project chat already has a server chat linked
   var proj = window.DattaProjects ? window.DattaProjects.getProject(activeProjectId) : null
   if (proj) {
     var existingChat = (proj.chats || []).find(function(c) {
       return String(c.id) === String(activeProjectChatId)
     })
     if (existingChat && existingChat.serverChatId) {
-      // Resume existing server chat
       openChat(existingChat.serverChatId)
       showProjectBanner(proj.name, activeProjectId)
       return
     }
   }
 
-  // Fresh project chat — clear screen
   currentChatId = null
   chatBox.innerHTML = ''
   document.body.classList.remove('chat-started')
@@ -1617,38 +1481,20 @@ window.addEventListener('datta:openProjectChat', function(e) {
   var projName = proj ? proj.name : 'Project'
   showProjectBanner(projName, activeProjectId)
 
-  // Close sidebar on mobile
   if (window.innerWidth < 900 && typeof closeSidebar === 'function') closeSidebar()
 })
 
 function showProjectBanner(projName, projectId) {
-  // Remove any existing banner
   var existing = document.getElementById('projectChatBanner')
   if (existing) existing.remove()
-
   var banner = document.createElement('div')
   banner.id = 'projectChatBanner'
-  banner.style.cssText =
-    'display:flex;align-items:center;gap:8px;padding:8px 16px;flex-shrink:0;' +
-    'background:rgba(255,215,0,0.04);border-bottom:1px solid rgba(255,215,0,0.08);' +
-    'font-family:\'Rajdhani\',sans-serif;'
-
+  banner.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 16px;flex-shrink:0;background:rgba(255,215,0,0.04);border-bottom:1px solid rgba(255,215,0,0.08);font-family:\'Rajdhani\',sans-serif;'
   banner.innerHTML =
     '<span style="font-size:14px;">📁</span>' +
-    '<span style="color:#ffd700;font-size:11px;letter-spacing:1.5px;font-weight:600;">' +
-      projName.toUpperCase() +
-    '</span>' +
+    '<span style="color:#ffd700;font-size:11px;letter-spacing:1.5px;font-weight:600;">' + projName.toUpperCase() + '</span>' +
     '<span style="color:#332200;font-size:11px;letter-spacing:1.5px;"> · PROJECT CHAT</span>' +
-    '<button onclick="exitProjectChat()" ' +
-      'style="margin-left:auto;background:none;border:none;color:#443300;cursor:pointer;' +
-      'font-size:10px;letter-spacing:1px;padding:3px 12px;border-radius:20px;' +
-      'border:1px solid rgba(255,215,0,0.08);transition:all .2s;font-family:\'Rajdhani\',sans-serif;" ' +
-      'onmouseover="this.style.color=\'#ffd700\';this.style.borderColor=\'rgba(255,215,0,0.3)\'" ' +
-      'onmouseout="this.style.color=\'#443300\';this.style.borderColor=\'rgba(255,215,0,0.08)\'">' +
-      '✕ EXIT' +
-    '</button>'
-
-  // Insert banner above the chat box
+    '<button onclick="exitProjectChat()" style="margin-left:auto;background:none;border:none;color:#443300;cursor:pointer;font-size:10px;letter-spacing:1px;padding:3px 12px;border-radius:20px;border:1px solid rgba(255,215,0,0.08);transition:all .2s;font-family:\'Rajdhani\',sans-serif;" onmouseover="this.style.color=\'#ffd700\';this.style.borderColor=\'rgba(255,215,0,0.3)\'" onmouseout="this.style.color=\'#443300\';this.style.borderColor=\'rgba(255,215,0,0.08)\'">✕ EXIT</button>'
   chatBox.parentElement.insertBefore(banner, chatBox)
 }
 
@@ -1660,5 +1506,4 @@ function exitProjectChat() {
   newChat()
 }
 window.exitProjectChat = exitProjectChat
-
 // ═══════════════════════════════════════════════════════════════════════════════
