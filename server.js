@@ -62,10 +62,9 @@ const SubscriptionSchema = new mongoose.Schema({
 })
 const Subscription = mongoose.model("Subscription", SubscriptionSchema)
 
-// ── PROJECT SCHEMA ────────────────────────────────────────────────────────────
 const ProjectSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  projectId: { type: String, required: true },   // client-side uid e.g. "1719000000000_abc12"
+  projectId: { type: String, required: true },
   name: { type: String, default: "Untitled Project" },
   color: { type: String, default: "#ffd700" },
   createdAt: { type: Number, default: Date.now },
@@ -73,9 +72,32 @@ const ProjectSchema = new mongoose.Schema({
   files: { type: Array, default: [] },
   artifacts: { type: Array, default: [] }
 })
-// Compound unique index: one document per user+project
 ProjectSchema.index({ userId: 1, projectId: 1 }, { unique: true })
 const Project = mongoose.model("Project", ProjectSchema)
+
+// ── AGENT MEMORY SCHEMA ───────────────────────────────────────────────────────
+const AgentMemorySchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  key: String,
+  value: mongoose.Schema.Types.Mixed,
+  category: { type: String, default: "general" },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+})
+const AgentMemory = mongoose.model("AgentMemory", AgentMemorySchema)
+
+// ── TASK SCHEMA ───────────────────────────────────────────────────────────────
+const TaskSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  title: String,
+  description: String,
+  status: { type: String, default: "pending" }, // pending, in-progress, done
+  priority: { type: String, default: "medium" }, // low, medium, high
+  dueDate: Date,
+  tags: [String],
+  createdAt: { type: Date, default: Date.now }
+})
+const Task = mongoose.model("Task", TaskSchema)
 
 // ── PLAN LIMITS ───────────────────────────────────────────────────────────────
 const planLimits = {
@@ -105,7 +127,6 @@ function checkAndUpdateLimit(userId, plan, type) {
   return { allowed: true, used: store.count, limit }
 }
 
-// ── JWT ───────────────────────────────────────────────────────────────────────
 const JWT_SECRET = process.env.JWT_SECRET || "datta-ai-secret-2024"
 const FRONTEND_URL = process.env.FRONTEND_URL || "https://harisaiganeshpampana-ai.github.io/datta-ai"
 
@@ -132,7 +153,434 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// ── WEB SEARCH ────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// AGENT TOOLS
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Tool 1: Web Search
+async function toolWebSearch(query) {
+  try {
+    const key = process.env.TAVILY_API_KEY
+    if (!key) return { error: "Search not configured" }
+    const response = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({ query, search_depth: "basic", max_results: 5, include_answer: true })
+    })
+    if (!response.ok) return { error: "Search failed" }
+    const data = await response.json()
+    return {
+      answer: data.answer || "",
+      results: data.results?.slice(0, 5).map(r => ({
+        title: r.title,
+        content: r.content?.substring(0, 400),
+        url: r.url
+      })) || []
+    }
+  } catch (e) {
+    return { error: e.message }
+  }
+}
+
+// Tool 2: Get News
+async function toolGetNews(topic) {
+  try {
+    const key = process.env.TAVILY_API_KEY
+    if (!key) return { error: "News not configured" }
+    const response = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({ query: topic + " latest news today", search_depth: "basic", max_results: 5, topic: "news" })
+    })
+    const data = await response.json()
+    return {
+      news: data.results?.slice(0, 5).map(r => ({
+        title: r.title,
+        summary: r.content?.substring(0, 300),
+        url: r.url,
+        published: r.published_date
+      })) || []
+    }
+  } catch (e) {
+    return { error: e.message }
+  }
+}
+
+// Tool 3: Calculator
+function toolCalculator(expression) {
+  try {
+    // Safe math evaluation
+    const sanitized = expression.replace(/[^0-9+\-*/.()%^√\s]/g, "")
+    const result = Function('"use strict"; return (' + sanitized + ')')()
+    return { expression, result, formatted: result.toLocaleString() }
+  } catch (e) {
+    return { error: "Invalid expression: " + expression }
+  }
+}
+
+// Tool 4: Code Runner (JavaScript)
+function toolRunCode(code) {
+  try {
+    const logs = []
+    const mockConsole = { log: (...args) => logs.push(args.join(" ")), error: (...args) => logs.push("ERROR: " + args.join(" ")), warn: (...args) => logs.push("WARN: " + args.join(" ")) }
+    const fn = new Function("console", code)
+    const result = fn(mockConsole)
+    return { output: logs.join("\n"), result: result !== undefined ? String(result) : null, success: true }
+  } catch (e) {
+    return { error: e.message, success: false }
+  }
+}
+
+// Tool 5: Manage Tasks
+async function toolManageTasks(action, userId, data) {
+  try {
+    if (action === "create") {
+      const task = await Task.create({ userId, title: data.title, description: data.description, priority: data.priority || "medium", dueDate: data.dueDate ? new Date(data.dueDate) : null, tags: data.tags || [] })
+      return { success: true, task: { id: task._id, title: task.title, priority: task.priority } }
+    }
+    if (action === "list") {
+      const tasks = await Task.find({ userId, status: { $ne: "done" } }).sort({ createdAt: -1 }).limit(10)
+      return { tasks: tasks.map(t => ({ id: t._id, title: t.title, status: t.status, priority: t.priority, dueDate: t.dueDate })) }
+    }
+    if (action === "complete") {
+      await Task.findOneAndUpdate({ _id: data.id, userId }, { status: "done" })
+      return { success: true }
+    }
+    if (action === "delete") {
+      await Task.findOneAndDelete({ _id: data.id, userId })
+      return { success: true }
+    }
+    return { error: "Unknown action" }
+  } catch (e) {
+    return { error: e.message }
+  }
+}
+
+// Tool 6: Memory (remember/recall user info)
+async function toolMemory(action, userId, data) {
+  try {
+    if (action === "save") {
+      await AgentMemory.findOneAndUpdate(
+        { userId, key: data.key },
+        { userId, key: data.key, value: data.value, category: data.category || "general", updatedAt: new Date() },
+        { upsert: true }
+      )
+      return { success: true, saved: data.key }
+    }
+    if (action === "recall") {
+      const mem = await AgentMemory.findOne({ userId, key: data.key })
+      return mem ? { found: true, key: mem.key, value: mem.value } : { found: false }
+    }
+    if (action === "list") {
+      const mems = await AgentMemory.find({ userId }).sort({ updatedAt: -1 }).limit(20)
+      return { memories: mems.map(m => ({ key: m.key, value: m.value, category: m.category })) }
+    }
+    if (action === "delete") {
+      await AgentMemory.findOneAndDelete({ userId, key: data.key })
+      return { success: true }
+    }
+    return { error: "Unknown action" }
+  } catch (e) {
+    return { error: e.message }
+  }
+}
+
+// Tool 7: Translate
+async function toolTranslate(text, targetLang) {
+  try {
+    const result = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [{ role: "user", content: `Translate this text to ${targetLang}. Return ONLY the translation, nothing else:\n\n${text}` }],
+      max_tokens: 500,
+      temperature: 0.3
+    })
+    return { original: text, translated: result.choices[0]?.message?.content?.trim(), language: targetLang }
+  } catch (e) {
+    return { error: e.message }
+  }
+}
+
+// Tool 8: Weather
+async function toolGetWeather(location) {
+  try {
+    const key = process.env.TAVILY_API_KEY
+    if (!key) return { error: "Weather search not configured" }
+    const response = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({ query: "weather in " + location + " today temperature", search_depth: "basic", max_results: 3 })
+    })
+    const data = await response.json()
+    return { location, weather: data.answer || data.results?.[0]?.content?.substring(0, 300) || "Weather data not available" }
+  } catch (e) {
+    return { error: e.message }
+  }
+}
+
+// Tool 9: Product Search
+async function toolSearchProducts(query, maxPrice) {
+  try {
+    const key = process.env.TAVILY_API_KEY
+    if (!key) return { error: "Search not configured" }
+    const searchQuery = query + (maxPrice ? " under " + maxPrice : "") + " price India buy"
+    const response = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({ query: searchQuery, search_depth: "basic", max_results: 5 })
+    })
+    const data = await response.json()
+    return {
+      query,
+      products: data.results?.slice(0, 5).map(r => ({
+        title: r.title,
+        info: r.content?.substring(0, 250),
+        url: r.url
+      })) || []
+    }
+  } catch (e) {
+    return { error: e.message }
+  }
+}
+
+// Tool 10: Summarize URL
+async function toolSummarizeUrl(url) {
+  try {
+    const key = process.env.TAVILY_API_KEY
+    if (!key) return { error: "Not configured" }
+    const response = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({ query: url, search_depth: "advanced", max_results: 1, include_raw_content: true })
+    })
+    const data = await response.json()
+    const content = data.results?.[0]?.raw_content || data.results?.[0]?.content || ""
+    if (!content) return { error: "Could not fetch URL" }
+
+    const summary = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [{ role: "user", content: "Summarize this content in 3-5 bullet points:\n\n" + content.substring(0, 3000) }],
+      max_tokens: 400,
+      temperature: 0.5
+    })
+    return { url, summary: summary.choices[0]?.message?.content?.trim() }
+  } catch (e) {
+    return { error: e.message }
+  }
+}
+
+// ── TOOL EXECUTOR ─────────────────────────────────────────────────────────────
+async function executeTool(toolName, params, userId) {
+  console.log("🔧 Executing tool:", toolName, params)
+  switch(toolName) {
+    case "web_search":      return await toolWebSearch(params.query)
+    case "get_news":        return await toolGetNews(params.topic)
+    case "calculator":      return toolCalculator(params.expression)
+    case "run_code":        return toolRunCode(params.code)
+    case "manage_tasks":    return await toolManageTasks(params.action, userId, params)
+    case "memory":          return await toolMemory(params.action, userId, params)
+    case "translate":       return await toolTranslate(params.text, params.target_language)
+    case "get_weather":     return await toolGetWeather(params.location)
+    case "search_products": return await toolSearchProducts(params.query, params.max_price)
+    case "summarize_url":   return await toolSummarizeUrl(params.url)
+    default: return { error: "Unknown tool: " + toolName }
+  }
+}
+
+// ── AGENT SYSTEM PROMPT ───────────────────────────────────────────────────────
+const AGENT_SYSTEM_PROMPT = `You are Datta AI Agent — a powerful autonomous AI agent. You can use tools to complete tasks.
+
+AVAILABLE TOOLS:
+1. web_search(query) — Search the web for real-time information
+2. get_news(topic) — Get latest news on any topic
+3. calculator(expression) — Perform mathematical calculations
+4. run_code(code) — Execute JavaScript code
+5. manage_tasks(action, title, description, priority, dueDate) — Create/list/complete tasks (actions: create/list/complete/delete)
+6. memory(action, key, value, category) — Save/recall information (actions: save/recall/list/delete)
+7. translate(text, target_language) — Translate text to any language
+8. get_weather(location) — Get weather for any location
+9. search_products(query, max_price) — Search for products and prices
+10. summarize_url(url) — Summarize any webpage
+
+RULES:
+- Think step by step before acting
+- Use tools when you need real-time info, calculations, or actions
+- After each tool result, decide if you need more tools or can answer
+- Always explain what you're doing at each step
+- Be concise but complete
+- Maximum 5 tool calls per request
+
+TO USE A TOOL, respond with this EXACT format:
+TOOL_CALL:{"tool":"tool_name","params":{"param1":"value1"}}
+
+After getting tool results, continue your response normally.
+When done with all tool calls, provide the final answer.`
+
+// ── AGENT ROUTE ───────────────────────────────────────────────────────────────
+app.post("/agent", upload.none(), authMiddleware, async (req, res) => {
+  try {
+    const { message, chatId, language } = req.body
+    const userId = req.user.id
+
+    if (!message) return res.status(400).json({ error: "No message" })
+
+    // Set streaming headers
+    res.setHeader("Content-Type", "text/plain; charset=utf-8")
+    res.setHeader("x-agent-mode", "true")
+
+    // Load or create chat
+    let chat = null
+    if (chatId && chatId !== "null") {
+      try { chat = await Chat.findOne({ _id: chatId, userId }) } catch(e) {}
+    }
+    if (!chat) {
+      chat = await Chat.create({ userId, title: message.substring(0, 45), messages: [] })
+    }
+
+    chat.messages.push({ role: "user", content: message })
+    await chat.save()
+
+    res.setHeader("x-chat-id", chat._id.toString())
+
+    // Load agent memories for context
+    const memories = await AgentMemory.find({ userId }).sort({ updatedAt: -1 }).limit(10)
+    const memContext = memories.length > 0
+      ? "\n\nUSER MEMORIES:\n" + memories.map(m => `${m.key}: ${JSON.stringify(m.value)}`).join("\n")
+      : ""
+
+    const history = chat.messages.slice(0, -1).slice(-8).map(m => ({
+      role: m.role === "assistant" ? "assistant" : "user",
+      content: m.content
+    }))
+
+    let fullResponse = ""
+    let toolCallCount = 0
+    const MAX_TOOLS = 5
+
+    // Agent loop
+    let continueLoop = true
+    let currentMessages = [
+      { role: "system", content: AGENT_SYSTEM_PROMPT + memContext },
+      ...history,
+      { role: "user", content: message }
+    ]
+
+    while (continueLoop && toolCallCount < MAX_TOOLS) {
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: currentMessages,
+        max_tokens: 2000,
+        temperature: 0.7,
+        stream: false
+      })
+
+      const agentResponse = completion.choices[0]?.message?.content || ""
+
+      // Check if there's a tool call
+      const toolCallMatch = agentResponse.match(/TOOL_CALL:(\{[^}]+\}|\{[\s\S]*?\})/m)
+
+      if (toolCallMatch) {
+        toolCallCount++
+
+        // Stream the text before the tool call
+        const beforeTool = agentResponse.substring(0, agentResponse.indexOf("TOOL_CALL:")).trim()
+        if (beforeTool) {
+          res.write(beforeTool + "\n\n")
+          fullResponse += beforeTool + "\n\n"
+        }
+
+        // Parse and execute tool
+        let toolData
+        try { toolData = JSON.parse(toolCallMatch[1]) }
+        catch(e) { res.write("⚠️ Tool call error\n\n"); break }
+
+        const toolName = toolData.tool
+        const toolParams = toolData.params || {}
+
+        // Stream tool execution status
+        const toolEmojis = { web_search: "🔍", get_news: "📰", calculator: "🧮", run_code: "💻", manage_tasks: "📅", memory: "🧠", translate: "🌍", get_weather: "🌤️", search_products: "🛒", summarize_url: "🔗" }
+        const toolEmoji = toolEmojis[toolName] || "🔧"
+        const toolStatus = `\n${toolEmoji} **Using ${toolName.replace(/_/g," ")}...**\n`
+        res.write(toolStatus)
+        fullResponse += toolStatus
+
+        // Execute the tool
+        const toolResult = await executeTool(toolName, toolParams, userId)
+        const resultStr = JSON.stringify(toolResult, null, 2)
+
+        // Add to conversation for next iteration
+        currentMessages.push({ role: "assistant", content: agentResponse })
+        currentMessages.push({ role: "user", content: `Tool result for ${toolName}:\n${resultStr}\n\nContinue your response.` })
+
+      } else {
+        // No more tool calls — stream final response
+        const chunks = agentResponse.match(/.{1,50}/g) || [agentResponse]
+        for (const chunk of chunks) {
+          res.write(chunk)
+          fullResponse += chunk
+        }
+        continueLoop = false
+      }
+    }
+
+    // Save to chat
+    chat.messages.push({ role: "assistant", content: fullResponse })
+    await chat.save()
+
+    res.write("\nCHATID" + chat._id)
+    res.end()
+
+  } catch (err) {
+    console.error("❌ Agent error:", err.message)
+    if (!res.headersSent) res.status(500).json({ error: err.message })
+    else { res.write("\n⚠️ Agent error: " + err.message); res.end() }
+  }
+})
+
+// ── AGENT TASKS ROUTES ────────────────────────────────────────────────────────
+app.get("/agent/tasks", authMiddleware, async (req, res) => {
+  try {
+    const tasks = await Task.find({ userId: req.user.id }).sort({ createdAt: -1 })
+    res.json(tasks)
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+app.post("/agent/tasks", authMiddleware, async (req, res) => {
+  try {
+    const task = await Task.create({ userId: req.user.id, ...req.body })
+    res.json(task)
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+app.put("/agent/tasks/:id", authMiddleware, async (req, res) => {
+  try {
+    const task = await Task.findOneAndUpdate({ _id: req.params.id, userId: req.user.id }, req.body, { new: true })
+    res.json(task)
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+app.delete("/agent/tasks/:id", authMiddleware, async (req, res) => {
+  try {
+    await Task.findOneAndDelete({ _id: req.params.id, userId: req.user.id })
+    res.json({ success: true })
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+// ── AGENT MEMORY ROUTES ───────────────────────────────────────────────────────
+app.get("/agent/memory", authMiddleware, async (req, res) => {
+  try {
+    const memories = await AgentMemory.find({ userId: req.user.id }).sort({ updatedAt: -1 })
+    res.json(memories)
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+app.delete("/agent/memory/:key", authMiddleware, async (req, res) => {
+  try {
+    await AgentMemory.findOneAndDelete({ userId: req.user.id, key: req.params.key })
+    res.json({ success: true })
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+// ── WEB SEARCH HELPER ─────────────────────────────────────────────────────────
 async function webSearch(query) {
   try {
     const key = process.env.TAVILY_API_KEY
@@ -151,7 +599,6 @@ async function webSearch(query) {
     ).join("\n\n")
     return answer + sources
   } catch (e) {
-    console.error("Web search error:", e.message)
     return null
   }
 }
@@ -163,42 +610,16 @@ function needsWebSearch(message) {
   return triggers.some(t => msg.includes(t))
 }
 
-// ── IMAGE DETECTION ───────────────────────────────────────────────────────────
 function isImageRequest(message) {
   if (!message) return false
   const msg = message.toLowerCase()
-  const triggers = [
-    "generate image","create image","make image","generate a image","create a image",
-    "generate an image","create an image","make an image","generate photo","create photo",
-    "generate picture","create picture","generate art","create art","make art",
-    "draw","paint","illustrate","sketch","image of","picture of","photo of",
-    "show me a image","show me an image","genrate","generat","dall-e","stable diffusion"
-  ]
+  const triggers = ["generate image","create image","make image","generate a image","create a image","generate an image","create an image","make an image","generate photo","create photo","generate picture","create picture","generate art","create art","make art","draw","paint","illustrate","sketch","image of","picture of","photo of","show me a image","show me an image","genrate","generat","dall-e","stable diffusion"]
   return triggers.some(t => msg.includes(t))
 }
 
 function getImagePrompt(message) {
   let prompt = message.trim()
-  const removes = [
-    "generate an image of","create an image of","make an image of",
-    "generate a image of","create a image of","make a image of",
-    "generate image of","create image of","make image of",
-    "generate an image","create an image","make an image",
-    "generate a image","create a image","make a image",
-    "generate image","create image","make image",
-    "generate a photo of","create a photo of","generate a photo","create a photo","generate photo",
-    "generate a picture of","create a picture of","generate a picture","create a picture","generate picture",
-    "generate art","create art","make art",
-    "draw me a","draw me an","draw me","draw a","draw an","draw",
-    "paint a","paint an","paint",
-    "illustrate a","illustrate an","illustrate",
-    "sketch of a","sketch of an","sketch of","sketch a","sketch an","sketch",
-    "image of a","image of an","image of",
-    "picture of a","picture of an","picture of",
-    "photo of a","photo of an","photo of",
-    "show me a image of","show me an image of","show me a image","show me an image",
-    "genrate an","genrate a","genrate","generat an","generat a","generat"
-  ]
+  const removes = ["generate an image of","create an image of","make an image of","generate a image of","create a image of","make a image of","generate image of","create image of","make image of","generate an image","create an image","make an image","generate a image","create a image","make a image","generate image","create image","make image","generate a photo of","create a photo of","generate a photo","create a photo","generate photo","generate a picture of","create a picture of","generate a picture","create a picture","generate picture","generate art","create art","make art","draw me a","draw me an","draw me","draw a","draw an","draw","paint a","paint an","paint","illustrate a","illustrate an","illustrate","sketch of a","sketch of an","sketch of","sketch a","sketch an","sketch","image of a","image of an","image of","picture of a","picture of an","picture of","photo of a","photo of an","photo of","show me a image of","show me an image of","show me a image","show me an image","genrate an","genrate a","genrate","generat an","generat a","generat"]
   removes.sort((a, b) => b.length - a.length)
   removes.forEach(r => {
     prompt = prompt.replace(new RegExp("^" + r.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "\\s*", "i"), "")
@@ -206,23 +627,18 @@ function getImagePrompt(message) {
   return prompt.trim() || message
 }
 
-// ── SYSTEM PROMPT ─────────────────────────────────────────────────────────────
 function getSystemPrompt(language, hasSearch) {
   const langNote = language && language !== "English" ? ` Always respond in ${language}.` : ""
   const searchNote = hasSearch ? " Use the web search results provided to give accurate, up-to-date answers. Always cite sources." : ""
   return `You are Datta AI — a powerful, all-rounder AI assistant like Claude or ChatGPT. You can do ANYTHING.
 
 CORE RULES:
-1. ALWAYS give COMPLETE answers — never say "here's a partial example" or cut off code
+1. ALWAYS give COMPLETE answers — never cut off code or explanations
 2. For coding requests: give FULL working code, every line, nothing missing
-3. For website requests: give COMPLETE HTML + CSS + JS in one file, fully functional
-4. For PDF/document requests: give complete content ready to copy
-5. For explanations: be clear, detailed and use examples
-6. For math/science: show full working steps
-7. For creative writing: be vivid and complete
-8. NEVER say "I can't do that" — always find a way to help
-9. Format code in proper markdown code blocks with language specified
-10. Be smart, helpful and thorough like a senior expert${langNote}${searchNote}`
+3. For website requests: give COMPLETE HTML + CSS + JS in one file
+4. NEVER say "I can't do that" — always find a way to help
+5. Format code in proper markdown code blocks
+6. Be smart, helpful and thorough${langNote}${searchNote}`
 }
 
 // ── GOOGLE OAUTH ──────────────────────────────────────────────────────────────
@@ -297,7 +713,6 @@ app.post("/auth/verify-otp", async (req, res) => {
 })
 
 app.get("/auth/google", passport.authenticate("google", { scope: ["profile","email"] }))
-
 app.get("/auth/google/callback",
   passport.authenticate("google", { session: false, failureRedirect: FRONTEND_URL + "/login.html?error=google_failed" }),
   (req, res) => {
@@ -337,6 +752,8 @@ app.delete("/auth/delete-account", authMiddleware, async (req, res) => {
     await Chat.deleteMany({ userId: req.user.id })
     await Subscription.deleteMany({ userId: req.user.id })
     await Project.deleteMany({ userId: req.user.id })
+    await AgentMemory.deleteMany({ userId: req.user.id })
+    await Task.deleteMany({ userId: req.user.id })
     await User.findByIdAndDelete(req.user.id)
     res.json({ success: true })
   } catch (err) { res.status(500).json({ error: err.message }) }
@@ -368,57 +785,31 @@ app.post("/payment/activate", authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// ── IMAGE GENERATION ENDPOINT ─────────────────────────────────────────────────
+// ── IMAGE GENERATION ──────────────────────────────────────────────────────────
 app.post("/generate-image", upload.none(), authMiddleware, async (req, res) => {
   try {
     const prompt = req.body.prompt
     if (!prompt) return res.status(400).json({ error: "No prompt provided" })
-
     const HF_KEY = process.env.HF_API_KEY
     if (!HF_KEY) {
       const seed = Math.floor(Math.random() * 999999)
-      const imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
-      return res.json({ imageUrl, source: "pollinations" })
+      return res.json({ imageUrl: "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed, source: "pollinations" })
     }
-
-    console.log("🎨 Generating image for:", prompt)
-
-    const response = await fetch(
-      "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer " + HF_KEY,
-          "Content-Type": "application/json",
-          "x-wait-for-model": "true"
-        },
-        body: JSON.stringify({
-          inputs: prompt,
-          parameters: { num_inference_steps: 4, width: 1024, height: 1024 }
-        })
-      }
-    )
-
+    const response = await fetch("https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + HF_KEY, "Content-Type": "application/json", "x-wait-for-model": "true" },
+      body: JSON.stringify({ inputs: prompt, parameters: { num_inference_steps: 4, width: 1024, height: 1024 } })
+    })
     if (!response.ok) {
-      const errText = await response.text()
-      console.error("HF Error:", response.status, errText)
       const seed = Math.floor(Math.random() * 999999)
-      const imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
-      return res.json({ imageUrl, source: "pollinations_fallback" })
+      return res.json({ imageUrl: "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed, source: "pollinations_fallback" })
     }
-
     const arrayBuffer = await response.arrayBuffer()
     const base64 = Buffer.from(arrayBuffer).toString("base64")
-    const imageUrl = "data:image/jpeg;base64," + base64
-
-    console.log("✅ Image generated successfully")
-    res.json({ imageUrl, source: "huggingface" })
-
+    res.json({ imageUrl: "data:image/jpeg;base64," + base64, source: "huggingface" })
   } catch (err) {
-    console.error("Image generation error:", err.message)
     const seed = Math.floor(Math.random() * 999999)
-    const imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(req.body.prompt || "art") + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
-    res.json({ imageUrl, source: "pollinations_fallback" })
+    res.json({ imageUrl: "https://image.pollinations.ai/prompt/" + encodeURIComponent(req.body.prompt || "art") + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed, source: "pollinations_fallback" })
   }
 })
 
@@ -433,24 +824,20 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
 
     if (!message && !file) return res.status(400).json({ error: "No message or file" })
 
-    const sub = await Subscription.findOne({ userId: userId, active: true }).catch(() => null)
+    const sub = await Subscription.findOne({ userId, active: true }).catch(() => null)
     const userPlan = sub ? sub.plan : "free"
 
     if (isImageRequest(message)) {
       const imgCheck = checkAndUpdateLimit(userId, userPlan, "images")
-      if (!imgCheck.allowed) {
-        return res.status(429).json({ error: "IMAGE_LIMIT", plan: userPlan, waitMins: imgCheck.waitMins, limit: imgCheck.limit })
-      }
+      if (!imgCheck.allowed) return res.status(429).json({ error: "IMAGE_LIMIT", plan: userPlan, waitMins: imgCheck.waitMins, limit: imgCheck.limit })
     } else {
       const msgCheck = checkAndUpdateLimit(userId, userPlan, "messages")
-      if (!msgCheck.allowed) {
-        return res.status(429).json({ error: "MESSAGE_LIMIT", plan: userPlan, waitMins: msgCheck.waitMins, limit: msgCheck.limit })
-      }
+      if (!msgCheck.allowed) return res.status(429).json({ error: "MESSAGE_LIMIT", plan: userPlan, waitMins: msgCheck.waitMins, limit: msgCheck.limit })
     }
 
     let chat = null
     if (chatId && chatId !== "" && chatId !== "null" && chatId !== "undefined") {
-      try { chat = await Chat.findOne({ _id: chatId, userId: userId }) } catch (e) { chat = null }
+      try { chat = await Chat.findOne({ _id: chatId, userId }) } catch (e) { chat = null }
     }
     if (!chat) {
       const greetings = ["hi","hii","hello","hey","helo","hai","sup","yo","hiya","howdy"]
@@ -466,44 +853,28 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     res.setHeader("x-chat-id", chat._id.toString())
     res.setHeader("Content-Type", "text/plain; charset=utf-8")
 
-    // ── IMAGE GENERATION ──────────────────────────────────────────────────
+    // IMAGE GENERATION
     if (message && isImageRequest(message)) {
       const imagePrompt = getImagePrompt(message)
-
       let imageUrl = null
       const HF_KEY = process.env.HF_API_KEY
       if (HF_KEY) {
         try {
-          const hfRes = await fetch(
-            "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
-            {
-              method: "POST",
-              headers: {
-                "Authorization": "Bearer " + HF_KEY,
-                "Content-Type": "application/json",
-                "x-wait-for-model": "true"
-              },
-              body: JSON.stringify({
-                inputs: imagePrompt,
-                parameters: { num_inference_steps: 4, width: 1024, height: 1024 }
-              })
-            }
-          )
+          const hfRes = await fetch("https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell", {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + HF_KEY, "Content-Type": "application/json", "x-wait-for-model": "true" },
+            body: JSON.stringify({ inputs: imagePrompt, parameters: { num_inference_steps: 4, width: 1024, height: 1024 } })
+          })
           if (hfRes.ok) {
             const buf = await hfRes.arrayBuffer()
-            const b64 = Buffer.from(buf).toString("base64")
-            imageUrl = "data:image/jpeg;base64," + b64
+            imageUrl = "data:image/jpeg;base64," + Buffer.from(buf).toString("base64")
           }
-        } catch(e) {
-          console.warn("HF image error:", e.message)
-        }
+        } catch(e) { console.warn("HF image error:", e.message) }
       }
-
       if (!imageUrl) {
         const seed = Math.floor(Math.random() * 999999)
         imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
       }
-
       const responseText = "DATTA_IMAGE_START\n![" + imagePrompt + "](" + imageUrl + ")\nPROMPT:" + imagePrompt + "\nDATTA_IMAGE_END"
       res.write(responseText)
       chat.messages.push({ role: "assistant", content: responseText })
@@ -513,19 +884,14 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       return
     }
 
-    // ── WEB SEARCH ────────────────────────────────────────────────────────
+    // WEB SEARCH
     let searchContext = ""
     if (message && needsWebSearch(message) && process.env.TAVILY_API_KEY) {
       const results = await webSearch(message)
       if (results) searchContext = "\n\n[Web Search Results]\n" + results + "\n[End of Search Results]"
     }
 
-    // ── BUILD HISTORY ─────────────────────────────────────────────────────
-    const history = chat.messages.slice(0, -1).slice(-10).map(m => ({
-      role: m.role === "assistant" ? "assistant" : "user",
-      content: m.content
-    }))
-
+    const history = chat.messages.slice(0, -1).slice(-10).map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content }))
     const isImageFile = file && file.mimetype?.startsWith("image/")
     let userContent
 
@@ -536,28 +902,20 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
         { type: "image_url", image_url: { url: "data:" + file.mimetype + ";base64," + base64 } }
       ]
     } else if (file) {
-      try {
-        const fileContent = file.buffer.toString("utf-8")
-        userContent = (message ? message + "\n\n" : "") + "[File: " + file.originalname + "]\n\n" + fileContent + searchContext
-      } catch (e) {
-        userContent = (message ? message + "\n\n" : "") + "[File: " + file.originalname + "]" + searchContext
-      }
+      try { userContent = (message ? message + "\n\n" : "") + "[File: " + file.originalname + "]\n\n" + file.buffer.toString("utf-8") + searchContext }
+      catch (e) { userContent = (message ? message + "\n\n" : "") + "[File: " + file.originalname + "]" + searchContext }
     } else {
       userContent = message + searchContext
     }
 
     const model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : "llama-3.3-70b-versatile"
     const msg = message.toLowerCase()
-    const needsLong = msg.includes("website") || msg.includes("code") || msg.includes("full") || msg.includes("complete") || msg.includes("build") || msg.includes("create") || msg.includes("write") || msg.includes("essay") || msg.includes("html") || msg.includes("python") || msg.includes("program") || msg.includes("story") || msg.includes("article")
+    const needsLong = msg.includes("website") || msg.includes("code") || msg.includes("full") || msg.includes("complete") || msg.includes("build") || msg.includes("create") || msg.includes("write") || msg.includes("html") || msg.includes("python") || msg.includes("program") || msg.includes("story") || msg.includes("article")
     const maxTokens = isImageFile ? 1024 : (needsLong ? 8000 : 1024)
 
     const stream = await groq.chat.completions.create({
       model,
-      messages: [
-        { role: "system", content: getSystemPrompt(language, !!searchContext) },
-        ...history,
-        { role: "user", content: userContent }
-      ],
+      messages: [{ role: "system", content: getSystemPrompt(language, !!searchContext) }, ...history, { role: "user", content: userContent }],
       max_tokens: maxTokens,
       temperature: 0.7,
       stream: true
@@ -633,8 +991,6 @@ app.post("/chat/:id/rename", authMiddleware, async (req, res) => {
 })
 
 // ── PROJECT ROUTES ────────────────────────────────────────────────────────────
-
-// GET all projects for the logged-in user
 app.get("/projects", authMiddleware, async (req, res) => {
   try {
     if (req.user.isGuest) return res.json([])
@@ -643,7 +999,6 @@ app.get("/projects", authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// POST — upsert (save or update) a single project
 app.post("/projects/save", authMiddleware, async (req, res) => {
   try {
     if (req.user.isGuest) return res.json({ success: true, skipped: true })
@@ -651,23 +1006,13 @@ app.post("/projects/save", authMiddleware, async (req, res) => {
     if (!projectId) return res.status(400).json({ error: "projectId is required" })
     await Project.findOneAndUpdate(
       { userId: req.user.id, projectId },
-      {
-        userId: req.user.id,
-        projectId,
-        name: name || "Untitled Project",
-        color: color || "#ffd700",
-        createdAt: createdAt || Date.now(),
-        chats: chats || [],
-        files: files || [],
-        artifacts: artifacts || []
-      },
+      { userId: req.user.id, projectId, name: name || "Untitled Project", color: color || "#ffd700", createdAt: createdAt || Date.now(), chats: chats || [], files: files || [], artifacts: artifacts || [] },
       { upsert: true, new: true }
     )
     res.json({ success: true })
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// DELETE a project
 app.delete("/projects/:projectId", authMiddleware, async (req, res) => {
   try {
     if (req.user.isGuest) return res.json({ success: true, skipped: true })
@@ -677,8 +1022,8 @@ app.delete("/projects/:projectId", authMiddleware, async (req, res) => {
 })
 
 // ── HEALTH CHECK ──────────────────────────────────────────────────────────────
-app.get("/", (req, res) => res.json({ status: "✅ Datta AI Server Running", version: "3.1" }))
+app.get("/", (req, res) => res.json({ status: "✅ Datta AI Agent Server Running", version: "4.0-agent" }))
 app.get("/health", (req, res) => res.json({ status: "ok", uptime: process.uptime() }))
 
 const PORT = process.env.PORT || 3000
-app.listen(PORT, () => console.log("🚀 Datta AI Server running on port " + PORT))
+app.listen(PORT, () => console.log("🚀 Datta AI Agent Server running on port " + PORT))
