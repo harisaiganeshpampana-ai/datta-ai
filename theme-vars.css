@@ -1,19 +1,21 @@
 /* ── DATTA AI THEME SYSTEM ─────────────────────────────────────────────── */
 
-/* DEFAULT: Dark */
+/* DEFAULT: Dark Red + Blue */
 :root {
-  --bg: #080800;
-  --bg2: #0f0e00;
-  --bg3: #1a1800;
-  --text: #fff8e7;
-  --text2: #665500;
-  --text3: #443300;
-  --border: rgba(255,215,0,0.1);
-  --border2: rgba(255,215,0,0.06);
-  --accent: #ffd700;
-  --sidebar-bg: #060600;
-  --input-bg: #0f0e00;
-  --card-bg: #0f0e00;
+  --bg: #080810;
+  --bg2: #0d0d18;
+  --bg3: #13131f;
+  --text: #f0f0ff;
+  --text2: #6b7280;
+  --text3: #4b5563;
+  --border: rgba(239,68,68,0.15);
+  --border2: rgba(239,68,68,0.08);
+  --accent: #ef4444;
+  --accent2: #3b82f6;
+  --accent3: #00d4ff;
+  --sidebar-bg: #06060f;
+  --input-bg: #0d0d18;
+  --card-bg: #0d0d18;
   --shadow: rgba(0,0,0,0.5);
 }
 
@@ -88,23 +90,23 @@ body { background: var(--bg) !important; color: var(--text) !important; }
 .main { background: var(--bg) !important; }
 .inputWrap { background: var(--input-bg) !important; border-color: var(--border) !important; }
 .card, .planCard, .group, .mbox, .ticketCard, .faqItem,
-.memCard, .statCard, .section, .botChat { 
-  background: var(--card-bg) !important; 
-  border-color: var(--border) !important; 
+.memCard, .statCard, .section, .botChat {
+  background: var(--card-bg) !important;
+  border-color: var(--border) !important;
 }
-.userBubble { background: rgba(255,215,0,0.12) !important; border-color: var(--border) !important; }
+.userBubble { background: rgba(239,68,68,0.15) !important; border-color: var(--border) !important; }
 .aiBubble { background: var(--card-bg) !important; border-color: var(--border2) !important; color: var(--text) !important; }
 .chatTitle, .navItem, .rowTitle { color: var(--text2) !important; }
 .rowSub, .planSanskrit, .chipDesc { color: var(--text3) !important; }
-.searchBox, .formInput, .mInput { 
-  background: var(--input-bg) !important; 
-  border-color: var(--border) !important; 
-  color: var(--text) !important; 
+.searchBox, .formInput, .mInput {
+  background: var(--input-bg) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
 }
 .sidebarDivider { background: var(--border) !important; }
-.profileCard, .heroCard, .lifetimeCard { 
-  background: var(--card-bg) !important; 
-  border-color: var(--border) !important; 
+.profileCard, .heroCard, .lifetimeCard {
+  background: var(--card-bg) !important;
+  border-color: var(--border) !important;
 }
 
 /* Light/Sepia specific fixes */
