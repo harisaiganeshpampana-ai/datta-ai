@@ -1,7 +1,6 @@
 // ================================================================
-//  DATTA AI — PROJECTS SYSTEM  v3.0
-//  Matches your exact theme: #080800 bg, #ffd700 accent, Bebas Neue
-//  Storage: localStorage key = 'datta_projects_v2'
+//  DATTA AI — PROJECTS SYSTEM  v4.0
+//  Storage: localStorage (cache) + MongoDB (source of truth)
 //  Compatible with your existing index.html structure
 // ================================================================
 
@@ -9,6 +8,7 @@
   'use strict';
 
   var STORAGE_KEY = 'datta_projects_v2';
+  var SERVER = 'https://datta-ai-server.onrender.com';
 
   /* ──────────────────────────────────────────────
      UTILITIES
@@ -41,7 +41,65 @@
   }
 
   /* ──────────────────────────────────────────────
-     DATA LAYER
+     AUTH HELPER
+  ────────────────────────────────────────────── */
+  function getToken() {
+    try {
+      var u = JSON.parse(localStorage.getItem('datta_user') || '{}');
+      return u.token || localStorage.getItem('datta_token') || null;
+    } catch(e) { return null; }
+  }
+
+  function isGuest() {
+    var t = getToken();
+    return !t || t.startsWith('guest_');
+  }
+
+  /* ──────────────────────────────────────────────
+     MONGODB SYNC HELPERS
+  ────────────────────────────────────────────── */
+  function syncProjectToMongo(project) {
+    if (isGuest()) return;
+    var token = getToken();
+    fetch(SERVER + '/projects/save', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify(project)
+    }).catch(function(e){ console.warn('[Datta] Project sync failed:', e); });
+  }
+
+  function deleteProjectFromMongo(projectId) {
+    if (isGuest()) return;
+    var token = getToken();
+    fetch(SERVER + '/projects/' + projectId, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).catch(function(e){ console.warn('[Datta] Project delete sync failed:', e); });
+  }
+
+  async function loadProjectsFromMongo() {
+    if (isGuest()) return;
+    var token = getToken();
+    try {
+      var res = await fetch(SERVER + '/projects', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!res.ok) return;
+      var data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        // MongoDB is source of truth — overwrite localStorage
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      }
+    } catch(e) {
+      console.warn('[Datta] Load projects from MongoDB failed:', e);
+    }
+  }
+
+  /* ──────────────────────────────────────────────
+     DATA LAYER  (localStorage + MongoDB sync)
   ────────────────────────────────────────────── */
   function getProjects() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
@@ -50,6 +108,8 @@
 
   function saveProjects(list) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    // Sync every project to MongoDB in the background
+    list.forEach(function(p){ syncProjectToMongo(p); });
   }
 
   function getProject(id) {
@@ -79,6 +139,7 @@
   }
 
   function deleteProject(id) {
+    deleteProjectFromMongo(id);
     saveProjects(getProjects().filter(function(p){ return String(p.id) !== String(id); }));
   }
 
@@ -106,6 +167,17 @@
     var p = list.find(function(x){ return String(x.id) === String(projectId); });
     if (!p) return;
     p.chats = (p.chats||[]).filter(function(c){ return String(c.id) !== String(chatId); });
+    saveProjects(list);
+  }
+
+  function saveMessageToChat(projectId, chatId, role, content) {
+    var list = getProjects();
+    var p = list.find(function(x){ return String(x.id) === String(projectId); });
+    if (!p) return;
+    var chat = (p.chats||[]).find(function(c){ return String(c.id) === String(chatId); });
+    if (!chat) return;
+    if (!chat.messages) chat.messages = [];
+    chat.messages.push({ role: role, content: content, ts: Date.now() });
     saveProjects(list);
   }
 
@@ -474,7 +546,7 @@
   }
 
   window.openProjectPanel = openProjectPanel;
-  window.openProjectPage = openProjectPanel; // alias for old code
+  window.openProjectPage = openProjectPanel;
 
   /* ──────────────────────────────────────────────
      SIDEBAR LIST RENDERER
@@ -590,7 +662,6 @@
     document.body.appendChild(overlay);
 
     var selectedColor = '#ffd700';
-    // Default active
     var defBtn = overlay.querySelector('[data-color="#ffd700"]');
     if (defBtn) defBtn.style.borderColor = '#fff';
 
@@ -650,13 +721,12 @@
   }
 
   /* ──────────────────────────────────────────────
-     OVERRIDE OLD STUBS IN YOUR index.html
+     OVERRIDE OLD STUBS
   ────────────────────────────────────────────── */
   window.loadProjects = function(){ renderSidebarProjects(); };
   window.loadProjectsSection = function(){ renderSidebarProjects(); };
   window.createNewProject = function(){ showNewProjectModal(); };
   window.doCreateProject = function(){
-    // fallback - handled by modal
     document.getElementById('np-create') && document.getElementById('np-create').click();
   };
 
@@ -672,23 +742,28 @@
     addChat: addChat,
     renameChat: renameChat,
     deleteChat: deleteChat,
+    saveMessageToChat: saveMessageToChat,
     addFile: addFile,
     deleteFile: deleteFile,
     addArtifact: addArtifact,
     deleteArtifact: deleteArtifact,
     openPanel: openProjectPanel,
     renderSidebar: renderSidebarProjects,
-    showModal: showNewProjectModal
+    showModal: showNewProjectModal,
+    syncToMongo: syncProjectToMongo,
+    loadFromMongo: loadProjectsFromMongo
   };
 
   /* ──────────────────────────────────────────────
-     INIT
+     INIT — load from MongoDB first, then render
   ────────────────────────────────────────────── */
   function init() {
     wireButtons();
-    // Render if projects section is visible
-    var sec = document.getElementById('section-projects');
-    if (sec && sec.style.display !== 'none') renderSidebarProjects();
+
+    // Load from MongoDB (source of truth), then render sidebar
+    loadProjectsFromMongo().then(function(){
+      renderSidebarProjects();
+    });
 
     // Watch DOM for late-loaded elements
     if (window.MutationObserver) {
