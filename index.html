@@ -32,66 +32,62 @@
        1. RESET & BASE
        ══════════════════════════════════════════════════ */
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:#080800; color:#fff8e7; font-family:'DM Sans',sans-serif; min-height:100vh; overflow:hidden; }
+    body { background:#080810; color:#f0f0ff; font-family:'DM Sans',sans-serif; min-height:100vh; overflow:hidden; }
 
     /* ══════════════════════════════════════════════════
        2. TOPBAR
        ══════════════════════════════════════════════════ */
     .topbar {
       position:fixed; top:0; left:0; right:0; height:54px;
-      background:rgba(8,8,0,0.96); border-bottom:1px solid rgba(255,215,0,0.1);
+      background:rgba(8,8,16,0.96); border-bottom:1px solid rgba(255,255,255,0.07);
       display:flex; align-items:center; padding:0 16px; gap:10px; z-index:500;
     }
     .tb-menu-btn {
-      background:none; border:none; color:#665500; cursor:pointer;
+      background:none; border:none; color:#555; cursor:pointer;
       font-size:18px; padding:4px 8px; flex-shrink:0;
     }
-    .tb-menu-btn:hover { color:var(--accent); }
+    .tb-menu-btn:hover { color:var(--accent,#00ff88); }
     .tb-logo-wrap { display:flex; align-items:center; gap:6px; flex-shrink:0; }
     .tb-logo-img { width:24px; height:24px; border-radius:6px; object-fit:cover; flex-shrink:0; }
     .tb-logo-text {
       font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px;
-      background:linear-gradient(90deg,var(--accent),#ff8c00);
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-      white-space:nowrap;
+      color:#f0f0ff; white-space:nowrap;
     }
     .tb-right { margin-left:auto; display:flex; align-items:center; gap:6px; padding-right:6px; }
     .tb-theme-btn {
-      background:none; border:1px solid var(--border); border-radius:50%;
+      background:none; border:1px solid rgba(255,255,255,0.1); border-radius:50%;
       width:30px; height:30px; cursor:pointer; font-size:14px;
-      display:flex; align-items:center; justify-content:center;
-      transition:all 0.2s; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center; transition:all 0.2s; flex-shrink:0;
     }
-    .tb-theme-btn:hover { border-color:var(--accent); }
+    .tb-theme-btn:hover { border-color:rgba(255,255,255,0.3); }
     .tb-mood-pill {
       display:none; align-items:center; gap:5px; padding:3px 10px;
-      border-radius:20px; border:1px solid rgba(255,215,0,0.2);
-      background:rgba(255,215,0,0.05); font-family:'Rajdhani',sans-serif;
-      font-size:11px; font-weight:600; letter-spacing:1px; color:#665500;
-      cursor:pointer; transition:all 0.4s ease; animation:autoMoodIn 0.4s ease;
+      border-radius:20px; border:1px solid rgba(255,255,255,0.1);
+      background:rgba(255,255,255,0.05); font-family:'Rajdhani',sans-serif;
+      font-size:11px; font-weight:600; letter-spacing:1px; color:#888;
+      cursor:pointer; transition:all 0.4s ease;
     }
     .tb-mood-indicator {
       display:none; align-items:center; gap:5px; padding:3px 10px;
-      border-radius:20px; border:1px solid rgba(255,215,0,0.3);
-      background:rgba(255,215,0,0.08); font-family:'Rajdhani',sans-serif;
-      font-size:12px; font-weight:600; letter-spacing:1px; color:#ffd700;
-      cursor:pointer; transition:all 0.2s;
+      border-radius:20px; border:1px solid rgba(255,255,255,0.15);
+      background:rgba(255,255,255,0.07); font-family:'Rajdhani',sans-serif;
+      font-size:12px; font-weight:600; letter-spacing:1px; color:#f0f0ff; cursor:pointer;
     }
     .tb-mood-toggle {
       background:none; border:1px solid rgba(255,255,255,0.08); cursor:pointer;
       width:32px; height:32px; border-radius:50%; display:flex;
       align-items:center; justify-content:center; font-size:16px; transition:all 0.2s;
     }
-    .tb-mood-toggle:hover { border-color:rgba(255,215,0,0.3); }
+    .tb-mood-toggle:hover { border-color:rgba(255,255,255,0.2); }
     .tb-color-btn {
       background:none; border:none; cursor:pointer; width:32px; height:32px;
       border-radius:50%; display:flex; align-items:center; justify-content:center;
       transition:all 0.2s; position:relative;
     }
     .tb-color-dot {
-      width:22px; height:22px; border-radius:50%; background:var(--accent);
-      box-shadow:0 0 8px var(--accent-glow); border:2px solid rgba(255,255,255,0.15);
-      transition:all 0.3s;
+      width:22px; height:22px; border-radius:50%; background:var(--accent,#00ff88);
+      box-shadow:0 0 8px var(--accent-glow,rgba(0,255,136,0.4));
+      border:2px solid rgba(255,255,255,0.15); transition:all 0.3s;
     }
 
     /* ══════════════════════════════════════════════════
@@ -99,7 +95,7 @@
        ══════════════════════════════════════════════════ */
     .sidebar {
       position:fixed; top:54px; left:0; bottom:0; width:260px;
-      background:#060600; border-right:1px solid rgba(255,215,0,0.08);
+      background:#06060f; border-right:1px solid rgba(255,255,255,0.05);
       display:flex; flex-direction:column; z-index:400; overflow:hidden;
     }
     @media(max-width:767px) {
@@ -108,69 +104,64 @@
     }
     .sidebar-top { display:flex; align-items:center; padding:16px 14px 8px; }
     .sidebar-logo {
-      font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:3px;
-      background:linear-gradient(90deg,var(--accent),#ff8c00);
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:3px; color:#f0f0ff;
     }
-    .sidebar-search-wrap {
-      padding:0 12px 8px;
-    }
+    .sidebar-search-wrap { padding:0 12px 8px; }
     .sidebar-search-inner {
       display:flex; align-items:center; gap:8px;
-      background:rgba(255,255,255,0.04); border:1px solid rgba(255,215,0,0.08);
+      background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07);
       border-radius:10px; padding:7px 12px;
     }
     .sidebar-search-input {
-      background:none; border:none; outline:none; color:#fff8e7;
+      background:none; border:none; outline:none; color:#f0f0ff;
       font-size:13px; font-family:'DM Sans',sans-serif; width:100%;
     }
     .sidebar-nav { padding:0 8px 4px; }
-    .nav-divider { height:1px; background:rgba(255,215,0,0.06); margin:6px 4px; }
+    .nav-divider { height:1px; background:rgba(255,255,255,0.05); margin:6px 4px; }
     .recents-label {
       padding:6px 14px 4px; font-family:'Rajdhani',sans-serif;
-      font-size:10px; letter-spacing:2px; color:#332200;
+      font-size:10px; letter-spacing:2px; color:#333;
     }
     .sidebarSection { display:flex; flex-direction:column; flex:1; overflow:hidden; }
-    .sidebarDivider { height:1px; background:rgba(255,215,0,0.07); margin:4px 0; }
-    .sidebarBottom { }
+    .sidebarDivider { height:1px; background:rgba(255,255,255,0.05); margin:4px 0; }
+    .sidebarBottom {}
     .version-tag {
-      text-align:center; font-size:9px; color:#252000; letter-spacing:2px;
+      text-align:center; font-size:9px; color:#252525; letter-spacing:2px;
       padding:2px 0; font-family:'Rajdhani',sans-serif;
     }
     .upgrade-banner {
-      margin:6px 10px; padding:10px 14px; background:rgba(255,215,0,0.05);
-      border:1px solid rgba(255,215,0,0.12); border-radius:12px; cursor:pointer;
+      margin:6px 10px; padding:10px 14px; background:rgba(0,255,136,0.05);
+      border:1px solid rgba(0,255,136,0.12); border-radius:12px; cursor:pointer;
       display:flex; align-items:center; gap:10px; transition:all 0.2s;
     }
-    .upgrade-banner:hover { background:rgba(255,215,0,0.1); }
+    .upgrade-banner:hover { background:rgba(0,255,136,0.09); }
     .upgrade-banner .ub-icon { font-size:18px; }
     .upgrade-banner .ub-info { flex:1; }
     .upgrade-banner .ub-title {
       font-size:12px; font-weight:700; font-family:'Rajdhani',sans-serif;
-      letter-spacing:0.5px; color:var(--accent);
+      letter-spacing:0.5px; color:#00ff88;
     }
-    .upgrade-banner .ub-sub { font-size:10px; color:#554400; }
-    .upgrade-banner .ub-arrow { color:#554400; font-size:14px; }
+    .upgrade-banner .ub-sub { font-size:10px; color:#444; }
+    .upgrade-banner .ub-arrow { color:#444; font-size:14px; }
     .profile-row {
       margin:4px 10px 10px; padding:10px 12px; border-radius:12px; cursor:pointer;
       display:flex; align-items:center; gap:10px; transition:all 0.2s;
       border:1px solid transparent;
     }
-    .profile-row:hover { background:rgba(255,215,0,0.05); border-color:rgba(255,215,0,0.1); }
+    .profile-row:hover { background:rgba(255,255,255,0.04); border-color:rgba(255,255,255,0.07); }
     .profileAvatar {
       width:34px; height:34px; border-radius:50%;
-      background:linear-gradient(135deg,var(--accent),#ff8c00);
+      background:linear-gradient(135deg,#00ff88,#00ccff);
       display:flex; align-items:center; justify-content:center;
       font-size:14px; font-weight:700; color:#000;
       font-family:'Rajdhani',sans-serif; flex-shrink:0;
     }
     .profile-info { flex:1; min-width:0; }
     .profileName {
-      font-size:10px; font-weight:600; color:#fff8e7; font-family:'DM Sans',sans-serif;
-      word-break:break-word; line-height:1.3; max-width:130px; overflow:hidden;
-      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+      font-size:13px; font-weight:600; color:#f0f0ff; font-family:'DM Sans',sans-serif;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
     }
-    .profileSub { font-size:11px; color:#554400; font-family:'Rajdhani',sans-serif; }
+    .profileSub { font-size:11px; color:#444; font-family:'Rajdhani',sans-serif; }
     .sidebar-overlay {
       display:none; position:fixed; top:0; left:0; right:0; bottom:0;
       background:rgba(0,0,0,0.5); z-index:399;
@@ -182,19 +173,18 @@
     .navItem {
       width:100%; display:flex; align-items:center; gap:10px;
       padding:9px 10px; border-radius:10px; border:none; background:none;
-      color:#665500; cursor:pointer; font-family:'DM Sans',sans-serif;
+      color:#555; cursor:pointer; font-family:'DM Sans',sans-serif;
       font-size:13px; transition:all 0.15s; text-align:left;
     }
-    .navItem:hover { background:rgba(255,215,0,0.06); color:var(--accent); }
-    .navItem.active { background:rgba(255,215,0,0.08); color:var(--accent); }
-    .navItem.active:hover { background:rgba(255,215,0,0.1); }
+    .navItem:hover { background:rgba(0,255,136,0.06); color:#00ff88; }
+    .navItem.active { background:rgba(0,255,136,0.08); color:#00ff88; }
 
     /* ══════════════════════════════════════════════════
        5. PROFILE MENU
        ══════════════════════════════════════════════════ */
     .profile-menu {
       display:none; position:fixed; bottom:80px; left:10px; width:240px;
-      background:#0f0e00; border:1px solid rgba(255,215,0,0.15);
+      background:#0f0f1a; border:1px solid rgba(255,255,255,0.08);
       border-radius:14px; padding:6px; box-shadow:0 -8px 30px rgba(0,0,0,0.5);
       z-index:1000; animation:profileMenuIn 0.2s ease;
     }
@@ -202,20 +192,20 @@
     .pm-item {
       width:100%; display:flex; align-items:center; gap:10px;
       padding:10px 12px; border-radius:10px; border:none; background:none;
-      color:#665500; cursor:pointer; font-family:'DM Sans',sans-serif;
+      color:#555; cursor:pointer; font-family:'DM Sans',sans-serif;
       font-size:13px; transition:all 0.15s; text-align:left;
     }
-    .pm-item:hover { background:rgba(255,215,0,0.06); color:#fff8e7; }
+    .pm-item:hover { background:rgba(255,255,255,0.05); color:#f0f0ff; }
     .pm-item--logout { color:#ff4444; }
     .pm-item--logout:hover { background:rgba(255,60,60,0.08); color:#ff4444; }
-    .pm-divider { border-top:1px solid rgba(255,215,0,0.07); margin:4px 0; }
+    .pm-divider { border-top:1px solid rgba(255,255,255,0.06); margin:4px 0; }
     .pm-links { display:flex; justify-content:center; gap:14px; padding:4px; }
     .pm-link {
-      font-size:10px; color:#332200; text-decoration:none;
+      font-size:10px; color:#333; text-decoration:none;
       font-family:'Rajdhani',sans-serif; letter-spacing:1px;
     }
-    .pm-link:hover { color:#ffd700; }
-    .pm-dot { color:#2a2000; font-size:10px; }
+    .pm-link:hover { color:#00ff88; }
+    .pm-dot { color:#2a2a2a; font-size:10px; }
 
     /* ══════════════════════════════════════════════════
        6. MAIN AREA
@@ -223,7 +213,6 @@
     .main {
       position:fixed; top:54px; left:260px; right:0; bottom:0;
       display:flex; flex-direction:column; overflow:hidden;
-      -webkit-overflow-scrolling:touch;
     }
     @media(max-width:900px) { .main { left:0; } }
     .chatWrapper {
@@ -246,81 +235,70 @@
     }
     @keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
     .messageRow.userRow { flex-direction:row-reverse; justify-content:flex-start; }
-    .userBubble, .userBubble * {
-      font-family:'Cormorant Garamond', serif !important;
-      font-size:15px !important; font-weight:500 !important;
-      letter-spacing:0.3px !important; line-height:1.7 !important;
-    }
     .userBubble {
-      background:rgba(255,215,0,0.12); border:1px solid rgba(255,215,0,0.25);
+      background:linear-gradient(135deg,rgba(0,204,106,0.2),rgba(0,170,255,0.2));
+      border:1px solid rgba(0,255,136,0.2);
       border-radius:18px 18px 4px 18px; padding:10px 16px; max-width:70%;
-      color:#fff8e7; word-wrap:break-word;
-    }
-    .aiBubble, .aiBubble *, .aiBubble p, .aiBubble li, .aiBubble span, .stream, .stream * {
-      font-family:'Nunito', sans-serif !important;
-      font-size:14px !important; font-weight:400 !important;
-      letter-spacing:0.2px !important; line-height:1.8 !important;
+      color:#f0f0ff; word-wrap:break-word; font-size:14px; line-height:1.6;
     }
     .aiBubble {
-      background:#0f0e00; border:1px solid rgba(255,215,0,0.08);
+      background:#0f0f1a; border:1px solid rgba(255,255,255,0.06);
       border-radius:4px 18px 18px 18px; padding:12px 16px; max-width:75%;
-      color:#fff8e7; word-wrap:break-word;
+      color:#f0f0ff; word-wrap:break-word; font-size:14px; line-height:1.8;
     }
     .aiBubble.typing span {
-      display:inline-block; width:6px; height:6px; background:#ffd700;
+      display:inline-block; width:6px; height:6px; background:#00ff88;
       border-radius:50%; animation:dot 1.2s infinite; margin:0 2px;
     }
     .aiBubble.typing span:nth-child(2) { animation-delay:0.2s; }
     .aiBubble.typing span:nth-child(3) { animation-delay:0.4s; }
     @keyframes dot { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
     .avatar {
-      width:30px; height:30px; border-radius:50%; background:rgba(255,215,0,0.1);
+      width:30px; height:30px; border-radius:50%; background:rgba(0,255,136,0.08);
       display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;
     }
     .aiContent { display:flex; flex-direction:column; gap:6px; max-width:80%; }
     .aiActions { display:flex; gap:6px; opacity:0; transition:opacity 0.2s; }
     .messageRow:hover .aiActions { opacity:1; }
-    .actionBtn { background:none; border:none; color:#443300; cursor:pointer; padding:3px; border-radius:6px; }
-    .actionBtn:hover { color:var(--accent); }
+    .actionBtn { background:none; border:none; color:#444; cursor:pointer; padding:3px; border-radius:6px; }
+    .actionBtn:hover { color:#00ff88; }
     .cursor { animation:blink 1s infinite; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-    .stream p { margin:0 0 8px; }
-    .stream p:last-child { margin-bottom:0; }
     .searchingIndicator { display:flex; align-items:center; gap:8px; }
     .searchIcon { font-size:16px; }
-    .searchText { font-size:13px; color:#665500; }
+    .searchText { font-size:13px; color:#555; }
 
     /* ══════════════════════════════════════════════════
        8. INPUT AREA
        ══════════════════════════════════════════════════ */
     .inputArea {
       padding:10px 16px calc(16px + env(safe-area-inset-bottom,0px));
-      background:var(--bg,#080800); border-top:1px solid rgba(255,215,0,0.06);
+      background:#080810; border-top:1px solid rgba(255,255,255,0.05);
       position:relative; z-index:10;
     }
     .inputWrap {
-      background:#0f0e00; border:1px solid rgba(255,215,0,0.12);
+      background:#0f0f1a; border:1px solid rgba(255,255,255,0.1);
       border-radius:16px; padding:8px 10px; max-width:800px; margin:0 auto;
     }
-    .inputWrap:focus-within { border-color:rgba(255,215,0,0.3); }
+    .inputWrap:focus-within { border-color:rgba(0,255,136,0.3); }
     .inputRow { display:flex; align-items:center; gap:8px; }
     #message {
-      flex:1; background:none; border:none; outline:none; color:#fff8e7;
+      flex:1; background:none; border:none; outline:none; color:#f0f0ff;
       font-size:15px; font-family:'DM Sans',sans-serif; padding:4px 0;
     }
-    #message::placeholder { color:#332200; }
+    #message::placeholder { color:#333; }
     .inputRightBtns { display:flex; align-items:center; gap:4px; }
     .sendBtn {
-      width:34px; height:34px; background:var(--accent); border:none;
-      border-radius:50%; cursor:pointer; display:flex; align-items:center;
-      justify-content:center; color:#000; transition:all 0.2s;
+      width:34px; height:34px; background:linear-gradient(135deg,#00cc6a,#00aaff);
+      border:none; border-radius:50%; cursor:pointer; display:flex;
+      align-items:center; justify-content:center; color:#fff; transition:all 0.2s;
     }
-    .sendBtn:hover { transform:scale(1.05); }
+    .sendBtn:hover { transform:scale(1.05); box-shadow:0 0 16px rgba(0,204,106,0.4); }
     .micBtn {
-      background:none; border:none; color:#554400; cursor:pointer;
+      background:none; border:none; color:#555; cursor:pointer;
       padding:6px; display:flex; align-items:center;
     }
-    .micBtn:hover { color:var(--accent); }
+    .micBtn:hover { color:#00ff88; }
     .stopBtn {
       width:30px; height:30px; background:rgba(255,60,60,0.1);
       border:1px solid rgba(255,60,60,0.3); border-radius:50%; cursor:pointer;
@@ -328,25 +306,25 @@
       display:none;
     }
     .plusBtn {
-      background:none; border:1px solid rgba(255,215,0,0.1); border-radius:10px;
-      color:#554400; cursor:pointer; width:30px; height:30px;
-      display:flex; align-items:center; justify-content:center;
+      background:none; border:1px solid rgba(255,255,255,0.1); border-radius:10px;
+      color:#555; cursor:pointer; width:30px; height:30px;
+      display:flex; align-items:center; justify-content:center; transition:all 0.2s;
     }
-    .plusBtn:hover { border-color:rgba(255,215,0,0.3); color:var(--accent); }
+    .plusBtn:hover { border-color:rgba(0,255,136,0.3); color:#00ff88; }
     .filePreviewChip {
-      display:flex; align-items:center; gap:8px; background:rgba(255,215,0,0.06);
-      border:1px solid rgba(255,215,0,0.12); border-radius:8px; padding:6px 10px;
-      margin-bottom:6px; font-size:12px; color:#665500;
+      display:flex; align-items:center; gap:8px; background:rgba(0,255,136,0.06);
+      border:1px solid rgba(0,255,136,0.12); border-radius:8px; padding:6px 10px;
+      margin-bottom:6px; font-size:12px; color:#666;
     }
-    #clearFile { background:none; border:none; color:#443300; cursor:pointer; font-size:14px; }
+    #clearFile { background:none; border:none; color:#444; cursor:pointer; font-size:14px; }
 
     /* ══════════════════════════════════════════════════
        9. SCROLL BUTTON
        ══════════════════════════════════════════════════ */
     #scrollDownBtn {
       position:absolute; bottom:10px; right:16px; width:32px; height:32px;
-      background:#0f0e00; border:1px solid rgba(255,215,0,0.2); border-radius:50%;
-      color:var(--accent); cursor:pointer; display:none; font-size:14px;
+      background:#0f0f1a; border:1px solid rgba(255,255,255,0.1); border-radius:50%;
+      color:#00ff88; cursor:pointer; display:none; font-size:14px;
     }
 
     /* ══════════════════════════════════════════════════
@@ -360,150 +338,176 @@
       padding:8px 10px; border-radius:10px; cursor:pointer;
       transition:all 0.15s; display:flex; align-items:center; justify-content:space-between;
     }
-    .chatItem:hover { background:rgba(255,215,0,0.06); }
+    .chatItem:hover { background:rgba(255,255,255,0.04); }
     .chatTitle {
-      font-size:13px; color:#665500; overflow:hidden;
+      font-size:13px; color:#555; overflow:hidden;
       text-overflow:ellipsis; white-space:nowrap; flex:1;
     }
     .deleteBtn {
-      background:none; border:none; color:#332200; cursor:pointer;
+      background:none; border:none; color:#333; cursor:pointer;
       opacity:0; font-size:13px; padding:2px 4px;
     }
     .chatItem:hover .deleteBtn { opacity:1; }
     .searchBox {
-      background:rgba(255,255,255,0.04); border:1px solid rgba(255,215,0,0.08);
-      border-radius:10px; padding:7px 12px; color:#fff8e7; font-size:13px;
+      background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07);
+      border-radius:10px; padding:7px 12px; color:#f0f0ff; font-size:13px;
       font-family:'DM Sans',sans-serif; outline:none; width:100%;
     }
     .emptySection {
       display:flex; flex-direction:column; align-items:center; gap:8px;
-      padding:30px 20px; color:#332200; font-family:'Rajdhani',sans-serif;
+      padding:30px 20px; color:#333; font-family:'Rajdhani',sans-serif;
       font-size:13px; letter-spacing:1px;
     }
 
     /* ══════════════════════════════════════════════════
-       11. WELCOME SCREEN
+       11. WELCOME SCREEN — FULLY FIXED
        ══════════════════════════════════════════════════ */
     .welcomeScreen {
       display:flex; flex-direction:column; align-items:center; justify-content:center;
-      width:100%; height:100%; padding:20px 16px 80px; text-align:center;
-      overflow-y:auto; -webkit-overflow-scrolling:touch; box-sizing:border-box;
-      scrollbar-width:thin; overscroll-behavior:contain; position:relative; z-index:10;
+      width:100%; height:100%;
+      padding:20px 24px 120px;
+      text-align:center;
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+      box-sizing:border-box;
+      position:relative;
+      z-index:10;
     }
-    @media(max-width:600px) {
-      .welcomeScreen { padding:20px 12px 120px; justify-content:flex-start; }
-      .welcomeTitle { font-size:28px !important; }
-    }
-    .welcomeScreen::before {
-      content:''; position:absolute; width:500px; height:500px;
-      background:radial-gradient(circle, rgba(255,215,0,0.06) 0%, transparent 70%);
-      top:50%; left:50%; transform:translate(-50%,-60%); pointer-events:none; border-radius:50%;
-    }
-    .welcomeScreen::after {
-      content:''; position:absolute; width:300px; height:300px;
-      background:radial-gradient(circle, rgba(255,140,0,0.05) 0%, transparent 70%);
-      bottom:20%; right:10%; pointer-events:none; border-radius:50%;
-    }
+
+    /* ✅ NO background animation — removed completely */
+    .welcomeScreen::before { display:none !important; }
+    .welcomeScreen::after { display:none !important; }
+
     .welcomeLogo {
       width:72px; height:72px; border-radius:20px; object-fit:cover;
-      margin-bottom:20px; box-shadow:0 0 32px rgba(255,215,0,0.25);
+      margin-bottom:20px; box-shadow:0 0 28px rgba(0,255,136,0.15);
       animation:welcomeFloat 3s ease-in-out infinite;
     }
-    @keyframes welcomeFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    @keyframes welcomeFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+
+    /* ✅ GREETING — normal white color */
     .welcomeGreeting {
       font-size:13px; font-weight:600; letter-spacing:3px; text-transform:uppercase;
-      color:#ffd700; margin-bottom:10px; font-family:'Rajdhani',sans-serif;
+      color:#00ff88; margin-bottom:10px; font-family:'Rajdhani',sans-serif;
       opacity:0; animation:fadeSlideUp 0.6s 0.1s ease forwards;
     }
+
+    /* ✅ TITLE — clean white, no gold, no glow */
     .welcomeTitle {
-      font-family:'Bebas Neue',sans-serif; font-size:clamp(28px,5vw,52px);
-      font-weight:400; letter-spacing:4px;
-      background:linear-gradient(135deg,#fff8e7,#ffd700,#ff8c00);
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-      background-clip:text; line-height:1.1; margin-bottom:10px;
-      opacity:0; animation:fadeSlideUp 0.6s 0.2s ease forwards;
-      filter:drop-shadow(0 0 20px rgba(255,215,0,0.2));
-      text-shadow:0 0 40px rgba(255,215,0,0.3), 0 0 80px rgba(255,140,0,0.15);
+      font-family:'Syne',sans-serif !important;
+      font-size:clamp(24px,4vw,40px) !important;
+      font-weight:800 !important;
+      color:#f0f0ff !important;
+      -webkit-text-fill-color:#f0f0ff !important;
+      background:none !important;
+      line-height:1.15 !important;
+      margin-bottom:10px !important;
+      letter-spacing:-0.5px !important;
+      filter:none !important;
+      text-shadow:none !important;
+      opacity:0;
+      animation:fadeSlideUp 0.6s 0.2s ease forwards;
     }
+
+    /* ✅ SUBTITLE — muted, no gold */
     .welcomeSub {
-      font-size:15px; color:#665500; margin-bottom:36px;
+      font-size:14px; color:#4b5563; margin-bottom:32px;
       font-family:'Rajdhani',sans-serif; letter-spacing:2px;
       opacity:0; animation:fadeSlideUp 0.6s 0.3s ease forwards;
     }
+
     .welcomeBadges {
       display:flex; gap:8px; flex-wrap:wrap; justify-content:center;
-      margin-bottom:40px; opacity:0; animation:fadeSlideUp 0.6s 0.4s ease forwards;
+      margin-bottom:36px; opacity:0; animation:fadeSlideUp 0.6s 0.4s ease forwards;
     }
     .welcomeBadge {
       display:flex; align-items:center; gap:6px; padding:6px 14px;
-      background:rgba(255,255,255,0.06); backdrop-filter:blur(10px);
-      border:1px solid rgba(255,255,255,0.1); border-radius:100px;
-      font-size:12px; color:rgba(255,255,255,0.6); font-family:'Rajdhani',sans-serif;
-      letter-spacing:0.5px; transition:all 0.2s; cursor:pointer; user-select:none;
+      background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+      border-radius:100px; font-size:12px; color:#666;
+      font-family:'Rajdhani',sans-serif; letter-spacing:0.5px;
+      transition:all 0.2s; cursor:pointer;
     }
-    .welcomeBadge:hover {
-      background:rgba(255,215,0,0.15); color:#ffd700;
-      border-color:rgba(255,215,0,0.3);
-    }
+    .welcomeBadge:hover { background:rgba(0,255,136,0.08); color:#00ff88; border-color:rgba(0,255,136,0.25); }
     .welcomeBadge span { font-size:14px; }
+
     .welcomeSuggestLabel {
-      font-size:11px; color:rgba(255,255,255,0.3); letter-spacing:2px;
-      text-transform:uppercase; font-family:'Rajdhani',sans-serif;
-      margin-bottom:4px; opacity:0; animation:fadeSlideUp 0.6s 0.5s ease forwards;
+      font-size:11px; color:#333; letter-spacing:2px; text-transform:uppercase;
+      font-family:'Rajdhani',sans-serif; margin-bottom:14px;
+      opacity:0; animation:fadeSlideUp 0.6s 0.5s ease forwards;
     }
+
+    /* ✅ CHIPS — perfectly centered, clean design */
     .welcomeChips {
-      display:flex; flex-direction:row; flex-wrap:wrap; justify-content:center;
-      gap:8px; max-width:480px; width:100%; box-sizing:border-box;
-      opacity:0; animation:fadeSlideUp 0.6s 0.6s ease forwards;
+      display:flex;
+      flex-direction:row;
+      flex-wrap:wrap;
+      justify-content:center;
+      align-items:center;
+      gap:10px;
+      max-width:560px;
+      width:100%;
+      margin:0 auto;
+      box-sizing:border-box;
+      opacity:0;
+      animation:fadeSlideUp 0.6s 0.6s ease forwards;
     }
+
     .chip {
-      background:rgba(255,255,255,0.07); backdrop-filter:blur(16px);
-      -webkit-backdrop-filter:blur(16px); border:1px solid rgba(255,255,255,0.12);
-      box-shadow:0 4px 24px rgba(0,0,0,0.2); border-radius:50px;
-      padding:8px 14px; text-align:center; cursor:pointer; transition:all 0.2s;
-      color:rgba(255,255,255,0.7); font-size:12px; font-family:'DM Sans',sans-serif;
-      line-height:1.4; display:inline-flex; align-items:center; gap:6px;
-      white-space:nowrap; max-width:fit-content;
+      background:rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:50px;
+      padding:10px 18px;
+      text-align:center;
+      cursor:pointer;
+      transition:all 0.2s;
+      color:rgba(255,255,255,0.6);
+      font-size:13px;
+      font-family:'DM Sans',sans-serif;
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      white-space:nowrap;
     }
     .chip:hover {
-      background:rgba(255,255,255,0.13); border-color:rgba(255,215,0,0.4);
-      color:#fff; transform:translateY(-2px);
-      box-shadow:0 8px 32px rgba(255,215,0,0.1);
+      background:rgba(0,255,136,0.08);
+      border-color:rgba(0,255,136,0.3);
+      color:#f0f0ff;
+      transform:translateY(-2px);
     }
-    .chipIcon { font-size:14px; display:inline; }
+    .chipIcon { font-size:15px; display:inline; }
     .chipTitle {
-      font-weight:700; font-size:13px; color:rgba(255,255,255,0.9);
+      font-weight:600; font-size:13px; color:rgba(255,255,255,0.85);
       font-family:'Rajdhani',sans-serif; letter-spacing:0.5px;
     }
-    .chip:hover .chipTitle { color:#ffd700; }
+    .chip:hover .chipTitle { color:#00ff88; }
     .chipDesc { display:none; }
+
     @keyframes fadeSlideUp {
       from { opacity:0; transform:translateY(16px); }
       to { opacity:1; transform:translateY(0); }
     }
-    @media(max-width:500px) {
-      .welcomeChips { grid-template-columns:1fr 1fr; gap:8px; max-width:100%; }
-      .welcomeBadges { gap:6px; flex-wrap:wrap; justify-content:center; }
-      .chip { padding:12px 10px; }
-      .chipTitle { font-size:12px; }
-      .chipIcon { font-size:18px; }
+
+    @media(max-width:600px) {
+      .welcomeScreen { padding:20px 16px 140px; justify-content:flex-start; padding-top:40px; }
       .welcomeTitle { font-size:26px !important; }
+      .welcomeChips { gap:8px; }
+      .chip { padding:8px 14px; }
     }
 
     /* ══════════════════════════════════════════════════
        12. MOOD PANEL
        ══════════════════════════════════════════════════ */
     .mood-panel {
-      position:fixed; top:58px; right:50px; background:#0f0e00;
-      border:1px solid rgba(255,215,0,0.2); border-radius:24px; padding:22px;
+      position:fixed; top:58px; right:50px; background:#0f0f1a;
+      border:1px solid rgba(255,255,255,0.1); border-radius:24px; padding:22px;
       z-index:2000; display:none; box-shadow:0 8px 40px rgba(0,0,0,0.7); min-width:300px;
     }
     .mood-panel-title {
       font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:3px;
-      color:var(--accent); margin-bottom:6px;
+      color:#f0f0ff; margin-bottom:6px;
     }
     .mood-panel-sub {
-      font-family:'Rajdhani',sans-serif; font-size:12px; color:#443300;
+      font-family:'Rajdhani',sans-serif; font-size:12px; color:#444;
       letter-spacing:1px; margin-bottom:18px;
     }
     .mood-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
@@ -514,7 +518,7 @@
     }
     .moodBtn:hover { filter:brightness(1.3); transform:translateY(-1px); }
     .moodBtn--focused { --mb-bg:rgba(0,204,255,0.06); --mb-border:rgba(0,204,255,0.2); --mb-color:#00ccff; }
-    .moodBtn--happy { --mb-bg:rgba(255,215,0,0.06); --mb-border:rgba(255,215,0,0.2); --mb-color:#ffd700; }
+    .moodBtn--happy { --mb-bg:rgba(0,255,136,0.06); --mb-border:rgba(0,255,136,0.2); --mb-color:#00ff88; }
     .moodBtn--stressed { --mb-bg:rgba(0,255,136,0.06); --mb-border:rgba(0,255,136,0.2); --mb-color:#00ff88; }
     .moodBtn--creative { --mb-bg:rgba(192,132,252,0.06); --mb-border:rgba(192,132,252,0.2); --mb-color:#c084fc; }
     .moodBtn--lazy { --mb-bg:rgba(249,115,22,0.06); --mb-border:rgba(249,115,22,0.2); --mb-color:#f97316; }
@@ -522,139 +526,87 @@
     .moodBtn--night { --mb-bg:rgba(129,140,248,0.06); --mb-border:rgba(129,140,248,0.2); --mb-color:#818cf8; }
     .moodBtn--wide { grid-column:span 2; }
     .mood-emoji { font-size:24px; margin-bottom:6px; }
-    .mood-name {
-      font-family:'Rajdhani',sans-serif; font-weight:700; font-size:14px;
-      color:var(--mb-color); letter-spacing:1px;
-    }
-    .mood-desc { font-size:11px; color:#443300; margin-top:2px; }
-    .mood-divider { border-top:1px solid rgba(255,215,0,0.07); margin-bottom:12px; }
-    .mood-detect-label {
-      font-family:'Rajdhani',sans-serif; font-size:10px; letter-spacing:2px;
-      color:#332200; margin-bottom:10px;
-    }
+    .mood-name { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:14px; color:var(--mb-color); letter-spacing:1px; }
+    .mood-desc { font-size:11px; color:#444; margin-top:2px; }
+    .mood-divider { border-top:1px solid rgba(255,255,255,0.06); margin-bottom:12px; }
+    .mood-detect-label { font-family:'Rajdhani',sans-serif; font-size:10px; letter-spacing:2px; color:#333; margin-bottom:10px; }
     .mood-clear-btn {
       width:100%; padding:8px; background:rgba(255,255,255,0.03);
-      border:1px solid rgba(255,255,255,0.08); border-radius:10px;
-      color:#443300; font-family:'Rajdhani',sans-serif; font-size:12px;
+      border:1px solid rgba(255,255,255,0.07); border-radius:10px;
+      color:#444; font-family:'Rajdhani',sans-serif; font-size:12px;
       letter-spacing:1px; cursor:pointer;
     }
-    .mood-clear-btn:hover { background:rgba(255,255,255,0.06); color:var(--accent); }
+    .mood-clear-btn:hover { color:#00ff88; }
     .moodExtraBtns { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px; }
     .moodExtraBtn {
       display:flex; flex-direction:column; align-items:center; gap:5px;
-      padding:10px 6px; background:rgba(255,215,0,0.04);
-      border:1px solid rgba(255,215,0,0.12); border-radius:14px; cursor:pointer;
+      padding:10px 6px; background:rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.07); border-radius:14px; cursor:pointer;
       transition:all 0.2s; font-family:'Rajdhani',sans-serif; font-size:11px;
-      font-weight:700; letter-spacing:0.5px; color:#554400;
+      font-weight:700; letter-spacing:0.5px; color:#555;
     }
-    .moodExtraBtn:hover {
-      background:rgba(255,215,0,0.1); border-color:rgba(255,215,0,0.3);
-      color:#ffd700; transform:translateY(-2px);
-    }
+    .moodExtraBtn:hover { background:rgba(0,255,136,0.08); border-color:rgba(0,255,136,0.2); color:#00ff88; }
     .moodExtraBtn .meBtnIcon { font-size:20px; line-height:1; }
     .moodExtraBtn .meBtnLabel { font-size:10px; letter-spacing:1px; text-align:center; }
-    @keyframes autoMoodIn { from{opacity:0;transform:scale(0.8)} to{opacity:1;transform:scale(1)} }
 
     /* ══════════════════════════════════════════════════
        13. COLOR PANEL
        ══════════════════════════════════════════════════ */
     .color-panel {
-      position:fixed; top:58px; right:10px; background:#0f0e00;
-      border:1px solid rgba(255,215,0,0.2); border-radius:20px; padding:20px;
+      position:fixed; top:58px; right:10px; background:#0f0f1a;
+      border:1px solid rgba(255,255,255,0.1); border-radius:20px; padding:20px;
       z-index:2000; display:none; box-shadow:0 8px 40px rgba(0,0,0,0.6);
       min-width:240px; animation:colorPanelIn 0.2s ease;
     }
     @keyframes colorPanelIn { from{opacity:0;transform:translateY(-8px) scale(0.96)} to{opacity:1;transform:translateY(0) scale(1)} }
-    .color-panel-title {
-      font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:3px;
-      color:var(--accent); margin-bottom:14px;
-    }
+    .color-panel-title { font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:3px; color:#f0f0ff; margin-bottom:14px; }
     .color-swatches { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; }
     .presetColor {
       width:32px; height:32px; border-radius:50%; border:3px solid transparent;
       cursor:pointer; transition:all 0.2s; position:relative; flex-shrink:0;
     }
     .presetColor:hover { transform:scale(1.15); }
-    .presetColor.active {
-      border-color:white;
-      box-shadow:0 0 0 2px rgba(255,255,255,0.3), 0 0 16px rgba(255,255,255,0.2);
-    }
-    .presetColor.active::after {
-      content:'✓'; position:absolute; inset:0; display:flex;
-      align-items:center; justify-content:center; font-size:13px;
-      font-weight:700; color:rgba(0,0,0,0.7);
-    }
+    .presetColor.active { border-color:white; box-shadow:0 0 0 2px rgba(255,255,255,0.3); }
+    .presetColor.active::after { content:'✓'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:rgba(0,0,0,0.7); }
     .color-custom-row { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
-    .color-custom-label {
-      font-family:'Rajdhani',sans-serif; font-size:13px; color:#665500; letter-spacing:1px;
-    }
-    .color-picker-input {
-      width:40px; height:40px; border-radius:50%; border:2px solid rgba(255,255,255,0.1);
-      cursor:pointer; padding:2px; background:none; outline:none;
-    }
-    .color-reset-btn {
-      padding:6px 12px; background:none; border:1px solid rgba(255,215,0,0.2);
-      border-radius:8px; color:#665500; font-size:11px; font-family:'Rajdhani',sans-serif;
-      letter-spacing:1px; cursor:pointer; transition:all 0.2s;
-    }
-    .color-reset-btn:hover { color:var(--accent); }
-    .color-close-btn {
-      width:100%; padding:8px; background:rgba(255,215,0,0.07);
-      border:1px solid rgba(255,215,0,0.15); border-radius:10px;
-      color:var(--accent); font-family:'Rajdhani',sans-serif;
-      font-size:13px; letter-spacing:1px; cursor:pointer;
-    }
-    .color-close-btn:hover { background:rgba(255,215,0,0.12); }
+    .color-custom-label { font-family:'Rajdhani',sans-serif; font-size:13px; color:#555; letter-spacing:1px; }
+    .color-picker-input { width:40px; height:40px; border-radius:50%; border:2px solid rgba(255,255,255,0.1); cursor:pointer; padding:2px; background:none; outline:none; }
+    .color-reset-btn { padding:6px 12px; background:none; border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#555; font-size:11px; font-family:'Rajdhani',sans-serif; letter-spacing:1px; cursor:pointer; }
+    .color-reset-btn:hover { color:#f0f0ff; }
+    .color-close-btn { width:100%; padding:8px; background:rgba(0,255,136,0.07); border:1px solid rgba(0,255,136,0.15); border-radius:10px; color:#00ff88; font-family:'Rajdhani',sans-serif; font-size:13px; letter-spacing:1px; cursor:pointer; }
 
     /* ══════════════════════════════════════════════════
        14. SPLASH SCREEN
        ══════════════════════════════════════════════════ */
     #splash {
-      position:fixed; top:0; left:0; right:0; bottom:0; background:#080800;
+      position:fixed; top:0; left:0; right:0; bottom:0; background:#080810;
       display:flex; flex-direction:column; align-items:center; justify-content:center;
       z-index:99999; transition:opacity 0.5s ease;
     }
     #splash.hide { opacity:0; pointer-events:none; }
 
     /* ══════════════════════════════════════════════════
-       15. PARTICLES
+       15. NO PARTICLES — removed completely
        ══════════════════════════════════════════════════ */
-    #particles-bg {
-      position:fixed; top:0; left:0; right:0; bottom:0;
-      pointer-events:none; z-index:0; overflow:hidden;
-    }
-    .particle {
-      position:absolute; border-radius:50%; opacity:0; animation:floatUp linear infinite;
-    }
-    @keyframes floatUp {
-      0% { opacity:0; transform:translateY(0) scale(0.5); }
-      10% { opacity:0.6; }
-      90% { opacity:0.3; }
-      100% { opacity:0; transform:translateY(-100vh) scale(1.2); }
-    }
+    #particles-bg { display:none !important; }
 
     /* ══════════════════════════════════════════════════
        16. SUPPORT BUTTON
        ══════════════════════════════════════════════════ */
     .supportBtn {
       position:fixed; bottom:80px; right:16px; width:48px; height:48px;
-      background:linear-gradient(135deg,var(--accent),#ff8c00);
+      background:linear-gradient(135deg,#00cc6a,#00aaff);
       border:none; border-radius:50%; cursor:pointer;
       display:flex; align-items:center; justify-content:center;
       font-size:20px; z-index:900;
-      box-shadow:0 4px 20px rgba(255,215,0,0.3);
-      transition:all 0.2s; animation:supportPulse 2s infinite;
+      box-shadow:0 4px 20px rgba(0,204,106,0.3); transition:all 0.2s;
     }
     .supportBtn:hover { transform:scale(1.1); }
-    @keyframes supportPulse {
-      0%,100% { box-shadow:0 4px 20px rgba(255,215,0,0.3); }
-      50% { box-shadow:0 4px 30px rgba(255,215,0,0.6); }
-    }
     .supportTooltip {
-      position:fixed; bottom:136px; right:16px; background:#0f0e00;
-      border:1px solid rgba(255,215,0,0.2); border-radius:10px; padding:6px 12px;
+      position:fixed; bottom:136px; right:16px; background:#0f0f1a;
+      border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:6px 12px;
       font-family:'Rajdhani',sans-serif; font-size:11px; letter-spacing:1px;
-      color:var(--accent); z-index:900; white-space:nowrap;
+      color:#00ff88; z-index:900; white-space:nowrap;
       opacity:0; transition:opacity 0.2s; pointer-events:none;
     }
     .supportBtn:hover + .supportTooltip { opacity:1; }
@@ -668,124 +620,81 @@
     .add-sheet-overlay.show { display:block; }
     .add-sheet {
       display:none; position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
-      background:#0f0e00; border:1px solid rgba(255,215,0,0.15); border-radius:20px;
+      background:#0f0f1a; border:1px solid rgba(255,255,255,0.08); border-radius:20px;
       padding:16px; z-index:801; width:min(340px,90vw); box-shadow:0 -8px 40px rgba(0,0,0,0.5);
     }
     .add-sheet.show { display:block; animation:sheetIn 0.2s ease; }
     @keyframes sheetIn { from{opacity:0;transform:translateX(-50%) translateY(10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
-    .add-sheet-title {
-      font-family:'Rajdhani',sans-serif; font-size:11px; letter-spacing:2px;
-      color:#443300; margin-bottom:12px;
-    }
+    .add-sheet-title { font-family:'Rajdhani',sans-serif; font-size:11px; letter-spacing:2px; color:#444; margin-bottom:12px; }
     .add-sheet-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
     .add-sheet-item {
       display:flex; flex-direction:column; align-items:center; gap:6px;
-      padding:14px; background:rgba(255,215,0,0.05);
-      border:1px solid rgba(255,215,0,0.1); border-radius:14px; cursor:pointer;
-      color:#665500; font-family:'Rajdhani',sans-serif; font-size:12px;
+      padding:14px; background:rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.07); border-radius:14px; cursor:pointer;
+      color:#555; font-family:'Rajdhani',sans-serif; font-size:12px;
       letter-spacing:1px; transition:all 0.2s;
     }
-    .add-sheet-item:hover { background:rgba(255,215,0,0.1); }
+    .add-sheet-item:hover { background:rgba(0,255,136,0.07); color:#00ff88; }
     .add-sheet-item .as-icon { font-size:24px; }
 
     /* ══════════════════════════════════════════════════
-       18. APPS PANEL (dynamic)
+       18. APPS PANEL
        ══════════════════════════════════════════════════ */
     .apps-overlay {
       position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999;
       display:flex; align-items:flex-end; justify-content:center; backdrop-filter:blur(4px);
     }
     .apps-panel {
-      background:var(--bg2,#0f0e00); border:1px solid rgba(255,215,0,0.12);
+      background:#0f0f1a; border:1px solid rgba(255,255,255,0.08);
       border-radius:24px 24px 0 0; padding:20px; width:100%; max-width:500px;
     }
-    .apps-title {
-      font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:3px;
-      color:var(--accent,#ffd700); margin-bottom:16px; text-align:center;
-    }
+    .apps-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:3px; color:#f0f0ff; margin-bottom:16px; text-align:center; }
     .apps-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:16px; }
     .apps-item {
       display:flex; flex-direction:column; align-items:center; gap:6px;
-      padding:14px 8px; background:rgba(255,215,0,0.04);
-      border:1px solid rgba(255,215,0,0.08); border-radius:14px;
-      cursor:pointer; transition:all 0.2s;
+      padding:14px 8px; background:rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.07); border-radius:14px; cursor:pointer; transition:all 0.2s;
     }
-    .apps-item:hover { background:rgba(255,215,0,0.1); }
+    .apps-item:hover { background:rgba(0,255,136,0.07); }
     .apps-item .ai-icon { font-size:24px; }
-    .apps-item .ai-label {
-      font-family:'Rajdhani',sans-serif; font-size:11px; letter-spacing:1px; color:#665500;
-    }
-    .apps-close-btn {
-      width:100%; padding:12px; background:none;
-      border:1px solid rgba(255,215,0,0.1); border-radius:50px;
-      color:#554400; font-family:'Rajdhani',sans-serif; font-size:13px;
-      letter-spacing:1px; cursor:pointer;
-    }
-    .apps-close-btn:hover { color:var(--accent); border-color:rgba(255,215,0,0.3); }
+    .apps-item .ai-label { font-family:'Rajdhani',sans-serif; font-size:11px; letter-spacing:1px; color:#555; }
+    .apps-close-btn { width:100%; padding:12px; background:none; border:1px solid rgba(255,255,255,0.08); border-radius:50px; color:#555; font-family:'Rajdhani',sans-serif; font-size:13px; letter-spacing:1px; cursor:pointer; }
+    .apps-close-btn:hover { color:#00ff88; border-color:rgba(0,255,136,0.3); }
 
     /* ══════════════════════════════════════════════════
        19. NEW PROJECT MODAL
        ══════════════════════════════════════════════════ */
-    .proj-modal-overlay {
-      position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:99999;
-      display:flex; align-items:center; justify-content:center; padding:16px;
-    }
-    .proj-modal {
-      background:#0f0e00; border:1px solid rgba(255,215,0,0.2);
-      border-radius:20px; padding:24px; width:100%; max-width:380px;
-    }
-    .proj-modal-title {
-      font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:3px;
-      color:#ffd700; margin-bottom:14px;
-    }
-    .proj-modal-input {
-      width:100%; padding:10px; background:rgba(255,215,0,0.05);
-      border:1px solid rgba(255,215,0,0.15); border-radius:10px;
-      color:#fff8e7; font-size:13px; outline:none; box-sizing:border-box;
-      margin-bottom:14px;
-    }
+    .proj-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:99999; display:flex; align-items:center; justify-content:center; padding:16px; }
+    .proj-modal { background:#0f0f1a; border:1px solid rgba(255,255,255,0.1); border-radius:20px; padding:24px; width:100%; max-width:380px; }
+    .proj-modal-title { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:3px; color:#f0f0ff; margin-bottom:14px; }
+    .proj-modal-input { width:100%; padding:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#f0f0ff; font-size:13px; outline:none; box-sizing:border-box; margin-bottom:14px; }
     .proj-modal-btns { display:flex; gap:8px; }
-    .proj-cancel-btn {
-      flex:1; padding:10px; background:none; border:1px solid rgba(255,215,0,0.1);
-      border-radius:50px; color:#665500; cursor:pointer; font-size:13px;
-    }
-    .proj-create-btn {
-      flex:2; padding:10px; background:linear-gradient(135deg,#ffd700,#ff8c00);
-      border:none; border-radius:50px; color:#000; font-weight:700;
-      cursor:pointer; font-size:13px;
-    }
-    .proj-create-btn:hover { filter:brightness(1.1); }
+    .proj-cancel-btn { flex:1; padding:10px; background:none; border:1px solid rgba(255,255,255,0.1); border-radius:50px; color:#555; cursor:pointer; font-size:13px; }
+    .proj-create-btn { flex:2; padding:10px; background:linear-gradient(135deg,#00cc6a,#00aaff); border:none; border-radius:50px; color:#000; font-weight:700; cursor:pointer; font-size:13px; }
 
     /* ══════════════════════════════════════════════════
-       20. TOAST NOTIFICATION
+       20. TOAST
        ══════════════════════════════════════════════════ */
     .toast-msg {
       position:fixed; top:70px; left:50%; transform:translateX(-50%);
-      background:#0f0e00; border:1px solid rgba(255,215,0,0.2);
+      background:#0f0f1a; border:1px solid rgba(0,255,136,0.2);
       border-radius:50px; padding:10px 20px; font-family:'Rajdhani',sans-serif;
-      font-size:13px; letter-spacing:1px; color:#ffd700; z-index:9999; white-space:nowrap;
+      font-size:13px; letter-spacing:1px; color:#00ff88; z-index:9999; white-space:nowrap;
     }
 
     /* ══════════════════════════════════════════════════
        21. UTILITY
        ══════════════════════════════════════════════════ */
     @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-    .visually-hidden {
-      position:absolute; width:1px; height:1px; margin:-1px;
-      padding:0; overflow:hidden; clip:rect(0,0,0,0); border:0;
-    }
+    .visually-hidden { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0,0,0,0); border:0; }
   </style>
 </head>
 
 <body>
-  <!-- ══════════════════════════════════════════════════
-       PARTICLES BACKGROUND
-       ══════════════════════════════════════════════════ -->
-  <div id="particles-bg" aria-hidden="true"></div>
+  <!-- NO PARTICLES — removed -->
+  <div id="particles-bg" aria-hidden="true" style="display:none;"></div>
 
-  <!-- ══════════════════════════════════════════════════
-       SPLASH SCREEN
-       ══════════════════════════════════════════════════ -->
+  <!-- SPLASH SCREEN -->
   <div id="splash" role="status" aria-label="Loading Datta AI">
     <div class="splash-ring">
       <img class="splash-logo" src="logo.jpeg" alt="Datta AI Logo">
@@ -795,9 +704,7 @@
     <div class="splash-dots"><span></span><span></span><span></span></div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════
-       HEADER / TOPBAR
-       ══════════════════════════════════════════════════ -->
+  <!-- TOPBAR -->
   <header class="topbar" role="banner">
     <button class="tb-menu-btn" id="menuBtn" aria-label="Toggle sidebar menu">☰</button>
     <div class="tb-logo-wrap">
@@ -806,8 +713,8 @@
     </div>
     <div class="tb-right">
       <button id="themeBtn" class="tb-theme-btn" aria-label="Change theme" title="Change Theme">🌑</button>
-      <div id="autoMoodPill" class="tb-mood-pill" role="status" aria-label="Auto detected mood"></div>
-      <div id="moodIndicator" class="tb-mood-indicator" role="status" aria-label="Current mood"></div>
+      <div id="autoMoodPill" class="tb-mood-pill" role="status"></div>
+      <div id="moodIndicator" class="tb-mood-indicator" role="status"></div>
       <button id="moodToggleBtn" class="tb-mood-toggle" aria-label="Set your mood" title="Set your mood">😊</button>
       <button id="topbarColorBtn" class="tb-color-btn" aria-label="Change theme color" title="Change Theme Color">
         <div id="topbarColorDot" class="tb-color-dot"></div>
@@ -815,149 +722,100 @@
     </div>
   </header>
 
-  <!-- ══════════════════════════════════════════════════
-       MOOD PANEL
-       ══════════════════════════════════════════════════ -->
+  <!-- MOOD PANEL -->
   <aside id="moodPanel" class="mood-panel" role="dialog" aria-label="Mood selector">
     <div class="mood-panel-title">😊 WHATS YOUR MOOD?</div>
     <div class="mood-panel-sub">Datta AI adapts to how you feel</div>
     <div class="mood-grid">
-      <button class="moodBtn moodBtn--focused" data-mood="focused" aria-label="Set mood to focused">
-        <div class="mood-emoji">🎯</div>
-        <div class="mood-name">Focused</div>
-        <div class="mood-desc">Sharp &amp; concise</div>
-      </button>
-      <button class="moodBtn moodBtn--happy" data-mood="happy" aria-label="Set mood to happy">
-        <div class="mood-emoji">😄</div>
-        <div class="mood-name">Happy</div>
-        <div class="mood-desc">Fun &amp; energetic</div>
-      </button>
-      <button class="moodBtn moodBtn--stressed" data-mood="stressed" aria-label="Set mood to stressed">
-        <div class="mood-emoji">😮‍💨</div>
-        <div class="mood-name">Stressed</div>
-        <div class="mood-desc">Calm &amp; reassuring</div>
-      </button>
-      <button class="moodBtn moodBtn--creative" data-mood="creative" aria-label="Set mood to creative">
-        <div class="mood-emoji">🎨</div>
-        <div class="mood-name">Creative</div>
-        <div class="mood-desc">Bold &amp; imaginative</div>
-      </button>
-      <button class="moodBtn moodBtn--lazy" data-mood="lazy" aria-label="Set mood to lazy">
-        <div class="mood-emoji">😴</div>
-        <div class="mood-name">Lazy</div>
-        <div class="mood-desc">Short &amp; chill</div>
-      </button>
-      <button class="moodBtn moodBtn--curious" data-mood="curious" aria-label="Set mood to curious">
-        <div class="mood-emoji">🔍</div>
-        <div class="mood-name">Curious</div>
-        <div class="mood-desc">Deep &amp; exploratory</div>
-      </button>
-      <button class="moodBtn moodBtn--night moodBtn--wide" data-mood="night" aria-label="Set mood to night brain">
-        <div class="mood-emoji">🌙</div>
-        <div class="mood-name">Night Brain</div>
-        <div class="mood-desc">Philosophical &amp; deep</div>
-      </button>
+      <button class="moodBtn moodBtn--focused" data-mood="focused"><div class="mood-emoji">🎯</div><div class="mood-name">Focused</div><div class="mood-desc">Sharp &amp; concise</div></button>
+      <button class="moodBtn moodBtn--happy" data-mood="happy"><div class="mood-emoji">😄</div><div class="mood-name">Happy</div><div class="mood-desc">Fun &amp; energetic</div></button>
+      <button class="moodBtn moodBtn--stressed" data-mood="stressed"><div class="mood-emoji">😮‍💨</div><div class="mood-name">Stressed</div><div class="mood-desc">Calm &amp; reassuring</div></button>
+      <button class="moodBtn moodBtn--creative" data-mood="creative"><div class="mood-emoji">🎨</div><div class="mood-name">Creative</div><div class="mood-desc">Bold &amp; imaginative</div></button>
+      <button class="moodBtn moodBtn--lazy" data-mood="lazy"><div class="mood-emoji">😴</div><div class="mood-name">Lazy</div><div class="mood-desc">Short &amp; chill</div></button>
+      <button class="moodBtn moodBtn--curious" data-mood="curious"><div class="mood-emoji">🔍</div><div class="mood-name">Curious</div><div class="mood-desc">Deep &amp; exploratory</div></button>
+      <button class="moodBtn moodBtn--night moodBtn--wide" data-mood="night"><div class="mood-emoji">🌙</div><div class="mood-name">Night Brain</div><div class="mood-desc">Philosophical &amp; deep</div></button>
     </div>
     <div class="mood-divider"></div>
     <div class="mood-detect-label">DETECT MY MOOD</div>
     <div class="moodExtraBtns">
-      <button class="moodExtraBtn" id="voiceMoodBtn" aria-label="Detect mood by voice">
-        <span class="meBtnIcon">🎙️</span>
-        <span class="meBtnLabel">VOICE<br>DETECT</span>
-      </button>
-      <button class="moodExtraBtn" id="selfieMoodBtn" aria-label="Detect mood by selfie">
-        <span class="meBtnIcon">📸</span>
-        <span class="meBtnLabel">SELFIE<br>SCAN</span>
-      </button>
-      <button class="moodExtraBtn" id="moodTimelineBtn" aria-label="View mood timeline">
-        <span class="meBtnIcon">🧠</span>
-        <span class="meBtnLabel">MOOD<br>TIMELINE</span>
-      </button>
+      <button class="moodExtraBtn" id="voiceMoodBtn"><span class="meBtnIcon">🎙️</span><span class="meBtnLabel">VOICE<br>DETECT</span></button>
+      <button class="moodExtraBtn" id="selfieMoodBtn"><span class="meBtnIcon">📸</span><span class="meBtnLabel">SELFIE<br>SCAN</span></button>
+      <button class="moodExtraBtn" id="moodTimelineBtn"><span class="meBtnIcon">🧠</span><span class="meBtnLabel">MOOD<br>TIMELINE</span></button>
     </div>
-    <button class="mood-clear-btn" id="moodClearBtn" aria-label="Clear mood">✕ Clear mood · Reset to Gold</button>
+    <button class="mood-clear-btn" id="moodClearBtn">✕ Clear mood · Reset</button>
   </aside>
 
-  <!-- ══════════════════════════════════════════════════
-       COLOR PANEL
-       ══════════════════════════════════════════════════ -->
+  <!-- COLOR PANEL -->
   <aside id="colorPanel" class="color-panel" role="dialog" aria-label="Theme color picker">
     <div class="color-panel-title">🎨 THEME COLOR</div>
     <div class="color-swatches">
-      <button class="presetColor active" data-color="#ffd700" style="background:#ffd700;" title="👑 Gold (Default)" aria-label="Gold color"></button>
-      <button class="presetColor" data-color="#00ff88" style="background:#00ff88;" title="Green" aria-label="Green color"></button>
-      <button class="presetColor" data-color="#00ccff" style="background:#00ccff;" title="Cyan" aria-label="Cyan color"></button>
-      <button class="presetColor" data-color="#c084fc" style="background:#c084fc;" title="Purple" aria-label="Purple color"></button>
-      <button class="presetColor" data-color="#f97316" style="background:#f97316;" title="Orange" aria-label="Orange color"></button>
-      <button class="presetColor" data-color="#ef4444" style="background:#ef4444;" title="Red" aria-label="Red color"></button>
-      <button class="presetColor" data-color="#3b82f6" style="background:#3b82f6;" title="Blue" aria-label="Blue color"></button>
-      <button class="presetColor" data-color="#ec4899" style="background:#ec4899;" title="Pink" aria-label="Pink color"></button>
+      <button class="presetColor" data-color="#00ff88" style="background:#00ff88;" title="Green"></button>
+      <button class="presetColor" data-color="#00ccff" style="background:#00ccff;" title="Cyan"></button>
+      <button class="presetColor" data-color="#c084fc" style="background:#c084fc;" title="Purple"></button>
+      <button class="presetColor active" data-color="#ffd700" style="background:#ffd700;" title="Gold"></button>
+      <button class="presetColor" data-color="#f97316" style="background:#f97316;" title="Orange"></button>
+      <button class="presetColor" data-color="#ef4444" style="background:#ef4444;" title="Red"></button>
+      <button class="presetColor" data-color="#3b82f6" style="background:#3b82f6;" title="Blue"></button>
+      <button class="presetColor" data-color="#ec4899" style="background:#ec4899;" title="Pink"></button>
     </div>
     <div class="color-custom-row">
       <span class="color-custom-label">Custom:</span>
-      <input type="color" id="accentColorPicker" class="color-picker-input" value="#ffd700" aria-label="Custom color picker">
-      <button id="colorResetBtn" class="color-reset-btn" aria-label="Reset to gold">👑 Reset Gold</button>
+      <input type="color" id="accentColorPicker" class="color-picker-input" value="#00ff88">
+      <button id="colorResetBtn" class="color-reset-btn">↺ Reset</button>
     </div>
-    <button id="colorCloseBtn" class="color-close-btn" aria-label="Close color panel">✕ Close</button>
+    <button id="colorCloseBtn" class="color-close-btn">✕ Close</button>
   </aside>
 
-  <!-- ══════════════════════════════════════════════════
-       SIDEBAR / NAVIGATION
-       ══════════════════════════════════════════════════ -->
+  <!-- SIDEBAR -->
   <nav class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
     <div class="sidebar-top">
-      <div class="sidebar-logo">👑 DATTA AI</div>
+      <div class="sidebar-logo">DATTA AI</div>
     </div>
 
     <div class="sidebar-search-wrap">
       <div class="sidebar-search-inner">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input id="search" type="text" placeholder="Search chats" class="sidebar-search-input" aria-label="Search chats">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="search" type="text" placeholder="Search chats" class="sidebar-search-input">
       </div>
     </div>
 
     <div class="sidebar-nav">
-      <button class="navItem" id="navNewChat" aria-label="Start new chat">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>New chat
+      <button class="navItem" id="navNewChat">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>New chat
       </button>
-      <button class="navItem" id="navApps" aria-label="Open apps panel">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Apps
+      <button class="navItem" id="navApps">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Apps
       </button>
-      <div class="nav-divider" role="separator"></div>
-      <button class="navItem active" id="navChats" aria-label="View chats">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chats
+      <div class="nav-divider"></div>
+      <button class="navItem active" id="navChats">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chats
       </button>
-      <button class="navItem" id="navNewProject" aria-label="Create new project">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>New project
+      <button class="navItem" id="navNewProject">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>New project
       </button>
-      <button class="navItem" id="navProjects" aria-label="View projects">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Project
+      <button class="navItem" id="navProjects">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Project
       </button>
     </div>
 
-    <div class="sidebarDivider" role="separator"></div>
+    <div class="sidebarDivider"></div>
     <div id="recentsLabel" class="recents-label">RECENTS</div>
 
-    <section class="sidebarSection" id="section-chats" aria-label="Chat history">
+    <section class="sidebarSection" id="section-chats">
       <div class="history" id="history"></div>
     </section>
-    <section class="sidebarSection" id="section-projects" style="display:none;" aria-label="Projects">
-      <div class="emptySection">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="1.5" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
-        <p>No projects yet</p>
-      </div>
+    <section class="sidebarSection" id="section-projects" style="display:none;">
+      <div class="emptySection"><p>No projects yet</p></div>
     </section>
-    <section class="sidebarSection" id="section-artifacts" style="display:none;" aria-label="Artifacts">
-      <div class="emptySection">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="1.5" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        <p>No artifacts yet</p>
-      </div>
+    <section class="sidebarSection" id="section-artifacts" style="display:none;">
+      <div class="emptySection"><p>No artifacts yet</p></div>
     </section>
 
     <div class="sidebarBottom">
       <div id="versionTag" class="version-tag">DATTA AI v2.0 · SHAKTI</div>
 
-      <div id="upgradeBanner" class="upgrade-banner" aria-label="Upgrade plan">
-        <span class="ub-icon">👑</span>
+      <div id="upgradeBanner" class="upgrade-banner">
+        <span class="ub-icon">🔥</span>
         <div class="ub-info">
           <div id="upgradeTitle" class="ub-title">Upgrade to Agni</div>
           <div id="upgradeSub" class="ub-sub">Unlimited power · ₹499/mo</div>
@@ -965,27 +823,24 @@
         <span class="ub-arrow">›</span>
       </div>
 
-      <div id="profileRow" class="profile-row" aria-label="User profile and settings">
+      <div id="profileRow" class="profile-row">
         <div class="profileAvatar">G</div>
         <div class="profile-info">
           <div class="profileName">Ganesh</div>
           <div class="profileSub">Free Plan</div>
         </div>
-        <svg id="profileArrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#443300" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        <svg id="profileArrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
 
       <!-- PROFILE POPUP MENU -->
-      <div id="profileMenu" class="profile-menu" role="menu" aria-label="Profile menu">
-        <button class="pm-item" id="pmSupport" role="menuitem">🎧 Support Center</button>
-        <button class="pm-item" id="pmSettings" role="menuitem">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          Settings
-        </button>
-        <button class="pm-item" id="pmMemory" role="menuitem">🧾 Smart Memory</button>
-        <button class="pm-item" id="pmTranslator" role="menuitem">🌍 Translator</button>
-        <button class="pm-item" id="pmAnalytics" role="menuitem">📊 Analytics</button>
-        <button class="pm-item" id="pmXP" role="menuitem">🎮 XP Progress</button>
-        <div class="pm-divider" role="separator"></div>
+      <div id="profileMenu" class="profile-menu" role="menu">
+        <button class="pm-item" id="pmSupport">🎧 Support Center</button>
+        <button class="pm-item" id="pmSettings">⚙️ Settings</button>
+        <button class="pm-item" id="pmMemory">🧾 Smart Memory</button>
+        <button class="pm-item" id="pmTranslator">🌍 Translator</button>
+        <button class="pm-item" id="pmAnalytics">📊 Analytics</button>
+        <button class="pm-item" id="pmXP">🎮 XP Progress</button>
+        <div class="pm-divider"></div>
         <div class="pm-links">
           <a href="privacy.html" class="pm-link">Privacy</a>
           <span class="pm-dot">·</span>
@@ -993,94 +848,92 @@
           <span class="pm-dot">·</span>
           <a href="home.html" class="pm-link">About</a>
         </div>
-        <button class="pm-item pm-item--logout" id="pmLogout" role="menuitem">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          Log out
-        </button>
+        <button class="pm-item pm-item--logout" id="pmLogout">🚪 Log out</button>
       </div>
     </div>
   </nav>
 
-  <!-- SIDEBAR OVERLAY (mobile) -->
-  <div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
+  <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
-  <!-- ══════════════════════════════════════════════════
-       MAIN CHAT AREA
-       ══════════════════════════════════════════════════ -->
+  <!-- MAIN CHAT AREA -->
   <main class="main" role="main">
-    <div id="welcomeScreen" class="welcomeScreen" aria-label="Welcome screen">
+
+    <!-- ✅ CLEAN WELCOME SCREEN -->
+    <div id="welcomeScreen" class="welcomeScreen">
       <img src="logo.jpeg" alt="Datta AI" class="welcomeLogo">
       <div class="welcomeGreeting">Good to see you 👋</div>
       <h1 class="welcomeTitle">How can I help you today?</h1>
       <p class="welcomeSub">Think Less. Do More.</p>
 
-      <div class="welcomeBadges" role="list">
-        <div class="welcomeBadge" id="badgeChat" role="listitem"><span>💬</span> AI Chat</div>
-        <div class="welcomeBadge" id="badgeSearch" role="listitem"><span>🌐</span> Web Search</div>
-        <div class="welcomeBadge" id="badgeVoice" role="listitem"><span>🎙️</span> Voice Assistant</div>
+      <div class="welcomeBadges">
+        <div class="welcomeBadge" id="badgeChat"><span>💬</span> AI Chat</div>
+        <div class="welcomeBadge" id="badgeSearch"><span>🌐</span> Web Search</div>
+        <div class="welcomeBadge" id="badgeVoice"><span>🎙️</span> Voice Assistant</div>
       </div>
 
       <div class="welcomeSuggestLabel">TRY ASKING</div>
-      <div class="welcomeChips" role="list">
-        <div class="chip" id="chipWeb" role="listitem" tabindex="0" aria-label="Search the web">
+
+      <!-- ✅ CHIPS ARE CENTERED — flex row wrap justify-content:center -->
+      <div class="welcomeChips">
+        <div class="chip" id="chipWeb" tabindex="0">
           <span class="chipIcon">🌐</span>
           <div class="chipTitle">Search the web</div>
         </div>
-        <div class="chip" id="chipCode" role="listitem" tabindex="0" aria-label="Write code">
+        <div class="chip" id="chipCode" tabindex="0">
           <span class="chipIcon">💻</span>
           <div class="chipTitle">Write code</div>
         </div>
-        <div class="chip" id="chipExplain" role="listitem" tabindex="0" aria-label="Explain anything">
+        <div class="chip" id="chipExplain" tabindex="0">
           <span class="chipIcon">🧠</span>
           <div class="chipTitle">Explain anything</div>
+        </div>
+        <div class="chip" id="chipImage" tabindex="0">
+          <span class="chipIcon">🎨</span>
+          <div class="chipTitle">Generate image</div>
         </div>
       </div>
     </div>
 
     <div class="chatWrapper">
-      <div class="chat" id="chat" role="log" aria-label="Chat messages" aria-live="polite"></div>
-      <button id="scrollDownBtn" aria-label="Scroll to bottom">↓</button>
+      <div class="chat" id="chat" role="log" aria-live="polite"></div>
+      <button id="scrollDownBtn">↓</button>
     </div>
 
     <div class="inputArea" id="inputArea">
       <div class="inputWrap" id="inputWrap">
-        <input type="file" id="imageInput" accept="image/*,.pdf,.txt,.csv,.js,.py,.html,.css,.json,.md,.doc,.docx" style="display:none;" aria-hidden="true">
-        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" aria-hidden="true">
-        <input type="file" id="photoInput" accept="image/*" style="display:none;" aria-hidden="true">
+        <input type="file" id="imageInput" accept="image/*,.pdf,.txt,.csv,.js,.py,.html,.css,.json,.md,.doc,.docx" style="display:none;">
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
+        <input type="file" id="photoInput" accept="image/*" style="display:none;">
 
         <div id="filePreviewWrap" style="display:none;">
           <div class="filePreviewChip">
             <span id="filePreview"></span>
-            <button id="clearFile" aria-label="Remove attached file">✕</button>
+            <button id="clearFile">✕</button>
           </div>
         </div>
 
         <div class="inputRow">
-          <button class="plusBtn" id="plusBtn" aria-label="Add attachment or tool">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+          <button class="plusBtn" id="plusBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
           </button>
-
-          <input id="message" type="text" placeholder="Message Datta AI..." autocomplete="off" aria-label="Type your message">
-
+          <input id="message" type="text" placeholder="Message Datta AI..." autocomplete="off">
           <div class="inputRightBtns">
-            <button class="micBtn" id="micBtn" aria-label="Voice input" title="Voice">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <button class="micBtn" id="micBtn" title="Voice">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
                 <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
                 <line x1="12" y1="19" x2="12" y2="23"/>
                 <line x1="8" y1="23" x2="16" y2="23"/>
               </svg>
             </button>
-            <button class="stopBtn" id="stopBtn" aria-label="Stop generation" title="Stop">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-              </svg>
+            <button class="stopBtn" id="stopBtn" title="Stop">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
             </button>
-            <button class="sendBtn" id="sendBtn" aria-label="Send message">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <button class="sendBtn" id="sendBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <line x1="12" y1="19" x2="12" y2="5"/>
                 <polyline points="5 12 12 5 19 12"/>
               </svg>
@@ -1091,808 +944,375 @@
     </div>
   </main>
 
-  <!-- ══════════════════════════════════════════════════
-       FLOATING SUPPORT BUTTON
-       ══════════════════════════════════════════════════ -->
-  <button class="supportBtn" id="supportBtn" aria-label="Open support center" title="Support">🎧</button>
-  <div class="supportTooltip" aria-hidden="true">Support Center</div>
+  <button class="supportBtn" id="supportBtn" title="Support">🎧</button>
+  <div class="supportTooltip">Support Center</div>
 
-  <!-- ══════════════════════════════════════════════════
-       ADD TO CHAT SHEET
-       ══════════════════════════════════════════════════ -->
-  <div id="addToChatOverlay" class="add-sheet-overlay" aria-hidden="true"></div>
-  <div id="addToChatSheet" class="add-sheet" role="dialog" aria-label="Add to chat options">
+  <!-- ADD TO CHAT SHEET -->
+  <div id="addToChatOverlay" class="add-sheet-overlay"></div>
+  <div id="addToChatSheet" class="add-sheet" role="dialog">
     <div class="add-sheet-title">ADD TO CHAT</div>
     <div class="add-sheet-grid">
-      <button class="add-sheet-item" id="asImageGen" aria-label="Generate image">
-        <span class="as-icon">🎨</span>Generate Image
-      </button>
-      <button class="add-sheet-item" id="asCamera" aria-label="Take photo">
-        <span class="as-icon">📷</span>Take Photo
-      </button>
-      <button class="add-sheet-item" id="asPhoto" aria-label="Upload image">
-        <span class="as-icon">🖼️</span>Upload Image
-      </button>
-      <button class="add-sheet-item" id="asFile" aria-label="Upload file">
-        <span class="as-icon">📎</span>Upload File
-      </button>
-      <button class="add-sheet-item" id="asWebSearch" aria-label="Web search">
-        <span class="as-icon">🌐</span>Web Search
-      </button>
-      <button class="add-sheet-item" id="asVoice" aria-label="Voice input">
-        <span class="as-icon">🎙️</span>Voice Input
-      </button>
+      <button class="add-sheet-item" id="asImageGen"><span class="as-icon">🎨</span>Generate Image</button>
+      <button class="add-sheet-item" id="asCamera"><span class="as-icon">📷</span>Take Photo</button>
+      <button class="add-sheet-item" id="asPhoto"><span class="as-icon">🖼️</span>Upload Image</button>
+      <button class="add-sheet-item" id="asFile"><span class="as-icon">📎</span>Upload File</button>
+      <button class="add-sheet-item" id="asWebSearch"><span class="as-icon">🌐</span>Web Search</button>
+      <button class="add-sheet-item" id="asVoice"><span class="as-icon">🎙️</span>Voice Input</button>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════
-       ALL JAVASCRIPT (consolidated)
-       ══════════════════════════════════════════════════ -->
   <script>
     (function() {
       'use strict';
 
-      // ── PARTICLES ──────────────────────────────────────
-      const bg = document.getElementById('particles-bg');
-      if (bg) {
-        const colors = ['#ffd700','#ff8c00','#ffffff','#ffa500','#ffed4a'];
-        for (let i = 0; i < 35; i++) {
-          setTimeout(function() {
-            const p = document.createElement('div');
-            p.className = 'particle';
-            const size = Math.random() * 4 + 2;
-            p.style.width = size + 'px';
-            p.style.height = size + 'px';
-            p.style.left = Math.random() * 100 + 'vw';
-            p.style.bottom = '-20px';
-            p.style.background = colors[Math.floor(Math.random() * colors.length)];
-            p.style.animationDuration = (Math.random() * 10 + 8) + 's';
-            p.style.animationDelay = (Math.random() * 5) + 's';
-            bg.appendChild(p);
-          }, i * 200);
-        }
-      }
+      // ── NO PARTICLES ─────────────────────────────────
+      // Particles completely disabled
 
-      // ── HELPER: CLOSE SIDEBAR ON MOBILE ────────────────
-      function closeSidebarIfMobile() {
-        if (window.innerWidth < 900) closeSidebar();
-      }
-
-      // ── SPLASH ─────────────────────────────────────────
+      // ── SPLASH ───────────────────────────────────────
       setTimeout(function() {
         const splash = document.getElementById('splash');
-        if (splash) {
-          splash.style.opacity = '0';
-          splash.style.transition = 'opacity 0.5s ease';
-          setTimeout(function() { splash.style.display = 'none'; }, 500);
-        }
+        if (splash) { splash.style.opacity='0'; setTimeout(function(){ splash.style.display='none'; }, 500); }
       }, 2500);
 
-      // ── THEME BUTTON ICON ON LOAD ──────────────────────
-      setTimeout(function() {
-        const themeBtn = document.getElementById('themeBtn');
-        const themeEmojis = { dark:'🌑', light:'☀️', gray:'🩶', midnight:'🌌', sepia:'📜' };
-        const currentTheme = localStorage.getItem('datta_theme') || 'dark';
-        if (themeBtn) themeBtn.textContent = themeEmojis[currentTheme] || '🌑';
-      }, 500);
-
-      // ── GREETING ───────────────────────────────────────
-      window.addEventListener('load', function() {
-        const hour = new Date().getHours();
-        const greet = hour < 12 ? 'Good morning ☀️' : hour < 17 ? 'Good afternoon 🌤️' : hour < 21 ? 'Good evening 🌙' : 'Good night 🌟';
-        const el = document.querySelector('.welcomeGreeting');
-        if (el) el.textContent = greet;
-      });
-
-      // ── UPDATE GREETING WITH USER NAME ─────────────────
+      // ── GREETING WITH USERNAME ────────────────────────
       window.addEventListener('load', function() {
         setTimeout(function() {
           try {
             const user = JSON.parse(localStorage.getItem('datta_user') || '{}');
-            const name = user.username || user.name || '';
-            if (name) {
-              const greetEl = document.querySelector('.welcomeGreeting');
-              if (greetEl) {
-                const time = new Date().getHours();
-                const tod = time < 12 ? 'Morning' : time < 17 ? 'Afternoon' : 'Evening';
-                greetEl.textContent = 'Good ' + tod + ', ' + name.split('_')[0] + ' 👋';
-              }
+            const name = (user.username || user.name || '').split('_')[0];
+            const hour = new Date().getHours();
+            const tod = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : hour < 21 ? 'Evening' : 'Night';
+            const emoji = hour < 12 ? '☀️' : hour < 17 ? '🌤️' : hour < 21 ? '🌙' : '🌟';
+            const greetEl = document.querySelector('.welcomeGreeting');
+            if (greetEl) {
+              greetEl.textContent = name ? 'Good ' + tod + ', ' + name + ' ' + emoji : 'Good ' + tod + ' ' + emoji;
             }
-          } catch(e) { /* silent */ }
-        }, 600);
+          } catch(e) {}
+        }, 400);
       });
 
-      // ── UPGRADE BANNER DYNAMIC ─────────────────────────
+      // ── UPGRADE BANNER ─────────────────────────────────
       window.addEventListener('load', function() {
         setTimeout(function() {
-          const user = (function() { try { return JSON.parse(localStorage.getItem('datta_user')||'{}'); } catch(e) { return {}; } })();
+          const user = (function(){ try{ return JSON.parse(localStorage.getItem('datta_user')||'{}'); }catch(e){ return {}; } })();
           const plan = localStorage.getItem('datta_plan') || 'free';
-          const username = (user.username || '').toLowerCase();
-          const creators = ['pampana_hari_sai_ganesh','harisaiganesh','ganesh','admin','creator','dattaai'];
-          const isCreatorUser = creators.some(function(c) { return username.includes(c); });
+          const username = (user.username||'').toLowerCase();
+          const isCreator = ['pampana_hari_sai_ganesh','harisaiganesh','ganesh','admin','creator','dattaai'].some(function(c){ return username.includes(c); });
 
-          const banner = document.getElementById('upgradeBanner');
           const title = document.getElementById('upgradeTitle');
           const sub = document.getElementById('upgradeSub');
+          const banner = document.getElementById('upgradeBanner');
 
-          if (isCreatorUser) {
-            if (banner) banner.style.background = 'rgba(255,215,0,0.08)';
+          if (isCreator) {
             if (title) title.textContent = '👑 Creator Account';
             if (sub) sub.textContent = 'Full access · Unlimited';
-            if (banner) { banner.onclick = null; banner.style.cursor = 'default'; }
-          } else {
-            const upgradeTo = { free:'⚡ Shakti', arambh:'⚡ Shakti', shakti:'🔥 Agni', agni:'👑 Brahma', brahma:null };
-            const upgradePrice = { free:'₹249/mo', arambh:'₹249/mo', shakti:'₹599/mo', agni:'₹1199/mo' };
-            const next = upgradeTo[plan];
-            if (next) {
-              if (title) title.textContent = 'Upgrade to ' + next;
-              if (sub) sub.textContent = 'Unlock more · ' + upgradePrice[plan];
-            } else {
-              if (banner) banner.style.display = 'none';
-            }
+            if (banner) banner.style.cursor = 'default';
           }
 
-          // Update profile name
           const profileName = document.querySelector('.profileName');
           const profileSubEl = document.querySelector('.profileSub');
           const avatarLetter = document.querySelector('.profileAvatar');
           if (profileName && user.username) profileName.textContent = user.username;
-          if (profileSubEl) profileSubEl.textContent = isCreatorUser ? '👑 Creator' : ((plan === 'free' ? 'Arambh' : plan.charAt(0).toUpperCase() + plan.slice(1)) + ' Plan');
+          if (profileSubEl) profileSubEl.textContent = isCreator ? '👑 Creator' : ((plan === 'free' ? 'Free' : plan.charAt(0).toUpperCase()+plan.slice(1)) + ' Plan');
           if (avatarLetter && user.username) avatarLetter.textContent = user.username.charAt(0).toUpperCase();
         }, 800);
       });
 
-      // ── SIDEBAR TOGGLE ─────────────────────────────────
+      // ── SIDEBAR ───────────────────────────────────────
       function toggleSidebar() {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebarOverlay');
         if (!sidebar) return;
         const isOpen = sidebar.classList.contains('show');
-        if (isOpen) {
-          sidebar.classList.remove('show');
-          if (overlay) overlay.style.display = 'none';
-        } else {
-          sidebar.classList.add('show');
-          if (overlay && window.innerWidth < 768) overlay.style.display = 'block';
-        }
+        if (isOpen) { sidebar.classList.remove('show'); if(overlay) overlay.style.display='none'; }
+        else { sidebar.classList.add('show'); if(overlay && window.innerWidth<768) overlay.style.display='block'; }
       }
-
       function closeSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebarOverlay');
-        if (sidebar) sidebar.classList.remove('show');
-        if (overlay) overlay.style.display = 'none';
+        const s = document.getElementById('sidebar'); const o = document.getElementById('sidebarOverlay');
+        if(s) s.classList.remove('show'); if(o) o.style.display='none';
       }
+      function closeSidebarIfMobile() { if(window.innerWidth<900) closeSidebar(); }
+      window.closeSidebar=closeSidebar; window.toggleSidebar=toggleSidebar;
 
-      window.closeSidebar = closeSidebar;
-      window.toggleSidebar = toggleSidebar;
-
-      // ── COLOR PANEL ────────────────────────────────────
+      // ── COLOR PANEL ───────────────────────────────────
       function toggleColorPanel() {
-        const panel = document.getElementById('colorPanel');
-        if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        const p = document.getElementById('colorPanel');
+        if(p) p.style.display = p.style.display==='none'?'block':'none';
       }
-
       function updateTopbarDot() {
         const dot = document.getElementById('topbarColorDot');
-        if (dot) dot.style.background = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
-        const saved = localStorage.getItem('datta_accent') || '#ffd700';
-        const p1 = document.getElementById('accentColorPicker');
-        const p2 = document.getElementById('accentColorPickerSettings');
-        if (p1) p1.value = saved;
-        if (p2) p2.value = saved;
+        const saved = localStorage.getItem('datta_accent')||'#00ff88';
+        if(dot) dot.style.background = saved;
       }
-
-      window.toggleColorPanel = toggleColorPanel;
-      window.updateTopbarDot = updateTopbarDot;
-      window.addEventListener('load', function() { setTimeout(updateTopbarDot, 100); });
-
-      // Close color panel on outside click
+      window.toggleColorPanel=toggleColorPanel; window.updateTopbarDot=updateTopbarDot;
+      window.addEventListener('load', function(){ setTimeout(updateTopbarDot,100); });
       document.addEventListener('click', function(e) {
-        const panel = document.getElementById('colorPanel');
-        const btn = document.getElementById('topbarColorBtn');
-        if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
-          panel.style.display = 'none';
-        }
-      });
-
-      // ── PROFILE MENU ──────────────────────────────────
-      function toggleProfileMenu() {
-        const menu = document.getElementById('profileMenu');
-        const arrow = document.getElementById('profileArrow');
-        if (!menu) return;
-        const isOpen = menu.style.display !== 'none';
-        menu.style.display = isOpen ? 'none' : 'block';
-        if (arrow) arrow.textContent = isOpen ? '▾' : '▴';
-      }
-      window.toggleProfileMenu = toggleProfileMenu;
-
-      document.addEventListener('click', function(e) {
-        const menu = document.getElementById('profileMenu');
-        if (menu && menu.style.display !== 'none' && !menu.contains(e.target) && !e.target.closest('#profileRow')) {
-          menu.style.display = 'none';
-        }
-      });
-
-      // ── SETTINGS ───────────────────────────────────────
-      function goToSettings() {
-        if (typeof currentChatId !== 'undefined' && currentChatId) {
-          sessionStorage.setItem('datta_return_chat', currentChatId);
-        }
-        window.location.href = 'settings.html';
-      }
-      window.goToSettings = goToSettings;
-
-      // Restore chat on return from settings
-      window.addEventListener('load', function() {
-        const returnChat = sessionStorage.getItem('datta_return_chat');
-        if (returnChat) {
-          sessionStorage.removeItem('datta_return_chat');
-          setTimeout(function() {
-            if (typeof openChat === 'function') openChat(returnChat);
-          }, 1200);
-        }
+        const p=document.getElementById('colorPanel'); const b=document.getElementById('topbarColorBtn');
+        if(p&&b&&!p.contains(e.target)&&!b.contains(e.target)) p.style.display='none';
       });
 
       // ── PLUS MENU ─────────────────────────────────────
       function togglePlusMenu(e) {
-        const sheet = document.getElementById('addToChatSheet');
-        const overlay = document.getElementById('addToChatOverlay');
-        const btn = document.getElementById('plusBtn');
-        if (!sheet) { console.warn('addToChatSheet not found'); return; }
-        const isOpen = sheet.classList.contains('show');
-        if (isOpen) {
-          sheet.classList.remove('show');
-          if (overlay) overlay.classList.remove('show');
-          if (btn) btn.classList.remove('active');
-        } else {
-          sheet.classList.add('show');
-          if (overlay) overlay.classList.add('show');
-          if (btn) btn.classList.add('active');
-        }
-        if (e) e.stopPropagation();
+        const sheet=document.getElementById('addToChatSheet'); const overlay=document.getElementById('addToChatOverlay'); const btn=document.getElementById('plusBtn');
+        if(!sheet) return;
+        const isOpen=sheet.classList.contains('show');
+        if(isOpen){ sheet.classList.remove('show'); if(overlay) overlay.classList.remove('show'); if(btn) btn.classList.remove('active'); }
+        else { sheet.classList.add('show'); if(overlay) overlay.classList.add('show'); if(btn) btn.classList.add('active'); }
+        if(e) e.stopPropagation();
       }
-
       function closePlusMenu() {
-        const sheet = document.getElementById('addToChatSheet');
-        const overlay = document.getElementById('addToChatOverlay');
-        const btn = document.getElementById('plusBtn');
-        if (sheet) sheet.classList.remove('show');
-        if (overlay) overlay.classList.remove('show');
-        if (btn) btn.classList.remove('active');
+        const s=document.getElementById('addToChatSheet'); const o=document.getElementById('addToChatOverlay'); const b=document.getElementById('plusBtn');
+        if(s) s.classList.remove('show'); if(o) o.classList.remove('show'); if(b) b.classList.remove('active');
       }
+      window.togglePlusMenu=togglePlusMenu; window.closePlusMenu=closePlusMenu;
 
-      window.togglePlusMenu = togglePlusMenu;
-      window.closePlusMenu = closePlusMenu;
-
-      // ── FILL PROMPT HELPERS ────────────────────────────
-      function fillPromptAndSend(text) {
-        const m = document.getElementById('message');
-        if (m) { m.value = text; m.focus(); if (typeof hideWelcome === 'function') hideWelcome(); }
-      }
-
-      function startNewChat() {
-        if (typeof newChat === 'function') newChat();
-        else window.location.reload();
-      }
-
-      window.fillPromptAndSend = fillPromptAndSend;
-
-      // ── WEB SEARCH TOGGLE ──────────────────────────────
-      function toggleWebSearch() {
-        const toggle = document.getElementById('webSearchToggle');
-        if (toggle) { toggle.checked = !toggle.checked; handleWebSearchToggle(toggle); }
-      }
-
-      function handleWebSearchToggle(checkbox) {
-        window.webSearchEnabled = checkbox.checked;
-      }
-
-      window.toggleWebSearch = toggleWebSearch;
-      window.handleWebSearchToggle = handleWebSearchToggle;
-
-      // ── FILE HANDLING ──────────────────────────────────
+      // ── FILE HANDLING ─────────────────────────────────
       function showFilePreview(file) {
-        const preview = document.getElementById('filePreview');
-        const wrap = document.getElementById('filePreviewWrap');
-        if (preview) preview.textContent = '📄 ' + file.name;
-        if (wrap) wrap.style.display = 'block';
+        const p=document.getElementById('filePreview'); const w=document.getElementById('filePreviewWrap');
+        if(p) p.textContent='📄 '+file.name; if(w) w.style.display='block';
       }
-
       function clearFileSelection() {
-        ['cameraInput','photoInput','imageInput'].forEach(function(id) {
-          const el = document.getElementById(id);
-          if (el) el.value = '';
-        });
-        const preview = document.getElementById('filePreview');
-        const wrap = document.getElementById('filePreviewWrap');
-        if (preview) preview.textContent = '';
-        if (wrap) wrap.style.display = 'none';
+        ['cameraInput','photoInput','imageInput'].forEach(function(id){ const el=document.getElementById(id); if(el) el.value=''; });
+        const p=document.getElementById('filePreview'); const w=document.getElementById('filePreviewWrap');
+        if(p) p.textContent=''; if(w) w.style.display='none';
       }
-
-      window.clearFileSelection = clearFileSelection;
+      window.clearFileSelection=clearFileSelection;
 
       window.addEventListener('load', function() {
-        ['imageInput','cameraInput','photoInput'].forEach(function(id) {
-          const el = document.getElementById(id);
-          if (el) el.addEventListener('change', function() {
-            if (this.files[0]) { showFilePreview(this.files[0]); closePlusMenu(); }
-          });
+        ['imageInput','cameraInput','photoInput'].forEach(function(id){
+          const el=document.getElementById(id);
+          if(el) el.addEventListener('change', function(){ if(this.files[0]){ showFilePreview(this.files[0]); closePlusMenu(); } });
         });
       });
 
-      // ── TRIGGER FUNCTIONS ──────────────────────────────
-      function triggerCamera() { document.getElementById('cameraInput').click(); }
-      function triggerPhotos() { document.getElementById('photoInput').click(); }
-      function triggerFile() { document.getElementById('imageInput').click(); }
+      function triggerCamera(){ document.getElementById('cameraInput').click(); }
+      function triggerPhotos(){ document.getElementById('photoInput').click(); }
+      function triggerFile(){ document.getElementById('imageInput').click(); }
+      function triggerImageGen(){ const i=document.getElementById('message'); if(i){ i.value='generate image of '; i.focus(); } closePlusMenu(); }
+      function triggerWebSearch(){ const i=document.getElementById('message'); if(i){ i.placeholder='Search the web...'; i.focus(); } closePlusMenu(); }
+      window.triggerCamera=triggerCamera; window.triggerPhotos=triggerPhotos; window.triggerFile=triggerFile;
+      window.triggerImageGen=triggerImageGen; window.triggerWebSearch=triggerWebSearch;
 
-      function triggerImageGen() {
-        const input = document.getElementById('message');
-        if (input) { input.value = 'generate image of '; input.focus(); }
-        closePlusMenu();
-      }
-
-      function triggerWebSearch() {
-        const input = document.getElementById('message');
-        if (input) { input.placeholder = 'Search the web...'; input.focus(); }
-        closePlusMenu();
-      }
-
-      window.triggerCamera = triggerCamera;
-      window.triggerPhotos = triggerPhotos;
-      window.triggerFile = triggerFile;
-      window.triggerImageGen = triggerImageGen;
-      window.triggerWebSearch = triggerWebSearch;
-
-      // ── SECTION SWITCHING ──────────────────────────────
+      // ── SECTION SWITCHING ─────────────────────────────
       function showSection(name) {
-        document.querySelectorAll('.sidebarSection').forEach(function(s) { s.style.display = 'none'; });
-        const el = document.getElementById('section-' + name);
-        if (el) el.style.display = 'block';
-
-        document.querySelectorAll('.navItem').forEach(function(b) {
-          b.classList.remove('active');
-        });
-        const activeBtn = document.getElementById('nav' + name.charAt(0).toUpperCase() + name.slice(1));
-        if (activeBtn) activeBtn.classList.add('active');
-
-        const label = document.getElementById('recentsLabel');
-        if (label) label.textContent = name.toUpperCase();
-        if (name === 'projects') loadProjects();
+        document.querySelectorAll('.sidebarSection').forEach(function(s){ s.style.display='none'; });
+        const el=document.getElementById('section-'+name); if(el) el.style.display='block';
+        document.querySelectorAll('.navItem').forEach(function(b){ b.classList.remove('active'); });
+        const ab=document.getElementById('nav'+name.charAt(0).toUpperCase()+name.slice(1)); if(ab) ab.classList.add('active');
+        const label=document.getElementById('recentsLabel'); if(label) label.textContent=name.toUpperCase();
+        if(name==='projects') loadProjects();
       }
-      window.showSection = showSection;
+      window.showSection=showSection;
 
-      // ── PROJECT MANAGEMENT ─────────────────────────────
-      function doCreateProject() {
-        const inp = document.getElementById('pni');
-        const name = inp ? inp.value.trim() : '';
-        if (!name) return;
-        let ps = [];
-        try { ps = JSON.parse(localStorage.getItem('datta_projects_v2') || '[]'); } catch(e) { /* silent */ }
-        ps.unshift({ id: Date.now(), name: name, instructions: '', color: '#ffd700', chats: [], createdAt: new Date().toISOString() });
-        localStorage.setItem('datta_projects_v2', JSON.stringify(ps));
-        const modal = document.getElementById('newProjModal');
-        if (modal) modal.remove();
-        if (typeof showSection === 'function') showSection('projects');
-        if (typeof loadProjectsSection === 'function') loadProjectsSection();
-      }
-
-      function closeNewProjModal() {
-        const modal = document.getElementById('newProjModal');
-        if (modal) modal.remove();
-      }
-
-      function createNewProject() {
-        if (typeof showNewProjectModal === 'function') { showNewProjectModal(); return; }
-        closeNewProjModal();
-
-        const modal = document.createElement('div');
-        modal.id = 'newProjModal';
-        modal.className = 'proj-modal-overlay';
-
-        const box = document.createElement('div');
-        box.className = 'proj-modal';
-
-        const title = document.createElement('div');
-        title.className = 'proj-modal-title';
-        title.textContent = 'NEW PROJECT';
-
-        const inp = document.createElement('input');
-        inp.id = 'pni';
-        inp.type = 'text';
-        inp.placeholder = 'Project name...';
-        inp.className = 'proj-modal-input';
-        inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') doCreateProject(); });
-
-        const btns = document.createElement('div');
-        btns.className = 'proj-modal-btns';
-
-        const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = 'Cancel';
-        cancelBtn.className = 'proj-cancel-btn';
-        cancelBtn.addEventListener('click', closeNewProjModal);
-
-        const createBtn = document.createElement('button');
-        createBtn.textContent = 'CREATE';
-        createBtn.className = 'proj-create-btn';
-        createBtn.addEventListener('click', doCreateProject);
-
-        btns.appendChild(cancelBtn);
-        btns.appendChild(createBtn);
-        box.appendChild(title);
-        box.appendChild(inp);
-        box.appendChild(btns);
-        modal.appendChild(box);
-        document.body.appendChild(modal);
-
-        modal.addEventListener('click', function(e) { if (e.target === modal) closeNewProjModal(); });
-        setTimeout(function() { inp.focus(); }, 100);
-      }
-
-      window.createNewProject = createNewProject;
-      window.doCreateProject = doCreateProject;
-      window.closeNewProjModal = closeNewProjModal;
-
+      // ── PROJECTS ──────────────────────────────────────
       function loadProjects() {
-        const sec = document.getElementById('section-projects');
-        if (!sec) return;
-        let projects = [];
-        try { projects = JSON.parse(localStorage.getItem('datta_projects_v2') || '[]'); } catch(e) { /* silent */ }
-        if (projects.length === 0) {
-          sec.innerHTML = '<div style="text-align:center;padding:30px 16px;"><div style="font-size:32px;margin-bottom:10px">📁</div><div style="font-size:13px;color:#443300;line-height:1.6;">No projects yet.<br>Click New project to start!</div></div>';
-          return;
-        }
-        sec.innerHTML = projects.map(function(p) {
-          return '<div onclick="if(typeof openProjectPage===\'function\'){openProjectPage('+p.id+')}else if(typeof openProjectPanel===\'function\'){openProjectPanel('+p.id+')}" style="display:flex;align-items:center;gap:8px;padding:9px 12px;margin:2px 8px;border-radius:10px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'rgba(255,215,0,0.05)\'" onmouseout="this.style.background=\'none\'">' +
-            '<div style="width:8px;height:8px;border-radius:50%;background:'+(p.color||'#ffd700')+';flex-shrink:0;"></div>' +
-            '<div style="flex:1;font-size:13px;color:#665500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+p.name+'</div>' +
-            '<div style="font-size:10px;color:#332200;font-family:Rajdhani,sans-serif;">'+(p.chats||[]).length+' chats</div>' +
-            '</div>';
-        }).join('');
+        const sec=document.getElementById('section-projects'); if(!sec) return;
+        let ps=[]; try{ ps=JSON.parse(localStorage.getItem('datta_projects_v2')||'[]'); }catch(e){}
+        if(ps.length===0){ sec.innerHTML='<div style="text-align:center;padding:30px 16px;"><div style="font-size:32px;margin-bottom:10px">📁</div><div style="font-size:13px;color:#444;line-height:1.6;">No projects yet.<br>Click New project to start!</div></div>'; return; }
+        sec.innerHTML=ps.map(function(p){ return '<div onclick="if(typeof openProjectPage===\'function\'){openProjectPage('+p.id+')}" style="display:flex;align-items:center;gap:8px;padding:9px 12px;margin:2px 8px;border-radius:10px;cursor:pointer;" onmouseover="this.style.background=\'rgba(255,255,255,0.04)\'" onmouseout="this.style.background=\'none\'"><div style="width:8px;height:8px;border-radius:50%;background:'+(p.color||'#00ff88')+';flex-shrink:0;"></div><div style="flex:1;font-size:13px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+p.name+'</div></div>'; }).join('');
       }
+      function createNewProject() {
+        const modal=document.createElement('div'); modal.id='newProjModal'; modal.className='proj-modal-overlay';
+        const box=document.createElement('div'); box.className='proj-modal';
+        box.innerHTML='<div class="proj-modal-title">NEW PROJECT</div><input id="pni" type="text" placeholder="Project name..." class="proj-modal-input"><div class="proj-modal-btns"><button class="proj-cancel-btn" onclick="document.getElementById(\'newProjModal\').remove()">Cancel</button><button class="proj-create-btn" onclick="doCreateProject()">CREATE</button></div>';
+        modal.appendChild(box); document.body.appendChild(modal);
+        modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
+        setTimeout(function(){ const i=document.getElementById('pni'); if(i) i.focus(); },100);
+      }
+      function doCreateProject() {
+        const inp=document.getElementById('pni'); const name=inp?inp.value.trim():''; if(!name) return;
+        let ps=[]; try{ ps=JSON.parse(localStorage.getItem('datta_projects_v2')||'[]'); }catch(e){}
+        ps.unshift({ id:Date.now(), name:name, color:'#00ff88', chats:[], createdAt:new Date().toISOString() });
+        localStorage.setItem('datta_projects_v2', JSON.stringify(ps));
+        const modal=document.getElementById('newProjModal'); if(modal) modal.remove();
+        showSection('projects'); loadProjects();
+      }
+      window.createNewProject=createNewProject; window.doCreateProject=doCreateProject; window.loadProjects=loadProjects;
 
-      function loadProjectsSection() { loadProjects(); }
-      window.loadProjectsSection = loadProjectsSection;
-      window.loadProjects = loadProjects;
-
-      // ── APPS PANEL ─────────────────────────────────────
+      // ── APPS PANEL ────────────────────────────────────
       function showAppsPanel() {
-        const existing = document.querySelector('.apps-overlay');
-        if (existing) existing.remove();
-
-        const apps = [
-          { icon:'🎨', name:'Image Gen', action: function() { fillPromptAndSend('generate image of '); } },
-          { icon:'🌐', name:'Web Search', action: function() { fillPromptAndSend('search the web for '); } },
-          { icon:'🎙️', name:'Voice', action: function() { if (typeof startAssistant === 'function') startAssistant(); } },
-          { icon:'📊', name:'Analytics', action: function() { window.location.href='analytics.html'; } },
-          { icon:'🧠', name:'Memory', action: function() { window.location.href='memory.html'; } },
-          { icon:'🌍', name:'Translator', action: function() { window.location.href='translator.html'; } },
-          { icon:'⭐', name:'XP & Level', action: function() { window.location.href='xp.html'; } },
-          { icon:'⚙️', name:'Settings', action: function() { window.location.href='settings.html'; } },
-          { icon:'🎧', name:'Support', action: function() { window.location.href='support.html'; } }
+        const existing=document.querySelector('.apps-overlay'); if(existing) existing.remove();
+        const apps=[
+          { icon:'🎨', name:'Image Gen', action:function(){ const i=document.getElementById('message'); if(i){ i.value='generate image of '; i.focus(); } } },
+          { icon:'🌐', name:'Web Search', action:function(){ const i=document.getElementById('message'); if(i){ i.value='search the web for '; i.focus(); } } },
+          { icon:'🎙️', name:'Voice', action:function(){ if(typeof startAssistant==='function') startAssistant(); } },
+          { icon:'⚙️', name:'Settings', action:function(){ window.location.href='settings.html'; } },
+          { icon:'🏠', name:'Home', action:function(){ window.location.href='home.html'; } },
+          { icon:'💰', name:'Pricing', action:function(){ window.location.href='pricing.html'; } }
         ];
-
-        const overlay = document.createElement('div');
-        overlay.className = 'apps-overlay';
-
-        const panel = document.createElement('div');
-        panel.className = 'apps-panel';
-
-        const title = document.createElement('div');
-        title.className = 'apps-title';
-        title.textContent = '🛠️ APPS & TOOLS';
-
-        const grid = document.createElement('div');
-        grid.className = 'apps-grid';
-
-        apps.forEach(function(app) {
-          const item = document.createElement('div');
-          item.className = 'apps-item';
-          item.innerHTML = '<span class="ai-icon">' + app.icon + '</span><span class="ai-label">' + app.name + '</span>';
-          item.addEventListener('click', function() {
-            app.action();
-            overlay.remove();
-          });
+        const overlay=document.createElement('div'); overlay.className='apps-overlay';
+        const panel=document.createElement('div'); panel.className='apps-panel';
+        const title=document.createElement('div'); title.className='apps-title'; title.textContent='🛠️ APPS & TOOLS';
+        const grid=document.createElement('div'); grid.className='apps-grid';
+        apps.forEach(function(app){
+          const item=document.createElement('div'); item.className='apps-item';
+          item.innerHTML='<span class="ai-icon">'+app.icon+'</span><span class="ai-label">'+app.name+'</span>';
+          item.addEventListener('click', function(){ app.action(); overlay.remove(); });
           grid.appendChild(item);
         });
-
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'apps-close-btn';
-        closeBtn.textContent = 'Close';
-        closeBtn.addEventListener('click', function() { overlay.remove(); });
-
-        panel.appendChild(title);
-        panel.appendChild(grid);
-        panel.appendChild(closeBtn);
+        const closeBtn=document.createElement('button'); closeBtn.className='apps-close-btn'; closeBtn.textContent='Close';
+        closeBtn.addEventListener('click', function(){ overlay.remove(); });
+        panel.appendChild(title); panel.appendChild(grid); panel.appendChild(closeBtn);
         overlay.appendChild(panel);
-
-        overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+        overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
         document.body.appendChild(overlay);
       }
-      window.showAppsPanel = showAppsPanel;
+      window.showAppsPanel=showAppsPanel;
 
-      // ── FEED PROMPT RESTORE ────────────────────────────
-      window.addEventListener('load', function() {
-        const feedPrompt = localStorage.getItem('datta_feed_prompt');
-        if (feedPrompt) {
-          localStorage.removeItem('datta_feed_prompt');
-          setTimeout(function() {
-            const input = document.getElementById('message');
-            if (input && typeof send === 'function') { input.value = feedPrompt; send(); }
-          }, 1500);
-        }
-      });
+      // ── HANDLE WEB SEARCH TOGGLE ──────────────────────
+      function toggleWebSearch() { const t=document.getElementById('webSearchToggle'); if(t){ t.checked=!t.checked; window.webSearchEnabled=t.checked; } }
+      function handleWebSearchToggle(cb) { window.webSearchEnabled=cb.checked; }
+      window.toggleWebSearch=toggleWebSearch; window.handleWebSearchToggle=handleWebSearchToggle;
 
-      // ══════════════════════════════════════════════════
-      // EVENT LISTENERS (replacing inline handlers)
-      // ══════════════════════════════════════════════════
-
+      // ── EVENT LISTENERS ───────────────────────────────
       document.addEventListener('DOMContentLoaded', function() {
 
-        // ── TOPBAR BUTTONS ─────────────────────────────
-        const menuBtn = document.getElementById('menuBtn');
-        if (menuBtn) menuBtn.addEventListener('click', toggleSidebar);
+        const menuBtn=document.getElementById('menuBtn');
+        if(menuBtn) menuBtn.addEventListener('click', toggleSidebar);
 
-        const themeBtn = document.getElementById('themeBtn');
-        if (themeBtn) themeBtn.addEventListener('click', function() {
-          if (typeof showThemePicker === 'function') showThemePicker();
+        const themeBtn=document.getElementById('themeBtn');
+        if(themeBtn) themeBtn.addEventListener('click', function(){ if(typeof showThemePicker==='function') showThemePicker(); });
+
+        const moodToggleBtn=document.getElementById('moodToggleBtn');
+        if(moodToggleBtn) moodToggleBtn.addEventListener('click', function(){ if(typeof toggleMoodPanel==='function') toggleMoodPanel(); });
+
+        const topbarColorBtn=document.getElementById('topbarColorBtn');
+        if(topbarColorBtn) topbarColorBtn.addEventListener('click', toggleColorPanel);
+
+        document.querySelectorAll('.moodBtn').forEach(function(btn){
+          btn.addEventListener('click', function(){ if(typeof applyMood==='function') applyMood(this.dataset.mood); });
         });
 
-        const autoMoodPill = document.getElementById('autoMoodPill');
-        if (autoMoodPill) autoMoodPill.addEventListener('click', function() {
-          if (typeof toggleMoodPanel === 'function') toggleMoodPanel();
-        });
+        const moodClearBtn=document.getElementById('moodClearBtn');
+        if(moodClearBtn) moodClearBtn.addEventListener('click', function(){ if(typeof clearMood==='function') clearMood(); });
 
-        const moodIndicator = document.getElementById('moodIndicator');
-        if (moodIndicator) moodIndicator.addEventListener('click', function() {
-          if (typeof toggleMoodPanel === 'function') toggleMoodPanel();
-        });
+        const voiceMoodBtn=document.getElementById('voiceMoodBtn');
+        if(voiceMoodBtn) voiceMoodBtn.addEventListener('click', function(){ if(typeof startVoiceMoodDetection==='function') startVoiceMoodDetection(); });
 
-        const moodToggleBtn = document.getElementById('moodToggleBtn');
-        if (moodToggleBtn) moodToggleBtn.addEventListener('click', function() {
-          if (typeof toggleMoodPanel === 'function') toggleMoodPanel();
-        });
-
-        const topbarColorBtn = document.getElementById('topbarColorBtn');
-        if (topbarColorBtn) topbarColorBtn.addEventListener('click', toggleColorPanel);
-
-        // ── MOOD PANEL BUTTONS ─────────────────────────
-        document.querySelectorAll('.moodBtn').forEach(function(btn) {
-          btn.addEventListener('click', function() {
-            const mood = this.dataset.mood;
-            if (typeof applyMood === 'function') applyMood(mood);
-          });
-        });
-
-        const voiceMoodBtn = document.getElementById('voiceMoodBtn');
-        if (voiceMoodBtn) voiceMoodBtn.addEventListener('click', function() {
-          if (typeof startVoiceMoodDetection === 'function') startVoiceMoodDetection();
-          if (typeof closeMoodPanel === 'function') closeMoodPanel();
-        });
-
-        const selfieMoodBtn = document.getElementById('selfieMoodBtn');
-        if (selfieMoodBtn) selfieMoodBtn.addEventListener('click', function() {
-          if (typeof startPhotoMoodDetection === 'function') startPhotoMoodDetection();
-        });
-
-        const moodTimelineBtn = document.getElementById('moodTimelineBtn');
-        if (moodTimelineBtn) moodTimelineBtn.addEventListener('click', function() {
-          if (typeof showMoodTimeline === 'function') showMoodTimeline();
-          if (typeof closeMoodPanel === 'function') closeMoodPanel();
-        });
-
-        const moodClearBtn = document.getElementById('moodClearBtn');
-        if (moodClearBtn) moodClearBtn.addEventListener('click', function() {
-          if (typeof clearMood === 'function') clearMood();
-        });
-
-        // ── COLOR PANEL BUTTONS ────────────────────────
-        document.querySelectorAll('.presetColor').forEach(function(btn) {
-          btn.addEventListener('click', function() {
-            const color = this.dataset.color;
-            if (typeof dattaTheme !== 'undefined' && dattaTheme.saveAndApply) {
-              dattaTheme.saveAndApply(color);
-            }
+        document.querySelectorAll('.presetColor').forEach(function(btn){
+          btn.addEventListener('click', function(){
+            const color=this.dataset.color;
+            if(typeof dattaTheme!=='undefined'&&dattaTheme.saveAndApply) dattaTheme.saveAndApply(color);
             updateTopbarDot();
-            // Update active state
-            document.querySelectorAll('.presetColor').forEach(function(b) { b.classList.remove('active'); });
+            document.querySelectorAll('.presetColor').forEach(function(b){ b.classList.remove('active'); });
             this.classList.add('active');
           });
         });
 
-        const accentColorPicker = document.getElementById('accentColorPicker');
-        if (accentColorPicker) accentColorPicker.addEventListener('input', function() {
-          if (typeof dattaTheme !== 'undefined' && dattaTheme.saveAndApply) {
-            dattaTheme.saveAndApply(this.value);
-          }
-          updateTopbarDot();
-        });
+        const accentColorPicker=document.getElementById('accentColorPicker');
+        if(accentColorPicker) accentColorPicker.addEventListener('input', function(){ if(typeof dattaTheme!=='undefined'&&dattaTheme.saveAndApply) dattaTheme.saveAndApply(this.value); updateTopbarDot(); });
 
-        const colorResetBtn = document.getElementById('colorResetBtn');
-        if (colorResetBtn) colorResetBtn.addEventListener('click', function() {
-          if (typeof dattaTheme !== 'undefined' && dattaTheme.DEFAULT && dattaTheme.saveAndApply) {
-            dattaTheme.saveAndApply(dattaTheme.DEFAULT);
-          }
-          updateTopbarDot();
-        });
+        const colorResetBtn=document.getElementById('colorResetBtn');
+        if(colorResetBtn) colorResetBtn.addEventListener('click', function(){ if(typeof dattaTheme!=='undefined'&&dattaTheme.DEFAULT&&dattaTheme.saveAndApply) dattaTheme.saveAndApply(dattaTheme.DEFAULT); updateTopbarDot(); });
 
-        const colorCloseBtn = document.getElementById('colorCloseBtn');
-        if (colorCloseBtn) colorCloseBtn.addEventListener('click', toggleColorPanel);
+        const colorCloseBtn=document.getElementById('colorCloseBtn');
+        if(colorCloseBtn) colorCloseBtn.addEventListener('click', toggleColorPanel);
 
-        // ── SIDEBAR NAV BUTTONS ────────────────────────
-        const navNewChat = document.getElementById('navNewChat');
-        if (navNewChat) navNewChat.addEventListener('click', function() {
-          startNewChat();
-          closeSidebarIfMobile();
-        });
+        const navNewChat=document.getElementById('navNewChat');
+        if(navNewChat) navNewChat.addEventListener('click', function(){ if(typeof newChat==='function') newChat(); closeSidebarIfMobile(); });
 
-        const navApps = document.getElementById('navApps');
-        if (navApps) navApps.addEventListener('click', function() {
-          showAppsPanel();
-          closeSidebarIfMobile();
-        });
+        const navApps=document.getElementById('navApps');
+        if(navApps) navApps.addEventListener('click', function(){ showAppsPanel(); closeSidebarIfMobile(); });
 
-        const navChats = document.getElementById('navChats');
-        if (navChats) navChats.addEventListener('click', function() {
-          showSection('chats');
-          closeSidebarIfMobile();
-        });
+        const navChats=document.getElementById('navChats');
+        if(navChats) navChats.addEventListener('click', function(){ showSection('chats'); closeSidebarIfMobile(); });
 
-        const navNewProject = document.getElementById('navNewProject');
-        if (navNewProject) navNewProject.addEventListener('click', function() {
-          createNewProject();
-        });
+        const navNewProject=document.getElementById('navNewProject');
+        if(navNewProject) navNewProject.addEventListener('click', createNewProject);
 
-        const navProjects = document.getElementById('navProjects');
-        if (navProjects) navProjects.addEventListener('click', function() {
-          showSection('projects');
-          if (typeof loadProjectsSection === 'function') loadProjectsSection();
-          closeSidebarIfMobile();
-        });
+        const navProjects=document.getElementById('navProjects');
+        if(navProjects) navProjects.addEventListener('click', function(){ showSection('projects'); loadProjects(); closeSidebarIfMobile(); });
 
-        // ── SIDEBAR SEARCH ─────────────────────────────
-        const searchInput = document.getElementById('search');
-        if (searchInput) searchInput.addEventListener('keyup', function() {
-          if (typeof searchChats === 'function') searchChats();
-        });
+        const searchInput=document.getElementById('search');
+        if(searchInput) searchInput.addEventListener('keyup', function(){ if(typeof searchChats==='function') searchChats(); });
 
-        // ── UPGRADE BANNER ─────────────────────────────
-        const upgradeBanner = document.getElementById('upgradeBanner');
-        if (upgradeBanner) upgradeBanner.addEventListener('click', function() {
-          window.location.href = 'pricing.html';
-        });
+        const upgradeBanner=document.getElementById('upgradeBanner');
+        if(upgradeBanner) upgradeBanner.addEventListener('click', function(){ window.location.href='pricing.html'; });
 
-        // ── PROFILE ROW ────────────────────────────────
-        const profileRow = document.getElementById('profileRow');
-        if (profileRow) profileRow.addEventListener('click', function() {
-          window.location.href = 'settings.html';
-        });
+        const profileRow=document.getElementById('profileRow');
+        if(profileRow) profileRow.addEventListener('click', function(){ window.location.href='settings.html'; });
 
-        // ── SIDEBAR OVERLAY ────────────────────────────
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-        if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+        const sidebarOverlay=document.getElementById('sidebarOverlay');
+        if(sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
 
-        // ── PROFILE MENU ITEMS ─────────────────────────
-        const pmSupport = document.getElementById('pmSupport');
-        if (pmSupport) pmSupport.addEventListener('click', function() { window.location.href = 'support.html'; });
+        const pmSupport=document.getElementById('pmSupport');
+        if(pmSupport) pmSupport.addEventListener('click', function(){ window.location.href='support.html'; });
 
-        const pmSettings = document.getElementById('pmSettings');
-        if (pmSettings) pmSettings.addEventListener('click', function() { goToSettings(); toggleProfileMenu(); });
+        const pmSettings=document.getElementById('pmSettings');
+        if(pmSettings) pmSettings.addEventListener('click', function(){ window.location.href='settings.html'; });
 
-        const pmMemory = document.getElementById('pmMemory');
-        if (pmMemory) pmMemory.addEventListener('click', function() { window.location.href = 'memory.html'; });
+        const pmLogout=document.getElementById('pmLogout');
+        if(pmLogout) pmLogout.addEventListener('click', function(){ if(typeof logout==='function') logout(); });
 
-        const pmTranslator = document.getElementById('pmTranslator');
-        if (pmTranslator) pmTranslator.addEventListener('click', function() { window.location.href = 'translator.html'; });
+        // Chips
+        const chipWeb=document.getElementById('chipWeb');
+        if(chipWeb) chipWeb.addEventListener('click', function(){ if(typeof fillPrompt==='function') fillPrompt('What are the latest AI news today?'); });
 
-        const pmAnalytics = document.getElementById('pmAnalytics');
-        if (pmAnalytics) pmAnalytics.addEventListener('click', function() { window.location.href = 'analytics.html'; });
+        const chipCode=document.getElementById('chipCode');
+        if(chipCode) chipCode.addEventListener('click', function(){ if(typeof fillPrompt==='function') fillPrompt('Write a Python script to sort a list of numbers'); });
 
-        const pmXP = document.getElementById('pmXP');
-        if (pmXP) pmXP.addEventListener('click', function() { window.location.href = 'xp.html'; });
+        const chipExplain=document.getElementById('chipExplain');
+        if(chipExplain) chipExplain.addEventListener('click', function(){ if(typeof fillPrompt==='function') fillPrompt('Explain quantum computing in simple terms'); });
 
-        const pmLogout = document.getElementById('pmLogout');
-        if (pmLogout) pmLogout.addEventListener('click', function() { if (typeof logout === 'function') logout(); });
+        const chipImage=document.getElementById('chipImage');
+        if(chipImage) chipImage.addEventListener('click', function(){ if(typeof fillPrompt==='function') fillPrompt('generate image of a futuristic city at night'); });
 
-        // ── WELCOME BADGES ─────────────────────────────
-        const badgeChat = document.getElementById('badgeChat');
-        if (badgeChat) badgeChat.addEventListener('click', function() {
-          const m = document.getElementById('message');
-          if (m) m.focus();
-        });
+        // Badges
+        const badgeSearch=document.getElementById('badgeSearch');
+        if(badgeSearch) badgeSearch.addEventListener('click', function(){ const m=document.getElementById('message'); if(m){ m.value='search the web for '; m.focus(); } });
 
-        const badgeSearch = document.getElementById('badgeSearch');
-        if (badgeSearch) badgeSearch.addEventListener('click', function() {
-          const m = document.getElementById('message');
-          if (m) { m.value = 'search the web for '; m.focus(); }
-        });
+        const badgeVoice=document.getElementById('badgeVoice');
+        if(badgeVoice) badgeVoice.addEventListener('click', function(){ if(typeof startAssistant==='function') startAssistant(); });
 
-        const badgeVoice = document.getElementById('badgeVoice');
-        if (badgeVoice) badgeVoice.addEventListener('click', function() {
-          if (typeof startAssistant === 'function') startAssistant();
-          else document.getElementById('micBtn').click();
-        });
+        // Input buttons
+        const plusBtn=document.getElementById('plusBtn');
+        if(plusBtn) plusBtn.addEventListener('click', function(e){ togglePlusMenu(e); });
 
-        // ── WELCOME CHIPS ──────────────────────────────
-        const chipWeb = document.getElementById('chipWeb');
-        if (chipWeb) chipWeb.addEventListener('click', function() {
-          if (typeof fillPrompt === 'function') fillPrompt('What are the latest AI news today?');
-        });
+        const micBtn=document.getElementById('micBtn');
+        if(micBtn) micBtn.addEventListener('click', function(){ if(typeof startAssistant==='function') startAssistant(); });
 
-        const chipCode = document.getElementById('chipCode');
-        if (chipCode) chipCode.addEventListener('click', function() {
-          if (typeof fillPrompt === 'function') fillPrompt('Write a Python script to sort a list of numbers');
-        });
+        const stopBtn=document.getElementById('stopBtn');
+        if(stopBtn) stopBtn.addEventListener('click', function(){ if(typeof stopGeneration==='function') stopGeneration(); });
 
-        const chipExplain = document.getElementById('chipExplain');
-        if (chipExplain) chipExplain.addEventListener('click', function() {
-          if (typeof fillPrompt === 'function') fillPrompt('Explain quantum computing in simple terms');
-        });
+        const sendBtn=document.getElementById('sendBtn');
+        if(sendBtn) sendBtn.addEventListener('click', function(){ if(typeof send==='function') send(); });
 
-        // ── INPUT AREA BUTTONS ─────────────────────────
-        const plusBtn = document.getElementById('plusBtn');
-        if (plusBtn) plusBtn.addEventListener('click', function(e) { togglePlusMenu(e); });
+        const clearFileBtn=document.getElementById('clearFile');
+        if(clearFileBtn) clearFileBtn.addEventListener('click', clearFileSelection);
 
-        const micBtn = document.getElementById('micBtn');
-        if (micBtn) micBtn.addEventListener('click', function() {
-          if (typeof startAssistant === 'function') startAssistant();
-        });
+        const addToChatOverlay=document.getElementById('addToChatOverlay');
+        if(addToChatOverlay) addToChatOverlay.addEventListener('click', closePlusMenu);
 
-        const stopBtn = document.getElementById('stopBtn');
-        if (stopBtn) stopBtn.addEventListener('click', function() {
-          if (typeof stopGeneration === 'function') stopGeneration();
-        });
+        const asImageGen=document.getElementById('asImageGen');
+        if(asImageGen) asImageGen.addEventListener('click', function(){ triggerImageGen(); });
 
-        const sendBtn = document.getElementById('sendBtn');
-        if (sendBtn) sendBtn.addEventListener('click', function() {
-          if (typeof send === 'function') send();
-        });
+        const asCamera=document.getElementById('asCamera');
+        if(asCamera) asCamera.addEventListener('click', function(){ triggerCamera(); closePlusMenu(); });
 
-        const clearFileBtn = document.getElementById('clearFile');
-        if (clearFileBtn) clearFileBtn.addEventListener('click', clearFileSelection);
+        const asPhoto=document.getElementById('asPhoto');
+        if(asPhoto) asPhoto.addEventListener('click', function(){ triggerPhotos(); closePlusMenu(); });
 
-        // ── ADD TO CHAT SHEET ITEMS ────────────────────
-        const addToChatOverlay = document.getElementById('addToChatOverlay');
-        if (addToChatOverlay) addToChatOverlay.addEventListener('click', closePlusMenu);
+        const asFile=document.getElementById('asFile');
+        if(asFile) asFile.addEventListener('click', function(){ triggerFile(); closePlusMenu(); });
 
-        const asImageGen = document.getElementById('asImageGen');
-        if (asImageGen) asImageGen.addEventListener('click', function() { triggerImageGen(); closePlusMenu(); });
+        const asWebSearch=document.getElementById('asWebSearch');
+        if(asWebSearch) asWebSearch.addEventListener('click', function(){ triggerWebSearch(); });
 
-        const asCamera = document.getElementById('asCamera');
-        if (asCamera) asCamera.addEventListener('click', function() { triggerCamera(); closePlusMenu(); });
+        const asVoice=document.getElementById('asVoice');
+        if(asVoice) asVoice.addEventListener('click', function(){ if(typeof startAssistant==='function') startAssistant(); closePlusMenu(); });
 
-        const asPhoto = document.getElementById('asPhoto');
-        if (asPhoto) asPhoto.addEventListener('click', function() { triggerPhotos(); closePlusMenu(); });
+        const supportBtnEl=document.getElementById('supportBtn');
+        if(supportBtnEl) supportBtnEl.addEventListener('click', function(){ window.location.href='support.html'; });
 
-        const asFile = document.getElementById('asFile');
-        if (asFile) asFile.addEventListener('click', function() { triggerFile(); closePlusMenu(); });
+      });
 
-        const asWebSearch = document.getElementById('asWebSearch');
-        if (asWebSearch) asWebSearch.addEventListener('click', function() { triggerWebSearch(); closePlusMenu(); });
-
-        const asVoice = document.getElementById('asVoice');
-        if (asVoice) asVoice.addEventListener('click', function() {
-          if (typeof startAssistant === 'function') startAssistant();
-          closePlusMenu();
-        });
-
-        // ── SUPPORT BUTTON ─────────────────────────────
-        const supportBtnEl = document.getElementById('supportBtn');
-        if (supportBtnEl) supportBtnEl.addEventListener('click', function() {
-          window.location.href = 'support.html';
-        });
-
-      }); // end DOMContentLoaded
-
-    })(); // end IIFE
+    })();
   </script>
 
-  <!-- ══════════════════════════════════════════════════
-       EXTERNAL SCRIPTS
-       ══════════════════════════════════════════════════ -->
+  <!-- EXTERNAL SCRIPTS -->
   <script src="plan-limits.js"></script>
   <script src="project-page.js"></script>
-  <script src="projects.js" onerror="console.warn('projects.js not found - upload it to GitHub')"></script>
+  <script src="projects.js" onerror="console.warn('projects.js not found')"></script>
   <script src="theme.js"></script>
   <script src="mood.js"></script>
   <script src="chat.js?v=12"></script>
