@@ -43,7 +43,6 @@ function renderImageResponse(text) {
   const uid = "ig" + Date.now()
   const safePrompt = prompt.replace(/'/g, "").replace(/"/g, "")
 
-  // Build HTML - show image directly, no hidden display trick
   return `<div class="dattaImgWrap" id="${uid}" style="max-width:400px;">
   <div style="font-family:Rajdhani,sans-serif;font-size:11px;letter-spacing:1px;color:#cc88ff;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
     <span>🎨</span><span id="${uid}lbl">Creating image...</span>
@@ -203,6 +202,11 @@ function newChat() {
   currentChatId = null
   chatBox.innerHTML = ""
   chatBox.scrollTop = 0
+  // Clear project context when starting a new chat
+  activeProjectId = null
+  activeProjectChatId = null
+  var banner = document.getElementById('projectChatBanner')
+  if (banner) banner.remove()
   showWelcome()
 }
 
@@ -212,7 +216,6 @@ function getMoodContext() {
 }
 
 // ── AUTO MOOD DETECT INDICATOR ────────────────────────────────────────────────
-// Shows ONLY when mood is auto-detected from message text — distinct from manual pill
 function showAutoMoodPill(moodKey) {
   const MOODS = window.MOODS || {}
   const mood = MOODS[moodKey]
@@ -221,7 +224,6 @@ function showAutoMoodPill(moodKey) {
   const pill = document.getElementById("autoMoodPill")
   if (!pill) return
 
-  // Small distinct badge — just emoji + "Auto" label, different style from manual
   pill.style.border = `1px solid ${mood.color}44`
   pill.style.background = "transparent"
   pill.style.color = mood.color
@@ -233,10 +235,8 @@ function showAutoMoodPill(moodKey) {
   pill.style.alignItems = "center"
   pill.title = `Auto-detected: ${mood.label}`
 
-  // Save so it persists on reload
   localStorage.setItem("datta_last_auto_mood", moodKey)
 
-  // Hide after 8 seconds
   clearTimeout(pill._hideTimer)
   pill._hideTimer = setTimeout(() => {
     pill.style.transition = "opacity 0.4s"
@@ -249,7 +249,6 @@ function showAutoMoodPill(moodKey) {
   }, 8000)
 }
 
-// Restore auto pill on page load only if auto-detected mood exists
 function restoreAutoMoodPill() {
   const autoSaved = localStorage.getItem("datta_last_auto_mood")
   if (!autoSaved) return
@@ -270,17 +269,14 @@ function restoreAutoMoodPill() {
   pill.title = `Auto-detected: ${mood.label}`
 }
 
-// Run on load — wait for mood.js to fully load first
 window.addEventListener("DOMContentLoaded", function() {
   setTimeout(restoreAutoMoodPill, 1500)
 })
 
-// Also try again after full page load
 window.addEventListener("load", function() {
   setTimeout(restoreAutoMoodPill, 500)
 })
 
-// ── FIXED buildMoodPrefix — with strict length control ────────────────────────
 function buildMoodPrefix() {
   const mood = getMoodContext()
 
@@ -309,7 +305,6 @@ async function send() {
   const text = input.value.trim()
   if (!text && !file) return
 
-  // Auto detect mood from message
   if (window.dattaAutoDetectMood && text) {
     const detected = window.dattaAutoDetectMood(text)
     if (detected) showAutoMoodPill(detected)
@@ -405,11 +400,17 @@ async function send() {
   controller = new AbortController()
   const formData = new FormData()
   const moodPrefix = buildMoodPrefix()
-  // Add project instructions if active project
   let projectPrefix = ''
   if (typeof getActiveProjectInstructions === 'function') {
     const projInstr = getActiveProjectInstructions()
     if (projInstr) projectPrefix = '[PROJECT CONTEXT: ' + projInstr + ']\n\n'
+  }
+  // Add project name to context if inside a project chat
+  if (activeProjectId && window.DattaProjects) {
+    var proj = window.DattaProjects.getProject(activeProjectId)
+    if (proj && !projectPrefix) {
+      projectPrefix = '[PROJECT: ' + proj.name + ']\n\n'
+    }
   }
   const messageWithMood = projectPrefix + (moodPrefix ? moodPrefix + text : text)
   formData.append("message", messageWithMood)
@@ -428,6 +429,29 @@ async function send() {
 
     const chatIdFromHeader = res.headers.get("x-chat-id")
     if (!currentChatId && chatIdFromHeader) currentChatId = chatIdFromHeader
+
+    // ── Save serverChatId into project chat on first message ──────────────────
+    if (activeProjectId && activeProjectChatId && currentChatId) {
+      try {
+        var pList = JSON.parse(localStorage.getItem('datta_projects_v2') || '[]')
+        var pObj = pList.find(function(p) { return String(p.id) === String(activeProjectId) })
+        if (pObj) {
+          var cObj = (pObj.chats || []).find(function(c) { return String(c.id) === String(activeProjectChatId) })
+          if (cObj && !cObj.serverChatId) {
+            cObj.serverChatId = currentChatId
+            var userBubbles = chatBox.querySelectorAll('.userBubble')
+            if (userBubbles.length === 1) {
+              var msgText = userBubbles[0].textContent.trim()
+              cObj.title = msgText.substring(0, 40) + (msgText.length > 40 ? '...' : '')
+            }
+            localStorage.setItem('datta_projects_v2', JSON.stringify(pList))
+          }
+        }
+      } catch(saveErr) {
+        console.warn('Project chat save error:', saveErr)
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     aiDiv.innerHTML = `
       <div class="avatar">${aiAvatarEmoji}</div>
@@ -504,59 +528,34 @@ async function send() {
 }
 
 // ─── LANGUAGE HELPERS ────────────────────────────────────────────────────────
-
-// Map language name to BCP-47 code for SpeechRecognition
 function getLangCode(langName) {
   const map = {
-    "English": "en-IN",
-    "Hindi": "hi-IN",
-    "Telugu": "te-IN",
-    "Tamil": "ta-IN",
-    "Kannada": "kn-IN",
-    "Malayalam": "ml-IN",
-    "Bengali": "bn-IN",
-    "Marathi": "mr-IN",
-    "Gujarati": "gu-IN",
-    "Punjabi": "pa-IN",
-    "Urdu": "ur-PK",
-    "Spanish": "es-ES",
-    "French": "fr-FR",
-    "German": "de-DE",
-    "Arabic": "ar-SA",
-    "Chinese": "zh-CN",
-    "Japanese": "ja-JP",
-    "Korean": "ko-KR",
-    "Portuguese": "pt-BR",
-    "Russian": "ru-RU",
-    "Italian": "it-IT",
-    "Dutch": "nl-NL",
-    "Turkish": "tr-TR",
-    "Vietnamese": "vi-VN",
-    "Thai": "th-TH",
-    "Indonesian": "id-ID",
-    "Malay": "ms-MY",
+    "English": "en-IN", "Hindi": "hi-IN", "Telugu": "te-IN", "Tamil": "ta-IN",
+    "Kannada": "kn-IN", "Malayalam": "ml-IN", "Bengali": "bn-IN", "Marathi": "mr-IN",
+    "Gujarati": "gu-IN", "Punjabi": "pa-IN", "Urdu": "ur-PK", "Spanish": "es-ES",
+    "French": "fr-FR", "German": "de-DE", "Arabic": "ar-SA", "Chinese": "zh-CN",
+    "Japanese": "ja-JP", "Korean": "ko-KR", "Portuguese": "pt-BR", "Russian": "ru-RU",
+    "Italian": "it-IT", "Dutch": "nl-NL", "Turkish": "tr-TR", "Vietnamese": "vi-VN",
+    "Thai": "th-TH", "Indonesian": "id-ID", "Malay": "ms-MY",
   }
   return map[langName] || "en-IN"
 }
 
-// Auto-detect language from text script
 function detectTextLanguage(text) {
   if (!text) return getLangCode(localStorage.getItem("datta_language") || "English")
-  if (/[ऀ-ॿ]/.test(text)) return "hi-IN"   // Hindi/Devanagari
-  if (/[ఀ-౿]/.test(text)) return "te-IN"   // Telugu
-  if (/[஀-௿]/.test(text)) return "ta-IN"   // Tamil
-  if (/[ಀ-೿]/.test(text)) return "kn-IN"   // Kannada
-  if (/[ഀ-ൿ]/.test(text)) return "ml-IN"   // Malayalam
-  if (/[ঀ-৿]/.test(text)) return "bn-IN"   // Bengali
-  if (/[؀-ۿ]/.test(text)) return "ar-SA"   // Arabic/Urdu
-  if (/[一-鿿]/.test(text)) return "zh-CN"   // Chinese
-  if (/[぀-ヿ]/.test(text)) return "ja-JP"   // Japanese
-  if (/[가-힯]/.test(text)) return "ko-KR"   // Korean
-  if (/[Ѐ-ӿ]/.test(text)) return "ru-RU"   // Russian
-  // Default to user's selected language
+  if (/[ऀ-ॿ]/.test(text)) return "hi-IN"
+  if (/[ఀ-౿]/.test(text)) return "te-IN"
+  if (/[஀-௿]/.test(text)) return "ta-IN"
+  if (/[ಀ-೿]/.test(text)) return "kn-IN"
+  if (/[ഀ-ൿ]/.test(text)) return "ml-IN"
+  if (/[ঀ-৿]/.test(text)) return "bn-IN"
+  if (/[؀-ۿ]/.test(text)) return "ar-SA"
+  if (/[一-鿿]/.test(text)) return "zh-CN"
+  if (/[぀-ヿ]/.test(text)) return "ja-JP"
+  if (/[가-힯]/.test(text)) return "ko-KR"
+  if (/[Ѐ-ӿ]/.test(text)) return "ru-RU"
   return getLangCode(localStorage.getItem("datta_language") || "English")
 }
-
 
 // ── IMAGE GENERATION ─────────────────────────────────────────────────────────
 async function generateWithPollinations(prompt, aiDiv) {
@@ -571,7 +570,6 @@ async function generateWithPollinations(prompt, aiDiv) {
     loadSidebar()
   }
 
-  // Step 1: Try server HF (most reliable, 5-10 sec)
   try {
     const fd = new FormData()
     fd.append("prompt", prompt)
@@ -586,13 +584,13 @@ async function generateWithPollinations(prompt, aiDiv) {
     }
   } catch(e) { console.warn("Server HF failed:", e.message) }
 
-  // Step 2: Pollinations - just load directly, onerror handles retries
   const seed = Math.floor(Math.random() * 999999)
   const imgUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
   showImg(imgUrl)
 }
 
 window.generateWithPollinations = generateWithPollinations
+
 // ─── LOAD SIDEBAR ─────────────────────────────────────────────────────────────
 async function loadSidebar() {
   try {
@@ -609,7 +607,6 @@ async function loadSidebar() {
     if (!history) return
     history.innerHTML = ""
 
-    // Close any open menus on outside click
     document.addEventListener("click", () => {
       document.querySelectorAll(".chatContextMenu").forEach(m => m.remove())
     }, { once: false })
@@ -618,7 +615,6 @@ async function loadSidebar() {
       let div = document.createElement("div")
       div.className = "chatItem"
       div.style.cssText = "display:flex;align-items:center;padding:8px 10px;border-radius:10px;cursor:pointer;transition:background 0.15s;position:relative;"
-      // Clean title - remove system instruction prefixes
       let cleanTitle = chat.title || "New Chat"
       if (cleanTitle.startsWith("[STRICT") || cleanTitle.startsWith("[MOOD") || cleanTitle.startsWith("[RESPONSE")) {
         cleanTitle = "Chat " + new Date().toLocaleDateString()
@@ -646,7 +642,6 @@ async function loadSidebar() {
 
 function showChatMenu(e, chatId, chatTitle) {
   e.stopPropagation()
-  // Remove any existing menus
   document.querySelectorAll(".chatContextMenu").forEach(m => m.remove())
 
   const menu = document.createElement("div")
@@ -680,7 +675,6 @@ function showChatMenu(e, chatId, chatTitle) {
     menu.appendChild(btn)
   })
 
-  // Position menu near click
   const rect = e.target.getBoundingClientRect()
   menu.style.left = Math.min(rect.left, window.innerWidth - 200) + "px"
   menu.style.top = rect.bottom + 4 + "px"
@@ -700,7 +694,6 @@ async function renameChat(chatId, currentTitle) {
     })
     loadSidebar()
   } catch(e) {
-    // Fallback: rename locally
     loadSidebar()
   }
 }
@@ -743,19 +736,16 @@ async function openChat(chatId) {
   const messages = await res.json()
   messages.forEach(m => {
     if (m.role === "user") {
-      // Strip system instructions - only show actual user text
       let displayMsg = m.content || ""
       if (displayMsg.includes("[STRICT INSTRUCTION]") || displayMsg.includes("[MOOD INSTRUCTION") || displayMsg.includes("[RESPONSE LENGTH")) {
-        // Extract only the last non-instruction line (real user message)
         const lines = displayMsg.split("\n")
         for (let i = lines.length - 1; i >= 0; i--) {
           const line = lines[i].trim()
-          if (line && !line.startsWith("[STRICT") && !line.startsWith("[MOOD") && !line.startsWith("[RESPONSE") && !line.startsWith("[EVOLVED") && !line.startsWith("[SMART")) {
+          if (line && !line.startsWith("[STRICT") && !line.startsWith("[MOOD") && !line.startsWith("[RESPONSE") && !line.startsWith("[EVOLVED") && !line.startsWith("[SMART") && !line.startsWith("[PROJECT")) {
             displayMsg = line
             break
           }
         }
-        // Also try splitting by double newline
         if (displayMsg.includes("[STRICT") || displayMsg.includes("[MOOD")) {
           const parts = m.content.split("\n\n")
           const lastPart = parts[parts.length - 1].trim()
@@ -802,7 +792,6 @@ async function deleteChat(e, id) {
 }
 
 function confirmDeleteChat(id) {
-  // Show confirm popup
   const existing = document.getElementById("deleteConfirmPopup")
   if (existing) existing.remove()
 
@@ -897,14 +886,13 @@ async function regenerateFrom(btn) {
   lucide.createIcons()
 }
 
-// ─── MIC BUTTON — directly listens into input box (like Claude) ───────────────
+// ─── MIC BUTTON ───────────────────────────────────────────────────────────────
 let inlineListening = false
 let inlineRecognition = null
 
 function startAssistant() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
   if (!SpeechRecognition) {
-    // Fallback to voice overlay if not supported
     openVoiceAssistant()
     return
   }
@@ -919,7 +907,6 @@ function startAssistant() {
 
   inlineListening = true
 
-  // Visual feedback on mic button
   if (micBtn) {
     micBtn.style.color = "#ff4444"
     micBtn.style.background = "rgba(255,60,60,0.1)"
@@ -927,7 +914,6 @@ function startAssistant() {
     micBtn.title = "Listening... (click to stop)"
   }
 
-  // Show listening indicator inside input
   if (input) {
     input.placeholder = "🎤 Listening..."
     input.style.borderColor = "rgba(255,60,60,0.3)"
@@ -951,7 +937,6 @@ function startAssistant() {
 
   inlineRecognition.onend = function() {
     stopInlineListening()
-    // Auto-send if there's text
     const text = document.getElementById("message")?.value.trim()
     if (text) {
       setTimeout(() => send(), 300)
@@ -1529,7 +1514,6 @@ function speakText2(text) {
   utterance.pitch = 1.0
   utterance.volume = 1.0
   const voices = voiceSynth.getVoices()
-  // Find best voice for detected language
   const langCode = detectedLang2.split("-")[0]
   const preferred = voices.find(v => v.lang === detectedLang2 && !v.name.includes("Male"))
     || voices.find(v => v.lang.startsWith(langCode) && !v.name.includes("Male"))
@@ -1595,3 +1579,86 @@ async function loadUserVersion() {
 window.addEventListener("DOMContentLoaded", function() {
   setTimeout(loadUserVersion, 1000)
 })
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  PROJECT CHAT INTEGRATION FIX
+//  Listens for datta:openProjectChat event fired by projects.js
+// ═══════════════════════════════════════════════════════════════════════════════
+
+var activeProjectId = null
+var activeProjectChatId = null
+
+window.addEventListener('datta:openProjectChat', function(e) {
+  var detail = e.detail || {}
+  activeProjectId = detail.projectId
+  activeProjectChatId = detail.chatId
+
+  // Check if this project chat already has a server chat linked
+  var proj = window.DattaProjects ? window.DattaProjects.getProject(activeProjectId) : null
+  if (proj) {
+    var existingChat = (proj.chats || []).find(function(c) {
+      return String(c.id) === String(activeProjectChatId)
+    })
+    if (existingChat && existingChat.serverChatId) {
+      // Resume existing server chat
+      openChat(existingChat.serverChatId)
+      showProjectBanner(proj.name, activeProjectId)
+      return
+    }
+  }
+
+  // Fresh project chat — clear screen
+  currentChatId = null
+  chatBox.innerHTML = ''
+  document.body.classList.remove('chat-started')
+  hideWelcome()
+
+  var projName = proj ? proj.name : 'Project'
+  showProjectBanner(projName, activeProjectId)
+
+  // Close sidebar on mobile
+  if (window.innerWidth < 900 && typeof closeSidebar === 'function') closeSidebar()
+})
+
+function showProjectBanner(projName, projectId) {
+  // Remove any existing banner
+  var existing = document.getElementById('projectChatBanner')
+  if (existing) existing.remove()
+
+  var banner = document.createElement('div')
+  banner.id = 'projectChatBanner'
+  banner.style.cssText =
+    'display:flex;align-items:center;gap:8px;padding:8px 16px;flex-shrink:0;' +
+    'background:rgba(255,215,0,0.04);border-bottom:1px solid rgba(255,215,0,0.08);' +
+    'font-family:\'Rajdhani\',sans-serif;'
+
+  banner.innerHTML =
+    '<span style="font-size:14px;">📁</span>' +
+    '<span style="color:#ffd700;font-size:11px;letter-spacing:1.5px;font-weight:600;">' +
+      projName.toUpperCase() +
+    '</span>' +
+    '<span style="color:#332200;font-size:11px;letter-spacing:1.5px;"> · PROJECT CHAT</span>' +
+    '<button onclick="exitProjectChat()" ' +
+      'style="margin-left:auto;background:none;border:none;color:#443300;cursor:pointer;' +
+      'font-size:10px;letter-spacing:1px;padding:3px 12px;border-radius:20px;' +
+      'border:1px solid rgba(255,215,0,0.08);transition:all .2s;font-family:\'Rajdhani\',sans-serif;" ' +
+      'onmouseover="this.style.color=\'#ffd700\';this.style.borderColor=\'rgba(255,215,0,0.3)\'" ' +
+      'onmouseout="this.style.color=\'#443300\';this.style.borderColor=\'rgba(255,215,0,0.08)\'">' +
+      '✕ EXIT' +
+    '</button>'
+
+  // Insert banner above the chat box
+  chatBox.parentElement.insertBefore(banner, chatBox)
+}
+
+function exitProjectChat() {
+  activeProjectId = null
+  activeProjectChatId = null
+  var b = document.getElementById('projectChatBanner')
+  if (b) b.remove()
+  newChat()
+}
+window.exitProjectChat = exitProjectChat
+
+// ═══════════════════════════════════════════════════════════════════════════════
