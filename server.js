@@ -62,6 +62,21 @@ const SubscriptionSchema = new mongoose.Schema({
 })
 const Subscription = mongoose.model("Subscription", SubscriptionSchema)
 
+// ── PROJECT SCHEMA ────────────────────────────────────────────────────────────
+const ProjectSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  projectId: { type: String, required: true },   // client-side uid e.g. "1719000000000_abc12"
+  name: { type: String, default: "Untitled Project" },
+  color: { type: String, default: "#ffd700" },
+  createdAt: { type: Number, default: Date.now },
+  chats: { type: Array, default: [] },
+  files: { type: Array, default: [] },
+  artifacts: { type: Array, default: [] }
+})
+// Compound unique index: one document per user+project
+ProjectSchema.index({ userId: 1, projectId: 1 }, { unique: true })
+const Project = mongoose.model("Project", ProjectSchema)
+
 // ── PLAN LIMITS ───────────────────────────────────────────────────────────────
 const planLimits = {
   free:       { messages: 50,     images: 5,      resetHours: 1 },
@@ -321,6 +336,7 @@ app.delete("/auth/delete-account", authMiddleware, async (req, res) => {
     if (user.password && !await bcrypt.compare(password, user.password)) return res.status(400).json({ error: "Wrong password" })
     await Chat.deleteMany({ userId: req.user.id })
     await Subscription.deleteMany({ userId: req.user.id })
+    await Project.deleteMany({ userId: req.user.id })
     await User.findByIdAndDelete(req.user.id)
     res.json({ success: true })
   } catch (err) { res.status(500).json({ error: err.message }) }
@@ -352,7 +368,7 @@ app.post("/payment/activate", authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// ── IMAGE GENERATION ENDPOINT (Server-side HF) ────────────────────────────────
+// ── IMAGE GENERATION ENDPOINT ─────────────────────────────────────────────────
 app.post("/generate-image", upload.none(), authMiddleware, async (req, res) => {
   try {
     const prompt = req.body.prompt
@@ -360,7 +376,6 @@ app.post("/generate-image", upload.none(), authMiddleware, async (req, res) => {
 
     const HF_KEY = process.env.HF_API_KEY
     if (!HF_KEY) {
-      // Fallback to Pollinations if no HF key
       const seed = Math.floor(Math.random() * 999999)
       const imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
       return res.json({ imageUrl, source: "pollinations" })
@@ -387,7 +402,6 @@ app.post("/generate-image", upload.none(), authMiddleware, async (req, res) => {
     if (!response.ok) {
       const errText = await response.text()
       console.error("HF Error:", response.status, errText)
-      // Fallback to Pollinations on HF error
       const seed = Math.floor(Math.random() * 999999)
       const imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
       return res.json({ imageUrl, source: "pollinations_fallback" })
@@ -402,7 +416,6 @@ app.post("/generate-image", upload.none(), authMiddleware, async (req, res) => {
 
   } catch (err) {
     console.error("Image generation error:", err.message)
-    // Fallback to Pollinations
     const seed = Math.floor(Math.random() * 999999)
     const imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(req.body.prompt || "art") + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
     res.json({ imageUrl, source: "pollinations_fallback" })
@@ -457,7 +470,6 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     if (message && isImageRequest(message)) {
       const imagePrompt = getImagePrompt(message)
 
-      // Try server-side HF generation
       let imageUrl = null
       const HF_KEY = process.env.HF_API_KEY
       if (HF_KEY) {
@@ -487,7 +499,6 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
         }
       }
 
-      // Fallback to Pollinations
       if (!imageUrl) {
         const seed = Math.floor(Math.random() * 999999)
         imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
@@ -621,8 +632,52 @@ app.post("/chat/:id/rename", authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
+// ── PROJECT ROUTES ────────────────────────────────────────────────────────────
+
+// GET all projects for the logged-in user
+app.get("/projects", authMiddleware, async (req, res) => {
+  try {
+    if (req.user.isGuest) return res.json([])
+    const projects = await Project.find({ userId: req.user.id }).sort({ createdAt: -1 })
+    res.json(projects)
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
+
+// POST — upsert (save or update) a single project
+app.post("/projects/save", authMiddleware, async (req, res) => {
+  try {
+    if (req.user.isGuest) return res.json({ success: true, skipped: true })
+    const { projectId, name, color, createdAt, chats, files, artifacts } = req.body
+    if (!projectId) return res.status(400).json({ error: "projectId is required" })
+    await Project.findOneAndUpdate(
+      { userId: req.user.id, projectId },
+      {
+        userId: req.user.id,
+        projectId,
+        name: name || "Untitled Project",
+        color: color || "#ffd700",
+        createdAt: createdAt || Date.now(),
+        chats: chats || [],
+        files: files || [],
+        artifacts: artifacts || []
+      },
+      { upsert: true, new: true }
+    )
+    res.json({ success: true })
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
+
+// DELETE a project
+app.delete("/projects/:projectId", authMiddleware, async (req, res) => {
+  try {
+    if (req.user.isGuest) return res.json({ success: true, skipped: true })
+    await Project.findOneAndDelete({ userId: req.user.id, projectId: req.params.projectId })
+    res.json({ success: true })
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
+
 // ── HEALTH CHECK ──────────────────────────────────────────────────────────────
-app.get("/", (req, res) => res.json({ status: "✅ Datta AI Server Running", version: "3.0" }))
+app.get("/", (req, res) => res.json({ status: "✅ Datta AI Server Running", version: "3.1" }))
 app.get("/health", (req, res) => res.json({ status: "ok", uptime: process.uptime() }))
 
 const PORT = process.env.PORT || 3000
