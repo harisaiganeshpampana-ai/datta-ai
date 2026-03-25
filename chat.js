@@ -1578,84 +1578,9 @@ function exitProjectChat() {
   newChat()
 }
 window.exitProjectChat = exitProjectChat
+
 // ═══════════════════════════════════════════════════════════════════════════════
-
-// ===== CONNECT OTP BUTTONS =====
-
-document.addEventListener("DOMContentLoaded", () => {
-
-  const sendBtn = document.getElementById("sendOtpBtn");
-  const verifyBtn = document.getElementById("verifyOtpBtn");
-
-  if (sendBtn) {
-    sendBtn.addEventListener("click", async () => {
-      const phone = document.getElementById("phoneInput").value;
-
-      console.log("Sending OTP to:", phone);
-
-      const res = await sendOTP(phone);
-
-      if (res?.success) {
-        alert("OTP sent ✅");
-      } else {
-        alert("Failed ❌");
-      }
-    });
-  }
-
-  if (verifyBtn) {
-    verifyBtn.addEventListener("click", async () => {
-      const phone = document.getElementById("phoneInput").value;
-      const code = document.getElementById("otpInput").value;
-
-      console.log("Verifying OTP:", code);
-
-      const res = await verifyOTP(phone, code);
-
-      if (res?.success) {
-        alert("Verified ✅");
-      } else {
-        alert("Wrong OTP ❌");
-      }
-    });
-  }
-
-});
-
-// ===== BACKEND API CALLS =====
-
-const BASE_URL = "https://datta-ai-server.onrender.com"; // your render URL
-
-async function sendOTP(phone) {
-  try {
-    const res = await fetch(`${BASE_URL}/send-otp`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ phone })
-    });
-
-    return await res.json();
-  } catch (err) {
-    console.error("Send OTP error:", err);
-    return { success: false };
-  }
-}
-
-async function verifyOTP(phone, code) {
-  try {
-    const res = await fetch(`${BASE_URL}/verify-otp`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ phone, code })
-    });
-
-    return await res.json();
-  } catch (err) {
-    console.error("Verify OTP error:", err);
-    return { success: false };
-  }
-}
+// NOTE: OTP logic has been moved entirely to login.html
+// The /auth/send-otp and /auth/verify-otp endpoints are called there.
+// Do NOT add OTP code here — it does not belong in chat.js.
+// ═══════════════════════════════════════════════════════════════════════════════
