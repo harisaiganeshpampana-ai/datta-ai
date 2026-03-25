@@ -211,86 +211,116 @@ app.post("/auth/login", async (req, res) => {
   } catch(err) { res.status(500).json({ error: "Server error" }) }
 })
 
-// SEND OTP - uses Twilio Verify Service (TWILIO_SERVICE_SID) OR direct SMS (TWILIO_PHONE)
+// SEND OTP - Fast2SMS (free, all Indian numbers) with Twilio fallback
 app.post("/auth/send-otp", async (req, res) => {
   try {
     const { phone } = req.body
     if (!phone) return res.status(400).json({ error: "Phone number required" })
 
-    const phoneRegex = /^\+[1-9]\d{7,14}$/
-    if (!phoneRegex.test(phone)) return res.status(400).json({ error: "Use format: +91XXXXXXXXXX" })
+    // Accept both +91XXXXXXXXXX and 10-digit formats
+    let cleanPhone = phone.replace(/\s+/g, "").trim()
+    let phoneFor2SMS = cleanPhone.replace("+91", "").replace(/^\+/, "")
+    if (phoneFor2SMS.length < 10) return res.status(400).json({ error: "Enter valid 10-digit mobile number" })
+    phoneFor2SMS = phoneFor2SMS.slice(-10) // take last 10 digits
 
-    if (!twilioClient) return res.status(500).json({ error: "SMS not configured. Please use email login." })
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+    const normalizedPhone = "+91" + phoneFor2SMS
+    otpStore[normalizedPhone] = { otp, expires: Date.now() + 10 * 60 * 1000 }
+    console.log("OTP for", normalizedPhone, ":", otp)
 
-    const serviceSid = process.env.TWILIO_SERVICE_SID
-    const fromPhone = process.env.TWILIO_PHONE || process.env.TWILIO_PHONE_NUMBER
+    const fast2smsKey = process.env.FAST2SMS_API_KEY
 
-    if (serviceSid) {
-      // Use Twilio Verify Service - most reliable
-      await twilioClient.verify.v2.services(serviceSid).verifications.create({
-        to: phone,
-        channel: "sms"
+    if (fast2smsKey) {
+      // Fast2SMS Quick SMS route - no DLT needed
+      const response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
+        method: "POST",
+        headers: {
+          "authorization": fast2smsKey,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          route: "q",
+          message: "Your Datta AI OTP is " + otp + ". Valid for 10 minutes. Do not share this code.",
+          language: "english",
+          flash: 0,
+          numbers: phoneFor2SMS
+        })
       })
-      console.log("OTP sent via Verify Service to:", phone)
-    } else if (fromPhone) {
-      // Use direct SMS with custom OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString()
-      otpStore[phone] = { otp, expires: Date.now() + 10 * 60 * 1000 }
-      await twilioClient.messages.create({
-        body: "Your Datta AI OTP is: " + otp + ". Valid for 10 minutes.",
-        from: fromPhone,
-        to: phone
-      })
-      console.log("OTP sent via direct SMS to:", phone)
-    } else {
-      return res.status(500).json({ error: "Add TWILIO_SERVICE_SID or TWILIO_PHONE to Render environment" })
+      const data = await response.json()
+      console.log("Fast2SMS response:", JSON.stringify(data))
+
+      if (data.return === true) {
+        return res.json({ success: true, message: "OTP sent successfully" })
+      } else {
+        console.error("Fast2SMS error:", data.message)
+      }
     }
 
-    res.json({ success: true, message: "OTP sent to " + phone })
+    // Twilio fallback (for verified numbers)
+    if (twilioClient && process.env.TWILIO_SERVICE_SID) {
+      await twilioClient.verify.v2.services(process.env.TWILIO_SERVICE_SID).verifications.create({
+        to: normalizedPhone, channel: "sms"
+      })
+      return res.json({ success: true, message: "OTP sent successfully" })
+    }
+
+    if (twilioClient && (process.env.TWILIO_PHONE || process.env.TWILIO_PHONE_NUMBER)) {
+      await twilioClient.messages.create({
+        body: "Your Datta AI OTP is: " + otp + ". Valid for 10 minutes.",
+        from: process.env.TWILIO_PHONE || process.env.TWILIO_PHONE_NUMBER,
+        to: normalizedPhone
+      })
+      return res.json({ success: true, message: "OTP sent successfully" })
+    }
+
+    res.status(500).json({ error: "SMS service not configured. Please add FAST2SMS_API_KEY to Render." })
 
   } catch(err) {
-    console.error("OTP send error:", err)
-    if (err.code === 21608) return res.status(400).json({ error: "Number not verified in Twilio trial. Go to console.twilio.com -> Verified Caller IDs and add your number." })
-    if (err.code === 21211) return res.status(400).json({ error: "Invalid phone number. Use +91XXXXXXXXXX" })
-    if (err.code === 20003) return res.status(500).json({ error: "Twilio auth failed. Check TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in Render." })
-    if (err.code === 60200) return res.status(400).json({ error: "Invalid phone number for Verify service." })
-    res.status(500).json({ error: "Failed to send OTP: " + err.message })
+    console.error("OTP send error:", err.message)
+    if (err.code === 21608) return res.status(400).json({ error: "Please use email login or upgrade Twilio account." })
+    res.status(500).json({ error: "Failed to send OTP. Please try email login." })
   }
 })
 
-// VERIFY OTP - supports both Verify Service and custom OTP
+// VERIFY OTP
 app.post("/auth/verify-otp", async (req, res) => {
   try {
     const { phone, otp } = req.body
     if (!phone || !otp) return res.status(400).json({ error: "Phone and OTP required" })
 
-    const serviceSid = process.env.TWILIO_SERVICE_SID
+    let cleanPhone = phone.replace(/\s+/g, "").trim()
+    let phoneFor2SMS = cleanPhone.replace("+91", "").replace(/^\+/, "").slice(-10)
+    const normalizedPhone = "+91" + phoneFor2SMS
 
-    if (serviceSid && twilioClient) {
-      // Verify using Twilio Verify Service
-      const result = await twilioClient.verify.v2.services(serviceSid).verificationChecks.create({
-        to: phone,
-        code: otp.toString().trim()
+    // Check custom OTP store first (Fast2SMS)
+    const stored = otpStore[normalizedPhone]
+    if (stored) {
+      if (Date.now() > stored.expires) {
+        delete otpStore[normalizedPhone]
+        return res.status(400).json({ error: "OTP expired. Request a new one." })
+      }
+      if (stored.otp !== otp.toString().trim()) {
+        return res.status(400).json({ error: "Incorrect OTP. Please try again." })
+      }
+      delete otpStore[normalizedPhone]
+    } else if (twilioClient && process.env.TWILIO_SERVICE_SID) {
+      // Try Twilio Verify
+      const result = await twilioClient.verify.v2.services(process.env.TWILIO_SERVICE_SID).verificationChecks.create({
+        to: normalizedPhone, code: otp.toString().trim()
       })
-      if (result.status !== "approved") return res.status(400).json({ error: "Incorrect OTP. Please try again." })
+      if (result.status !== "approved") return res.status(400).json({ error: "Incorrect OTP." })
     } else {
-      // Verify custom OTP from store
-      const stored = otpStore[phone]
-      if (!stored) return res.status(400).json({ error: "No OTP sent. Please request a new OTP." })
-      if (Date.now() > stored.expires) { delete otpStore[phone]; return res.status(400).json({ error: "OTP expired. Request a new one." }) }
-      if (stored.otp !== otp.toString().trim()) return res.status(400).json({ error: "Incorrect OTP." })
-      delete otpStore[phone]
+      return res.status(400).json({ error: "No OTP found. Please request a new OTP." })
     }
 
-    let user = await User.findOne({ phone })
-    if (!user) user = await User.create({ username: "user_" + phone.slice(-4), phone })
-
+    let user = await User.findOne({ phone: normalizedPhone })
+    if (!user) user = await User.create({ username: "user_" + phoneFor2SMS.slice(-4), phone: normalizedPhone })
     res.json({ token: generateToken(user), user: { id: user._id, username: user.username } })
 
   } catch(err) {
-    console.error("OTP verify error:", err)
-    if (err.code === 60202) return res.status(400).json({ error: "Max attempts exceeded. Request a new OTP." })
-    if (err.code === 20404) return res.status(400).json({ error: "OTP expired. Request a new one." })
+    console.error("OTP verify error:", err.message)
+    if (err.code === 60202) return res.status(400).json({ error: "Too many attempts. Request a new OTP." })
     res.status(500).json({ error: err.message })
   }
 })
