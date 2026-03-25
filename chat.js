@@ -350,8 +350,46 @@ async function send() {
   })
   if (typeof clearFileSelection === "function") clearFileSelection()
 
-  const searchTriggers = ["latest","recent","today","yesterday","this week","current","now","live","breaking","news","who is","what is the","price of","weather","score","2025","2026","happened","update","trending","stock","crypto","bitcoin","search for","find","look up","ipl","cricket","match","movie","released","launched","election","gold","petrol"]
-  const willSearch = searchTriggers.some(t => text.toLowerCase().includes(t))
+  // ── AGENT MODE: Comprehensive real-time search triggers ──────────────────
+  const searchTriggers = [
+    // Time-based (always search)
+    "latest","recent","today","yesterday","this week","this month","right now",
+    "current","now","live","breaking","just happened","recently","tonight",
+    "this morning","2024","2025","2026","ongoing","still",
+    // News & Events
+    "news","update","updates","what happened","what is happening","happening",
+    "headline","headlines","report","reports","announced","announcement",
+    "war","attack","conflict","battle","strike","bombing","missile",
+    "russia","ukraine","israel","gaza","palestine","iran","china","taiwan",
+    "modi","trump","biden","election","vote","government","minister","president",
+    "protest","rally","earthquake","flood","disaster","accident","crash",
+    // Prices & Finance
+    "price","prices","cost","rate","rates","how much","worth",
+    "stock","stocks","share","shares","market","nifty","sensex","nasdaq",
+    "crypto","bitcoin","ethereum","rupee","dollar","gold","silver","petrol","diesel",
+    // Sports
+    "score","scores","result","results","match","matches","game","games",
+    "ipl","cricket","football","soccer","tennis","f1","formula 1",
+    "who won","who is winning","live score","playing","tournament","league","cup",
+    // People & Places
+    "who is","who are","where is","when is","what is the status",
+    "ceo","founder","president","prime minister","king","queen",
+    // Weather
+    "weather","temperature","rain","forecast","climate",
+    // Search intent
+    "search","find","look up","tell me about","what about","any news",
+    "released","launched","launched","new","upcoming",
+    "movie","film","show","series","album","song"
+  ]
+  // Smart detection: is this a real-time query?
+  const lowerText = text.toLowerCase()
+  const willSearch = searchTriggers.some(t => lowerText.includes(t)) ||
+    // Any question about something that changes frequently
+    (lowerText.includes("?") && (
+      lowerText.includes("who") || lowerText.includes("what") ||
+      lowerText.includes("where") || lowerText.includes("when") ||
+      lowerText.includes("how much") || lowerText.includes("is there")
+    ))
   const willGenImage = imageTriggers.some(t => text.toLowerCase().includes(t))
   const aiAvatarEmoji = window.dattaMoodEmoji || "🤖"
 
@@ -367,11 +405,19 @@ async function send() {
       </div>
     `
   } else if (willSearch) {
+    // Show smart search indicator based on query type
+    let searchLabel = "Searching the web..."
+    if (lowerText.includes("war") || lowerText.includes("conflict") || lowerText.includes("attack")) searchLabel = "Getting latest war updates..."
+    else if (lowerText.includes("price") || lowerText.includes("stock") || lowerText.includes("crypto")) searchLabel = "Fetching live prices..."
+    else if (lowerText.includes("weather")) searchLabel = "Getting weather data..."
+    else if (lowerText.includes("score") || lowerText.includes("match") || lowerText.includes("cricket")) searchLabel = "Getting live scores..."
+    else if (lowerText.includes("news")) searchLabel = "Searching latest news..."
+    else if (lowerText.includes("election") || lowerText.includes("vote")) searchLabel = "Finding latest updates..."
     aiDiv.innerHTML = `
       <div class="avatar">${aiAvatarEmoji}</div>
       <div class="aiBubble searchingIndicator">
         <span class="searchIcon">🌐</span>
-        <span class="searchText">Searching the web...</span>
+        <span class="searchText" id="searchStatusText">${searchLabel}</span>
       </div>
     `
   } else {
@@ -423,7 +469,19 @@ async function send() {
     }
   }
   const messageWithMood = projectPrefix + (moodPrefix ? moodPrefix + text : text)
-  formData.append("message", messageWithMood)
+  // ── AGENT MODE: Tell backend to use web search when needed ──
+  if (willSearch) {
+    // Enhance message to instruct AI to search and give current info
+    const agentMessage = messageWithMood +
+      "\n\n[AGENT INSTRUCTION]: You MUST search the web for real-time information to answer this. " +
+      "Use your Tavily web search tool. Give current, up-to-date answer with sources. " +
+      "Today is " + new Date().toLocaleDateString("en-IN", {weekday:"long",year:"numeric",month:"long",day:"numeric"}) + "."
+    formData.append("message", agentMessage)
+    formData.append("search", "true")  // tells backend to use Tavily
+    formData.append("agent", "true")   // enables agent mode
+  } else {
+    formData.append("message", messageWithMood)
+  }
   formData.append("chatId", currentChatId || "")
   formData.append("token", getToken())
   formData.append("language", localStorage.getItem("datta_language") || "English")
@@ -1331,11 +1389,15 @@ async function processVoiceQuery(query) {
   try {
     const formData = new FormData()
     const moodPrefix = buildMoodPrefix()
-    formData.append("message", moodPrefix ? moodPrefix + query : query)
+    const voiceNeedsSearch = searchTriggers && searchTriggers.some(t => query.toLowerCase().includes(t))
+    const voiceMsg = (moodPrefix ? moodPrefix + query : query) +
+      (voiceNeedsSearch ? "\n\n[AGENT INSTRUCTION]: Search the web for current information. Today is " + new Date().toLocaleDateString("en-IN") + "." : "")
+    formData.append("message", voiceMsg)
     formData.append("chatId", currentChatId || "")
     formData.append("token", getToken())
     formData.append("language", localStorage.getItem("datta_language") || "English")
     formData.append("voice", "true")
+    if (voiceNeedsSearch) { formData.append("search", "true"); formData.append("agent", "true") }
     if (window.dattaMoodLabel) formData.append("mood", window.dattaMoodLabel)
     const res = await fetch("https://datta-ai-server.onrender.com/chat", { method: "POST", body: formData })
     if (!res.ok) { speakText2("Sorry, I encountered an error. Please try again."); setVoiceStatus("Error. Tap to try again.", "idle"); return }
