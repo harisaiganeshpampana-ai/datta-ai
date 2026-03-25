@@ -259,7 +259,7 @@ body::before {
   display: none;
 }
 
-.msg.error { background: #2a1010; border: 1px solid #441010; color: #ff6666; display: block; }
+.msg.error   { background: #2a1010; border: 1px solid #441010; color: #ff6666; display: block; }
 .msg.success { background: #0a2a1a; border: 1px solid #104410; color: #44ff88; display: block; }
 
 /* LOADING SPINNER */
@@ -272,6 +272,48 @@ body::before {
   display: inline-block; vertical-align: middle;
   margin-right: 6px;
 }
+
+/* RESEND OTP */
+.resendRow {
+  display: none;
+  text-align: center;
+  margin-top: 10px;
+  font-size: 13px;
+  color: #555;
+}
+.resendRow.visible { display: block; }
+.resendBtn {
+  background: none; border: none;
+  color: #00ff88; font-size: 13px;
+  cursor: pointer; text-decoration: underline;
+  padding: 0;
+}
+.resendBtn:disabled { color: #555; cursor: not-allowed; text-decoration: none; }
+
+/* OTP BOXES */
+.otpBoxes {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 4px;
+}
+.otpBoxes input {
+  width: 44px !important;
+  height: 52px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  padding: 0 !important;
+  border-radius: 10px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  color: white;
+  outline: none;
+  transition: border-color 0.2s;
+  caret-color: #00ff88;
+}
+.otpBoxes input:focus { border-color: #00ff88; }
+.otpBoxes input.filled { border-color: #00cc6a; }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -317,7 +359,7 @@ body::before {
         <input type="password" id="loginPassword" placeholder="Enter your password">
       </div>
 
-      <button class="submitBtn" onclick="handleLogin()">Login</button>
+      <button class="submitBtn" id="loginBtn" onclick="handleLogin()">Login</button>
 
       <div class="divider">or continue with</div>
 
@@ -354,7 +396,7 @@ body::before {
         <input type="password" id="signupPassword" placeholder="Min 6 characters">
       </div>
 
-      <button class="submitBtn" onclick="handleSignup()">Create Account</button>
+      <button class="submitBtn" id="signupBtn" onclick="handleSignup()">Create Account</button>
 
       <div class="divider">or continue with</div>
 
@@ -370,27 +412,51 @@ body::before {
       </button>
     </div>
 
-    <!-- PHONE SECTION -->
+    <!-- PHONE / OTP SECTION -->
     <div class="formSection" id="phoneSection">
       <div class="formTitle">Phone Login</div>
-      <div class="formSub">Enter your phone number</div>
+      <div class="formSub" id="phoneSubText">Enter your phone number</div>
 
-      <div class="field">
-        <label>Phone Number</label>
-        <div class="phoneRow">
-          <input class="countryCode" type="text" id="countryCode" value="+91">
-          <div class="field">
-            <input type="tel" id="phoneNumber" placeholder="9876543210">
+      <!-- Step 1: Phone number input -->
+      <div id="phoneInputStep">
+        <div class="field">
+          <label>Phone Number</label>
+          <div class="phoneRow">
+            <input class="countryCode" type="text" id="countryCode" value="+91" maxlength="4">
+            <div class="field">
+              <input type="tel" id="phoneNumber" placeholder="9876543210" maxlength="10">
+            </div>
           </div>
         </div>
+        <button class="submitBtn" id="phoneBtn" onclick="handleSendOtp()">Send OTP</button>
       </div>
 
-      <div class="field" id="otpField" style="display:none;">
-        <label>OTP</label>
-        <input type="text" id="otpInput" placeholder="Enter 6-digit OTP" maxlength="6">
-      </div>
+      <!-- Step 2: OTP verification (hidden initially) -->
+      <div id="otpVerifyStep" style="display:none;">
+        <div class="field">
+          <label>Enter OTP sent to <span id="sentToLabel" style="color:#00ff88;"></span></label>
+          <!-- 6 individual OTP boxes for better UX -->
+          <div class="otpBoxes">
+            <input type="tel" maxlength="1" class="otp-box" data-index="0">
+            <input type="tel" maxlength="1" class="otp-box" data-index="1">
+            <input type="tel" maxlength="1" class="otp-box" data-index="2">
+            <input type="tel" maxlength="1" class="otp-box" data-index="3">
+            <input type="tel" maxlength="1" class="otp-box" data-index="4">
+            <input type="tel" maxlength="1" class="otp-box" data-index="5">
+          </div>
+        </div>
+        <button class="submitBtn" id="verifyOtpBtn" onclick="handleVerifyOtp()">Verify OTP</button>
 
-      <button class="submitBtn" id="phoneBtn" onclick="handlePhone()">Send OTP</button>
+        <!-- Resend OTP with countdown -->
+        <div class="resendRow visible" id="resendRow">
+          <span id="resendTimerText">Resend OTP in <strong id="resendCountdown">30</strong>s</span>
+          <button class="resendBtn" id="resendBtn" onclick="handleResendOtp()" disabled style="display:none;">Resend OTP</button>
+        </div>
+
+        <button class="guestBtn" onclick="resetPhoneStep()" style="margin-top:10px;">
+          ✏️ Change Number
+        </button>
+      </div>
 
       <button class="guestBtn" onclick="switchTab('login')" style="margin-top:10px;">
         ← Back to Login
@@ -403,7 +469,7 @@ body::before {
 <script>
 const SERVER = "https://datta-ai-server.onrender.com"
 
-// Run immediately on script load - dont wait for window load
+// Run immediately on script load - don't wait for window load
 ;(function() {
   const params = new URLSearchParams(window.location.search)
   const token = params.get("token")
@@ -416,7 +482,7 @@ const SERVER = "https://datta-ai-server.onrender.com"
       } catch(e) {}
     }
     const hasPlan = localStorage.getItem("datta_plan")
-      window.location.replace(hasPlan ? "index.html" : "pricing.html")
+    window.location.replace(hasPlan ? "index.html" : "pricing.html")
   }
 })()
 
@@ -436,7 +502,10 @@ window.addEventListener("load", function() {
   }
 
   handleGoogleCallback()
+  initOtpBoxes()
 })
+
+// ─── TAB SWITCHING ────────────────────────────────────────────────────────────
 
 function switchTab(tab) {
   document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"))
@@ -451,8 +520,11 @@ function switchTab(tab) {
     document.getElementById("signupSection").classList.add("active")
   } else if (tab === "phone") {
     document.getElementById("phoneSection").classList.add("active")
+    resetPhoneStep()
   }
 }
+
+// ─── MESSAGES ─────────────────────────────────────────────────────────────────
 
 function showMsg(text, type) {
   const el = document.getElementById("msg")
@@ -466,17 +538,8 @@ function clearMsg() {
   el.textContent = ""
 }
 
-function setLoading(btnId, loading) {
-  const btn = document.getElementById(btnId) || document.querySelector(".submitBtn")
-  if (loading) {
-    btn.disabled = true
-    btn.innerHTML = '<span class="spinner"></span> Please wait...'
-  } else {
-    btn.disabled = false
-  }
-}
+// ─── EMAIL LOGIN ──────────────────────────────────────────────────────────────
 
-// EMAIL LOGIN
 async function handleLogin() {
   const email = document.getElementById("loginEmail").value.trim()
   const password = document.getElementById("loginPassword").value
@@ -484,7 +547,7 @@ async function handleLogin() {
 
   if (!email || !password) return showMsg("Please fill in all fields", "error")
 
-  const btn = document.querySelectorAll(".submitBtn")[0]
+  const btn = document.getElementById("loginBtn")
   btn.disabled = true
   btn.innerHTML = '<span class="spinner"></span> Logging in...'
 
@@ -507,8 +570,6 @@ async function handleLogin() {
     localStorage.setItem("datta_user", JSON.stringify(data.user))
     showMsg("Login successful! Redirecting...", "success")
     setTimeout(() => {
-      // New user (no plan yet) → go to pricing to pick plan
-      // Returning user (has plan) → go straight to chat
       const hasPlan = localStorage.getItem("datta_plan")
       window.location.href = hasPlan ? "index.html" : "pricing.html"
     }, 1000)
@@ -520,7 +581,8 @@ async function handleLogin() {
   }
 }
 
-// EMAIL SIGNUP
+// ─── EMAIL SIGNUP ─────────────────────────────────────────────────────────────
+
 async function handleSignup() {
   const username = document.getElementById("signupUsername").value.trim()
   const email = document.getElementById("signupEmail").value.trim()
@@ -531,7 +593,7 @@ async function handleSignup() {
   if (password.length < 6) return showMsg("Password must be at least 6 characters", "error")
   if (username.length < 3) return showMsg("Username must be at least 3 characters", "error")
 
-  const btn = document.querySelectorAll(".submitBtn")[1]
+  const btn = document.getElementById("signupBtn")
   btn.disabled = true
   btn.innerHTML = '<span class="spinner"></span> Creating account...'
 
@@ -554,7 +616,6 @@ async function handleSignup() {
     localStorage.setItem("datta_user", JSON.stringify(data.user))
     showMsg("Account created! Redirecting...", "success")
     setTimeout(() => {
-      // Brand new account → always go to pricing first
       window.location.href = "pricing.html"
     }, 1000)
 
@@ -565,84 +626,236 @@ async function handleSignup() {
   }
 }
 
-// PHONE OTP
-let otpSent = false
-async function handlePhone() {
+// ─── OTP BOXES LOGIC ──────────────────────────────────────────────────────────
+
+function initOtpBoxes() {
+  const boxes = document.querySelectorAll(".otp-box")
+  boxes.forEach((box, i) => {
+    box.addEventListener("input", function() {
+      // Only allow digits
+      this.value = this.value.replace(/\D/g, "")
+      if (this.value) {
+        this.classList.add("filled")
+        if (i < boxes.length - 1) boxes[i + 1].focus()
+      } else {
+        this.classList.remove("filled")
+      }
+    })
+    box.addEventListener("keydown", function(e) {
+      if (e.key === "Backspace" && !this.value && i > 0) {
+        boxes[i - 1].focus()
+        boxes[i - 1].value = ""
+        boxes[i - 1].classList.remove("filled")
+      }
+    })
+    box.addEventListener("paste", function(e) {
+      e.preventDefault()
+      const pasted = (e.clipboardData || window.clipboardData).getData("text").replace(/\D/g, "")
+      pasted.split("").slice(0, 6).forEach((ch, idx) => {
+        if (boxes[idx]) {
+          boxes[idx].value = ch
+          boxes[idx].classList.add("filled")
+        }
+      })
+      const last = Math.min(pasted.length, 5)
+      boxes[last].focus()
+    })
+  })
+}
+
+function getOtpValue() {
+  return Array.from(document.querySelectorAll(".otp-box")).map(b => b.value).join("")
+}
+
+function clearOtpBoxes() {
+  document.querySelectorAll(".otp-box").forEach(b => {
+    b.value = ""
+    b.classList.remove("filled")
+  })
+}
+
+// ─── RESEND COUNTDOWN ─────────────────────────────────────────────────────────
+
+let resendTimer = null
+
+function startResendCountdown() {
+  let seconds = 30
+  const countdownEl = document.getElementById("resendCountdown")
+  const timerText = document.getElementById("resendTimerText")
+  const resendBtn = document.getElementById("resendBtn")
+
+  timerText.style.display = "inline"
+  resendBtn.style.display = "none"
+  resendBtn.disabled = true
+  countdownEl.textContent = seconds
+
+  clearInterval(resendTimer)
+  resendTimer = setInterval(() => {
+    seconds--
+    countdownEl.textContent = seconds
+    if (seconds <= 0) {
+      clearInterval(resendTimer)
+      timerText.style.display = "none"
+      resendBtn.style.display = "inline"
+      resendBtn.disabled = false
+    }
+  }, 1000)
+}
+
+// ─── PHONE OTP: SEND ─────────────────────────────────────────────────────────
+
+async function handleSendOtp() {
   const code = document.getElementById("countryCode").value.trim()
   const phone = document.getElementById("phoneNumber").value.trim()
+  clearMsg()
+
+  if (!phone) return showMsg("Enter your phone number", "error")
+  if (phone.length < 10) return showMsg("Enter a valid 10-digit phone number", "error")
+
   const btn = document.getElementById("phoneBtn")
+  btn.disabled = true
+  btn.innerHTML = '<span class="spinner"></span> Sending OTP...'
 
-  if (!otpSent) {
-    if (!phone) return showMsg("Enter your phone number", "error")
-    clearMsg()
-    btn.disabled = true
-    btn.innerHTML = '<span class="spinner"></span> Sending OTP...'
+  try {
+    const res = await fetch(SERVER + "/auth/send-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: code + phone })
+    })
+    const data = await res.json()
 
-    try {
-      const res = await fetch(SERVER + "/auth/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: code + phone })
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        showMsg(data.error || "Failed to send OTP", "error")
-        btn.disabled = false
-        btn.textContent = "Send OTP"
-        return
-      }
-      otpSent = true
-      document.getElementById("otpField").style.display = "block"
-      btn.disabled = false
-      btn.textContent = "Verify OTP"
-      showMsg("OTP sent to " + code + phone, "success")
-    } catch (e) {
-      showMsg("Server error", "error")
+    if (!res.ok) {
+      showMsg(data.error || "Failed to send OTP. Check your number.", "error")
       btn.disabled = false
       btn.textContent = "Send OTP"
+      return
     }
 
-  } else {
-    const otp = document.getElementById("otpInput").value.trim()
-    if (!otp) return showMsg("Enter the OTP", "error")
-    clearMsg()
-    btn.disabled = true
-    btn.innerHTML = '<span class="spinner"></span> Verifying...'
+    // Switch to OTP verify step
+    document.getElementById("phoneInputStep").style.display = "none"
+    document.getElementById("otpVerifyStep").style.display = "block"
+    document.getElementById("sentToLabel").textContent = code + phone
+    document.getElementById("phoneSubText").textContent = "Enter the OTP we sent you"
+    showMsg("OTP sent to " + code + phone, "success")
+    startResendCountdown()
 
-    try {
-      const res = await fetch(SERVER + "/auth/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: document.getElementById("countryCode").value + document.getElementById("phoneNumber").value, otp })
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        showMsg(data.error || "Invalid OTP", "error")
-        btn.disabled = false
-        btn.textContent = "Verify OTP"
-        return
-      }
-      localStorage.setItem("datta_token", data.token)
-      localStorage.setItem("datta_user", JSON.stringify(data.user))
-      showMsg("Verified! Redirecting...", "success")
-      setTimeout(() => {
-        const hasPlan = localStorage.getItem("datta_plan")
-        window.location.href = hasPlan ? "index.html" : "pricing.html"
-      }, 1000)
-    } catch (e) {
-      showMsg("Server error", "error")
-      btn.disabled = false
-      btn.textContent = "Verify OTP"
-    }
+    // Focus first OTP box
+    const boxes = document.querySelectorAll(".otp-box")
+    if (boxes[0]) boxes[0].focus()
+
+  } catch (e) {
+    showMsg("Server unreachable. Please try again in a moment.", "error")
+    btn.disabled = false
+    btn.textContent = "Send OTP"
   }
 }
 
-// GOOGLE LOGIN - Real OAuth
+// ─── PHONE OTP: RESEND ───────────────────────────────────────────────────────
+
+async function handleResendOtp() {
+  const code = document.getElementById("countryCode").value.trim()
+  const phone = document.getElementById("phoneNumber").value.trim()
+  clearMsg()
+  clearOtpBoxes()
+
+  const resendBtn = document.getElementById("resendBtn")
+  resendBtn.disabled = true
+  resendBtn.textContent = "Sending..."
+
+  try {
+    const res = await fetch(SERVER + "/auth/send-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: code + phone })
+    })
+    const data = await res.json()
+
+    if (!res.ok) {
+      showMsg(data.error || "Failed to resend OTP", "error")
+      resendBtn.disabled = false
+      resendBtn.textContent = "Resend OTP"
+      return
+    }
+
+    showMsg("New OTP sent to " + code + phone, "success")
+    startResendCountdown()
+    const boxes = document.querySelectorAll(".otp-box")
+    if (boxes[0]) boxes[0].focus()
+
+  } catch (e) {
+    showMsg("Server unreachable. Please try again.", "error")
+    resendBtn.disabled = false
+    resendBtn.textContent = "Resend OTP"
+  }
+}
+
+// ─── PHONE OTP: VERIFY ───────────────────────────────────────────────────────
+
+async function handleVerifyOtp() {
+  const otp = getOtpValue()
+  if (otp.length < 6) return showMsg("Enter the complete 6-digit OTP", "error")
+  clearMsg()
+
+  const btn = document.getElementById("verifyOtpBtn")
+  btn.disabled = true
+  btn.innerHTML = '<span class="spinner"></span> Verifying...'
+
+  const code = document.getElementById("countryCode").value.trim()
+  const phone = document.getElementById("phoneNumber").value.trim()
+
+  try {
+    const res = await fetch(SERVER + "/auth/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: code + phone, otp })
+    })
+    const data = await res.json()
+
+    if (!res.ok) {
+      showMsg(data.error || "Invalid OTP. Please try again.", "error")
+      btn.disabled = false
+      btn.textContent = "Verify OTP"
+      clearOtpBoxes()
+      document.querySelectorAll(".otp-box")[0].focus()
+      return
+    }
+
+    clearInterval(resendTimer)
+    localStorage.setItem("datta_token", data.token)
+    localStorage.setItem("datta_user", JSON.stringify(data.user))
+    showMsg("Verified! Redirecting...", "success")
+    setTimeout(() => {
+      const hasPlan = localStorage.getItem("datta_plan")
+      window.location.href = hasPlan ? "index.html" : "pricing.html"
+    }, 1000)
+
+  } catch (e) {
+    showMsg("Server unreachable. Please try again.", "error")
+    btn.disabled = false
+    btn.textContent = "Verify OTP"
+  }
+}
+
+// ─── RESET PHONE STEP (go back to phone input) ───────────────────────────────
+
+function resetPhoneStep() {
+  clearInterval(resendTimer)
+  clearMsg()
+  clearOtpBoxes()
+  document.getElementById("phoneInputStep").style.display = "block"
+  document.getElementById("otpVerifyStep").style.display = "none"
+  document.getElementById("phoneSubText").textContent = "Enter your phone number"
+  const btn = document.getElementById("phoneBtn")
+  btn.disabled = false
+  btn.textContent = "Send OTP"
+}
+
+// ─── GOOGLE LOGIN ─────────────────────────────────────────────────────────────
+
 function handleGoogle() {
   window.location.href = "https://datta-ai-server.onrender.com/auth/google"
 }
 
-// Handle Google callback token in URL
 function handleGoogleCallback() {
   const params = new URLSearchParams(window.location.search)
   const token = params.get("token")
@@ -656,16 +869,11 @@ function handleGoogleCallback() {
 
   if (token) {
     try {
-      // Save token
       localStorage.setItem("datta_token", token)
-
-      // Save user if provided
       if (userStr) {
         const user = JSON.parse(decodeURIComponent(userStr))
         localStorage.setItem("datta_user", JSON.stringify(user))
       }
-
-      // Clean URL and redirect immediately
       window.history.replaceState({}, document.title, window.location.pathname)
       const hasPlan = localStorage.getItem("datta_plan")
       window.location.replace(hasPlan ? "index.html" : "pricing.html")
@@ -676,42 +884,32 @@ function handleGoogleCallback() {
   }
 }
 
-// GUEST LOGIN
+// ─── GUEST LOGIN ──────────────────────────────────────────────────────────────
+
 function handleGuest() {
   const guestId = "guest_" + Date.now()
   const guestUser = { username: "Guest", email: "", isGuest: true, id: guestId }
   localStorage.setItem("datta_token", "guest_" + guestId)
   localStorage.setItem("datta_user", JSON.stringify(guestUser))
-  localStorage.setItem("datta_plan", "arambh")  // guests get free plan
+  localStorage.setItem("datta_plan", "arambh")
   window.location.href = "index.html"
 }
 
-// Enter key support
+// ─── ENTER KEY SUPPORT ────────────────────────────────────────────────────────
+
 document.addEventListener("keydown", function(e) {
   if (e.key !== "Enter") return
   const active = document.querySelector(".formSection.active")
   if (!active) return
   if (active.id === "loginSection") handleLogin()
   else if (active.id === "signupSection") handleSignup()
-  else if (active.id === "phoneSection") handlePhone()
+  else if (active.id === "phoneSection") {
+    const otpStep = document.getElementById("otpVerifyStep")
+    if (otpStep && otpStep.style.display !== "none") handleVerifyOtp()
+    else handleSendOtp()
+  }
 })
 </script>
 
-<div style="padding:20px">
-
-  <input id="phoneInput" placeholder="Enter phone (+91XXXXXXXXXX)" />
-  <br><br>
-
-  <button id="sendOtpBtn">Send OTP</button>
-
-  <br><br>
-
-  <input id="otpInput" placeholder="Enter OTP" />
-  <br><br>
-
-  <button id="verifyOtpBtn">Verify OTP</button>
-
-</div>
 </body>
 </html>
-
