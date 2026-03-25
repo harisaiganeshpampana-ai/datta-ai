@@ -453,6 +453,16 @@ async function send() {
     return
   }
 
+  // ── SMART ROUTING: Agent for real-time, Chat for normal ─────────────────
+  const needsAgent = willSearch ||
+    lowerText.includes("calculate") || lowerText.includes("translate") ||
+    lowerText.includes("create task") || lowerText.includes("remember that") ||
+    lowerText.includes("run this code") || lowerText.includes("search for")
+  const ENDPOINT = needsAgent
+    ? "https://datta-ai-server.onrender.com/agent"
+    : "https://datta-ai-server.onrender.com/chat"
+  console.log(needsAgent ? "🤖 Agent mode" : "💬 Chat mode", "→", lowerText.substring(0,40))
+
   // SERVER CALL
   controller = new AbortController()
   const formData = new FormData()
@@ -489,7 +499,7 @@ async function send() {
   if (file) formData.append("image", file)
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/chat", {
+    const res = await fetch(ENDPOINT, {
       method: "POST",
       signal: controller.signal,
       body: formData
