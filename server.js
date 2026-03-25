@@ -232,28 +232,55 @@ app.post("/auth/send-otp", async (req, res) => {
     const fast2smsKey = process.env.FAST2SMS_API_KEY
 
     if (fast2smsKey) {
-      // Fast2SMS Quick SMS route - no DLT needed
-      const response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
-        method: "POST",
-        headers: {
-          "authorization": fast2smsKey,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
+      try {
+        // Fast2SMS Quick SMS route - no DLT needed
+        const fast2smsBody = JSON.stringify({
           route: "q",
-          message: "Your Datta AI OTP is " + otp + ". Valid for 10 minutes. Do not share this code.",
+          message: "Your Datta AI OTP is " + otp + ". Valid for 10 minutes. Do not share.",
           language: "english",
           flash: 0,
           numbers: phoneFor2SMS
         })
-      })
-      const data = await response.json()
-      console.log("Fast2SMS response:", JSON.stringify(data))
+        console.log("Sending Fast2SMS to:", phoneFor2SMS, "body:", fast2smsBody)
 
-      if (data.return === true) {
-        return res.json({ success: true, message: "OTP sent successfully" })
-      } else {
-        console.error("Fast2SMS error:", data.message)
+        const response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
+          method: "POST",
+          headers: {
+            "authorization": fast2smsKey,
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache"
+          },
+          body: fast2smsBody
+        })
+        const responseText = await response.text()
+        console.log("Fast2SMS raw response:", responseText)
+
+        let data
+        try { data = JSON.parse(responseText) } catch(e) { data = { return: false, message: responseText } }
+
+        if (data.return === true) {
+          console.log("Fast2SMS OTP sent successfully to:", phoneFor2SMS)
+          return res.json({ success: true, message: "OTP sent to " + normalizedPhone })
+        } else {
+          console.error("Fast2SMS failed:", JSON.stringify(data))
+          // Don't fall through to Twilio error - show proper message
+          if (data.message && data.message.includes("authorization")) {
+            return res.status(500).json({ error: "Fast2SMS API key invalid. Check FAST2SMS_API_KEY in Render." })
+          }
+          // Try with v3 endpoint
+          const response2 = await fetch("https://www.fast2sms.com/dev/bulk", {
+            method: "POST",
+            headers: { "authorization": fast2smsKey, "Content-Type": "application/json" },
+            body: JSON.stringify({ sender_id: "FSTSMS", message: "Your Datta AI OTP is " + otp + ". Valid 10 mins.", language: "english", route: "p", numbers: phoneFor2SMS })
+          })
+          const data2 = await response2.json()
+          console.log("Fast2SMS v3 response:", JSON.stringify(data2))
+          if (data2.return === true) {
+            return res.json({ success: true, message: "OTP sent successfully" })
+          }
+        }
+      } catch(fast2err) {
+        console.error("Fast2SMS exception:", fast2err.message)
       }
     }
 
@@ -274,12 +301,14 @@ app.post("/auth/send-otp", async (req, res) => {
       return res.json({ success: true, message: "OTP sent successfully" })
     }
 
-    res.status(500).json({ error: "SMS service not configured. Please add FAST2SMS_API_KEY to Render." })
+    // OTP is stored, user can get it from Render logs in dev mode
+    console.log("=== DEV MODE OTP for", normalizedPhone, ":", otp, "===")
+    res.status(500).json({ error: "SMS sending failed. Please use Email or Google login instead." })
 
   } catch(err) {
     console.error("OTP send error:", err.message)
-    if (err.code === 21608) return res.status(400).json({ error: "Please use email login or upgrade Twilio account." })
-    res.status(500).json({ error: "Failed to send OTP. Please try email login." })
+    if (err.code === 21608) return res.status(400).json({ error: "Please use Email or Google login instead." })
+    res.status(500).json({ error: "Failed to send OTP. Please use Email or Google login." })
   }
 })
 
