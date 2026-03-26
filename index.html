@@ -16,13 +16,10 @@
 
 <!-- SPLASH SCREEN -->
 <div id="splash">
-  <div class="splash-ring">
-    <img class="splash-logo" src="logo.png" alt="Datta AI Logo">
-  </div>
-  <div class="splash-title">Datta AI</div>
-  <div class="splash-subtitle">Welcome</div>
-  <div class="splash-dots">
-    <span></span><span></span><span></span>
+  <div class="splashContent">
+    <img class="splashLogo" src="logo.png" alt="Datta AI">
+    <div class="splashName">DATTA AI</div>
+    <div class="splashTagline">Your Intelligent Assistant</div>
   </div>
 </div>
 
@@ -232,11 +229,17 @@
 <script src="chat.js?v=6"></script>
 
 <script>
-  // SPLASH SCREEN
+  // SPLASH SCREEN - 3 seconds then smooth fade out
   window.addEventListener("load", function() {
     setTimeout(function() {
       const splash = document.getElementById("splash")
-      if (splash) splash.classList.add("hide")
+      if (splash) {
+        splash.classList.add("hide")
+        // Remove from DOM after fade completes
+        setTimeout(function() {
+          if (splash.parentNode) splash.parentNode.removeChild(splash)
+        }, 700)
+      }
     }, 3000)
   })
 
