@@ -74,6 +74,16 @@ const SubscriptionSchema = new mongoose.Schema({
 })
 const Subscription = mongoose.model("Subscription", SubscriptionSchema)
 
+// MEMORY SCHEMA - persistent user memory
+const MemorySchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  key: String,
+  value: mongoose.Schema.Types.Mixed,
+  category: { type: String, default: "general" },
+  updatedAt: { type: Date, default: Date.now }
+})
+const Memory = mongoose.model("Memory", MemorySchema)
+
 const planLimits = {
   free:       { messages: 50,     images: 5,      resetHours: 1 },
   basic:      { messages: 500,    images: 20,     resetHours: 24 },
@@ -166,6 +176,129 @@ function getImagePrompt(message) {
   removes.sort((a, b) => b.length - a.length)
   removes.forEach(r => { prompt = prompt.replace(new RegExp("^" + r.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*", "i"), "") })
   return prompt.trim() || message
+}
+
+// -- BROWSE URL (using Tavily extract) ----------------------------------------
+async function browseUrl(url) {
+  try {
+    const key = process.env.TAVILY_API_KEY
+    if (!key) return null
+    const response = await fetch("https://api.tavily.com/extract", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ api_key: key, urls: [url] })
+    })
+    if (!response.ok) return null
+    const data = await response.json()
+    const result = data.results?.[0]
+    if (!result) return null
+    return {
+      url: result.url,
+      title: result.title || url,
+      content: (result.raw_content || result.content || "").substring(0, 3000)
+    }
+  } catch(e) {
+    console.error("Browse URL error:", e.message)
+    return null
+  }
+}
+
+// -- SEND WHATSAPP (via CallMeBot - free) -------------------------------------
+async function sendWhatsApp(phone, message) {
+  try {
+    const apiKey = process.env.CALLMEBOT_API_KEY
+    if (!apiKey) {
+      // Try Twilio WhatsApp sandbox
+      const twilioSid = process.env.TWILIO_ACCOUNT_SID
+      const twilioAuth = process.env.TWILIO_AUTH_TOKEN
+      const twilioWaFrom = process.env.TWILIO_WA_FROM || "whatsapp:+14155238886"
+      if (twilioSid && twilioAuth) {
+        const res = await fetch("https://api.twilio.com/2010-04-01/Accounts/" + twilioSid + "/Messages.json", {
+          method: "POST",
+          headers: {
+            "Authorization": "Basic " + Buffer.from(twilioSid + ":" + twilioAuth).toString("base64"),
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          body: new URLSearchParams({
+            To: "whatsapp:" + phone,
+            From: twilioWaFrom,
+            Body: message
+          }).toString()
+        })
+        const data = await res.json()
+        if (res.ok) return { success: true, method: "twilio_wa", sid: data.sid }
+        return { success: false, error: data.message }
+      }
+      return { success: false, error: "WhatsApp not configured. Add CALLMEBOT_API_KEY or TWILIO_WA_FROM to Render." }
+    }
+    // CallMeBot (free WhatsApp API)
+    const encodedMsg = encodeURIComponent(message)
+    const cleanPhone = phone.replace(/[^0-9]/g, "")
+    const res = await fetch("https://api.callmebot.com/whatsapp.php?phone=" + cleanPhone + "&text=" + encodedMsg + "&apikey=" + apiKey)
+    const text = await res.text()
+    if (text.includes("Message queued")) return { success: true, method: "callmebot" }
+    return { success: false, error: text.substring(0, 100) }
+  } catch(e) {
+    return { success: false, error: e.message }
+  }
+}
+
+// -- USER MEMORY HELPERS -------------------------------------------------------
+async function saveMemory(userId, key, value, category) {
+  await Memory.findOneAndUpdate(
+    { userId, key },
+    { userId, key, value, category: category || "general", updatedAt: new Date() },
+    { upsert: true, new: true }
+  )
+}
+
+async function getMemories(userId) {
+  const memories = await Memory.find({ userId }).sort({ updatedAt: -1 }).limit(20)
+  if (!memories.length) return ""
+  return "
+
+[USER MEMORY - facts you remember about this user]
+" +
+    memories.map(m => m.key + ": " + JSON.stringify(m.value)).join("
+") +
+    "
+[END MEMORY]
+"
+}
+
+async function extractAndSaveMemory(userId, userMessage, aiResponse) {
+  try {
+    // Ask AI to extract memorable facts from conversation
+    const extraction = await groq.chat.completions.create({
+      model: "llama-3.1-8b-instant",
+      messages: [{
+        role: "user",
+        content: `Extract key facts about the user from this conversation that should be remembered for future sessions. Only extract clear personal facts (name, location, preferences, job, etc). Return as JSON array: [{"key": "user_name", "value": "John", "category": "personal"}]. If nothing to remember, return [].
+
+User said: "${userMessage.substring(0, 500)}"
+AI responded: "${aiResponse.substring(0, 200)}"
+
+Return ONLY valid JSON array, nothing else.`
+      }],
+      max_tokens: 200,
+      temperature: 0.1
+    })
+
+    const raw = extraction.choices?.[0]?.message?.content?.trim() || "[]"
+    const clean = raw.replace(/```json|```/g, "").trim()
+    const facts = JSON.parse(clean)
+
+    if (Array.isArray(facts)) {
+      for (const fact of facts) {
+        if (fact.key && fact.value) {
+          await saveMemory(userId, fact.key, fact.value, fact.category || "general")
+        }
+      }
+      if (facts.length > 0) console.log("Saved", facts.length, "memories for user")
+    }
+  } catch(e) {
+    console.log("Memory extraction skipped:", e.message)
+  }
 }
 
 // GOOGLE OAUTH
@@ -642,12 +775,19 @@ CRITICAL RULES - NEVER BREAK THESE:
 12. If someone pastes code with a bug - fix ALL bugs and return complete working code
 13. Your responses should be production-ready, professional quality${langNote}${searchNote}`
 
+    // Combine all context
+    const finalUserContent = typeof userContent === "string"
+      ? userContent + urlContext + searchContext
+      : userContent
+
+    const systemWithMemory = systemPrompt + memoryContext
+
     const stream = await groq.chat.completions.create({
       model,
       messages: [
-        { role: "system", content: systemPrompt },
+        { role: "system", content: systemWithMemory },
         ...history,
-        { role: "user", content: userContent }
+        { role: "user", content: finalUserContent }
       ],
       max_tokens: maxTok,
       temperature: 0.7,
@@ -661,6 +801,12 @@ CRITICAL RULES - NEVER BREAK THESE:
     }
 
     chat.messages.push({ role: "assistant", content: full })
+
+    // Save memories from this conversation (non-blocking)
+    if (!req.user.isGuest && message) {
+      extractAndSaveMemory(userId, message, full).catch(() => {})
+    }
+
     if (chat.messages.length === 4 || chat.title === "New conversation") {
       try {
         const t = await groq.chat.completions.create({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: "Generate a very short title (max 5 words, no quotes) for: \"" + message + "\". Just the title." }], max_tokens: 15 })
@@ -711,6 +857,37 @@ app.post("/chats/fix-titles", authMiddleware, async (req, res) => {
       }
     }
     res.json({ success: true, fixed })
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
+// MEMORY ROUTES
+app.get("/memory", authMiddleware, async (req, res) => {
+  try {
+    const memories = await Memory.find({ userId: req.user.id }).sort({ updatedAt: -1 })
+    res.json(memories)
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
+app.post("/memory", authMiddleware, async (req, res) => {
+  try {
+    const { key, value, category } = req.body
+    if (!key || !value) return res.status(400).json({ error: "Key and value required" })
+    await saveMemory(req.user.id, key, value, category)
+    res.json({ success: true })
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
+app.delete("/memory/:key", authMiddleware, async (req, res) => {
+  try {
+    await Memory.findOneAndDelete({ userId: req.user.id, key: req.params.key })
+    res.json({ success: true })
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
+app.delete("/memory", authMiddleware, async (req, res) => {
+  try {
+    await Memory.deleteMany({ userId: req.user.id })
+    res.json({ success: true })
   } catch(err) { res.status(500).json({ error: err.message }) }
 })
 
