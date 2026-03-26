@@ -777,7 +777,20 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const validModels = ["llama-3.3-70b-versatile","llama-3.1-8b-instant","deepseek-r1-distill-llama-70b","mixtral-8x7b-32768","llama-3.1-70b-versatile"]
     const chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.3-70b-versatile"
     const model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : chosenModel
+    const style = req.body.style || "Balanced"
+    const ainame = req.body.ainame || "Datta AI"
+    const styleNotes = {
+      Short: " Keep responses very brief - 1-3 sentences max unless code is needed.",
+      Detailed: " Give thorough, comprehensive, detailed responses.",
+      Formal: " Use formal professional language.",
+      Casual: " Be friendly, casual and conversational like a friend.",
+      Technical: " Use technical terminology and be precise.",
+      Creative: " Be creative, use analogies and interesting examples.",
+      Simple: " Use very simple language, avoid jargon, explain everything clearly.",
+      Balanced: ""
+    }
     const langNote = language && language !== "English" ? " Always respond in " + language + "." : ""
+    const styleNote = styleNotes[style] || ""
     const searchNote = searchContext ? " Use web search results for accurate answers and cite sources." : ""
 
     // Detect if code/build task needs max tokens
@@ -785,7 +798,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const isCodeTask = ["build","create","write","make","code","website","app","script","program","html","python","javascript","fix","debug","error","update","improve","full","complete","function","class","api"].some(k => msgLower.includes(k))
     const maxTok = isImageFile ? 1024 : (isCodeTask ? 8192 : 4096)
 
-    const systemPrompt = `You are Datta AI - a powerful AI Agent. Today is ${new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.
+    const systemPrompt = `You are ${ainame} - a powerful AI Agent. Today is ${new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.
 
 CRITICAL RULES - NEVER BREAK THESE:
 1. ALWAYS give COMPLETE, FULL, 100% WORKING code - never say "rest of code here" or truncate
@@ -800,7 +813,7 @@ CRITICAL RULES - NEVER BREAK THESE:
 10. You are an expert in: HTML, CSS, JS, React, Python, Node.js, SQL, Java, C++, and ALL languages
 11. For creative tasks: be original and impressive
 12. If someone pastes code with a bug - fix ALL bugs and return complete working code
-13. Your responses should be production-ready, professional quality${langNote}${searchNote}`
+13. Your responses should be production-ready, professional quality${langNote}${styleNote}${searchNote}`
 
     // Combine all context
     const finalUserContent = typeof userContent === "string"
