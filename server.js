@@ -253,11 +253,10 @@ async function saveMemory(userId, key, value, category) {
 }
 
 async function getMemories(userId) {
-  const memories = await Memory.find({ userId }).sort({ updatedAt: -1 }).limit(20)
+  const memories = await Memory.find({ userId }).sort({ updatedAt: -1 }).limit(5)
   if (!memories.length) return ""
-  return "\n\n[USER MEMORY - facts you remember about this user]\n" +
-    memories.map(m => m.key + ": " + JSON.stringify(m.value)).join("\n") +
-    "\n[END MEMORY]\n"
+  const memText = memories.map(m => m.key + ": " + String(m.value).substring(0, 100)).join(", ")
+  return "\n[Memory: " + memText + "]"
 }
 
 async function extractAndSaveMemory(userId, userMessage, aiResponse) {
@@ -727,7 +726,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     if (urlMatch && process.env.TAVILY_API_KEY) {
       const urlResult = await browseUrl(urlMatch[0])
       if (urlResult) {
-        urlContext = "\n\n[URL Content from " + urlResult.url + "]\nTitle: " + urlResult.title + "\n\n" + urlResult.content + "\n[End of URL Content]"
+        urlContext = "\n\n[URL: " + urlResult.url + "]\n" + urlResult.content.substring(0, 1500) + "\n[End URL]"
         console.log("Browsed URL:", urlMatch[0])
       }
     }
@@ -759,7 +758,10 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       if (results) searchContext = "\n\n[Web Search Results]\n" + results + "\n[End of Search Results]"
     }
 
-    const history = chat.messages.slice(0, -1).slice(-10).map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content }))
+    const history = chat.messages.slice(0, -1).slice(-6).map(m => ({
+      role: m.role === "assistant" ? "assistant" : "user",
+      content: m.content.substring(0, 2000)
+    }))
     const isImageFile = file && file.mimetype?.startsWith("image/")
     let userContent
     if (isImageFile) {
@@ -781,7 +783,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Detect if code/build task needs max tokens
     const msgLower = message.toLowerCase()
     const isCodeTask = ["build","create","write","make","code","website","app","script","program","html","python","javascript","fix","debug","error","update","improve","full","complete","function","class","api"].some(k => msgLower.includes(k))
-    const maxTok = isImageFile ? 1024 : (isCodeTask ? 32768 : 8192)
+    const maxTok = isImageFile ? 1024 : (isCodeTask ? 8192 : 4096)
 
     const systemPrompt = `You are Datta AI - a powerful AI Agent. Today is ${new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.
 
