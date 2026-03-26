@@ -2130,3 +2130,35 @@ window.openVoiceAssistant = function() {
 }
 
 window.setVoice = setVoice
+
+// MOBILE KEYBOARD FIX
+// When keyboard opens, scroll to bottom so input stays visible
+if (window.innerWidth <= 768) {
+  const msgInput = document.getElementById("message")
+  if (msgInput) {
+    msgInput.addEventListener("focus", () => {
+      setTimeout(() => {
+        chatBox.scrollTop = chatBox.scrollHeight
+        window.scrollTo(0, 0)
+      }, 300)
+    })
+
+    msgInput.addEventListener("blur", () => {
+      setTimeout(() => {
+        window.scrollTo(0, 0)
+      }, 100)
+    })
+  }
+
+  // Fix visual viewport change (keyboard open/close)
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", () => {
+      const inputArea = document.getElementById("inputArea")
+      if (!inputArea) return
+      const keyboardHeight = window.innerHeight - window.visualViewport.height
+      inputArea.style.transform = keyboardHeight > 100
+        ? "translateY(-" + keyboardHeight + "px)"
+        : "none"
+    })
+  }
+}
