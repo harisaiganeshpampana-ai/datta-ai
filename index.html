@@ -261,15 +261,22 @@
     }, 3000)
   })
 
-  // BOTTOM SHEET
+  // BOTTOM SHEET - proper toggle
   function togglePlusMenu() {
     const sheet = document.getElementById("addToChatSheet")
     const overlay = document.getElementById("addToChatOverlay")
     const btn = document.getElementById("plusBtn")
     if (!sheet) return
-    sheet.classList.add("show")
-    overlay.classList.add("show")
-    btn.classList.add("active")
+    const isOpen = sheet.classList.contains("show")
+    if (isOpen) {
+      sheet.classList.remove("show")
+      overlay.classList.remove("show")
+      if (btn) btn.classList.remove("active")
+    } else {
+      sheet.classList.add("show")
+      overlay.classList.add("show")
+      if (btn) btn.classList.add("active")
+    }
   }
 
   function closePlusMenu() {
@@ -298,6 +305,21 @@
   window.closePlusMenu = closePlusMenu
   window.toggleWebSearch = toggleWebSearch
   window.handleWebSearchToggle = handleWebSearchToggle
+
+  // Close sheet whenever page becomes visible (back button etc)
+  document.addEventListener("visibilitychange", function() {
+    if (!document.hidden) closePlusMenu()
+  })
+
+  // Close sheet on escape key
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape") closePlusMenu()
+  })
+
+  // Make sure sheet is closed on load
+  window.addEventListener("load", function() {
+    closePlusMenu()
+  })
 
   // FILE HELPERS
   function getSelectedFile() {
