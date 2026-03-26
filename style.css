@@ -3592,3 +3592,160 @@ body {
   border-color: #00ff8866;
   color: #00ff88;
 }
+
+/* ═══════════════════════════════════════
+   MOBILE FIXES - All 5 issues
+   ═══════════════════════════════════════ */
+
+/* FIX 1: Keyboard pushes content - use dvh instead of vh */
+@supports (height: 100dvh) {
+  body, .app, .main {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+  }
+}
+
+/* FIX 2: Input stays above keyboard */
+@media (max-width: 768px) {
+  .inputArea {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 8px 12px env(safe-area-inset-bottom, 12px) !important;
+    background: #0a0a0a !important;
+    border-top: 1px solid #1a1a1a !important;
+    transform: none !important;
+    z-index: 999 !important;
+  }
+
+  /* Prevent keyboard from pushing input */
+  .inputWrap {
+    border-radius: 16px !important;
+  }
+
+  /* Chat box padding from input */
+  .chat {
+    padding-bottom: 80px !important;
+    height: auto !important;
+    flex: 1 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* FIX 3: Smooth scroll */
+  .chat, .sidebar, .history {
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+    scroll-behavior: smooth !important;
+  }
+
+  /* FIX 4: Text readable size */
+  .aiBubble {
+    font-size: 15px !important;
+    line-height: 1.7 !important;
+  }
+
+  .userBubble {
+    font-size: 15px !important;
+    max-width: 85% !important;
+  }
+
+  /* FIX 5: Scroll down button - correct position above input */
+  #scrollDownBtn {
+    bottom: 80px !important;
+    right: 16px !important;
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 18px !important;
+    z-index: 998 !important;
+  }
+
+  /* FIX: Buttons not overlapping */
+  .inputRightBtns {
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .sendBtn, .stopBtn, .micBtn {
+    width: 38px !important;
+    height: 38px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .plusBtn {
+    width: 36px !important;
+    height: 36px !important;
+    flex-shrink: 0 !important;
+  }
+
+  #message {
+    font-size: 16px !important; /* Prevents iOS zoom on focus */
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
+
+  /* Action buttons not overlapping */
+  .aiActions {
+    gap: 4px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .actionBtn {
+    padding: 6px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+  }
+
+  /* Topbar buttons not overlapping */
+  .topActions {
+    gap: 4px !important;
+  }
+
+  .topIconBtn, .themeToggleBtn {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  .modelPickerBtn {
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+  }
+
+  /* Code blocks scroll on mobile */
+  .codeBlockWrap pre {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    font-size: 12px !important;
+  }
+
+  /* Image not cut off */
+  .dattaImgWrap {
+    max-width: 100% !important;
+  }
+
+  .dattaImgBox {
+    border-radius: 12px !important;
+  }
+
+  /* Welcome screen on mobile */
+  .welcomeScreen {
+    width: 95% !important;
+    transform: translate(-50%, -52%) !important;
+  }
+
+  /* Message row spacing */
+  .messageRow {
+    margin-bottom: 14px !important;
+    padding: 0 4px !important;
+  }
+}
+
+/* iPhone safe area support */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .inputArea {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom)) !important;
+  }
+}
