@@ -316,6 +316,51 @@ Return ONLY valid JSON array, nothing else.`
   }
 }
 
+// EMAIL SENDING (using Gmail SMTP - free)
+async function sendVerificationEmail(email, token, username) {
+  try {
+    const GMAIL_USER = process.env.GMAIL_USER
+    const GMAIL_PASS = process.env.GMAIL_APP_PASSWORD
+    if (!GMAIL_USER || !GMAIL_PASS) {
+      console.log("Email not configured - skipping verification email")
+      return false
+    }
+    const verifyUrl = FRONTEND_URL + "/verify-email.html?token=" + token
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <body style="background:#0a0a0a;color:white;font-family:Arial,sans-serif;padding:40px;max-width:500px;margin:0 auto;">
+        <div style="text-align:center;margin-bottom:30px;">
+          <h1 style="font-size:28px;background:linear-gradient(135deg,#00ff88,#00ccff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">DATTA AI</h1>
+        </div>
+        <h2 style="font-size:22px;margin-bottom:10px;">Verify your email</h2>
+        <p style="color:#888;margin-bottom:24px;">Hi ${username}! Click the button below to verify your email address.</p>
+        <a href="${verifyUrl}" style="display:block;text-align:center;padding:14px 32px;background:linear-gradient(135deg,#00cc6a,#00aaff);border-radius:12px;color:white;font-weight:700;font-size:16px;text-decoration:none;margin-bottom:20px;">Verify Email Address</a>
+        <p style="color:#555;font-size:12px;text-align:center;">Link expires in 24 hours. If you didn't sign up, ignore this email.</p>
+        <p style="color:#333;font-size:12px;text-align:center;margin-top:8px;">Or copy this link: ${verifyUrl}</p>
+      </body>
+      </html>
+    `
+    // Use nodemailer with Gmail
+    const nodemailer = await import("nodemailer")
+    const transporter = nodemailer.default.createTransport({
+      service: "gmail",
+      auth: { user: GMAIL_USER, pass: GMAIL_PASS }
+    })
+    await transporter.sendMail({
+      from: '"Datta AI" <' + GMAIL_USER + '>',
+      to: email,
+      subject: "Verify your Datta AI account",
+      html
+    })
+    console.log("Verification email sent to:", email)
+    return true
+  } catch(e) {
+    console.log("Email send error:", e.message)
+    return false
+  }
+}
+
 // GOOGLE OAUTH
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
@@ -343,8 +388,55 @@ app.post("/auth/signup", async (req, res) => {
     if (password.length < 6) return res.status(400).json({ error: "Password min 6 characters" })
     const existing = await User.findOne({ $or: [{ email: email.toLowerCase() }, { username }] })
     if (existing) return res.status(400).json({ error: existing.username === username ? "Username taken" : "Email already registered" })
-    const user = await User.create({ username, email: email.toLowerCase(), password: await bcrypt.hash(password, 10) })
-    res.json({ token: generateToken(user), user: { id: user._id, username: user.username, email: user.email } })
+
+    // Generate verify token
+    const verifyToken = require("crypto").randomBytes(32).toString("hex")
+    const user = await User.create({
+      username,
+      email: email.toLowerCase(),
+      password: await bcrypt.hash(password, 10),
+      emailVerified: false,
+      verifyToken,
+      verifyTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
+    })
+
+    // Send verification email (non-blocking)
+    sendVerificationEmail(email.toLowerCase(), verifyToken, username).catch(() => {})
+
+    // Return token - user can use app but email unverified
+    res.json({
+      token: generateToken(user),
+      user: { id: user._id, username: user.username, email: user.email, emailVerified: false },
+      message: "Account created! Please check your email to verify your account."
+    })
+  } catch(err) { res.status(500).json({ error: "Server error" }) }
+})
+
+// VERIFY EMAIL
+app.get("/auth/verify-email", async (req, res) => {
+  try {
+    const { token } = req.query
+    if (!token) return res.status(400).json({ error: "Token required" })
+    const user = await User.findOne({ verifyToken: token, verifyTokenExpires: { $gt: new Date() } })
+    if (!user) return res.status(400).json({ error: "Invalid or expired token" })
+    await User.findByIdAndUpdate(user._id, { emailVerified: true, verifyToken: null, verifyTokenExpires: null })
+    res.json({ success: true, message: "Email verified successfully!" })
+  } catch(err) { res.status(500).json({ error: "Server error" }) }
+})
+
+// RESEND VERIFICATION EMAIL
+app.post("/auth/resend-verification", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+    if (!user) return res.status(404).json({ error: "User not found" })
+    if (user.emailVerified) return res.json({ message: "Email already verified!" })
+    const verifyToken = require("crypto").randomBytes(32).toString("hex")
+    await User.findByIdAndUpdate(user._id, {
+      verifyToken,
+      verifyTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
+    })
+    await sendVerificationEmail(user.email, verifyToken, user.username)
+    res.json({ success: true, message: "Verification email sent!" })
   } catch(err) { res.status(500).json({ error: "Server error" }) }
 })
 
