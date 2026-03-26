@@ -925,6 +925,29 @@ app.delete("/chat/:id", authMiddleware, async (req, res) => { try { await Chat.f
 app.delete("/chats/all", authMiddleware, async (req, res) => { try { await Chat.deleteMany({ userId: req.user.id }); res.json({ success: true }) } catch(err) { res.status(500).json({ error: err.message }) } })
 app.post("/chat/:id/rename", authMiddleware, async (req, res) => { try { await Chat.findOneAndUpdate({ _id: req.params.id, userId: req.user.id }, { title: req.body.title }); res.json({ success: true }) } catch(err) { res.status(500).json({ error: err.message }) } })
 
+// ANALYTICS DASHBOARD
+app.get("/analytics", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id
+    const [totalChats, totalMessages, subscription] = await Promise.all([
+      Chat.countDocuments({ userId }),
+      Chat.aggregate([
+        { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+        { $project: { count: { $size: "$messages" } } },
+        { $group: { _id: null, total: { $sum: "$count" } } }
+      ]),
+      Subscription.findOne({ userId, active: true })
+    ])
+    const msgs = totalMessages[0]?.total || 0
+    res.json({
+      totalChats,
+      totalMessages: msgs,
+      plan: subscription?.plan || "free",
+      memberSince: req.user.iat ? new Date(req.user.iat * 1000).toLocaleDateString() : "Unknown"
+    })
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
 app.get("/", (req, res) => res.json({ status: "Datta AI Server running", version: "3.0" }))
 app.get("/health", (req, res) => res.json({ status: "ok", uptime: process.uptime() }))
 
