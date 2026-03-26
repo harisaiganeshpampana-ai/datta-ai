@@ -145,25 +145,24 @@
 <!-- MAIN CHAT AREA -->
 <div class="main">
 
-  <!-- WELCOME -->
+  <!-- WELCOME + CHIPS - perfectly centered -->
   <div id="welcomeScreen" class="welcomeScreen">
     <h1 class="welcomeTitle">What can I build for you?</h1>
+    <p class="welcomeSub">Ask anything. Code, create, search, analyze.</p>
+    <div class="suggestionChips" id="suggestionChips">
+      <button class="chip" onclick="useChip(this)">🌐 Build me a portfolio website</button>
+      <button class="chip" onclick="useChip(this)">🐍 Write a Python web scraper</button>
+      <button class="chip" onclick="useChip(this)">🎨 Generate image of sunset</button>
+      <button class="chip" onclick="useChip(this)">📰 Latest tech news today</button>
+      <button class="chip" onclick="useChip(this)">⚡ Build a calculator app</button>
+      <button class="chip" onclick="useChip(this)">🧮 Explain machine learning</button>
+    </div>
   </div>
 
   <!-- CHAT -->
   <div class="chatWrapper">
     <div class="chat" id="chat"></div>
     <button id="scrollDownBtn">↓</button>
-  </div>
-
-  <!-- SUGGESTION CHIPS -->
-  <div class="suggestionChips" id="suggestionChips">
-    <button class="chip" onclick="useChip(this)">🌐 Build me a portfolio website</button>
-    <button class="chip" onclick="useChip(this)">🐍 Write a Python web scraper</button>
-    <button class="chip" onclick="useChip(this)">🎨 Generate image of sunset</button>
-    <button class="chip" onclick="useChip(this)">📰 Latest tech news today</button>
-    <button class="chip" onclick="useChip(this)">⚡ Build a calculator app</button>
-    <button class="chip" onclick="useChip(this)">🧮 Explain machine learning</button>
   </div>
 
   <!-- INPUT -->
