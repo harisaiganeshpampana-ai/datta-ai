@@ -3824,3 +3824,215 @@ input, textarea, select { touch-action: manipulation; }
     -webkit-overflow-scrolling: touch !important;
   }
 }
+
+/* ═══════════════════════════════════════
+   UI IMPROVEMENTS
+   ═══════════════════════════════════════ */
+
+/* Rate limit box */
+.limitBox {
+  background: #1a0a00 !important;
+  border: 1px solid #ff880033 !important;
+  border-radius: 16px !important;
+  padding: 20px !important;
+  text-align: center !important;
+  max-width: 280px !important;
+}
+
+/* Better welcome screen */
+.welcomeTitle {
+  font-family: 'Bebas Neue', sans-serif !important;
+  font-size: 36px !important;
+  letter-spacing: 3px !important;
+  background: linear-gradient(135deg, #ffffff, #aaaaaa) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  margin-bottom: 8px !important;
+}
+
+.welcomeSub {
+  font-size: 14px !important;
+  color: #555 !important;
+  margin-bottom: 28px !important;
+}
+
+/* Better chips */
+.chip {
+  background: #111 !important;
+  border: 1px solid #1e1e1e !important;
+  border-radius: 12px !important;
+  padding: 10px 14px !important;
+  font-size: 13px !important;
+  color: #888 !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  text-align: left !important;
+  line-height: 1.4 !important;
+}
+
+.chip:hover {
+  background: #161616 !important;
+  border-color: #2a2a2a !important;
+  color: #ccc !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Better topbar */
+.topBar {
+  height: 52px !important;
+  padding: 0 12px !important;
+  gap: 8px !important;
+}
+
+.topTitle {
+  font-family: 'Bebas Neue', sans-serif !important;
+  font-size: 20px !important;
+  letter-spacing: 3px !important;
+  background: linear-gradient(135deg, #00ff88, #00ccff) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+/* Better sidebar */
+.sidebar {
+  width: 260px !important;
+}
+
+.sidebarBrand {
+  font-family: 'Bebas Neue', sans-serif !important;
+  font-size: 18px !important;
+  letter-spacing: 3px !important;
+  background: linear-gradient(135deg, #00ff88, #00ccff) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* Chat item hover */
+.chatItem {
+  border-radius: 10px !important;
+  padding: 10px 12px !important;
+  margin: 2px 8px !important;
+  transition: background 0.15s !important;
+}
+
+.chatItem:hover {
+  background: #161616 !important;
+}
+
+.chatItem.active {
+  background: #0a1f0a !important;
+  border-left: 2px solid #00ff88 !important;
+}
+
+/* User bubble improvement */
+.userBubble {
+  background: #1a1a1a !important;
+  border: 1px solid #222 !important;
+  border-radius: 18px 18px 4px 18px !important;
+  padding: 10px 16px !important;
+  max-width: 78% !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  color: #e8e8e8 !important;
+}
+
+/* AI bubble improvement */
+.aiBubble {
+  padding: 4px 0 !important;
+  max-width: 100% !important;
+}
+
+/* Typing indicator */
+.typing::after {
+  content: "▌" !important;
+  animation: blink 1s infinite !important;
+  color: #00ff88 !important;
+}
+
+/* New chat button */
+.newChatBtn {
+  background: linear-gradient(135deg, #0a2a1a, #0a1a2a) !important;
+  border: 1px solid #00ff8822 !important;
+  color: #00ff88 !important;
+  border-radius: 12px !important;
+  padding: 10px 16px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s !important;
+}
+
+.newChatBtn:hover {
+  background: linear-gradient(135deg, #0f3a22, #0f2a3a) !important;
+  border-color: #00ff8844 !important;
+}
+
+/* Upgrade button in sidebar */
+.upgradeBtn {
+  margin: 8px 12px !important;
+  border-radius: 14px !important;
+  padding: 12px 14px !important;
+}
+
+/* CLEAN CHAT ITEMS - no emoji */
+.chatItem {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 9px 10px !important;
+  margin: 2px 6px !important;
+  border-radius: 10px !important;
+  cursor: pointer !important;
+  transition: background 0.15s !important;
+  position: relative !important;
+  border: 1px solid transparent !important;
+}
+
+.chatItem:hover { background: #161616 !important; }
+.chatItem:hover .deleteBtn { opacity: 1 !important; }
+.chatItem.active {
+  background: #0a1a0a !important;
+  border-color: #00ff8822 !important;
+}
+
+.chatIcon { flex-shrink: 0 !important; color: #444 !important; }
+
+.chatTitle {
+  flex: 1 !important;
+  font-size: 13px !important;
+  color: #aaa !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.4 !important;
+}
+
+.chatItem.active .chatTitle { color: #ddd !important; }
+
+.deleteBtn {
+  opacity: 0 !important;
+  background: none !important;
+  border: none !important;
+  color: #555 !important;
+  cursor: pointer !important;
+  padding: 4px !important;
+  border-radius: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  transition: all 0.15s !important;
+}
+
+.deleteBtn:hover {
+  background: #2a1010 !important;
+  color: #ff6666 !important;
+}
+
+/* Delete confirm inline */
+.deleteConfirm {
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  flex-shrink: 0 !important;
+}
