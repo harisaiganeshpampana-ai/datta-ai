@@ -1,3 +1,64 @@
+// SHARE CHAT
+async function shareChatLink() {
+  if (!currentChatId) { showToast("Start a chat first!"); return }
+  try {
+    showToast("Creating share link...")
+    const res = await fetch("https://datta-ai-server.onrender.com/chat/" + currentChatId + "/share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: getToken() })
+    })
+    const data = await res.json()
+    if (data.url) {
+      await navigator.clipboard.writeText(data.url)
+      showToast("Share link copied! 🔗")
+    }
+  } catch(e) { showToast("Failed to create share link") }
+}
+
+// CODE EXECUTION in chat
+async function executeCode(btn) {
+  const pre = btn.closest(".codeBlockWrap").querySelector("pre")
+  const code = pre.querySelector("code")?.innerText || pre.innerText
+  const lang = pre.querySelector("code")?.className?.replace("language-", "") || "javascript"
+
+  btn.textContent = "Running..."
+  btn.disabled = true
+
+  try {
+    const res = await fetch("https://datta-ai-server.onrender.com/execute", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, language: lang, token: getToken() })
+    })
+    const result = await res.json()
+
+    // Show output below code block
+    const wrap = btn.closest(".codeBlockWrap")
+    let outputDiv = wrap.querySelector(".codeOutput")
+    if (!outputDiv) {
+      outputDiv = document.createElement("div")
+      outputDiv.className = "codeOutput"
+      wrap.appendChild(outputDiv)
+    }
+
+    if (result.errors) {
+      outputDiv.innerHTML = '<div class="codeOutputErr">❌ ' + result.errors + '</div>'
+    } else if (result.output) {
+      outputDiv.innerHTML = '<div class="codeOutputOk">▶ Output:<br><pre>' + result.output + '</pre></div>'
+    } else {
+      outputDiv.innerHTML = '<div class="codeOutputOk">✓ Ran successfully (no output)</div>'
+    }
+  } catch(e) {
+    showToast("Execution failed")
+  }
+  btn.textContent = "Run"
+  btn.disabled = false
+}
+
+window.shareChatLink = shareChatLink
+window.executeCode = executeCode
+
 // ADD COPY BUTTONS TO CODE BLOCKS
 function addCodeCopyButtons(container) {
   if (!container) return
@@ -10,14 +71,18 @@ function addCodeCopyButtons(container) {
     const wrapper = document.createElement("div")
     wrapper.className = "codeBlockWrap"
 
+    const isRunnable = ["javascript","js","python","py"].includes((lang||"").toLowerCase())
     const header = document.createElement("div")
     header.className = "codeBlockHeader"
     header.innerHTML = `
       <span class="codeLang">${lang || "code"}</span>
-      <button class="codeCopyBtn" onclick="copyCode(this)">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        Copy
-      </button>
+      <div style="display:flex;gap:6px;">
+        ${isRunnable ? `<button class="codeRunBtn" onclick="executeCode(this)">▶ Run</button>` : ""}
+        <button class="codeCopyBtn" onclick="copyCode(this)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
     `
 
     pre.parentNode.insertBefore(wrapper, pre)
@@ -1552,31 +1617,7 @@ window.changeModel = changeModel
 
 // ── FEATURE 4B: SHARE CHAT ──────────────────────────────────────────────────
 function shareChat() {
-  const chatBox = document.getElementById("chat")
-  if (!chatBox || !chatBox.children.length) {
-    alert("No chat to share!")
-    return
-  }
-
-  // Try Web Share API (mobile)
-  if (navigator.share) {
-    const messages = []
-    chatBox.querySelectorAll(".messageRow").forEach(row => {
-      const userBubble = row.querySelector(".userBubble")
-      const aiBubble = row.querySelector(".aiBubble, .stream")
-      if (userBubble) messages.push("You: " + userBubble.innerText.trim())
-      if (aiBubble) messages.push("Datta AI: " + aiBubble.innerText.trim())
-    })
-    navigator.share({
-      title: "Datta AI Chat",
-      text: messages.slice(0, 4).join("\n\n") + "\n\n— Shared from Datta AI",
-      url: "https://harisaiganeshpampana-ai.github.io/datta-ai"
-    }).catch(() => {})
-  } else {
-    // Copy link to clipboard
-    navigator.clipboard.writeText("https://harisaiganeshpampana-ai.github.io/datta-ai")
-    showToast("Link copied to clipboard!")
-  }
+  shareChatLink()
 }
 
 window.shareChat = shareChat
