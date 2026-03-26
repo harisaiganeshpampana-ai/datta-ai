@@ -2562,3 +2562,72 @@ body.light #splash { background: #fff; }
 .chat-started .welcomeScreen {
   display: none !important;
 }
+
+/* CODE BLOCKS - Professional Style */
+.codeBlockWrap {
+  margin: 12px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #2a2a2a;
+  background: #0d0d0d;
+}
+
+.codeBlockHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: #161616;
+  border-bottom: 1px solid #222;
+}
+
+.codeLang {
+  font-size: 12px;
+  color: #666;
+  font-family: monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.codeCopyBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: #1e1e1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.codeCopyBtn:hover {
+  background: #252525;
+  color: white;
+  border-color: #333;
+}
+
+.aiBubble pre {
+  margin: 0 !important;
+  padding: 14px !important;
+  background: #0d0d0d !important;
+  border-radius: 0 !important;
+  overflow-x: auto !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+}
+
+.aiBubble code {
+  font-family: 'Consolas', 'Monaco', monospace !important;
+  font-size: 13px !important;
+}
+
+.aiBubble :not(pre) > code {
+  background: #1a1a1a !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  color: #00ff88 !important;
+  font-size: 12px !important;
+}
