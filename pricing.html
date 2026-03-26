@@ -173,7 +173,7 @@ body { background:#0a0a0a; color:white; min-height:100vh; }
         <span style="background:#ff440022;color:#ff6644;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700;border:1px solid #ff440044;">TRIAL</span>
       </div>
       <span class="pricePeriod">first month · then ₹1000/mo</span>
-      <div class="priceYearly" id="proYearly">₹799/year (save 20%)</div>
+      <div class="priceYearly" id="proYearly">₹5,000/year (save 58%)</div>
     </div>
     <ul class="planFeatureList">
       <li><span class="fi yes">✓</span><span>100 messages per 4 hours</span></li>
@@ -196,7 +196,7 @@ body { background:#0a0a0a; color:white; min-height:100vh; }
     <div class="planPrice">
       <span class="priceAmount" id="maxPrice">₹2,500</span>
       <span class="pricePeriod">/month</span>
-      <div class="priceYearly" id="maxYearly">₹24,000/year (save 20%)</div>
+      <div class="priceYearly" id="maxYearly">₹29,999/year (save 50%)</div>
     </div>
     <ul class="planFeatureList">
       <li><span class="fi yes">✓</span><span>200 messages per 3 hours</span></li>
@@ -218,7 +218,7 @@ body { background:#0a0a0a; color:white; min-height:100vh; }
     <div class="planPrice">
       <span class="priceAmount" id="ultramaxPrice">₹5,000</span>
       <span class="pricePeriod">/month</span>
-      <div class="priceYearly" id="ultramaxYearly">₹48,000/year (save 20%)</div>
+      <div class="priceYearly" id="ultramaxYearly">₹59,999/year (save 50%)</div>
     </div>
     <ul class="planFeatureList">
       <li><span class="fi yes">✓</span><span>Unlimited everything</span></li>
@@ -292,11 +292,11 @@ let selectedPlan = null
 
 const prices = {
   monthly: { pro: 99, max: 2500, ultramax: 5000 },
-  yearly:  { pro: 799, max: 24000, ultramax: 48000 }
+  yearly:  { pro: 5000, max: 29999, ultramax: 59999 }
 }
 const pricesUSD = {
   monthly: { pro: 2, max: 30, ultramax: 60 },
-  yearly:  { pro: 10, max: 290, ultramax: 580 }
+  yearly:  { pro: 60, max: 360, ultramax: 720 }
 }
 const planNames = { free:"Free", pro:"Pro", max:"Max", ultramax:"Ultra Max" }
 
@@ -358,9 +358,10 @@ function toggleBilling() {
   document.getElementById("yearlyLabel").classList.toggle("active", isYearly)
   const period = isYearly ? "yearly" : "monthly"
   const p = prices[period]
-  document.getElementById("proPrice").textContent = "Rs." + p.pro
-  document.getElementById("maxPrice").textContent = "Rs." + p.max
-  document.getElementById("ultramaxPrice").textContent = "Rs." + p.ultramax
+  const fmt = n => n >= 1000 ? "Rs." + n.toLocaleString("en-IN") : "Rs." + n
+  document.getElementById("proPrice").textContent = fmt(p.pro)
+  document.getElementById("maxPrice").textContent = fmt(p.max)
+  document.getElementById("ultramaxPrice").textContent = fmt(p.ultramax)
   document.querySelectorAll(".priceYearly").forEach(el => el.style.display = isYearly ? "block" : "none")
 }
 
