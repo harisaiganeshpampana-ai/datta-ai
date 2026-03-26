@@ -24,6 +24,22 @@
 
 <body>
 
+<!-- UPDATE GATE - shows before app if update required -->
+<div id="updateGate" style="display:none;position:fixed;inset:0;background:#080808;z-index:999999;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:4px;background:linear-gradient(135deg,#00ff88,#00ccff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:32px;">DATTA AI</div>
+  <div style="font-size:48px;margin-bottom:20px;">🚀</div>
+  <div style="font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:white;margin-bottom:8px;">New Version Available!</div>
+  <div style="font-size:14px;color:#666;margin-bottom:8px;" id="versionText">v3.5 is here</div>
+  <div style="background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:16px 24px;margin:16px 0;text-align:left;max-width:320px;width:100%;">
+    <div style="font-size:12px;color:#555;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">What's new</div>
+    <div id="changelogList" style="font-size:13px;color:#888;line-height:1.8;"></div>
+  </div>
+  <button onclick="doUpdate()" style="width:100%;max-width:320px;padding:16px;background:linear-gradient(135deg,#00cc6a,#00aaff);border:none;border-radius:14px;color:white;font-size:16px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:1px;margin-bottom:10px;">
+    UPDATE NOW →
+  </button>
+  <div style="font-size:12px;color:#333;">App will not open until updated</div>
+</div>
+
 <!-- SPLASH SCREEN -->
 <div id="splash">
   <div class="splashContent">
@@ -772,5 +788,64 @@
   </div>
 </div>
 
+<script>
+// VERSION CHECK - runs first before anything else
+const APP_VERSION = "3.5"
+const SERVER = "https://datta-ai-server.onrender.com"
+
+async function checkVersion() {
+  try {
+    const res = await fetch(SERVER + "/version?v=" + APP_VERSION, { cache: "no-store" })
+    const data = await res.json()
+
+    if (data.updateRequired) {
+      // Show update gate - block app
+      const gate = document.getElementById("updateGate")
+      gate.style.display = "flex"
+
+      // Hide splash
+      const splash = document.getElementById("splash")
+      if (splash) splash.style.display = "none"
+
+      // Set version text
+      document.getElementById("versionText").textContent = "v" + data.latest + " is now available"
+
+      // Set changelog
+      const list = document.getElementById("changelogList")
+      if (data.changelog && list) {
+        list.innerHTML = data.changelog.map(c => "✓ " + c).join("<br>")
+      }
+    }
+  } catch(e) {
+    // If server unreachable, allow app to open
+    console.log("Version check failed, allowing access")
+  }
+}
+
+function doUpdate() {
+  const btn = document.querySelector("#updateGate button")
+  if (btn) { btn.textContent = "Updating..."; btn.disabled = true }
+
+  // Clear all caches
+  if ("caches" in window) {
+    caches.keys().then(keys => keys.forEach(k => caches.delete(k)))
+  }
+
+  // Unregister service worker
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => r.unregister())
+    })
+  }
+
+  // Hard reload after short delay
+  setTimeout(() => {
+    window.location.href = window.location.href.split("?")[0] + "?nocache=" + Date.now()
+  }, 800)
+}
+
+// Run version check immediately
+checkVersion()
+</script>
 </body>
 </html>
