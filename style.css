@@ -2758,3 +2758,206 @@ body.light-theme .sendBtn svg { stroke: white !important; }
 body.light-theme .codeBlockWrap { border-color: #ddd !important; }
 body.light-theme .codeBlockHeader { background: #f0f0f0 !important; border-color: #ddd !important; }
 body.light-theme pre { background: #f8f8f8 !important; }
+
+/* MODEL PICKER BUTTON */
+.modelPickerBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 20px;
+  color: #ccc;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Rajdhani', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.modelPickerBtn:hover {
+  background: #222;
+  border-color: #333;
+  color: white;
+}
+
+/* MODEL PICKER OVERLAY */
+.modelPickerOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 2000;
+  display: none;
+  backdrop-filter: blur(4px);
+}
+
+.modelPickerOverlay.show { display: block; }
+
+/* MODEL PICKER MODAL */
+.modelPickerModal {
+  position: fixed;
+  top: 60px;
+  right: 16px;
+  width: 360px;
+  max-height: 80vh;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 20px;
+  z-index: 2001;
+  overflow: hidden;
+  display: none;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  animation: modelPickerIn 0.2s ease;
+}
+
+@media (max-width: 480px) {
+  .modelPickerModal {
+    right: 8px;
+    left: 8px;
+    width: auto;
+    top: 56px;
+  }
+}
+
+@keyframes modelPickerIn {
+  from { opacity: 0; transform: translateY(-10px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modelPickerModal.show { display: flex; }
+
+.modelPickerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #1e1e1e;
+}
+
+.modelPickerTitle {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: white;
+}
+
+.modelPickerClose {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: #1e1e1e;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.modelPickerClose:hover { background: #2a2a2a; color: white; }
+
+.modelPickerList {
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* MODEL CARD */
+.modelCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px;
+  background: #161616;
+  border: 1px solid #1e1e1e;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modelCard:hover {
+  background: #1a1a1a;
+  border-color: #2a2a2a;
+}
+
+.modelCard.active {
+  border-color: #00ff8844;
+  background: #0a1a0f;
+}
+
+.modelCardLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.modelCardIcon {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.modelCardName {
+  font-size: 15px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 3px;
+  font-family: 'Rajdhani', sans-serif;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.modelCardDesc {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+.modelCardFeatures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.mf {
+  font-size: 10px;
+  color: #555;
+  background: #1e1e1e;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.modelCard.active .mf { color: #00ff8888; background: #0a2a1a; }
+
+.modelBadge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.modelBadge.free { background: #0a2a1a; color: #00ff88; }
+.modelBadge.pro { background: #1a0a2a; color: #aa66ff; }
+.modelBadge.vision { background: #0a1a2a; color: #00ccff; }
+
+.modelCardCheck {
+  font-size: 16px;
+  color: #00ff88;
+  font-weight: 700;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+}
