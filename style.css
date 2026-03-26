@@ -3227,3 +3227,37 @@ body {
   transition: all 0.2s;
 }
 .adminLink:hover { background: #1a1a1a; color: #aaa; }
+
+/* SCROLL DOWN BUTTON - fixed to bottom right */
+#scrollDownBtn {
+  position: fixed !important;
+  bottom: 90px !important;
+  right: 20px !important;
+  left: auto !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+  background: #1a1a1a !important;
+  border: 1px solid #333 !important;
+  color: #aaa !important;
+  font-size: 16px !important;
+  cursor: pointer !important;
+  display: none;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 200 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+  transition: all 0.2s !important;
+  padding: 0 !important;
+}
+
+#scrollDownBtn:hover {
+  background: #222 !important;
+  color: white !important;
+  border-color: #444 !important;
+  transform: translateY(-2px) !important;
+}
+
+#scrollDownBtn.show {
+  display: flex !important;
+}
