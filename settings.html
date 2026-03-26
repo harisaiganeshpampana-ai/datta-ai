@@ -4,660 +4,743 @@
 <meta charset="UTF-8">
 <title>Settings - Datta AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; font-family:system-ui,Arial,sans-serif; }
 
-body {
-  background: #0a0a0a;
-  color: white;
-  min-height: 100vh;
+:root {
+  --bg: #0a0a0a;
+  --bg2: #111;
+  --bg3: #1a1a1a;
+  --border: #222;
+  --text: #ffffff;
+  --text2: #aaa;
+  --text3: #666;
+  --accent: #00ff88;
+  --accent2: #00ccff;
 }
 
+body { background: var(--bg); color: var(--text); min-height: 100vh; transition: all 0.3s; }
+
+/* HEADER */
 .header {
-  position: sticky;
-  top: 0;
-  background: #111;
-  border-bottom: 1px solid #222;
-  padding: 16px 24px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
+  position: sticky; top: 0;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+  display: flex; align-items: center; gap: 14px;
   z-index: 100;
 }
-
 .backBtn {
-  background: #1e1e1e;
-  border: none;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: background 0.2s;
+  background: var(--bg3); border: none; color: var(--text);
+  padding: 8px 14px; border-radius: 20px; cursor: pointer; font-size: 14px;
+  transition: all 0.2s;
 }
+.backBtn:hover { background: #222; }
+.headerTitle { font-family:'Rajdhani',sans-serif; font-size:18px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
 
-.backBtn:hover { background: #2a2a2a; }
+/* CONTAINER */
+.container { max-width: 680px; margin: 0 auto; padding: 20px 16px 60px; }
 
-.headerTitle {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.container {
-  max-width: 700px;
-  margin: 0 auto;
-  padding: 24px 20px;
-}
-
+/* USER CARD */
 .userCard {
-  background: #111;
-  border: 1px solid #222;
-  border-radius: 16px;
-  padding: 24px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 28px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 20px; padding: 20px; margin-bottom: 24px;
+  display: flex; align-items: center; gap: 16px;
 }
-
+.userAvatarWrap { position: relative; cursor: pointer; }
 .userAvatar {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #00ff88, #00ccff);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: 700;
-  color: #000;
-  flex-shrink: 0;
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 700; color: #000; overflow: hidden;
+}
+.userAvatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+.editPhotoBtn {
+  position: absolute; bottom: -2px; right: -2px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; cursor: pointer;
+}
+.userName { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
+.userEmail { font-size: 13px; color: var(--text3); }
+.userPlan {
+  margin-top: 6px; display: inline-block;
+  padding: 3px 10px; border-radius: 20px;
+  background: #0a2a1a; color: var(--accent);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
 }
 
-.userName { font-size: 18px; font-weight: 700; }
-.userEmail { font-size: 13px; color: #666; margin-top: 2px; }
-
+/* SECTION */
+.sectionLabel {
+  font-size: 11px; color: var(--text3); font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 0 4px; margin-bottom: 8px; margin-top: 20px;
+}
 .section {
-  background: #111;
-  border: 1px solid #222;
-  border-radius: 16px;
-  overflow: hidden;
-  margin-bottom: 16px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 16px; overflow: hidden; margin-bottom: 8px;
 }
-
-.sectionTitle {
-  font-size: 11px;
-  color: #666;
-  font-weight: 600;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  padding: 16px 20px 8px;
-}
-
 .settingRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid #1a1a1a;
-  cursor: pointer;
-  transition: background 0.15s;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid #141414;
+  cursor: pointer; transition: background 0.15s;
 }
-
 .settingRow:last-child { border-bottom: none; }
-.settingRow:hover { background: #161616; }
-
+.settingRow:hover { background: #141414; }
 .settingLeft { display: flex; align-items: center; gap: 12px; }
 .settingIcon {
-  width: 36px; height: 36px;
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 17px;
-  flex-shrink: 0;
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;
 }
-
 .settingLabel { font-size: 15px; font-weight: 500; }
-.settingDesc { font-size: 12px; color: #666; margin-top: 1px; }
+.settingDesc { font-size: 12px; color: var(--text3); margin-top: 1px; }
+.settingArrow { color: var(--text3); font-size: 18px; }
+.settingValue { font-size: 12px; color: var(--text3); margin-right: 8px; }
 
-.settingRight {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #555;
-  font-size: 13px;
-}
-
-.arrow { color: #444; font-size: 16px; }
-
-/* Toggle */
-.toggle {
-  position: relative;
-  display: inline-block;
-  width: 44px; height: 24px;
-}
+/* TOGGLE */
+.toggle { position:relative; width:44px; height:24px; }
 .toggle input { opacity:0; width:0; height:0; }
 .toggleSlider {
-  position: absolute; inset: 0;
-  background: #2a2a2a;
-  border-radius: 24px;
-  cursor: pointer;
-  transition: 0.3s;
+  position:absolute; inset:0; background:#2a2a2a; border-radius:24px;
+  cursor:pointer; transition:0.3s;
 }
 .toggleSlider::before {
-  content: '';
-  position: absolute;
-  width: 18px; height: 18px;
-  left: 3px; top: 3px;
-  background: white;
-  border-radius: 50%;
-  transition: 0.3s;
+  content:''; position:absolute; width:18px; height:18px;
+  left:3px; top:3px; background:white; border-radius:50%; transition:0.3s;
 }
-.toggle input:checked + .toggleSlider { background: #00cc6a; }
-.toggle input:checked + .toggleSlider::before { transform: translateX(20px); }
+.toggle input:checked + .toggleSlider { background: var(--accent); }
+.toggle input:checked + .toggleSlider::before { transform:translateX(20px); }
 
-/* Panel overlay */
+/* PANEL */
 .panel {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.7);
-  z-index: 200;
-  display: none;
-  align-items: flex-end;
-  justify-content: center;
-  backdrop-filter: blur(4px);
+  position:fixed; inset:0; background:rgba(0,0,0,0.7);
+  z-index:200; display:none; align-items:flex-end; justify-content:center;
+  backdrop-filter:blur(4px);
 }
-
-.panel.show { display: flex; }
-
+.panel.show { display:flex; }
 .panelBox {
-  background: #111;
-  border: 1px solid #222;
-  border-radius: 20px 20px 0 0;
-  width: 100%;
-  max-width: 700px;
-  max-height: 80vh;
-  overflow-y: auto;
-  padding: 24px;
+  background: var(--bg2); border:1px solid var(--border);
+  border-radius:20px 20px 0 0; width:100%; max-width:680px;
+  max-height:85vh; overflow-y:auto; padding:24px;
   animation: slideUp 0.3s ease;
 }
-
-@keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-
-.panelHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.panelTitle { font-size: 17px; font-weight: 700; }
-
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.panelHeader { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.panelTitle { font-family:'Rajdhani',sans-serif; font-size:18px; font-weight:700; letter-spacing:0.5px; }
 .panelClose {
-  background: #1e1e1e;
-  border: none;
-  color: white;
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 14px;
+  width:28px; height:28px; border-radius:50%; background:var(--bg3);
+  border:none; color:var(--text); cursor:pointer; font-size:14px;
 }
 
-.formField { margin-bottom: 16px; }
-.formLabel {
-  font-size: 12px;
-  color: #888;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-  display: block;
-}
-
+/* FORM */
+.formLabel { font-size:11px; color:var(--text3); font-weight:700; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:8px; display:block; }
 .formInput {
-  width: 100%;
-  padding: 12px 14px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
-  border-radius: 10px;
-  color: white;
-  font-size: 15px;
-  outline: none;
+  width:100%; padding:12px 14px; background:var(--bg3); border:1px solid var(--border);
+  border-radius:10px; color:var(--text); font-size:15px; outline:none; margin-bottom:16px;
   transition: border-color 0.2s;
 }
-
-.formInput:focus { border-color: #00ff88; }
-
+.formInput:focus { border-color: var(--accent); }
 .saveBtn {
-  width: 100%;
-  padding: 13px;
-  background: linear-gradient(135deg, #00cc6a, #00aaff);
-  border: none;
-  border-radius: 12px;
-  color: white;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-top: 8px;
-  transition: opacity 0.2s;
+  width:100%; padding:13px; background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border:none; border-radius:12px; color:#000; font-size:15px; font-weight:700; cursor:pointer;
 }
-
-.saveBtn:hover { opacity: 0.9; }
-.saveBtn:disabled { opacity: 0.5; cursor: not-allowed; }
-
 .dangerBtn {
-  width: 100%;
-  padding: 13px;
-  background: #dc2626;
-  border: none;
-  border-radius: 12px;
-  color: white;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-top: 8px;
-  transition: background 0.2s;
+  width:100%; padding:12px; background:#1a0808; border:1px solid #441010;
+  border-radius:12px; color:#ff6666; font-size:14px; font-weight:600; cursor:pointer; margin-top:8px;
 }
+.msg { padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:14px; }
+.msg.success { background:#0a2a1a; border:1px solid #104410; color:#44ff88; }
+.msg.error { background:#2a1010; border:1px solid #441010; color:#ff6666; }
 
-.dangerBtn:hover { background: #ef4444; }
-
-.msg {
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  margin-bottom: 14px;
-  display: none;
-}
-
-.msg.success { background: #0a2a1a; border: 1px solid #104410; color: #44ff88; display: block; }
-.msg.error { background: #2a1010; border: 1px solid #441010; color: #ff6666; display: block; }
-
-.themeGrid { display: flex; gap: 10px; margin-bottom: 16px; }
+/* THEME GRID */
+.themeGrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
 .themeCard {
-  flex: 1; padding: 14px;
-  border: 2px solid #2a2a2a;
-  border-radius: 12px;
-  cursor: pointer;
-  text-align: center;
-  font-size: 13px;
-  transition: all 0.2s;
-  background: #1a1a1a;
-  color: #aaa;
+  border-radius:14px; padding:14px; cursor:pointer; border:2px solid var(--border);
+  transition:all 0.2s; position:relative; overflow:hidden;
 }
-.themeCard.active { border-color: #00ff88; color: white; background: #0a2a1a; }
+.themeCard.active { border-color: var(--accent); }
+.themePreview { height:60px; border-radius:8px; margin-bottom:10px; }
+.themeName { font-size:13px; font-weight:600; }
+.themeCheck {
+  position:absolute; top:8px; right:8px;
+  width:20px; height:20px; border-radius:50%;
+  background: var(--accent); color:#000; font-size:11px;
+  display:none; align-items:center; justify-content:center; font-weight:700;
+}
+.themeCard.active .themeCheck { display:flex; }
 
-.langGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+/* WALLPAPER GRID */
+.wallpaperGrid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:16px; }
+.wallpaperCard {
+  height:80px; border-radius:10px; cursor:pointer; border:2px solid transparent;
+  transition:all 0.2s; position:relative;
 }
-.langBtn {
-  padding: 12px;
-  background: #1a1a1a;
-  border: 2px solid #2a2a2a;
-  border-radius: 10px;
-  color: #aaa;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: left;
-}
-.langBtn.active { border-color: #00ccff; color: white; background: #0a1a2a; }
+.wallpaperCard.active { border-color: var(--accent); }
 
-.dangerZone {
-  background: #1a0a0a;
-  border: 1px solid #3a1a1a;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
+/* STYLE PILLS */
+.stylePills { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+.stylePill {
+  padding:8px 16px; background:var(--bg3); border:1px solid var(--border);
+  border-radius:20px; font-size:13px; cursor:pointer; transition:all 0.2s; color:var(--text2);
 }
-.dangerTitle { font-size: 14px; font-weight: 600; color: #ef4444; margin-bottom: 4px; }
-.dangerDesc { font-size: 12px; color: #888; margin-bottom: 12px; }
+.stylePill.active { background:#0a2a1a; border-color:var(--accent); color:var(--accent); }
 
-.logoutRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  cursor: pointer;
-  color: #ef4444;
-  font-size: 15px;
-  font-weight: 500;
-  transition: background 0.15s;
-  border-radius: 16px;
-  background: #111;
-  border: 1px solid #222;
-  margin-top: 8px;
+/* LOGOUT */
+.logoutBtn {
+  width:100%; padding:14px; background:#1a0808; border:1px solid #441010;
+  border-radius:14px; color:#ff6666; font-size:15px; font-weight:600;
+  cursor:pointer; margin-top:8px; transition:all 0.2s;
 }
-
-.logoutRow:hover { background: #1a0a0a; }
+.logoutBtn:hover { background:#2a1010; }
 </style>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 </head>
 <body>
 
 <div class="header">
-  <button class="backBtn" onclick="goBack()">
-    ← Back
-  </button>
+  <button class="backBtn" onclick="goBack()">← Back</button>
   <div class="headerTitle">Settings</div>
 </div>
 
 <div class="container">
 
-  <!-- User Card -->
+  <!-- USER CARD -->
   <div class="userCard">
-    <div class="userAvatar" id="userAvatar">G</div>
-    <div>
+    <div class="userAvatarWrap" onclick="uploadPhoto()">
+      <div class="userAvatar" id="userAvatar">
+        <img id="userAvatarImg" style="display:none">
+        <span id="userAvatarLetter">G</span>
+      </div>
+      <div class="editPhotoBtn">📷</div>
+    </div>
+    <div style="flex:1">
       <div class="userName" id="userName">Loading...</div>
       <div class="userEmail" id="userEmail">Loading...</div>
+      <div class="userPlan" id="userPlan">Free Plan</div>
     </div>
   </div>
 
-  <!-- Profile Settings -->
-  <div class="sectionTitle">ACCOUNT</div>
-  <div class="section">
-    <div class="settingRow" onclick="openPanel('username')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a2a1a;">👤</div>
-        <div>
-          <div class="settingLabel">Change Username</div>
-          <div class="settingDesc">Update your display name</div>
-        </div>
-      </div>
-      <div class="arrow">›</div>
-    </div>
-    <div class="settingRow" onclick="openPanel('password')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a1a2a;">🔑</div>
-        <div>
-          <div class="settingLabel">Change Password</div>
-          <div class="settingDesc">Update your password</div>
-        </div>
-      </div>
-      <div class="arrow">›</div>
-    </div>
-  </div>
-
-  <!-- Appearance -->
-  <div class="sectionTitle">APPEARANCE</div>
+  <!-- APPEARANCE -->
+  <div class="sectionLabel">Appearance</div>
   <div class="section">
     <div class="settingRow" onclick="openPanel('theme')">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#2a1a0a;">🎨</div>
-        <div>
-          <div class="settingLabel">Theme</div>
-          <div class="settingDesc" id="themeDesc">Dark mode</div>
-        </div>
+        <div class="settingIcon" style="background:#1a1a2a;">🎨</div>
+        <div><div class="settingLabel">Theme</div><div class="settingDesc" id="themeDesc">Dark</div></div>
       </div>
-      <div class="arrow">›</div>
+      <div class="settingArrow">›</div>
+    </div>
+    <div class="settingRow" onclick="openPanel('wallpaper')">
+      <div class="settingLeft">
+        <div class="settingIcon" style="background:#2a1a1a;">🖼️</div>
+        <div><div class="settingLabel">Chat Wallpaper</div><div class="settingDesc" id="wallpaperDesc">None</div></div>
+      </div>
+      <div class="settingArrow">›</div>
+    </div>
+  </div>
+
+  <!-- AI SETTINGS -->
+  <div class="sectionLabel">AI Behaviour</div>
+  <div class="section">
+    <div class="settingRow" onclick="openPanel('ainame')">
+      <div class="settingLeft">
+        <div class="settingIcon" style="background:#0a2a1a;">🤖</div>
+        <div><div class="settingLabel">AI Name</div><div class="settingDesc" id="ainameDesc">Datta AI</div></div>
+      </div>
+      <div class="settingArrow">›</div>
+    </div>
+    <div class="settingRow" onclick="openPanel('aistyle')">
+      <div class="settingLeft">
+        <div class="settingIcon" style="background:#2a2a0a;">✍️</div>
+        <div><div class="settingLabel">Response Style</div><div class="settingDesc" id="aistyleDesc">Balanced</div></div>
+      </div>
+      <div class="settingArrow">›</div>
     </div>
     <div class="settingRow" onclick="openPanel('language')">
       <div class="settingLeft">
         <div class="settingIcon" style="background:#0a1a2a;">🌐</div>
-        <div>
-          <div class="settingLabel">AI Response Language</div>
-          <div class="settingDesc" id="langDesc">English</div>
-        </div>
+        <div><div class="settingLabel">AI Language</div><div class="settingDesc" id="langDesc">English</div></div>
       </div>
-      <div class="arrow">›</div>
+      <div class="settingArrow">›</div>
     </div>
   </div>
 
-  <!-- Notifications -->
-  <div class="sectionTitle">PREFERENCES</div>
+  <!-- ACCOUNT -->
+  <div class="sectionLabel">Account</div>
   <div class="section">
-    <div class="settingRow" onclick="void(0)">
+    <div class="settingRow" onclick="openPanel('username')">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#2a2a0a;">🔔</div>
-        <div>
-          <div class="settingLabel">Sound Effects</div>
-          <div class="settingDesc">Play sound on AI response</div>
-        </div>
+        <div class="settingIcon" style="background:#1a2a1a;">👤</div>
+        <div><div class="settingLabel">Change Username</div><div class="settingDesc">Update display name</div></div>
       </div>
-      <label class="toggle" onclick="event.stopPropagation()">
-        <input type="checkbox" id="soundToggle" onchange="savePref()">
-        <span class="toggleSlider"></span>
-      </label>
+      <div class="settingArrow">›</div>
     </div>
-    <div class="settingRow" onclick="void(0)">
+    <div class="settingRow" onclick="openPanel('password')">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a0a2a;">✨</div>
-        <div>
-          <div class="settingLabel">Streaming Text</div>
-          <div class="settingDesc">Show text as AI types</div>
-        </div>
+        <div class="settingIcon" style="background:#1a1a2a;">🔑</div>
+        <div><div class="settingLabel">Change Password</div><div class="settingDesc">Update your password</div></div>
       </div>
-      <label class="toggle" onclick="event.stopPropagation()">
-        <input type="checkbox" id="streamToggle" checked onchange="savePref()">
-        <span class="toggleSlider"></span>
-      </label>
+      <div class="settingArrow">›</div>
+    </div>
+    <div class="settingRow" onclick="window.location.href='pricing.html'">
+      <div class="settingLeft">
+        <div class="settingIcon" style="background:#2a1a0a;">⚡</div>
+        <div><div class="settingLabel">Upgrade Plan</div><div class="settingDesc">Unlock more features</div></div>
+      </div>
+      <div class="settingArrow">›</div>
     </div>
   </div>
 
-  <!-- Danger Zone -->
-  <div class="sectionTitle">DANGER ZONE</div>
+  <!-- MEMORY -->
+  <div class="sectionLabel">Memory</div>
+  <div class="section">
+    <div class="settingRow" onclick="openPanel('memory')">
+      <div class="settingLeft">
+        <div class="settingIcon" style="background:#1a0a2a;">🧠</div>
+        <div><div class="settingLabel">What AI Remembers</div><div class="settingDesc" id="memoryCount">Loading...</div></div>
+      </div>
+      <div class="settingArrow">›</div>
+    </div>
+  </div>
+
+  <!-- DANGER -->
+  <div class="sectionLabel">Data</div>
   <div class="section">
     <div class="settingRow" onclick="openPanel('deleteChats')">
       <div class="settingLeft">
         <div class="settingIcon" style="background:#2a1010;">🗑️</div>
-        <div>
-          <div class="settingLabel" style="color:#ef4444;">Delete All Chats</div>
-          <div class="settingDesc">Permanently delete chat history</div>
-        </div>
+        <div><div class="settingLabel" style="color:#ff6666;">Delete All Chats</div><div class="settingDesc">Clear chat history</div></div>
       </div>
-      <div class="arrow">›</div>
+      <div class="settingArrow">›</div>
     </div>
     <div class="settingRow" onclick="openPanel('deleteAccount')">
       <div class="settingLeft">
         <div class="settingIcon" style="background:#2a1010;">❌</div>
-        <div>
-          <div class="settingLabel" style="color:#ef4444;">Delete Account</div>
-          <div class="settingDesc">Permanently delete your account</div>
-        </div>
+        <div><div class="settingLabel" style="color:#ff6666;">Delete Account</div><div class="settingDesc">Permanently remove account</div></div>
       </div>
-      <div class="arrow">›</div>
+      <div class="settingArrow">›</div>
     </div>
   </div>
 
-  <!-- Memory Section -->
-  <div class="sectionTitle">DATTA AI MEMORY</div>
-  <div class="section">
-    <div class="settingRow" onclick="openPanel('memory')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a1a2a;">🧠</div>
-        <div>
-          <div class="settingLabel">What Datta AI Remembers</div>
-          <div class="settingDesc" id="memoryCount">Loading...</div>
-        </div>
-      </div>
-      <div class="arrow">›</div>
-    </div>
-  </div>
-
-  <!-- Logout -->
-  <div class="logoutRow" onclick="logout()">
-    <span>🚪 Log Out</span>
-    <span>›</span>
-  </div>
+  <button class="logoutBtn" onclick="logout()">🚪 Log Out</button>
 
 </div>
 
-<!-- PANELS -->
+<!-- ─── PANELS ─── -->
 
-<!-- Username Panel -->
-<div class="panel" id="panel-username" onclick="closePanel('username')">
-  <div class="panelBox" onclick="event.stopPropagation()">
-    <div class="panelHeader">
-      <div class="panelTitle">Change Username</div>
-      <button class="panelClose" onclick="closePanel('username')">✕</button>
-    </div>
-    <div class="msg" id="msg-username"></div>
-    <div class="formField">
-      <label class="formLabel">New Username</label>
-      <input type="text" id="newUsername" class="formInput" placeholder="Enter new username">
-    </div>
-    <button class="saveBtn" onclick="changeUsername()">Save Username</button>
-  </div>
-</div>
-
-<!-- Password Panel -->
-<div class="panel" id="panel-password" onclick="closePanel('password')">
-  <div class="panelBox" onclick="event.stopPropagation()">
-    <div class="panelHeader">
-      <div class="panelTitle">Change Password</div>
-      <button class="panelClose" onclick="closePanel('password')">✕</button>
-    </div>
-    <div class="msg" id="msg-password"></div>
-    <div class="formField">
-      <label class="formLabel">Current Password</label>
-      <input type="password" id="currentPassword" class="formInput" placeholder="Current password">
-    </div>
-    <div class="formField">
-      <label class="formLabel">New Password</label>
-      <input type="password" id="newPassword" class="formInput" placeholder="Min 6 characters">
-    </div>
-    <div class="formField">
-      <label class="formLabel">Confirm New Password</label>
-      <input type="password" id="confirmPassword" class="formInput" placeholder="Confirm new password">
-    </div>
-    <button class="saveBtn" onclick="changePassword()">Change Password</button>
-  </div>
-</div>
-
-<!-- Theme Panel -->
+<!-- THEME PANEL -->
 <div class="panel" id="panel-theme" onclick="closePanel('theme')">
-  <div class="panelBox" onclick="event.stopPropagation()">
-    <div class="panelHeader">
-      <div class="panelTitle">Choose Theme</div>
-      <button class="panelClose" onclick="closePanel('theme')">✕</button>
+<div class="panelBox" onclick="event.stopPropagation()">
+  <div class="panelHeader">
+    <div class="panelTitle">Choose Theme</div>
+    <button class="panelClose" onclick="closePanel('theme')">✕</button>
+  </div>
+  <div class="themeGrid">
+    <div class="themeCard" id="theme-dark" onclick="setTheme('dark')">
+      <div class="themePreview" style="background:linear-gradient(135deg,#0a0a0a,#1a1a1a);border:1px solid #222;"></div>
+      <div class="themeName">🌙 Dark</div>
+      <div class="themeCheck">✓</div>
     </div>
-    <div class="themeGrid">
-      <div class="themeCard" id="theme-dark" onclick="setTheme('dark')">🌙<br>Dark</div>
-      <div class="themeCard" id="theme-light" onclick="setTheme('light')">☀️<br>Light</div>
+    <div class="themeCard" id="theme-light" onclick="setTheme('light')">
+      <div class="themePreview" style="background:linear-gradient(135deg,#f5f5f5,#e8e8e8);border:1px solid #ddd;"></div>
+      <div class="themeName">☀️ Light</div>
+      <div class="themeCheck">✓</div>
+    </div>
+    <div class="themeCard" id="theme-midnight" onclick="setTheme('midnight')">
+      <div class="themePreview" style="background:linear-gradient(135deg,#000020,#000840);border:1px solid #001166;"></div>
+      <div class="themeName">🌌 Midnight</div>
+      <div class="themeCheck">✓</div>
+    </div>
+    <div class="themeCard" id="theme-forest" onclick="setTheme('forest')">
+      <div class="themePreview" style="background:linear-gradient(135deg,#0a1a0a,#0a2a0a);border:1px solid #1a4a1a;"></div>
+      <div class="themeName">🌿 Forest</div>
+      <div class="themeCheck">✓</div>
+    </div>
+    <div class="themeCard" id="theme-ocean" onclick="setTheme('ocean')">
+      <div class="themePreview" style="background:linear-gradient(135deg,#000a1a,#001a2a);border:1px solid #003366;"></div>
+      <div class="themeName">🌊 Ocean</div>
+      <div class="themeCheck">✓</div>
+    </div>
+    <div class="themeCard" id="theme-sunset" onclick="setTheme('sunset')">
+      <div class="themePreview" style="background:linear-gradient(135deg,#1a0a00,#2a0a1a);border:1px solid #442200;"></div>
+      <div class="themeName">🌅 Sunset</div>
+      <div class="themeCheck">✓</div>
     </div>
   </div>
 </div>
+</div>
 
-<!-- Language Panel -->
+<!-- WALLPAPER PANEL -->
+<div class="panel" id="panel-wallpaper" onclick="closePanel('wallpaper')">
+<div class="panelBox" onclick="event.stopPropagation()">
+  <div class="panelHeader">
+    <div class="panelTitle">Chat Wallpaper</div>
+    <button class="panelClose" onclick="closePanel('wallpaper')">✕</button>
+  </div>
+  <div class="wallpaperGrid">
+    <div class="wallpaperCard" id="wp-none" style="background:#111;border:1px solid #222;display:flex;align-items:center;justify-content:center;color:#555;font-size:12px;" onclick="setWallpaper('none')">None</div>
+    <div class="wallpaperCard" id="wp-dots" style="background:#0a0a0a;background-image:radial-gradient(circle,#222 1px,transparent 1px);background-size:20px 20px;" onclick="setWallpaper('dots')"></div>
+    <div class="wallpaperCard" id="wp-grid" style="background:#0a0a0a;background-image:linear-gradient(#1a1a1a 1px,transparent 1px),linear-gradient(90deg,#1a1a1a 1px,transparent 1px);background-size:20px 20px;" onclick="setWallpaper('grid')"></div>
+    <div class="wallpaperCard" id="wp-waves" style="background:linear-gradient(135deg,#001a2a,#002a3a,#001a2a);" onclick="setWallpaper('waves')"></div>
+    <div class="wallpaperCard" id="wp-gradient1" style="background:linear-gradient(135deg,#0a0a2a,#1a0a2a,#0a1a2a);" onclick="setWallpaper('gradient1')"></div>
+    <div class="wallpaperCard" id="wp-gradient2" style="background:linear-gradient(135deg,#0a1a0a,#1a2a0a,#0a1a1a);" onclick="setWallpaper('gradient2')"></div>
+    <div class="wallpaperCard" id="wp-stars" style="background:#000;background-image:radial-gradient(circle,#fff 1px,transparent 1px);background-size:30px 30px;" onclick="setWallpaper('stars')"></div>
+    <div class="wallpaperCard" id="wp-mesh" style="background:linear-gradient(135deg,#00ff8811,#00ccff11,#aa44ff11);" onclick="setWallpaper('mesh')"></div>
+    <div class="wallpaperCard" style="background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:11px;color:#666;" onclick="pickCustomWallpaper()">📷 Custom</div>
+  </div>
+</div>
+</div>
+
+<!-- AI NAME PANEL -->
+<div class="panel" id="panel-ainame" onclick="closePanel('ainame')">
+<div class="panelBox" onclick="event.stopPropagation()">
+  <div class="panelHeader">
+    <div class="panelTitle">Custom AI Name</div>
+    <button class="panelClose" onclick="closePanel('ainame')">✕</button>
+  </div>
+  <div class="msg" id="msg-ainame"></div>
+  <label class="formLabel">AI Name (shown in chat)</label>
+  <input type="text" id="ainameInput" class="formInput" placeholder="e.g. Datta AI, Jarvis, Friday...">
+  <button class="saveBtn" onclick="saveAIName()">Save Name</button>
+</div>
+</div>
+
+<!-- AI STYLE PANEL -->
+<div class="panel" id="panel-aistyle" onclick="closePanel('aistyle')">
+<div class="panelBox" onclick="event.stopPropagation()">
+  <div class="panelHeader">
+    <div class="panelTitle">Response Style</div>
+    <button class="panelClose" onclick="closePanel('aistyle')">✕</button>
+  </div>
+  <div class="stylePills" id="stylePills">
+    <div class="stylePill" onclick="setStyle('Balanced')">⚖️ Balanced</div>
+    <div class="stylePill" onclick="setStyle('Short')">⚡ Short & Quick</div>
+    <div class="stylePill" onclick="setStyle('Detailed')">📖 Detailed</div>
+    <div class="stylePill" onclick="setStyle('Formal')">👔 Formal</div>
+    <div class="stylePill" onclick="setStyle('Casual')">😊 Casual & Friendly</div>
+    <div class="stylePill" onclick="setStyle('Technical')">🔧 Technical</div>
+    <div class="stylePill" onclick="setStyle('Creative')">🎨 Creative</div>
+    <div class="stylePill" onclick="setStyle('Simple')">🧒 Simple & Clear</div>
+  </div>
+</div>
+</div>
+
+<!-- LANGUAGE PANEL -->
 <div class="panel" id="panel-language" onclick="closePanel('language')">
-  <div class="panelBox" onclick="event.stopPropagation()">
-    <div class="panelHeader">
-      <div class="panelTitle">AI Response Language</div>
-      <button class="panelClose" onclick="closePanel('language')">✕</button>
-    </div>
-    <div class="langGrid">
-      <button class="langBtn" onclick="setLanguage('English')">🇺🇸 English</button>
-      <button class="langBtn" onclick="setLanguage('Hindi')">🇮🇳 Hindi</button>
-      <button class="langBtn" onclick="setLanguage('Telugu')">🇮🇳 Telugu</button>
-      <button class="langBtn" onclick="setLanguage('Tamil')">🇮🇳 Tamil</button>
-      <button class="langBtn" onclick="setLanguage('Spanish')">🇪🇸 Spanish</button>
-      <button class="langBtn" onclick="setLanguage('French')">🇫🇷 French</button>
-      <button class="langBtn" onclick="setLanguage('Arabic')">🇸🇦 Arabic</button>
-      <button class="langBtn" onclick="setLanguage('Chinese')">🇨🇳 Chinese</button>
-      <button class="langBtn" onclick="setLanguage('Japanese')">🇯🇵 Japanese</button>
-      <button class="langBtn" onclick="setLanguage('German')">🇩🇪 German</button>
-    </div>
+<div class="panelBox" onclick="event.stopPropagation()">
+  <div class="panelHeader">
+    <div class="panelTitle">AI Response Language</div>
+    <button class="panelClose" onclick="closePanel('language')">✕</button>
+  </div>
+  <div class="stylePills">
+    <div class="stylePill" onclick="setLanguage('English')">🇺🇸 English</div>
+    <div class="stylePill" onclick="setLanguage('Hindi')">🇮🇳 Hindi</div>
+    <div class="stylePill" onclick="setLanguage('Telugu')">🇮🇳 Telugu</div>
+    <div class="stylePill" onclick="setLanguage('Tamil')">🇮🇳 Tamil</div>
+    <div class="stylePill" onclick="setLanguage('Kannada')">🇮🇳 Kannada</div>
+    <div class="stylePill" onclick="setLanguage('Malayalam')">🇮🇳 Malayalam</div>
+    <div class="stylePill" onclick="setLanguage('Spanish')">🇪🇸 Spanish</div>
+    <div class="stylePill" onclick="setLanguage('French')">🇫🇷 French</div>
+    <div class="stylePill" onclick="setLanguage('Arabic')">🇸🇦 Arabic</div>
+    <div class="stylePill" onclick="setLanguage('Chinese')">🇨🇳 Chinese</div>
   </div>
 </div>
+</div>
 
-<!-- Delete Chats Panel -->
+<!-- USERNAME PANEL -->
+<div class="panel" id="panel-username" onclick="closePanel('username')">
+<div class="panelBox" onclick="event.stopPropagation()">
+  <div class="panelHeader">
+    <div class="panelTitle">Change Username</div>
+    <button class="panelClose" onclick="closePanel('username')">✕</button>
+  </div>
+  <div class="msg" id="msg-username"></div>
+  <label class="formLabel">New Username</label>
+  <input type="text" id="newUsername" class="formInput" placeholder="Enter new username">
+  <button class="saveBtn" onclick="changeUsername()">Save Username</button>
+</div>
+</div>
+
+<!-- PASSWORD PANEL -->
+<div class="panel" id="panel-password" onclick="closePanel('password')">
+<div class="panelBox" onclick="event.stopPropagation()">
+  <div class="panelHeader">
+    <div class="panelTitle">Change Password</div>
+    <button class="panelClose" onclick="closePanel('password')">✕</button>
+  </div>
+  <div class="msg" id="msg-password"></div>
+  <label class="formLabel">Current Password</label>
+  <input type="password" id="currentPassword" class="formInput" placeholder="Current password">
+  <label class="formLabel">New Password</label>
+  <input type="password" id="newPassword" class="formInput" placeholder="Min 6 characters">
+  <label class="formLabel">Confirm New Password</label>
+  <input type="password" id="confirmPassword" class="formInput" placeholder="Confirm new password">
+  <button class="saveBtn" onclick="changePassword()">Change Password</button>
+</div>
+</div>
+
+<!-- MEMORY PANEL -->
+<div class="panel" id="panel-memory" onclick="closePanel('memory')">
+<div class="panelBox" onclick="event.stopPropagation()">
+  <div class="panelHeader">
+    <div class="panelTitle">🧠 AI Memory</div>
+    <button class="panelClose" onclick="closePanel('memory')">✕</button>
+  </div>
+  <div id="memoryList" style="margin-bottom:16px;max-height:300px;overflow-y:auto;"></div>
+  <button class="dangerBtn" onclick="clearAllMemory()">🗑️ Clear All Memory</button>
+</div>
+</div>
+
+<!-- DELETE CHATS PANEL -->
 <div class="panel" id="panel-deleteChats" onclick="closePanel('deleteChats')">
-  <div class="panelBox" onclick="event.stopPropagation()">
-    <div class="panelHeader">
-      <div class="panelTitle">Delete All Chats</div>
-      <button class="panelClose" onclick="closePanel('deleteChats')">✕</button>
-    </div>
-    <div class="msg" id="msg-deleteChats"></div>
-    <div class="dangerZone">
-      <div class="dangerTitle">Warning!</div>
-      <div class="dangerDesc">This will permanently delete ALL your chat history. This cannot be undone.</div>
-      <button class="dangerBtn" onclick="deleteAllChats()">Yes, Delete All Chats</button>
-    </div>
+<div class="panelBox" onclick="event.stopPropagation()">
+  <div class="panelHeader">
+    <div class="panelTitle">Delete All Chats</div>
+    <button class="panelClose" onclick="closePanel('deleteChats')">✕</button>
   </div>
+  <div class="msg" id="msg-deleteChats"></div>
+  <p style="color:#888;font-size:13px;margin-bottom:16px;">This will permanently delete all your chat history. Cannot be undone.</p>
+  <button class="dangerBtn" onclick="deleteAllChats()">Yes, Delete All Chats</button>
+</div>
 </div>
 
-<!-- Delete Account Panel -->
+<!-- DELETE ACCOUNT PANEL -->
 <div class="panel" id="panel-deleteAccount" onclick="closePanel('deleteAccount')">
-  <div class="panelBox" onclick="event.stopPropagation()">
-    <div class="panelHeader">
-      <div class="panelTitle">Delete Account</div>
-      <button class="panelClose" onclick="closePanel('deleteAccount')">✕</button>
-    </div>
-    <div class="msg" id="msg-deleteAccount"></div>
-    <div class="dangerZone">
-      <div class="dangerTitle">This cannot be undone!</div>
-      <div class="dangerDesc">All your data, chats, and account will be permanently deleted.</div>
-      <div class="formField">
-        <label class="formLabel">Enter Password to Confirm</label>
-        <input type="password" id="deletePassword" class="formInput" placeholder="Your password">
-      </div>
-      <button class="dangerBtn" onclick="deleteAccount()">Delete My Account Forever</button>
-    </div>
+<div class="panelBox" onclick="event.stopPropagation()">
+  <div class="panelHeader">
+    <div class="panelTitle">Delete Account</div>
+    <button class="panelClose" onclick="closePanel('deleteAccount')">✕</button>
   </div>
+  <div class="msg" id="msg-deleteAccount"></div>
+  <p style="color:#888;font-size:13px;margin-bottom:16px;">All data will be permanently deleted.</p>
+  <label class="formLabel">Enter Password to Confirm</label>
+  <input type="password" id="deletePassword" class="formInput" placeholder="Your password">
+  <button class="dangerBtn" onclick="deleteAccount()">Delete My Account Forever</button>
+</div>
 </div>
 
 <script>
 const SERVER = "https://datta-ai-server.onrender.com"
-
-function getToken() {
-  return localStorage.getItem("datta_token") || ""
+const THEMES = {
+  dark:     { bg:"#0a0a0a", bg2:"#111", bg3:"#1a1a1a", border:"#222", text:"#fff", text2:"#aaa", text3:"#666", accent:"#00ff88", accent2:"#00ccff" },
+  light:    { bg:"#f5f5f5", bg2:"#fff", bg3:"#f0f0f0", border:"#ddd", text:"#111", text2:"#555", text3:"#999", accent:"#00aa55", accent2:"#0088cc" },
+  midnight: { bg:"#000010", bg2:"#000820", bg3:"#001030", border:"#001166", text:"#e0e8ff", text2:"#8899cc", text3:"#445588", accent:"#4488ff", accent2:"#88aaff" },
+  forest:   { bg:"#050f05", bg2:"#0a180a", bg3:"#0f2010", border:"#1a4a1a", text:"#e0ffe0", text2:"#88bb88", text3:"#4a7a4a", accent:"#44cc44", accent2:"#88ff88" },
+  ocean:    { bg:"#000a18", bg2:"#001025", bg3:"#001835", border:"#003366", text:"#e0f0ff", text2:"#7799cc", text3:"#334466", accent:"#0088ff", accent2:"#00ccff" },
+  sunset:   { bg:"#100500", bg2:"#1a0800", bg3:"#220a00", border:"#441500", text:"#fff0e0", text2:"#cc9966", text3:"#775533", accent:"#ff8800", accent2:"#ff4400" }
 }
 
-function getUser() {
-  try {
-    const raw = localStorage.getItem("datta_user")
-    if (raw && raw !== "null") return JSON.parse(raw)
-  } catch(e) {}
-  return null
+const WALLPAPERS = {
+  none: "",
+  dots: "radial-gradient(circle,#222 1px,transparent 1px) 0 0/20px 20px",
+  grid: "linear-gradient(#1a1a1a 1px,transparent 1px) 0 0/20px 20px,linear-gradient(90deg,#1a1a1a 1px,transparent 1px) 0 0/20px 20px",
+  waves: "linear-gradient(135deg,#001a2a,#002a3a,#001a2a)",
+  gradient1: "linear-gradient(135deg,#0a0a2a,#1a0a2a,#0a1a2a)",
+  gradient2: "linear-gradient(135deg,#0a1a0a,#1a2a0a,#0a1a1a)",
+  stars: "radial-gradient(circle,#fff 1px,transparent 1px) 0 0/30px 30px",
+  mesh: "linear-gradient(135deg,#00ff8811,#00ccff11,#aa44ff11)"
 }
 
-// Check auth
-window.addEventListener("load", function() {
-  const token = getToken()
-  if (!token) {
-    window.location.href = "login.html"
-    return
+function getToken() { return localStorage.getItem("datta_token") || "" }
+function getUser() { try { return JSON.parse(localStorage.getItem("datta_user")||"{}") } catch(e) { return {} } }
+
+// Apply theme to THIS page
+function applyThemeToPage(themeName) {
+  const t = THEMES[themeName] || THEMES.dark
+  const root = document.documentElement
+  Object.entries(t).forEach(([k, v]) => root.style.setProperty("--" + k, v))
+}
+
+// Apply theme EVERYWHERE (saves and notifies)
+function setTheme(name) {
+  localStorage.setItem("datta_theme", name)
+  applyThemeToPage(name)
+  document.querySelectorAll(".themeCard").forEach(c => c.classList.remove("active"))
+  const card = document.getElementById("theme-" + name)
+  if (card) card.classList.add("active")
+  document.getElementById("themeDesc").textContent = name.charAt(0).toUpperCase() + name.slice(1)
+  showMsg("theme", "Theme applied!", "success")
+  setTimeout(() => closePanel("theme"), 800)
+}
+
+function setWallpaper(name) {
+  localStorage.setItem("datta_wallpaper", name)
+  document.querySelectorAll(".wallpaperCard").forEach(c => c.classList.remove("active"))
+  const card = document.getElementById("wp-" + name)
+  if (card) card.classList.add("active")
+  document.getElementById("wallpaperDesc").textContent = name === "none" ? "None" : name.charAt(0).toUpperCase() + name.slice(1)
+  setTimeout(() => closePanel("wallpaper"), 600)
+}
+
+function pickCustomWallpaper() {
+  const input = document.createElement("input")
+  input.type = "file"; input.accept = "image/*"
+  input.onchange = e => {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => {
+      localStorage.setItem("datta_wallpaper_custom", ev.target.result)
+      localStorage.setItem("datta_wallpaper", "custom")
+      document.getElementById("wallpaperDesc").textContent = "Custom"
+      closePanel("wallpaper")
+    }
+    reader.readAsDataURL(file)
   }
+  input.click()
+}
 
-  const user = getUser()
-  if (user) {
-    document.getElementById("userAvatar").textContent = (user.username || "U")[0].toUpperCase()
-    document.getElementById("userName").textContent = user.username || "User"
-    document.getElementById("userEmail").textContent = user.email || (user.isGuest ? "Guest Account" : "")
-  }
+function saveAIName() {
+  const name = document.getElementById("ainameInput").value.trim()
+  if (!name) return showMsg("ainame", "Enter a name", "error")
+  localStorage.setItem("datta_ai_name", name)
+  document.getElementById("ainameDesc").textContent = name
+  showMsg("ainame", "AI name saved!", "success")
+  setTimeout(() => closePanel("ainame"), 1000)
+}
 
-  // Load saved prefs
-  const theme = localStorage.getItem("datta_theme") || "dark"
-  document.getElementById("themeDesc").textContent = theme === "dark" ? "Dark mode" : "Light mode"
-  document.getElementById("theme-" + theme).classList.add("active")
+function setStyle(style) {
+  localStorage.setItem("datta_ai_style", style)
+  document.querySelectorAll(".stylePill").forEach(p => p.classList.remove("active"))
+  event.target.classList.add("active")
+  document.getElementById("aistyleDesc").textContent = style
+  setTimeout(() => closePanel("aistyle"), 600)
+}
 
-  const lang = localStorage.getItem("datta_language") || "English"
+function setLanguage(lang) {
+  localStorage.setItem("datta_language", lang)
   document.getElementById("langDesc").textContent = lang
-  document.querySelectorAll(".langBtn").forEach(b => {
-    if (b.textContent.includes(lang)) b.classList.add("active")
-  })
+  setTimeout(() => closePanel("language"), 600)
+}
 
-  const prefs = JSON.parse(localStorage.getItem("datta_notif") || "{}")
-  document.getElementById("soundToggle").checked = prefs.sound || false
-  document.getElementById("streamToggle").checked = prefs.stream !== false
+function uploadPhoto() {
+  const input = document.createElement("input")
+  input.type = "file"; input.accept = "image/*"
+  input.onchange = e => {
+    const file = e.target.files[0]; if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => {
+      localStorage.setItem("datta_avatar", ev.target.result)
+      setAvatar(ev.target.result)
+    }
+    reader.readAsDataURL(file)
+  }
+  input.click()
+}
 
-  if (theme === "light") document.body.style.background = "#f5f5f5"
-})
+function setAvatar(dataUrl) {
+  const img = document.getElementById("userAvatarImg")
+  const letter = document.getElementById("userAvatarLetter")
+  if (img) { img.src = dataUrl; img.style.display = "block" }
+  if (letter) letter.style.display = "none"
+}
 
-function goBack() {
-  window.location.href = "index.html"
+async function changeUsername() {
+  const val = document.getElementById("newUsername").value.trim()
+  if (!val || val.length < 3) return showMsg("username", "Min 3 characters", "error")
+  try {
+    const res = await fetch(SERVER + "/auth/update-username", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ username: val, token: getToken() })
+    })
+    const data = await res.json()
+    if (!res.ok) return showMsg("username", data.error || "Failed", "error")
+    const user = getUser(); user.username = val
+    localStorage.setItem("datta_user", JSON.stringify(user))
+    document.getElementById("userName").textContent = val
+    document.getElementById("userAvatarLetter").textContent = val[0].toUpperCase()
+    showMsg("username", "Username updated!", "success")
+    setTimeout(() => closePanel("username"), 1200)
+  } catch(e) { showMsg("username", "Server error", "error") }
+}
+
+async function changePassword() {
+  const cur = document.getElementById("currentPassword").value
+  const nw = document.getElementById("newPassword").value
+  const cf = document.getElementById("confirmPassword").value
+  if (!cur || !nw || !cf) return showMsg("password", "Fill all fields", "error")
+  if (nw.length < 6) return showMsg("password", "Min 6 characters", "error")
+  if (nw !== cf) return showMsg("password", "Passwords don't match", "error")
+  try {
+    const res = await fetch(SERVER + "/auth/change-password", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ currentPassword: cur, newPassword: nw, token: getToken() })
+    })
+    const data = await res.json()
+    if (!res.ok) return showMsg("password", data.error || "Failed", "error")
+    showMsg("password", "Password changed!", "success")
+    setTimeout(() => closePanel("password"), 1200)
+  } catch(e) { showMsg("password", "Server error", "error") }
+}
+
+async function loadMemory() {
+  try {
+    const res = await fetch(SERVER + "/memory?token=" + getToken())
+    const memories = await res.json()
+    const count = Array.isArray(memories) ? memories.length : 0
+    const countEl = document.getElementById("memoryCount")
+    if (countEl) countEl.textContent = count + " things remembered"
+    const list = document.getElementById("memoryList")
+    if (!list) return
+    if (!count) { list.innerHTML = '<div style="color:#666;font-size:13px;padding:8px;">Nothing remembered yet. Start chatting!</div>'; return }
+    list.innerHTML = memories.map(m => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg3);border-radius:10px;margin-bottom:8px;">
+        <div>
+          <div style="font-size:13px;color:var(--text);font-weight:500;">${m.key.replace(/_/g," ")}</div>
+          <div style="font-size:12px;color:var(--text3);">${JSON.stringify(m.value)}</div>
+        </div>
+        <button onclick="deleteMemory('${m.key}')" style="background:none;border:none;color:#666;cursor:pointer;font-size:16px;">✕</button>
+      </div>
+    `).join("")
+  } catch(e) {}
+}
+
+async function deleteMemory(key) {
+  await fetch(SERVER + "/memory/" + key + "?token=" + getToken(), { method: "DELETE" })
+  loadMemory()
+}
+
+async function clearAllMemory() {
+  if (!confirm("Clear all AI memory?")) return
+  await fetch(SERVER + "/memory?token=" + getToken(), { method: "DELETE" })
+  loadMemory()
+}
+
+async function deleteAllChats() {
+  try {
+    const res = await fetch(SERVER + "/chats/all?token=" + getToken(), { method: "DELETE" })
+    if (!res.ok) return showMsg("deleteChats", "Failed", "error")
+    showMsg("deleteChats", "All chats deleted!", "success")
+    setTimeout(() => closePanel("deleteChats"), 1200)
+  } catch(e) { showMsg("deleteChats", "Server error", "error") }
+}
+
+async function deleteAccount() {
+  const pw = document.getElementById("deletePassword").value
+  if (!pw) return showMsg("deleteAccount", "Enter password", "error")
+  try {
+    const res = await fetch(SERVER + "/auth/delete-account", {
+      method: "DELETE", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ password: pw, token: getToken() })
+    })
+    const data = await res.json()
+    if (!res.ok) return showMsg("deleteAccount", data.error || "Failed", "error")
+    localStorage.clear(); window.location.href = "login.html"
+  } catch(e) { showMsg("deleteAccount", "Server error", "error") }
+}
+
+function logout() {
+  if (!confirm("Log out?")) return
+  localStorage.removeItem("datta_token")
+  localStorage.removeItem("datta_user")
+  window.location.href = "login.html"
 }
 
 function openPanel(name) {
   document.getElementById("panel-" + name).classList.add("show")
+  if (name === "memory") loadMemory()
 }
 
 function closePanel(name) {
@@ -667,178 +750,71 @@ function closePanel(name) {
 function showMsg(id, text, type) {
   const el = document.getElementById("msg-" + id)
   if (!el) return
-  el.textContent = text
-  el.className = "msg " + type
+  el.textContent = text; el.className = "msg " + type
   setTimeout(() => { el.className = "msg"; el.textContent = "" }, 3000)
 }
 
-async function changeUsername() {
-  const val = document.getElementById("newUsername").value.trim()
-  if (!val || val.length < 3) return showMsg("username", "Username must be at least 3 characters", "error")
-
-  try {
-    const res = await fetch(SERVER + "/auth/update-username", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: val, token: getToken() })
-    })
-    const data = await res.json()
-    if (!res.ok) return showMsg("username", data.error || "Failed", "error")
-
-    const user = getUser() || {}
-    user.username = val
-    localStorage.setItem("datta_user", JSON.stringify(user))
-    document.getElementById("userName").textContent = val
-    document.getElementById("userAvatar").textContent = val[0].toUpperCase()
-    showMsg("username", "Username updated!", "success")
-    setTimeout(() => closePanel("username"), 1500)
-  } catch(e) {
-    showMsg("username", "Server error", "error")
-  }
+function goBack() {
+  window.location.href = "index.html"
 }
 
-async function changePassword() {
-  const current = document.getElementById("currentPassword").value
-  const newPass = document.getElementById("newPassword").value
-  const confirm = document.getElementById("confirmPassword").value
-
-  if (!current || !newPass || !confirm) return showMsg("password", "Fill all fields", "error")
-  if (newPass.length < 6) return showMsg("password", "Min 6 characters", "error")
-  if (newPass !== confirm) return showMsg("password", "Passwords don't match", "error")
-
-  try {
-    const res = await fetch(SERVER + "/auth/change-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentPassword: current, newPassword: newPass, token: getToken() })
-    })
-    const data = await res.json()
-    if (!res.ok) return showMsg("password", data.error || "Failed", "error")
-    showMsg("password", "Password changed!", "success")
-    document.getElementById("currentPassword").value = ""
-    document.getElementById("newPassword").value = ""
-    document.getElementById("confirmPassword").value = ""
-    setTimeout(() => closePanel("password"), 1500)
-  } catch(e) {
-    showMsg("password", "Server error", "error")
-  }
-}
-
-function setTheme(theme) {
-  localStorage.setItem("datta_theme", theme)
-  document.querySelectorAll(".themeCard").forEach(c => c.classList.remove("active"))
-  document.getElementById("theme-" + theme).classList.add("active")
-  document.getElementById("themeDesc").textContent = theme === "dark" ? "Dark mode" : "Light mode"
-  setTimeout(() => closePanel("theme"), 500)
-}
-
-function setLanguage(lang) {
-  localStorage.setItem("datta_language", lang)
-  document.querySelectorAll(".langBtn").forEach(b => {
-    b.classList.toggle("active", b.textContent.includes(lang))
-  })
-  document.getElementById("langDesc").textContent = lang
-  setTimeout(() => closePanel("language"), 500)
-}
-
-function savePref() {
-  localStorage.setItem("datta_notif", JSON.stringify({
-    sound: document.getElementById("soundToggle").checked,
-    stream: document.getElementById("streamToggle").checked
-  }))
-}
-
-async function deleteAllChats() {
-  try {
-    const res = await fetch(SERVER + "/chats/all?token=" + getToken(), { method: "DELETE" })
-    if (!res.ok) return showMsg("deleteChats", "Failed to delete", "error")
-    showMsg("deleteChats", "All chats deleted!", "success")
-    setTimeout(() => closePanel("deleteChats"), 1500)
-  } catch(e) {
-    showMsg("deleteChats", "Server error", "error")
-  }
-}
-
-async function deleteAccount() {
-  const password = document.getElementById("deletePassword").value
-  if (!password) return showMsg("deleteAccount", "Enter your password", "error")
-
-  try {
-    const res = await fetch(SERVER + "/auth/delete-account", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password, token: getToken() })
-    })
-    const data = await res.json()
-    if (!res.ok) return showMsg("deleteAccount", data.error || "Failed", "error")
-    localStorage.clear()
-    window.location.href = "login.html"
-  } catch(e) {
-    showMsg("deleteAccount", "Server error", "error")
-  }
-}
-
-function logout() {
-  if (!confirm("Are you sure you want to logout?")) return
-  localStorage.removeItem("datta_token")
-  localStorage.removeItem("datta_user")
-  window.location.href = "login.html"
-}
-
-// MEMORY FUNCTIONS
-async function loadMemory() {
-  try {
-    const res = await fetch("https://datta-ai-server.onrender.com/memory?token=" + getToken())
-    const memories = await res.json()
-    const count = Array.isArray(memories) ? memories.length : 0
-    const countEl = document.getElementById("memoryCount")
-    if (countEl) countEl.textContent = count + " things remembered"
-
-    const list = document.getElementById("memoryList")
-    if (list) {
-      if (!count) {
-        list.innerHTML = '<div style="color:#666;font-size:13px;padding:8px;">Nothing remembered yet. Start chatting!</div>'
-        return
-      }
-      list.innerHTML = memories.map(m => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#1a1a1a;border-radius:10px;margin-bottom:8px;">
-          <div>
-            <div style="font-size:13px;color:white;font-weight:500;">${m.key.replace(/_/g,' ')}</div>
-            <div style="font-size:12px;color:#888;margin-top:2px;">${JSON.stringify(m.value)}</div>
-          </div>
-          <button onclick="deleteMemory('${m.key}')" style="background:none;border:none;color:#666;cursor:pointer;font-size:16px;padding:4px;">✕</button>
-        </div>
-      `).join("")
-    }
-  } catch(e) {
-    console.error("Memory load error:", e)
-  }
-}
-
-async function deleteMemory(key) {
-  await fetch("https://datta-ai-server.onrender.com/memory/" + key + "?token=" + getToken(), { method: "DELETE" })
-  loadMemory()
-}
-
-async function clearAllMemory() {
-  if (!confirm("Clear all Datta AI memory?")) return
-  await fetch("https://datta-ai-server.onrender.com/memory?token=" + getToken(), { method: "DELETE" })
-  showMsg("memory", "All memory cleared!", "success")
-  loadMemory()
-}
-
-// Load memory on page load
+// LOAD ON START
 window.addEventListener("load", function() {
-  setTimeout(loadMemory, 500)
+  if (!getToken()) { window.location.href = "login.html"; return }
+
+  const user = getUser()
+  if (user.username) {
+    document.getElementById("userName").textContent = user.username
+    document.getElementById("userAvatarLetter").textContent = (user.username[0] || "G").toUpperCase()
+  }
+  if (user.email) document.getElementById("userEmail").textContent = user.email
+
+  // Load saved avatar
+  const avatar = localStorage.getItem("datta_avatar")
+  if (avatar) setAvatar(avatar)
+
+  // Load plan
+  fetch(SERVER + "/payment/subscription?token=" + getToken())
+    .then(r => r.json())
+    .then(d => {
+      const planNames = { free:"Arambh Free", basic:"Shakti Basic", pro:"Agni Pro", enterprise:"Brahma Enterprise" }
+      const planEl = document.getElementById("userPlan")
+      if (planEl) planEl.textContent = planNames[d.plan] || d.plan
+    }).catch(() => {})
+
+  // Apply saved theme
+  const theme = localStorage.getItem("datta_theme") || "dark"
+  applyThemeToPage(theme)
+  const tc = document.getElementById("theme-" + theme)
+  if (tc) tc.classList.add("active")
+  document.getElementById("themeDesc").textContent = theme.charAt(0).toUpperCase() + theme.slice(1)
+
+  // Load wallpaper desc
+  const wp = localStorage.getItem("datta_wallpaper") || "none"
+  const wpEl = document.getElementById("wallpaperDesc")
+  if (wpEl) wpEl.textContent = wp.charAt(0).toUpperCase() + wp.slice(1)
+  const wpCard = document.getElementById("wp-" + wp)
+  if (wpCard) wpCard.classList.add("active")
+
+  // Load AI name
+  const aiName = localStorage.getItem("datta_ai_name") || "Datta AI"
+  document.getElementById("ainameDesc").textContent = aiName
+  document.getElementById("ainameInput").value = aiName
+
+  // Load style
+  const style = localStorage.getItem("datta_ai_style") || "Balanced"
+  document.getElementById("aistyleDesc").textContent = style
+  document.querySelectorAll(".stylePill").forEach(p => {
+    if (p.textContent.includes(style)) p.classList.add("active")
+  })
+
+  // Load language
+  const lang = localStorage.getItem("datta_language") || "English"
+  document.getElementById("langDesc").textContent = lang
+
+  // Load memory count
+  loadMemory()
 })
-
-// Override openPanel to load memory when opened
-const originalOpenPanel = openPanel
-window.openPanel = function(name) {
-  originalOpenPanel(name)
-  if (name === "memory") loadMemory()
-}
 </script>
-
 </body>
 </html>
