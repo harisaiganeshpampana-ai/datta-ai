@@ -2459,3 +2459,106 @@ body.light #splash { background: #fff; }
 .chat-started .suggestionChips {
   display: none;
 }
+
+/* WELCOME SCREEN - Perfect Center */
+.welcomeScreen {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -60%);
+  text-align: center;
+  width: 100%;
+  max-width: 700px;
+  padding: 0 20px;
+  pointer-events: none;
+}
+
+.welcomeScreen * { pointer-events: all; }
+
+.suggestionChips {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  max-width: 680px !important;
+  margin: 16px auto 0 !important;
+}
+
+.chat-started .welcomeScreen,
+.chat-started .suggestionChips {
+  display: none !important;
+}
+
+/* PERFECT CENTER WELCOME */
+.main {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+  overflow: hidden !important;
+}
+
+.welcomeScreen {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -55%) !important;
+  text-align: center !important;
+  width: 100% !important;
+  max-width: 680px !important;
+  padding: 0 24px !important;
+  z-index: 10 !important;
+  pointer-events: none !important;
+}
+
+.welcomeScreen * { pointer-events: all !important; }
+
+.welcomeTitle {
+  font-family: 'Rajdhani', sans-serif !important;
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  color: white !important;
+  letter-spacing: 1px !important;
+  margin-bottom: 8px !important;
+  text-transform: uppercase !important;
+}
+
+.welcomeSub {
+  font-size: 14px !important;
+  color: #555 !important;
+  margin-bottom: 24px !important;
+}
+
+.suggestionChips {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  margin: 0 auto !important;
+  max-width: 100% !important;
+}
+
+.chip {
+  padding: 9px 16px !important;
+  background: #141414 !important;
+  border: 1px solid #222 !important;
+  border-radius: 20px !important;
+  color: #888 !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  white-space: nowrap !important;
+}
+
+.chip:hover {
+  background: #1e1e1e !important;
+  border-color: #00ff8833 !important;
+  color: #ccc !important;
+  transform: translateY(-2px) !important;
+}
+
+.chat-started .welcomeScreen {
+  display: none !important;
+}
