@@ -1240,6 +1240,8 @@ async function processVoiceQuery(query) {
     formData.append("token", getToken())
     formData.append("language", localStorage.getItem("datta_language") || "English")
     formData.append("model", localStorage.getItem("datta_model") || "llama-3.3-70b-versatile")
+    formData.append("style", localStorage.getItem("datta_ai_style") || "Balanced")
+    formData.append("ainame", localStorage.getItem("datta_ai_name") || "Datta AI")
     formData.append("voice", "true")
 
     const res = await fetch("https://datta-ai-server.onrender.com/chat", {
@@ -1853,3 +1855,83 @@ window.send = function() {
 }
 
 window.trackEvent = trackEvent
+
+// ══════════════════════════════════════════════════════
+// FULL THEME SYSTEM - applies to entire app
+// ══════════════════════════════════════════════════════
+const THEMES = {
+  dark:     { bg:"#0a0a0a", bg2:"#111", bg3:"#1a1a1a", border:"#222", text:"#fff", text2:"#aaa", text3:"#666", accent:"#00ff88", accent2:"#00ccff" },
+  light:    { bg:"#f5f5f5", bg2:"#fff", bg3:"#f0f0f0", border:"#ddd", text:"#111", text2:"#555", text3:"#999", accent:"#00aa55", accent2:"#0088cc" },
+  midnight: { bg:"#000010", bg2:"#000820", bg3:"#001030", border:"#001166", text:"#e0e8ff", text2:"#8899cc", text3:"#445588", accent:"#4488ff", accent2:"#88aaff" },
+  forest:   { bg:"#050f05", bg2:"#0a180a", bg3:"#0f2010", border:"#1a4a1a", text:"#e0ffe0", text2:"#88bb88", text3:"#4a7a4a", accent:"#44cc44", accent2:"#88ff88" },
+  ocean:    { bg:"#000a18", bg2:"#001025", bg3:"#001835", border:"#003366", text:"#e0f0ff", text2:"#7799cc", text3:"#334466", accent:"#0088ff", accent2:"#00ccff" },
+  sunset:   { bg:"#100500", bg2:"#1a0800", bg3:"#220a00", border:"#441500", text:"#fff0e0", text2:"#cc9966", text3:"#775533", accent:"#ff8800", accent2:"#ff4400" }
+}
+
+const WALLPAPERS = {
+  none: "",
+  dots: "radial-gradient(circle,#222 1px,transparent 1px) 0 0/20px 20px",
+  grid: "linear-gradient(#1a1a1a 1px,transparent 1px) 0 0/20px 20px,linear-gradient(90deg,#1a1a1a 1px,transparent 1px) 0 0/20px 20px",
+  waves: "linear-gradient(135deg,#001a2a,#002a3a,#001a2a)",
+  gradient1: "linear-gradient(135deg,#0a0a2a,#1a0a2a,#0a1a2a)",
+  gradient2: "linear-gradient(135deg,#0a1a0a,#1a2a0a,#0a1a1a)",
+  stars: "radial-gradient(circle,#fff 1px,transparent 1px) 0 0/30px 30px",
+  mesh: "linear-gradient(135deg,#00ff8811,#00ccff11,#aa44ff11)"
+}
+
+function applyFullTheme() {
+  const themeName = localStorage.getItem("datta_theme") || "dark"
+  const t = THEMES[themeName] || THEMES.dark
+  const root = document.documentElement
+
+  // Apply CSS variables
+  Object.entries(t).forEach(([k, v]) => root.style.setProperty("--" + k, v))
+
+  // Apply directly to key elements
+  document.body.style.background = t.bg
+  document.body.style.color = t.text
+
+  const sidebar = document.querySelector(".sidebar")
+  if (sidebar) { sidebar.style.background = t.bg2; sidebar.style.borderColor = t.border }
+
+  const topBar = document.querySelector(".topBar, .topbar")
+  if (topBar) { topBar.style.background = t.bg2; topBar.style.borderColor = t.border }
+
+  const inputWrap = document.querySelector(".inputWrap")
+  if (inputWrap) { inputWrap.style.background = t.bg2; inputWrap.style.borderColor = t.border }
+
+  // Apply wallpaper to chat area
+  const chatArea = document.querySelector(".chat, #chat")
+  const wp = localStorage.getItem("datta_wallpaper") || "none"
+  const wpCustom = localStorage.getItem("datta_wallpaper_custom")
+  if (chatArea) {
+    if (wp === "custom" && wpCustom) {
+      chatArea.style.backgroundImage = "url(" + wpCustom + ")"
+      chatArea.style.backgroundSize = "cover"
+    } else if (WALLPAPERS[wp]) {
+      chatArea.style.background = WALLPAPERS[wp]
+    } else {
+      chatArea.style.background = ""
+    }
+  }
+
+  // Update theme toggle button
+  const themeBtn = document.getElementById("themeToggleBtn")
+  if (themeBtn) {
+    const icons = { dark:"🌙", light:"☀️", midnight:"🌌", forest:"🌿", ocean:"🌊", sunset:"🌅" }
+    themeBtn.textContent = icons[themeName] || "🌙"
+  }
+
+  // Apply custom AI name
+  const aiName = localStorage.getItem("datta_ai_name") || "Datta AI"
+  const titles = document.querySelectorAll(".topTitle, .sidebarBrand")
+  titles.forEach(t => { if (!t.textContent.includes("AI") || t.textContent === "DATTA AI") t.textContent = aiName.toUpperCase() })
+}
+
+// Apply theme immediately on load
+applyFullTheme()
+
+// Also apply after DOM loads
+window.addEventListener("DOMContentLoaded", applyFullTheme)
+
+window.applyFullTheme = applyFullTheme
