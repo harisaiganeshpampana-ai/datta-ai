@@ -1,3 +1,47 @@
+// ADD COPY BUTTONS TO CODE BLOCKS
+function addCodeCopyButtons(container) {
+  if (!container) return
+  const codeBlocks = container.querySelectorAll("pre")
+  codeBlocks.forEach(pre => {
+    if (pre.querySelector(".codeCopyBtn")) return // already has button
+
+    const lang = pre.querySelector("code")?.className?.replace("language-", "") || ""
+
+    const wrapper = document.createElement("div")
+    wrapper.className = "codeBlockWrap"
+
+    const header = document.createElement("div")
+    header.className = "codeBlockHeader"
+    header.innerHTML = `
+      <span class="codeLang">${lang || "code"}</span>
+      <button class="codeCopyBtn" onclick="copyCode(this)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy
+      </button>
+    `
+
+    pre.parentNode.insertBefore(wrapper, pre)
+    wrapper.appendChild(header)
+    wrapper.appendChild(pre)
+  })
+}
+
+function copyCode(btn) {
+  const pre = btn.closest(".codeBlockWrap").querySelector("pre")
+  const code = pre.querySelector("code")?.innerText || pre.innerText
+  navigator.clipboard.writeText(code).then(() => {
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`
+    btn.style.color = "#00ff88"
+    setTimeout(() => {
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`
+      btn.style.color = ""
+    }, 2000)
+  })
+}
+
+window.copyCode = copyCode
+window.addCodeCopyButtons = addCodeCopyButtons
+
 // STOP GENERATION
 function showStopBtn() {
   const stop = document.getElementById("stopBtn")
