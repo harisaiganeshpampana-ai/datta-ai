@@ -1,63 +1,55 @@
-// Auto-update: change version number when you update files
-const CACHE = "datta-ai-v" + Date.now()
-const STATIC = "datta-ai-static"
+const VERSION = "datta-ai-v25"
+const CACHE = VERSION
 
-const ASSETS = [
-  "/datta-ai/index.html",
-  "/datta-ai/login.html",
-  "/datta-ai/chat.js",
-  "/datta-ai/style.css",
-  "/datta-ai/logo.png"
-]
-
-// INSTALL - cache assets
 self.addEventListener("install", e => {
-  console.log("SW installing...")
-  self.skipWaiting() // Activate immediately, don't wait
+  console.log("SW v25 installing")
+  self.skipWaiting()
   e.waitUntil(
-    caches.open(STATIC).then(c => c.addAll(ASSETS)).catch(err => console.log("Cache error:", err))
+    caches.open(CACHE).then(c =>
+      c.addAll([
+        "/datta-ai/index.html",
+        "/datta-ai/chat.js",
+        "/datta-ai/style.css",
+        "/datta-ai/logo.png"
+      ]).catch(() => {})
+    )
   )
 })
 
-// ACTIVATE - delete old caches immediately
 self.addEventListener("activate", e => {
-  console.log("SW activating...")
+  console.log("SW v25 activating - clearing old caches")
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== STATIC).map(k => {
-        console.log("Deleting old cache:", k)
-        return caches.delete(k)
-      }))
-    ).then(() => self.clients.claim()) // Take control of all pages immediately
+      Promise.all(
+        keys.filter(k => k !== CACHE).map(k => {
+          console.log("Deleting:", k)
+          return caches.delete(k)
+        })
+      )
+    ).then(() => self.clients.claim())
   )
 })
 
-// FETCH - network first, cache fallback
 self.addEventListener("fetch", e => {
-  // Skip API calls - always go to network
-  if (e.request.url.includes("onrender.com") ||
-      e.request.url.includes("api.") ||
-      e.request.method !== "GET") {
-    return
-  }
+  if (e.request.method !== "GET") return
+  if (e.request.url.includes("onrender.com")) return
+  if (e.request.url.includes("googleapis")) return
 
   e.respondWith(
     fetch(e.request)
-      .then(response => {
-        // Update cache with fresh response
-        if (response && response.status === 200) {
-          const clone = response.clone()
-          caches.open(STATIC).then(c => c.put(e.request, clone))
+      .then(res => {
+        if (res && res.status === 200) {
+          const clone = res.clone()
+          caches.open(CACHE).then(c => c.put(e.request, clone))
         }
-        return response
+        return res
       })
-      .catch(() => caches.match(e.request)) // Offline fallback
+      .catch(() => caches.match(e.request))
   )
 })
 
-// PUSH NOTIFICATIONS
 self.addEventListener("push", e => {
-  const data = e.data?.json() || { title: "Datta AI", body: "You have a new message!" }
+  const data = e.data?.json() || { title: "Datta AI", body: "New message!" }
   e.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
@@ -73,7 +65,6 @@ self.addEventListener("notificationclick", e => {
   e.waitUntil(clients.openWindow("/datta-ai/index.html"))
 })
 
-// BACKGROUND SYNC - when back online
 self.addEventListener("message", e => {
   if (e.data === "skipWaiting") self.skipWaiting()
 })
