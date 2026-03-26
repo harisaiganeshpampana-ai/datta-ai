@@ -721,9 +721,40 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       return
     }
 
+    // BROWSE URL - if message contains a URL
+    let urlContext = ""
+    const urlMatch = message && message.match(/https?:\/\/[^\s]+/)
+    if (urlMatch && process.env.TAVILY_API_KEY) {
+      const urlResult = await browseUrl(urlMatch[0])
+      if (urlResult) {
+        urlContext = "\n\n[URL Content from " + urlResult.url + "]\nTitle: " + urlResult.title + "\n\n" + urlResult.content + "\n[End of URL Content]"
+        console.log("Browsed URL:", urlMatch[0])
+      }
+    }
+
+    // WHATSAPP - detect send whatsapp request
+    const waMatch = message && message.toLowerCase().match(/send whatsapp to ([+\d]+)[,:]?\s*(.+)/i)
+    if (waMatch) {
+      const waPhone = waMatch[1]
+      const waMsg = waMatch[2]
+      const waResult = await sendWhatsApp(waPhone, waMsg)
+      const waResponse = waResult.success
+        ? "WhatsApp message sent to " + waPhone + "!"
+        : "Failed to send WhatsApp: " + waResult.error
+      res.write(waResponse)
+      chat.messages.push({ role: "assistant", content: waResponse })
+      await chat.save()
+      res.write("CHATID" + chat._id)
+      res.end()
+      return
+    }
+
+    // LOAD USER MEMORY
+    const memoryContext = req.user.isGuest ? "" : await getMemories(userId).catch(() => "")
+
     // WEB SEARCH
     let searchContext = ""
-    if (message && needsWebSearch(message) && process.env.TAVILY_API_KEY) {
+    if (message && !urlContext && needsWebSearch(message) && process.env.TAVILY_API_KEY) {
       const results = await webSearch(message)
       if (results) searchContext = "\n\n[Web Search Results]\n" + results + "\n[End of Search Results]"
     }
@@ -771,7 +802,7 @@ CRITICAL RULES - NEVER BREAK THESE:
 
     // Combine all context
     const finalUserContent = typeof userContent === "string"
-      ? userContent + urlContext + searchContext
+      ? userContent + urlContext
       : userContent
 
     const systemWithMemory = systemPrompt + memoryContext
