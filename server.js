@@ -1422,7 +1422,30 @@ app.get("/suggestions", authMiddleware, async (req, res) => {
   }
 })
 
-app.get("/", (req, res) => res.json({ status: "Datta AI Server running", version: "3.0" }))
+// VERSION CHECK - blocks old app versions
+const APP_VERSION = "3.5"
+const MIN_VERSION = "3.5" // Versions below this are blocked
+
+app.get("/version", (req, res) => {
+  const clientVersion = req.query.v || "0"
+  const isBlocked = parseFloat(clientVersion) < parseFloat(MIN_VERSION)
+  res.json({
+    latest: APP_VERSION,
+    minimum: MIN_VERSION,
+    blocked: isBlocked,
+    updateRequired: isBlocked,
+    updateUrl: process.env.FRONTEND_URL || "https://harisaiganeshpampana-ai.github.io/datta-ai",
+    changelog: [
+      "Improved AI responses",
+      "Fixed mobile keyboard issue",
+      "Better image generation",
+      "Smarter chat suggestions",
+      "UI improvements"
+    ]
+  })
+})
+
+app.get("/", (req, res) => res.json({ status: "Datta AI Server running", version: "3.5" }))
 app.get("/health", (req, res) => res.json({ status: "ok", uptime: process.uptime() }))
 
 const PORT = process.env.PORT || 3000
