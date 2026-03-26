@@ -2267,3 +2267,54 @@ function updateApp() {
 }
 
 window.updateApp = updateApp
+
+// FORCE UPDATE - clear all cache and reload
+function forceUpdate() {
+  showToast("Updating app...")
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(reg => reg.unregister())
+    })
+  }
+  // Clear all caches
+  if ("caches" in window) {
+    caches.keys().then(keys => {
+      keys.forEach(key => caches.delete(key))
+    })
+  }
+  // Hard reload after 500ms
+  setTimeout(() => window.location.reload(true), 500)
+}
+
+window.forceUpdate = forceUpdate
+
+// Show update button after 5 seconds
+setTimeout(() => {
+  const btn = document.getElementById("updateBtn")
+  if (btn) btn.style.display = "flex"
+}, 5000)
+
+// SW update detection
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/datta-ai/sw.js").then(reg => {
+    reg.addEventListener("updatefound", () => {
+      const nw = reg.installing
+      nw.addEventListener("statechange", () => {
+        if (nw.state === "installed" && navigator.serviceWorker.controller) {
+          const btn = document.getElementById("updateBtn")
+          if (btn) {
+            btn.style.display = "flex"
+            btn.style.animation = "pulse 1s infinite"
+            btn.title = "New update available! Tap to update"
+          }
+          showToast("🚀 Update available! Tap ↻ to refresh")
+        }
+      })
+    })
+  }).catch(e => console.log("SW:", e))
+
+  let refreshing = false
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!refreshing) { refreshing = true; window.location.reload() }
+  })
+}
