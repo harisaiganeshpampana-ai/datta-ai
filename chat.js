@@ -1439,14 +1439,12 @@ window.toggleVoiceListening = toggleVoiceListening
 
 // VERSION NAMES based on plan
 const planVersions = {
-  free:       { name: "Arambh", sanskrit: "आरंभ", version: "v1.0", emoji: "🌱" },
-  starter:    { name: "Arambh", sanskrit: "आरंभ", version: "v1.0", emoji: "🌱" },
-  basic:      { name: "Shakti", sanskrit: "शक्ति", version: "v2.0", emoji: "⚡" },
-  growth:     { name: "Shakti", sanskrit: "शक्ति", version: "v2.0", emoji: "⚡" },
-  pro:        { name: "Agni",   sanskrit: "अग्नि",  version: "v3.0", emoji: "🔥" },
-  scale:      { name: "Agni",   sanskrit: "अग्नि",  version: "v3.0", emoji: "🔥" },
-  enterprise: { name: "Brahma", sanskrit: "ब्रह्म", version: "v4.0", emoji: "👑" },
-  empire:     { name: "Brahma", sanskrit: "ब्रह्म", version: "v4.0", emoji: "👑" }
+  free:      { name: "Free",      version: "v1.0", emoji: "🌱" },
+  pro:       { name: "Pro",       version: "v2.0", emoji: "⚡" },
+  max:       { name: "Max",       version: "v3.0", emoji: "🚀" },
+  ultramax:  { name: "Ultra Max", version: "v4.0", emoji: "👑" },
+  basic:     { name: "Pro",       version: "v2.0", emoji: "⚡" },
+  enterprise:{ name: "Ultra Max", version: "v4.0", emoji: "👑" }
 }
 
 async function loadUserVersion() {
@@ -1457,27 +1455,70 @@ async function loadUserVersion() {
     const plan = data.plan || "free"
     const v = planVersions[plan] || planVersions.free
 
-    // Update version tag in sidebar
+    // Save plan
+    localStorage.setItem("datta_plan", plan)
+
+    // Update version tag
     const tag = document.getElementById("versionTag")
     if (tag) tag.textContent = "DATTA AI " + v.version + " · " + v.name.toUpperCase()
 
     // Update profile subtitle
     const sub = document.querySelector(".profileSub")
-    if (sub) sub.textContent = v.emoji + " " + v.name + " " + v.sanskrit
+    if (sub) sub.textContent = v.emoji + " " + v.name + " Plan"
 
-    // Update upgrade button
-    const upgradeBtn = document.querySelector(".upgradeBtn div div:first-child")
-    if (upgradeBtn && plan === "free") {
-      upgradeBtn.textContent = "Upgrade to Agni 🔥"
-    } else if (upgradeBtn) {
-      upgradeBtn.textContent = v.emoji + " " + v.name + " Plan"
+    // Update plan button in sidebar
+    const emoji = document.getElementById("planBtnEmoji")
+    const title = document.getElementById("planBtnTitle")
+    const subtitle = document.getElementById("planBtnSub")
+
+    const planInfo = {
+      free:     { emoji:"🌱", title:"Free Plan",      sub:"Upgrade for more power →" },
+      pro:      { emoji:"⚡", title:"Pro Plan",       sub:"100 msgs per 4hrs · Active" },
+      max:      { emoji:"🚀", title:"Max Plan",       sub:"200 msgs per 3hrs · Active" },
+      ultramax: { emoji:"👑", title:"Ultra Max Plan", sub:"Unlimited messages · Active" },
+      basic:    { emoji:"⚡", title:"Pro Plan",       sub:"Active subscription" },
+      enterprise:{ emoji:"👑", title:"Ultra Max Plan", sub:"Active subscription" }
     }
 
-    // Store plan
-    localStorage.setItem("datta_plan", plan)
+    const info = planInfo[plan] || planInfo.free
+    if (emoji) emoji.textContent = info.emoji
+    if (title) title.textContent = info.title
+    if (subtitle) subtitle.textContent = info.sub
+
+    // Change button color for paid plans
+    const btn = document.getElementById("planBtn")
+    if (btn) {
+      if (plan === "free") {
+        btn.style.background = "linear-gradient(135deg, #0a2a1a, #0a1a2a)"
+        btn.style.borderColor = "#00ff8833"
+      } else if (plan === "pro") {
+        btn.style.background = "linear-gradient(135deg, #1a1a0a, #2a1a00)"
+        btn.style.borderColor = "#ffaa0033"
+      } else if (plan === "max") {
+        btn.style.background = "linear-gradient(135deg, #0a0a2a, #1a0a2a)"
+        btn.style.borderColor = "#8844ff33"
+      } else if (plan === "ultramax") {
+        btn.style.background = "linear-gradient(135deg, #2a0a1a, #1a0a2a)"
+        btn.style.borderColor = "#ff44aa33"
+      }
+    }
 
   } catch(e) {
     console.log("Version load error:", e.message)
+    // Show from localStorage as fallback
+    const plan = localStorage.getItem("datta_plan") || "free"
+    const info = {
+      free:     { emoji:"🌱", title:"Free Plan",      sub:"Upgrade for more power →" },
+      pro:      { emoji:"⚡", title:"Pro Plan",       sub:"Active" },
+      max:      { emoji:"🚀", title:"Max Plan",       sub:"Active" },
+      ultramax: { emoji:"👑", title:"Ultra Max Plan", sub:"Active" }
+    }[plan] || { emoji:"🌱", title:"Free Plan", sub:"Upgrade for more power →" }
+    const emoji = document.getElementById("planBtnEmoji")
+    const title = document.getElementById("planBtnTitle")
+    const sub = document.getElementById("planBtnSub")
+    if (emoji) emoji.textContent = info.emoji
+    if (title) title.textContent = info.title
+    if (sub) sub.textContent = info.sub
   }
 }
 
