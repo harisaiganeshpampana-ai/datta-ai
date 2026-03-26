@@ -613,7 +613,10 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       userContent = message + searchContext
     }
 
-    const model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : "llama-3.3-70b-versatile"
+    const selectedModel = req.body.model || "llama-3.3-70b-versatile"
+    const validModels = ["llama-3.3-70b-versatile","llama-3.1-8b-instant","deepseek-r1-distill-llama-70b","mixtral-8x7b-32768","llama-3.1-70b-versatile"]
+    const chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.3-70b-versatile"
+    const model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : chosenModel
     const langNote = language && language !== "English" ? " Always respond in " + language + "." : ""
     const searchNote = searchContext ? " Use web search results for accurate answers and cite sources." : ""
 
