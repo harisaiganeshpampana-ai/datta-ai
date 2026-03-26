@@ -1,53 +1,31 @@
-const VERSION = "datta-ai-v25"
-const CACHE = VERSION
+// VERSION 26 - No caching, always fresh
+const VERSION = "v26"
 
 self.addEventListener("install", e => {
-  console.log("SW v25 installing")
+  console.log("SW", VERSION, "installed")
   self.skipWaiting()
-  e.waitUntil(
-    caches.open(CACHE).then(c =>
-      c.addAll([
-        "/datta-ai/index.html",
-        "/datta-ai/chat.js",
-        "/datta-ai/style.css",
-        "/datta-ai/logo.png"
-      ]).catch(() => {})
-    )
-  )
 })
 
 self.addEventListener("activate", e => {
-  console.log("SW v25 activating - clearing old caches")
+  console.log("SW", VERSION, "activated - clearing ALL caches")
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE).map(k => {
-          console.log("Deleting:", k)
-          return caches.delete(k)
-        })
-      )
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   )
 })
 
+// NO CACHING - always go to network
 self.addEventListener("fetch", e => {
+  // Only handle GET requests
   if (e.request.method !== "GET") return
+  // Skip API calls
   if (e.request.url.includes("onrender.com")) return
-  if (e.request.url.includes("googleapis")) return
-
-  e.respondWith(
-    fetch(e.request)
-      .then(res => {
-        if (res && res.status === 200) {
-          const clone = res.clone()
-          caches.open(CACHE).then(c => c.put(e.request, clone))
-        }
-        return res
-      })
-      .catch(() => caches.match(e.request))
-  )
+  // Always fetch fresh from network
+  e.respondWith(fetch(e.request).catch(() => new Response("Offline")))
 })
 
+// Push notifications
 self.addEventListener("push", e => {
   const data = e.data?.json() || { title: "Datta AI", body: "New message!" }
   e.waitUntil(
