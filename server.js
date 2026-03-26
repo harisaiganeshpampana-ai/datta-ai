@@ -961,6 +961,270 @@ app.get("/analytics", authMiddleware, async (req, res) => {
   } catch(err) { res.status(500).json({ error: err.message }) }
 })
 
+
+// ------------------------------------------------------
+// ADMIN DASHBOARD ROUTES
+// ------------------------------------------------------
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "harisaiganesh@gmail.com").split(",")
+
+function isAdmin(req) {
+  return req.user && (ADMIN_EMAILS.includes(req.user.email) || req.user.isAdmin)
+}
+
+app.get("/admin/stats", authMiddleware, async (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: "Not authorized" })
+  try {
+    const [totalUsers, totalChats, totalMessages, plans] = await Promise.all([
+      User.countDocuments(),
+      Chat.countDocuments(),
+      Chat.aggregate([{ $project: { count: { $size: "$messages" } } }, { $group: { _id: null, total: { $sum: "$count" } } }]),
+      Subscription.aggregate([{ $group: { _id: "$plan", count: { $sum: 1 } } }])
+    ])
+    const today = new Date(); today.setHours(0,0,0,0)
+    const newUsersToday = await User.countDocuments({ createdAt: { $gte: today } })
+    const newChatsToday = await Chat.countDocuments({ createdAt: { $gte: today } })
+    const planStats = {}
+    plans.forEach(p => { planStats[p._id || "free"] = p.count })
+    res.json({
+      totalUsers, totalChats,
+      totalMessages: totalMessages[0]?.total || 0,
+      newUsersToday, newChatsToday,
+      planStats,
+      revenue: {
+        basic: (planStats.basic || 0) * 199,
+        pro: (planStats.pro || 0) * 499,
+        enterprise: (planStats.enterprise || 0) * 1499
+      }
+    })
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
+app.get("/admin/users", authMiddleware, async (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: "Not authorized" })
+  try {
+    const page = parseInt(req.query.page) || 1
+    const limit = 20
+    const users = await User.find().sort({ createdAt: -1 }).skip((page-1)*limit).limit(limit).select("-password")
+    const total = await User.countDocuments()
+    const subs = await Subscription.find({ active: true })
+    const subMap = {}
+    subs.forEach(s => { subMap[s.userId.toString()] = s.plan })
+    const usersWithPlan = users.map(u => ({ ...u.toObject(), plan: subMap[u._id.toString()] || "free" }))
+    res.json({ users: usersWithPlan, total, pages: Math.ceil(total/limit) })
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
+app.delete("/admin/user/:id", authMiddleware, async (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: "Not authorized" })
+  try {
+    await Promise.all([
+      User.findByIdAndDelete(req.params.id),
+      Chat.deleteMany({ userId: req.params.id }),
+      Subscription.deleteMany({ userId: req.params.id })
+    ])
+    res.json({ success: true })
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
+// ------------------------------------------------------
+// PUBLIC API - Let others use Datta AI
+// ------------------------------------------------------
+const ApiKeySchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  key: { type: String, unique: true },
+  name: String,
+  requests: { type: Number, default: 0 },
+  limit: { type: Number, default: 1000 },
+  active: { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now }
+})
+const ApiKey = mongoose.model("ApiKey", ApiKeySchema)
+
+function generateApiKey() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+  let key = "datta_"
+  for (let i = 0; i < 32; i++) key += chars[Math.floor(Math.random() * chars.length)]
+  return key
+}
+
+app.post("/api/keys", authMiddleware, async (req, res) => {
+  try {
+    const { name } = req.body
+    const existing = await ApiKey.countDocuments({ userId: req.user.id })
+    if (existing >= 3) return res.status(400).json({ error: "Max 3 API keys allowed" })
+    const key = await ApiKey.create({ userId: req.user.id, key: generateApiKey(), name: name || "My API Key" })
+    res.json({ key: key.key, name: key.name, limit: key.limit })
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
+app.get("/api/keys", authMiddleware, async (req, res) => {
+  try {
+    const keys = await ApiKey.find({ userId: req.user.id }).select("-__v")
+    res.json(keys)
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
+app.delete("/api/keys/:key", authMiddleware, async (req, res) => {
+  try {
+    await ApiKey.findOneAndDelete({ userId: req.user.id, key: req.params.key })
+    res.json({ success: true })
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
+// PUBLIC API ENDPOINT
+app.post("/api/v1/chat", async (req, res) => {
+  try {
+    const apiKey = req.headers["x-api-key"] || req.body.api_key
+    if (!apiKey) return res.status(401).json({ error: "API key required. Get one at " + FRONTEND_URL + "/setting.html" })
+    const keyDoc = await ApiKey.findOne({ key: apiKey, active: true })
+    if (!keyDoc) return res.status(401).json({ error: "Invalid API key" })
+    if (keyDoc.requests >= keyDoc.limit) return res.status(429).json({ error: "API limit reached. Upgrade plan for more." })
+
+    const { message, model, language, style } = req.body
+    if (!message) return res.status(400).json({ error: "message is required" })
+
+    await ApiKey.findByIdAndUpdate(keyDoc._id, { $inc: { requests: 1 } })
+
+    const useModel = model || "llama-3.3-70b-versatile"
+    const completion = await groq.chat.completions.create({
+      model: useModel,
+      messages: [
+        { role: "system", content: "You are Datta AI, a helpful assistant." + (language ? " Respond in " + language + "." : "") + (style ? " Style: " + style : "") },
+        { role: "user", content: message }
+      ],
+      max_tokens: 2048
+    })
+
+    res.json({
+      response: completion.choices[0]?.message?.content || "",
+      model: useModel,
+      requests_used: keyDoc.requests + 1,
+      requests_limit: keyDoc.limit
+    })
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
+// ------------------------------------------------------
+// SHARE CHAT AS PUBLIC LINK
+// ------------------------------------------------------
+const SharedChatSchema = new mongoose.Schema({
+  shareId: { type: String, unique: true },
+  chatId: mongoose.Schema.Types.ObjectId,
+  userId: mongoose.Schema.Types.ObjectId,
+  title: String,
+  messages: Array,
+  createdAt: { type: Date, default: Date.now },
+  views: { type: Number, default: 0 }
+})
+const SharedChat = mongoose.model("SharedChat", SharedChatSchema)
+
+app.post("/chat/:id/share", authMiddleware, async (req, res) => {
+  try {
+    const chat = await Chat.findOne({ _id: req.params.id, userId: req.user.id })
+    if (!chat) return res.status(404).json({ error: "Chat not found" })
+    const existing = await SharedChat.findOne({ chatId: chat._id })
+    if (existing) return res.json({ shareId: existing.shareId, url: FRONTEND_URL + "/share.html?id=" + existing.shareId })
+    const shareId = Math.random().toString(36).substring(2, 10)
+    await SharedChat.create({ shareId, chatId: chat._id, userId: req.user.id, title: chat.title, messages: chat.messages })
+    res.json({ shareId, url: FRONTEND_URL + "/share.html?id=" + shareId })
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
+app.get("/share/:shareId", async (req, res) => {
+  try {
+    const shared = await SharedChat.findOneAndUpdate({ shareId: req.params.shareId }, { $inc: { views: 1 } }, { new: true })
+    if (!shared) return res.status(404).json({ error: "Shared chat not found" })
+    res.json({ title: shared.title, messages: shared.messages, views: shared.views, createdAt: shared.createdAt })
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
+// ------------------------------------------------------
+// AI PROJECTS
+// ------------------------------------------------------
+const ProjectSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  name: { type: String, default: "New Project" },
+  description: String,
+  color: { type: String, default: "#00ff88" },
+  emoji: { type: String, default: "-" },
+  chatIds: [mongoose.Schema.Types.ObjectId],
+  files: Array,
+  createdAt: { type: Date, default: Date.now }
+})
+const Project = mongoose.model("Project", ProjectSchema)
+
+app.get("/projects", authMiddleware, async (req, res) => {
+  try { res.json(await Project.find({ userId: req.user.id }).sort({ createdAt: -1 })) }
+  catch(err) { res.status(500).json({ error: err.message }) }
+})
+
+app.post("/projects", authMiddleware, async (req, res) => {
+  try {
+    const { name, description, color, emoji } = req.body
+    const project = await Project.create({ userId: req.user.id, name, description, color, emoji })
+    res.json(project)
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
+app.put("/projects/:id", authMiddleware, async (req, res) => {
+  try {
+    const project = await Project.findOneAndUpdate({ _id: req.params.id, userId: req.user.id }, req.body, { new: true })
+    res.json(project)
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
+app.delete("/projects/:id", authMiddleware, async (req, res) => {
+  try {
+    await Project.findOneAndDelete({ _id: req.params.id, userId: req.user.id })
+    res.json({ success: true })
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
+// ------------------------------------------------------
+// CODE EXECUTION (safe JS only)
+// ------------------------------------------------------
+app.post("/execute", authMiddleware, async (req, res) => {
+  try {
+    const { code, language } = req.body
+    if (!code) return res.status(400).json({ error: "No code provided" })
+
+    if (language === "javascript" || language === "js") {
+      const logs = []
+      const errors = []
+      let result = null
+      try {
+        const fn = new Function("console", "Math", "Date", "JSON", "parseInt", "parseFloat", "String", "Number", "Array", "Object",
+          `"use strict"; const output = []; ` + code + `; return output;`
+        )
+        const mockConsole = {
+          log: (...a) => logs.push(a.map(x => typeof x === "object" ? JSON.stringify(x) : String(x)).join(" ")),
+          error: (...a) => errors.push(a.join(" ")),
+          warn: (...a) => logs.push("WARN: " + a.join(" "))
+        }
+        result = fn(mockConsole, Math, Date, JSON, parseInt, parseFloat, String, Number, Array, Object)
+      } catch(e) { errors.push(e.message) }
+      return res.json({ output: logs.join("\n"), errors: errors.join("\n"), language: "javascript" })
+    }
+
+    // For Python - use Judge0 API (free)
+    if (language === "python") {
+      const judge0Key = process.env.JUDGE0_API_KEY
+      if (!judge0Key) {
+        return res.json({ output: "", errors: "Python execution requires JUDGE0_API_KEY in Render. Get free key at rapidapi.com/judge0-official", language: "python" })
+      }
+      const submitRes = await fetch("https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-RapidAPI-Key": judge0Key, "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com" },
+        body: JSON.stringify({ source_code: code, language_id: 71, stdin: "" })
+      })
+      const result = await submitRes.json()
+      return res.json({ output: result.stdout || "", errors: result.stderr || result.compile_output || "", language: "python" })
+    }
+
+    res.json({ output: "", errors: "Language not supported yet. JavaScript and Python are available.", language })
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
 app.get("/", (req, res) => res.json({ status: "Datta AI Server running", version: "3.0" }))
 app.get("/health", (req, res) => res.json({ status: "ok", uptime: process.uptime() }))
 
