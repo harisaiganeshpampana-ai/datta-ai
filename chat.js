@@ -141,23 +141,14 @@ function renderImageResponse(text) {
   let imgUrl = null
   let prompt = "Generated Image"
 
-  // Extract from DATTA_IMAGE format
   if (text.includes("DATTA_IMAGE_START")) {
-    // Extract prompt
     const promptMatch = text.match(/PROMPT:([^\n]+)/)
     if (promptMatch) prompt = promptMatch[1].trim()
-
-    // Extract image URL - handle both base64 and regular URLs
     const base64Match = text.match(/!\[[^\]]*\]\((data:image[^)]{0,10000000})\)/)
     const urlMatch = text.match(/!\[[^\]]*\]\((https:[^)]+)\)/)
-
-    if (base64Match) {
-      imgUrl = base64Match[1]
-    } else if (urlMatch) {
-      imgUrl = urlMatch[1]
-    }
+    if (base64Match) imgUrl = base64Match[1]
+    else if (urlMatch) imgUrl = urlMatch[1]
   } else {
-    // Old format
     const imgMatch = text.match(/!\[([^\]]*)\]\(([^)]+)\)/)
     const promptMatch = text.match(/PROMPT:(.+)/) || text.match(/\*Prompt: ([^*]+)\*/)
     if (!imgMatch) return marked.parse(text)
@@ -176,8 +167,22 @@ function renderImageResponse(text) {
   </div>
   <div class="dattaImgBox">
     <div class="dattaShimmer" id="${uid}shimmer">
-      <div class="shimmerOrb"></div>
-      <div class="shimmerText">Generating with AI...</div>
+      <div class="imgGenCanvas">
+        <div class="imgGenParticle" style="--d:0s;--x:20%;--y:30%"></div>
+        <div class="imgGenParticle" style="--d:0.3s;--x:70%;--y:20%"></div>
+        <div class="imgGenParticle" style="--d:0.6s;--x:50%;--y:60%"></div>
+        <div class="imgGenParticle" style="--d:0.9s;--x:80%;--y:70%"></div>
+        <div class="imgGenParticle" style="--d:1.2s;--x:30%;--y:80%"></div>
+        <div class="imgGenParticle" style="--d:1.5s;--x:60%;--y:40%"></div>
+        <div class="imgGenBrush"></div>
+        <div class="imgGenCenter">
+          <div class="imgGenRing r1"></div>
+          <div class="imgGenRing r2"></div>
+          <div class="imgGenRing r3"></div>
+          <div class="imgGenIcon">🎨</div>
+        </div>
+      </div>
+      <div class="shimmerText" id="${uid}txt">Generating with AI...</div>
     </div>
     <img src="${imgUrl}" alt="${altText}" class="dattaImg" style="display:none;opacity:0;"
       onload="
@@ -287,6 +292,27 @@ window.downloadImage = downloadImage
 window.regenerateImage = regenerateImage
 window.likeImage = likeImage
 window.dislikeImage = dislikeImage
+// Cycle loading text for image generation
+function startImgLoadingText(uid) {
+  const texts = [
+    "Generating with AI...",
+    "Painting pixels...",
+    "Adding details...",
+    "Almost ready...",
+    "Final touches..."
+  ]
+  let i = 0
+  const el = document.getElementById(uid + "txt")
+  if (!el) return
+  const interval = setInterval(() => {
+    i = (i + 1) % texts.length
+    if (el) el.textContent = texts[i]
+    else clearInterval(interval)
+  }, 1200)
+  // Store interval to clear later
+  window["imgInterval_" + uid] = interval
+}
+window.startImgLoadingText = startImgLoadingText
 window.renderImageResponse = renderImageResponse
 // AUTH CHECK - redirect to login if not logged in
 // Configure marked for clean rendering
