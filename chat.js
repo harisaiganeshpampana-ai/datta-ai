@@ -236,6 +236,13 @@ window.addEventListener("beforeunload", function() {
   }
 })
 
+// Also save when navigating within the app
+function navigateTo(url) {
+  if (currentChatId) localStorage.setItem("datta_last_chat", currentChatId)
+  window.location.href = url
+}
+window.navigateTo = navigateTo
+
 // Restore last chat - called AFTER sidebar loads
 
 function getUser() {
@@ -536,18 +543,22 @@ async function loadSidebar() {
       history.appendChild(div)
     })
 
-    // Restore last chat after sidebar is fully loaded
-    const lastChatId = localStorage.getItem("datta_last_chat")
-    if (lastChatId && !currentChatId) {
-      // Check if this chat exists in sidebar
-      const exists = chats.some(c => c._id === lastChatId)
-      if (exists) {
-        openChat(lastChatId)
-        // Highlight active chat
-        setTimeout(() => {
-          const activeDiv = history.querySelector("[data-chat-id='" + lastChatId + "']")
-          if (activeDiv) activeDiv.classList.add("active")
-        }, 100)
+    // Restore last chat - only on first load
+    if (!window._chatRestored) {
+      window._chatRestored = true
+      const lastChatId = localStorage.getItem("datta_last_chat")
+      if (lastChatId) {
+        const exists = chats.some(c => c._id === lastChatId)
+        if (exists) {
+          setTimeout(() => {
+            openChat(lastChatId)
+            const activeDiv = history.querySelector("[data-chat-id='" + lastChatId + "']")
+            if (activeDiv) activeDiv.classList.add("active")
+          }, 200)
+        } else {
+          // Chat not found - clear it
+          localStorage.removeItem("datta_last_chat")
+        }
       }
     }
   } catch(e) {
