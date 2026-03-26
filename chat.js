@@ -2211,3 +2211,59 @@ async function resendVerification() {
 }
 
 window.resendVerification = resendVerification
+
+// AUTO UPDATE - detect new version and reload
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/datta-ai/sw.js").then(reg => {
+
+    // Check for updates every 30 seconds
+    setInterval(() => reg.update(), 30000)
+
+    // New version found - show update toast
+    reg.addEventListener("updatefound", () => {
+      const newWorker = reg.installing
+      newWorker.addEventListener("statechange", () => {
+        if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+          showUpdateToast()
+        }
+      })
+    })
+  })
+
+  // When new SW takes control - reload page
+  let refreshing = false
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!refreshing) {
+      refreshing = true
+      window.location.reload()
+    }
+  })
+}
+
+function showUpdateToast() {
+  const toast = document.createElement("div")
+  toast.style.cssText = `
+    position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
+    background:#111; border:1px solid #00ff8844;
+    border-radius:16px; padding:12px 20px;
+    display:flex; align-items:center; gap:12px;
+    z-index:9999; box-shadow:0 8px 24px rgba(0,0,0,0.5);
+    animation:slideUp 0.3s ease; white-space:nowrap;
+  `
+  toast.innerHTML = `
+    <span style="font-size:18px;">🚀</span>
+    <span style="font-size:13px;color:#aaa;">New update available!</span>
+    <button onclick="updateApp()" style="padding:6px 14px;background:linear-gradient(135deg,#00cc6a,#00aaff);border:none;border-radius:20px;color:white;font-size:12px;font-weight:700;cursor:pointer;">Update</button>
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#555;cursor:pointer;font-size:16px;">✕</button>
+  `
+  document.body.appendChild(toast)
+}
+
+function updateApp() {
+  if (navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage("skipWaiting")
+  }
+  window.location.reload(true)
+}
+
+window.updateApp = updateApp
