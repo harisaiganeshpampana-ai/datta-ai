@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Verify Email - Datta AI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0a0a0a; color:white; font-family:system-ui,Arial,sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+.card { background:#111; border:1px solid #222; border-radius:24px; padding:48px 36px; max-width:420px; width:100%; text-align:center; }
+.logo { font-family:'Bebas Neue',sans-serif; font-size:32px; letter-spacing:4px; background:linear-gradient(135deg,#00ff88,#00ccff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:32px; }
+.icon { font-size:56px; margin-bottom:20px; }
+.title { font-family:'Rajdhani',sans-serif; font-size:24px; font-weight:700; margin-bottom:10px; }
+.msg { font-size:14px; color:#888; line-height:1.6; margin-bottom:28px; }
+.btn { display:block; padding:14px; background:linear-gradient(135deg,#00cc6a,#00aaff); border:none; border-radius:12px; color:white; font-size:15px; font-weight:700; cursor:pointer; text-decoration:none; margin-bottom:12px; font-family:'Rajdhani',sans-serif; letter-spacing:0.5px; }
+.btnOutline { display:block; padding:13px; background:transparent; border:1px solid #2a2a2a; border-radius:12px; color:#888; font-size:14px; cursor:pointer; text-decoration:none; }
+.success { color:#00ff88; }
+.error { color:#ff6666; }
+.loading { color:#aaa; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">DATTA AI</div>
+  <div class="icon" id="icon">⏳</div>
+  <div class="title" id="title">Verifying Email...</div>
+  <div class="msg" id="msg">Please wait while we verify your email address.</div>
+  <div id="actions"></div>
+</div>
+
+<script>
+const SERVER = "https://datta-ai-server.onrender.com"
+const token = new URLSearchParams(window.location.search).get("token")
+
+async function verify() {
+  if (!token) {
+    showError("Invalid verification link", "No token found in the URL.")
+    return
+  }
+  try {
+    const res = await fetch(SERVER + "/auth/verify-email?token=" + token)
+    const data = await res.json()
+    if (res.ok && data.success) {
+      document.getElementById("icon").textContent = "✅"
+      document.getElementById("title").innerHTML = '<span class="success">Email Verified!</span>'
+      document.getElementById("msg").textContent = "Your email has been verified successfully. You can now use all features of Datta AI!"
+      document.getElementById("actions").innerHTML = '<a href="index.html" class="btn">Open Datta AI →</a>'
+    } else {
+      showError("Verification Failed", data.error || "Link may have expired. Please request a new one.")
+    }
+  } catch(e) {
+    showError("Connection Error", "Could not connect to server. Please try again.")
+  }
+}
+
+function showError(title, msg) {
+  document.getElementById("icon").textContent = "❌"
+  document.getElementById("title").innerHTML = '<span class="error">' + title + '</span>'
+  document.getElementById("msg").textContent = msg
+  document.getElementById("actions").innerHTML = `
+    <a href="index.html" class="btn">Go to Datta AI</a>
+    <a href="login.html" class="btnOutline">Back to Login</a>
+  `
+}
+
+verify()
+</script>
+</body>
+</html>
