@@ -912,7 +912,10 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const isCodeTask = ["build","create","write","make","code","website","app","script","program","html","python","javascript","fix","debug","error","update","improve","full","complete","function","class","api"].some(k => msgLower.includes(k))
     const maxTok = isImageFile ? 1024 : (isCodeTask ? 8192 : 4096)
 
-    const systemPrompt = `You are ${ainame} - a powerful AI Agent. Today is ${new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.
+    const now = new Date()
+    const timeStr = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })
+    const dateStr = now.toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+    const systemPrompt = `You are ${ainame} - a powerful AI Agent. Today is ${dateStr}, ${timeStr} IST.
 
 RESPONSE FORMATTING RULES:
 - Use **bold** for important terms and key points
@@ -1377,6 +1380,46 @@ app.post("/execute", authMiddleware, async (req, res) => {
 
     res.json({ output: "", errors: "Language not supported yet. JavaScript and Python are available.", language })
   } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
+// SMART SUGGESTIONS based on user history
+app.get("/suggestions", authMiddleware, async (req, res) => {
+  try {
+    const recentChats = await Chat.find({ userId: req.user.id }).sort({ updatedAt: -1 }).limit(3)
+    const topics = recentChats.map(c => c.title).filter(Boolean).join(", ")
+
+    const suggestions = [
+      "Build me a portfolio website",
+      "Write a Python web scraper",
+      "Create an image of a sunset",
+      "Explain quantum computing simply",
+      "Write a business email template",
+      "Create a React todo app"
+    ]
+
+    if (topics) {
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.1-8b-instant",
+        messages: [{ role: "user", content: `Based on these recent chat topics: "${topics}", suggest 4 short follow-up questions or tasks the user might want to do next. Return as JSON array of strings, max 8 words each. Example: ["Build a React dashboard", "Add dark mode to website"]. Return ONLY the JSON array.` }],
+        max_tokens: 100,
+        temperature: 0.8
+      })
+      const raw = completion.choices?.[0]?.message?.content?.trim()
+      try {
+        const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim())
+        if (Array.isArray(parsed)) return res.json(parsed.slice(0, 4))
+      } catch(e) {}
+    }
+
+    res.json(suggestions.sort(() => Math.random() - 0.5).slice(0, 4))
+  } catch(err) {
+    res.json([
+      "Build me a portfolio website",
+      "Create an image of a sunset",
+      "Write a Python script",
+      "Explain AI in simple terms"
+    ])
+  }
 })
 
 app.get("/", (req, res) => res.json({ status: "Datta AI Server running", version: "3.0" }))
