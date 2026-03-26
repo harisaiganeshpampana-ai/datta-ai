@@ -1419,6 +1419,41 @@ async function processVoiceQuery(query) {
   }
 }
 
+// VOICE PROFILES
+const voiceProfiles = {
+  "aria":    { name: "Aria",    lang: "en-US", rate: 0.95, pitch: 1.1, keywords: ["Google US English","Samantha","Aria","Zira"] },
+  "james":   { name: "James",   lang: "en-US", rate: 0.9,  pitch: 0.85, keywords: ["Google UK English Male","Daniel","James","David"] },
+  "sofia":   { name: "Sofia",   lang: "en-US", rate: 1.0,  pitch: 1.2, keywords: ["Google UK English Female","Karen","Moira","Sofia"] },
+  "neural":  { name: "Neural",  lang: "en-US", rate: 0.95, pitch: 1.0, keywords: ["Neural","Natural","Enhanced","Premium"] },
+  "indian":  { name: "Riya",    lang: "en-IN", rate: 0.9,  pitch: 1.0, keywords: ["Google हिन्दी","Lekha","Veena","en-IN"] },
+  "british": { name: "Oliver",  lang: "en-GB", rate: 0.9,  pitch: 0.9, keywords: ["Google UK English Male","Arthur","Oliver","en-GB"] }
+}
+
+function getSelectedVoiceProfile() {
+  return localStorage.getItem("datta_voice") || "aria"
+}
+
+function pickVoice(profile) {
+  const voices = voiceSynth.getVoices()
+  if (!voices.length) return null
+
+  // Try to find matching voice by keywords
+  for (const keyword of profile.keywords) {
+    const found = voices.find(v =>
+      v.name.includes(keyword) ||
+      v.lang.startsWith(profile.lang)
+    )
+    if (found) return found
+  }
+
+  // Fallback - find any voice with matching lang
+  const langMatch = voices.find(v => v.lang.startsWith(profile.lang))
+  if (langMatch) return langMatch
+
+  // Last resort - first available
+  return voices[0]
+}
+
 function speakText2(text) {
   if (!voiceSynth) return
   stopSpeaking()
@@ -1427,39 +1462,38 @@ function speakText2(text) {
   setVoiceStatus("Speaking...", "speaking")
 
   const utterance = new SpeechSynthesisUtterance(text)
-  utterance.lang = "en-US"
-  utterance.rate = 0.95
-  utterance.pitch = 1.0
+  const profileKey = getSelectedVoiceProfile()
+  const profile = voiceProfiles[profileKey] || voiceProfiles.aria
+
+  utterance.lang = profile.lang
+  utterance.rate = profile.rate
+  utterance.pitch = profile.pitch
   utterance.volume = 1.0
 
-  // Try to get a good voice
-  const voices = voiceSynth.getVoices()
-  const preferred = voices.find(v =>
-    v.name.includes("Google") ||
-    v.name.includes("Samantha") ||
-    v.name.includes("Karen") ||
-    v.name.includes("Female") ||
-    (v.lang === "en-US" && !v.name.includes("Male"))
-  )
-  if (preferred) utterance.voice = preferred
+  // Wait for voices to load then pick
+  const setVoiceAndSpeak = () => {
+    const voice = pickVoice(profile)
+    if (voice) utterance.voice = voice
 
-  utterance.onend = () => {
-    isSpeaking = false
-    if (voiceActive) {
-      setVoiceStatus("Tap to speak", "idle")
-      // Auto listen after speaking
-      setTimeout(() => {
-        if (voiceActive) startListening()
-      }, 800)
+    utterance.onend = () => {
+      isSpeaking = false
+      if (voiceActive) {
+        setVoiceStatus("Tap to speak", "idle")
+        setTimeout(() => { if (voiceActive) startListening() }, 800)
+      }
     }
+    utterance.onerror = () => {
+      isSpeaking = false
+      setVoiceStatus("Tap to speak", "idle")
+    }
+    voiceSynth.speak(utterance)
   }
 
-  utterance.onerror = () => {
-    isSpeaking = false
-    setVoiceStatus("Tap to speak", "idle")
+  if (voiceSynth.getVoices().length) {
+    setVoiceAndSpeak()
+  } else {
+    voiceSynth.addEventListener("voiceschanged", setVoiceAndSpeak, { once: true })
   }
-
-  voiceSynth.speak(utterance)
 }
 
 function stopSpeaking() {
@@ -2066,3 +2100,33 @@ window.addEventListener("DOMContentLoaded", function() {
     adminLink.style.display = "block"
   }
 })
+
+// SET VOICE
+function setVoice(key) {
+  localStorage.setItem("datta_voice", key)
+
+  // Update UI
+  document.querySelectorAll(".voiceOption").forEach(b => b.classList.remove("active"))
+  const btn = document.getElementById("vopt-" + key)
+  if (btn) btn.classList.add("active")
+
+  // Preview voice
+  const profile = voiceProfiles[key]
+  if (profile) speakText2("Hi! I am " + profile.name + ", your Datta AI voice.")
+}
+
+// Load saved voice on open
+function loadSavedVoice() {
+  const saved = localStorage.getItem("datta_voice") || "aria"
+  document.querySelectorAll(".voiceOption").forEach(b => b.classList.remove("active"))
+  const btn = document.getElementById("vopt-" + saved)
+  if (btn) btn.classList.add("active")
+}
+
+const origOpenVoice = window.openVoiceAssistant
+window.openVoiceAssistant = function() {
+  if (origOpenVoice) origOpenVoice()
+  setTimeout(loadSavedVoice, 100)
+}
+
+window.setVoice = setVoice
