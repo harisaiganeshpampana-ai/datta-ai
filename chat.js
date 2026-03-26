@@ -2162,3 +2162,52 @@ if (window.innerWidth <= 768) {
     })
   }
 }
+
+// EMAIL VERIFICATION BANNER
+window.addEventListener("DOMContentLoaded", async function() {
+  const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
+  if (!user.email || user.emailVerified) return
+
+  // Check if already verified from server
+  try {
+    const res = await fetch("https://datta-ai-server.onrender.com/payment/subscription?token=" + getToken())
+    if (!res.ok) return
+  } catch(e) { return }
+
+  // Show banner if not verified
+  const verified = localStorage.getItem("email_verified")
+  if (verified) return
+
+  const banner = document.createElement("div")
+  banner.id = "verifyBanner"
+  banner.style.cssText = `
+    position:fixed; top:0; left:0; right:0; z-index:9999;
+    background:linear-gradient(135deg,#1a1a00,#2a1a00);
+    border-bottom:1px solid #ffaa0044;
+    padding:10px 16px; display:flex; align-items:center;
+    gap:10px; font-size:13px;
+  `
+  banner.innerHTML = `
+    <span>📧</span>
+    <span style="flex:1;color:#ffaa88;">Verify your email to unlock all features</span>
+    <button onclick="resendVerification()" style="padding:5px 12px;background:#ffaa00;border:none;border-radius:8px;color:#000;font-size:12px;font-weight:700;cursor:pointer;">Resend</button>
+    <button onclick="document.getElementById('verifyBanner').remove();localStorage.setItem('email_verified','dismissed')" style="background:none;border:none;color:#666;cursor:pointer;font-size:16px;">✕</button>
+  `
+  document.body.prepend(banner)
+})
+
+async function resendVerification() {
+  try {
+    const res = await fetch("https://datta-ai-server.onrender.com/auth/resend-verification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: getToken() })
+    })
+    const data = await res.json()
+    showToast(data.message || "Verification email sent!")
+    document.getElementById("verifyBanner")?.remove()
+    localStorage.setItem("email_verified", "sent")
+  } catch(e) { showToast("Failed to send email") }
+}
+
+window.resendVerification = resendVerification
