@@ -675,6 +675,61 @@ async function changePassword() {
   } catch(e) { showMsg("password", "Server error", "error") }
 }
 
+async function loadUsage() {
+  try {
+    const res = await fetch("https://datta-ai-server.onrender.com/user/usage?token=" + getToken())
+    if (!res.ok) throw new Error("Failed")
+    const data = await res.json()
+
+    document.getElementById("usageLoading").style.display = "none"
+    document.getElementById("usageContent").style.display = "block"
+
+    const plan = data.plan || "free"
+    const limits = {
+      free:     { msgs: 25, imgs: 3 },
+      pro:      { msgs: 100, imgs: 20 },
+      max:      { msgs: 200, imgs: 30 },
+      ultramax: { msgs: 999999, imgs: 100 }
+    }
+    const limit = limits[plan] || limits.free
+
+    const msgUsed = data.messagesUsed || 0
+    const imgUsed = data.imagesUsed || 0
+
+    const msgPct = limit.msgs >= 999999 ? 0 : Math.min(100, Math.round(msgUsed / limit.msgs * 100))
+    const imgPct = Math.min(100, Math.round(imgUsed / (limit.imgs || 3) * 100))
+
+    document.getElementById("msgUsageText").textContent = msgUsed + " / " + (limit.msgs >= 999999 ? "Unlimited" : limit.msgs)
+    document.getElementById("imgUsageText").textContent = imgUsed + " / " + (limit.imgs >= 999999 ? "Unlimited" : limit.imgs)
+
+    setTimeout(() => {
+      document.getElementById("msgUsageBar").style.width = msgPct + "%"
+      document.getElementById("imgUsageBar").style.width = imgPct + "%"
+      if (msgPct > 80) document.getElementById("msgUsageBar").style.background = "linear-gradient(90deg,#ff4444,#ff8844)"
+      if (imgPct > 80) document.getElementById("imgUsageBar").style.background = "linear-gradient(90deg,#ff4444,#ff8844)"
+    }, 100)
+
+    const planNames = { free:"Free Plan", pro:"Pro Plan", max:"Max Plan", ultramax:"Ultra Max Plan" }
+    const planSubs  = { free:"25 msgs · 3 images", pro:"100 msgs/4hrs · 20 images", max:"200 msgs/3hrs · 30 images", ultramax:"Unlimited everything" }
+    document.getElementById("planNameUsage").textContent = planNames[plan] || "Free Plan"
+    document.getElementById("planSubUsage").textContent = planSubs[plan] || ""
+
+    if (data.resetIn && data.resetIn > 0) {
+      const mins = Math.ceil(data.resetIn / 60000)
+      document.getElementById("msgResetText").textContent = "Resets in " + (mins > 60 ? Math.ceil(mins/60) + " hrs" : mins + " min")
+    }
+
+    if (plan === "ultramax") {
+      const btn = document.getElementById("upgradeUsageBtn")
+      if (btn) btn.style.display = "none"
+    }
+
+  } catch(e) {
+    document.getElementById("usageLoading").textContent = "Could not load usage"
+    console.error("Usage error:", e)
+  }
+}
+
 async function loadMemory() {
   try {
     const res = await fetch(SERVER + "/memory?token=" + getToken())
@@ -815,6 +870,7 @@ window.addEventListener("load", function() {
   // Load usage
   loadUsage()
   // Load memory count
+  loadUsage()
   loadMemory()
 })
 </script>
