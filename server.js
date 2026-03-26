@@ -678,6 +678,42 @@ CRITICAL RULES - NEVER BREAK THESE:
   }
 })
 
+// AUTO FIX BAD TITLES
+app.post("/chats/fix-titles", authMiddleware, async (req, res) => {
+  try {
+    const badTitles = ["hi", "hii", "hiii", "hello", "hey", "helo", "hai", "sup", "yo", "new conversation", "new chat", "hiya"]
+    const chats = await Chat.find({ userId: req.user.id })
+    let fixed = 0
+
+    for (const chat of chats) {
+      const titleLower = chat.title.toLowerCase().trim()
+      if (badTitles.includes(titleLower) && chat.messages.length >= 2) {
+        // Find first real user message
+        const firstReal = chat.messages.find(m =>
+          m.role === "user" && m.content && m.content.length > 3 &&
+          !badTitles.includes(m.content.toLowerCase().trim())
+        )
+        if (firstReal) {
+          try {
+            const t = await groq.chat.completions.create({
+              model: "llama-3.1-8b-instant",
+              messages: [{ role: "user", content: "Generate a very short title (max 5 words, no quotes) for a chat that is about: " + firstReal.content.substring(0, 200) + ". Just the title." }],
+              max_tokens: 15
+            })
+            const newTitle = t.choices?.[0]?.message?.content?.trim()
+            if (newTitle && !newTitle.startsWith("[") && newTitle.length > 2) {
+              chat.title = newTitle
+              await chat.save()
+              fixed++
+            }
+          } catch(e) {}
+        }
+      }
+    }
+    res.json({ success: true, fixed })
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
 // CHAT HISTORY
 app.get("/chats", authMiddleware, async (req, res) => { try { res.json(await Chat.find({ userId: req.user.id }).sort({ createdAt: -1 }).select("title createdAt")) } catch(err) { res.status(500).json({ error: err.message }) } })
 app.get("/chat/:id", authMiddleware, async (req, res) => { try { const c = await Chat.findOne({ _id: req.params.id, userId: req.user.id }); res.json(c ? c.messages : []) } catch(err) { res.status(500).json({ error: err.message }) } })
