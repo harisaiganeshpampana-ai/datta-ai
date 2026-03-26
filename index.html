@@ -118,12 +118,12 @@
     </a>
   </div>
 
-  <!-- UPGRADE BUTTON -->
-  <div class="upgradeBtn" onclick="navigateTo('pricing.html')">
-    <span>🔥</span>
+  <!-- PLAN BUTTON - shows current plan or upgrade -->
+  <div class="upgradeBtn" id="planBtn" onclick="navigateTo('pricing.html')">
+    <span id="planBtnEmoji">🌱</span>
     <div>
-      <div style="font-size:13px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;">Upgrade to Agni</div>
-      <div style="font-size:11px;color:#888;">Unlimited power • ₹499/mo</div>
+      <div id="planBtnTitle" style="font-size:13px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;">Free Plan</div>
+      <div id="planBtnSub" style="font-size:11px;color:#888;">Upgrade for more power</div>
     </div>
     <span style="color:#00ff88;font-size:16px;">›</span>
   </div>
