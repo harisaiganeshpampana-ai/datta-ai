@@ -27,8 +27,9 @@ function stopGeneration() {
 
 window.stopGeneration = stopGeneration
 
-// RENDER IMAGE RESPONSE
+// RENDER IMAGE RESPONSE - Datta AI unique style
 function renderImageResponse(text) {
+  // Handle new format
   let cleanText = text
   if (text.includes("DATTA_IMAGE_START")) {
     cleanText = text.replace("DATTA_IMAGE_START\n", "").replace("\nDATTA_IMAGE_END", "")
@@ -39,49 +40,63 @@ function renderImageResponse(text) {
 
   const altText = imgMatch[1] || "Generated Image"
   const imgUrl = imgMatch[2]
-  const prompt = (promptMatch ? promptMatch[1].trim() : altText).substring(0, 100)
+  const prompt = promptMatch ? promptMatch[1].trim() : altText
   const uid = "ig" + Date.now()
-  const safePrompt = prompt.replace(/'/g, "").replace(/"/g, "")
 
-  return `<div class="dattaImgWrap" id="${uid}" style="max-width:400px;">
-  <div style="font-family:Rajdhani,sans-serif;font-size:11px;letter-spacing:1px;color:#cc88ff;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
-    <span>🎨</span><span id="${uid}lbl">Creating image...</span>
+  return `<div class="dattaImgWrap" id="${uid}">
+  <div class="dattaImgLabel" id="${uid}lbl">
+    <span class="dattaImgIcon">🎨</span>
+    <span>Creating your image...</span>
   </div>
-  <div style="position:relative;border-radius:12px;overflow:hidden;background:#1a0a2a;min-height:200px;display:flex;align-items:center;justify-content:center;">
-    <div id="${uid}spin" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:2;">
-      <div style="width:40px;height:40px;border:3px solid rgba(200,100,255,0.2);border-top-color:#cc88ff;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
-      <div style="font-size:12px;color:#cc88ff;font-family:Rajdhani,sans-serif;">Generating...</div>
+  <div class="dattaImgBox">
+    <div class="dattaShimmer" id="${uid}shimmer">
+      <div class="shimmerOrb"></div>
+      <div class="shimmerText">Generating with AI...</div>
     </div>
-    <img id="${uid}img" src="${imgUrl}" alt="${altText}"
-      style="width:100%;border-radius:12px;display:block;min-height:200px;object-fit:cover;"
+    <img src="${imgUrl}" alt="${altText}" class="dattaImg" style="display:none;opacity:0;"
       onload="
-        var spin=document.getElementById('${uid}spin');
-        var lbl=document.getElementById('${uid}lbl');
-        var act=document.getElementById('${uid}act');
-        if(spin)spin.style.display='none';
-        if(lbl)lbl.textContent='${safePrompt}';
-        if(act)act.style.display='flex';
-        this.style.minHeight='auto';
+        var w=document.getElementById('${uid}');
+        var s=document.getElementById('${uid}shimmer');
+        var l=document.getElementById('${uid}lbl');
+        var a=document.getElementById('${uid}actions');
+        if(s)s.style.display='none';
+        if(l)l.innerHTML='<span class=dattaImgIcon>✨</span><span>${prompt}</span>';
+        if(a)a.style.display='flex';
+        this.style.display='block';
+        setTimeout(function(){var img=document.querySelector('#${uid} .dattaImg');if(img)img.style.opacity='1';},10);
       "
       onerror="
-        var retries=parseInt(this.dataset.retries||0);
-        var spin=document.getElementById('${uid}spin');
-        if(retries<2){
-          this.dataset.retries=retries+1;
-          var seed=Math.floor(Math.random()*999999);
-          if(spin)spin.querySelector('div:last-child').textContent='Retrying '+(retries+1)+'/2...';
-          setTimeout(()=>{
-            this.src='https://image.pollinations.ai/prompt/'+encodeURIComponent('${safePrompt}')+'?width=1024&height=1024&nologo=true&seed='+seed;
-          },1500);
+        var img=this;
+        var s=document.getElementById('${uid}shimmer');
+        var retries=parseInt(img.dataset.retries||0);
+        if(retries < 2){
+          img.dataset.retries=retries+1;
+          setTimeout(function(){
+            var seed=Math.floor(Math.random()*999999);
+            img.src=img.src.replace(/seed=\d+/,'seed='+seed);
+          }, 2000);
+          if(s)s.querySelector('.shimmerText').textContent='Retrying... ('+(retries+1)+'/2)';
         } else {
-          if(spin)spin.innerHTML='<div style=color:#ff4444;font-size:13px>❌ Failed. Try again.</div>';
+          if(s)s.innerHTML='<div style=padding:32px;color:#888;text-align:center;font-size:13px>❌ Failed to generate. Try again.</div>';
         }
       "
     >
   </div>
-  <div id="${uid}act" style="display:none;gap:8px;margin-top:10px;flex-wrap:wrap;">
-    <button onclick="regenerateImage('${safePrompt}',this)" style="padding:6px 14px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:20px;color:#cc9900;font-family:Rajdhani,sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;">🔄 Regenerate</button>
-    <button onclick="downloadImage('${imgUrl}','${safePrompt}')" style="padding:6px 14px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:20px;color:#cc9900;font-family:Rajdhani,sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;">⬇️ Download</button>
+  <div class="dattaImgActions" id="${uid}actions" style="display:none;">
+    <button class="dattaImgBtn" onclick="downloadImage('${imgUrl}','${prompt}')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download
+    </button>
+    <button class="dattaImgBtn" onclick="regenerateImage('${prompt}',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Regenerate
+    </button>
+    <button class="dattaImgBtn likeImgBtn" onclick="likeImage(this)" title="Like">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+    </button>
+    <button class="dattaImgBtn dislikeImgBtn" onclick="dislikeImage(this)" title="Dislike">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
+    </button>
   </div>
 </div>`
 }
@@ -95,48 +110,47 @@ function downloadImage(url, prompt) {
 }
 
 async function regenerateImage(prompt, btn) {
-  const wrap = btn.closest(".dattaImgWrap")
-  if (!wrap) return
   btn.disabled = true
-  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 0.6s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Generating...'
-  const seed = Math.floor(Math.random() * 999999)
-  const newUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed
-  const shimmer = wrap.querySelector(".dattaShimmer")
-  const img = wrap.querySelector(".dattaImg")
-  const actions = wrap.querySelector(".dattaImgActions")
-  const label = wrap.querySelector(".dattaImgLabel")
-  if (shimmer) { shimmer.style.display = "flex"; shimmer.querySelector(".shimmerText").textContent = "Regenerating..." }
-  if (img) { img.style.display = "none"; img.style.opacity = "0"; img.dataset.retries = "0" }
-  if (actions) actions.style.display = "none"
-  if (label) label.innerHTML = '<span class="dattaImgIcon">🎨</span><span>Regenerating...</span>'
+  btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 0.6s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Generating...'
+
+  const container = btn.closest(".imageGenContainer")
+  const img = container.querySelector(".generatedImg")
+  const loader = container.querySelector(".imageGenLoader")
+  const result = container.querySelector(".imageGenResult")
+
+  // Show loader
+  result.style.display = "none"
+  loader.style.display = "flex"
+  loader.innerHTML = '<div class="imageGenSpinner"></div><div class="imageGenLoadText">Regenerating...</div>'
+
+  // Generate new image with different seed
+  const seed = Math.floor(Math.random() * 99999)
+  const newUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&enhance=true&seed=" + seed
+
   img.onload = () => {
-    if (shimmer) shimmer.style.display = "none"
-    if (actions) actions.style.display = "flex"
-    if (label) label.innerHTML = '<span class="dattaImgIcon">✨</span><span>' + prompt + '</span>'
-    img.style.display = "block"
-    setTimeout(() => { img.style.opacity = "1" }, 10)
+    result.style.display = "block"
+    loader.style.display = "none"
     btn.disabled = false
-    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Regenerate'
+    btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Regenerate'
   }
   img.onerror = () => {
-    if (shimmer) shimmer.innerHTML = '<div style="padding:32px;color:#888;text-align:center;font-size:13px">❌ Failed. Try again.</div>'
+    loader.innerHTML = '<div style="color:#f88">Failed. Try again.</div>'
     btn.disabled = false
-    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Regenerate'
   }
   img.src = newUrl
 }
 
 function likeImage(btn) {
   const isActive = btn.classList.toggle("active")
-  btn.style.color = isActive ? "var(--accent)" : ""
-  const dislike = btn.closest(".dattaImgActions").querySelector(".dislikeImgBtn")
+  btn.style.color = isActive ? "#00ff88" : ""
+  const dislike = btn.closest(".imageGenBtns").querySelector(".dislikeImgBtn")
   if (dislike) { dislike.classList.remove("active"); dislike.style.color = "" }
 }
 
 function dislikeImage(btn) {
   const isActive = btn.classList.toggle("active")
   btn.style.color = isActive ? "#ff4444" : ""
-  const like = btn.closest(".dattaImgActions").querySelector(".likeImgBtn")
+  const like = btn.closest(".imageGenBtns").querySelector(".likeImgBtn")
   if (like) { like.classList.remove("active"); like.style.color = "" }
 }
 
@@ -145,8 +159,8 @@ window.regenerateImage = regenerateImage
 window.likeImage = likeImage
 window.dislikeImage = dislikeImage
 window.renderImageResponse = renderImageResponse
-
-// AUTH CHECK
+// AUTH CHECK - redirect to login if not logged in
+// Always read token fresh
 function getToken() {
   return localStorage.getItem("datta_token") || ""
 }
@@ -159,6 +173,7 @@ function getUser() {
   return null
 }
 
+// AUTH CHECK
 if (!getToken()) {
   window.location.href = "login.html"
 }
@@ -166,6 +181,7 @@ if (!getToken()) {
 const datta_token = getToken()
 const datta_user = getUser()
 
+// Update sidebar profile with real user info
 window.addEventListener("DOMContentLoaded", function() {
   if (datta_user) {
     const nameEl = document.querySelector(".profileName")
@@ -189,124 +205,23 @@ let currentChatId = null
 let controller = null
 let userScrolledUp = false
 
-const imageTriggers = [
-  "generate image", "create image", "make image", "draw", "generate photo",
-  "create photo", "make photo", "generate picture", "create picture",
-  "image of", "picture of", "photo of", "draw me", "paint", "illustrate",
-  "sketch", "generate art", "create art", "make art"
-]
 
-// ─── NEW CHAT ─────────────────────────────────────────────────────────────────
+// ─── NEW CHAT ────────────────────────────────────────────────────────────────
 function newChat() {
   currentChatId = null
   chatBox.innerHTML = ""
   chatBox.scrollTop = 0
-  activeProjectId = null
-  activeProjectChatId = null
-  var banner = document.getElementById('projectChatBanner')
-  if (banner) banner.remove()
   showWelcome()
 }
 
-// ─── MOOD SYSTEM ──────────────────────────────────────────────────────────────
-function getMoodContext() {
-  return window.dattaMoodPersonality || null
-}
-
-// ── AUTO MOOD DETECT INDICATOR ────────────────────────────────────────────────
-function showAutoMoodPill(moodKey) {
-  const MOODS = window.MOODS || {}
-  const mood = MOODS[moodKey]
-  if (!mood) return
-  const pill = document.getElementById("autoMoodPill")
-  if (!pill) return
-  pill.style.border = `1px solid ${mood.color}44`
-  pill.style.background = "transparent"
-  pill.style.color = mood.color
-  pill.style.fontSize = "11px"
-  pill.style.padding = "2px 8px"
-  pill.style.opacity = "0.85"
-  pill.innerHTML = `<span style="font-size:9px;letter-spacing:1px;opacity:0.6;margin-right:3px;font-family:'Rajdhani',sans-serif;">AUTO</span>${mood.emoji}`
-  pill.style.display = "flex"
-  pill.style.alignItems = "center"
-  pill.title = `Auto-detected: ${mood.label}`
-  localStorage.setItem("datta_last_auto_mood", moodKey)
-  clearTimeout(pill._hideTimer)
-  pill._hideTimer = setTimeout(() => {
-    pill.style.transition = "opacity 0.4s"
-    pill.style.opacity = "0"
-    setTimeout(() => {
-      pill.style.display = "none"
-      pill.style.opacity = "0.85"
-      localStorage.removeItem("datta_last_auto_mood")
-    }, 400)
-  }, 8000)
-}
-
-function restoreAutoMoodPill() {
-  const autoSaved = localStorage.getItem("datta_last_auto_mood")
-  if (!autoSaved) return
-  const MOODS = window.MOODS || {}
-  const mood = MOODS[autoSaved]
-  if (!mood) return
-  const pill = document.getElementById("autoMoodPill")
-  if (!pill) return
-  pill.style.border = `1px solid ${mood.color}44`
-  pill.style.background = "transparent"
-  pill.style.color = mood.color
-  pill.style.fontSize = "11px"
-  pill.style.padding = "2px 8px"
-  pill.style.opacity = "0.85"
-  pill.innerHTML = `<span style="font-size:9px;letter-spacing:1px;opacity:0.6;margin-right:3px;font-family:'Rajdhani',sans-serif;">AUTO</span>${mood.emoji}`
-  pill.style.display = "flex"
-  pill.style.alignItems = "center"
-  pill.title = `Auto-detected: ${mood.label}`
-}
-
-window.addEventListener("DOMContentLoaded", function() {
-  setTimeout(restoreAutoMoodPill, 1500)
-})
-
-window.addEventListener("load", function() {
-  setTimeout(restoreAutoMoodPill, 500)
-})
-
-// ── BUILD MOOD PREFIX — WITH DATE/TIME FIX ────────────────────────────────────
-function buildMoodPrefix() {
-  const mood = getMoodContext()
-
-  // ── CURRENT DATE & YEAR INJECTION (fixes wrong year/iPhone bug) ──
-  const now = new Date()
-  const dateStr = now.toLocaleDateString("en-IN", {
-    weekday: "long", year: "numeric", month: "long", day: "numeric"
-  })
-  const timeStr = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
-  const year = now.getFullYear()
-  const month = now.toLocaleString("en-IN", { month: "long" })
-
-  const dateInstruction = `[CURRENT DATE & TIME — ALWAYS USE THIS]:
-Today is ${dateStr}, ${timeStr} IST.
-Current year: ${year}. Current month: ${month}.
-If anyone asks what year/date/time it is, always answer using the above.
-The iPhone 17 series was announced in ${year}. Always give answers relevant to ${year}.
-You are NOT limited to old training data — trust this date context above all else.\n\n`
-
-  const lengthRule = `[RESPONSE LENGTH RULE — ALWAYS FOLLOW THIS]:
-- Keep answers SHORT and CONCISE by default.
-- If the user asks a simple or casual question, reply in 1 to 3 sentences only.
-- Only give a long, detailed answer if the user explicitly says: "explain", "elaborate", "in detail", "tell me more", "say more", "describe", or asks something clearly complex.
-- Use a maximum of 2 emojis per response. Do NOT spam emojis.
-- Never pad answers with filler phrases or unnecessary enthusiasm.
-- Match your response length strictly to what was asked.\n\n`
-
-  if (!mood) return "[STRICT INSTRUCTION]: " + dateInstruction + lengthRule
-  return "[STRICT INSTRUCTION]: " + dateInstruction + lengthRule + "[MOOD INSTRUCTION - FOLLOW THIS STRICTLY]: " + mood + "\n\n"
-}
 
 // ─── SEND MESSAGE ─────────────────────────────────────────────────────────────
 async function send() {
-  const input = document.getElementById("message")
 
+  const input = document.getElementById("message")
+  const filePreview = document.getElementById("filePreview")
+
+  // Get file from any input source
   let file = null
   const fileInputIds = ["cameraInput", "photoInput", "imageInput"]
   for (const id of fileInputIds) {
@@ -314,13 +229,11 @@ async function send() {
     if (el && el.files && el.files[0]) { file = el.files[0]; break }
   }
   const text = input.value.trim()
+
+  // Block send if nothing to send
   if (!text && !file) return
 
-  if (window.dattaAutoDetectMood && text) {
-    const detected = window.dattaAutoDetectMood(text)
-    if (detected) showAutoMoodPill(detected)
-  }
-
+  // Save chat title - always use the typed message as title
   if (!currentChatId) {
     let title = text ? text.substring(0, 40) : "New Chat"
     if (text && text.length > 40) title += "..."
@@ -330,19 +243,20 @@ async function send() {
   hideWelcome()
   document.body.classList.add("chat-started")
 
-  const moodEmoji = window.dattaMoodEmoji ? window.dattaMoodEmoji + " " : ""
-
+  // Show user bubble with file info if attached
   chatBox.innerHTML += `
     <div class="messageRow userRow">
       <div class="userBubble">
         ${file ? `<div style="font-size:12px;opacity:0.75;margin-bottom:4px;">📄 ${file.name}</div>` : ""}
         ${text ? `<div>${text}</div>` : ""}
       </div>
-      <div class="avatar">${moodEmoji || "🧑"}</div>
+      <div class="avatar">🧑</div>
     </div>
   `
 
   chatBox.scrollTop = chatBox.scrollHeight
+
+  // Clear input + file
   input.value = ""
   ;["cameraInput","photoInput","imageInput"].forEach(id => {
     const el = document.getElementById(id)
@@ -350,79 +264,36 @@ async function send() {
   })
   if (typeof clearFileSelection === "function") clearFileSelection()
 
-  // ── AGENT MODE: Comprehensive real-time search triggers ──────────────────
-  const searchTriggers = [
-    // Time-based (always search)
-    "latest","recent","today","yesterday","this week","this month","right now",
-    "current","now","live","breaking","just happened","recently","tonight",
-    "this morning","2024","2025","2026","ongoing","still",
-    // News & Events
-    "news","update","updates","what happened","what is happening","happening",
-    "headline","headlines","report","reports","announced","announcement",
-    "war","attack","conflict","battle","strike","bombing","missile",
-    "russia","ukraine","israel","gaza","palestine","iran","china","taiwan",
-    "modi","trump","biden","election","vote","government","minister","president",
-    "protest","rally","earthquake","flood","disaster","accident","crash",
-    // Prices & Finance
-    "price","prices","cost","rate","rates","how much","worth",
-    "stock","stocks","share","shares","market","nifty","sensex","nasdaq",
-    "crypto","bitcoin","ethereum","rupee","dollar","gold","silver","petrol","diesel",
-    // Sports
-    "score","scores","result","results","match","matches","game","games",
-    "ipl","cricket","football","soccer","tennis","f1","formula 1",
-    "who won","who is winning","live score","playing","tournament","league","cup",
-    // People & Places
-    "who is","who are","where is","when is","what is the status",
-    "ceo","founder","president","prime minister","king","queen",
-    // Weather
-    "weather","temperature","rain","forecast","climate",
-    // Search intent
-    "search","find","look up","tell me about","what about","any news",
-    "released","launched","launched","new","upcoming",
-    "movie","film","show","series","album","song"
-  ]
-  // Smart detection: is this a real-time query?
-  const lowerText = text.toLowerCase()
-  const willSearch = searchTriggers.some(t => lowerText.includes(t)) ||
-    // Any question about something that changes frequently
-    (lowerText.includes("?") && (
-      lowerText.includes("who") || lowerText.includes("what") ||
-      lowerText.includes("where") || lowerText.includes("when") ||
-      lowerText.includes("how much") || lowerText.includes("is there")
-    ))
-  const willGenImage = imageTriggers.some(t => text.toLowerCase().includes(t))
-  const aiAvatarEmoji = window.dattaMoodEmoji || "🤖"
+  // Detect request type for indicator
+  const searchTriggers = ["latest","recent","today","yesterday","this week","current","now","live","breaking","news","who is","what is the","price of","weather","score","2025","2026","happened","update","trending","stock","crypto","bitcoin","search for","find","look up","ipl","cricket","match","movie","released","launched","election","gold","petrol"]
+  const imageTriggers = ["generate image","create image","make image","draw","generate photo","create photo","make photo","generate picture","create picture","image of","picture of","photo of","draw me","paint","illustrate","sketch","generate art","create art"]
 
+  const willSearch = searchTriggers.some(t => text.toLowerCase().includes(t))
+  const willGenImage = imageTriggers.some(t => text.toLowerCase().includes(t))
+
+  // Show appropriate indicator
   let aiDiv = document.createElement("div")
   aiDiv.className = "messageRow"
 
   if (willGenImage) {
     aiDiv.innerHTML = `
-      <div class="avatar">🎨</div>
+      <div class="avatar">🤖</div>
       <div class="aiBubble searchingIndicator" style="background:#1a0a2a!important;border-color:#4a1a6a!important;">
         <span class="searchIcon">🎨</span>
         <span class="searchText" style="color:#cc88ff;">Generating image...</span>
       </div>
     `
   } else if (willSearch) {
-    // Show smart search indicator based on query type
-    let searchLabel = "Searching the web..."
-    if (lowerText.includes("war") || lowerText.includes("conflict") || lowerText.includes("attack")) searchLabel = "Getting latest war updates..."
-    else if (lowerText.includes("price") || lowerText.includes("stock") || lowerText.includes("crypto")) searchLabel = "Fetching live prices..."
-    else if (lowerText.includes("weather")) searchLabel = "Getting weather data..."
-    else if (lowerText.includes("score") || lowerText.includes("match") || lowerText.includes("cricket")) searchLabel = "Getting live scores..."
-    else if (lowerText.includes("news")) searchLabel = "Searching latest news..."
-    else if (lowerText.includes("election") || lowerText.includes("vote")) searchLabel = "Finding latest updates..."
     aiDiv.innerHTML = `
-      <div class="avatar">${aiAvatarEmoji}</div>
+      <div class="avatar">🤖</div>
       <div class="aiBubble searchingIndicator">
         <span class="searchIcon">🌐</span>
-        <span class="searchText" id="searchStatusText">${searchLabel}</span>
+        <span class="searchText">Searching the web...</span>
       </div>
     `
   } else {
     aiDiv.innerHTML = `
-      <div class="avatar">${aiAvatarEmoji}</div>
+      <div class="avatar">🤖</div>
       <div class="aiBubble typing">
         <span></span><span></span><span></span>
       </div>
@@ -430,107 +301,36 @@ async function send() {
   }
   chatBox.appendChild(aiDiv)
   chatBox.scrollTop = chatBox.scrollHeight
-  showStopBtn()
 
-  // CLIENT-SIDE IMAGE GENERATION
-  if (willGenImage) {
-    let prompt = text
-      .replace(/generate image of|create image of|make image of|generate photo of|create photo of|make photo of|generate picture of|create picture of|picture of|photo of|image of|draw me a|draw me|draw a|draw|illustrate a|illustrate|sketch a|sketch|paint a|paint|generate art of|create art of|make art of/gi, "")
-      .trim()
-    if (!prompt) prompt = text
-    const seed = Math.floor(Math.random() * 999999)
-    const imgUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed
-    const fakeResponse = `DATTA_IMAGE_START\n![${prompt}](${imgUrl})\nPROMPT:${prompt}\nDATTA_IMAGE_END`
-    setTimeout(() => {
-      aiDiv.innerHTML = `
-        <div class="avatar">🎨</div>
-        <div class="aiContent">${renderImageResponse(fakeResponse)}</div>
-      `
-      chatBox.scrollTop = chatBox.scrollHeight
-      hideStopBtn()
-      loadSidebar()
-    }, 800)
-    return
-  }
-
-  // ── SMART ROUTING: Agent for real-time, Chat for normal ─────────────────
-  const needsAgent = willSearch ||
-    lowerText.includes("calculate") || lowerText.includes("translate") ||
-    lowerText.includes("create task") || lowerText.includes("remember that") ||
-    lowerText.includes("run this code") || lowerText.includes("search for")
-  const ENDPOINT = needsAgent
-    ? "https://datta-ai-server.onrender.com/agent"
-    : "https://datta-ai-server.onrender.com/chat"
-  console.log(needsAgent ? "🤖 Agent mode" : "💬 Chat mode", "→", lowerText.substring(0,40))
-
-  // SERVER CALL
+  // Build FormData
   controller = new AbortController()
   const formData = new FormData()
-  const moodPrefix = buildMoodPrefix()
-  let projectPrefix = ''
-  if (typeof getActiveProjectInstructions === 'function') {
-    const projInstr = getActiveProjectInstructions()
-    if (projInstr) projectPrefix = '[PROJECT CONTEXT: ' + projInstr + ']\n\n'
-  }
-  if (activeProjectId && window.DattaProjects) {
-    var proj = window.DattaProjects.getProject(activeProjectId)
-    if (proj && !projectPrefix) {
-      projectPrefix = '[PROJECT: ' + proj.name + ']\n\n'
-    }
-  }
-  const messageWithMood = projectPrefix + (moodPrefix ? moodPrefix + text : text)
-  // ── AGENT MODE: Tell backend to use web search when needed ──
-  if (willSearch) {
-    // Enhance message to instruct AI to search and give current info
-    const agentMessage = messageWithMood +
-      "\n\n[AGENT INSTRUCTION]: You MUST search the web for real-time information to answer this. " +
-      "Use your Tavily web search tool. Give current, up-to-date answer with sources. " +
-      "Today is " + new Date().toLocaleDateString("en-IN", {weekday:"long",year:"numeric",month:"long",day:"numeric"}) + "."
-    formData.append("message", agentMessage)
-    formData.append("search", "true")  // tells backend to use Tavily
-    formData.append("agent", "true")   // enables agent mode
-  } else {
-    formData.append("message", messageWithMood)
-  }
+  formData.append("message", text)
   formData.append("chatId", currentChatId || "")
   formData.append("token", getToken())
   formData.append("language", localStorage.getItem("datta_language") || "English")
-  if (window.dattaMoodLabel) formData.append("mood", window.dattaMoodLabel)
-  if (file) formData.append("image", file)
+
+  if (file) {
+    formData.append("image", file)
+  }
+
+  showStopBtn()
 
   try {
-    const res = await fetch(ENDPOINT, {
+    const res = await fetch("https://datta-ai-server.onrender.com/chat", {
       method: "POST",
       signal: controller.signal,
       body: formData
     })
 
     const chatIdFromHeader = res.headers.get("x-chat-id")
-    if (!currentChatId && chatIdFromHeader) currentChatId = chatIdFromHeader
-
-    if (activeProjectId && activeProjectChatId && currentChatId) {
-      try {
-        var pList = JSON.parse(localStorage.getItem('datta_projects_v2') || '[]')
-        var pObj = pList.find(function(p) { return String(p.id) === String(activeProjectId) })
-        if (pObj) {
-          var cObj = (pObj.chats || []).find(function(c) { return String(c.id) === String(activeProjectChatId) })
-          if (cObj && !cObj.serverChatId) {
-            cObj.serverChatId = currentChatId
-            var userBubbles = chatBox.querySelectorAll('.userBubble')
-            if (userBubbles.length === 1) {
-              var msgText = userBubbles[0].textContent.trim()
-              cObj.title = msgText.substring(0, 40) + (msgText.length > 40 ? '...' : '')
-            }
-            localStorage.setItem('datta_projects_v2', JSON.stringify(pList))
-          }
-        }
-      } catch(saveErr) {
-        console.warn('Project chat save error:', saveErr)
-      }
+    if (!currentChatId && chatIdFromHeader) {
+      currentChatId = chatIdFromHeader
     }
 
+    // Replace typing indicator with response bubble
     aiDiv.innerHTML = `
-      <div class="avatar">${aiAvatarEmoji}</div>
+      <div class="avatar">🤖</div>
       <div class="aiContent">
         <div class="aiBubble">
           <span class="stream"></span>
@@ -555,7 +355,9 @@ async function send() {
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
+
       const chunk = decoder.decode(value)
+
       if (chunk.includes("CHATID")) {
         const parts = chunk.split("CHATID")
         streamText += parts[0]
@@ -563,6 +365,8 @@ async function send() {
       } else {
         streamText += chunk
       }
+
+      // Check if image response
       const isImgResponse = streamText.includes("pollinations.ai") || streamText.includes("DATTA_IMAGE")
       if (isImgResponse) {
         const container = aiDiv.querySelector(".aiContent") || aiDiv
@@ -578,6 +382,7 @@ async function send() {
       lucide.createIcons()
     }
 
+    // Final render
     const isImgResponse = streamText.includes("pollinations.ai") || streamText.includes("DATTA_IMAGE")
     if (isImgResponse) {
       const container = aiDiv.querySelector(".aiContent") || aiDiv
@@ -599,112 +404,39 @@ async function send() {
       `
       console.error("Send error:", err)
     }
-    hideStopBtn()
   }
 }
 
-// ─── LANGUAGE HELPERS ─────────────────────────────────────────────────────────
-function getLangCode(langName) {
-  const map = {
-    "English": "en-IN", "Hindi": "hi-IN", "Telugu": "te-IN", "Tamil": "ta-IN",
-    "Kannada": "kn-IN", "Malayalam": "ml-IN", "Bengali": "bn-IN", "Marathi": "mr-IN",
-    "Gujarati": "gu-IN", "Punjabi": "pa-IN", "Urdu": "ur-PK", "Spanish": "es-ES",
-    "French": "fr-FR", "German": "de-DE", "Arabic": "ar-SA", "Chinese": "zh-CN",
-    "Japanese": "ja-JP", "Korean": "ko-KR", "Portuguese": "pt-BR", "Russian": "ru-RU",
-    "Italian": "it-IT", "Dutch": "nl-NL", "Turkish": "tr-TR", "Vietnamese": "vi-VN",
-    "Thai": "th-TH", "Indonesian": "id-ID", "Malay": "ms-MY",
-  }
-  return map[langName] || "en-IN"
-}
 
-function detectTextLanguage(text) {
-  if (!text) return getLangCode(localStorage.getItem("datta_language") || "English")
-  if (/[ऀ-ॿ]/.test(text)) return "hi-IN"
-  if (/[ఀ-౿]/.test(text)) return "te-IN"
-  if (/[஀-௿]/.test(text)) return "ta-IN"
-  if (/[ಀ-೿]/.test(text)) return "kn-IN"
-  if (/[ഀ-ൿ]/.test(text)) return "ml-IN"
-  if (/[ঀ-৿]/.test(text)) return "bn-IN"
-  if (/[؀-ۿ]/.test(text)) return "ar-SA"
-  if (/[一-鿿]/.test(text)) return "zh-CN"
-  if (/[぀-ヿ]/.test(text)) return "ja-JP"
-  if (/[가-힯]/.test(text)) return "ko-KR"
-  if (/[Ѐ-ӿ]/.test(text)) return "ru-RU"
-  return getLangCode(localStorage.getItem("datta_language") || "English")
-}
-
-// ── IMAGE GENERATION ──────────────────────────────────────────────────────────
-async function generateWithPollinations(prompt, aiDiv) {
-  const showImg = (imgUrl) => {
-    const fakeResponse = "DATTA_IMAGE_START\n![" + prompt + "](" + imgUrl + ")\nPROMPT:" + prompt + "\nDATTA_IMAGE_END"
-    if (aiDiv) {
-      aiDiv.innerHTML = "<div class='avatar'>🎨</div><div class='aiContent'>" + renderImageResponse(fakeResponse) + "</div>"
-      const cb = document.getElementById("chat")
-      if (cb) cb.scrollTop = cb.scrollHeight
-    }
-    hideStopBtn()
-    loadSidebar()
-  }
-  try {
-    const fd = new FormData()
-    fd.append("prompt", prompt)
-    fd.append("token", getToken())
-    const res = await Promise.race([
-      fetch("https://datta-ai-server.onrender.com/generate-image", { method:"POST", body:fd }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 20000))
-    ])
-    if (res.ok) {
-      const data = await res.json()
-      if (data.imageUrl) { showImg(data.imageUrl); return }
-    }
-  } catch(e) { console.warn("Server HF failed:", e.message) }
-  const seed = Math.floor(Math.random() * 999999)
-  const imgUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&model=flux-schnell&seed=" + seed
-  showImg(imgUrl)
-}
-window.generateWithPollinations = generateWithPollinations
-
-// ─── LOAD SIDEBAR ──────────────────────────────────────────────────────────────
+// ─── LOAD SIDEBAR ─────────────────────────────────────────────────────────────
 async function loadSidebar() {
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/chats?token=" + getToken())
+
+    // If 401 redirect to login
     if (res.status === 401) {
       localStorage.removeItem("datta_token")
       localStorage.removeItem("datta_user")
       window.location.href = "login.html"
       return
     }
+
     const data = await res.json()
     const chats = Array.isArray(data) ? data : []
     const history = document.getElementById("history")
     if (!history) return
     history.innerHTML = ""
 
-    document.addEventListener("click", () => {
-      document.querySelectorAll(".chatContextMenu").forEach(m => m.remove())
-    }, { once: false })
-
     chats.forEach(chat => {
       let div = document.createElement("div")
       div.className = "chatItem"
-      div.style.cssText = "display:flex;align-items:center;padding:8px 10px;border-radius:10px;cursor:pointer;transition:background 0.15s;position:relative;"
-      let cleanTitle = chat.title || "New Chat"
-      if (cleanTitle.startsWith("[STRICT") || cleanTitle.startsWith("[MOOD") || cleanTitle.startsWith("[RESPONSE") || cleanTitle.startsWith("[CURRENT DATE")) {
-        cleanTitle = "Chat " + new Date().toLocaleDateString()
-      }
-      cleanTitle = cleanTitle.replace(/^\[.*?\]:\s*/g, "").trim() || "New Chat"
-
       div.innerHTML = `
-        <div class="chatTitle" style="flex:1;font-size:13px;color:#665500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${cleanTitle}">${cleanTitle}</div>
-        <button class="chatMenuBtn" data-id="${chat._id}" data-title="${cleanTitle.substring(0,50)}" onclick="showChatMenu(event,this.dataset.id,this.dataset.title)"
-          style="background:none;border:none;color:#665500;cursor:pointer;padding:4px 6px;font-size:16px;opacity:0;transition:opacity 0.2s;flex-shrink:0;border-radius:6px;">⋯</button>
+        <div class="chatTitle" title="${chat.title}">${chat.title}</div>
+        <button class="deleteBtn" onclick="confirmDelete(event,'${chat._id}')" title="Delete chat">🗑</button>
       `
-      div.onmouseenter = () => div.querySelector(".chatMenuBtn").style.opacity = "1"
-      div.onmouseleave = () => div.querySelector(".chatMenuBtn").style.opacity = "0"
       div.onclick = (e) => {
-        if (e.target.closest(".chatMenuBtn")) return
+        if (e.target.closest(".deleteBtn")) return
         openChat(chat._id)
-        if (window.innerWidth < 900) closeSidebar && closeSidebar()
       }
       history.appendChild(div)
     })
@@ -713,106 +445,21 @@ async function loadSidebar() {
   }
 }
 
-function showChatMenu(e, chatId, chatTitle) {
-  e.stopPropagation()
-  document.querySelectorAll(".chatContextMenu").forEach(m => m.remove())
-  const menu = document.createElement("div")
-  menu.className = "chatContextMenu"
-  menu.style.cssText = `position:fixed;background:#0f0e00;border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:6px;z-index:9999;min-width:180px;box-shadow:0 8px 30px rgba(0,0,0,0.6);animation:menuIn 0.15s ease;`
-  const menuItems = [
-    { icon:"✏️", label:"Rename", action: () => renameChat(chatId, chatTitle) },
-    { icon:"📌", label:"Pin chat", action: () => pinChat(chatId) },
-    { icon:"📦", label:"Archive", action: () => archiveChat(chatId) },
-    { icon:"🗑️", label:"Delete", action: () => confirmDeleteChat(chatId), danger: true },
-  ]
-  menuItems.forEach(item => {
-    const btn = document.createElement("button")
-    btn.style.cssText = `width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:none;color:${item.danger ? "#ff4444" : "#665500"};cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;text-align:left;transition:background 0.15s;`
-    btn.innerHTML = `<span>${item.icon}</span>${item.label}`
-    btn.onmouseover = () => btn.style.background = item.danger ? "rgba(255,60,60,0.08)" : "rgba(255,215,0,0.06)"
-    btn.onmouseout = () => btn.style.background = "none"
-    btn.onclick = (ev) => { ev.stopPropagation(); menu.remove(); item.action() }
-    menu.appendChild(btn)
-  })
-  const rect = e.target.getBoundingClientRect()
-  menu.style.left = Math.min(rect.left, window.innerWidth - 200) + "px"
-  menu.style.top = rect.bottom + 4 + "px"
-  document.body.appendChild(menu)
-  setTimeout(() => document.addEventListener("click", () => menu.remove(), { once: true }), 50)
-}
 
-async function renameChat(chatId, currentTitle) {
-  const newTitle = prompt("Rename chat:", currentTitle)
-  if (!newTitle || newTitle === currentTitle) return
-  try {
-    await fetch("https://datta-ai-server.onrender.com/chat/" + chatId + "/rename", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: getToken(), title: newTitle })
-    })
-    loadSidebar()
-  } catch(e) { loadSidebar() }
-}
-
-function pinChat(chatId) {
-  const pins = JSON.parse(localStorage.getItem("datta_pinned") || "[]")
-  if (!pins.includes(chatId)) pins.unshift(chatId)
-  localStorage.setItem("datta_pinned", JSON.stringify(pins))
-  showToastMsg("📌 Chat pinned!")
-  loadSidebar()
-}
-
-function archiveChat(chatId) {
-  const archived = JSON.parse(localStorage.getItem("datta_archived") || "[]")
-  if (!archived.includes(chatId)) archived.push(chatId)
-  localStorage.setItem("datta_archived", JSON.stringify(archived))
-  showToastMsg("📦 Chat archived!")
-  loadSidebar()
-}
-
-function showToastMsg(msg) {
-  let t = document.getElementById("sidebarToast")
-  if (!t) {
-    t = document.createElement("div")
-    t.id = "sidebarToast"
-    t.style.cssText = "position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#0f0e00;border:1px solid rgba(0,255,136,0.3);border-radius:50px;padding:8px 18px;font-family:Rajdhani,sans-serif;font-size:12px;color:#00ff88;letter-spacing:1px;z-index:9999;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.5);"
-    document.body.appendChild(t)
-  }
-  t.textContent = msg
-  t.style.display = "block"
-  setTimeout(() => t.style.display = "none", 2500)
-}
-
-// ─── OPEN CHAT ─────────────────────────────────────────────────────────────────
+// ─── OPEN CHAT ────────────────────────────────────────────────────────────────
 async function openChat(chatId) {
   currentChatId = chatId
   chatBox.innerHTML = ""
   hideWelcome()
+
   const res = await fetch("https://datta-ai-server.onrender.com/chat/" + chatId + "?token=" + getToken())
   const messages = await res.json()
+
   messages.forEach(m => {
     if (m.role === "user") {
-      let displayMsg = m.content || ""
-      if (displayMsg.includes("[STRICT INSTRUCTION]") || displayMsg.includes("[MOOD INSTRUCTION") || displayMsg.includes("[RESPONSE LENGTH") || displayMsg.includes("[CURRENT DATE")) {
-        const lines = displayMsg.split("\n")
-        for (let i = lines.length - 1; i >= 0; i--) {
-          const line = lines[i].trim()
-          if (line && !line.startsWith("[STRICT") && !line.startsWith("[MOOD") && !line.startsWith("[RESPONSE") && !line.startsWith("[CURRENT") && !line.startsWith("[EVOLVED") && !line.startsWith("[SMART") && !line.startsWith("[PROJECT")) {
-            displayMsg = line
-            break
-          }
-        }
-        if (displayMsg.includes("[STRICT") || displayMsg.includes("[MOOD") || displayMsg.includes("[CURRENT")) {
-          const parts = m.content.split("\n\n")
-          const lastPart = parts[parts.length - 1].trim()
-          if (lastPart && !lastPart.startsWith("[")) {
-            displayMsg = lastPart
-          }
-        }
-      }
       chatBox.innerHTML += `
         <div class="messageRow userRow">
-          <div class="userBubble" style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:500;letter-spacing:0.3px;">${displayMsg}</div>
+          <div class="userBubble">${m.content}</div>
           <div class="avatar">🧑</div>
         </div>
       `
@@ -821,7 +468,7 @@ async function openChat(chatId) {
         <div class="messageRow">
           <div class="avatar">🤖</div>
           <div class="aiContent">
-            <div class="aiBubble" style="font-family:'Nunito',sans-serif;font-size:14px;letter-spacing:0.2px;">${marked.parse(m.content)}</div>
+            <div class="aiBubble">${marked.parse(m.content)}</div>
             <div class="aiActions">
               <button class="actionBtn" title="Copy" onclick="copyText(this)"><i data-lucide="copy"></i></button>
               <button class="actionBtn" title="Speak" onclick="speakText(this)"><i data-lucide="volume-2"></i></button>
@@ -836,87 +483,78 @@ async function openChat(chatId) {
       `
     }
   })
+
   scrollBottom()
   lucide.createIcons()
 }
 
-// ─── DELETE CHAT ───────────────────────────────────────────────────────────────
+
+// ─── DELETE CHAT ──────────────────────────────────────────────────────────────
 async function deleteChat(e, id) {
-  if (e) e.stopPropagation()
-  await fetch("https://datta-ai-server.onrender.com/chat/" + id + "?token=" + getToken(), { method: "DELETE" })
+  e.stopPropagation()
+  await fetch("https://datta-ai-server.onrender.com/chat/" + id + "?token=" + getToken(), {
+    method: "DELETE"
+  })
   loadSidebar()
 }
 
-function confirmDeleteChat(id) {
-  const existing = document.getElementById("deleteConfirmPopup")
-  if (existing) existing.remove()
-  const popup = document.createElement("div")
-  popup.id = "deleteConfirmPopup"
-  popup.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);"
-  popup.innerHTML = `
-    <div style="background:#0f0e00;border:1px solid rgba(255,60,60,0.2);border-radius:18px;padding:24px;max-width:300px;width:90%;text-align:center;">
-      <div style="font-size:32px;margin-bottom:10px">🗑️</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:#fff8e7;margin-bottom:8px">Delete Chat?</div>
-      <div style="font-size:13px;color:#665500;margin-bottom:20px;">This chat will be permanently deleted.</div>
-      <div style="display:flex;gap:8px;">
-        <button onclick="document.getElementById('deleteConfirmPopup').remove()"
-          style="flex:1;padding:11px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.1);border-radius:50px;color:#665500;font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;">Cancel</button>
-        <button onclick="deleteChat(null,'${id}');document.getElementById('deleteConfirmPopup').remove()"
-          style="flex:1;padding:11px;background:rgba(255,60,60,0.1);border:1px solid rgba(255,60,60,0.3);border-radius:50px;color:#ff4444;font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;">Delete</button>
-      </div>
-    </div>
-  `
-  document.body.appendChild(popup)
-  popup.onclick = (e) => { if (e.target === popup) popup.remove() }
-}
-window.confirmDeleteChat = confirmDeleteChat
 
-// ─── COPY / SPEAK ──────────────────────────────────────────────────────────────
+// ─── COPY TEXT ────────────────────────────────────────────────────────────────
 function copyText(btn) {
   const text = btn.closest(".aiContent").querySelector(".aiBubble").innerText
   navigator.clipboard.writeText(text)
 }
 
+
+// ─── SPEAK TEXT ───────────────────────────────────────────────────────────────
 function speakText(btn) {
   const text = btn.closest(".aiContent").querySelector(".aiBubble").innerText
   const speech = new SpeechSynthesisUtterance(text)
-  const detectedLang = detectTextLanguage(text)
-  speech.lang = detectedLang
-  const voices = speechSynthesis.getVoices()
-  const match = voices.find(v => v.lang.startsWith(detectedLang.split("-")[0]))
-  if (match) speech.voice = match
+  speech.lang = "en-US"
   speechSynthesis.speak(speech)
 }
 
-function stopVoice() { speechSynthesis.cancel() }
+
+// ─── STOP VOICE ───────────────────────────────────────────────────────────────
+function stopVoice() {
+  speechSynthesis.cancel()
+}
+
 
 // ─── REGENERATE ───────────────────────────────────────────────────────────────
 async function regenerateFrom(btn) {
   const row = btn.closest(".messageRow")
   const prev = row.previousElementSibling
   if (!prev) return
+
   const text = prev.querySelector(".userBubble").innerText
   const aiBubble = row.querySelector(".aiBubble")
   aiBubble.innerHTML = `<span class="stream"></span>`
   const span = aiBubble.querySelector(".stream")
+
   controller = new AbortController()
-  const formData = new FormData()
-  const moodPrefix = buildMoodPrefix()
-  formData.append("message", moodPrefix ? moodPrefix + text : text)
-  formData.append("chatId", currentChatId || "")
-  formData.append("token", getToken())
-  formData.append("language", localStorage.getItem("datta_language") || "English")
-  if (window.dattaMoodLabel) formData.append("mood", window.dattaMoodLabel)
+
   const res = await fetch("https://datta-ai-server.onrender.com/chat", {
-    method: "POST", signal: controller.signal, body: formData
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    signal: controller.signal,
+    body: JSON.stringify({
+      message: text,
+      title: text.substring(0, 40),
+      chatId: currentChatId
+    })
   })
+
   const reader = res.body.getReader()
   const decoder = new TextDecoder()
   let streamText = ""
+
   while (true) {
     const { done, value } = await reader.read()
     if (done) break
+
     const chunk = decoder.decode(value)
+
     if (chunk.includes("CHATID")) {
       const parts = chunk.split("CHATID")
       streamText += parts[0]
@@ -924,62 +562,29 @@ async function regenerateFrom(btn) {
     } else {
       streamText += chunk
     }
+
     span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>'
     scrollBottom()
   }
+
   span.innerHTML = marked.parse(streamText)
   lucide.createIcons()
 }
 
-// ─── MIC / VOICE INPUT ────────────────────────────────────────────────────────
-let inlineListening = false
-let inlineRecognition = null
 
+// ─── VOICE INPUT ──────────────────────────────────────────────────────────────
 function startAssistant() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-  if (!SpeechRecognition) { openVoiceAssistant(); return }
-  if (inlineListening) { stopInlineListening(); return }
-  const input = document.getElementById("message")
-  const micBtn = document.getElementById("micBtn")
-  inlineListening = true
-  if (micBtn) { micBtn.style.color = "#ff4444"; micBtn.style.background = "rgba(255,60,60,0.1)"; micBtn.style.borderColor = "rgba(255,60,60,0.3)"; micBtn.title = "Listening... (click to stop)" }
-  if (input) { input.placeholder = "🎤 Listening..."; input.style.borderColor = "rgba(255,60,60,0.3)" }
-  inlineRecognition = new SpeechRecognition()
-  inlineRecognition.lang = getLangCode(localStorage.getItem("datta_language") || "English")
-  inlineRecognition.continuous = false
-  inlineRecognition.interimResults = true
-  inlineRecognition.maxAlternatives = 1
-  inlineRecognition.onresult = function(e) {
-    let interim = "", final = ""
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) final += e.results[i][0].transcript
-      else interim += e.results[i][0].transcript
-    }
-    if (input) input.value = final || interim
+  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)()
+  recognition.lang = "en-US"
+  recognition.start()
+  recognition.onresult = (e) => {
+    document.getElementById("message").value = e.results[0][0].transcript
+    send()
   }
-  inlineRecognition.onend = function() {
-    stopInlineListening()
-    const text = document.getElementById("message")?.value.trim()
-    if (text) setTimeout(() => send(), 300)
-  }
-  inlineRecognition.onerror = function(e) {
-    stopInlineListening()
-    if (input) input.placeholder = "Message Datta AI..."
-  }
-  inlineRecognition.start()
 }
 
-function stopInlineListening() {
-  inlineListening = false
-  const micBtn = document.getElementById("micBtn")
-  const input = document.getElementById("message")
-  if (inlineRecognition) { try { inlineRecognition.stop() } catch(e) {}; inlineRecognition = null }
-  if (micBtn) { micBtn.style.color = ""; micBtn.style.background = ""; micBtn.style.borderColor = ""; micBtn.title = "Voice" }
-  if (input) { input.placeholder = "Message Datta AI..."; input.style.borderColor = "" }
-}
-window.stopInlineListening = stopInlineListening
 
-// ─── TOGGLE / SCROLL / WELCOME ────────────────────────────────────────────────
+// ─── TOGGLE MENU ─────────────────────────────────────────────────────────────
 function toggleMenu(e, id) {
   e.stopPropagation()
   document.querySelectorAll(".chatMenu").forEach(m => m.style.display = "none")
@@ -987,8 +592,12 @@ function toggleMenu(e, id) {
   if (menu) menu.style.display = "block"
 }
 
-window.onclick = () => { document.querySelectorAll(".chatMenu").forEach(m => m.style.display = "none") }
+window.onclick = () => {
+  document.querySelectorAll(".chatMenu").forEach(m => m.style.display = "none")
+}
 
+
+// ─── SCROLL ───────────────────────────────────────────────────────────────────
 function scrollBottom() {
   if (userScrolledUp) return
   chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: "smooth" })
@@ -1001,30 +610,36 @@ chatBox.addEventListener("scroll", () => {
 })
 
 if (scrollBtn) {
-  scrollBtn.addEventListener("click", () => { userScrolledUp = false; scrollBottom() })
+  scrollBtn.addEventListener("click", () => {
+    userScrolledUp = false
+    scrollBottom()
+  })
 }
 
+
+// ─── WELCOME HELPERS ──────────────────────────────────────────────────────────
 function hideWelcome() {
-  const cw = document.querySelector(".chatWrapper")
-  if (cw) cw.style.pointerEvents = "auto"
   const w = document.getElementById("welcomeScreen")
   if (w) w.style.display = "none"
 }
 
 function showWelcome() {
-  const cw = document.querySelector(".chatWrapper")
-  if (cw) cw.style.pointerEvents = "none"
   const w = document.getElementById("welcomeScreen")
   if (w) w.style.display = "block"
 }
 
+
+// ─── FILL PROMPT ──────────────────────────────────────────────────────────────
 function fillPrompt(text) {
   document.getElementById("message").value = text
   hideWelcome()
   send()
 }
+
 window.fillPrompt = fillPrompt
 
+
+// ─── SUGGEST BUTTONS ──────────────────────────────────────────────────────────
 document.querySelectorAll(".suggestBtn").forEach(btn => {
   btn.addEventListener("click", () => {
     const text = btn.getAttribute("data-text")
@@ -1034,16 +649,26 @@ document.querySelectorAll(".suggestBtn").forEach(btn => {
   })
 })
 
-document.getElementById("message").addEventListener("keydown", function(e) {
-  if (e.key === "Enter") { e.preventDefault(); send() }
+
+// ─── ENTER KEY ────────────────────────────────────────────────────────────────
+document.getElementById("message").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") {
+    e.preventDefault()
+    send()
+  }
 })
 
+
+// ─── SIDEBAR TOGGLE ───────────────────────────────────────────────────────────
 function toggleSidebar() {
   const sidebar = document.querySelector(".sidebar")
   sidebar.classList.toggle("show")
 }
+
 window.toggleSidebar = toggleSidebar
 
+
+// ─── SAVE CHAT TITLE (local fallback) ────────────────────────────────────────
 function saveChatTitle(title) {
   const history = document.getElementById("history")
   if (!history) return
@@ -1053,6 +678,8 @@ function saveChatTitle(title) {
   history.prepend(div)
 }
 
+
+// ─── SEARCH CHATS ────────────────────────────────────────────────────────────
 function searchChats() {
   const query = document.getElementById("search").value.toLowerCase()
   document.querySelectorAll(".chatItem").forEach(item => {
@@ -1061,38 +688,54 @@ function searchChats() {
   })
 }
 
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
 window.send = send
 loadSidebar()
 
+// SHOW SIDEBAR SECTION
 function showSection(name) {
+  // Hide all sections
   document.querySelectorAll(".sidebarSection").forEach(s => s.style.display = "none")
+  // Show selected
   const el = document.getElementById("section-" + name)
   if (el) el.style.display = "flex"
+
+  // Update active nav
   document.querySelectorAll(".navItem").forEach(b => b.classList.remove("active"))
   const btns = document.querySelectorAll(".navItem")
   const idx = ["chats","projects","artifacts"].indexOf(name)
   if (btns[idx]) btns[idx].classList.add("active")
+
+  // Show/hide recents label and search
   const showRecents = name === "chats"
   const recentsLabel = document.getElementById("recentsLabel")
   const search = document.getElementById("search")
   if (recentsLabel) recentsLabel.style.display = showRecents ? "block" : "none"
   if (search) search.style.display = showRecents ? "block" : "none"
 }
+
 window.showSection = showSection
 
+// LOGOUT
 function logout() {
   localStorage.removeItem("datta_token")
   localStorage.removeItem("datta_user")
   window.location.href = "login.html"
 }
+
 window.logout = logout
 
-// ── SETTINGS ──────────────────────────────────────────────────────────────────
+// ── SETTINGS ─────────────────────────────────────────────────────────────────
+
 function openSettings() {
   event.stopPropagation()
   const modal = document.getElementById("settingsModal")
   if (!modal) return
+
   modal.classList.add("show")
+
+  // Reset to profile tab and scroll top
   setTimeout(function() {
     switchSettingsTab("profile")
     const box = modal.querySelector(".modalBox")
@@ -1135,11 +778,17 @@ function loadSettingsUI() {
   } catch(e) {}
   const usernameInput = document.getElementById("newUsername")
   if (usernameInput) usernameInput.placeholder = user.username || "Enter new username"
+
+  // Load theme
   const theme = localStorage.getItem("datta_theme") || "dark"
   setTheme(theme, true)
+
+  // Load language
   const lang = localStorage.getItem("datta_language") || "English"
   const langSelect = document.getElementById("aiLanguage")
   if (langSelect) langSelect.value = lang
+
+  // Load notification settings
   const notifSettings = JSON.parse(localStorage.getItem("datta_notif") || "{}")
   const soundToggle = document.getElementById("soundToggle")
   const notifToggle = document.getElementById("notifToggle")
@@ -1149,10 +798,12 @@ function loadSettingsUI() {
   if (streamToggle) streamToggle.checked = notifSettings.stream !== false
 }
 
+// CHANGE USERNAME
 async function changeUsername() {
   const newUsername = document.getElementById("newUsername").value.trim()
   if (!newUsername) return showSettingsMsg("Please enter a username", "error")
   if (newUsername.length < 3) return showSettingsMsg("Username must be at least 3 characters", "error")
+
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/auth/update-username", {
       method: "POST",
@@ -1161,24 +812,34 @@ async function changeUsername() {
     })
     const data = await res.json()
     if (!res.ok) return showSettingsMsg(data.error || "Failed to update", "error")
+
+    // Update local storage
     const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
     user.username = newUsername
     localStorage.setItem("datta_user", JSON.stringify(user))
+
+    // Update sidebar
     const nameEl = document.querySelector(".profileName")
     const avatarEl = document.querySelector(".profileAvatar")
     if (nameEl) nameEl.textContent = newUsername
     if (avatarEl) avatarEl.textContent = newUsername[0].toUpperCase()
+
     showSettingsMsg("Username updated successfully!", "success")
-  } catch(e) { showSettingsMsg("Server error. Try again.", "error") }
+  } catch (e) {
+    showSettingsMsg("Server error. Try again.", "error")
+  }
 }
 
+// CHANGE PASSWORD
 async function changePassword() {
   const current = document.getElementById("currentPassword").value
   const newPass = document.getElementById("newPassword").value
   const confirm = document.getElementById("confirmPassword").value
+
   if (!current || !newPass || !confirm) return showSettingsMsg("Please fill all fields", "error")
   if (newPass.length < 6) return showSettingsMsg("New password must be at least 6 characters", "error")
   if (newPass !== confirm) return showSettingsMsg("Passwords do not match", "error")
+
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/auth/change-password", {
       method: "POST",
@@ -1187,13 +848,17 @@ async function changePassword() {
     })
     const data = await res.json()
     if (!res.ok) return showSettingsMsg(data.error || "Failed to change password", "error")
+
     document.getElementById("currentPassword").value = ""
     document.getElementById("newPassword").value = ""
     document.getElementById("confirmPassword").value = ""
     showSettingsMsg("Password changed successfully!", "success")
-  } catch(e) { showSettingsMsg("Server error. Try again.", "error") }
+  } catch (e) {
+    showSettingsMsg("Server error. Try again.", "error")
+  }
 }
 
+// SET THEME
 function setTheme(theme, silent) {
   localStorage.setItem("datta_theme", theme)
   if (theme === "light") {
@@ -1208,6 +873,7 @@ function setTheme(theme, silent) {
   if (!silent) showSettingsMsg("Theme changed to " + theme + " mode!", "success")
 }
 
+// SET FONT SIZE
 function setFontSize(size) {
   document.querySelectorAll(".fontBtn").forEach(b => b.classList.remove("active"))
   event.target.classList.add("active")
@@ -1218,12 +884,14 @@ function setFontSize(size) {
   showSettingsMsg("Font size set to " + size, "success")
 }
 
+// SAVE LANGUAGE
 function saveLanguage() {
   const lang = document.getElementById("aiLanguage").value
   localStorage.setItem("datta_language", lang)
   showSettingsMsg("AI will now respond in " + lang + "!", "success")
 }
 
+// SAVE NOTIFICATION SETTINGS
 function saveNotifSettings() {
   const settings = {
     sound: document.getElementById("soundToggle").checked,
@@ -1233,23 +901,33 @@ function saveNotifSettings() {
   localStorage.setItem("datta_notif", JSON.stringify(settings))
 }
 
+// DELETE ALL CHATS
 async function deleteAllChats() {
   if (!confirm("Are you sure? This will delete ALL your chats permanently!")) return
+
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/chats/all?token=" + getToken(), { method: "DELETE" })
+    const res = await fetch("https://datta-ai-server.onrender.com/chats/all?token=" + getToken(), {
+      method: "DELETE"
+    })
     if (!res.ok) return showSettingsMsg("Failed to delete chats", "error")
+
     chatBox.innerHTML = ""
     currentChatId = null
     showWelcome()
     loadSidebar()
     showSettingsMsg("All chats deleted!", "success")
-  } catch(e) { showSettingsMsg("Server error. Try again.", "error") }
+  } catch (e) {
+    showSettingsMsg("Server error. Try again.", "error")
+  }
 }
 
+// DELETE ACCOUNT
 async function deleteAccount() {
   const password = document.getElementById("deleteAccountPassword").value
   if (!password) return showSettingsMsg("Enter your password to confirm", "error")
+
   if (!confirm("This will PERMANENTLY delete your account. Are you absolutely sure?")) return
+
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/auth/delete-account", {
       method: "DELETE",
@@ -1258,14 +936,20 @@ async function deleteAccount() {
     })
     const data = await res.json()
     if (!res.ok) return showSettingsMsg(data.error || "Failed to delete account", "error")
+
     localStorage.clear()
     window.location.href = "login.html"
-  } catch(e) { showSettingsMsg("Server error. Try again.", "error") }
+  } catch (e) {
+    showSettingsMsg("Server error. Try again.", "error")
+  }
 }
 
+// Apply saved theme on load
 ;(function() {
   const theme = localStorage.getItem("datta_theme") || "dark"
   if (theme === "light") document.body.classList.add("light")
+
+  // Apply saved language to system prompt
   const lang = localStorage.getItem("datta_language")
   if (lang) window.dattaLanguage = lang
 })()
@@ -1282,24 +966,38 @@ window.saveNotifSettings = saveNotifSettings
 window.deleteAllChats = deleteAllChats
 window.deleteAccount = deleteAccount
 
+// LIKE / DISLIKE
 function likeMsg(btn) {
   const wasActive = btn.classList.contains("active")
   const row = btn.closest(".aiActions")
-  row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => { b.classList.remove("active"); b.style.color = "" })
-  if (!wasActive) { btn.classList.add("active"); btn.style.color = "var(--accent)" }
+  row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => {
+    b.classList.remove("active")
+    b.style.color = ""
+  })
+  if (!wasActive) {
+    btn.classList.add("active")
+    btn.style.color = "#00ff88"
+  }
 }
 
 function dislikeMsg(btn) {
   const wasActive = btn.classList.contains("active")
   const row = btn.closest(".aiActions")
-  row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => { b.classList.remove("active"); b.style.color = "" })
-  if (!wasActive) { btn.classList.add("active"); btn.style.color = "#ff4444" }
+  row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => {
+    b.classList.remove("active")
+    b.style.color = ""
+  })
+  if (!wasActive) {
+    btn.classList.add("active")
+    btn.style.color = "#ff4444"
+  }
 }
 
 window.likeMsg = likeMsg
 window.dislikeMsg = dislikeMsg
 
-// ── VOICE ASSISTANT ───────────────────────────────────────────────────────────
+// ── VOICE ASSISTANT (SIRI-LIKE) ──────────────────────────────────────────────
+
 let voiceRecognition = null
 let voiceSynth = window.speechSynthesis
 let isListening = false
@@ -1311,17 +1009,11 @@ function openVoiceAssistant() {
   const overlay = document.getElementById("voiceOverlay")
   if (overlay) overlay.classList.add("show")
   setVoiceStatus("Tap the mic to speak", "idle")
-  const moodGreets = {
-    focused: "Ready to help you get things done!",
-    happy: "Hey! Happy to chat with you!",
-    stressed: "Hey, take a deep breath. I am here for you.",
-    creative: "Let us create something amazing together!",
-    lazy: "sup. what do you need.",
-    curious: "What shall we explore today?"
-  }
-  const savedMood = localStorage.getItem("datta_mood")
-  const greeting = (savedMood && moodGreets[savedMood]) || "Hello! I am Datta AI. How can I help you today?"
-  setTimeout(() => { speakText2(greeting) }, 500)
+
+  // Greet user
+  setTimeout(() => {
+    speakText2("Hello! I am Datta AI. How can I help you today?")
+  }, 500)
 }
 
 function closeVoiceAssistant() {
@@ -1336,13 +1028,16 @@ function setVoiceStatus(text, mode) {
   const status = document.getElementById("voiceStatus")
   const orb = document.getElementById("voiceOrb")
   const micBtn = document.getElementById("voiceMicBtn")
+
   if (status) status.textContent = text
   if (orb) {
     orb.classList.remove("listening", "speaking")
     if (mode === "listening") orb.classList.add("listening")
     if (mode === "speaking") orb.classList.add("speaking")
   }
-  if (micBtn) micBtn.classList.toggle("active", mode === "listening")
+  if (micBtn) {
+    micBtn.classList.toggle("active", mode === "listening")
+  }
 }
 
 function setVoiceText(text) {
@@ -1351,7 +1046,11 @@ function setVoiceText(text) {
 }
 
 function toggleVoiceListening() {
-  if (isListening) { stopListening() } else { startListening() }
+  if (isListening) {
+    stopListening()
+  } else {
+    startListening()
+  }
 }
 
 function startListening() {
@@ -1359,63 +1058,102 @@ function startListening() {
     setVoiceText("Speech recognition not supported in this browser.")
     return
   }
+
   stopSpeaking()
+
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
   voiceRecognition = new SpeechRecognition()
-  voiceRecognition.lang = getLangCode(localStorage.getItem("datta_language") || "English")
+  voiceRecognition.lang = "en-US"
   voiceRecognition.continuous = false
   voiceRecognition.interimResults = true
-  voiceRecognition.onstart = () => { isListening = true; setVoiceStatus("Listening...", "listening"); setVoiceText("") }
+
+  voiceRecognition.onstart = () => {
+    isListening = true
+    setVoiceStatus("Listening...", "listening")
+    setVoiceText("")
+  }
+
   voiceRecognition.onresult = (e) => {
-    let interim = "", final = ""
+    let interim = ""
+    let final = ""
     for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) { final += e.results[i][0].transcript }
-      else { interim += e.results[i][0].transcript }
+      if (e.results[i].isFinal) {
+        final += e.results[i][0].transcript
+      } else {
+        interim += e.results[i][0].transcript
+      }
     }
     setVoiceText(final || interim)
-    if (final) { stopListening(); processVoiceQuery(final) }
+
+    if (final) {
+      stopListening()
+      processVoiceQuery(final)
+    }
   }
-  voiceRecognition.onerror = (e) => { isListening = false; setVoiceStatus("Error: " + e.error + ". Try again.", "idle") }
-  voiceRecognition.onend = () => { isListening = false; if (voiceActive) setVoiceStatus("Tap to speak", "idle") }
+
+  voiceRecognition.onerror = (e) => {
+    console.error("Voice error:", e.error)
+    isListening = false
+    setVoiceStatus("Error: " + e.error + ". Try again.", "idle")
+  }
+
+  voiceRecognition.onend = () => {
+    isListening = false
+    if (voiceActive) setVoiceStatus("Tap to speak", "idle")
+  }
+
   voiceRecognition.start()
 }
 
 function stopListening() {
   isListening = false
-  if (voiceRecognition) { try { voiceRecognition.stop() } catch(e) {}; voiceRecognition = null }
+  if (voiceRecognition) {
+    try { voiceRecognition.stop() } catch(e) {}
+    voiceRecognition = null
+  }
   setVoiceStatus("Tap to speak", "idle")
 }
 
 async function processVoiceQuery(query) {
   if (!query.trim()) return
+
   setVoiceStatus("Thinking...", "speaking")
   setVoiceText(query)
+
+  // Check for close commands
   const closeCmds = ["close", "stop", "exit", "bye", "goodbye", "dismiss"]
   if (closeCmds.some(c => query.toLowerCase().includes(c))) {
     speakText2("Goodbye! Have a great day!")
     setTimeout(closeVoiceAssistant, 2000)
     return
   }
+
   try {
     const formData = new FormData()
-    const moodPrefix = buildMoodPrefix()
-    const voiceNeedsSearch = searchTriggers && searchTriggers.some(t => query.toLowerCase().includes(t))
-    const voiceMsg = (moodPrefix ? moodPrefix + query : query) +
-      (voiceNeedsSearch ? "\n\n[AGENT INSTRUCTION]: Search the web for current information. Today is " + new Date().toLocaleDateString("en-IN") + "." : "")
-    formData.append("message", voiceMsg)
+    formData.append("message", query)
     formData.append("chatId", currentChatId || "")
     formData.append("token", getToken())
     formData.append("language", localStorage.getItem("datta_language") || "English")
     formData.append("voice", "true")
-    if (voiceNeedsSearch) { formData.append("search", "true"); formData.append("agent", "true") }
-    if (window.dattaMoodLabel) formData.append("mood", window.dattaMoodLabel)
-    const res = await fetch("https://datta-ai-server.onrender.com/chat", { method: "POST", body: formData })
-    if (!res.ok) { speakText2("Sorry, I encountered an error. Please try again."); setVoiceStatus("Error. Tap to try again.", "idle"); return }
+
+    const res = await fetch("https://datta-ai-server.onrender.com/chat", {
+      method: "POST",
+      body: formData
+    })
+
+    if (!res.ok) {
+      speakText2("Sorry, I encountered an error. Please try again.")
+      setVoiceStatus("Error. Tap to try again.", "idle")
+      return
+    }
+
     const chatIdFromHeader = res.headers.get("x-chat-id")
     if (!currentChatId && chatIdFromHeader) currentChatId = chatIdFromHeader
+
     const reader = res.body.getReader()
     const decoder = new TextDecoder()
     let fullText = ""
+
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
@@ -1424,8 +1162,12 @@ async function processVoiceQuery(query) {
         const parts = chunk.split("CHATID")
         fullText += parts[0]
         currentChatId = parts[1]
-      } else { fullText += chunk }
+      } else {
+        fullText += chunk
+      }
     }
+
+    // Clean text for speaking (remove markdown)
     const cleanText = fullText
       .replace(/!\[.*?\]\(.*?\)/g, "I generated an image for you.")
       .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
@@ -1434,14 +1176,31 @@ async function processVoiceQuery(query) {
       .replace(/\*/g, "")
       .replace(/`/g, "")
       .trim()
+
     setVoiceText(cleanText.substring(0, 100) + (cleanText.length > 100 ? "..." : ""))
-    const aiEmoji = window.dattaMoodEmoji || "🤖"
-    chatBox.innerHTML += `<div class="messageRow userRow"><div class="userBubble">🎤 ${query}</div><div class="avatar">🧑</div></div>`
-    chatBox.innerHTML += `<div class="messageRow"><div class="avatar">${aiEmoji}</div><div class="aiContent"><div class="aiBubble">${marked.parse(fullText.split("CHATID")[0])}</div></div></div>`
+
+    // Add to chat UI
+    chatBox.innerHTML += `
+      <div class="messageRow userRow">
+        <div class="userBubble">🎤 ${query}</div>
+        <div class="avatar">🧑</div>
+      </div>
+    `
+    chatBox.innerHTML += `
+      <div class="messageRow">
+        <div class="avatar">🤖</div>
+        <div class="aiContent">
+          <div class="aiBubble">${marked.parse(fullText.split("CHATID")[0])}</div>
+        </div>
+      </div>
+    `
     chatBox.scrollTop = chatBox.scrollHeight
     loadSidebar()
+
+    // Speak the response
     speakText2(cleanText)
-  } catch(err) {
+
+  } catch (err) {
     console.error("Voice query error:", err)
     speakText2("Sorry, something went wrong.")
     setVoiceStatus("Error. Tap to try again.", "idle")
@@ -1451,26 +1210,43 @@ async function processVoiceQuery(query) {
 function speakText2(text) {
   if (!voiceSynth) return
   stopSpeaking()
+
   isSpeaking = true
   setVoiceStatus("Speaking...", "speaking")
+
   const utterance = new SpeechSynthesisUtterance(text)
-  const detectedLang2 = detectTextLanguage(text)
-  utterance.lang = detectedLang2
+  utterance.lang = "en-US"
   utterance.rate = 0.95
   utterance.pitch = 1.0
   utterance.volume = 1.0
+
+  // Try to get a good voice
   const voices = voiceSynth.getVoices()
-  const langCode = detectedLang2.split("-")[0]
-  const preferred = voices.find(v => v.lang === detectedLang2 && !v.name.includes("Male"))
-    || voices.find(v => v.lang.startsWith(langCode) && !v.name.includes("Male"))
-    || voices.find(v => v.lang.startsWith(langCode))
-    || voices.find(v => v.name.includes("Google") || v.name.includes("Samantha"))
+  const preferred = voices.find(v =>
+    v.name.includes("Google") ||
+    v.name.includes("Samantha") ||
+    v.name.includes("Karen") ||
+    v.name.includes("Female") ||
+    (v.lang === "en-US" && !v.name.includes("Male"))
+  )
   if (preferred) utterance.voice = preferred
+
   utterance.onend = () => {
     isSpeaking = false
-    if (voiceActive) { setVoiceStatus("Tap to speak", "idle"); setTimeout(() => { if (voiceActive) startListening() }, 800) }
+    if (voiceActive) {
+      setVoiceStatus("Tap to speak", "idle")
+      // Auto listen after speaking
+      setTimeout(() => {
+        if (voiceActive) startListening()
+      }, 800)
+    }
   }
-  utterance.onerror = () => { isSpeaking = false; setVoiceStatus("Tap to speak", "idle") }
+
+  utterance.onerror = () => {
+    isSpeaking = false
+    setVoiceStatus("Tap to speak", "idle")
+  }
+
   voiceSynth.speak(utterance)
 }
 
@@ -1479,12 +1255,16 @@ function stopSpeaking() {
   isSpeaking = false
 }
 
-window.startAssistant = startAssistant
+// Update the assistant button to open voice overlay
+window.startAssistant = function() {
+  openVoiceAssistant()
+}
+
 window.openVoiceAssistant = openVoiceAssistant
 window.closeVoiceAssistant = closeVoiceAssistant
 window.toggleVoiceListening = toggleVoiceListening
 
-// VERSION NAMES
+// VERSION NAMES based on plan
 const planVersions = {
   free:       { name: "Arambh", sanskrit: "आरंभ", version: "v1.0", emoji: "🌱" },
   starter:    { name: "Arambh", sanskrit: "आरंभ", version: "v1.0", emoji: "🌱" },
@@ -1503,84 +1283,44 @@ async function loadUserVersion() {
     const data = await res.json()
     const plan = data.plan || "free"
     const v = planVersions[plan] || planVersions.free
+
+    // Update version tag in sidebar
     const tag = document.getElementById("versionTag")
     if (tag) tag.textContent = "DATTA AI " + v.version + " · " + v.name.toUpperCase()
+
+    // Update profile subtitle
     const sub = document.querySelector(".profileSub")
     if (sub) sub.textContent = v.emoji + " " + v.name + " " + v.sanskrit
+
+    // Update upgrade button
     const upgradeBtn = document.querySelector(".upgradeBtn div div:first-child")
     if (upgradeBtn && plan === "free") {
       upgradeBtn.textContent = "Upgrade to Agni 🔥"
     } else if (upgradeBtn) {
       upgradeBtn.textContent = v.emoji + " " + v.name + " Plan"
     }
+
+    // Store plan
     localStorage.setItem("datta_plan", plan)
-  } catch(e) { console.log("Version load error:", e.message) }
+
+  } catch(e) {
+    console.log("Version load error:", e.message)
+  }
 }
 
+// Load version on startup
 window.addEventListener("DOMContentLoaded", function() {
   setTimeout(loadUserVersion, 1000)
 })
 
-// ═══════════════════════════════════════════════════════════════════════════════
-//  PROJECT CHAT INTEGRATION
-// ═══════════════════════════════════════════════════════════════════════════════
-
-var activeProjectId = null
-var activeProjectChatId = null
-
-window.addEventListener('datta:openProjectChat', function(e) {
-  var detail = e.detail || {}
-  activeProjectId = detail.projectId
-  activeProjectChatId = detail.chatId
-
-  var proj = window.DattaProjects ? window.DattaProjects.getProject(activeProjectId) : null
-  if (proj) {
-    var existingChat = (proj.chats || []).find(function(c) {
-      return String(c.id) === String(activeProjectChatId)
-    })
-    if (existingChat && existingChat.serverChatId) {
-      openChat(existingChat.serverChatId)
-      showProjectBanner(proj.name, activeProjectId)
-      return
-    }
+// SUGGESTION CHIPS
+function useChip(btn) {
+  const input = document.getElementById("message")
+  if (input) {
+    input.value = btn.textContent.replace(/^[^\s]+\s/, "")
+    input.focus()
+    // Auto send
+    send()
   }
-
-  currentChatId = null
-  chatBox.innerHTML = ''
-  document.body.classList.remove('chat-started')
-  hideWelcome()
-
-  var projName = proj ? proj.name : 'Project'
-  showProjectBanner(projName, activeProjectId)
-
-  if (window.innerWidth < 900 && typeof closeSidebar === 'function') closeSidebar()
-})
-
-function showProjectBanner(projName, projectId) {
-  var existing = document.getElementById('projectChatBanner')
-  if (existing) existing.remove()
-  var banner = document.createElement('div')
-  banner.id = 'projectChatBanner'
-  banner.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 16px;flex-shrink:0;background:rgba(255,215,0,0.04);border-bottom:1px solid rgba(255,215,0,0.08);font-family:\'Rajdhani\',sans-serif;'
-  banner.innerHTML =
-    '<span style="font-size:14px;">📁</span>' +
-    '<span style="color:#ffd700;font-size:11px;letter-spacing:1.5px;font-weight:600;">' + projName.toUpperCase() + '</span>' +
-    '<span style="color:#332200;font-size:11px;letter-spacing:1.5px;"> · PROJECT CHAT</span>' +
-    '<button onclick="exitProjectChat()" style="margin-left:auto;background:none;border:none;color:#443300;cursor:pointer;font-size:10px;letter-spacing:1px;padding:3px 12px;border-radius:20px;border:1px solid rgba(255,215,0,0.08);transition:all .2s;font-family:\'Rajdhani\',sans-serif;" onmouseover="this.style.color=\'#ffd700\';this.style.borderColor=\'rgba(255,215,0,0.3)\'" onmouseout="this.style.color=\'#443300\';this.style.borderColor=\'rgba(255,215,0,0.08)\'">✕ EXIT</button>'
-  chatBox.parentElement.insertBefore(banner, chatBox)
 }
-
-function exitProjectChat() {
-  activeProjectId = null
-  activeProjectChatId = null
-  var b = document.getElementById('projectChatBanner')
-  if (b) b.remove()
-  newChat()
-}
-window.exitProjectChat = exitProjectChat
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// NOTE: OTP logic has been moved entirely to login.html
-// The /auth/send-otp and /auth/verify-otp endpoints are called there.
-// Do NOT add OTP code here — it does not belong in chat.js.
-// ═══════════════════════════════════════════════════════════════════════════════
+window.useChip = useChip
