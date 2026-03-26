@@ -135,7 +135,7 @@ body { background:#0a0a0a; color:white; min-height:100vh; }
       <span class="toggleSlider"></span>
     </label>
     <span class="billingLabel" id="yearlyLabel">Yearly</span>
-    <span class="saveBadge">Save 40%</span>
+    <span class="saveBadge" id="saveBadge">Save up to 58%</span>
   </div>
 </div>
 
@@ -169,11 +169,12 @@ body { background:#0a0a0a; color:white; min-height:100vh; }
     <div class="planDesc">For regular users who need more</div>
     <div class="planPrice">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-        <span class="priceAmount" id="proPrice">₹99</span>
+        <span class="priceAmount" id="proPrice">Rs.99</span>
         <span style="background:#ff440022;color:#ff6644;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700;border:1px solid #ff440044;">TRIAL</span>
       </div>
-      <span class="pricePeriod">first month · then ₹1000/mo</span>
-      <div class="priceYearly" id="proYearly">₹5,000/year (save 58%)</div>
+      <span class="pricePeriod" id="proPeriod">/month</span>
+      <div style="font-size:11px;color:#888;margin-top:2px;">First month trial · then Rs.1,000/mo</div>
+      <div class="savingLine" style="display:none;font-size:12px;color:#00ff88;margin-top:4px;" id="proSaving"></div>
     </div>
     <ul class="planFeatureList">
       <li><span class="fi yes">✓</span><span>100 messages per 4 hours</span></li>
@@ -194,9 +195,9 @@ body { background:#0a0a0a; color:white; min-height:100vh; }
     <div class="planName">Max</div>
     <div class="planDesc">Best for power users & creators</div>
     <div class="planPrice">
-      <span class="priceAmount" id="maxPrice">₹2,500</span>
-      <span class="pricePeriod">/month</span>
-      <div class="priceYearly" id="maxYearly">₹29,999/year (save 50%)</div>
+      <span class="priceAmount" id="maxPrice">Rs.2,500</span>
+      <span class="pricePeriod" id="maxPeriod">/month</span>
+      <div class="savingLine" style="display:none;font-size:12px;color:#00ff88;margin-top:4px;" id="maxSaving"></div>
     </div>
     <ul class="planFeatureList">
       <li><span class="fi yes">✓</span><span>200 messages per 3 hours</span></li>
@@ -216,9 +217,9 @@ body { background:#0a0a0a; color:white; min-height:100vh; }
     <div class="planName">Ultra Max</div>
     <div class="planDesc">For teams & businesses</div>
     <div class="planPrice">
-      <span class="priceAmount" id="ultramaxPrice">₹5,000</span>
-      <span class="pricePeriod">/month</span>
-      <div class="priceYearly" id="ultramaxYearly">₹59,999/year (save 50%)</div>
+      <span class="priceAmount" id="ultramaxPrice">Rs.5,000</span>
+      <span class="pricePeriod" id="ultramaxPeriod">/month</span>
+      <div class="savingLine" style="display:none;font-size:12px;color:#00ff88;margin-top:4px;" id="ultramaxSaving"></div>
     </div>
     <ul class="planFeatureList">
       <li><span class="fi yes">✓</span><span>Unlimited everything</span></li>
@@ -356,13 +357,31 @@ function toggleBilling() {
   isYearly = document.getElementById("billingToggle").checked
   document.getElementById("monthlyLabel").classList.toggle("active", !isYearly)
   document.getElementById("yearlyLabel").classList.toggle("active", isYearly)
-  const period = isYearly ? "yearly" : "monthly"
-  const p = prices[period]
-  const fmt = n => n >= 1000 ? "Rs." + n.toLocaleString("en-IN") : "Rs." + n
-  document.getElementById("proPrice").textContent = fmt(p.pro)
-  document.getElementById("maxPrice").textContent = fmt(p.max)
-  document.getElementById("ultramaxPrice").textContent = fmt(p.ultramax)
-  document.querySelectorAll(".priceYearly").forEach(el => el.style.display = isYearly ? "block" : "none")
+
+  const fmt = n => "Rs." + n.toLocaleString("en-IN")
+
+  if (isYearly) {
+    // Show yearly prices with /year
+    document.getElementById("proPrice").textContent = fmt(prices.yearly.pro)
+    document.getElementById("maxPrice").textContent = fmt(prices.yearly.max)
+    document.getElementById("ultramaxPrice").textContent = fmt(prices.yearly.ultramax)
+    document.getElementById("proPeriod").textContent = "/year"
+    document.getElementById("maxPeriod").textContent = "/year"
+    document.getElementById("ultramaxPeriod").textContent = "/year"
+    document.getElementById("proSaving").textContent = "Save Rs." + (prices.monthly.pro * 12 - prices.yearly.pro).toLocaleString("en-IN") + " vs monthly"
+    document.getElementById("maxSaving").textContent = "Save Rs." + (prices.monthly.max * 12 - prices.yearly.max).toLocaleString("en-IN") + " vs monthly"
+    document.getElementById("ultramaxSaving").textContent = "Save Rs." + (prices.monthly.ultramax * 12 - prices.yearly.ultramax).toLocaleString("en-IN") + " vs monthly"
+    document.querySelectorAll(".savingLine").forEach(e => e.style.display = "block")
+  } else {
+    // Show monthly prices with /month
+    document.getElementById("proPrice").textContent = fmt(prices.monthly.pro)
+    document.getElementById("maxPrice").textContent = fmt(prices.monthly.max)
+    document.getElementById("ultramaxPrice").textContent = fmt(prices.monthly.ultramax)
+    document.getElementById("proPeriod").textContent = "/month"
+    document.getElementById("maxPeriod").textContent = "/month"
+    document.getElementById("ultramaxPeriod").textContent = "/month"
+    document.querySelectorAll(".savingLine").forEach(e => e.style.display = "none")
+  }
 }
 
 function openPay(plan) {
