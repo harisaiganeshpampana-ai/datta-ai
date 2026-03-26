@@ -229,6 +229,23 @@ function getToken() {
   return localStorage.getItem("datta_token") || ""
 }
 
+// Save current chat when leaving page
+window.addEventListener("beforeunload", function() {
+  if (currentChatId) {
+    localStorage.setItem("datta_last_chat", currentChatId)
+  }
+})
+
+// Restore last chat on page load
+window.addEventListener("DOMContentLoaded", function() {
+  const lastChat = localStorage.getItem("datta_last_chat")
+  if (lastChat) {
+    setTimeout(function() {
+      openChat(lastChat)
+    }, 800)
+  }
+})
+
 function getUser() {
   try {
     const raw = localStorage.getItem("datta_user")
@@ -473,6 +490,8 @@ async function send() {
 
 
 // ─── LOAD SIDEBAR ─────────────────────────────────────────────────────────────
+let sidebarFixDone = false
+
 async function loadSidebar() {
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/chats?token=" + getToken())
@@ -490,6 +509,25 @@ async function loadSidebar() {
     const history = document.getElementById("history")
     if (!history) return
     history.innerHTML = ""
+
+    // Auto-fix bad titles once per session
+    if (!sidebarFixDone && chats.length > 0) {
+      sidebarFixDone = true
+      const badTitles = ["hi","hii","hiii","hello","hey","helo","hai","new conversation","new chat"]
+      const hasBad = chats.some(c => badTitles.includes(c.title.toLowerCase().trim()))
+      if (hasBad) {
+        fetch("https://datta-ai-server.onrender.com/chats/fix-titles?token=" + getToken(), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: getToken() })
+        }).then(r => r.json()).then(d => {
+          if (d.fixed > 0) {
+            console.log("Fixed", d.fixed, "chat titles")
+            loadSidebar() // Reload with fixed titles
+          }
+        }).catch(() => {})
+      }
+    }
 
     chats.forEach(chat => {
       let div = document.createElement("div")
