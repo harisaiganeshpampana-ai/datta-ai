@@ -646,8 +646,15 @@ async function loadSidebar() {
       div.className = "chatItem"
       div.setAttribute("data-chat-id", chat._id)
       div.innerHTML = `
+        <svg class="chatIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
         <div class="chatTitle" title="${chat.title}">${chat.title}</div>
-        <button class="deleteBtn" onclick="confirmDelete(event,'${chat._id}')" title="Delete chat">🗑</button>
+        <button class="deleteBtn" onclick="confirmDelete(event,'${chat._id}')" title="Delete">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+          </svg>
+        </button>
       `
       div.onclick = (e) => {
         if (e.target.closest(".deleteBtn")) return
@@ -724,12 +731,49 @@ async function openChat(chatId) {
 
 
 // ─── DELETE CHAT ──────────────────────────────────────────────────────────────
-async function deleteChat(e, id) {
+function confirmDelete(e, id) {
   e.stopPropagation()
-  await fetch("https://datta-ai-server.onrender.com/chat/" + id + "?token=" + getToken(), {
-    method: "DELETE"
-  })
-  loadSidebar()
+  e.preventDefault()
+  // Find the chat item and show inline confirm
+  const chatItem = e.target.closest(".chatItem")
+  if (!chatItem) return
+
+  // Already confirming
+  if (chatItem.querySelector(".deleteConfirm")) {
+    deleteChat(id, chatItem)
+    return
+  }
+
+  const confirm = document.createElement("div")
+  confirm.className = "deleteConfirm"
+  confirm.innerHTML = `
+    <span style="font-size:12px;color:#ff6666;">Delete?</span>
+    <button onclick="deleteChat('${id}', this.closest('.chatItem'))" style="padding:2px 8px;background:#ff4444;border:none;border-radius:6px;color:white;font-size:11px;cursor:pointer;font-weight:700;">Yes</button>
+    <button onclick="this.parentElement.remove()" style="padding:2px 8px;background:#222;border:none;border-radius:6px;color:#aaa;font-size:11px;cursor:pointer;">No</button>
+  `
+  confirm.style.cssText = "display:flex;align-items:center;gap:6px;padding:4px 0;"
+  chatItem.appendChild(confirm)
+
+  // Auto remove after 3 seconds
+  setTimeout(() => confirm.remove(), 3000)
+}
+
+async function deleteChat(id, chatItem) {
+  try {
+    if (chatItem) chatItem.style.opacity = "0.4"
+    await fetch("https://datta-ai-server.onrender.com/chat/" + id + "?token=" + getToken(), {
+      method: "DELETE"
+    })
+    if (chatItem) chatItem.remove()
+    if (currentChatId === id) {
+      currentChatId = null
+      document.getElementById("chat").innerHTML = ""
+      showWelcome()
+    }
+    loadSidebar()
+  } catch(e) {
+    if (chatItem) chatItem.style.opacity = "1"
+  }
 }
 
 
@@ -2310,3 +2354,6 @@ if ("serviceWorker" in navigator) {
     if (!refreshing) { refreshing = true; window.location.reload() }
   })
 }
+
+window.confirmDelete = confirmDelete
+window.deleteChat = deleteChat
