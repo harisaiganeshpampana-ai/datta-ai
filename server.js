@@ -488,40 +488,101 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       console.log("Generating image:", imagePrompt)
       let imageUrl = null
 
-      // Try multiple HuggingFace models
-      const HF_KEY = process.env.HF_API_KEY
-      if (HF_KEY) {
-        const hfModels = [
-          "stabilityai/stable-diffusion-xl-base-1.0",
-          "runwayml/stable-diffusion-v1-5",
-          "CompVis/stable-diffusion-v1-4"
-        ]
-        for (const hfModel of hfModels) {
-          try {
-            console.log("Trying HF model:", hfModel)
-            const hfRes = await fetch("https://api-inference.huggingface.co/models/" + hfModel, {
-              method: "POST",
-              headers: { "Authorization": "Bearer " + HF_KEY, "Content-Type": "application/json", "x-wait-for-model": "true" },
-              body: JSON.stringify({ inputs: imagePrompt })
-            })
-            if (hfRes.ok) {
-              const buf = await hfRes.arrayBuffer()
-              imageUrl = "data:image/jpeg;base64," + Buffer.from(buf).toString("base64")
-              console.log("HuggingFace success with:", hfModel)
-              break
-            } else {
-              console.log("HF model failed:", hfModel, hfRes.status)
+      // IMAGE GENERATION - Try multiple free services
+      const seed = Math.floor(Math.random() * 999999)
+
+      // 1. Try Stable Horde (100% free, no key needed)
+      try {
+        console.log("Trying Stable Horde...")
+        const hordeRes = await fetch("https://stablehorde.net/api/v2/generate/async", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": process.env.STABLE_HORDE_KEY || "0000000000"
+          },
+          body: JSON.stringify({
+            prompt: imagePrompt,
+            params: { width: 512, height: 512, steps: 20, n: 1, sampler_name: "k_euler" },
+            models: ["stable_diffusion"],
+            r2: true
+          })
+        })
+        if (hordeRes.ok) {
+          const hordeData = await hordeRes.json()
+          const jobId = hordeData.id
+          console.log("Horde job ID:", jobId)
+
+          // Poll for result (max 60 seconds)
+          for (let i = 0; i < 12; i++) {
+            await new Promise(r => setTimeout(r, 5000))
+            const statusRes = await fetch("https://stablehorde.net/api/v2/generate/check/" + jobId)
+            const statusData = await statusRes.json()
+            if (statusData.done) {
+              const resultRes = await fetch("https://stablehorde.net/api/v2/generate/status/" + jobId)
+              const resultData = await resultRes.json()
+              if (resultData.generations && resultData.generations[0]) {
+                const imgData = resultData.generations[0]
+                if (imgData.img && imgData.img.startsWith("http")) {
+                  // Download and convert to base64
+                  const imgRes = await fetch(imgData.img)
+                  if (imgRes.ok) {
+                    const buf = await imgRes.arrayBuffer()
+                    imageUrl = "data:image/webp;base64," + Buffer.from(buf).toString("base64")
+                    console.log("Stable Horde success!")
+                  }
+                } else if (imgData.img) {
+                  imageUrl = "data:image/webp;base64," + imgData.img
+                  console.log("Stable Horde base64 success!")
+                }
+                break
+              }
             }
-          } catch(e) { console.log("HF error:", hfModel, e.message) }
+            console.log("Horde waiting... queue:", statusData.queue_position)
+          }
         }
+      } catch(e) {
+        console.log("Stable Horde error:", e.message)
       }
 
-      // Fallback: Pollinations with working models
+      // 2. Try Dezgo (free tier)
+      if (!imageUrl && process.env.DEZGO_API_KEY) {
+        try {
+          console.log("Trying Dezgo...")
+          const dezgoRes = await fetch("https://api.dezgo.com/text2image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Dezgo-Key": process.env.DEZGO_API_KEY },
+            body: JSON.stringify({ prompt: imagePrompt, model: "dreamshaper_8", width: 512, height: 512, steps: 25 })
+          })
+          if (dezgoRes.ok) {
+            const buf = await dezgoRes.arrayBuffer()
+            imageUrl = "data:image/jpeg;base64," + Buffer.from(buf).toString("base64")
+            console.log("Dezgo success!")
+          }
+        } catch(e) { console.log("Dezgo error:", e.message) }
+      }
+
+      // 3. Fetch Pollinations server-side as base64 (avoids CORS)
       if (!imageUrl) {
-        const seed = Math.floor(Math.random() * 999999)
-        // Use flux model which is most reliable
-        imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed
-        console.log("Pollinations fallback:", imageUrl.substring(0, 100))
+        try {
+          console.log("Trying Pollinations server-side fetch...")
+          const polUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed
+          const polRes = await fetch(polUrl, { headers: { "User-Agent": "DattaAI/1.0" } })
+          if (polRes.ok) {
+            const buf = await polRes.arrayBuffer()
+            if (buf.byteLength > 10000) {
+              imageUrl = "data:image/jpeg;base64," + Buffer.from(buf).toString("base64")
+              console.log("Pollinations base64 success! Size:", buf.byteLength)
+            } else {
+              console.log("Pollinations returned too small:", buf.byteLength)
+              imageUrl = polUrl
+            }
+          } else {
+            imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=turbo&seed=" + seed
+          }
+        } catch(e) {
+          console.log("Pollinations error:", e.message)
+          imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=512&height=512&nologo=true&seed=" + seed
+        }
       }
 
       const responseText = "DATTA_IMAGE_START\n![" + imagePrompt + "](" + imageUrl + ")\nPROMPT:" + imagePrompt + "\nDATTA_IMAGE_END"
