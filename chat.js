@@ -794,15 +794,6 @@ function saveChatTitle(title) {
 
 
 // ─── SEARCH CHATS ────────────────────────────────────────────────────────────
-function searchChats() {
-  const query = document.getElementById("search").value.toLowerCase()
-  document.querySelectorAll(".chatItem").forEach(item => {
-    const title = item.querySelector(".chatTitle")?.textContent.toLowerCase() || ""
-    item.style.display = title.includes(query) ? "" : "none"
-  })
-}
-
-
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 window.send = send
 loadSidebar()
@@ -1668,3 +1659,197 @@ window.addEventListener("DOMContentLoaded", function() {
 window.openModelPicker = openModelPicker
 window.closeModelPicker = closeModelPicker
 window.selectModel = selectModel
+
+// ══════════════════════════════════════════════════════
+// PWA - Service Worker Registration
+// ══════════════════════════════════════════════════════
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/datta-ai/sw.js")
+      .then(() => console.log("SW registered"))
+      .catch(e => console.log("SW error:", e))
+  })
+}
+
+// PWA Install prompt
+let deferredPrompt = null
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault()
+  deferredPrompt = e
+  showInstallBanner()
+})
+
+function showInstallBanner() {
+  if (localStorage.getItem("pwa_dismissed")) return
+  const banner = document.createElement("div")
+  banner.className = "installBanner"
+  banner.id = "installBanner"
+  banner.innerHTML = `
+    <img src="logo.png" alt="Datta AI">
+    <div class="installBannerText">
+      <div class="installBannerTitle">Install Datta AI</div>
+      <div class="installBannerSub">Add to home screen for best experience</div>
+    </div>
+    <button class="installBannerBtn" onclick="installPWA()">Install</button>
+    <button class="installBannerClose" onclick="dismissInstall()">✕</button>
+  `
+  document.body.appendChild(banner)
+}
+
+function installPWA() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt()
+    deferredPrompt.userChoice.then(r => {
+      if (r.outcome === "accepted") showToast("Datta AI installed!")
+      deferredPrompt = null
+    })
+  }
+  dismissInstall()
+}
+
+function dismissInstall() {
+  localStorage.setItem("pwa_dismissed", "1")
+  const b = document.getElementById("installBanner")
+  if (b) b.remove()
+}
+
+window.installPWA = installPWA
+window.dismissInstall = dismissInstall
+
+// ══════════════════════════════════════════════════════
+// PUSH NOTIFICATIONS
+// ══════════════════════════════════════════════════════
+async function requestNotifications() {
+  if (!("Notification" in window)) return
+  if (Notification.permission === "granted") return
+  if (localStorage.getItem("notif_asked")) return
+
+  localStorage.setItem("notif_asked", "1")
+
+  const toast = document.createElement("div")
+  toast.className = "notifToast"
+  toast.innerHTML = `
+    <div class="notifToastTitle">🔔 Stay Updated</div>
+    <div class="notifToastSub">Get notified when Datta AI responds</div>
+    <div class="notifToastBtns">
+      <button class="notifAllow" onclick="allowNotifs(this)">Allow</button>
+      <button class="notifDeny" onclick="this.closest('.notifToast').remove()">No thanks</button>
+    </div>
+  `
+  document.body.appendChild(toast)
+  setTimeout(() => toast.remove(), 8000)
+}
+
+async function allowNotifs(btn) {
+  btn.closest(".notifToast").remove()
+  const perm = await Notification.requestPermission()
+  if (perm === "granted") showToast("Notifications enabled!")
+}
+
+window.allowNotifs = allowNotifs
+
+// Ask after first chat
+setTimeout(requestNotifications, 10000)
+
+// ══════════════════════════════════════════════════════
+// CHAT SEARCH
+// ══════════════════════════════════════════════════════
+let allChats = []
+
+function searchChats(query) {
+  const q = query.toLowerCase().trim()
+  const items = document.querySelectorAll(".chatItem")
+  items.forEach(item => {
+    const title = item.querySelector(".chatTitle")?.textContent?.toLowerCase() || ""
+    item.classList.toggle("hidden", q.length > 0 && !title.includes(q))
+  })
+}
+
+window.searchChats = searchChats
+
+// ══════════════════════════════════════════════════════
+// MULTI-LANGUAGE UI
+// ══════════════════════════════════════════════════════
+const UI_STRINGS = {
+  English: { placeholder: "Ask Datta AI anything...", newChat: "New chat", search: "Search chats...", welcome: "What can I build for you?" },
+  Hindi: { placeholder: "Datta AI से पूछें...", newChat: "नई चैट", search: "चैट खोजें...", welcome: "मैं आपके लिए क्या बना सकता हूं?" },
+  Telugu: { placeholder: "Datta AI ని అడగండి...", newChat: "కొత్త చాట్", search: "చాట్లు వెతకండి...", welcome: "నేను మీ కోసం ఏమి నిర్మించగలను?" },
+  Tamil: { placeholder: "Datta AI கேளுங்கள்...", newChat: "புதிய அரட்டை", search: "தேடுங்கள்...", welcome: "நான் உங்களுக்கு என்ன உருவாக்கலாம்?" }
+}
+
+function applyUILanguage(lang) {
+  const strings = UI_STRINGS[lang] || UI_STRINGS.English
+  const msgInput = document.getElementById("message")
+  const searchInput = document.getElementById("chatSearchInput")
+  const welcomeTitle = document.querySelector(".welcomeTitle")
+  if (msgInput) msgInput.placeholder = strings.placeholder
+  if (searchInput) searchInput.placeholder = "🔍 " + strings.search
+  if (welcomeTitle) welcomeTitle.textContent = strings.welcome
+  localStorage.setItem("datta_ui_lang", lang)
+}
+
+// Apply saved UI language
+window.addEventListener("DOMContentLoaded", () => {
+  const saved = localStorage.getItem("datta_ui_lang") || "English"
+  applyUILanguage(saved)
+})
+
+window.applyUILanguage = applyUILanguage
+
+// ══════════════════════════════════════════════════════
+// PROFILE PHOTO UPLOAD
+// ══════════════════════════════════════════════════════
+function uploadProfilePhoto() {
+  const input = document.createElement("input")
+  input.type = "file"
+  input.accept = "image/*"
+  input.onchange = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const dataUrl = ev.target.result
+      localStorage.setItem("datta_avatar", dataUrl)
+      updateProfilePhoto(dataUrl)
+      showToast("Profile photo updated!")
+    }
+    reader.readAsDataURL(file)
+  }
+  input.click()
+}
+
+function updateProfilePhoto(dataUrl) {
+  const avatars = document.querySelectorAll(".profileAvatar, .userAvatarImg")
+  avatars.forEach(a => { a.src = dataUrl; a.style.display = "block" })
+
+  const textAvatars = document.querySelectorAll(".profileInitial, .profileLetter")
+  textAvatars.forEach(a => { a.style.display = "none" })
+}
+
+// Load saved profile photo
+window.addEventListener("DOMContentLoaded", () => {
+  const saved = localStorage.getItem("datta_avatar")
+  if (saved) updateProfilePhoto(saved)
+})
+
+window.uploadProfilePhoto = uploadProfilePhoto
+
+// ══════════════════════════════════════════════════════
+// ANALYTICS (stored locally + server)
+// ══════════════════════════════════════════════════════
+function trackEvent(event, data) {
+  const analytics = JSON.parse(localStorage.getItem("datta_analytics") || "{}")
+  if (!analytics[event]) analytics[event] = 0
+  analytics[event]++
+  analytics.lastSeen = new Date().toISOString()
+  localStorage.setItem("datta_analytics", JSON.stringify(analytics))
+}
+
+// Track message sends
+const origSend = window.send
+window.send = function() {
+  trackEvent("messages_sent")
+  if (origSend) origSend.apply(this, arguments)
+}
+
+window.trackEvent = trackEvent
