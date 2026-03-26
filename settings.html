@@ -812,6 +812,8 @@ window.addEventListener("load", function() {
   const lang = localStorage.getItem("datta_language") || "English"
   document.getElementById("langDesc").textContent = lang
 
+  // Load usage
+  loadUsage()
   // Load memory count
   loadMemory()
 })
