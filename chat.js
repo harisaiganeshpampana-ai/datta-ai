@@ -724,13 +724,6 @@ document.getElementById("message").addEventListener("keydown", function (e) {
 
 
 // ─── SIDEBAR TOGGLE ───────────────────────────────────────────────────────────
-function toggleSidebar() {
-  const sidebar = document.querySelector(".sidebar")
-  sidebar.classList.toggle("show")
-}
-
-window.toggleSidebar = toggleSidebar
-
 
 // ─── SAVE CHAT TITLE (local fallback) ────────────────────────────────────────
 function saveChatTitle(title) {
@@ -1198,6 +1191,7 @@ async function processVoiceQuery(query) {
     formData.append("chatId", currentChatId || "")
     formData.append("token", getToken())
     formData.append("language", localStorage.getItem("datta_language") || "English")
+    formData.append("model", localStorage.getItem("datta_model") || "llama-3.3-70b-versatile")
     formData.append("voice", "true")
 
     const res = await fetch("https://datta-ai-server.onrender.com/chat", {
@@ -1388,3 +1382,174 @@ function useChip(btn) {
   }
 }
 window.useChip = useChip
+
+// ── FEATURE 1: BUG FIXES ─────────────────────────────────────────────────────
+// Fix Enter key to send message
+document.addEventListener("DOMContentLoaded", function() {
+  const msgInput = document.getElementById("message")
+  if (msgInput) {
+    msgInput.addEventListener("keydown", function(e) {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault()
+        send()
+      }
+    })
+  }
+
+  // Load saved theme
+  const savedTheme = localStorage.getItem("datta_theme")
+  if (savedTheme === "light") applyLightTheme()
+  else applyDarkTheme()
+
+  // Load saved model
+  const savedModel = localStorage.getItem("datta_model")
+  if (savedModel) {
+    const sel = document.getElementById("modelSelect")
+    if (sel) sel.value = savedModel
+  }
+})
+
+// ── FEATURE 2: DARK/LIGHT THEME ─────────────────────────────────────────────
+function toggleTheme() {
+  const isLight = document.body.classList.contains("light-theme")
+  if (isLight) {
+    applyDarkTheme()
+    localStorage.setItem("datta_theme", "dark")
+  } else {
+    applyLightTheme()
+    localStorage.setItem("datta_theme", "light")
+  }
+}
+
+function applyLightTheme() {
+  document.body.classList.add("light-theme")
+  const btn = document.getElementById("themeToggleBtn")
+  if (btn) btn.textContent = "☀️"
+}
+
+function applyDarkTheme() {
+  document.body.classList.remove("light-theme")
+  const btn = document.getElementById("themeToggleBtn")
+  if (btn) btn.textContent = "🌙"
+}
+
+window.toggleTheme = toggleTheme
+
+// ── FEATURE 3: MOBILE UI - Auto collapse sidebar on mobile ──────────────────
+function toggleSidebar() {
+  const sidebar = document.querySelector(".sidebar")
+  if (!sidebar) return
+  sidebar.classList.toggle("show")
+
+  // Add overlay for mobile
+  let overlay = document.getElementById("sidebarOverlay")
+  if (!overlay) {
+    overlay = document.createElement("div")
+    overlay.id = "sidebarOverlay"
+    overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99;display:none;"
+    overlay.onclick = () => { sidebar.classList.remove("show"); overlay.style.display = "none" }
+    document.body.appendChild(overlay)
+  }
+  overlay.style.display = sidebar.classList.contains("show") ? "block" : "none"
+}
+
+window.toggleSidebar = toggleSidebar
+
+// ── FEATURE 4: CHAT EXPORT ──────────────────────────────────────────────────
+function exportChat() {
+  const chatBox = document.getElementById("chat")
+  if (!chatBox || !chatBox.children.length) {
+    alert("No chat to export!")
+    return
+  }
+
+  // Get all messages
+  const messages = []
+  chatBox.querySelectorAll(".messageRow").forEach(row => {
+    const userBubble = row.querySelector(".userBubble")
+    const aiBubble = row.querySelector(".aiBubble, .stream")
+    if (userBubble) messages.push("You: " + userBubble.innerText.trim())
+    if (aiBubble) messages.push("Datta AI: " + aiBubble.innerText.trim())
+  })
+
+  if (!messages.length) return
+
+  const content = "Datta AI Chat Export\n" + new Date().toLocaleString() + "\n" + "=".repeat(50) + "\n\n" + messages.join("\n\n")
+
+  // Download as txt
+  const blob = new Blob([content], { type: "text/plain" })
+  const a = document.createElement("a")
+  a.href = URL.createObjectURL(blob)
+  a.download = "datta-ai-chat-" + Date.now() + ".txt"
+  a.click()
+}
+
+window.exportChat = exportChat
+
+// ── FEATURE 5: AI MODEL SELECTOR ────────────────────────────────────────────
+function changeModel(model) {
+  localStorage.setItem("datta_model", model)
+  const modelNames = {
+    "llama-3.3-70b-versatile": "Fast",
+    "llama-3.1-8b-instant": "Instant",
+    "deepseek-r1-distill-llama-70b": "Reasoning",
+    "mixtral-8x7b-32768": "Mixtral"
+  }
+  showToast("Model: " + (modelNames[model] || model))
+}
+
+window.changeModel = changeModel
+
+// ── FEATURE 4B: SHARE CHAT ──────────────────────────────────────────────────
+function shareChat() {
+  const chatBox = document.getElementById("chat")
+  if (!chatBox || !chatBox.children.length) {
+    alert("No chat to share!")
+    return
+  }
+
+  // Try Web Share API (mobile)
+  if (navigator.share) {
+    const messages = []
+    chatBox.querySelectorAll(".messageRow").forEach(row => {
+      const userBubble = row.querySelector(".userBubble")
+      const aiBubble = row.querySelector(".aiBubble, .stream")
+      if (userBubble) messages.push("You: " + userBubble.innerText.trim())
+      if (aiBubble) messages.push("Datta AI: " + aiBubble.innerText.trim())
+    })
+    navigator.share({
+      title: "Datta AI Chat",
+      text: messages.slice(0, 4).join("\n\n") + "\n\n— Shared from Datta AI",
+      url: "https://harisaiganeshpampana-ai.github.io/datta-ai"
+    }).catch(() => {})
+  } else {
+    // Copy link to clipboard
+    navigator.clipboard.writeText("https://harisaiganeshpampana-ai.github.io/datta-ai")
+    showToast("Link copied to clipboard!")
+  }
+}
+
+window.shareChat = shareChat
+
+// ── TOAST NOTIFICATION ───────────────────────────────────────────────────────
+function showToast(msg, duration = 2500) {
+  let toast = document.getElementById("dattaToast")
+  if (!toast) {
+    toast = document.createElement("div")
+    toast.id = "dattaToast"
+    toast.style.cssText = `
+      position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+      background: #1a1a1a; border: 1px solid #333; color: white;
+      padding: 10px 20px; border-radius: 20px; font-size: 13px;
+      z-index: 9999; opacity: 0; transition: opacity 0.3s;
+      pointer-events: none; white-space: nowrap;
+    `
+    document.body.appendChild(toast)
+  }
+  toast.textContent = msg
+  toast.style.opacity = "1"
+  clearTimeout(toast._timer)
+  toast._timer = setTimeout(() => { toast.style.opacity = "0" }, duration)
+}
+
+window.showToast = showToast
