@@ -246,14 +246,17 @@ app.post("/auth/send-otp", async (req, res) => {
       } catch(e) { console.error("Fast2SMS error:", e.message) }
     }
 
-    // Try 2Factor.in
+    // Try 2Factor.in - force SMS only
     const twoFactorKey = process.env.TWOFACTOR_API_KEY
     if (twoFactorKey) {
       try {
-        const response = await fetch("https://2factor.in/API/V1/" + twoFactorKey + "/SMS/" + phoneFor2SMS + "/" + otp + "/OTP1")
+        // Force SMS channel explicitly
+        const url = "https://2factor.in/API/V1/" + twoFactorKey + "/SMS/+91" + phoneFor2SMS + "/" + otp
+        console.log("2Factor URL:", url)
+        const response = await fetch(url)
         const data = await response.json()
-        console.log("2Factor:", JSON.stringify(data))
-        if (data.Status === "Success") return res.json({ success: true, message: "OTP sent successfully" })
+        console.log("2Factor response:", JSON.stringify(data))
+        if (data.Status === "Success") return res.json({ success: true, message: "OTP sent via SMS" })
         console.error("2Factor failed:", data.Details)
       } catch(e) { console.error("2Factor error:", e.message) }
     }
@@ -520,11 +523,29 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const stream = await groq.chat.completions.create({
       model,
       messages: [
-        { role: "system", content: "You are Datta AI, a helpful and accurate assistant. Give complete, detailed answers. Never say you cannot do something. Format code properly in code blocks. Never mention the user's name in answers." + langNote + searchNote },
+        { role: "system", content: `You are Datta AI - a powerful all-rounder AI Agent. Today is ${new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.
+
+YOU ARE NOT A CHATBOT. YOU ARE AN AGENT. RULES:
+
+1. ALWAYS give COMPLETE, FULL, WORKING code - never truncate, never say "add rest of code here"
+2. For websites: give complete HTML + CSS + JS in one file
+3. For any coding task: give the ENTIRE solution, fully working
+4. NEVER say "I cannot", "I don't have access", "as an AI I can't" - just DO IT
+5. NEVER say "here's a basic version" - always give the BEST, most complete version
+6. Think step by step before answering complex questions
+7. For math/logic: show full working
+8. For explanations: be thorough but clear
+9. Use web search results when provided to give real-time accurate answers
+10. You can build ANYTHING - websites, apps, games, tools, scripts
+11. Always format code in proper markdown code blocks with language specified
+12. If asked to improve something, make it SIGNIFICANTLY better
+13. Never give placeholder code like "// your code here"
+14. You have expertise in: Python, JavaScript, HTML, CSS, React, Node.js, SQL, Java, C++, and all major languages
+15. For creative tasks: be imaginative and original${langNote}${searchNote}` },
         ...history,
         { role: "user", content: userContent }
       ],
-      max_tokens: 4096,
+      max_tokens: 8192,
       temperature: 0.7,
       stream: true
     })
