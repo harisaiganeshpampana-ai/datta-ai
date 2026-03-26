@@ -1,5 +1,71 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&family=Orbitron:wght@700;900&display=swap');
 
+/* ── SPLASH SCREEN - Clean & Professional ── */
+#splash {
+  position: fixed;
+  inset: 0;
+  background: #0a0a0a;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+
+#splash.hide {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.splashContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  animation: splashFadeIn 0.8s ease forwards;
+}
+
+@keyframes splashFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.splashLogo {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  border-radius: 24px;
+  animation: splashLogoIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes splashLogoIn {
+  from { opacity: 0; transform: scale(0.7); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.splashName {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  letter-spacing: 6px;
+  background: linear-gradient(90deg, #00ff88, #00ccff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: splashFadeIn 0.8s ease 0.3s both;
+}
+
+.splashTagline {
+  font-size: 13px;
+  color: #444;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  animation: splashFadeIn 0.8s ease 0.5s both;
+}
+
+
+
 /* GLOBAL */
 * {
   margin: 0;
@@ -16,119 +82,42 @@ body {
 }
 
 /* SPLASH SCREEN */
-#splash {
-  position: fixed;
-  inset: 0;
-  background: #0a0a0a;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  transition: opacity 0.8s ease, visibility 0.8s ease;
-}
 
-#splash.hide {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
 
-.splash-ring {
-  position: relative;
-  width: 150px;
-  height: 150px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: splashPop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
 
-.splash-ring::before {
-  content: '';
-  position: absolute;
-  inset: -5px;
-  border-radius: 50%;
-  background: conic-gradient(from 0deg, #00ff88, #00ccff, #0066ff, #00ff88);
-  animation: spinRing 2s linear infinite;
-  filter: blur(3px);
-  opacity: 0.9;
-}
 
-.splash-ring::after {
-  content: '';
-  position: absolute;
-  inset: 0px;
-  border-radius: 50%;
-  background: #0a0a0a;
-}
+
+
+
+
+
 
 @keyframes spinRing {
   to { transform: rotate(360deg); }
 }
 
-.splash-logo {
-  width: 130px;
-  height: 130px;
-  border-radius: 50%;
-  object-fit: cover;
-  position: relative;
-  z-index: 1;
-}
 
-@keyframes splashPop {
-  0%   { transform: scale(0.2); opacity: 0; }
+
+
   70%  { transform: scale(1.08); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
 
-.splash-title {
-  margin-top: 28px;
-  font-size: 36px;
-  font-weight: 800;
-  background: linear-gradient(90deg, #00ff88, #00ccff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  opacity: 0;
-  animation: splashFadeUp 0.6s ease 0.7s forwards;
-  letter-spacing: 1px;
-}
 
-.splash-subtitle {
-  margin-top: 8px;
-  font-size: 12px;
-  color: #555;
-  opacity: 0;
-  letter-spacing: 4px;
-  text-transform: uppercase;
-  animation: splashFadeUp 0.6s ease 1s forwards;
-}
 
-@keyframes splashFadeUp {
-  0%   { opacity: 0; transform: translateY(16px); }
+
+
+
   100% { opacity: 1; transform: translateY(0); }
 }
 
-.splash-dots {
-  margin-top: 50px;
-  display: flex;
-  gap: 10px;
-  opacity: 0;
-  animation: splashFadeUp 0.4s ease 1.3s forwards;
-}
 
-.splash-dots span {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #333;
-  animation: dotBounce 1s infinite ease-in-out;
-}
 
-.splash-dots span:nth-child(1) { animation-delay: 0s; }
-.splash-dots span:nth-child(2) { animation-delay: 0.2s; }
-.splash-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+
+
+
+
 
 @keyframes dotBounce {
   0%, 80%, 100% { background: #333; transform: scale(1); }
@@ -1240,7 +1229,7 @@ body.light .sInput { background: #f5f5f5; border-color: #ddd; color: #111; }
 body.light .sSelect { background: #f5f5f5; border-color: #ddd; color: #111; }
 body.light .sidebarProfile { border-top-color: #e0e0e0; }
 body.light .profileName { color: #111; }
-body.light #splash { background: #fff; }
+body.light 
 
 /* WEB SEARCH INDICATOR */
 .searchingIndicator {
@@ -1421,11 +1410,7 @@ body.light #splash { background: #fff; }
 }
 
 /* Splash title */
-.splash-title {
-  font-family: var(--font-brand) !important;
-  font-size: 42px !important;
-  letter-spacing: 4px !important;
-}
+
 
 /* Plan names in pricing */
 .planName {
