@@ -236,15 +236,7 @@ window.addEventListener("beforeunload", function() {
   }
 })
 
-// Restore last chat on page load
-window.addEventListener("DOMContentLoaded", function() {
-  const lastChat = localStorage.getItem("datta_last_chat")
-  if (lastChat) {
-    setTimeout(function() {
-      openChat(lastChat)
-    }, 800)
-  }
-})
+// Restore last chat - called AFTER sidebar loads
 
 function getUser() {
   try {
@@ -532,6 +524,7 @@ async function loadSidebar() {
     chats.forEach(chat => {
       let div = document.createElement("div")
       div.className = "chatItem"
+      div.setAttribute("data-chat-id", chat._id)
       div.innerHTML = `
         <div class="chatTitle" title="${chat.title}">${chat.title}</div>
         <button class="deleteBtn" onclick="confirmDelete(event,'${chat._id}')" title="Delete chat">🗑</button>
@@ -542,6 +535,21 @@ async function loadSidebar() {
       }
       history.appendChild(div)
     })
+
+    // Restore last chat after sidebar is fully loaded
+    const lastChatId = localStorage.getItem("datta_last_chat")
+    if (lastChatId && !currentChatId) {
+      // Check if this chat exists in sidebar
+      const exists = chats.some(c => c._id === lastChatId)
+      if (exists) {
+        openChat(lastChatId)
+        // Highlight active chat
+        setTimeout(() => {
+          const activeDiv = history.querySelector("[data-chat-id='" + lastChatId + "']")
+          if (activeDiv) activeDiv.classList.add("active")
+        }, 100)
+      }
+    }
   } catch(e) {
     console.error("Sidebar error:", e.message)
   }
