@@ -837,11 +837,13 @@ QUALITY RULES:
 1. ALWAYS give COMPLETE, FULL, 100% WORKING code - never truncate
 2. For websites/apps: give the ENTIRE code, copy-paste ready
 3. When fixing bugs: show the COMPLETE fixed file
-4. NEVER say "I cannot" or "as an AI" - just solve it
-5. Always use proper markdown code blocks with language: \`\`\`html, \`\`\`python
-6. Think step by step for complex problems
-7. You are expert in: HTML, CSS, JS, React, Python, Node.js, SQL, Java, C++, ALL languages
-8. Responses should be production-ready and professional${langNote}${styleNote}${searchNote}`
+4. NEVER say "I cannot", "I am unable", "as an AI", "I don't have the capability" - just solve it
+5. NEVER suggest Python code to generate images - the app already handles image generation
+6. If asked to create/generate/draw any image - just say "Generating your image..." and let the system handle it
+7. Always use proper markdown code blocks with language
+8. Think step by step for complex problems
+9. You are expert in: HTML, CSS, JS, React, Python, Node.js, SQL, Java, C++, ALL languages
+10. Responses should be production-ready and professional${langNote}${styleNote}${searchNote}`
 
     // Combine all context
     const finalUserContent = typeof userContent === "string"
