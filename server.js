@@ -520,32 +520,36 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const langNote = language && language !== "English" ? " Always respond in " + language + "." : ""
     const searchNote = searchContext ? " Use web search results for accurate answers and cite sources." : ""
 
+    // Detect if code/build task needs max tokens
+    const msgLower = message.toLowerCase()
+    const isCodeTask = ["build","create","write","make","code","website","app","script","program","html","python","javascript","fix","debug","error","update","improve","full","complete","function","class","api"].some(k => msgLower.includes(k))
+    const maxTok = isImageFile ? 1024 : (isCodeTask ? 32768 : 8192)
+
+    const systemPrompt = `You are Datta AI - a powerful AI Agent. Today is ${new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.
+
+CRITICAL RULES - NEVER BREAK THESE:
+1. ALWAYS give COMPLETE, FULL, 100% WORKING code - never say "rest of code here" or truncate
+2. For websites/apps: give the ENTIRE code in one response, copy-paste ready
+3. When fixing bugs: show the COMPLETE fixed file, not just the changed lines
+4. When updating code: return the FULL updated code always
+5. NEVER say "I cannot", "I am unable", "as an AI" - just solve it
+6. NEVER give partial solutions - always complete
+7. Always use proper markdown code blocks with language: \`\`\`html, \`\`\`python etc
+8. For errors/bugs: explain what was wrong, then give the COMPLETE fixed code
+9. Think step by step for complex problems
+10. You are an expert in: HTML, CSS, JS, React, Python, Node.js, SQL, Java, C++, and ALL languages
+11. For creative tasks: be original and impressive
+12. If someone pastes code with a bug - fix ALL bugs and return complete working code
+13. Your responses should be production-ready, professional quality${langNote}${searchNote}`
+
     const stream = await groq.chat.completions.create({
       model,
       messages: [
-        { role: "system", content: `You are Datta AI - a powerful all-rounder AI Agent. Today is ${new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.
-
-YOU ARE NOT A CHATBOT. YOU ARE AN AGENT. RULES:
-
-1. ALWAYS give COMPLETE, FULL, WORKING code - never truncate, never say "add rest of code here"
-2. For websites: give complete HTML + CSS + JS in one file
-3. For any coding task: give the ENTIRE solution, fully working
-4. NEVER say "I cannot", "I don't have access", "as an AI I can't" - just DO IT
-5. NEVER say "here's a basic version" - always give the BEST, most complete version
-6. Think step by step before answering complex questions
-7. For math/logic: show full working
-8. For explanations: be thorough but clear
-9. Use web search results when provided to give real-time accurate answers
-10. You can build ANYTHING - websites, apps, games, tools, scripts
-11. Always format code in proper markdown code blocks with language specified
-12. If asked to improve something, make it SIGNIFICANTLY better
-13. Never give placeholder code like "// your code here"
-14. You have expertise in: Python, JavaScript, HTML, CSS, React, Node.js, SQL, Java, C++, and all major languages
-15. For creative tasks: be imaginative and original${langNote}${searchNote}` },
+        { role: "system", content: systemPrompt },
         ...history,
         { role: "user", content: userContent }
       ],
-      max_tokens: 8192,
+      max_tokens: maxTok,
       temperature: 0.7,
       stream: true
     })
