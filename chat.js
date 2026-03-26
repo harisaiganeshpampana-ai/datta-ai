@@ -1553,3 +1553,61 @@ function showToast(msg, duration = 2500) {
 }
 
 window.showToast = showToast
+
+// ── MODEL PICKER ─────────────────────────────────────────────────────────────
+const modelData = {
+  veda:   { model: "llama-3.3-70b-versatile", icon: "⚡", name: "Veda" },
+  surya:  { model: "llama-3.1-8b-instant", icon: "🚀", name: "Surya" },
+  agni:   { model: "deepseek-r1-distill-llama-70b", icon: "🧠", name: "Agni" },
+  brahma: { model: "mixtral-8x7b-32768", icon: "👑", name: "Brahma" },
+  chitra: { model: "meta-llama/llama-4-scout-17b-16e-instruct", icon: "👁️", name: "Chitra" }
+}
+
+let currentModelKey = "veda"
+
+function openModelPicker() {
+  document.getElementById("modelPickerOverlay").classList.add("show")
+  document.getElementById("modelPickerModal").classList.add("show")
+}
+
+function closeModelPicker() {
+  document.getElementById("modelPickerOverlay").classList.remove("show")
+  document.getElementById("modelPickerModal").classList.remove("show")
+}
+
+function selectModel(modelId, key, icon, name) {
+  currentModelKey = key
+
+  // Update all cards
+  document.querySelectorAll(".modelCard").forEach(c => c.classList.remove("active"))
+  document.querySelectorAll(".modelCardCheck").forEach(c => c.textContent = "")
+
+  const card = document.getElementById("mcard-" + key)
+  const check = document.getElementById("check-" + key)
+  if (card) card.classList.add("active")
+  if (check) check.textContent = "✓"
+
+  // Update button
+  document.getElementById("modelBtnIcon").textContent = icon
+  document.getElementById("modelBtnName").textContent = name
+
+  // Save
+  localStorage.setItem("datta_model", modelId)
+  localStorage.setItem("datta_model_key", key)
+
+  showToast("Model: " + name)
+  setTimeout(closeModelPicker, 400)
+}
+
+// Load saved model on startup
+window.addEventListener("DOMContentLoaded", function() {
+  const savedKey = localStorage.getItem("datta_model_key") || "veda"
+  const saved = modelData[savedKey]
+  if (saved) {
+    selectModel(saved.model, savedKey, saved.icon, saved.name)
+  }
+})
+
+window.openModelPicker = openModelPicker
+window.closeModelPicker = closeModelPicker
+window.selectModel = selectModel
