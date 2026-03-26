@@ -231,84 +231,57 @@ app.post("/auth/send-otp", async (req, res) => {
 
     const fast2smsKey = process.env.FAST2SMS_API_KEY
 
+    // Try Fast2SMS first
     if (fast2smsKey) {
       try {
-        // Fast2SMS Quick SMS route - no DLT needed
-        const fast2smsBody = JSON.stringify({
-          route: "q",
-          message: "Your Datta AI OTP is " + otp + ". Valid for 10 minutes. Do not share.",
-          language: "english",
-          flash: 0,
-          numbers: phoneFor2SMS
-        })
-        console.log("Sending Fast2SMS to:", phoneFor2SMS, "body:", fast2smsBody)
-
         const response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
           method: "POST",
-          headers: {
-            "authorization": fast2smsKey,
-            "Content-Type": "application/json",
-            "Cache-Control": "no-cache"
-          },
-          body: fast2smsBody
+          headers: { "authorization": fast2smsKey, "Content-Type": "application/json" },
+          body: JSON.stringify({ route: "q", message: "Your Datta AI OTP is " + otp + ". Valid 10 minutes.", language: "english", flash: 0, numbers: phoneFor2SMS })
         })
-        const responseText = await response.text()
-        console.log("Fast2SMS raw response:", responseText)
-
-        let data
-        try { data = JSON.parse(responseText) } catch(e) { data = { return: false, message: responseText } }
-
-        if (data.return === true) {
-          console.log("Fast2SMS OTP sent successfully to:", phoneFor2SMS)
-          return res.json({ success: true, message: "OTP sent to " + normalizedPhone })
-        } else {
-          console.error("Fast2SMS failed:", JSON.stringify(data))
-          // Don't fall through to Twilio error - show proper message
-          if (data.message && data.message.includes("authorization")) {
-            return res.status(500).json({ error: "Fast2SMS API key invalid. Check FAST2SMS_API_KEY in Render." })
-          }
-          // Try with v3 endpoint
-          const response2 = await fetch("https://www.fast2sms.com/dev/bulk", {
-            method: "POST",
-            headers: { "authorization": fast2smsKey, "Content-Type": "application/json" },
-            body: JSON.stringify({ sender_id: "FSTSMS", message: "Your Datta AI OTP is " + otp + ". Valid 10 mins.", language: "english", route: "p", numbers: phoneFor2SMS })
-          })
-          const data2 = await response2.json()
-          console.log("Fast2SMS v3 response:", JSON.stringify(data2))
-          if (data2.return === true) {
-            return res.json({ success: true, message: "OTP sent successfully" })
-          }
-        }
-      } catch(fast2err) {
-        console.error("Fast2SMS exception:", fast2err.message)
-      }
+        const data = await response.json()
+        console.log("Fast2SMS:", JSON.stringify(data))
+        if (data.return === true) return res.json({ success: true, message: "OTP sent successfully" })
+        console.error("Fast2SMS failed:", data.message)
+      } catch(e) { console.error("Fast2SMS error:", e.message) }
     }
 
-    // Twilio fallback (for verified numbers)
-    if (twilioClient && process.env.TWILIO_SERVICE_SID) {
-      await twilioClient.verify.v2.services(process.env.TWILIO_SERVICE_SID).verifications.create({
-        to: normalizedPhone, channel: "sms"
-      })
-      return res.json({ success: true, message: "OTP sent successfully" })
+    // Try 2Factor.in
+    const twoFactorKey = process.env.TWOFACTOR_API_KEY
+    if (twoFactorKey) {
+      try {
+        const response = await fetch("https://2factor.in/API/V1/" + twoFactorKey + "/SMS/" + phoneFor2SMS + "/" + otp + "/OTP1")
+        const data = await response.json()
+        console.log("2Factor:", JSON.stringify(data))
+        if (data.Status === "Success") return res.json({ success: true, message: "OTP sent successfully" })
+        console.error("2Factor failed:", data.Details)
+      } catch(e) { console.error("2Factor error:", e.message) }
     }
 
-    if (twilioClient && (process.env.TWILIO_PHONE || process.env.TWILIO_PHONE_NUMBER)) {
-      await twilioClient.messages.create({
-        body: "Your Datta AI OTP is: " + otp + ". Valid for 10 minutes.",
-        from: process.env.TWILIO_PHONE || process.env.TWILIO_PHONE_NUMBER,
-        to: normalizedPhone
-      })
-      return res.json({ success: true, message: "OTP sent successfully" })
+    // Try MSG91
+    const msg91Key = process.env.MSG91_API_KEY
+    const msg91Template = process.env.MSG91_TEMPLATE_ID
+    if (msg91Key && msg91Template) {
+      try {
+        const response = await fetch("https://control.msg91.com/api/v5/otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "authkey": msg91Key },
+          body: JSON.stringify({ template_id: msg91Template, mobile: "91" + phoneFor2SMS, otp: otp })
+        })
+        const data = await response.json()
+        console.log("MSG91:", JSON.stringify(data))
+        if (data.type === "success") return res.json({ success: true, message: "OTP sent successfully" })
+        console.error("MSG91 failed:", data.message)
+      } catch(e) { console.error("MSG91 error:", e.message) }
     }
 
-    // OTP is stored, user can get it from Render logs in dev mode
-    console.log("=== DEV MODE OTP for", normalizedPhone, ":", otp, "===")
-    res.status(500).json({ error: "SMS sending failed. Please use Email or Google login instead." })
+    // All SMS services failed
+    console.log("=== ALL SMS FAILED - OTP for", normalizedPhone, ":", otp, "===")
+    res.status(500).json({ error: "Could not send OTP. Please use Email or Google login." })
 
   } catch(err) {
     console.error("OTP send error:", err.message)
-    if (err.code === 21608) return res.status(400).json({ error: "Please use Email or Google login instead." })
-    res.status(500).json({ error: "Failed to send OTP. Please use Email or Google login." })
+    res.status(500).json({ error: "Could not send OTP. Please use Email or Google login." })
   }
 })
 
@@ -322,26 +295,17 @@ app.post("/auth/verify-otp", async (req, res) => {
     let phoneFor2SMS = cleanPhone.replace("+91", "").replace(/^\+/, "").slice(-10)
     const normalizedPhone = "+91" + phoneFor2SMS
 
-    // Check custom OTP store first (Fast2SMS)
+    // Verify from our own OTP store
     const stored = otpStore[normalizedPhone]
-    if (stored) {
-      if (Date.now() > stored.expires) {
-        delete otpStore[normalizedPhone]
-        return res.status(400).json({ error: "OTP expired. Request a new one." })
-      }
-      if (stored.otp !== otp.toString().trim()) {
-        return res.status(400).json({ error: "Incorrect OTP. Please try again." })
-      }
+    if (!stored) return res.status(400).json({ error: "No OTP sent. Please request a new OTP." })
+    if (Date.now() > stored.expires) {
       delete otpStore[normalizedPhone]
-    } else if (twilioClient && process.env.TWILIO_SERVICE_SID) {
-      // Try Twilio Verify
-      const result = await twilioClient.verify.v2.services(process.env.TWILIO_SERVICE_SID).verificationChecks.create({
-        to: normalizedPhone, code: otp.toString().trim()
-      })
-      if (result.status !== "approved") return res.status(400).json({ error: "Incorrect OTP." })
-    } else {
-      return res.status(400).json({ error: "No OTP found. Please request a new OTP." })
+      return res.status(400).json({ error: "OTP expired. Request a new one." })
     }
+    if (stored.otp !== otp.toString().trim()) {
+      return res.status(400).json({ error: "Incorrect OTP. Please try again." })
+    }
+    delete otpStore[normalizedPhone]
 
     let user = await User.findOne({ phone: normalizedPhone })
     if (!user) user = await User.create({ username: "user_" + phoneFor2SMS.slice(-4), phone: normalizedPhone })
