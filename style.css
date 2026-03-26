@@ -3749,3 +3749,9 @@ body {
     padding-bottom: calc(8px + env(safe-area-inset-bottom)) !important;
   }
 }
+
+/* FORCE sheet hidden by default - prevent auto open */
+#addToChatSheet { bottom: -100% !important; }
+#addToChatSheet.show { bottom: 0 !important; }
+#addToChatOverlay { display: none !important; }
+#addToChatOverlay.show { display: block !important; }
