@@ -255,15 +255,9 @@ async function saveMemory(userId, key, value, category) {
 async function getMemories(userId) {
   const memories = await Memory.find({ userId }).sort({ updatedAt: -1 }).limit(20)
   if (!memories.length) return ""
-  return "
-
-[USER MEMORY - facts you remember about this user]
-" +
-    memories.map(m => m.key + ": " + JSON.stringify(m.value)).join("
-") +
-    "
-[END MEMORY]
-"
+  return "\n\n[USER MEMORY - facts you remember about this user]\n" +
+    memories.map(m => m.key + ": " + JSON.stringify(m.value)).join("\n") +
+    "\n[END MEMORY]\n"
 }
 
 async function extractAndSaveMemory(userId, userMessage, aiResponse) {
