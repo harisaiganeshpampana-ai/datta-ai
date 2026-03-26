@@ -3195,3 +3195,35 @@ body {
 .notifToastBtns { display: flex; gap: 8px; }
 .notifAllow { flex: 1; padding: 7px; background: #00cc6a; border: none; border-radius: 8px; color: white; font-size: 12px; font-weight: 600; cursor: pointer; }
 .notifDeny { flex: 1; padding: 7px; background: #1e1e1e; border: 1px solid #333; border-radius: 8px; color: #888; font-size: 12px; cursor: pointer; }
+
+/* CODE RUN BUTTON */
+.codeRunBtn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px 10px; background: #0a2a1a;
+  border: 1px solid #00ff8844; border-radius: 6px;
+  color: #00ff88; font-size: 12px; cursor: pointer;
+  transition: all 0.2s;
+}
+.codeRunBtn:hover { background: #0f3a22; }
+.codeRunBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* CODE OUTPUT */
+.codeOutput { border-top: 1px solid #1a1a1a; }
+.codeOutputOk {
+  padding: 12px 14px; background: #050f05;
+  font-size: 13px; color: #88ff88;
+}
+.codeOutputOk pre { background: transparent; padding: 4px 0; color: #88ff88; }
+.codeOutputErr {
+  padding: 12px 14px; background: #0f0505;
+  font-size: 13px; color: #ff6666;
+}
+
+/* ADD ADMIN LINK TO SIDEBAR */
+.adminLink {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; color: #666; font-size: 13px;
+  cursor: pointer; border-radius: 8px; text-decoration: none;
+  transition: all 0.2s;
+}
+.adminLink:hover { background: #1a1a1a; color: #aaa; }
