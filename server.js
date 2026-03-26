@@ -488,29 +488,40 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       console.log("Generating image:", imagePrompt)
       let imageUrl = null
 
-      // Try HuggingFace FLUX first
+      // Try multiple HuggingFace models
       const HF_KEY = process.env.HF_API_KEY
       if (HF_KEY) {
-        try {
-          const hfRes = await fetch("https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell", {
-            method: "POST",
-            headers: { "Authorization": "Bearer " + HF_KEY, "Content-Type": "application/json", "x-wait-for-model": "true" },
-            body: JSON.stringify({ inputs: imagePrompt, parameters: { num_inference_steps: 4, width: 1024, height: 1024 } })
-          })
-          if (hfRes.ok) {
-            const buf = await hfRes.arrayBuffer()
-            imageUrl = "data:image/jpeg;base64," + Buffer.from(buf).toString("base64")
-            console.log("HuggingFace image success!")
-          } else { console.log("HF failed:", hfRes.status) }
-        } catch(e) { console.log("HF error:", e.message) }
+        const hfModels = [
+          "stabilityai/stable-diffusion-xl-base-1.0",
+          "runwayml/stable-diffusion-v1-5",
+          "CompVis/stable-diffusion-v1-4"
+        ]
+        for (const hfModel of hfModels) {
+          try {
+            console.log("Trying HF model:", hfModel)
+            const hfRes = await fetch("https://api-inference.huggingface.co/models/" + hfModel, {
+              method: "POST",
+              headers: { "Authorization": "Bearer " + HF_KEY, "Content-Type": "application/json", "x-wait-for-model": "true" },
+              body: JSON.stringify({ inputs: imagePrompt })
+            })
+            if (hfRes.ok) {
+              const buf = await hfRes.arrayBuffer()
+              imageUrl = "data:image/jpeg;base64," + Buffer.from(buf).toString("base64")
+              console.log("HuggingFace success with:", hfModel)
+              break
+            } else {
+              console.log("HF model failed:", hfModel, hfRes.status)
+            }
+          } catch(e) { console.log("HF error:", hfModel, e.message) }
+        }
       }
 
-      // Fallback: Pollinations
+      // Fallback: Pollinations with working models
       if (!imageUrl) {
         const seed = Math.floor(Math.random() * 999999)
-        const models = ["flux-schnell", "flux", "turbo", "flux-realism"]
-        imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=" + models[seed % models.length] + "&seed=" + seed
-        console.log("Pollinations fallback:", imageUrl.substring(0, 80))
+        // Use flux model which is most reliable
+        imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed
+        console.log("Pollinations fallback:", imageUrl.substring(0, 100))
       }
 
       const responseText = "DATTA_IMAGE_START\n![" + imagePrompt + "](" + imageUrl + ")\nPROMPT:" + imagePrompt + "\nDATTA_IMAGE_END"
