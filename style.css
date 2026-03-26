@@ -3790,3 +3790,37 @@ input, textarea, select { touch-action: manipulation; }
   max-width: 600px !important;
   margin: 0 auto !important;
 }
+
+/* INPUT BAR - fixed at bottom, no transform tricks */
+@media (max-width: 768px) {
+  .inputArea {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+    z-index: 100 !important;
+    background: #0a0a0a !important;
+    padding: 8px 12px 16px !important;
+  }
+
+  /* Sheet must be ABOVE input bar */
+  #addToChatSheet {
+    z-index: 1501 !important;
+  }
+
+  /* Prevent page scroll from triggering sheet */
+  body {
+    overflow: hidden !important;
+  }
+
+  .main {
+    overflow: hidden !important;
+    position: relative !important;
+  }
+
+  .chat {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
