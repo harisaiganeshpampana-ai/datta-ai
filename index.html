@@ -262,33 +262,33 @@
   })
 
   // BOTTOM SHEET - proper toggle
+  // SHEET STATE - single source of truth
   var _sheetOpen = false
 
   function togglePlusMenu() {
-    if (_sheetOpen) closePlusMenu()
-    else openPlusMenu()
+    _sheetOpen ? _closeSheet() : _openSheet()
   }
 
-  function openPlusMenu() {
-    var sheet = document.getElementById("addToChatSheet")
-    var overlay = document.getElementById("addToChatOverlay")
-    var btn = document.getElementById("plusBtn")
-    if (!sheet) return
+  function _openSheet() {
+    var s = document.getElementById("addToChatSheet")
+    var o = document.getElementById("addToChatOverlay")
+    if (!s) return
     _sheetOpen = true
-    sheet.style.bottom = "0px"
-    overlay.style.display = "block"
-    if (btn) btn.style.opacity = "0.7"
+    s.style.setProperty("bottom","0px","important")
+    o.style.setProperty("display","block","important")
   }
 
-  function closePlusMenu() {
-    var sheet = document.getElementById("addToChatSheet")
-    var overlay = document.getElementById("addToChatOverlay")
-    var btn = document.getElementById("plusBtn")
+  function _closeSheet() {
+    var s = document.getElementById("addToChatSheet")
+    var o = document.getElementById("addToChatOverlay")
     _sheetOpen = false
-    if (sheet) sheet.style.bottom = "-110%"
-    if (overlay) overlay.style.display = "none"
-    if (btn) btn.style.opacity = "1"
+    if (s) s.style.setProperty("bottom","-120%","important")
+    if (o) o.style.setProperty("display","none","important")
   }
+
+  // Make closePlusMenu available globally
+  function closePlusMenu() { _closeSheet() }
+  function openPlusMenu() { _openSheet() }
 
   function toggleWebSearch(row) {
     const toggle = document.getElementById("webSearchToggle")
@@ -308,29 +308,14 @@
   window.toggleWebSearch = toggleWebSearch
   window.handleWebSearchToggle = handleWebSearchToggle
 
-  // Close sheet whenever page becomes visible (back button etc)
-  document.addEventListener("visibilitychange", function() {
-    if (!document.hidden) closePlusMenu()
-  })
-
-  // Close sheet on escape key
+  // Close sheet on escape
   document.addEventListener("keydown", function(e) {
-    if (e.key === "Escape") closePlusMenu()
+    if (e.key === "Escape") _closeSheet()
   })
 
-  // Make sure sheet is ALWAYS closed on load
-  window.addEventListener("load", function() {
-    closePlusMenu()
-    // Force hide just in case
-    const sheet = document.getElementById("addToChatSheet")
-    const overlay = document.getElementById("addToChatOverlay")
-    if (sheet) { sheet.classList.remove("show"); sheet.style.bottom = "-100%" }
-    if (overlay) { overlay.classList.remove("show"); overlay.style.display = "none" }
-  })
-
-  // Also close on DOMContentLoaded
-  document.addEventListener("DOMContentLoaded", function() {
-    closePlusMenu()
+  // Close when coming back to page
+  document.addEventListener("visibilitychange", function() {
+    if (!document.hidden) _closeSheet()
   })
 
   // FILE HELPERS
