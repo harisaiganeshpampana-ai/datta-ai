@@ -1976,3 +1976,13 @@ applyFullTheme()
 window.addEventListener("DOMContentLoaded", applyFullTheme)
 
 window.applyFullTheme = applyFullTheme
+
+// SHOW ADMIN LINK if user is admin
+window.addEventListener("DOMContentLoaded", function() {
+  const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
+  const adminEmails = ["harisaiganeshpampana@gmail.com", "harisaiganesh@gmail.com"]
+  const adminLink = document.getElementById("adminLink")
+  if (adminLink && user.email && adminEmails.includes(user.email)) {
+    adminLink.style.display = "block"
+  }
+})
