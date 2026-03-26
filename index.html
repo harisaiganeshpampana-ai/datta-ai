@@ -262,30 +262,32 @@
   })
 
   // BOTTOM SHEET - proper toggle
+  var _sheetOpen = false
+
   function togglePlusMenu() {
-    const sheet = document.getElementById("addToChatSheet")
-    const overlay = document.getElementById("addToChatOverlay")
-    const btn = document.getElementById("plusBtn")
+    if (_sheetOpen) closePlusMenu()
+    else openPlusMenu()
+  }
+
+  function openPlusMenu() {
+    var sheet = document.getElementById("addToChatSheet")
+    var overlay = document.getElementById("addToChatOverlay")
+    var btn = document.getElementById("plusBtn")
     if (!sheet) return
-    const isOpen = sheet.style.bottom === "0px" || sheet.style.bottom === "0"
-    if (isOpen) {
-      sheet.style.bottom = "-100%"
-      overlay.style.display = "none"
-      if (btn) btn.classList.remove("active")
-    } else {
-      sheet.style.bottom = "0"
-      overlay.style.display = "block"
-      if (btn) btn.classList.add("active")
-    }
+    _sheetOpen = true
+    sheet.style.bottom = "0px"
+    overlay.style.display = "block"
+    if (btn) btn.style.opacity = "0.7"
   }
 
   function closePlusMenu() {
-    const sheet = document.getElementById("addToChatSheet")
-    const overlay = document.getElementById("addToChatOverlay")
-    const btn = document.getElementById("plusBtn")
-    if (sheet) sheet.style.bottom = "-100%"
+    var sheet = document.getElementById("addToChatSheet")
+    var overlay = document.getElementById("addToChatOverlay")
+    var btn = document.getElementById("plusBtn")
+    _sheetOpen = false
+    if (sheet) sheet.style.bottom = "-110%"
     if (overlay) overlay.style.display = "none"
-    if (btn) btn.classList.remove("active")
+    if (btn) btn.style.opacity = "1"
   }
 
   function toggleWebSearch(row) {
@@ -584,8 +586,8 @@
 
 
 <!-- ADD TO CHAT BOTTOM SHEET -->
-<div class="addToChatOverlay" id="addToChatOverlay" onclick="closePlusMenu()" style="display:none;"></div>
-<div class="addToChatSheet" id="addToChatSheet" style="bottom:-100%;">
+<div id="addToChatOverlay" onclick="closePlusMenu()" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1500;display:none;backdrop-filter:blur(4px);"></div>
+<div id="addToChatSheet" style="position:fixed;bottom:-100%;left:0;right:0;background:#111;border-radius:20px 20px 0 0;z-index:1501;padding:0 0 40px;transition:bottom 0.35s cubic-bezier(0.4,0,0.2,1);max-width:600px;margin:0 auto;">
   <div class="sheetHandle"></div>
   <div class="sheetHeader">
     <button class="sheetCloseBtn" onclick="closePlusMenu()">✕</button>
