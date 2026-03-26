@@ -634,5 +634,103 @@
 
 </div>
 
+
+<!-- MODEL PICKER MODAL -->
+<div class="modelPickerOverlay" id="modelPickerOverlay" onclick="closeModelPicker()"></div>
+<div class="modelPickerModal" id="modelPickerModal">
+  <div class="modelPickerHeader">
+    <div class="modelPickerTitle">Choose Model</div>
+    <button class="modelPickerClose" onclick="closeModelPicker()">✕</button>
+  </div>
+  <div class="modelPickerList">
+
+    <!-- Veda -->
+    <div class="modelCard active" id="mcard-veda" onclick="selectModel('llama-3.3-70b-versatile','veda','⚡','Veda')">
+      <div class="modelCardLeft">
+        <div class="modelCardIcon" style="background:linear-gradient(135deg,#00ff88,#00ccff);">⚡</div>
+        <div>
+          <div class="modelCardName">Veda <span class="modelBadge free">FREE</span></div>
+          <div class="modelCardDesc">Best for everyday tasks, coding, writing</div>
+          <div class="modelCardFeatures">
+            <span class="mf">✓ Fast responses</span>
+            <span class="mf">✓ Code generation</span>
+            <span class="mf">✓ 70B parameters</span>
+          </div>
+        </div>
+      </div>
+      <div class="modelCardCheck" id="check-veda">✓</div>
+    </div>
+
+    <!-- Surya -->
+    <div class="modelCard" id="mcard-surya" onclick="selectModel('llama-3.1-8b-instant','surya','🚀','Surya')">
+      <div class="modelCardLeft">
+        <div class="modelCardIcon" style="background:linear-gradient(135deg,#ff8800,#ffcc00);">🚀</div>
+        <div>
+          <div class="modelCardName">Surya <span class="modelBadge free">FREE</span></div>
+          <div class="modelCardDesc">Ultra-fast responses, quick answers</div>
+          <div class="modelCardFeatures">
+            <span class="mf">✓ Fastest speed</span>
+            <span class="mf">✓ Quick Q&A</span>
+            <span class="mf">✓ 8B parameters</span>
+          </div>
+        </div>
+      </div>
+      <div class="modelCardCheck" id="check-surya"></div>
+    </div>
+
+    <!-- Agni -->
+    <div class="modelCard" id="mcard-agni" onclick="selectModel('deepseek-r1-distill-llama-70b','agni','🧠','Agni')">
+      <div class="modelCardLeft">
+        <div class="modelCardIcon" style="background:linear-gradient(135deg,#ff4444,#ff8800);">🧠</div>
+        <div>
+          <div class="modelCardName">Agni <span class="modelBadge pro">PRO</span></div>
+          <div class="modelCardDesc">Deep reasoning, complex problems, math</div>
+          <div class="modelCardFeatures">
+            <span class="mf">✓ Chain of thought</span>
+            <span class="mf">✓ Math & logic</span>
+            <span class="mf">✓ Research tasks</span>
+          </div>
+        </div>
+      </div>
+      <div class="modelCardCheck" id="check-agni"></div>
+    </div>
+
+    <!-- Brahma -->
+    <div class="modelCard" id="mcard-brahma" onclick="selectModel('mixtral-8x7b-32768','brahma','👑','Brahma')">
+      <div class="modelCardLeft">
+        <div class="modelCardIcon" style="background:linear-gradient(135deg,#aa44ff,#ff44aa);">👑</div>
+        <div>
+          <div class="modelCardName">Brahma <span class="modelBadge pro">PRO</span></div>
+          <div class="modelCardDesc">Creative writing, long context, analysis</div>
+          <div class="modelCardFeatures">
+            <span class="mf">✓ 32K context</span>
+            <span class="mf">✓ Creative tasks</span>
+            <span class="mf">✓ Mixtral MoE</span>
+          </div>
+        </div>
+      </div>
+      <div class="modelCardCheck" id="check-brahma"></div>
+    </div>
+
+    <!-- Chitra - Vision -->
+    <div class="modelCard" id="mcard-chitra" onclick="selectModel('meta-llama/llama-4-scout-17b-16e-instruct','chitra','👁️','Chitra')">
+      <div class="modelCardLeft">
+        <div class="modelCardIcon" style="background:linear-gradient(135deg,#00ccff,#aa44ff);">👁️</div>
+        <div>
+          <div class="modelCardName">Chitra <span class="modelBadge vision">VISION</span></div>
+          <div class="modelCardDesc">Image understanding, visual analysis</div>
+          <div class="modelCardFeatures">
+            <span class="mf">✓ See images</span>
+            <span class="mf">✓ Visual QA</span>
+            <span class="mf">✓ Llama 4 Scout</span>
+          </div>
+        </div>
+      </div>
+      <div class="modelCardCheck" id="check-chitra"></div>
+    </div>
+
+  </div>
+</div>
+
 </body>
 </html>
