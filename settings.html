@@ -404,6 +404,57 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
     </div>
   </div>
 
+  <!-- LEGAL -->
+  <div class="sectionLabel">Legal</div>
+  <div class="section">
+    <div class="settingRow" onclick="window.open('privacy.html')">
+      <div class="settingLeft">
+        <div class="settingIcon" style="background:#0a0a2a;">🔒</div>
+        <div>
+          <div class="settingLabel">Privacy Policy</div>
+          <div class="settingDesc">How we handle your data</div>
+        </div>
+      </div>
+      <div class="settingArrow">›</div>
+    </div>
+    <div class="settingRow" onclick="window.open('terms.html')">
+      <div class="settingLeft">
+        <div class="settingIcon" style="background:#0a1a0a;">📄</div>
+        <div>
+          <div class="settingLabel">Terms of Service</div>
+          <div class="settingDesc">Rules for using Datta AI</div>
+        </div>
+      </div>
+      <div class="settingArrow">›</div>
+    </div>
+    <div class="settingRow" onclick="window.open('https://datta-ai.com')">
+      <div class="settingLeft">
+        <div class="settingIcon" style="background:#1a0a0a;">🌐</div>
+        <div>
+          <div class="settingLabel">Website</div>
+          <div class="settingDesc">datta-ai.com</div>
+        </div>
+      </div>
+      <div class="settingArrow">›</div>
+    </div>
+    <div class="settingRow" onclick="copyEmail()">
+      <div class="settingLeft">
+        <div class="settingIcon" style="background:#0a1a1a;">✉️</div>
+        <div>
+          <div class="settingLabel">Contact Support</div>
+          <div class="settingDesc">harisaiganeshpampana@gmail.com</div>
+        </div>
+      </div>
+      <div class="settingArrow">›</div>
+    </div>
+  </div>
+
+  <!-- APP INFO -->
+  <div style="text-align:center;padding:16px 0 8px;">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;background:linear-gradient(135deg,#00ff88,#00ccff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">DATTA AI</div>
+    <div style="font-size:12px;color:#333;margin-top:4px;">Version 3.5 · Made with ❤️ in India</div>
+  </div>
+
   <button class="logoutBtn" onclick="logout()">🚪 Log Out</button>
 
 </div>
@@ -908,6 +959,12 @@ async function deleteAccount() {
     if (!res.ok) return showMsg("deleteAccount", data.error || "Failed", "error")
     localStorage.clear(); window.location.href = "login.html"
   } catch(e) { showMsg("deleteAccount", "Server error", "error") }
+}
+
+function copyEmail() {
+  navigator.clipboard.writeText("harisaiganeshpampana@gmail.com")
+    .then(() => alert("Email copied!"))
+    .catch(() => alert("harisaiganeshpampana@gmail.com"))
 }
 
 function logout() {
