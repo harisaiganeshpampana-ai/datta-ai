@@ -1568,12 +1568,12 @@ window.toggleVoiceListening = toggleVoiceListening
 
 // VERSION NAMES based on plan
 const planVersions = {
-  free:      { name: "Free",      version: "v1.0", emoji: "🌱" },
-  pro:       { name: "Pro",       version: "v2.0", emoji: "⚡" },
-  max:       { name: "Max",       version: "v3.0", emoji: "🚀" },
-  ultramax:  { name: "Ultra Max", version: "v4.0", emoji: "👑" },
-  basic:     { name: "Pro",       version: "v2.0", emoji: "⚡" },
-  enterprise:{ name: "Ultra Max", version: "v4.0", emoji: "👑" }
+  free:      { name: "Free",      version: "Datta 2.1", emoji: "🌱" },
+  pro:       { name: "Pro",       version: "Datta 4.2", emoji: "⚡" },
+  max:       { name: "Max",       version: "Datta 4.8", emoji: "🚀" },
+  ultramax:  { name: "Ultra Max", version: "Datta 5.4", emoji: "👑" },
+  basic:     { name: "Pro",       version: "Datta 4.2", emoji: "⚡" },
+  enterprise:{ name: "Ultra Max", version: "Datta 5.4", emoji: "👑" }
 }
 
 async function loadUserVersion() {
@@ -1817,11 +1817,16 @@ window.showToast = showToast
 
 // ── MODEL PICKER ─────────────────────────────────────────────────────────────
 const modelData = {
-  veda:   { model: "llama-3.3-70b-versatile", icon: "⚡", name: "Veda" },
-  surya:  { model: "llama-3.1-8b-instant", icon: "🚀", name: "Surya" },
-  agni:   { model: "deepseek-r1-distill-llama-70b", icon: "🧠", name: "Agni" },
-  brahma: { model: "mixtral-8x7b-32768", icon: "👑", name: "Brahma" },
-  chitra: { model: "meta-llama/llama-4-scout-17b-16e-instruct", icon: "👁️", name: "Chitra" }
+  d21:    { model: "llama-3.1-8b-instant",                        icon: "", name: "Datta 2.1" },
+  d42:    { model: "llama-3.3-70b-versatile",                     icon: "", name: "Datta 4.2" },
+  d48:    { model: "deepseek-r1-distill-llama-70b",               icon: "", name: "Datta 4.8" },
+  d54:    { model: "mixtral-8x7b-32768",                          icon: "", name: "Datta 5.4" },
+  chitra: { model: "meta-llama/llama-4-scout-17b-16e-instruct",   icon: "", name: "Datta Vision" },
+  // Legacy support
+  veda:   { model: "llama-3.3-70b-versatile",  icon: "", name: "Datta 4.2" },
+  surya:  { model: "llama-3.1-8b-instant",     icon: "", name: "Datta 2.1" },
+  agni:   { model: "deepseek-r1-distill-llama-70b", icon: "", name: "Datta 4.8" },
+  brahma: { model: "mixtral-8x7b-32768",       icon: "", name: "Datta 5.4" }
 }
 
 let currentModelKey = "veda"
@@ -1848,9 +1853,14 @@ function selectModel(modelId, key, icon, name) {
   if (card) card.classList.add("active")
   if (check) check.textContent = "✓"
 
-  // Update button
-  document.getElementById("modelBtnIcon").textContent = icon
-  document.getElementById("modelBtnName").textContent = name
+  // Update topbar button
+  const btnName = document.getElementById("modelBtnName")
+  if (btnName) btnName.textContent = name
+
+  // Update input bar pills
+  document.querySelectorAll(".inputModelPill").forEach(p => p.classList.remove("active"))
+  const pill = document.getElementById("imp-" + key)
+  if (pill) pill.classList.add("active")
 
   // Save
   localStorage.setItem("datta_model", modelId)
@@ -1862,7 +1872,7 @@ function selectModel(modelId, key, icon, name) {
 
 // Load saved model on startup
 window.addEventListener("DOMContentLoaded", function() {
-  const savedKey = localStorage.getItem("datta_model_key") || "veda"
+  const savedKey = localStorage.getItem("datta_model_key") || "d21"
   const saved = modelData[savedKey]
   if (saved) {
     selectModel(saved.model, savedKey, saved.icon, saved.name)
@@ -2357,3 +2367,24 @@ if ("serviceWorker" in navigator) {
 
 window.confirmDelete = confirmDelete
 window.deleteChat = deleteChat
+
+// INPUT BAR MODEL SELECTOR
+function selectInputModel(modelId, key, label) {
+  // Use the main selectModel function to keep everything in sync
+  selectModel(modelId, key, "", label)
+  showToast(label + " selected")
+}
+
+// Load saved model pill on startup
+window.addEventListener("DOMContentLoaded", function() {
+  const savedKey = localStorage.getItem("datta_model_key") || "d21"
+  document.querySelectorAll(".inputModelPill").forEach(p => p.classList.remove("active"))
+  const pill = document.getElementById("imp-" + savedKey)
+  if (pill) pill.classList.add("active")
+  // Update topbar button name
+  const saved = modelData[savedKey]
+  const btnName = document.getElementById("modelBtnName")
+  if (btnName && saved) btnName.textContent = saved.name
+})
+
+window.selectInputModel = selectInputModel
