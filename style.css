@@ -3565,3 +3565,30 @@ body {
   height: 100% !important;
   min-height: 300px !important;
 }
+
+/* VOICE SELECTOR */
+.voiceSelector {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.voiceOption {
+  padding: 7px 14px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 20px;
+  color: #666;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.voiceOption:hover { background: #222; color: #aaa; }
+.voiceOption.active {
+  background: #0a2a1a;
+  border-color: #00ff8866;
+  color: #00ff88;
+}
