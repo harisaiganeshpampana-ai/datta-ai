@@ -289,6 +289,16 @@ window.likeImage = likeImage
 window.dislikeImage = dislikeImage
 window.renderImageResponse = renderImageResponse
 // AUTH CHECK - redirect to login if not logged in
+// Configure marked for clean rendering
+if (typeof marked !== 'undefined') {
+  marked.setOptions({
+    breaks: true,
+    gfm: true,
+    headerIds: false,
+    mangle: false
+  })
+}
+
 // Always read token fresh
 function getToken() {
   return localStorage.getItem("datta_token") || ""
