@@ -2946,3 +2946,9 @@ body.light-theme pre { background: #f8f8f8 !important; }
   width: 20px;
   text-align: center;
 }
+
+/* ACTIVE CHAT IN SIDEBAR */
+.chatItem.active {
+  background: #1a1a1a !important;
+  border-left: 2px solid #00ff88 !important;
+}
