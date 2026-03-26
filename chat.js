@@ -73,18 +73,35 @@ window.stopGeneration = stopGeneration
 
 // RENDER IMAGE RESPONSE - Datta AI unique style
 function renderImageResponse(text) {
-  // Handle new format
-  let cleanText = text
-  if (text.includes("DATTA_IMAGE_START")) {
-    cleanText = text.replace("DATTA_IMAGE_START\n", "").replace("\nDATTA_IMAGE_END", "")
-  }
-  const imgMatch = cleanText.match(/!\[([^\]]*)\]\(([^)]+)\)/)
-  const promptMatch = cleanText.match(/PROMPT:(.+)/) || cleanText.match(/\*Prompt: ([^*]+)\*/)
-  if (!imgMatch) return marked.parse(text)
+  let imgUrl = null
+  let prompt = "Generated Image"
 
-  const altText = imgMatch[1] || "Generated Image"
-  const imgUrl = imgMatch[2]
-  const prompt = promptMatch ? promptMatch[1].trim() : altText
+  // Extract from DATTA_IMAGE format
+  if (text.includes("DATTA_IMAGE_START")) {
+    // Extract prompt
+    const promptMatch = text.match(/PROMPT:([^\n]+)/)
+    if (promptMatch) prompt = promptMatch[1].trim()
+
+    // Extract image URL - handle both base64 and regular URLs
+    const base64Match = text.match(/!\[[^\]]*\]\((data:image[^)]{0,10000000})\)/)
+    const urlMatch = text.match(/!\[[^\]]*\]\((https:[^)]+)\)/)
+
+    if (base64Match) {
+      imgUrl = base64Match[1]
+    } else if (urlMatch) {
+      imgUrl = urlMatch[1]
+    }
+  } else {
+    // Old format
+    const imgMatch = text.match(/!\[([^\]]*)\]\(([^)]+)\)/)
+    const promptMatch = text.match(/PROMPT:(.+)/) || text.match(/\*Prompt: ([^*]+)\*/)
+    if (!imgMatch) return marked.parse(text)
+    imgUrl = imgMatch[2]
+    if (promptMatch) prompt = promptMatch[1].trim()
+  }
+
+  if (!imgUrl) return marked.parse(text)
+  const altText = prompt
   const uid = "ig" + Date.now()
 
   return `<div class="dattaImgWrap" id="${uid}">
@@ -113,15 +130,18 @@ function renderImageResponse(text) {
         var img=this;
         var s=document.getElementById('${uid}shimmer');
         var retries=parseInt(img.dataset.retries||0);
-        if(retries < 2){
+        // Only retry for URL images (not base64)
+        if(!img.src.startsWith('data:') && retries < 3){
           img.dataset.retries=retries+1;
+          if(s && s.querySelector) s.querySelector && (s.querySelector('.shimmerText').textContent='Retrying... ('+(retries+1)+'/3)');
           setTimeout(function(){
             var seed=Math.floor(Math.random()*999999);
-            img.src=img.src.replace(/seed=\d+/,'seed='+seed);
-          }, 2000);
-          if(s)s.querySelector('.shimmerText').textContent='Retrying... ('+(retries+1)+'/2)';
+            var newSrc=img.src.replace(/seed=\d+/,'seed='+seed);
+            if(newSrc===img.src) newSrc=img.src+'&r='+seed;
+            img.src=newSrc;
+          }, 3000);
         } else {
-          if(s)s.innerHTML='<div style=padding:32px;color:#888;text-align:center;font-size:13px>❌ Failed to generate. Try again.</div>';
+          if(s)s.innerHTML='<div style=\'padding:32px;color:#888;text-align:center;font-size:13px\'>❌ Image service busy. Try again in a moment.</div>';
         }
       "
     >
