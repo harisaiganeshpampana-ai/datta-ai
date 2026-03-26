@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin - Datta AI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:system-ui,sans-serif; }
+body { background:#0a0a0a; color:white; min-height:100vh; }
+.header { background:#111; border-bottom:1px solid #222; padding:16px 24px; display:flex; align-items:center; gap:16px; }
+.backBtn { background:#1e1e1e; border:none; color:white; padding:8px 16px; border-radius:20px; cursor:pointer; font-size:14px; }
+.headerTitle { font-family:'Rajdhani',sans-serif; font-size:20px; font-weight:700; letter-spacing:1px; }
+.badge { background:#0a2a1a; color:#00ff88; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+.container { max-width:1000px; margin:0 auto; padding:24px 16px; }
+.statsGrid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:24px; }
+@media(min-width:600px){ .statsGrid { grid-template-columns:repeat(4,1fr); } }
+.statCard { background:#111; border:1px solid #222; border-radius:16px; padding:20px; }
+.statValue { font-size:28px; font-weight:800; font-family:'Rajdhani',sans-serif; background:linear-gradient(135deg,#00ff88,#00ccff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.statLabel { font-size:12px; color:#666; margin-top:4px; text-transform:uppercase; letter-spacing:0.5px; }
+.section { background:#111; border:1px solid #222; border-radius:16px; padding:20px; margin-bottom:16px; }
+.sectionTitle { font-family:'Rajdhani',sans-serif; font-size:16px; font-weight:700; letter-spacing:0.5px; margin-bottom:16px; text-transform:uppercase; color:#aaa; }
+.revenueRow { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #1a1a1a; }
+.revenueRow:last-child { border-bottom:none; }
+.planBadge { padding:3px 10px; border-radius:20px; font-size:12px; font-weight:700; }
+.usersTable { width:100%; border-collapse:collapse; }
+.usersTable th { text-align:left; padding:10px; font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid #1a1a1a; }
+.usersTable td { padding:12px 10px; border-bottom:1px solid #141414; font-size:13px; }
+.usersTable tr:hover td { background:#141414; }
+.deleteUserBtn { background:#2a1010; border:1px solid #441010; color:#ff6666; padding:4px 10px; border-radius:6px; cursor:pointer; font-size:12px; }
+.pagination { display:flex; gap:8px; justify-content:center; margin-top:16px; }
+.pageBtn { padding:6px 12px; background:#1a1a1a; border:1px solid #222; border-radius:8px; color:#aaa; cursor:pointer; font-size:13px; }
+.pageBtn.active { background:#0a2a1a; border-color:#00ff8844; color:#00ff88; }
+.apiSection { background:#111; border:1px solid #222; border-radius:16px; padding:20px; margin-bottom:16px; }
+.apiKeyBox { background:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px; padding:12px; font-family:monospace; font-size:13px; color:#00ff88; word-break:break-all; margin-bottom:8px; }
+.createApiBtn { padding:10px 20px; background:linear-gradient(135deg,#00cc6a,#00aaff); border:none; border-radius:10px; color:white; font-size:14px; font-weight:700; cursor:pointer; }
+.loading { text-align:center; color:#666; padding:40px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <button class="backBtn" onclick="window.location.href='index.html'">← Back</button>
+  <div class="headerTitle">Admin Dashboard</div>
+  <div class="badge">ADMIN</div>
+</div>
+
+<div class="container">
+
+  <!-- STATS -->
+  <div class="statsGrid">
+    <div class="statCard">
+      <div class="statValue" id="totalUsers">-</div>
+      <div class="statLabel">Total Users</div>
+    </div>
+    <div class="statCard">
+      <div class="statValue" id="totalChats">-</div>
+      <div class="statLabel">Total Chats</div>
+    </div>
+    <div class="statCard">
+      <div class="statValue" id="totalMessages">-</div>
+      <div class="statLabel">Messages Sent</div>
+    </div>
+    <div class="statCard">
+      <div class="statValue" id="totalRevenue">-</div>
+      <div class="statLabel">Est. Revenue</div>
+    </div>
+  </div>
+
+  <!-- TODAY -->
+  <div class="section">
+    <div class="sectionTitle">Today</div>
+    <div class="revenueRow">
+      <span>New Users Today</span>
+      <span id="newUsersToday" style="color:#00ff88;font-weight:700;">-</span>
+    </div>
+    <div class="revenueRow">
+      <span>New Chats Today</span>
+      <span id="newChatsToday" style="color:#00ccff;font-weight:700;">-</span>
+    </div>
+  </div>
+
+  <!-- PLAN BREAKDOWN -->
+  <div class="section">
+    <div class="sectionTitle">Plan Breakdown</div>
+    <div class="revenueRow">
+      <span>🌱 Arambh (Free)</span>
+      <span id="planFree" style="color:#aaa;">-</span>
+    </div>
+    <div class="revenueRow">
+      <span>⚡ Shakti (Basic) — ₹199/mo</span>
+      <span id="planBasic" style="color:#00ff88;font-weight:700;">-</span>
+    </div>
+    <div class="revenueRow">
+      <span>🔥 Agni (Pro) — ₹499/mo</span>
+      <span id="planPro" style="color:#aa66ff;font-weight:700;">-</span>
+    </div>
+    <div class="revenueRow">
+      <span>👑 Brahma (Enterprise) — ₹1499/mo</span>
+      <span id="planEnterprise" style="color:#ffaa00;font-weight:700;">-</span>
+    </div>
+    <div class="revenueRow" style="border-top:1px solid #222;margin-top:8px;padding-top:12px;">
+      <span style="font-weight:700;">Total Monthly Revenue</span>
+      <span id="totalRevDisplay" style="color:#00ff88;font-size:18px;font-weight:800;">₹0</span>
+    </div>
+  </div>
+
+  <!-- API KEYS -->
+  <div class="apiSection">
+    <div class="sectionTitle">Your API Keys</div>
+    <div id="apiKeysList"><div class="loading">Loading...</div></div>
+    <div style="display:flex;gap:10px;margin-top:12px;">
+      <input type="text" id="apiKeyName" placeholder="Key name (e.g. My App)" style="flex:1;padding:10px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;color:white;outline:none;font-size:14px;">
+      <button class="createApiBtn" onclick="createApiKey()">+ Create Key</button>
+    </div>
+  </div>
+
+  <!-- USERS TABLE -->
+  <div class="section">
+    <div class="sectionTitle">All Users</div>
+    <div id="usersTableWrap"><div class="loading">Loading...</div></div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+</div>
+
+<script>
+const SERVER = "https://datta-ai-server.onrender.com"
+let currentPage = 1
+
+function getToken() { return localStorage.getItem("datta_token") || "" }
+
+async function loadStats() {
+  try {
+    const res = await fetch(SERVER + "/admin/stats?token=" + getToken())
+    if (!res.ok) { document.body.innerHTML = '<div style="text-align:center;padding:80px;color:#ff6666;font-size:18px;">Not authorized. Admin access required.</div>'; return }
+    const d = await res.json()
+    document.getElementById("totalUsers").textContent = d.totalUsers.toLocaleString()
+    document.getElementById("totalChats").textContent = d.totalChats.toLocaleString()
+    document.getElementById("totalMessages").textContent = d.totalMessages.toLocaleString()
+    document.getElementById("totalRevenue").textContent = "Rs." + ((d.revenue.basic + d.revenue.pro + d.revenue.enterprise)).toLocaleString()
+    document.getElementById("newUsersToday").textContent = d.newUsersToday
+    document.getElementById("newChatsToday").textContent = d.newChatsToday
+    document.getElementById("planFree").textContent = (d.planStats.free || 0) + " users"
+    document.getElementById("planBasic").textContent = (d.planStats.basic || 0) + " users — Rs." + (d.revenue.basic).toLocaleString()
+    document.getElementById("planPro").textContent = (d.planStats.pro || 0) + " users — Rs." + (d.revenue.pro).toLocaleString()
+    document.getElementById("planEnterprise").textContent = (d.planStats.enterprise || 0) + " users — Rs." + (d.revenue.enterprise).toLocaleString()
+    document.getElementById("totalRevDisplay").textContent = "Rs." + (d.revenue.basic + d.revenue.pro + d.revenue.enterprise).toLocaleString()
+  } catch(e) { console.error(e) }
+}
+
+async function loadUsers(page = 1) {
+  currentPage = page
+  try {
+    const res = await fetch(SERVER + "/admin/users?token=" + getToken() + "&page=" + page)
+    const d = await res.json()
+    const wrap = document.getElementById("usersTableWrap")
+    wrap.innerHTML = `<table class="usersTable">
+      <tr><th>Username</th><th>Email</th><th>Plan</th><th>Joined</th><th>Action</th></tr>
+      ${d.users.map(u => `<tr>
+        <td>${u.username}</td>
+        <td style="color:#888">${u.email || "-"}</td>
+        <td><span class="planBadge" style="background:#0a2a1a;color:#00ff88">${u.plan}</span></td>
+        <td style="color:#666">${new Date(u.createdAt).toLocaleDateString()}</td>
+        <td><button class="deleteUserBtn" onclick="deleteUser('${u._id}')">Delete</button></td>
+      </tr>`).join("")}
+    </table>`
+    const pag = document.getElementById("pagination")
+    pag.innerHTML = Array.from({length: d.pages}, (_, i) =>
+      `<button class="pageBtn ${i+1===page?'active':''}" onclick="loadUsers(${i+1})">${i+1}</button>`
+    ).join("")
+  } catch(e) {}
+}
+
+async function deleteUser(id) {
+  if (!confirm("Delete this user permanently?")) return
+  const res = await fetch(SERVER + "/admin/user/" + id + "?token=" + getToken(), { method: "DELETE" })
+  if (res.ok) { loadUsers(currentPage); loadStats() }
+}
+
+async function loadApiKeys() {
+  try {
+    const res = await fetch(SERVER + "/api/keys?token=" + getToken())
+    const keys = await res.json()
+    const list = document.getElementById("apiKeysList")
+    if (!keys.length) { list.innerHTML = '<div style="color:#666;font-size:13px;">No API keys yet. Create one below.</div>'; return }
+    list.innerHTML = keys.map(k => `
+      <div style="margin-bottom:12px;">
+        <div style="font-size:12px;color:#888;margin-bottom:4px;">${k.name} — ${k.requests}/${k.limit} requests</div>
+        <div class="apiKeyBox">${k.key}</div>
+        <button onclick="copyKey('${k.key}')" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#aaa;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;margin-right:6px;">Copy</button>
+        <button onclick="deleteKey('${k.key}')" style="background:#2a1010;border:1px solid #441010;color:#ff6666;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;">Delete</button>
+      </div>
+    `).join("")
+  } catch(e) {}
+}
+
+async function createApiKey() {
+  const name = document.getElementById("apiKeyName").value.trim() || "My API Key"
+  const res = await fetch(SERVER + "/api/keys?token=" + getToken(), {
+    method: "POST", headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ name })
+  })
+  const data = await res.json()
+  if (data.key) { loadApiKeys(); document.getElementById("apiKeyName").value = "" }
+  else alert(data.error || "Failed")
+}
+
+async function deleteKey(key) {
+  if (!confirm("Delete this API key?")) return
+  await fetch(SERVER + "/api/keys/" + key + "?token=" + getToken(), { method: "DELETE" })
+  loadApiKeys()
+}
+
+function copyKey(key) {
+  navigator.clipboard.writeText(key)
+  alert("API key copied!")
+}
+
+window.addEventListener("load", () => {
+  if (!getToken()) { window.location.href = "login.html"; return }
+  loadStats()
+  loadUsers()
+  loadApiKeys()
+})
+</script>
+</body>
+</html>
