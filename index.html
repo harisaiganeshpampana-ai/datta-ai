@@ -316,8 +316,18 @@
     if (e.key === "Escape") closePlusMenu()
   })
 
-  // Make sure sheet is closed on load
+  // Make sure sheet is ALWAYS closed on load
   window.addEventListener("load", function() {
+    closePlusMenu()
+    // Force hide just in case
+    const sheet = document.getElementById("addToChatSheet")
+    const overlay = document.getElementById("addToChatOverlay")
+    if (sheet) { sheet.classList.remove("show"); sheet.style.bottom = "-100%" }
+    if (overlay) { overlay.classList.remove("show"); overlay.style.display = "none" }
+  })
+
+  // Also close on DOMContentLoaded
+  document.addEventListener("DOMContentLoaded", function() {
     closePlusMenu()
   })
 
@@ -353,15 +363,15 @@
 
   // FILE INPUT LISTENERS
   document.getElementById("imageInput").addEventListener("change", function() {
-    if (this.files[0]) { showFilePreview(this.files[0]); togglePlusMenu() }
+    if (this.files[0]) { showFilePreview(this.files[0]); closePlusMenu() }
   })
 
   document.getElementById("cameraInput").addEventListener("change", function() {
-    if (this.files[0]) { showFilePreview(this.files[0]); togglePlusMenu() }
+    if (this.files[0]) { showFilePreview(this.files[0]); closePlusMenu() }
   })
 
   document.getElementById("photoInput").addEventListener("change", function() {
-    if (this.files[0]) { showFilePreview(this.files[0]); togglePlusMenu() }
+    if (this.files[0]) { showFilePreview(this.files[0]); closePlusMenu() }
   })
 
   // PLUS MENU ACTIONS
@@ -378,22 +388,22 @@
   }
 
   function triggerWebSearch() {
+    closePlusMenu()
     const input = document.getElementById("message")
     if (input) {
       input.placeholder = "Search the web..."
       input.focus()
     }
-    togglePlusMenu()
   }
 
   function triggerImageGen() {
+    closePlusMenu()
     const input = document.getElementById("message")
     if (input) {
       input.value = "generate image of "
       input.focus()
       input.setSelectionRange(input.value.length, input.value.length)
     }
-    togglePlusMenu()
   }
 
   window.triggerCamera = triggerCamera
