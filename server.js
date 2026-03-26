@@ -485,9 +485,34 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // IMAGE GENERATION
     if (message && isImageRequest(message)) {
       const imagePrompt = getImagePrompt(message)
-      const seed = Math.floor(Math.random() * 999999)
-      const models = ["flux-schnell", "flux", "turbo"]
-      const imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=" + models[seed % 3] + "&seed=" + seed
+      console.log("Generating image:", imagePrompt)
+      let imageUrl = null
+
+      // Try HuggingFace FLUX first
+      const HF_KEY = process.env.HF_API_KEY
+      if (HF_KEY) {
+        try {
+          const hfRes = await fetch("https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell", {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + HF_KEY, "Content-Type": "application/json", "x-wait-for-model": "true" },
+            body: JSON.stringify({ inputs: imagePrompt, parameters: { num_inference_steps: 4, width: 1024, height: 1024 } })
+          })
+          if (hfRes.ok) {
+            const buf = await hfRes.arrayBuffer()
+            imageUrl = "data:image/jpeg;base64," + Buffer.from(buf).toString("base64")
+            console.log("HuggingFace image success!")
+          } else { console.log("HF failed:", hfRes.status) }
+        } catch(e) { console.log("HF error:", e.message) }
+      }
+
+      // Fallback: Pollinations
+      if (!imageUrl) {
+        const seed = Math.floor(Math.random() * 999999)
+        const models = ["flux-schnell", "flux", "turbo", "flux-realism"]
+        imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=" + models[seed % models.length] + "&seed=" + seed
+        console.log("Pollinations fallback:", imageUrl.substring(0, 80))
+      }
+
       const responseText = "DATTA_IMAGE_START\n![" + imagePrompt + "](" + imageUrl + ")\nPROMPT:" + imagePrompt + "\nDATTA_IMAGE_END"
       res.write(responseText)
       chat.messages.push({ role: "assistant", content: responseText })
