@@ -612,16 +612,16 @@ async function loadSidebar() {
     if (!window._chatRestored) {
       window._chatRestored = true
       const lastChatId = localStorage.getItem("datta_last_chat")
-      if (lastChatId) {
+      if (lastChatId && chats.length > 0) {
         const exists = chats.some(c => c._id === lastChatId)
         if (exists) {
+          openChat(lastChatId)
           setTimeout(() => {
-            openChat(lastChatId)
+            document.querySelectorAll(".chatItem").forEach(d => d.classList.remove("active"))
             const activeDiv = history.querySelector("[data-chat-id='" + lastChatId + "']")
             if (activeDiv) activeDiv.classList.add("active")
-          }, 200)
+          }, 300)
         } else {
-          // Chat not found - clear it
           localStorage.removeItem("datta_last_chat")
         }
       }
@@ -791,8 +791,11 @@ function scrollBottom() {
 
 chatBox.addEventListener("scroll", () => {
   const distFromBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight
-  userScrolledUp = distFromBottom > 100
-  if (scrollBtn) scrollBtn.style.display = userScrolledUp ? "block" : "none"
+  userScrolledUp = distFromBottom > 150
+  if (scrollBtn) {
+    if (userScrolledUp) scrollBtn.classList.add("show")
+    else scrollBtn.classList.remove("show")
+  }
 })
 
 if (scrollBtn) {
