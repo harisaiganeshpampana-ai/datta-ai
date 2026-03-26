@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Datta AI</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -267,14 +267,14 @@
     const overlay = document.getElementById("addToChatOverlay")
     const btn = document.getElementById("plusBtn")
     if (!sheet) return
-    const isOpen = sheet.classList.contains("show")
+    const isOpen = sheet.style.bottom === "0px" || sheet.style.bottom === "0"
     if (isOpen) {
-      sheet.classList.remove("show")
-      overlay.classList.remove("show")
+      sheet.style.bottom = "-100%"
+      overlay.style.display = "none"
       if (btn) btn.classList.remove("active")
     } else {
-      sheet.classList.add("show")
-      overlay.classList.add("show")
+      sheet.style.bottom = "0"
+      overlay.style.display = "block"
       if (btn) btn.classList.add("active")
     }
   }
@@ -283,8 +283,8 @@
     const sheet = document.getElementById("addToChatSheet")
     const overlay = document.getElementById("addToChatOverlay")
     const btn = document.getElementById("plusBtn")
-    if (sheet) sheet.classList.remove("show")
-    if (overlay) overlay.classList.remove("show")
+    if (sheet) sheet.style.bottom = "-100%"
+    if (overlay) overlay.style.display = "none"
     if (btn) btn.classList.remove("active")
   }
 
@@ -584,8 +584,8 @@
 
 
 <!-- ADD TO CHAT BOTTOM SHEET -->
-<div class="addToChatOverlay" id="addToChatOverlay" onclick="closePlusMenu()"></div>
-<div class="addToChatSheet" id="addToChatSheet">
+<div class="addToChatOverlay" id="addToChatOverlay" onclick="closePlusMenu()" style="display:none;"></div>
+<div class="addToChatSheet" id="addToChatSheet" style="bottom:-100%;">
   <div class="sheetHandle"></div>
   <div class="sheetHeader">
     <button class="sheetCloseBtn" onclick="closePlusMenu()">✕</button>
