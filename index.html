@@ -700,89 +700,76 @@
   </div>
   <div class="modelPickerList">
 
-    <!-- Veda -->
-    <div class="modelCard active" id="mcard-veda" onclick="selectModel('llama-3.3-70b-versatile','veda','⚡','Veda')">
+    <!-- Datta 2.1 -->
+    <div class="modelCard active" id="mcard-d21" onclick="selectModel('llama-3.1-8b-instant','d21','','Datta 2.1')">
       <div class="modelCardLeft">
-        <div class="modelCardIcon" style="background:linear-gradient(135deg,#00ff88,#00ccff);">⚡</div>
+        <div class="modelCardIcon" style="background:linear-gradient(135deg,#1a1a1a,#2a2a2a);font-size:13px;font-weight:800;color:#aaa;font-family:Rajdhani,sans-serif;">2.1</div>
         <div>
-          <div class="modelCardName">Veda <span class="modelBadge free">FREE</span></div>
-          <div class="modelCardDesc">Best for everyday tasks, coding, writing</div>
+          <div class="modelCardName">Datta 2.1 <span class="modelBadge free">FREE</span></div>
+          <div class="modelCardDesc">Lightweight model — default for Free plan. Simple and fast answers.</div>
           <div class="modelCardFeatures">
             <span class="mf">✓ Fast responses</span>
-            <span class="mf">✓ Code generation</span>
+            <span class="mf">✓ Simple Q&A</span>
+            <span class="mf">✓ Basic coding</span>
+            <span class="mf">✓ Uses limits slowly</span>
+          </div>
+        </div>
+      </div>
+      <div class="modelCardCheck" id="check-d21">✓</div>
+    </div>
+
+    <!-- Datta 4.2 -->
+    <div class="modelCard" id="mcard-d42" onclick="selectModel('llama-3.3-70b-versatile','d42','','Datta 4.2')">
+      <div class="modelCardLeft">
+        <div class="modelCardIcon" style="background:linear-gradient(135deg,#0a2a1a,#0a1a2a);font-size:13px;font-weight:800;color:#00ff88;font-family:Rajdhani,sans-serif;">4.2</div>
+        <div>
+          <div class="modelCardName">Datta 4.2 <span class="modelBadge free">FREE</span></div>
+          <div class="modelCardDesc">Balanced model — good for Pro users. Handles most tasks well.</div>
+          <div class="modelCardFeatures">
+            <span class="mf">✓ Good coding</span>
+            <span class="mf">✓ Writing & analysis</span>
+            <span class="mf">✓ Research tasks</span>
             <span class="mf">✓ 70B parameters</span>
           </div>
         </div>
       </div>
-      <div class="modelCardCheck" id="check-veda">✓</div>
+      <div class="modelCardCheck" id="check-d42"></div>
     </div>
 
-    <!-- Surya -->
-    <div class="modelCard" id="mcard-surya" onclick="selectModel('llama-3.1-8b-instant','surya','🚀','Surya')">
+    <!-- Datta 4.8 -->
+    <div class="modelCard" id="mcard-d48" onclick="selectModel('deepseek-r1-distill-llama-70b','d48','','Datta 4.8')">
       <div class="modelCardLeft">
-        <div class="modelCardIcon" style="background:linear-gradient(135deg,#ff8800,#ffcc00);">🚀</div>
+        <div class="modelCardIcon" style="background:linear-gradient(135deg,#1a0a2a,#2a0a1a);font-size:13px;font-weight:800;color:#aa66ff;font-family:Rajdhani,sans-serif;">4.8</div>
         <div>
-          <div class="modelCardName">Surya <span class="modelBadge free">FREE</span></div>
-          <div class="modelCardDesc">Ultra-fast responses, quick answers</div>
+          <div class="modelCardName">Datta 4.8 <span class="modelBadge pro">MAX</span></div>
+          <div class="modelCardDesc">Advanced reasoning model — great for Max plan. Deep thinking & logic.</div>
           <div class="modelCardFeatures">
-            <span class="mf">✓ Fastest speed</span>
-            <span class="mf">✓ Quick Q&A</span>
-            <span class="mf">✓ 8B parameters</span>
-          </div>
-        </div>
-      </div>
-      <div class="modelCardCheck" id="check-surya"></div>
-    </div>
-
-    <!-- Agni -->
-    <div class="modelCard" id="mcard-agni" onclick="selectModel('deepseek-r1-distill-llama-70b','agni','🧠','Agni')">
-      <div class="modelCardLeft">
-        <div class="modelCardIcon" style="background:linear-gradient(135deg,#ff4444,#ff8800);">🧠</div>
-        <div>
-          <div class="modelCardName">Agni <span class="modelBadge pro">PRO</span></div>
-          <div class="modelCardDesc">Deep reasoning, complex problems, math</div>
-          <div class="modelCardFeatures">
-            <span class="mf">✓ Chain of thought</span>
+            <span class="mf">✓ Deep reasoning</span>
             <span class="mf">✓ Math & logic</span>
-            <span class="mf">✓ Research tasks</span>
+            <span class="mf">✓ Complex coding</span>
+            <span class="mf">✓ Research & analysis</span>
           </div>
         </div>
       </div>
-      <div class="modelCardCheck" id="check-agni"></div>
+      <div class="modelCardCheck" id="check-d48"></div>
     </div>
 
-    <!-- Brahma -->
-    <div class="modelCard" id="mcard-brahma" onclick="selectModel('mixtral-8x7b-32768','brahma','👑','Brahma')">
+    <!-- Datta 5.4 -->
+    <div class="modelCard" id="mcard-d54" onclick="selectModel('mixtral-8x7b-32768','d54','','Datta 5.4')">
       <div class="modelCardLeft">
-        <div class="modelCardIcon" style="background:linear-gradient(135deg,#aa44ff,#ff44aa);">👑</div>
+        <div class="modelCardIcon" style="background:linear-gradient(135deg,#2a0a0a,#1a0a2a);font-size:13px;font-weight:800;color:#ff6644;font-family:Rajdhani,sans-serif;">5.4</div>
         <div>
-          <div class="modelCardName">Brahma <span class="modelBadge pro">PRO</span></div>
-          <div class="modelCardDesc">Creative writing, long context, analysis</div>
+          <div class="modelCardName">Datta 5.4 <span class="modelBadge vision">ULTRA</span></div>
+          <div class="modelCardDesc">Most powerful model — best on Ultra Max. Uses limits fast on lower plans.</div>
           <div class="modelCardFeatures">
-            <span class="mf">✓ 32K context</span>
-            <span class="mf">✓ Creative tasks</span>
-            <span class="mf">✓ Mixtral MoE</span>
+            <span class="mf">✓ Ultra powerful</span>
+            <span class="mf">✓ 32K long context</span>
+            <span class="mf">✓ Creative writing</span>
+            <span class="mf">✓ Advanced coding</span>
           </div>
         </div>
       </div>
-      <div class="modelCardCheck" id="check-brahma"></div>
-    </div>
-
-    <!-- Chitra - Vision -->
-    <div class="modelCard" id="mcard-chitra" onclick="selectModel('meta-llama/llama-4-scout-17b-16e-instruct','chitra','👁️','Chitra')">
-      <div class="modelCardLeft">
-        <div class="modelCardIcon" style="background:linear-gradient(135deg,#00ccff,#aa44ff);">👁️</div>
-        <div>
-          <div class="modelCardName">Chitra <span class="modelBadge vision">VISION</span></div>
-          <div class="modelCardDesc">Image understanding, visual analysis</div>
-          <div class="modelCardFeatures">
-            <span class="mf">✓ See images</span>
-            <span class="mf">✓ Visual QA</span>
-            <span class="mf">✓ Llama 4 Scout</span>
-          </div>
-        </div>
-      </div>
-      <div class="modelCardCheck" id="check-chitra"></div>
+      <div class="modelCardCheck" id="check-d54"></div>
     </div>
 
   </div>
