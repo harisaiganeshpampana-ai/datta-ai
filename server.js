@@ -930,6 +930,38 @@ app.post("/chats/fix-titles", authMiddleware, async (req, res) => {
   } catch(err) { res.status(500).json({ error: err.message }) }
 })
 
+// USER USAGE ROUTE
+app.get("/user/usage", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id
+    const sub = await Subscription.findOne({ userId, active: true }).catch(() => null)
+    const plan = sub ? sub.plan : "free"
+
+    const msgKey = userId.toString() + "_messages"
+    const imgKey = userId.toString() + "_images"
+    const msgStore = rateLimitStore[msgKey] || { count: 0, windowStart: Date.now(), totalEver: 0 }
+    const imgStore = rateLimitStore[imgKey] || { count: 0, windowStart: Date.now() }
+
+    const limits = planLimits[plan] || planLimits.free
+    const resetMs = limits.resetHours * 60 * 60 * 1000
+    const now = Date.now()
+    const resetIn = resetMs > 0 ? Math.max(0, resetMs - (now - msgStore.windowStart)) : 0
+
+    res.json({
+      plan,
+      messagesUsed: msgStore.count || 0,
+      imagesUsed: imgStore.count || 0,
+      totalMessagesEver: msgStore.totalEver || 0,
+      resetIn,
+      limits: {
+        messages: limits.messages,
+        images: limits.images,
+        resetHours: limits.resetHours
+      }
+    })
+  } catch(err) { res.status(500).json({ error: err.message }) }
+})
+
 // MEMORY ROUTES
 app.get("/memory", authMiddleware, async (req, res) => {
   try {
