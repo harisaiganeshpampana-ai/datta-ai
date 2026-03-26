@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Shared Chat - Datta AI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:system-ui,sans-serif; }
+body { background:#0a0a0a; color:white; min-height:100vh; }
+.header { background:#111; border-bottom:1px solid #222; padding:14px 20px; display:flex; align-items:center; justify-content:space-between; }
+.logo { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:3px; background:linear-gradient(90deg,#00ff88,#00ccff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.tryBtn { padding:8px 18px; background:linear-gradient(135deg,#00cc6a,#00aaff); border:none; border-radius:20px; color:white; font-size:13px; font-weight:700; cursor:pointer; text-decoration:none; }
+.container { max-width:720px; margin:0 auto; padding:24px 16px 60px; }
+.chatTitle { font-family:'Rajdhani',sans-serif; font-size:22px; font-weight:700; margin-bottom:6px; }
+.chatMeta { font-size:13px; color:#666; margin-bottom:24px; }
+.messageRow { display:flex; gap:12px; margin-bottom:16px; }
+.messageRow.user { flex-direction:row-reverse; }
+.bubble { padding:12px 16px; border-radius:18px; max-width:80%; font-size:14px; line-height:1.6; }
+.userBubble { background:#1a3a1a; color:#e0ffe0; border-radius:18px 18px 4px 18px; }
+.aiBubble { background:#111; border:1px solid #222; border-radius:18px 18px 18px 4px; color:#e0e0e0; }
+.aiBubble pre { background:#1a1a1a; padding:12px; border-radius:8px; overflow-x:auto; margin:8px 0; }
+.aiBubble code { font-family:monospace; font-size:12px; }
+.footer { text-align:center; padding:32px 20px; border-top:1px solid #1a1a1a; margin-top:32px; }
+.footerText { color:#555; font-size:13px; margin-bottom:16px; }
+.loading { text-align:center; padding:60px; color:#666; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">DATTA AI</div>
+  <a href="index.html" class="tryBtn">Try Datta AI Free →</a>
+</div>
+<div class="container">
+  <div id="content"><div class="loading">Loading shared chat...</div></div>
+</div>
+<script>
+const SERVER = "https://datta-ai-server.onrender.com"
+const shareId = new URLSearchParams(window.location.search).get("id")
+
+async function loadChat() {
+  if (!shareId) { document.getElementById("content").innerHTML = '<div class="loading">Invalid share link</div>'; return }
+  try {
+    const res = await fetch(SERVER + "/share/" + shareId)
+    if (!res.ok) { document.getElementById("content").innerHTML = '<div class="loading">Chat not found or expired</div>'; return }
+    const data = await res.json()
+    document.title = data.title + " - Datta AI"
+    let html = `<div class="chatTitle">${data.title}</div><div class="chatMeta">Shared from Datta AI · ${new Date(data.createdAt).toLocaleDateString()} · ${data.views} views</div>`
+    data.messages.forEach(msg => {
+      if (msg.role === "user") {
+        html += `<div class="messageRow user"><div class="bubble userBubble">${msg.content}</div></div>`
+      } else {
+        html += `<div class="messageRow"><div class="bubble aiBubble">${marked.parse(msg.content)}</div></div>`
+      }
+    })
+    html += `<div class="footer"><div class="footerText">This conversation was shared from Datta AI</div><a href="index.html" class="tryBtn">Start your own conversation →</a></div>`
+    document.getElementById("content").innerHTML = html
+  } catch(e) { document.getElementById("content").innerHTML = '<div class="loading">Failed to load chat</div>' }
+}
+loadChat()
+</script>
+</body>
+</html>
