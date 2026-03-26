@@ -189,6 +189,18 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
 .stylePill.active { background:#0a2a1a; border-color:var(--accent); color:var(--accent); }
 
 /* LOGOUT */
+.voiceCard {
+  background: var(--bg3);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.voiceCard:hover { background: #222; border-color: #333; }
+.voiceCard.active { border-color: #00ff8866; background: #0a2a1a; }
+
 .logoutBtn {
   width:100%; padding:14px; background:#1a0808; border:1px solid #441010;
   border-radius:14px; color:#ff6666; font-size:15px; font-weight:600;
@@ -294,6 +306,74 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
   </div>
 
   <!-- MEMORY -->
+  <!-- USAGE SECTION -->
+  <div class="sectionLabel">Your Usage</div>
+  <div class="section" style="padding:16px;">
+    <div id="usageLoading" style="color:#666;font-size:13px;text-align:center;padding:8px;">Loading usage...</div>
+    <div id="usageContent" style="display:none;">
+      <div style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:13px;color:#aaa;">💬 Messages</span>
+          <span style="font-size:12px;color:#666;" id="msgUsageText">0 / 25</span>
+        </div>
+        <div style="background:#1a1a1a;border-radius:20px;height:8px;overflow:hidden;">
+          <div id="msgUsageBar" style="height:100%;border-radius:20px;background:linear-gradient(90deg,#00ff88,#00ccff);width:0%;transition:width 1s ease;"></div>
+        </div>
+        <div style="font-size:11px;color:#555;margin-top:4px;" id="msgResetText"></div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:13px;color:#aaa;">🎨 Images</span>
+          <span style="font-size:12px;color:#666;" id="imgUsageText">0 / 3</span>
+        </div>
+        <div style="background:#1a1a1a;border-radius:20px;height:8px;overflow:hidden;">
+          <div id="imgUsageBar" style="height:100%;border-radius:20px;background:linear-gradient(90deg,#aa44ff,#ff44aa);width:0%;transition:width 1s ease;"></div>
+        </div>
+      </div>
+      <div style="background:#0a0a0a;border:1px solid #1e1e1e;border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:white;" id="planNameUsage">Free Plan</div>
+          <div style="font-size:11px;color:#555;margin-top:2px;" id="planSubUsage">Upgrade for more</div>
+        </div>
+        <button id="upgradeUsageBtn" onclick="window.location.href='pricing.html'" style="padding:7px 16px;background:linear-gradient(135deg,#00cc6a,#00aaff);border:none;border-radius:20px;color:white;font-size:12px;font-weight:700;cursor:pointer;">Upgrade</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VOICE SECTION -->
+  <div class="sectionLabel">Voice Assistant</div>
+  <div class="section" style="padding:16px;">
+    <div style="font-size:12px;color:#666;margin-bottom:12px;">Choose voice for Datta AI</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="voiceCard active" id="vcrd-aria" onclick="selectVoice('aria')">
+        <div style="font-size:24px;margin-bottom:4px;">👩</div>
+        <div style="font-size:13px;font-weight:600;">Aria</div>
+        <div style="font-size:11px;color:#666;">US Female</div>
+      </div>
+      <div class="voiceCard" id="vcrd-james" onclick="selectVoice('james')">
+        <div style="font-size:24px;margin-bottom:4px;">👨</div>
+        <div style="font-size:13px;font-weight:600;">James</div>
+        <div style="font-size:11px;color:#666;">US Male</div>
+      </div>
+      <div class="voiceCard" id="vcrd-sofia" onclick="selectVoice('sofia')">
+        <div style="font-size:24px;margin-bottom:4px;">👩‍🦰</div>
+        <div style="font-size:13px;font-weight:600;">Sofia</div>
+        <div style="font-size:11px;color:#666;">UK Female</div>
+      </div>
+      <div class="voiceCard" id="vcrd-indian" onclick="selectVoice('indian')">
+        <div style="font-size:24px;margin-bottom:4px;">👩🏽</div>
+        <div style="font-size:13px;font-weight:600;">Riya</div>
+        <div style="font-size:11px;color:#666;">Indian Female</div>
+      </div>
+      <div class="voiceCard" id="vcrd-british" onclick="selectVoice('british')">
+        <div style="font-size:24px;margin-bottom:4px;">👨‍💼</div>
+        <div style="font-size:13px;font-weight:600;">Oliver</div>
+        <div style="font-size:11px;color:#666;">UK Male</div>
+      </div>
+    </div>
+    <button onclick="previewVoice()" style="width:100%;margin-top:12px;padding:10px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;color:#aaa;font-size:13px;cursor:pointer;transition:all 0.2s;">🔊 Preview Selected Voice</button>
+  </div>
+
   <div class="sectionLabel">Memory</div>
   <div class="section">
     <div class="settingRow" onclick="openPanel('memory')">
@@ -675,6 +755,50 @@ async function changePassword() {
   } catch(e) { showMsg("password", "Server error", "error") }
 }
 
+// VOICE FUNCTIONS
+function selectVoice(key) {
+  localStorage.setItem("datta_voice", key)
+  document.querySelectorAll(".voiceCard").forEach(c => c.classList.remove("active"))
+  const card = document.getElementById("vcrd-" + key)
+  if (card) card.classList.add("active")
+}
+
+function previewVoice() {
+  const key = localStorage.getItem("datta_voice") || "aria"
+  const names = { aria:"Aria", james:"James", sofia:"Sofia", indian:"Riya", british:"Oliver" }
+  const langs = { aria:"en-US", james:"en-US", sofia:"en-GB", indian:"en-IN", british:"en-GB" }
+  const rates = { aria:0.95, james:0.9, sofia:1.0, indian:0.9, british:0.9 }
+  const pitches = { aria:1.1, james:0.85, sofia:1.2, indian:1.0, british:0.9 }
+  const name = names[key] || "Aria"
+  const u = new SpeechSynthesisUtterance("Hi! I am " + name + ", your Datta AI voice assistant. How can I help you today?")
+  u.lang = langs[key] || "en-US"
+  u.rate = rates[key] || 0.95
+  u.pitch = pitches[key] || 1.0
+  const voices = window.speechSynthesis.getVoices()
+  const kwds = {
+    aria:["Samantha","Zira","Google US English"],
+    james:["David","Google UK English Male","Daniel"],
+    sofia:["Karen","Moira","Google UK English Female"],
+    indian:["Lekha","Veena","en-IN"],
+    british:["Arthur","Oliver","en-GB"]
+  }
+  const kw = kwds[key] || []
+  for (const k of kw) {
+    const v = voices.find(v => v.name.includes(k) || v.lang.includes(k))
+    if (v) { u.voice = v; break }
+  }
+  window.speechSynthesis.cancel()
+  window.speechSynthesis.speak(u)
+}
+
+// Load saved voice
+function loadSavedVoiceSetting() {
+  const saved = localStorage.getItem("datta_voice") || "aria"
+  document.querySelectorAll(".voiceCard").forEach(c => c.classList.remove("active"))
+  const card = document.getElementById("vcrd-" + saved)
+  if (card) card.classList.add("active")
+}
+
 async function loadUsage() {
   try {
     const res = await fetch("https://datta-ai-server.onrender.com/user/usage?token=" + getToken())
@@ -872,6 +996,7 @@ window.addEventListener("load", function() {
   // Load memory count
   loadUsage()
   loadMemory()
+  loadSavedVoiceSetting()
 })
 </script>
 </body>
