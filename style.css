@@ -3092,3 +3092,106 @@ body {
     margin-left: 0 !important;
   }
 }
+
+/* CHAT SEARCH */
+.chatSearchWrap {
+  padding: 8px 12px;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.chatSearchInput {
+  width: 100%;
+  padding: 8px 12px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 20px;
+  color: white;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.chatSearchInput:focus { border-color: #00ff8844; }
+.chatSearchInput::placeholder { color: #444; }
+
+.chatItem.hidden { display: none !important; }
+
+/* PROFILE PHOTO */
+.profileAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+/* INSTALL PWA BANNER */
+.installBanner {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111;
+  border: 1px solid #00ff8833;
+  border-radius: 16px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 500;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  animation: slideUp 0.3s ease;
+  max-width: calc(100% - 32px);
+}
+
+.installBanner img { width: 36px; height: 36px; border-radius: 8px; }
+.installBannerText { flex: 1; }
+.installBannerTitle { font-size: 14px; font-weight: 600; color: white; }
+.installBannerSub { font-size: 11px; color: #666; }
+.installBannerBtn {
+  padding: 7px 14px;
+  background: linear-gradient(135deg, #00cc6a, #00aaff);
+  border: none;
+  border-radius: 20px;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.installBannerClose {
+  background: none;
+  border: none;
+  color: #555;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* NOTIFICATION PERMISSION TOAST */
+.notifToast {
+  position: fixed;
+  top: 60px;
+  right: 16px;
+  background: #111;
+  border: 1px solid #2a2a2a;
+  border-radius: 14px;
+  padding: 14px 16px;
+  z-index: 999;
+  max-width: 280px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.notifToastTitle { font-size: 14px; font-weight: 600; color: white; margin-bottom: 4px; }
+.notifToastSub { font-size: 12px; color: #888; margin-bottom: 12px; }
+.notifToastBtns { display: flex; gap: 8px; }
+.notifAllow { flex: 1; padding: 7px; background: #00cc6a; border: none; border-radius: 8px; color: white; font-size: 12px; font-weight: 600; cursor: pointer; }
+.notifDeny { flex: 1; padding: 7px; background: #1e1e1e; border: 1px solid #333; border-radius: 8px; color: #888; font-size: 12px; cursor: pointer; }
