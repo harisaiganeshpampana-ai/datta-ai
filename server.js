@@ -888,8 +888,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }
 
     const selectedModel = req.body.model || "llama-3.3-70b-versatile"
-    const validModels = ["llama-3.3-70b-versatile","llama-3.1-8b-instant","deepseek-r1-distill-llama-70b","mixtral-8x7b-32768","llama-3.1-70b-versatile"]
-    const chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.3-70b-versatile"
+    const validModels = ["llama-3.1-8b-instant","llama-3.3-70b-versatile","deepseek-r1-distill-llama-70b","mixtral-8x7b-32768","llama-3.1-70b-versatile","meta-llama/llama-4-scout-17b-16e-instruct"]
+    const chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.1-8b-instant"
     const model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : chosenModel
     const style = req.body.style || "Balanced"
     const ainame = req.body.ainame || "Datta AI"
