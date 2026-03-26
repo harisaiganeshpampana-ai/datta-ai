@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Save Datta AI Logo as PNG</title>
+<style>
+body { background:#111; color:white; font-family:Arial,sans-serif; text-align:center; padding:40px; }
+button { margin:10px; padding:14px 28px; background:linear-gradient(135deg,#00ff88,#00ccff); border:none; border-radius:12px; color:#000; font-size:15px; font-weight:700; cursor:pointer; }
+canvas { border-radius:16px; margin:20px auto; display:block; }
+</style>
+</head>
+<body>
+<h2 style="color:#00ff88;">Datta AI Logo Converter</h2>
+<p style="color:#888;">Click a button to download logo as PNG</p>
+
+<button onclick="download(512)">Download 512x512 (App Icon)</button>
+<button onclick="download(192)">Download 192x192 (PWA)</button>
+<button onclick="download(1024)">Download 1024x1024 (High Res)</button>
+
+<canvas id="c" width="512" height="512"></canvas>
+
+<script>
+const svgData = `<svg width="512" height="512" viewBox="0 0 680 680" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#00ff88"/>
+    <stop offset="100%" stop-color="#00ccff"/>
+  </linearGradient>
+  <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#00ccff"/>
+    <stop offset="100%" stop-color="#aa44ff"/>
+  </linearGradient>
+  <linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#00ff88"/>
+    <stop offset="100%" stop-color="#aa44ff"/>
+  </linearGradient>
+  <linearGradient id="card" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#141414"/>
+    <stop offset="100%" stop-color="#0e0e0e"/>
+  </linearGradient>
+</defs>
+<rect width="680" height="680" fill="#080808" rx="64"/>
+<rect x="60" y="60" width="60" height="6" rx="3" fill="url(#g1)"/>
+<rect x="60" y="72" width="36" height="3" rx="1.5" fill="#00ff88" opacity="0.4"/>
+<rect x="560" y="60" width="60" height="6" rx="3" fill="url(#g2)"/>
+<rect x="584" y="72" width="36" height="3" rx="1.5" fill="#aa44ff" opacity="0.4"/>
+<rect x="190" y="160" width="300" height="300" rx="40" fill="#141414" stroke="#1e1e1e" stroke-width="1.5"/>
+<rect x="240" y="205" width="44" height="210" rx="22" fill="#00ff88"/>
+<rect x="260" y="205" width="100" height="44" rx="22" fill="#00ff88"/>
+<rect x="260" y="371" width="100" height="44" rx="22" fill="#00ccff"/>
+<path d="M 348 227 Q 430 227 430 310" fill="none" stroke="#00ff88" stroke-width="44" stroke-linecap="round"/>
+<path d="M 430 310 Q 430 393 348 393" fill="none" stroke="#00ccff" stroke-width="44" stroke-linecap="round"/>
+<circle cx="430" cy="310" r="16" fill="#0e0e0e"/>
+<circle cx="430" cy="310" r="10" fill="#00ff88"/>
+<circle cx="430" cy="310" r="5" fill="#ffffff" opacity="0.9"/>
+<rect x="190" y="160" width="24" height="4" rx="2" fill="#00ff88" opacity="0.6"/>
+<rect x="190" y="160" width="4" height="24" rx="2" fill="#00ff88" opacity="0.6"/>
+<rect x="466" y="160" width="24" height="4" rx="2" fill="#00ccff" opacity="0.6"/>
+<rect x="486" y="160" width="4" height="24" rx="2" fill="#00ccff" opacity="0.6"/>
+<rect x="190" y="452" width="4" height="24" rx="2" fill="#00ff88" opacity="0.4"/>
+<rect x="190" y="472" width="24" height="4" rx="2" fill="#00ff88" opacity="0.4"/>
+<rect x="466" y="472" width="24" height="4" rx="2" fill="#aa44ff" opacity="0.4"/>
+<rect x="486" y="452" width="4" height="24" rx="2" fill="#aa44ff" opacity="0.4"/>
+<text x="340" y="546" font-family="Arial Black,sans-serif" font-size="64" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="14">DATTA</text>
+<rect x="295" y="562" width="90" height="30" rx="15" fill="#00ff88"/>
+<text x="340" y="583" font-family="Arial Black,sans-serif" font-size="15" font-weight="900" fill="#080808" text-anchor="middle" letter-spacing="5">AI</text>
+<circle cx="68" cy="630" r="3" fill="#00ff88" opacity="0.5"/>
+<circle cx="80" cy="630" r="2" fill="#00ccff" opacity="0.4"/>
+<circle cx="612" cy="630" r="3" fill="#aa44ff" opacity="0.5"/>
+<circle cx="600" cy="630" r="2" fill="#00ccff" opacity="0.4"/>
+</svg>`
+
+function download(size) {
+  const canvas = document.getElementById('c')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')
+  const img = new Image()
+  const blob = new Blob([svgData], {type:'image/svg+xml'})
+  const url = URL.createObjectURL(blob)
+  img.onload = () => {
+    ctx.clearRect(0,0,size,size)
+    ctx.drawImage(img,0,0,size,size)
+    URL.revokeObjectURL(url)
+    const a = document.createElement('a')
+    a.download = 'logo-' + size + '.png'
+    a.href = canvas.toDataURL('image/png')
+    a.click()
+  }
+  img.src = url
+}
+
+// Preview on load
+window.onload = () => download(512)
+</script>
+</body>
+</html>
