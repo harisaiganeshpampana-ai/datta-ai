@@ -85,28 +85,50 @@ const MemorySchema = new mongoose.Schema({
 const Memory = mongoose.model("Memory", MemorySchema)
 
 const planLimits = {
-  free:       { messages: 50,     images: 5,      resetHours: 1 },
-  basic:      { messages: 500,    images: 20,     resetHours: 24 },
-  pro:        { messages: 999999, images: 999999, resetHours: 0 },
-  enterprise: { messages: 999999, images: 999999, resetHours: 0 }
+  free:      { messages: 25,     images: 3,      resetHours: 99999, firstTimeMessages: 25, afterMessages: 8 },
+  pro:       { messages: 100,    images: 20,     resetHours: 4 },
+  max:       { messages: 200,    images: 30,     resetHours: 3 },
+  ultramax:  { messages: 999999, images: 100,    resetHours: 0 },
+  basic:     { messages: 100,    images: 20,     resetHours: 4 },
+  enterprise:{ messages: 999999, images: 100,    resetHours: 0 }
 }
 const rateLimitStore = {}
 
 function checkAndUpdateLimit(userId, plan, type) {
   const limits = planLimits[plan] || planLimits.free
   if (limits[type] === 999999) return { allowed: true }
+
   const key = userId.toString() + "_" + type
   const now = Date.now()
   const resetMs = limits.resetHours * 60 * 60 * 1000
-  if (!rateLimitStore[key]) rateLimitStore[key] = { count: 0, windowStart: now }
+
+  if (!rateLimitStore[key]) rateLimitStore[key] = { count: 0, windowStart: now, totalEver: 0 }
   const store = rateLimitStore[key]
-  if (resetMs > 0 && now - store.windowStart > resetMs) { store.count = 0; store.windowStart = now }
-  const limit = limits[type]
-  if (store.count >= limit) {
-    const waitMs = resetMs - (now - store.windowStart)
-    return { allowed: false, type, plan, waitMins: Math.ceil(waitMs / 60000), limit }
+
+  // Reset window if time passed
+  if (resetMs > 0 && resetMs < 999999 * 3600 * 1000 && now - store.windowStart > resetMs) {
+    store.count = 0
+    store.windowStart = now
   }
+
+  // Free plan special logic - first 25 free, then only 8 per session
+  let limit = limits[type]
+  if (plan === "free" && type === "messages") {
+    if (store.totalEver >= 25) {
+      limit = 8  // After first 25, only 8 per reset period
+    }
+  }
+
+  if (store.count >= limit) {
+    const waitMs = resetMs > 0 && resetMs < 999999 * 3600 * 1000
+      ? resetMs - (now - store.windowStart)
+      : 0
+    const waitMins = waitMs > 0 ? Math.ceil(waitMs / 60000) : 0
+    return { allowed: false, type, plan, waitMins, limit, totalEver: store.totalEver }
+  }
+
   store.count++
+  store.totalEver = (store.totalEver || 0) + 1
   return { allowed: true, used: store.count, limit }
 }
 
@@ -500,7 +522,7 @@ app.get("/payment/subscription", authMiddleware, async (req, res) => {
 app.post("/payment/activate", authMiddleware, async (req, res) => {
   try {
     const { plan, method, paymentId, period } = req.body
-    if (!["free","basic","pro","enterprise"].includes(plan)) return res.status(400).json({ error: "Invalid plan" })
+    if (!["free","pro","max","ultramax","basic","enterprise"].includes(plan)) return res.status(400).json({ error: "Invalid plan" })
     const endDate = new Date()
     endDate.setMonth(endDate.getMonth() + (period === "yearly" ? 12 : 1))
     await Subscription.findOneAndUpdate({ userId: req.user.id }, { plan, period, paymentId, method, startDate: new Date(), endDate, active: true }, { upsert: true, new: true })
