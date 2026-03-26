@@ -3750,8 +3750,37 @@ body {
   }
 }
 
-/* FORCE sheet hidden by default - prevent auto open */
-#addToChatSheet { bottom: -100% !important; }
-#addToChatSheet.show { bottom: 0 !important; }
-#addToChatOverlay { display: none !important; }
-#addToChatOverlay.show { display: block !important; }
+
+
+/* DISABLE ZOOM on mobile */
+* { touch-action: pan-x pan-y; }
+input, textarea, select { touch-action: manipulation; }
+
+/* MENU BUTTON - bigger and visible */
+.menuBtn {
+  font-size: 22px !important;
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #1a1a1a !important;
+  border: 1px solid #2a2a2a !important;
+  border-radius: 10px !important;
+  cursor: pointer !important;
+  color: white !important;
+  flex-shrink: 0 !important;
+  transition: all 0.2s !important;
+}
+
+.menuBtn:hover { background: #222 !important; border-color: #333 !important; }
+
+@media (max-width: 768px) {
+  .menuBtn {
+    font-size: 20px !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+  }
+}
