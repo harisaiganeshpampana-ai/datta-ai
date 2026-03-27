@@ -1506,8 +1506,8 @@ const voiceProfiles = {
   "james":   { name: "James",   lang: "en-US", rate: 0.9,  pitch: 0.85, keywords: ["Google UK English Male","Daniel","James","David"] },
   "sofia":   { name: "Sofia",   lang: "en-US", rate: 1.0,  pitch: 1.2, keywords: ["Google UK English Female","Karen","Moira","Sofia"] },
   "neural":  { name: "Neural",  lang: "en-US", rate: 0.95, pitch: 1.0, keywords: ["Neural","Natural","Enhanced","Premium"] },
-  "indian":  { name: "Riya",    lang: "en-IN", rate: 0.9,  pitch: 1.0, keywords: ["Google हिन्दी","Lekha","Veena","en-IN"] },
-  "british": { name: "Oliver",  lang: "en-GB", rate: 0.9,  pitch: 0.9, keywords: ["Google UK English Male","Arthur","Oliver","en-GB"] }
+  "indian":  { name: "Riya",   lang: "en-IN", rate: 0.9,  pitch: 1.05, gender: "female", keywords: ["Lekha","Veena","Google हिन्दी","en-IN"] },
+  "british": { name: "Oliver", lang: "en-GB", rate: 0.88, pitch: 0.8,  gender: "male",   keywords: ["Google UK English Male","Daniel","George","Arthur","en-GB"] }
 }
 
 function getSelectedVoiceProfile() {
@@ -1518,20 +1518,35 @@ function pickVoice(profile) {
   const voices = voiceSynth.getVoices()
   if (!voices.length) return null
 
-  // Try to find matching voice by keywords
-  for (const keyword of profile.keywords) {
-    const found = voices.find(v =>
-      v.name.includes(keyword) ||
-      v.lang.startsWith(profile.lang)
-    )
+  // Try exact keyword match first
+  for (const kw of profile.keywords) {
+    const found = voices.find(v => v.name.includes(kw))
     if (found) return found
   }
 
-  // Fallback - find any voice with matching lang
-  const langMatch = voices.find(v => v.lang.startsWith(profile.lang))
-  if (langMatch) return langMatch
+  // Gender + language match
+  const langVoices = voices.filter(v => v.lang.startsWith(profile.lang.split("-")[0]))
+  if (langVoices.length) {
+    const maleWords = ["david","james","daniel","george","oliver","alex","ryan","male","man","tom"]
+    const femaleWords = ["samantha","zira","karen","sofia","aria","female","woman","victoria","lisa"]
+    const gWords = profile.gender === "male" ? maleWords : femaleWords
+    const gendered = langVoices.find(v => gWords.some(g => v.name.toLowerCase().includes(g)))
+    if (gendered) return gendered
+    // Male voices tend to be listed later
+    if (profile.gender === "male" && langVoices.length > 1) return langVoices[langVoices.length - 1]
+    return langVoices[0]
+  }
 
-  // Last resort - first available
+  // English fallback with gender
+  const engVoices = voices.filter(v => v.lang.startsWith("en"))
+  if (engVoices.length) {
+    const maleWords = ["david","james","daniel","george","oliver","alex","male","man"]
+    const femaleWords = ["samantha","zira","karen","aria","female","woman","victoria"]
+    const gWords = profile.gender === "male" ? maleWords : femaleWords
+    const gendered = engVoices.find(v => gWords.some(g => v.name.toLowerCase().includes(g)))
+    if (gendered) return gendered
+  }
+
   return voices[0]
 }
 
