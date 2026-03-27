@@ -132,19 +132,15 @@ window.addCodeCopyButtons = addCodeCopyButtons
 function showStopBtn() {
   const stop = document.getElementById("stopBtn")
   const send = document.getElementById("sendBtn")
-  const mic = document.getElementById("micBtn")
-  if (stop) stop.style.cssText = "display:flex!important;width:36px;height:36px;border-radius:50%;background:#ff4444;border:none;color:white;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;animation:stopPulse 1.5s infinite;"
+  if (stop) stop.style.display = "flex"
   if (send) send.style.display = "none"
-  if (mic) mic.style.display = "none"
 }
 
 function hideStopBtn() {
   const stop = document.getElementById("stopBtn")
   const send = document.getElementById("sendBtn")
-  const mic = document.getElementById("micBtn")
   if (stop) stop.style.display = "none"
-  if (send) send.style.cssText = "display:flex!important"
-  if (mic) mic.style.cssText = "display:flex!important"
+  if (send) send.style.display = "flex"
 }
 
 function stopGeneration() {
