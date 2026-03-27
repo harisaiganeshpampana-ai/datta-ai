@@ -649,43 +649,49 @@ async function send() {
         streamText += chunk
       }
 
-      // Check if image response - never show raw DATTA_IMAGE text
+      // Image response detection - never show raw markers
       const isImgResponse = streamText.includes("DATTA_IMAGE_START") || streamText.includes("pollinations.ai")
       if (isImgResponse) {
-        const container = aiDiv.querySelector(".aiContent") || aiDiv
         if (streamText.includes("DATTA_IMAGE_END")) {
+          // Image complete - render it
+          const container = aiDiv.querySelector(".aiContent") || aiDiv
           container.innerHTML = renderImageResponse(streamText)
         } else {
-          // Show animation while generating
-          span.innerHTML = `
-            <div style="display:flex;align-items:center;gap:10px;color:#aaa;font-size:14px;">
-              <span style="font-size:20px;">🎨</span>
-              <span>Generating your image...</span>
-              <span style="display:inline-flex;gap:3px;">
-                <span style="width:6px;height:6px;border-radius:50%;background:#00ff88;animation:dot 1.2s infinite 0s;display:inline-block;"></span>
-                <span style="width:6px;height:6px;border-radius:50%;background:#00ff88;animation:dot 1.2s infinite 0.4s;display:inline-block;"></span>
-                <span style="width:6px;height:6px;border-radius:50%;background:#00ff88;animation:dot 1.2s infinite 0.8s;display:inline-block;"></span>
-              </span>
-            </div>
-            <style>@keyframes dot{0%,100%{opacity:0.2}50%{opacity:1}}</style>
-          `
+          // Still generating - show only animation, hide raw text
+          span.innerHTML = `<div style="display:flex;align-items:center;gap:10px;color:#888;font-size:14px;padding:8px 0;">
+            <span style="font-size:22px;">🎨</span>
+            <span>Generating your image...</span>
+            <span style="display:inline-flex;gap:3px;margin-left:4px;">
+              <span style="width:5px;height:5px;border-radius:50%;background:#00ff88;animation:imgDot 1s infinite 0s;display:inline-block;"></span>
+              <span style="width:5px;height:5px;border-radius:50%;background:#00ff88;animation:imgDot 1s infinite 0.3s;display:inline-block;"></span>
+              <span style="width:5px;height:5px;border-radius:50%;background:#00ff88;animation:imgDot 1s infinite 0.6s;display:inline-block;"></span>
+            </span>
+          </div>
+          <style>@keyframes imgDot{0%,100%{opacity:0.2;transform:scale(0.8)}50%{opacity:1;transform:scale(1)}}</style>`
         }
       } else {
-        // Clean text - remove any stray DATTA_ markers
-        const cleanText = streamText.split("DATTA_IMAGE_START")[0]
-        span.innerHTML = marked.parse(cleanText) + '<span class="cursor">▌</span>'
+        // Normal text - split off any image markers
+        const cleanText = streamText.includes("DATTA_IMAGE_START")
+          ? streamText.split("DATTA_IMAGE_START")[0]
+          : streamText
+        if (cleanText.trim()) {
+          span.innerHTML = marked.parse(cleanText) + '<span class="cursor">▌</span>'
+        }
       }
       scrollBottom()
       lucide.createIcons()
     }
 
     // Final render
-    const isImgResponse = streamText.includes("pollinations.ai") || streamText.includes("DATTA_IMAGE")
-    if (isImgResponse) {
+    const isImgResponseFinal = streamText.includes("DATTA_IMAGE_START") || streamText.includes("pollinations.ai")
+    if (isImgResponseFinal) {
       const container = aiDiv.querySelector(".aiContent") || aiDiv
       container.innerHTML = renderImageResponse(streamText)
     } else {
-      span.innerHTML = marked.parse(streamText)
+      const finalClean = streamText.includes("DATTA_IMAGE_START")
+        ? streamText.split("DATTA_IMAGE_START")[0]
+        : streamText
+      span.innerHTML = marked.parse(finalClean)
     }
     lucide.createIcons()
     hideStopBtn()
