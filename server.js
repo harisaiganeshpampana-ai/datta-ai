@@ -1038,6 +1038,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const validModels = ["llama-3.1-8b-instant","llama-3.3-70b-versatile","gemma2-9b-it","llama-3.3-70b-versatile","llama-3.3-70b-versatile","meta-llama/llama-4-scout-17b-16e-instruct"]
     const chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.1-8b-instant"
     const model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : chosenModel
+    const useTogether = chosenModel === "meta-llama/llama-4-maverick-17b-128e-instruct" && process.env.TOGETHER_API_KEY
     const style = req.body.style || "Balanced"
     const ainame = req.body.ainame || "Datta AI"
     const styleNotes = {
@@ -1057,7 +1058,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Detect if code/build task needs max tokens
     const msgLower = message.toLowerCase()
     const isCodeTask = ["build","create","write","make","code","website","app","script","program","html","python","javascript","fix","debug","error","update","improve","full","complete","function","class","api"].some(k => msgLower.includes(k))
-    const maxTok = isImageFile ? 4096 : (isCodeTask ? 8192 : 6144)
+    const maxTok = isImageFile ? 4096 : (useTogetherAI ? 16000 : isCodeTask ? 8192 : 6144)
 
     const now = new Date()
     const timeStr = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })
@@ -1120,17 +1121,27 @@ QUALITY RULES:
 
     const systemWithMemory = systemPrompt + memoryContext
 
-    const stream = await groq.chat.completions.create({
-      model,
-      messages: [
-        { role: "system", content: systemWithMemory },
-        ...history,
-        { role: "user", content: finalUserContent }
-      ],
-      max_tokens: maxTok,
-      temperature: 0.75,
-      stream: true
-    })
+    let stream
+    if (useTogether) {
+      // Use Together AI DeepSeek V3 for Datta 5.4 (best coding)
+      stream = await callTogetherAI(
+        [...history, { role: "user", content: typeof finalUserContent === "string" ? finalUserContent : (message || "") }],
+        systemWithMemory,
+        maxTok
+      )
+    } else {
+      stream = await groq.chat.completions.create({
+        model,
+        messages: [
+          { role: "system", content: systemWithMemory },
+          ...history,
+          { role: "user", content: finalUserContent }
+        ],
+        max_tokens: maxTok,
+        temperature: 0.75,
+        stream: true
+      })
+    }
 
     let full = ""
     for await (const part of stream) {
@@ -1607,6 +1618,37 @@ app.get("/suggestions", authMiddleware, async (req, res) => {
   }
 })
 
+// TOGETHER AI - Dedicated coding model for Datta 5.4
+async function callTogetherAI(messages, systemPrompt, maxTokens = 8192) {
+  const apiKey = process.env.TOGETHER_API_KEY
+  if (!apiKey) throw new Error("TOGETHER_API_KEY not configured")
+
+  const response = await fetch("https://api.together.xyz/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + apiKey
+    },
+    body: JSON.stringify({
+      model: "deepseek-ai/DeepSeek-V3",  // Best coding model on Together AI
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages
+      ],
+      max_tokens: maxTokens,
+      temperature: 0.3,  // Lower temperature for more precise code
+      stream: true
+    })
+  })
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.error?.message || "Together AI error")
+  }
+
+  return response
+}
+
 // AI LENS ROUTE
 app.post("/lens", authMiddleware, async (req, res) => {
   try {
@@ -1662,6 +1704,37 @@ app.get("/version", (req, res) => {
 })
 
 app.get("/", (req, res) => res.json({ status: "Datta AI Server running", version: "3.5" }))
+
+// TOGETHER AI - dedicated coding API for Datta 5.4
+async function callTogetherAI(messages, systemPrompt, res) {
+  const key = process.env.TOGETHER_API_KEY
+  if (!key) throw new Error("Together AI not configured")
+
+  const response = await fetch("https://api.together.xyz/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + key
+    },
+    body: JSON.stringify({
+      model: "deepseek-ai/DeepSeek-V3",
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages
+      ],
+      max_tokens: 16000,
+      temperature: 0.2,
+      stream: true
+    })
+  })
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.error?.message || "Together AI error")
+  }
+
+  return response
+}
 
 // KEEP ALIVE - ping self every 14 minutes to prevent Render sleep
 const SELF_URL = process.env.RENDER_EXTERNAL_URL || "https://datta-ai-server.onrender.com"
