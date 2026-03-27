@@ -16,6 +16,14 @@ dotenv.config()
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } })
 const app = express()
 
+// Hide server technology from response headers
+app.use((req, res, next) => {
+  res.removeHeader("X-Powered-By")
+  res.setHeader("Server", "Datta-AI")
+  res.setHeader("X-Content-Type-Options", "nosniff")
+  next()
+})
+
 app.use(cors({ origin: "*", methods: ["GET","POST","PUT","DELETE","OPTIONS"], allowedHeaders: ["Content-Type","Authorization","x-chat-id"] }))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
@@ -73,6 +81,38 @@ const SubscriptionSchema = new mongoose.Schema({
   active: { type: Boolean, default: true }
 })
 const Subscription = mongoose.model("Subscription", SubscriptionSchema)
+
+// ERROR SANITIZER - never expose internal details to users
+function sanitizeError(err) {
+  const msg = (err?.message || err?.error?.message || String(err) || "").toLowerCase()
+  
+  // Rate limit errors
+  if (msg.includes("rate limit") || msg.includes("429") || msg.includes("tpm") || msg.includes("tokens per minute")) {
+    return { userMsg: "Datta AI is thinking too hard! Please wait a moment and try again.", code: "rate_limit" }
+  }
+  // Model errors
+  if (msg.includes("decommission") || msg.includes("model") || msg.includes("deprecated")) {
+    return { userMsg: "This model is temporarily unavailable. Switching to default model.", code: "model_error" }
+  }
+  // Auth errors
+  if (msg.includes("api key") || msg.includes("unauthorized") || msg.includes("authentication")) {
+    return { userMsg: "Service temporarily unavailable. Please try again.", code: "service_error" }
+  }
+  // Timeout
+  if (msg.includes("timeout") || msg.includes("timed out")) {
+    return { userMsg: "Request timed out. Please try again.", code: "timeout" }
+  }
+  // Network
+  if (msg.includes("network") || msg.includes("fetch") || msg.includes("econnrefused")) {
+    return { userMsg: "Connection error. Please check your internet and try again.", code: "network" }
+  }
+  // Context too long
+  if (msg.includes("context") || msg.includes("too long") || msg.includes("maximum")) {
+    return { userMsg: "Message too long. Please start a new chat.", code: "too_long" }
+  }
+  // Generic fallback - never expose real error
+  return { userMsg: "Something went wrong. Please try again.", code: "unknown" }
+}
 
 // MEMORY SCHEMA - persistent user memory
 const MemorySchema = new mongoose.Schema({
@@ -557,7 +597,7 @@ app.post("/auth/verify-otp", async (req, res) => {
   } catch(err) {
     console.error("OTP verify error:", err.message)
     if (err.code === 60202) return res.status(400).json({ error: "Too many attempts. Request a new OTP." })
-    res.status(500).json({ error: err.message })
+    res.status(500).json({ error: sanitizeError(err).userMsg })
   }
 })
 
@@ -575,7 +615,7 @@ app.post("/auth/update-username", authMiddleware, async (req, res) => {
     if (existing && existing._id.toString() !== req.user.id) return res.status(400).json({ error: "Username taken" })
     await User.findByIdAndUpdate(req.user.id, { username })
     res.json({ success: true })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 app.post("/auth/change-password", authMiddleware, async (req, res) => {
@@ -586,7 +626,7 @@ app.post("/auth/change-password", authMiddleware, async (req, res) => {
     if (!await bcrypt.compare(currentPassword, user.password)) return res.status(400).json({ error: "Wrong current password" })
     await User.findByIdAndUpdate(req.user.id, { password: await bcrypt.hash(newPassword, 10) })
     res.json({ success: true })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 app.delete("/auth/delete-account", authMiddleware, async (req, res) => {
@@ -599,7 +639,7 @@ app.delete("/auth/delete-account", authMiddleware, async (req, res) => {
     await Subscription.deleteMany({ userId: req.user.id })
     await User.findByIdAndDelete(req.user.id)
     res.json({ success: true })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 // SUBSCRIPTION ROUTES
@@ -608,7 +648,7 @@ app.get("/payment/subscription", authMiddleware, async (req, res) => {
     const sub = await Subscription.findOne({ userId: req.user.id, active: true })
     const plan = sub ? sub.plan : "free"
     res.json({ plan, period: sub?.period || "monthly", endDate: sub?.endDate || null, limits: planLimits[plan] })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 app.post("/payment/activate", authMiddleware, async (req, res) => {
@@ -619,7 +659,7 @@ app.post("/payment/activate", authMiddleware, async (req, res) => {
     endDate.setMonth(endDate.getMonth() + (period === "yearly" ? 12 : 1))
     await Subscription.findOneAndUpdate({ userId: req.user.id }, { plan, period, paymentId, method, startDate: new Date(), endDate, active: true }, { upsert: true, new: true })
     res.json({ success: true, plan, endDate })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 // RAZORPAY ORDER
@@ -637,7 +677,7 @@ app.post("/payment/razorpay-order", authMiddleware, async (req, res) => {
     const order = await response.json()
     if (!response.ok) return res.status(400).json({ error: order.error?.description || "Order creation failed" })
     res.json({ orderId: order.id, keyId: key_id, amount, plan, period })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 // RAZORPAY VERIFY
@@ -653,7 +693,7 @@ app.post("/payment/razorpay-verify", authMiddleware, async (req, res) => {
     endDate.setMonth(endDate.getMonth() + (period === "yearly" ? 12 : 1))
     await Subscription.findOneAndUpdate({ userId: req.user.id }, { plan, period, paymentId: razorpay_payment_id, method: "razorpay", startDate: new Date(), endDate, active: true }, { upsert: true, new: true })
     res.json({ success: true, plan, endDate })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 // STRIPE SESSION
@@ -683,7 +723,7 @@ app.post("/payment/stripe-session", authMiddleware, async (req, res) => {
     const session = await response.json()
     if (!response.ok) return res.status(400).json({ error: session.error?.message || "Stripe session failed" })
     res.json({ url: session.url })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 // CHAT ROUTE
@@ -1059,7 +1099,7 @@ app.post("/chats/fix-titles", authMiddleware, async (req, res) => {
       }
     }
     res.json({ success: true, fixed })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 // USER USAGE ROUTE
@@ -1091,7 +1131,7 @@ app.get("/user/usage", authMiddleware, async (req, res) => {
         resetHours: limits.resetHours
       }
     })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 // MEMORY ROUTES
@@ -1099,7 +1139,7 @@ app.get("/memory", authMiddleware, async (req, res) => {
   try {
     const memories = await Memory.find({ userId: req.user.id }).sort({ updatedAt: -1 })
     res.json(memories)
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 app.post("/memory", authMiddleware, async (req, res) => {
@@ -1108,29 +1148,29 @@ app.post("/memory", authMiddleware, async (req, res) => {
     if (!key || !value) return res.status(400).json({ error: "Key and value required" })
     await saveMemory(req.user.id, key, value, category)
     res.json({ success: true })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 app.delete("/memory/:key", authMiddleware, async (req, res) => {
   try {
     await Memory.findOneAndDelete({ userId: req.user.id, key: req.params.key })
     res.json({ success: true })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 app.delete("/memory", authMiddleware, async (req, res) => {
   try {
     await Memory.deleteMany({ userId: req.user.id })
     res.json({ success: true })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 // CHAT HISTORY
-app.get("/chats", authMiddleware, async (req, res) => { try { res.json(await Chat.find({ userId: req.user.id }).sort({ createdAt: -1 }).select("title createdAt")) } catch(err) { res.status(500).json({ error: err.message }) } })
-app.get("/chat/:id", authMiddleware, async (req, res) => { try { const c = await Chat.findOne({ _id: req.params.id, userId: req.user.id }); res.json(c ? c.messages : []) } catch(err) { res.status(500).json({ error: err.message }) } })
-app.delete("/chat/:id", authMiddleware, async (req, res) => { try { await Chat.findOneAndDelete({ _id: req.params.id, userId: req.user.id }); res.json({ success: true }) } catch(err) { res.status(500).json({ error: err.message }) } })
-app.delete("/chats/all", authMiddleware, async (req, res) => { try { await Chat.deleteMany({ userId: req.user.id }); res.json({ success: true }) } catch(err) { res.status(500).json({ error: err.message }) } })
-app.post("/chat/:id/rename", authMiddleware, async (req, res) => { try { await Chat.findOneAndUpdate({ _id: req.params.id, userId: req.user.id }, { title: req.body.title }); res.json({ success: true }) } catch(err) { res.status(500).json({ error: err.message }) } })
+app.get("/chats", authMiddleware, async (req, res) => { try { res.json(await Chat.find({ userId: req.user.id }).sort({ createdAt: -1 }).select("title createdAt")) } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) } })
+app.get("/chat/:id", authMiddleware, async (req, res) => { try { const c = await Chat.findOne({ _id: req.params.id, userId: req.user.id }); res.json(c ? c.messages : []) } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) } })
+app.delete("/chat/:id", authMiddleware, async (req, res) => { try { await Chat.findOneAndDelete({ _id: req.params.id, userId: req.user.id }); res.json({ success: true }) } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) } })
+app.delete("/chats/all", authMiddleware, async (req, res) => { try { await Chat.deleteMany({ userId: req.user.id }); res.json({ success: true }) } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) } })
+app.post("/chat/:id/rename", authMiddleware, async (req, res) => { try { await Chat.findOneAndUpdate({ _id: req.params.id, userId: req.user.id }, { title: req.body.title }); res.json({ success: true }) } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) } })
 
 // ANALYTICS DASHBOARD
 app.get("/analytics", authMiddleware, async (req, res) => {
@@ -1152,7 +1192,7 @@ app.get("/analytics", authMiddleware, async (req, res) => {
       plan: subscription?.plan || "free",
       memberSince: req.user.iat ? new Date(req.user.iat * 1000).toLocaleDateString() : "Unknown"
     })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 
@@ -1190,7 +1230,7 @@ app.get("/admin/stats", authMiddleware, async (req, res) => {
         enterprise: (planStats.enterprise || 0) * 1499
       }
     })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 app.get("/admin/users", authMiddleware, async (req, res) => {
@@ -1205,7 +1245,7 @@ app.get("/admin/users", authMiddleware, async (req, res) => {
     subs.forEach(s => { subMap[s.userId.toString()] = s.plan })
     const usersWithPlan = users.map(u => ({ ...u.toObject(), plan: subMap[u._id.toString()] || "free" }))
     res.json({ users: usersWithPlan, total, pages: Math.ceil(total/limit) })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 app.delete("/admin/user/:id", authMiddleware, async (req, res) => {
@@ -1217,7 +1257,7 @@ app.delete("/admin/user/:id", authMiddleware, async (req, res) => {
       Subscription.deleteMany({ userId: req.params.id })
     ])
     res.json({ success: true })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 // ------------------------------------------------------
@@ -1248,21 +1288,21 @@ app.post("/api/keys", authMiddleware, async (req, res) => {
     if (existing >= 3) return res.status(400).json({ error: "Max 3 API keys allowed" })
     const key = await ApiKey.create({ userId: req.user.id, key: generateApiKey(), name: name || "My API Key" })
     res.json({ key: key.key, name: key.name, limit: key.limit })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 app.get("/api/keys", authMiddleware, async (req, res) => {
   try {
     const keys = await ApiKey.find({ userId: req.user.id }).select("-__v")
     res.json(keys)
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 app.delete("/api/keys/:key", authMiddleware, async (req, res) => {
   try {
     await ApiKey.findOneAndDelete({ userId: req.user.id, key: req.params.key })
     res.json({ success: true })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 // PUBLIC API ENDPOINT
@@ -1295,7 +1335,7 @@ app.post("/api/v1/chat", async (req, res) => {
       requests_used: keyDoc.requests + 1,
       requests_limit: keyDoc.limit
     })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 // ------------------------------------------------------
@@ -1321,7 +1361,7 @@ app.post("/chat/:id/share", authMiddleware, async (req, res) => {
     const shareId = Math.random().toString(36).substring(2, 10)
     await SharedChat.create({ shareId, chatId: chat._id, userId: req.user.id, title: chat.title, messages: chat.messages })
     res.json({ shareId, url: FRONTEND_URL + "/share.html?id=" + shareId })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 app.get("/share/:shareId", async (req, res) => {
@@ -1329,7 +1369,7 @@ app.get("/share/:shareId", async (req, res) => {
     const shared = await SharedChat.findOneAndUpdate({ shareId: req.params.shareId }, { $inc: { views: 1 } }, { new: true })
     if (!shared) return res.status(404).json({ error: "Shared chat not found" })
     res.json({ title: shared.title, messages: shared.messages, views: shared.views, createdAt: shared.createdAt })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 // ------------------------------------------------------
@@ -1349,7 +1389,7 @@ const Project = mongoose.model("Project", ProjectSchema)
 
 app.get("/projects", authMiddleware, async (req, res) => {
   try { res.json(await Project.find({ userId: req.user.id }).sort({ createdAt: -1 })) }
-  catch(err) { res.status(500).json({ error: err.message }) }
+  catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 app.post("/projects", authMiddleware, async (req, res) => {
@@ -1357,21 +1397,21 @@ app.post("/projects", authMiddleware, async (req, res) => {
     const { name, description, color, emoji } = req.body
     const project = await Project.create({ userId: req.user.id, name, description, color, emoji })
     res.json(project)
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 app.put("/projects/:id", authMiddleware, async (req, res) => {
   try {
     const project = await Project.findOneAndUpdate({ _id: req.params.id, userId: req.user.id }, req.body, { new: true })
     res.json(project)
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 app.delete("/projects/:id", authMiddleware, async (req, res) => {
   try {
     await Project.findOneAndDelete({ _id: req.params.id, userId: req.user.id })
     res.json({ success: true })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 // ------------------------------------------------------
@@ -1416,7 +1456,7 @@ app.post("/execute", authMiddleware, async (req, res) => {
     }
 
     res.json({ output: "", errors: "Language not supported yet. JavaScript and Python are available.", language })
-  } catch(err) { res.status(500).json({ error: err.message }) }
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 // SMART SUGGESTIONS based on user history
@@ -1482,17 +1522,17 @@ app.post("/lens", authMiddleware, async (req, res) => {
     res.json({ result })
   } catch(err) {
     console.error("Lens error:", err.message)
-    res.status(500).json({ error: err.message })
+    res.status(500).json({ error: sanitizeError(err).userMsg })
   }
 })
 
-// VERSION CHECK - blocks old app versions
-const APP_VERSION = "3.5"
-const MIN_VERSION = "3.5" // Versions below this are blocked
+// VERSION CHECK
+const APP_VERSION = "37"
+const MIN_VERSION = "37"
 
 app.get("/version", (req, res) => {
   const clientVersion = req.query.v || "0"
-  const isBlocked = parseFloat(clientVersion) < parseFloat(MIN_VERSION)
+  const isBlocked = parseInt(clientVersion) < parseInt(MIN_VERSION)
   res.json({
     latest: APP_VERSION,
     minimum: MIN_VERSION,
@@ -1500,11 +1540,11 @@ app.get("/version", (req, res) => {
     updateRequired: isBlocked,
     updateUrl: process.env.FRONTEND_URL || "https://harisaiganeshpampana-ai.github.io/datta-ai",
     changelog: [
-      "Improved AI responses",
-      "Fixed mobile keyboard issue",
-      "Better image generation",
-      "Smarter chat suggestions",
-      "UI improvements"
+      "Fixed Add to chat issue",
+      "New model selector",
+      "Better mobile UI",
+      "AI Lens feature",
+      "Bug fixes"
     ]
   })
 })
