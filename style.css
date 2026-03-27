@@ -4159,3 +4159,73 @@ input, textarea, select { touch-action: manipulation; }
 }
 
 #message::placeholder { color: #444 !important; }
+
+/* MOBILE RESPONSE FORMATTING - Clean and compact */
+@media (max-width: 768px) {
+
+  /* AI bubble - tighter on mobile */
+  .aiBubble {
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+  }
+
+  /* Paragraphs - less spacing */
+  .aiBubble p {
+    margin: 0 0 8px 0 !important;
+    line-height: 1.6 !important;
+  }
+
+  /* Headings - smaller on mobile */
+  .aiBubble h1 { font-size: 17px !important; margin: 12px 0 6px !important; }
+  .aiBubble h2 { font-size: 15px !important; margin: 12px 0 6px !important; }
+  .aiBubble h3 { font-size: 14px !important; margin: 10px 0 5px !important; }
+
+  /* Lists - compact */
+  .aiBubble ul, .aiBubble ol {
+    margin: 4px 0 8px 0 !important;
+    padding-left: 18px !important;
+  }
+
+  .aiBubble li {
+    margin: 3px 0 !important;
+    line-height: 1.5 !important;
+    font-size: 14px !important;
+  }
+
+  /* No extra indent on list items */
+  .aiBubble li p {
+    margin: 0 !important;
+    display: inline !important;
+  }
+
+  /* Reduce message row spacing */
+  .messageRow {
+    margin-bottom: 12px !important;
+    padding: 0 2px !important;
+  }
+
+  /* AI content max width */
+  .aiContent {
+    max-width: 100% !important;
+  }
+
+  /* Tables scroll on mobile */
+  .aiBubble table {
+    font-size: 12px !important;
+    display: block !important;
+    overflow-x: auto !important;
+  }
+
+  /* Bold stays white but not too heavy */
+  .aiBubble strong {
+    font-weight: 600 !important;
+    color: #eee !important;
+  }
+
+  /* Blockquote compact */
+  .aiBubble blockquote {
+    padding: 6px 12px !important;
+    margin: 8px 0 !important;
+    font-size: 13px !important;
+  }
+}
