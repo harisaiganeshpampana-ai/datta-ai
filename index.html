@@ -5,7 +5,7 @@
 
 <title>Datta AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
-<link rel="stylesheet" href="style.css?v=37">
+<link rel="stylesheet" href="style.css?v=38">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -241,7 +241,7 @@
 
       <!-- Bottom row -->
       <div class="inputRow">
-        <button class="plusBtn" id="plusBtn" onclick="togglePlusMenu()">
+        <button class="plusBtn" id="plusBtn" onclick="event.stopPropagation();togglePlusMenu()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -283,7 +283,7 @@
 
 </div>
 
-<script src="chat.js?v=37"></script>
+<script src="chat.js?v=38"></script>
 
 <script>
   // SPLASH SCREEN - 3 seconds then smooth fade out
@@ -353,18 +353,33 @@
     if (!document.hidden) closePlusMenu()
   })
 
+  // CRITICAL: Close sheet on any scroll or touch on chat area
+  document.addEventListener("touchstart", function(e) {
+    var sheet = document.getElementById("addToChatSheet")
+    var plusBtn = document.getElementById("plusBtn")
+    if (!sheet || !plusBtn) return
+    if (!e.target.closest("#addToChatSheet") && !e.target.closest("#plusBtn")) {
+      closePlusMenu()
+    }
+  }, { passive: true })
+
   // Force close on page load
   window.addEventListener("load", function() {
-    closePlusMenu()
+    setTimeout(closePlusMenu, 100)
+    setTimeout(closePlusMenu, 500)
+    setTimeout(closePlusMenu, 1000)
   })
+
   document.addEventListener("DOMContentLoaded", function() {
     closePlusMenu()
-    // Close sheet when input is focused (keyboard opens)
     var msgInput = document.getElementById("message")
     if (msgInput) {
       msgInput.addEventListener("focus", function() {
         closePlusMenu()
       })
+      msgInput.addEventListener("touchstart", function() {
+        closePlusMenu()
+      }, { passive: true })
     }
   })
 
