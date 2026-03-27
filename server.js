@@ -1235,6 +1235,51 @@ app.post("/chats/fix-titles", authMiddleware, async (req, res) => {
   } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
+// REFERRAL SYSTEM
+const ReferralSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  code: { type: String, unique: true },
+  referredUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  bonusMessages: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now }
+})
+const Referral = mongoose.model("Referral", ReferralSchema)
+
+// Get or create referral code
+app.get("/referral/code", authMiddleware, async (req, res) => {
+  try {
+    let ref = await Referral.findOne({ userId: req.user.id })
+    if (!ref) {
+      const code = "DATTA" + Math.random().toString(36).substring(2,7).toUpperCase()
+      ref = await Referral.create({ userId: req.user.id, code })
+    }
+    res.json({ code: ref.code, referredCount: ref.referredUsers.length, bonusMessages: ref.bonusMessages })
+  } catch(e) { res.status(500).json({ error: sanitizeError(e).userMsg }) }
+})
+
+// Apply referral code on signup
+app.post("/referral/apply", authMiddleware, async (req, res) => {
+  try {
+    const { code } = req.body
+    const ref = await Referral.findOne({ code: code.toUpperCase() })
+    if (!ref) return res.status(404).json({ error: "Invalid referral code" })
+    if (ref.userId.toString() === req.user.id) return res.status(400).json({ error: "Cannot use your own code" })
+    // Check not already referred
+    if (ref.referredUsers.includes(req.user.id)) return res.status(400).json({ error: "Already used" })
+    // Add bonus - 10 extra messages to referrer
+    ref.referredUsers.push(req.user.id)
+    ref.bonusMessages += 10
+    await ref.save()
+    // Give bonus to new user too
+    let newUserRef = await Referral.findOne({ userId: req.user.id })
+    if (!newUserRef) {
+      const newCode = "DATTA" + Math.random().toString(36).substring(2,7).toUpperCase()
+      await Referral.create({ userId: req.user.id, code: newCode, bonusMessages: 5 })
+    }
+    res.json({ success: true, message: "Referral applied! You both get bonus messages." })
+  } catch(e) { res.status(500).json({ error: sanitizeError(e).userMsg }) }
+})
+
 // USER USAGE ROUTE - reads from MongoDB
 app.get("/user/usage", authMiddleware, async (req, res) => {
   try {
@@ -1667,6 +1712,39 @@ async function callTogetherAI(messages, systemPrompt, maxTokens = 8192) {
 
   return response
 }
+
+// EXPORT CHAT AS PDF TEXT
+app.get("/chat/:id/export", authMiddleware, async (req, res) => {
+  try {
+    const chat = await Chat.findOne({ _id: req.params.id, userId: req.user.id })
+    if (!chat) return res.status(404).json({ error: "Chat not found" })
+    
+    let text = "DATTA AI - Chat Export
+"
+    text += "=" .repeat(40) + "
+"
+    text += "Title: " + (chat.title || "Untitled") + "
+"
+    text += "Date: " + new Date(chat.createdAt).toLocaleDateString() + "
+"
+    text += "=" .repeat(40) + "
+
+"
+    
+    chat.messages.forEach(m => {
+      const role = m.role === "user" ? "You" : "Datta AI"
+      const content = typeof m.content === "string" ? m.content : "[Image/File]"
+      text += `[${role}]
+${content}
+
+`
+    })
+    
+    res.setHeader("Content-Type", "text/plain")
+    res.setHeader("Content-Disposition", `attachment; filename="datta-ai-chat-${Date.now()}.txt"`)
+    res.send(text)
+  } catch(e) { res.status(500).json({ error: sanitizeError(e).userMsg }) }
+})
 
 // AI LENS ROUTE
 app.post("/lens", authMiddleware, async (req, res) => {
