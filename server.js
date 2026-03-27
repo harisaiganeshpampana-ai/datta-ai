@@ -3,6 +3,7 @@ import cors from "cors"
 import dotenv from "dotenv"
 import mongoose from "mongoose"
 import multer from "multer"
+import crypto from "crypto"
 import Groq from "groq-sdk"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
@@ -506,7 +507,7 @@ app.post("/auth/signup", async (req, res) => {
     if (existing) return res.status(400).json({ error: existing.username === username ? "Username taken" : "Email already registered" })
 
     // Generate verify token
-    const verifyToken = require("crypto").randomBytes(32).toString("hex")
+    const verifyToken = crypto.randomBytes(32).toString("hex")
     const user = await User.create({
       username,
       email: email.toLowerCase(),
@@ -546,7 +547,7 @@ app.post("/auth/resend-verification", authMiddleware, async (req, res) => {
     const user = await User.findById(req.user.id)
     if (!user) return res.status(404).json({ error: "User not found" })
     if (user.emailVerified) return res.json({ message: "Email already verified!" })
-    const verifyToken = require("crypto").randomBytes(32).toString("hex")
+    const verifyToken = crypto.randomBytes(32).toString("hex")
     await User.findByIdAndUpdate(user._id, {
       verifyToken,
       verifyTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
@@ -738,6 +739,13 @@ app.post("/payment/activate", authMiddleware, async (req, res) => {
   } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
+// Send Razorpay key to frontend safely
+app.get("/payment/razorpay-key", authMiddleware, (req, res) => {
+  const key = process.env.RAZORPAY_KEY_ID
+  if (!key) return res.status(400).json({ error: "Razorpay not configured" })
+  res.json({ key })
+})
+
 // RAZORPAY ORDER
 app.post("/payment/razorpay-order", authMiddleware, async (req, res) => {
   try {
@@ -762,8 +770,7 @@ app.post("/payment/razorpay-verify", authMiddleware, async (req, res) => {
     const { razorpay_payment_id, razorpay_order_id, razorpay_signature, plan, period } = req.body
     const key_secret = process.env.RAZORPAY_KEY_SECRET
     if (!key_secret) return res.status(400).json({ error: "Razorpay not configured" })
-    const crypto = await import("crypto")
-    const expectedSig = crypto.default.createHmac("sha256", key_secret).update(razorpay_order_id + "|" + razorpay_payment_id).digest("hex")
+    const expectedSig = crypto.createHmac("sha256", key_secret).update(razorpay_order_id + "|" + razorpay_payment_id).digest("hex")
     if (expectedSig !== razorpay_signature) return res.status(400).json({ error: "Payment verification failed" })
     const endDate = new Date()
     endDate.setMonth(endDate.getMonth() + (period === "yearly" ? 12 : 1))
