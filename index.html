@@ -7,29 +7,22 @@
 (function() {
   var CURRENT_VERSION = "37"
   var storedVersion = localStorage.getItem("app_version")
+  localStorage.setItem("app_version", CURRENT_VERSION)
   
   if (storedVersion && storedVersion !== CURRENT_VERSION) {
-    // New version detected - clear everything and reload
-    localStorage.setItem("app_version", CURRENT_VERSION)
-    
-    // Clear all caches
+    // Clear caches silently
     if ("caches" in window) {
       caches.keys().then(function(keys) {
         keys.forEach(function(key) { caches.delete(key) })
       })
     }
-    
-    // Unregister service worker then reload
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(regs) {
         regs.forEach(function(r) { r.unregister() })
-        window.location.reload(true)
       })
-    } else {
-      window.location.reload(true)
     }
-  } else {
-    localStorage.setItem("app_version", CURRENT_VERSION)
+    // Show update banner instead of reloading
+    window._showUpdateBanner = true
   }
 })()
 </script>
@@ -1023,10 +1016,17 @@ function hardUpdate() {
     })
   }
   setTimeout(function() {
-    window.location.href = window.location.href.split("?")[0] + "?t=" + Date.now()
-  }, 500)
+    window.location.reload(true)
+  }, 300)
 }
 window.hardUpdate = hardUpdate
+
+window.addEventListener("load", function() {
+  if (window._showUpdateBanner) {
+    var b = document.getElementById("forceBanner")
+    if (b) b.style.display = "block"
+  }
+})
 </script>
 </body>
 </html>
