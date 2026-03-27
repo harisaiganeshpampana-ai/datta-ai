@@ -2392,23 +2392,69 @@ window.confirmDelete = confirmDelete
 window.deleteChat = deleteChat
 
 // INPUT BAR MODEL SELECTOR
-function selectInputModel(modelId, key, label) {
-  // Use the main selectModel function to keep everything in sync
-  selectModel(modelId, key, "", label)
-  showToast(label + " selected")
+let _dropdownOpen = false
+
+function toggleModelDropdown() {
+  const dd = document.getElementById("modelDropdown")
+  if (!dd) return
+  _dropdownOpen = !_dropdownOpen
+  dd.style.display = _dropdownOpen ? "block" : "none"
 }
 
-// Load saved model pill on startup
+function closeModelDropdown() {
+  const dd = document.getElementById("modelDropdown")
+  if (dd) dd.style.display = "none"
+  _dropdownOpen = false
+}
+
+// Close dropdown when clicking outside
+document.addEventListener("click", function(e) {
+  if (!e.target.closest(".inputModelBar") && !e.target.closest("#modelDropdown")) {
+    closeModelDropdown()
+  }
+})
+
+function selectInputModel(modelId, key, label) {
+  // Update active model pill text
+  const activePill = document.getElementById("activeModelName")
+  if (activePill) activePill.textContent = label
+
+  // Update dropdown checkmarks
+  document.querySelectorAll(".modelDropItem").forEach(d => d.classList.remove("active"))
+  document.querySelectorAll(".mdiCheck").forEach(c => c.textContent = "")
+  const item = document.getElementById("mdi-" + key)
+  const check = document.getElementById("mdic-" + key)
+  if (item) item.classList.add("active")
+  if (check) check.textContent = "✓"
+
+  // Save model
+  localStorage.setItem("datta_model", modelId)
+  localStorage.setItem("datta_model_key", key)
+
+  // Sync with topbar
+  const btnName = document.getElementById("modelBtnName")
+  if (btnName) btnName.textContent = label
+
+  // Close dropdown
+  closeModelDropdown()
+}
+
+// Load saved model on startup
 window.addEventListener("DOMContentLoaded", function() {
   const savedKey = localStorage.getItem("datta_model_key") || "d21"
-  document.querySelectorAll(".inputModelPill").forEach(p => p.classList.remove("active"))
-  const pill = document.getElementById("imp-" + savedKey)
-  if (pill) pill.classList.add("active")
-  // Update topbar button name
   const saved = modelData[savedKey]
-  const btnName = document.getElementById("modelBtnName")
-  if (btnName && saved) btnName.textContent = saved.name
+  if (saved) {
+    const activePill = document.getElementById("activeModelName")
+    if (activePill) activePill.textContent = saved.name
+    const item = document.getElementById("mdi-" + savedKey)
+    const check = document.getElementById("mdic-" + savedKey)
+    if (item) item.classList.add("active")
+    if (check) check.textContent = "✓"
+  }
 })
+
+window.toggleModelDropdown = toggleModelDropdown
+window.closeModelDropdown = closeModelDropdown
 
 window.selectInputModel = selectInputModel
 
