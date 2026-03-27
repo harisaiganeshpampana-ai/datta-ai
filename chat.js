@@ -1526,33 +1526,45 @@ function pickVoice(profile) {
   const voices = voiceSynth.getVoices()
   if (!voices.length) return null
 
-  // Try exact keyword match first
-  for (const kw of profile.keywords) {
-    const found = voices.find(v => v.name.includes(kw))
-    if (found) return found
+  // Debug - log all available voices once
+  if (!window._voicesLogged) {
+    window._voicesLogged = true
+    console.log("Available voices:", voices.map(v => v.name + " (" + v.lang + ")").join(", "))
   }
 
-  // Gender + language match
+  // Try exact keyword match
+  for (const kw of profile.keywords) {
+    const found = voices.find(v => v.name.toLowerCase().includes(kw.toLowerCase()))
+    if (found) { console.log("Voice matched by keyword:", found.name); return found }
+  }
+
+  // Language match
   const langVoices = voices.filter(v => v.lang.startsWith(profile.lang.split("-")[0]))
+
   if (langVoices.length) {
-    const maleWords = ["david","james","daniel","george","oliver","alex","ryan","male","man","tom"]
-    const femaleWords = ["samantha","zira","karen","sofia","aria","female","woman","victoria","lisa"]
+    // Gender match by name
+    const maleWords = ["male","man","david","james","daniel","george","oliver","alex","ryan","tom","richard","peter","john","mark"]
+    const femaleWords = ["female","woman","girl","samantha","zira","karen","sofia","aria","victoria","lisa","susan","alice","emma","kate"]
     const gWords = profile.gender === "male" ? maleWords : femaleWords
+
     const gendered = langVoices.find(v => gWords.some(g => v.name.toLowerCase().includes(g)))
-    if (gendered) return gendered
-    // Male voices tend to be listed later
-    if (profile.gender === "male" && langVoices.length > 1) return langVoices[langVoices.length - 1]
+    if (gendered) { console.log("Voice matched by gender+lang:", gendered.name); return gendered }
+
+    // No gender match - for male pick last, for female pick first
+    if (profile.gender === "male") return langVoices[langVoices.length - 1]
     return langVoices[0]
   }
 
-  // English fallback with gender
+  // English fallback
   const engVoices = voices.filter(v => v.lang.startsWith("en"))
-  if (engVoices.length) {
-    const maleWords = ["david","james","daniel","george","oliver","alex","male","man"]
-    const femaleWords = ["samantha","zira","karen","aria","female","woman","victoria"]
+  if (engVoices.length > 0) {
+    const maleWords = ["male","man","david","james","daniel","george","oliver"]
+    const femaleWords = ["female","woman","samantha","zira","karen","aria"]
     const gWords = profile.gender === "male" ? maleWords : femaleWords
     const gendered = engVoices.find(v => gWords.some(g => v.name.toLowerCase().includes(g)))
     if (gendered) return gendered
+    if (profile.gender === "male" && engVoices.length > 1) return engVoices[engVoices.length - 1]
+    return engVoices[0]
   }
 
   return voices[0]
@@ -1577,8 +1589,10 @@ function speakText2(text) {
   // Wait for voices to load then pick
   const setVoiceAndSpeak = () => {
     const voice = pickVoice(profile)
-    if (voice) utterance.voice = voice
-
+    if (voice) {
+      utterance.voice = voice
+      console.log("Speaking with voice:", voice.name)
+    }
     utterance.onend = () => {
       isSpeaking = false
       if (voiceActive) {
@@ -1586,17 +1600,27 @@ function speakText2(text) {
         setTimeout(() => { if (voiceActive) startListening() }, 800)
       }
     }
-    utterance.onerror = () => {
+    utterance.onerror = (e) => {
+      console.log("Speech error:", e)
       isSpeaking = false
       setVoiceStatus("Tap to speak", "idle")
     }
     voiceSynth.speak(utterance)
   }
 
-  if (voiceSynth.getVoices().length) {
+  // Always wait a moment to ensure voices are loaded
+  const availVoices = voiceSynth.getVoices()
+  if (availVoices.length > 0) {
     setVoiceAndSpeak()
   } else {
-    voiceSynth.addEventListener("voiceschanged", setVoiceAndSpeak, { once: true })
+    voiceSynth.onvoiceschanged = () => {
+      voiceSynth.onvoiceschanged = null
+      setVoiceAndSpeak()
+    }
+    // Fallback if onvoiceschanged never fires
+    setTimeout(() => {
+      if (isSpeaking === false) setVoiceAndSpeak()
+    }, 1000)
   }
 }
 
