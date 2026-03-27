@@ -237,7 +237,7 @@
 
         <div class="inputRightBtns">
           <!-- Mic / Siri button -->
-          <button class="micBtn" id="micBtn" onclick="startAssistant()" title="Voice">
+          <button class="micBtn" id="micBtn" onclick="startVoiceListener()" title="Voice input">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
               <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
@@ -603,54 +603,60 @@
 <!-- VOICE ASSISTANT OVERLAY -->
 <div id="voiceOverlay" class="voiceOverlay">
 
-  <!-- Close button top right -->
-  <button onclick="closeVoiceAssistant()" style="position:absolute;top:20px;right:20px;background:rgba(255,255,255,0.1);border:none;color:white;width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+  <!-- Top bar -->
+  <div style="position:absolute;top:0;left:0;right:0;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="font-family:'Josefin Sans',sans-serif;font-size:13px;letter-spacing:3px;color:#555;text-transform:uppercase;">Voice Assistant</div>
+    <button onclick="closeVoiceAssistant()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);color:#aaa;width:36px;height:36px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+  </div>
 
-  <!-- AI Name -->
-  <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;background:linear-gradient(135deg,#00ff88,#00ccff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;">DATTA AI</div>
-
-  <!-- Voice orb - tap to listen -->
-  <div class="voiceOrb" id="voiceOrb" onclick="toggleVoiceListening()" style="cursor:pointer;">
+  <!-- Orb -->
+  <div class="voiceOrb" id="voiceOrb" onclick="toggleVoiceListening()" style="cursor:pointer;margin-bottom:32px;">
     <div class="voiceRing ring1"></div>
     <div class="voiceRing ring2"></div>
     <div class="voiceRing ring3"></div>
     <div class="voiceCore">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-        <line x1="12" y1="19" x2="12" y2="23"></line>
-        <line x1="8" y1="23" x2="16" y2="23"></line>
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
       </svg>
     </div>
   </div>
 
-  <!-- Status -->
-  <div class="voiceStatus" id="voiceStatus">Tap mic to speak</div>
+  <!-- Status text -->
+  <div class="voiceStatus" id="voiceStatus" style="font-family:'Josefin Sans',sans-serif;letter-spacing:2px;text-transform:uppercase;font-size:13px;">Tap to speak</div>
 
-  <!-- Live transcript -->
-  <div class="voiceText" id="voiceText" style="min-height:28px;text-align:center;max-width:300px;"></div>
+  <!-- Live spoken text -->
+  <div id="voiceText" style="min-height:60px;max-width:320px;text-align:center;font-family:'Cormorant Garamond',serif;font-size:20px;color:#ddd;line-height:1.5;margin:16px 0;padding:0 20px;"></div>
 
-  <!-- Tap to speak button -->
-  <button id="voiceMicBtn" onclick="toggleVoiceListening()" style="
-    padding:14px 32px;
-    background:linear-gradient(135deg,#00cc6a,#00aaff);
-    border:none;border-radius:30px;
-    color:white;font-size:15px;font-weight:700;
-    cursor:pointer;font-family:'Rajdhani',sans-serif;
-    letter-spacing:1px;margin-top:8px;
-    transition:all 0.2s;
-  ">
-    🎤 Tap to Speak
-  </button>
+  <!-- AI response text -->
+  <div id="voiceAIText" style="min-height:40px;max-width:320px;text-align:center;font-family:'Cormorant Garamond',serif;font-size:15px;color:#666;line-height:1.6;margin-bottom:32px;padding:0 20px;font-style:italic;"></div>
 
-  <!-- Language selector -->
-  <select onchange="setVoiceLang(this.value)" style="margin-top:12px;background:#1a1a1a;border:1px solid #333;color:#aaa;padding:8px 16px;border-radius:20px;font-size:13px;outline:none;">
-    <option value="en-IN">English (India)</option>
-    <option value="en-US">English (US)</option>
-    <option value="hi-IN">Hindi</option>
-    <option value="te-IN">Telugu</option>
-    <option value="ta-IN">Tamil</option>
-  </select>
+  <!-- Controls -->
+  <div style="display:flex;align-items:center;gap:20px;">
+    <!-- Language -->
+    <select onchange="setVoiceLang(this.value)" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#888;padding:8px 14px;border-radius:20px;font-size:12px;outline:none;font-family:'Josefin Sans',sans-serif;letter-spacing:1px;">
+      <option value="en-IN">EN-IN</option>
+      <option value="en-US">EN-US</option>
+      <option value="hi-IN">हिंदी</option>
+      <option value="te-IN">తెలుగు</option>
+      <option value="ta-IN">தமிழ்</option>
+    </select>
+
+    <!-- Big mic button -->
+    <button id="voiceMicBtn" onclick="toggleVoiceListening()" style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#00ff88,#00ccff);border:none;color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;box-shadow:0 0 24px rgba(0,255,136,0.3);">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+    </button>
+
+    <!-- Send to chat -->
+    <button onclick="sendVoiceToChat()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#888;padding:8px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-family:'Josefin Sans',sans-serif;letter-spacing:1px;">CHAT</button>
+  </div>
 
 </div>
 
@@ -748,7 +754,7 @@
   <div class="sheetDivider"></div>
 
   <!-- Voice Row -->
-  <div class="sheetRow" onclick="startAssistant();closePlusMenu()">
+  <div class="sheetRow" onclick="openVoiceAssistant();closePlusMenu()">
     <div class="sheetRowLeft">
       <div class="sheetRowIcon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
