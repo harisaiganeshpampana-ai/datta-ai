@@ -1042,9 +1042,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
             const textContent = tjMatches.map(m => m.replace(/\(([^)]*)\)\s*Tj/, "$1")).join(" ")
             
             // Also try to get plain readable chars
-            const readable = pdfStr.replace(/[^ -~
-
-	]/g, " ").replace(/\s+/g, " ")
+            const readable = pdfStr.replace(/[^\x20-\x7E]/g, " ").replace(/\s+/g, " ")
             const words = readable.split(" ").filter(w => w.length > 2 && /^[a-zA-Z0-9.,!?;:'"()-]+$/.test(w))
             pdfText = textContent || words.join(" ")
             pdfText = pdfText.substring(0, 8000) // Limit to 8000 chars
@@ -1052,28 +1050,17 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
             pdfText = "Could not extract text from PDF"
           }
           
-          userContent = (message ? message + "
-
-" : "") + 
-            "[PDF File: " + file.originalname + "]
-
-" +
-            "PDF Content:
-" + pdfText + searchContext
+          userContent = (message ? message + "\n\n" : "") + 
+            "[PDF: " + file.originalname + "]\n\n" +
+            (pdfText || "Could not extract PDF text") + searchContext
         } else {
           // Text files - read as UTF-8
           const fileText = file.buffer.toString("utf-8").substring(0, 8000)
-          userContent = (message ? message + "
-
-" : "") + 
-            "[File: " + file.originalname + "]
-
-" + fileText + searchContext
+          userContent = (message ? message + "\n\n" : "") + 
+            "[File: " + file.originalname + "]\n\n" + fileText + searchContext
         }
       } catch(e) { 
-        userContent = (message ? message + "
-
-" : "") + "[File: " + file.originalname + " - could not read content]" + searchContext 
+        userContent = (message ? message + "\n\n" : "") + "[File: " + file.originalname + " - could not read content]" + searchContext 
       }
     } else {
       userContent = message + searchContext
