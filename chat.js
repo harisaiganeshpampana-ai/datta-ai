@@ -414,7 +414,20 @@ function newChat() {
   currentChatId = null
   chatBox.innerHTML = ""
   chatBox.scrollTop = 0
+  localStorage.removeItem("datta_last_chat")
+  // Close sidebar on mobile
+  const sidebar = document.getElementById("sidebar")
+  if (sidebar && window.innerWidth < 768) {
+    sidebar.classList.remove("open")
+    const overlay = document.getElementById("sidebarOverlay")
+    if (overlay) overlay.style.display = "none"
+  }
   showWelcome()
+  // Reload smart suggestions
+  loadSmartSuggestions()
+  // Focus input
+  const msg = document.getElementById("message")
+  if (msg) setTimeout(() => msg.focus(), 100)
 }
 
 
@@ -939,7 +952,13 @@ function hideWelcome() {
 
 function showWelcome() {
   const w = document.getElementById("welcomeScreen")
-  if (w) w.style.display = "block"
+  if (w) {
+    w.style.display = "flex"
+    w.style.flexDirection = "column"
+    w.style.alignItems = "center"
+    w.style.justifyContent = "center"
+  }
+  loadSmartSuggestions()
 }
 
 
