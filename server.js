@@ -1031,11 +1031,19 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       userContent = message + searchContext
     }
 
-    const selectedModel = req.body.model || "llama-3.3-70b-versatile"
-    const validModels = ["llama-3.1-8b-instant","llama-3.3-70b-versatile","gemma2-9b-it","llama-3.3-70b-versatile","llama-3.3-70b-versatile","meta-llama/llama-4-scout-17b-16e-instruct"]
+    const selectedModel = req.body.model || "llama-3.1-8b-instant"
+    const validModels = [
+      "llama-3.1-8b-instant",                          // Datta 2.1
+      "llama-3.3-70b-versatile",                        // Datta 4.2
+      "gemma2-9b-it",                                   // Datta 4.8
+      "meta-llama/llama-4-maverick-17b-128e-instruct",  // Datta 5.4
+      "meta-llama/llama-4-scout-17b-16e-instruct",      // Datta Vision
+      // Persona models
+      "persona-lawyer","persona-teacher","persona-chef","persona-fitness"
+    ]
     const chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.1-8b-instant"
     const model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : chosenModel
-    const useTogether = chosenModel === "meta-llama/llama-4-maverick-17b-128e-instruct" && process.env.TOGETHER_API_KEY
+    const useTogether = (chosenModel === "meta-llama/llama-4-maverick-17b-128e-instruct" || chosenModel.startsWith("persona-")) && process.env.TOGETHER_API_KEY
     const style = req.body.style || "Balanced"
     const ainame = req.body.ainame || "Datta AI"
     const styleNotes = {
@@ -1119,12 +1127,17 @@ QUALITY RULES:
     const systemWithMemory = systemPrompt + memoryContext
 
     let stream
+    // Resolve actual Together AI model
+    const togetherModel = chosenModel.startsWith("persona-") 
+      ? "llama-3.3-70b-versatile"  // personas use fast model
+      : "deepseek-ai/DeepSeek-V3"  // Datta 5.4 uses DeepSeek
+
     if (useTogether) {
-      // Use Together AI DeepSeek V3 for Datta 5.4 (best coding)
       stream = await callTogetherAI(
         [...history, { role: "user", content: typeof finalUserContent === "string" ? finalUserContent : (message || "") }],
         systemWithMemory,
-        maxTok
+        maxTok,
+        togetherModel
       )
     } else {
       stream = await groq.chat.completions.create({
@@ -1661,7 +1674,7 @@ app.get("/suggestions", authMiddleware, async (req, res) => {
 })
 
 // TOGETHER AI - Dedicated coding model for Datta 5.4
-async function callTogetherAI(messages, systemPrompt, maxTokens = 8192) {
+async function callTogetherAI(messages, systemPrompt, maxTokens = 8192, model = "deepseek-ai/DeepSeek-V3") {
   const apiKey = process.env.TOGETHER_API_KEY
   if (!apiKey) throw new Error("TOGETHER_API_KEY not configured")
 
@@ -1672,7 +1685,7 @@ async function callTogetherAI(messages, systemPrompt, maxTokens = 8192) {
       "Authorization": "Bearer " + apiKey
     },
     body: JSON.stringify({
-      model: "deepseek-ai/DeepSeek-V3",  // Best coding model on Together AI
+      model: model,  // Dynamic model selection
       messages: [
         { role: "system", content: systemPrompt },
         ...messages
