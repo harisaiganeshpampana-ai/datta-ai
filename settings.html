@@ -135,8 +135,31 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
 .panelHeader { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
 .panelTitle { font-family:'Rajdhani',sans-serif; font-size:18px; font-weight:700; letter-spacing:0.5px; }
 .panelClose {
-  width:28px; height:28px; border-radius:50%; background:var(--bg3);
-  border:none; color:var(--text); cursor:pointer; font-size:14px;
+  display: none;
+}
+.panelBack {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #00ff88;
+  font-size: 14px;
+  font-family: 'Josefin Sans', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  padding: 6px 10px 6px 4px;
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+.panelBack:hover {
+  background: rgba(0,255,136,0.08);
+  transform: translateX(-2px);
+}
+.panelBack::before {
+  content: "←";
+  font-size: 16px;
 }
 
 /* FORM */
@@ -193,16 +216,90 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
 .stylePill.active { background:#0a2a1a; border-color:var(--accent); color:var(--accent); }
 
 /* LOGOUT */
-.fontCard {
-  padding: 16px;
-  background: #111;
-  border: 1px solid #1e1e1e;
-  border-radius: 14px;
+/* ── PERSONA CARDS ── */
+.personaCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: #0f0f0f;
+  border: 1.5px solid #1a1a1a;
+  border-radius: 16px;
   cursor: pointer;
   transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
 }
-.fontCard:hover { background: #161616; border-color: #2a2a2a; }
-.fontCard.active { border-color: #00ff8866; background: #0a1a0f; }
+.personaCard::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: transparent;
+  transition: background 0.2s;
+  border-radius: 3px 0 0 3px;
+}
+.personaCard:hover {
+  background: #141414;
+  border-color: #252525;
+  transform: translateX(3px);
+}
+.personaCard.active {
+  background: #0a180a;
+  border-color: #00ff8840;
+}
+.personaCard.active::before {
+  background: #00ff88;
+}
+
+/* ── FONT CARDS ── */
+.fontCard {
+  padding: 14px 16px;
+  background: #0f0f0f;
+  border: 1.5px solid #1a1a1a;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.fontCard::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: transparent;
+  transition: background 0.2s;
+  border-radius: 3px 0 0 3px;
+}
+.fontCard:hover {
+  background: #141414;
+  border-color: #252525;
+  transform: translateX(3px);
+}
+.fontCard.active {
+  background: #0a180a;
+  border-color: #00ff8840;
+}
+.fontCard.active::before {
+  background: #00ff88;
+}
+
+/* Font size buttons */
+.sizeBtn {
+  flex: 1;
+  padding: 12px;
+  background: #0f0f0f;
+  border: 1.5px solid #1a1a1a;
+  border-radius: 12px;
+  color: #777;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: system-ui;
+  text-align: center;
+}
+.sizeBtn:hover { background: #141414; border-color: #252525; color: #ccc; }
+.sizeBtn.active { background: #0a180a; border-color: #00ff8840; color: #00ff88; }
 
 .voiceCard {
   background: var(--bg3);
@@ -395,18 +492,48 @@ const fontFamilies = {
   mono:    "'Courier New', monospace"
 }
 
+function setPersonaSettings(key, label) {
+  localStorage.setItem("datta_persona", key)
+  localStorage.setItem("datta_persona_label", label)
+  // Update cards
+  document.querySelectorAll(".personaCard").forEach(c => c.classList.remove("active"))
+  document.querySelectorAll(".personaCheck").forEach(c => c.style.display = "none")
+  const card = document.getElementById("persona-" + key)
+  const check = document.getElementById("pcheck-" + key)
+  if (card) card.classList.add("active")
+  if (check) check.style.display = "block"
+  const desc = document.getElementById("personaDesc")
+  if (desc) desc.textContent = label
+  showMsg("persona", "✓ " + label + " mode active", "success")
+  setTimeout(() => closePanel("persona"), 800)
+}
+
+function loadSavedPersona() {
+  const key = localStorage.getItem("datta_persona") || "none"
+  const label = localStorage.getItem("datta_persona_label") || "Normal"
+  document.querySelectorAll(".personaCard").forEach(c => c.classList.remove("active"))
+  document.querySelectorAll(".personaCheck").forEach(c => c.style.display = "none")
+  const card = document.getElementById("persona-" + key)
+  const check = document.getElementById("pcheck-" + key)
+  if (card) card.classList.add("active")
+  if (check) check.style.display = "block"
+  const desc = document.getElementById("personaDesc")
+  if (desc) desc.textContent = label
+}
+
 function setFont(key, label) {
   localStorage.setItem("datta_font", key)
   localStorage.setItem("datta_font_label", label)
-  // Update active card
   document.querySelectorAll(".fontCard").forEach(c => c.classList.remove("active"))
+  document.querySelectorAll(".fontCheck").forEach(c => c.style.display = "none")
   const card = document.getElementById("font-" + key)
+  const check = document.getElementById("fcheck-" + key)
   if (card) card.classList.add("active")
-  // Apply font
+  if (check) check.style.display = "inline"
   applyFont(key)
   const desc = document.getElementById("fontDesc")
   if (desc) desc.textContent = label
-  showMsg("font", "Font applied!", "success")
+  showMsg("font", "✓ " + label + " font applied", "success")
   setTimeout(() => closePanel("font"), 800)
 }
 
@@ -431,17 +558,21 @@ function previewFontSize(size) {
 function saveFontSize(size) {
   size = parseInt(size)
   localStorage.setItem("datta_font_size", size)
-  // Apply globally
   const style = document.getElementById("datta-size-style") || document.createElement("style")
   style.id = "datta-size-style"
   style.textContent = `.aiBubble, .aiBubble p, .aiBubble li, .userBubble { font-size: ${size}px !important; }`
   document.head.appendChild(style)
   const labels = { 12:"Small", 13:"Small", 14:"Small", 15:"Medium", 16:"Medium", 17:"Medium", 18:"Large", 19:"Large", 20:"Large", 21:"Extra Large", 22:"Extra Large" }
   const desc = document.getElementById("fontsizeDesc")
-  if (desc) desc.textContent = (labels[size] || "Custom") + " (" + size + ")"
+  if (desc) desc.textContent = labels[size] || "Custom"
   const slider = document.getElementById("fontSizeSlider")
   if (slider) slider.value = size
   previewFontSize(size)
+  // Highlight active size button
+  document.querySelectorAll(".sizeBtn").forEach(b => b.classList.remove("active"))
+  const nearest = size <= 14 ? 13 : size <= 17 ? 16 : 19
+  const btn = document.getElementById("szbtn-" + nearest)
+  if (btn) btn.classList.add("active")
 }
 
 function loadSavedFont() {
@@ -449,12 +580,14 @@ function loadSavedFont() {
   const savedSize = parseInt(localStorage.getItem("datta_font_size") || "16")
   applyFont(savedFont)
   saveFontSize(savedSize)
-  // Update active card
   document.querySelectorAll(".fontCard").forEach(c => c.classList.remove("active"))
+  document.querySelectorAll(".fontCheck").forEach(c => c.style.display = "none")
   const card = document.getElementById("font-" + savedFont)
+  const check = document.getElementById("fcheck-" + savedFont)
   if (card) card.classList.add("active")
+  if (check) check.style.display = "inline"
   const desc = document.getElementById("fontDesc")
-  if (desc) desc.textContent = localStorage.getItem("datta_font_label") || "Elegant (Default)"
+  if (desc) desc.textContent = localStorage.getItem("datta_font_label") || "Elegant"
 }
 
 function copyEmail() {
@@ -671,6 +804,13 @@ function previewVoice() {
       </div>
       <div class="settingArrow">›</div>
     </div>
+    <div class="settingRow" onclick="openPanel('persona')">
+      <div class="settingLeft">
+        <div class="settingIcon" style="background:#1a0a2a;">🎭</div>
+        <div><div class="settingLabel">AI Mode</div><div class="settingDesc" id="personaDesc">Normal</div></div>
+      </div>
+      <div class="settingArrow">›</div>
+    </div>
     <div class="settingRow" onclick="openPanel('language')">
       <div class="settingLeft">
         <div class="settingIcon" style="background:#0a1a2a;">🌐</div>
@@ -848,7 +988,7 @@ function previewVoice() {
 <div class="panelBox" onclick="event.stopPropagation()">
   <div class="panelHeader">
     <div class="panelTitle">Choose Theme</div>
-    <button class="panelClose" onclick="closePanel('theme')">✕</button>
+    <button class="panelBack" onclick="closePanel('theme')">Back</button>
   </div>
   <div class="themeGrid">
     <div class="themeCard" id="theme-dark" onclick="setTheme('dark')">
@@ -890,7 +1030,7 @@ function previewVoice() {
 <div class="panelBox" onclick="event.stopPropagation()">
   <div class="panelHeader">
     <div class="panelTitle">Chat Wallpaper</div>
-    <button class="panelClose" onclick="closePanel('wallpaper')">✕</button>
+    <button class="panelBack" onclick="closePanel('wallpaper')">Back</button>
   </div>
   <div class="wallpaperGrid">
     <div class="wallpaperCard" id="wp-none" style="background:#111;border:1px solid #222;display:flex;align-items:center;justify-content:center;color:#555;font-size:12px;" onclick="setWallpaper('none')">None</div>
@@ -911,7 +1051,7 @@ function previewVoice() {
 <div class="panelBox" onclick="event.stopPropagation()">
   <div class="panelHeader">
     <div class="panelTitle">Custom AI Name</div>
-    <button class="panelClose" onclick="closePanel('ainame')">✕</button>
+    <button class="panelBack" onclick="closePanel('ainame')">Back</button>
   </div>
   <div class="msg" id="msg-ainame"></div>
   <label class="formLabel">AI Name (shown in chat)</label>
@@ -925,7 +1065,7 @@ function previewVoice() {
 <div class="panelBox" onclick="event.stopPropagation()">
   <div class="panelHeader">
     <div class="panelTitle">Response Style</div>
-    <button class="panelClose" onclick="closePanel('aistyle')">✕</button>
+    <button class="panelBack" onclick="closePanel('aistyle')">Back</button>
   </div>
   <div class="stylePills" id="stylePills">
     <div class="stylePill" onclick="setStyle('Balanced')">⚖️ Balanced</div>
@@ -945,7 +1085,7 @@ function previewVoice() {
 <div class="panelBox" onclick="event.stopPropagation()">
   <div class="panelHeader">
     <div class="panelTitle">AI Response Language</div>
-    <button class="panelClose" onclick="closePanel('language')">✕</button>
+    <button class="panelBack" onclick="closePanel('language')">Back</button>
   </div>
   <div class="stylePills">
     <div class="stylePill" onclick="setLanguage('English')">🇺🇸 English</div>
@@ -967,7 +1107,7 @@ function previewVoice() {
 <div class="panelBox" onclick="event.stopPropagation()">
   <div class="panelHeader">
     <div class="panelTitle">Change Username</div>
-    <button class="panelClose" onclick="closePanel('username')">✕</button>
+    <button class="panelBack" onclick="closePanel('username')">Back</button>
   </div>
   <div class="msg" id="msg-username"></div>
   <label class="formLabel">New Username</label>
@@ -981,7 +1121,7 @@ function previewVoice() {
 <div class="panelBox" onclick="event.stopPropagation()">
   <div class="panelHeader">
     <div class="panelTitle">Change Password</div>
-    <button class="panelClose" onclick="closePanel('password')">✕</button>
+    <button class="panelBack" onclick="closePanel('password')">Back</button>
   </div>
   <div class="msg" id="msg-password"></div>
   <label class="formLabel">Current Password</label>
@@ -995,34 +1135,102 @@ function previewVoice() {
 </div>
 
 <!-- MEMORY PANEL -->
+<!-- AI MODE / PERSONA PANEL -->
+<div class="panel" id="panel-persona">
+  <div class="panelHeader">
+    <button class="panelBack" onclick="closePanel('persona')">Back</button>
+    <div class="panelTitle">AI Mode</div>
+  </div>
+  <div class="panelBody" onclick="event.stopPropagation()">
+    <p style="font-size:13px;color:#555;margin-bottom:16px;line-height:1.6;">Choose a special mode. The AI will behave like an expert in that field.</p>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div class="personaCard active" id="persona-none" onclick="setPersonaSettings('none','Normal')">
+        <div style="font-size:22px;flex-shrink:0;">💬</div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">Normal</div>
+          <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">Default Datta AI</div>
+        </div>
+        <div class="personaCheck" id="pcheck-none" style="color:#00ff88;font-size:18px;font-weight:700;">✓</div>
+      </div>
+      <div class="personaCard" id="persona-lawyer" onclick="setPersonaSettings('lawyer','Lawyer')">
+        <div style="font-size:22px;flex-shrink:0;">⚖️</div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">Lawyer</div>
+          <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">Legal information & guidance</div>
+        </div>
+        <div class="personaCheck" id="pcheck-lawyer" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</div>
+      </div>
+      <div class="personaCard" id="persona-teacher" onclick="setPersonaSettings('teacher','Teacher')">
+        <div style="font-size:22px;flex-shrink:0;">📚</div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">Teacher</div>
+          <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">Explains concepts simply</div>
+        </div>
+        <div class="personaCheck" id="pcheck-teacher" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</div>
+      </div>
+      <div class="personaCard" id="persona-chef" onclick="setPersonaSettings('chef','Chef')">
+        <div style="font-size:22px;flex-shrink:0;">👨‍🍳</div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">Chef</div>
+          <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">Recipes & cooking guidance</div>
+        </div>
+        <div class="personaCheck" id="pcheck-chef" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</div>
+      </div>
+      <div class="personaCard" id="persona-fitness" onclick="setPersonaSettings('fitness','Fitness Coach')">
+        <div style="font-size:22px;flex-shrink:0;">💪</div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">Fitness Coach</div>
+          <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">Workouts & nutrition plans</div>
+        </div>
+        <div class="personaCheck" id="pcheck-fitness" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- FONT STYLE PANEL -->
 <div class="panel" id="panel-font">
   <div class="panelHeader">
-    <button class="panelBack" onclick="closePanel('font')">←</button>
+    <button class="panelBack" onclick="closePanel('font')">Back</button>
     <div class="panelTitle">Font Style</div>
   </div>
   <div class="panelBody" onclick="event.stopPropagation()">
     <div class="msg" id="msg-font"></div>
     <div style="display:flex;flex-direction:column;gap:10px;">
       <div class="fontCard active" id="font-elegant" onclick="setFont('elegant','Elegant')">
-        <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:white;margin-bottom:4px;">The quick brown fox</div>
-        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;">Elegant · Cormorant Garamond</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:white;">The quick brown fox</div>
+          <span class="fontCheck" id="fcheck-elegant" style="color:#00ff88;font-size:18px;font-weight:700;">✓</span>
+        </div>
+        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Elegant · Cormorant Garamond</div>
       </div>
       <div class="fontCard" id="font-modern" onclick="setFont('modern','Modern')">
-        <div style="font-family:'Inter',sans-serif;font-size:17px;color:white;margin-bottom:4px;">The quick brown fox</div>
-        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;">Modern · Inter</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-family:'Inter',sans-serif;font-size:17px;color:white;">The quick brown fox</div>
+          <span class="fontCheck" id="fcheck-modern" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</span>
+        </div>
+        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Modern · Inter</div>
       </div>
       <div class="fontCard" id="font-classic" onclick="setFont('classic','Classic')">
-        <div style="font-family:'Georgia',serif;font-size:18px;color:white;margin-bottom:4px;">The quick brown fox</div>
-        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;">Classic · Georgia</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-family:'Georgia',serif;font-size:18px;color:white;">The quick brown fox</div>
+          <span class="fontCheck" id="fcheck-classic" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</span>
+        </div>
+        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Classic · Georgia</div>
       </div>
       <div class="fontCard" id="font-rounded" onclick="setFont('rounded','Rounded')">
-        <div style="font-family:'Nunito',sans-serif;font-size:18px;color:white;margin-bottom:4px;">The quick brown fox</div>
-        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;">Rounded · Nunito</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-family:'Nunito',sans-serif;font-size:18px;color:white;">The quick brown fox</div>
+          <span class="fontCheck" id="fcheck-rounded" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</span>
+        </div>
+        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Rounded · Nunito</div>
       </div>
       <div class="fontCard" id="font-mono" onclick="setFont('mono','Monospace')">
-        <div style="font-family:'Courier New',monospace;font-size:15px;color:white;margin-bottom:4px;">The quick brown fox</div>
-        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;">Mono · Courier New</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-family:'Courier New',monospace;font-size:15px;color:white;">The quick brown fox</div>
+          <span class="fontCheck" id="fcheck-mono" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</span>
+        </div>
+        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Mono · Courier New</div>
       </div>
     </div>
   </div>
@@ -1031,7 +1239,7 @@ function previewVoice() {
 <!-- FONT SIZE PANEL -->
 <div class="panel" id="panel-fontsize">
   <div class="panelHeader">
-    <button class="panelBack" onclick="closePanel('fontsize')">←</button>
+    <button class="panelBack" onclick="closePanel('fontsize')">Back</button>
     <div class="panelTitle">Font Size</div>
   </div>
   <div class="panelBody" onclick="event.stopPropagation()">
@@ -1049,9 +1257,9 @@ function previewVoice() {
       <span>Large</span>
     </div>
     <div style="display:flex;gap:8px;">
-      <button onclick="saveFontSize(13)" style="flex:1;padding:10px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;color:#aaa;font-size:12px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">Small</button>
-      <button onclick="saveFontSize(16)" style="flex:1;padding:10px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;color:#aaa;font-size:14px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">Medium</button>
-      <button onclick="saveFontSize(19)" style="flex:1;padding:10px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;color:#aaa;font-size:17px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">Large</button>
+      <button class="sizeBtn" id="szbtn-13" onclick="saveFontSize(13)">Small</button>
+      <button class="sizeBtn active" id="szbtn-16" onclick="saveFontSize(16)">Medium</button>
+      <button class="sizeBtn" id="szbtn-19" onclick="saveFontSize(19)">Large</button>
     </div>
   </div>
 </div>
@@ -1060,7 +1268,7 @@ function previewVoice() {
 <div class="panelBox" onclick="event.stopPropagation()">
   <div class="panelHeader">
     <div class="panelTitle">🧠 AI Memory</div>
-    <button class="panelClose" onclick="closePanel('memory')">✕</button>
+    <button class="panelBack" onclick="closePanel('memory')">Back</button>
   </div>
   <div id="memoryList" style="margin-bottom:16px;max-height:300px;overflow-y:auto;"></div>
   <button class="dangerBtn" onclick="clearAllMemory()">🗑️ Clear All Memory</button>
@@ -1072,7 +1280,7 @@ function previewVoice() {
 <div class="panelBox" onclick="event.stopPropagation()">
   <div class="panelHeader">
     <div class="panelTitle">Delete All Chats</div>
-    <button class="panelClose" onclick="closePanel('deleteChats')">✕</button>
+    <button class="panelBack" onclick="closePanel('deleteChats')">Back</button>
   </div>
   <div class="msg" id="msg-deleteChats"></div>
   <p style="color:#888;font-size:13px;margin-bottom:16px;">This will permanently delete all your chat history. Cannot be undone.</p>
@@ -1085,7 +1293,7 @@ function previewVoice() {
 <div class="panelBox" onclick="event.stopPropagation()">
   <div class="panelHeader">
     <div class="panelTitle">Delete Account</div>
-    <button class="panelClose" onclick="closePanel('deleteAccount')">✕</button>
+    <button class="panelBack" onclick="closePanel('deleteAccount')">Back</button>
   </div>
   <div class="msg" id="msg-deleteAccount"></div>
   <p style="color:#888;font-size:13px;margin-bottom:16px;">All data will be permanently deleted.</p>
