@@ -4036,3 +4036,126 @@ input, textarea, select { touch-action: manipulation; }
   gap: 5px !important;
   flex-shrink: 0 !important;
 }
+
+/* INPUT MODEL BAR - like Claude's model selector */
+.inputModelBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.inputModelBar::-webkit-scrollbar { display: none; }
+
+.inputModelPill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  border-radius: 20px;
+  color: #555;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  font-family: 'Rajdhani', sans-serif;
+  letter-spacing: 0.3px;
+}
+
+.inputModelPill:hover {
+  border-color: #333;
+  color: #888;
+  background: #111;
+}
+
+.inputModelPill.active {
+  border-color: #00ff8866;
+  color: #00ff88;
+  background: #0a1a0f;
+}
+
+@media (max-width: 768px) {
+  .inputModelBar {
+    padding: 4px 4px 2px;
+    gap: 5px;
+  }
+
+  .inputModelPill {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+}
+
+/* MODEL BAR INSIDE INPUT BOX - like Claude */
+.inputWrap {
+  border-radius: 16px !important;
+  border: 1px solid #222 !important;
+  background: #111 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.inputModelBar {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 8px 12px 4px !important;
+  border-bottom: 1px solid #1a1a1a !important;
+  overflow-x: auto !important;
+  scrollbar-width: none !important;
+}
+
+.inputModelBar::-webkit-scrollbar { display: none !important; }
+
+.inputModelPill {
+  padding: 4px 12px !important;
+  background: transparent !important;
+  border: 1px solid #2a2a2a !important;
+  border-radius: 20px !important;
+  color: #555 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  transition: all 0.15s !important;
+  font-family: 'Rajdhani', sans-serif !important;
+}
+
+.inputModelPill:hover {
+  border-color: #333 !important;
+  color: #888 !important;
+}
+
+.inputModelPill.active {
+  background: #0a1a0f !important;
+  border-color: #00ff8866 !important;
+  color: #00ff88 !important;
+}
+
+/* Input row stays clean */
+.inputRow {
+  display: flex !important;
+  align-items: center !important;
+  padding: 6px 8px 8px !important;
+  gap: 6px !important;
+}
+
+#message {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  flex: 1 !important;
+  font-size: 15px !important;
+  color: white !important;
+  padding: 6px 8px !important;
+}
+
+#message::placeholder { color: #444 !important; }
