@@ -956,7 +956,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Detect if code/build task needs max tokens
     const msgLower = message.toLowerCase()
     const isCodeTask = ["build","create","write","make","code","website","app","script","program","html","python","javascript","fix","debug","error","update","improve","full","complete","function","class","api"].some(k => msgLower.includes(k))
-    const maxTok = isImageFile ? 4096 : (isCodeTask ? 8192 : 4096)
+    const maxTok = isImageFile ? 4096 : (isCodeTask ? 8192 : 6144)
 
     const now = new Date()
     const timeStr = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })
@@ -1025,7 +1025,7 @@ QUALITY RULES:
         { role: "user", content: finalUserContent }
       ],
       max_tokens: maxTok,
-      temperature: 0.7,
+      temperature: 0.75,
       stream: true
     })
 
