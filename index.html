@@ -6,7 +6,7 @@
 
 <title>Datta AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
-<link rel="stylesheet" href="style.css?v=39">
+<link rel="stylesheet" href="style.css?v=40">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -265,7 +265,7 @@
 
 </div>
 
-<script src="chat.js?v=39"></script>
+<script src="chat.js?v=40"></script>
 
 <script>
   // SPLASH SCREEN - skip if returning from settings
@@ -597,12 +597,20 @@
 
 <!-- VOICE ASSISTANT OVERLAY -->
 <div id="voiceOverlay" class="voiceOverlay">
-  <div class="voiceOrb" id="voiceOrb">
+
+  <!-- Close button top right -->
+  <button onclick="closeVoiceAssistant()" style="position:absolute;top:20px;right:20px;background:rgba(255,255,255,0.1);border:none;color:white;width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+
+  <!-- AI Name -->
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;background:linear-gradient(135deg,#00ff88,#00ccff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;">DATTA AI</div>
+
+  <!-- Voice orb - tap to listen -->
+  <div class="voiceOrb" id="voiceOrb" onclick="toggleVoiceListening()" style="cursor:pointer;">
     <div class="voiceRing ring1"></div>
     <div class="voiceRing ring2"></div>
     <div class="voiceRing ring3"></div>
     <div class="voiceCore">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
         <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
         <line x1="12" y1="19" x2="12" y2="23"></line>
@@ -610,18 +618,35 @@
       </svg>
     </div>
   </div>
-  <div class="voiceStatus" id="voiceStatus">Tap to speak</div>
-  <div class="voiceText" id="voiceText"></div>
-  <div class="voiceActions">
-    <button class="voiceActionBtn" id="voiceMicBtn" onclick="toggleVoiceListening()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-      </svg>
-      Hold to Talk
-    </button>
-    <button class="voiceActionBtn voiceCloseBtn" onclick="closeVoiceAssistant()">✕ Close</button>
-  </div>
+
+  <!-- Status -->
+  <div class="voiceStatus" id="voiceStatus">Tap mic to speak</div>
+
+  <!-- Live transcript -->
+  <div class="voiceText" id="voiceText" style="min-height:28px;text-align:center;max-width:300px;"></div>
+
+  <!-- Tap to speak button -->
+  <button id="voiceMicBtn" onclick="toggleVoiceListening()" style="
+    padding:14px 32px;
+    background:linear-gradient(135deg,#00cc6a,#00aaff);
+    border:none;border-radius:30px;
+    color:white;font-size:15px;font-weight:700;
+    cursor:pointer;font-family:'Rajdhani',sans-serif;
+    letter-spacing:1px;margin-top:8px;
+    transition:all 0.2s;
+  ">
+    🎤 Tap to Speak
+  </button>
+
+  <!-- Language selector -->
+  <select onchange="setVoiceLang(this.value)" style="margin-top:12px;background:#1a1a1a;border:1px solid #333;color:#aaa;padding:8px 16px;border-radius:20px;font-size:13px;outline:none;">
+    <option value="en-IN">English (India)</option>
+    <option value="en-US">English (US)</option>
+    <option value="hi-IN">Hindi</option>
+    <option value="te-IN">Telugu</option>
+    <option value="ta-IN">Tamil</option>
+  </select>
+
 </div>
 
 
@@ -977,6 +1002,12 @@ window.hardUpdate = hardUpdate
 
 
 </script>
+
+<!-- ATTRIBUTION - required for Llama/Groq usage -->
+<div style="display:none;" id="attribution">
+  Powered by Meta Llama models via Groq inference. 
+  Datta AI is an independent product not affiliated with Meta or Groq.
+</div>
 
 <!-- MODEL DROPDOWN - at body level so it's not clipped -->
 <div id="modelDropdown" style="display:none;position:fixed;bottom:90px;left:12px;right:12px;background:#111;border:1px solid #333;border-radius:16px;z-index:99999;padding:8px;box-shadow:0 -8px 32px rgba(0,0,0,0.8);" onclick="event.stopPropagation()">
