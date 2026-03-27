@@ -222,7 +222,27 @@ async function webSearch(query) {
 function needsWebSearch(message) {
   if (!message) return false
   const msg = message.toLowerCase()
-  const triggers = ["latest","recent","today","yesterday","this week","current","now","live","breaking","news","who is","what is the","price of","weather","score","2025","2026","happened","update","trending","stock","crypto","bitcoin","ipl","cricket","match","movie","released","launched","election","president","prime minister","gold","petrol","diesel","result","exam","rate","war","attack","killed"]
+  const triggers = [
+    // Current events
+    "latest","recent","today","yesterday","this week","current","now","live","breaking",
+    "news","happened","update","trending","2024","2025","2026",
+    // Factual knowledge questions
+    "who is","who was","who invented","who discovered","who founded","who created","who wrote",
+    "what is the","what are","what was","when did","when was","where is","where was",
+    "how many","how much","which country","which city","which state",
+    "father of","mother of","inventor of","founder of","capital of",
+    "president of","prime minister","governor","minister","ceo","chairman",
+    "population of","area of","height of","length of","distance",
+    "history of","origin of","born in","died in","age of",
+    // Prices & finance
+    "price of","cost of","weather","score","stock","crypto","bitcoin","gold",
+    "petrol","diesel","rate","exchange","currency","salary","income",
+    // Entertainment & sports
+    "ipl","cricket","match","movie","released","launched","election","sports",
+    "actor","actress","singer","player","team","award","winner","champion",
+    // Search intent
+    "tell me about","explain","define","describe","search for","find","look up"
+  ]
   return triggers.some(t => msg.includes(t))
 }
 
