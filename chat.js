@@ -130,23 +130,13 @@ window.addCodeCopyButtons = addCodeCopyButtons
 
 // STOP GENERATION
 function showStopBtn() {
-  const stop = document.getElementById("stopBtn")
-  const send = document.getElementById("sendBtn")
-  if (stop) {
-    stop.classList.add("active")
-    stop.style.setProperty("display", "flex", "important")
-  }
-  if (send) send.style.setProperty("display", "none", "important")
+  document.getElementById("stopBtn").style.display = "flex"
+  document.getElementById("sendBtn").style.display = "none"
 }
 
 function hideStopBtn() {
-  const stop = document.getElementById("stopBtn")
-  const send = document.getElementById("sendBtn")
-  if (stop) {
-    stop.classList.remove("active")
-    stop.style.setProperty("display", "none", "important")
-  }
-  if (send) send.style.setProperty("display", "flex", "important")
+  document.getElementById("stopBtn").style.display = "none"
+  document.getElementById("sendBtn").style.display = "flex"
 }
 
 function stopGeneration() {
