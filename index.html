@@ -286,33 +286,29 @@
   })
 
   // BOTTOM SHEET - proper toggle
-  // SHEET STATE - single source of truth
-  var _sheetOpen = false
+  // SHEET - completely controlled by inline styles only
+  var SHEET_OPEN = false
 
   function togglePlusMenu() {
-    _sheetOpen ? _closeSheet() : _openSheet()
+    SHEET_OPEN ? closePlusMenu() : openPlusMenu()
   }
 
-  function _openSheet() {
+  function openPlusMenu() {
     var s = document.getElementById("addToChatSheet")
     var o = document.getElementById("addToChatOverlay")
-    if (!s) return
-    _sheetOpen = true
-    s.style.setProperty("bottom","0px","important")
-    o.style.setProperty("display","block","important")
+    if (!s || !o) return
+    SHEET_OPEN = true
+    s.setAttribute("style", "position:fixed!important;bottom:0!important;left:0!important;right:0!important;background:#111!important;border-radius:20px 20px 0 0!important;z-index:88889!important;padding:0 0 40px!important;transition:bottom 0.3s ease!important;max-width:600px!important;margin:0 auto!important;")
+    o.setAttribute("style", "position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;background:rgba(0,0,0,0.7)!important;z-index:88888!important;display:block!important;")
   }
 
-  function _closeSheet() {
+  function closePlusMenu() {
     var s = document.getElementById("addToChatSheet")
     var o = document.getElementById("addToChatOverlay")
-    _sheetOpen = false
-    if (s) s.style.setProperty("bottom","-120%","important")
-    if (o) o.style.setProperty("display","none","important")
+    SHEET_OPEN = false
+    if (s) s.setAttribute("style", "position:fixed!important;bottom:-120%!important;left:0!important;right:0!important;background:#111!important;border-radius:20px 20px 0 0!important;z-index:88889!important;padding:0 0 40px!important;transition:bottom 0.3s ease!important;max-width:600px!important;margin:0 auto!important;")
+    if (o) o.setAttribute("style", "position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;background:rgba(0,0,0,0.7)!important;z-index:88888!important;display:none!important;")
   }
-
-  // Make closePlusMenu available globally
-  function closePlusMenu() { _closeSheet() }
-  function openPlusMenu() { _openSheet() }
 
   function toggleWebSearch(row) {
     const toggle = document.getElementById("webSearchToggle")
@@ -334,12 +330,20 @@
 
   // Close sheet on escape
   document.addEventListener("keydown", function(e) {
-    if (e.key === "Escape") _closeSheet()
+    if (e.key === "Escape") closePlusMenu()
   })
 
-  // Close when coming back to page
+  // Close when coming back to page  
   document.addEventListener("visibilitychange", function() {
-    if (!document.hidden) _closeSheet()
+    if (!document.hidden) closePlusMenu()
+  })
+
+  // Force close on page load
+  window.addEventListener("load", function() {
+    closePlusMenu()
+  })
+  document.addEventListener("DOMContentLoaded", function() {
+    closePlusMenu()
   })
 
   // FILE HELPERS
@@ -595,8 +599,8 @@
 
 
 <!-- ADD TO CHAT BOTTOM SHEET -->
-<div id="addToChatOverlay" onclick="closePlusMenu()" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1500;display:none;backdrop-filter:blur(4px);"></div>
-<div id="addToChatSheet" style="position:fixed;bottom:-100%;left:0;right:0;background:#111;border-radius:20px 20px 0 0;z-index:1501;padding:0 0 40px;transition:bottom 0.35s cubic-bezier(0.4,0,0.2,1);max-width:600px;margin:0 auto;">
+<div id="addToChatOverlay" onclick="closePlusMenu()" style="position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;background:rgba(0,0,0,0.7)!important;z-index:88888!important;display:none!important;"></div>
+<div id="addToChatSheet" style="position:fixed!important;bottom:-120%!important;left:0!important;right:0!important;background:#111!important;border-radius:20px 20px 0 0!important;z-index:88889!important;padding:0 0 40px!important;transition:bottom 0.3s ease!important;max-width:600px!important;margin:0 auto!important;">
   <div class="sheetHandle"></div>
   <div class="sheetHeader">
     <button class="sheetCloseBtn" onclick="closePlusMenu()">✕</button>
