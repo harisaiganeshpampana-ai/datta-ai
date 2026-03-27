@@ -972,7 +972,11 @@ function showMsg(id, text, type) {
 }
 
 function goBack() {
-  window.location.href = "index.html"
+  if (window.history.length > 1) {
+    window.history.back()
+  } else {
+    window.location.href = "index.html"
+  }
 }
 
 // LOAD ON START
