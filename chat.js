@@ -1801,7 +1801,7 @@ function changeModel(model) {
     "llama-3.3-70b-versatile": "Fast",
     "llama-3.1-8b-instant": "Instant",
     "llama3-70b-8192": "Reasoning",
-    "llama-3.1-70b-versatile": "Mixtral"
+    "llama-3.3-70b-versatile": "Mixtral"
   }
   showToast("Model: " + (modelNames[model] || model))
 }
@@ -1843,13 +1843,13 @@ const modelData = {
   d21:    { model: "llama-3.1-8b-instant",                        icon: "", name: "Datta 2.1" },
   d42:    { model: "llama-3.3-70b-versatile",                     icon: "", name: "Datta 4.2" },
   d48:    { model: "llama3-70b-8192",               icon: "", name: "Datta 4.8" },
-  d54:    { model: "llama-3.1-70b-versatile",                          icon: "", name: "Datta 5.4" },
+  d54:    { model: "llama-3.3-70b-versatile",                          icon: "", name: "Datta 5.4" },
   chitra: { model: "meta-llama/llama-4-scout-17b-16e-instruct",   icon: "", name: "Datta Vision" },
   // Legacy support
   veda:   { model: "llama-3.3-70b-versatile",  icon: "", name: "Datta 4.2" },
   surya:  { model: "llama-3.1-8b-instant",     icon: "", name: "Datta 2.1" },
   agni:   { model: "llama3-70b-8192", icon: "", name: "Datta 4.8" },
-  brahma: { model: "llama-3.1-70b-versatile",       icon: "", name: "Datta 5.4" }
+  brahma: { model: "llama-3.3-70b-versatile",       icon: "", name: "Datta 5.4" }
 }
 
 let currentModelKey = "veda"
@@ -2393,11 +2393,28 @@ window.deleteChat = deleteChat
 
 // ── MODEL DROPDOWN ──────────────────────────────────────────────────────────
 let _ddOpen = false
+let _ddClickTime = 0
 
 function toggleModelDropdown() {
+  _ddClickTime = Date.now()
   _ddOpen = !_ddOpen
   const dd = document.getElementById("modelDropdown")
-  if (dd) dd.style.display = _ddOpen ? "block" : "none"
+  if (!dd) return
+  if (_ddOpen) {
+    dd.style.display = "block"
+    dd.style.position = "fixed"
+    // Position above input bar
+    const pill = document.getElementById("activeModelPill")
+    if (pill) {
+      const rect = pill.getBoundingClientRect()
+      dd.style.bottom = (window.innerHeight - rect.top + 8) + "px"
+      dd.style.left = "12px"
+      dd.style.right = "12px"
+      dd.style.zIndex = "99999"
+    }
+  } else {
+    dd.style.display = "none"
+  }
 }
 
 function closeModelDropdown() {
@@ -2406,7 +2423,9 @@ function closeModelDropdown() {
   if (dd) dd.style.display = "none"
 }
 
+// Close when clicking outside - with delay to prevent immediate close
 document.addEventListener("click", function(e) {
+  if (Date.now() - _ddClickTime < 300) return
   if (!e.target.closest("#activeModelPill") && !e.target.closest("#modelDropdown")) {
     closeModelDropdown()
   }
