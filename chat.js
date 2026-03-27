@@ -525,7 +525,7 @@ async function send() {
   formData.append("token", getToken())
   formData.append("language", localStorage.getItem("datta_language") || "English")
 
-  formData.append("model", localStorage.getItem("datta_model") || "llama-3.1-8b-instant")
+  formData.append("model", getPersonaModel())
   formData.append("style", localStorage.getItem("datta_ai_style") || "Balanced")
   formData.append("ainame", localStorage.getItem("datta_ai_name") || "Datta AI")
 
@@ -1998,36 +1998,6 @@ function toggleSidebar() {
 
 window.toggleSidebar = toggleSidebar
 
-// ── FEATURE 4: CHAT EXPORT ──────────────────────────────────────────────────
-function exportChat() {
-  const chatBox = document.getElementById("chat")
-  if (!chatBox || !chatBox.children.length) {
-    alert("No chat to export!")
-    return
-  }
-
-  // Get all messages
-  const messages = []
-  chatBox.querySelectorAll(".messageRow").forEach(row => {
-    const userBubble = row.querySelector(".userBubble")
-    const aiBubble = row.querySelector(".aiBubble, .stream")
-    if (userBubble) messages.push("You: " + userBubble.innerText.trim())
-    if (aiBubble) messages.push("Datta AI: " + aiBubble.innerText.trim())
-  })
-
-  if (!messages.length) return
-
-  const content = "Datta AI Chat Export\n" + new Date().toLocaleString() + "\n" + "=".repeat(50) + "\n\n" + messages.join("\n\n")
-
-  // Download as txt
-  const blob = new Blob([content], { type: "text/plain" })
-  const a = document.createElement("a")
-  a.href = URL.createObjectURL(blob)
-  a.download = "datta-ai-chat-" + Date.now() + ".txt"
-  a.click()
-}
-
-window.exportChat = exportChat
 
 // ── FEATURE 5: AI MODEL SELECTOR ────────────────────────────────────────────
 function changeModel(model) {
@@ -2625,6 +2595,67 @@ if ("serviceWorker" in navigator) {
 
 window.confirmDelete = confirmDelete
 window.deleteChat = deleteChat
+
+// EXPORT CHAT
+async function exportChat() {
+  if (!currentChatId) return showToast("No chat to export")
+  try {
+    const res = await fetch("https://datta-ai-server.onrender.com/chat/" + currentChatId + "/export?token=" + getToken())
+    if (!res.ok) return showToast("Export failed")
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "datta-ai-chat.txt"
+    a.click()
+    URL.revokeObjectURL(url)
+    showToast("Chat exported!")
+  } catch(e) { showToast("Export failed") }
+}
+window.exportChat = exportChat
+
+// REFERRAL
+async function showReferral() {
+  try {
+    const res = await fetch("https://datta-ai-server.onrender.com/referral/code?token=" + getToken())
+    const data = await res.json()
+    const msg = `Your referral code: ${data.code}
+
+Share this with friends!
+You get +10 messages per referral.
+
+You've referred: ${data.referredCount} people
+Bonus messages earned: ${data.bonusMessages}`
+    const shareText = `Try Datta AI - Free AI Assistant!
+Use my code ${data.code} at signup for 5 bonus messages!
+https://datta-ai.com`
+    if (navigator.share) {
+      navigator.share({ title: "Datta AI Referral", text: shareText })
+    } else {
+      navigator.clipboard.writeText(shareText)
+      showToast("Referral link copied!")
+      alert(msg)
+    }
+  } catch(e) { showToast("Could not load referral") }
+}
+window.showReferral = showReferral
+
+// AI PERSONAS
+function setPersona(key, label) {
+  localStorage.setItem("datta_persona", key)
+  localStorage.setItem("datta_persona_label", label)
+  showToast("Mode: " + label)
+  // Close persona panel if open
+  const panel = document.getElementById("personaPanel")
+  if (panel) panel.style.display = "none"
+}
+window.setPersona = setPersona
+
+function getPersonaModel() {
+  const persona = localStorage.getItem("datta_persona")
+  if (persona && persona !== "none") return "persona-" + persona
+  return localStorage.getItem("datta_model") || "llama-3.1-8b-instant"
+}
 
 // ── MODEL DROPDOWN ──────────────────────────────────────────────────────────
 let _ddOpen = false
