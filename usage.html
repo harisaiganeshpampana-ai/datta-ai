@@ -91,9 +91,11 @@ function getToken() { return localStorage.getItem("datta_token") || "" }
 
 function formatTime(ms) {
   if (!ms || ms <= 0) return "Now"
+  if (ms > 365 * 24 * 60 * 60 * 1000) return "Never"
   const mins = Math.ceil(ms / 60000)
   if (mins < 60) return mins + " min"
   const hrs = Math.ceil(mins / 60)
+  if (hrs > 999) return "Never"
   return hrs + " hr" + (hrs > 1 ? "s" : "")
 }
 
@@ -191,7 +193,7 @@ async function loadUsage() {
         <div class="usageMeta">${imgPct >= 100 ? "⚠️ Limit reached" : imgPct + "% used today"}</div>
       </div>
 
-      ${resetIn > 0 ? `
+      ${plan !== "free" && resetIn > 0 ? `
       <div class="resetCard">
         <div class="resetIcon">⏰</div>
         <div class="resetText">
@@ -199,6 +201,13 @@ async function loadUsage() {
           <div class="resetSub">Your message limit refreshes automatically</div>
         </div>
         <div class="resetTime">${formatTime(resetIn)}</div>
+      </div>` : plan === "free" ? `
+      <div class="resetCard" style="background:#1a0a00;border-color:#ff880022;">
+        <div class="resetIcon">⚠️</div>
+        <div class="resetText">
+          <div class="resetTitle" style="color:#ff8844;">Free Plan Limit</div>
+          <div class="resetSub">First 25 messages free · then 8 per session · never fully resets</div>
+        </div>
       </div>` : ""}
 
       ${plan === "free" ? `
