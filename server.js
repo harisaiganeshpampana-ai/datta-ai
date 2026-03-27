@@ -1713,39 +1713,32 @@ async function callTogetherAI(messages, systemPrompt, maxTokens = 8192) {
   return response
 }
 
-// EXPORT CHAT AS PDF TEXT
+// EXPORT CHAT
 app.get("/chat/:id/export", authMiddleware, async (req, res) => {
   try {
     const chat = await Chat.findOne({ _id: req.params.id, userId: req.user.id })
     if (!chat) return res.status(404).json({ error: "Chat not found" })
-    
-    let text = "DATTA AI - Chat Export
-"
-    text += "=" .repeat(40) + "
-"
-    text += "Title: " + (chat.title || "Untitled") + "
-"
-    text += "Date: " + new Date(chat.createdAt).toLocaleDateString() + "
-"
-    text += "=" .repeat(40) + "
-
-"
-    
+    const sep = "=".repeat(40)
+    const lines = [
+      "DATTA AI - Chat Export",
+      sep,
+      "Title: " + (chat.title || "Untitled"),
+      "Date: " + new Date(chat.createdAt).toLocaleDateString(),
+      sep, ""
+    ]
     chat.messages.forEach(m => {
       const role = m.role === "user" ? "You" : "Datta AI"
-      const content = typeof m.content === "string" ? m.content : "[Image/File]"
-      text += `[${role}]
-${content}
-
-`
+      const text = typeof m.content === "string" ? m.content : "[File/Image]"
+      lines.push("[" + role + "]")
+      lines.push(text)
+      lines.push("")
     })
-    
+    const output = lines.join("\n")
     res.setHeader("Content-Type", "text/plain")
-    res.setHeader("Content-Disposition", `attachment; filename="datta-ai-chat-${Date.now()}.txt"`)
-    res.send(text)
-  } catch(e) { res.status(500).json({ error: sanitizeError(e).userMsg }) }
+    res.setHeader("Content-Disposition", "attachment; filename=datta-ai-chat.txt")
+    res.send(output)
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
-
 // AI LENS ROUTE
 app.post("/lens", authMiddleware, async (req, res) => {
   try {
