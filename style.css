@@ -4257,3 +4257,39 @@ input, textarea, select { touch-action: manipulation; }
   width: 20px !important;
   text-align: center !important;
 }
+
+/* SINGLE MODEL PILL */
+.inputModelBar {
+  padding: 6px 10px 2px !important;
+  border-bottom: 1px solid #1a1a1a !important;
+}
+
+.inputModelSingle {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 4px 12px !important;
+  background: #0a1a0f !important;
+  border: 1px solid #00ff8844 !important;
+  border-radius: 20px !important;
+  color: #00ff88 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  font-family: 'Rajdhani', sans-serif !important;
+}
+
+/* MODEL DROPDOWN */
+.modelDropItem {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px 12px !important;
+  border-radius: 10px !important;
+  cursor: pointer !important;
+  transition: background 0.15s !important;
+  margin-bottom: 2px !important;
+}
+
+.modelDropItem:hover { background: #1a1a1a !important; }
+.modelDropItem.active { background: #0a1a0f !important; }
