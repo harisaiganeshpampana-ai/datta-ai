@@ -951,6 +951,11 @@ QUALITY RULES:
 4. NEVER say "I cannot" - just solve it
 5. Expert in: HTML, CSS, JS, React, Python, Node.js, SQL, Java, C++, ALL languages` + langNote + styleNote + searchNote
 
+    // Combine user content with URL context
+    const finalUserContent = typeof userContent === "string"
+      ? userContent + urlContext
+      : userContent
+
     const systemWithMemory = systemPrompt + memoryContext
 
     const stream = await groq.chat.completions.create({
