@@ -263,16 +263,28 @@ async function webSearch(query) {
     const response = await fetch("https://api.tavily.com/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ api_key: key, query, search_depth: "basic", max_results: 5, include_answer: true })
+      body: JSON.stringify({
+        api_key: key,
+        query,
+        search_depth: "advanced",
+        max_results: 7,
+        include_answer: true,
+        include_raw_content: false
+      })
     })
     if (!response.ok) return null
     const data = await response.json()
     if (!data.results?.length) return null
-    const answer = data.answer ? "Summary: " + data.answer + "\n\n" : ""
-    const sources = data.results.slice(0, 3).map((r, i) =>
-      (i+1) + ". " + r.title + "\n" + (r.content||"").substring(0, 200) + "\nSource: " + r.url
-    ).join("\n\n")
-    return answer + sources
+
+    // Build rich context from results
+    const answer = data.answer ? "DIRECT ANSWER: " + data.answer + "\n\n" : ""
+    const sources = data.results.slice(0, 5).map((r, i) =>
+      "SOURCE " + (i+1) + ": " + r.title + "\n" +
+      "URL: " + r.url + "\n" +
+      "CONTENT: " + (r.content || "").substring(0, 800)
+    ).join("\n\n---\n\n")
+
+    return answer + "SEARCH RESULTS:\n\n" + sources
   } catch(e) { return null }
 }
 
@@ -1053,7 +1065,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }
     const langNote = language && language !== "English" ? " Always respond in " + language + "." : ""
     const styleNote = styleNotes[style] || ""
-    const searchNote = searchContext ? " Use web search results for accurate answers and cite sources." : ""
+    const searchNote = searchContext ? " IMPORTANT: Use the web search results to give a COMPLETE, DETAILED answer. Tell the user ALL the news/information directly. Do NOT say 'visit this website' or 'go to this link' or 'read more at'. Give the full answer yourself using the search results. Include key details, dates, names, numbers from the results. Only mention source names at the end briefly." : ""
 
     // Detect if code/build task needs max tokens
     const msgLower = message.toLowerCase()
@@ -1706,32 +1718,6 @@ app.get("/version", (req, res) => {
 app.get("/", (req, res) => res.json({ status: "Datta AI Server running", version: "3.5" }))
 
 // TOGETHER AI - dedicated coding API for Datta 5.4
-async function callTogetherAI(messages, systemPrompt, res) {
-  const key = process.env.TOGETHER_API_KEY
-  if (!key) throw new Error("Together AI not configured")
-
-  const response = await fetch("https://api.together.xyz/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer " + key
-    },
-    body: JSON.stringify({
-      model: "deepseek-ai/DeepSeek-V3",
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...messages
-      ],
-      max_tokens: 16000,
-      temperature: 0.2,
-      stream: true
-    })
-  })
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}))
-    throw new Error(err.error?.message || "Together AI error")
-  }
 
   return response
 }
