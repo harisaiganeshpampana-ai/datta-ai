@@ -216,6 +216,14 @@
         </div>
       </div>
 
+      <!-- Model selector row - INSIDE input box like Claude -->
+      <div class="inputModelBar">
+        <button class="inputModelPill active" id="imp-d21" onclick="selectInputModel('llama-3.1-8b-instant','d21','Datta 2.1')">Datta 2.1</button>
+        <button class="inputModelPill" id="imp-d42" onclick="selectInputModel('llama-3.3-70b-versatile','d42','Datta 4.2')">Datta 4.2</button>
+        <button class="inputModelPill" id="imp-d48" onclick="selectInputModel('deepseek-r1-distill-llama-70b','d48','Datta 4.8')">Datta 4.8</button>
+        <button class="inputModelPill" id="imp-d54" onclick="selectInputModel('mixtral-8x7b-32768','d54','Datta 5.4')">Datta 5.4</button>
+      </div>
+
       <!-- Bottom row -->
       <div class="inputRow">
         <button class="plusBtn" id="plusBtn" onclick="togglePlusMenu()">
