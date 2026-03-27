@@ -2646,12 +2646,31 @@ window.showReferral = showReferral
 function setPersona(key, label) {
   localStorage.setItem("datta_persona", key)
   localStorage.setItem("datta_persona_label", label)
+  updateModeIndicator(key, label)
   showToast("Mode: " + label)
-  // Close persona panel if open
-  const panel = document.getElementById("personaPanel")
-  if (panel) panel.style.display = "none"
 }
+
+function updateModeIndicator(key, label) {
+  const btn = document.getElementById("modeIndicator")
+  if (!btn) return
+  if (!key || key === "none") {
+    btn.style.display = "none"
+  } else {
+    const icons = { lawyer:"⚖️", teacher:"📚", chef:"👨‍🍳", fitness:"💪" }
+    btn.textContent = (icons[key] || "") + " " + label
+    btn.style.display = "flex"
+  }
+}
+
+// Load mode indicator on start
+window.addEventListener("DOMContentLoaded", function() {
+  const savedKey = localStorage.getItem("datta_persona") || "none"
+  const savedLabel = localStorage.getItem("datta_persona_label") || "Normal"
+  updateModeIndicator(savedKey, savedLabel)
+})
+
 window.setPersona = setPersona
+window.updateModeIndicator = updateModeIndicator
 
 function getPersonaModel() {
   const persona = localStorage.getItem("datta_persona")
