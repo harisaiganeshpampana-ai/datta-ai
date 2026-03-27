@@ -816,10 +816,10 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const userPlan = sub ? sub.plan : "free"
 
     if (isImageRequest(message)) {
-      const imgCheck = checkAndUpdateLimit(userId, userPlan, "images")
+      const imgCheck = await checkAndUpdateLimitDB(userId, userPlan, "images")
       if (!imgCheck.allowed) return res.status(429).json({ error: "IMAGE_LIMIT", plan: userPlan, waitMins: imgCheck.waitMins, limit: imgCheck.limit })
     } else {
-      const msgCheck = checkAndUpdateLimit(userId, userPlan, "messages")
+      const msgCheck = await checkAndUpdateLimitDB(userId, userPlan, "messages")
       if (!msgCheck.allowed) return res.status(429).json({ error: "MESSAGE_LIMIT", plan: userPlan, waitMins: msgCheck.waitMins, limit: msgCheck.limit })
     }
 
