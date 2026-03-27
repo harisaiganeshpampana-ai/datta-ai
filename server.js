@@ -894,7 +894,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }
 
     const selectedModel = req.body.model || "llama-3.3-70b-versatile"
-    const validModels = ["llama-3.1-8b-instant","llama-3.3-70b-versatile","deepseek-r1-distill-llama-70b","llama-3.1-70b-versatile","llama-3.1-70b-versatile","meta-llama/llama-4-scout-17b-16e-instruct"]
+    const validModels = ["llama-3.1-8b-instant","llama-3.3-70b-versatile","llama3-70b-8192","llama-3.1-70b-versatile","llama-3.1-70b-versatile","meta-llama/llama-4-scout-17b-16e-instruct"]
     const chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.1-8b-instant"
     const model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : chosenModel
     const style = req.body.style || "Balanced"
@@ -927,7 +927,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const modelPersonas = {
       "llama-3.1-8b-instant":                      "You are Datta 2.1 - fast and concise. Give brief, clear answers. Best for quick questions and simple tasks.",
       "llama-3.3-70b-versatile":                   "You are Datta 4.2 - balanced and capable. Handle coding, writing, analysis well. Give thorough focused answers.",
-      "deepseek-r1-distill-llama-70b":             "You are Datta 4.8 - advanced reasoning AI. Think step by step. Excel at math, logic, complex coding. Show your reasoning.",
+      "llama3-70b-8192":             "You are Datta 4.8 - advanced reasoning AI. Think step by step. Excel at math, logic, complex coding. Show your reasoning.",
       "llama-3.1-70b-versatile":                        "You are Datta 5.4 - the most powerful model. Handle extremely complex tasks, long documents, expert coding, detailed analysis.",
       "meta-llama/llama-4-scout-17b-16e-instruct": "You are Datta Vision - multimodal AI. Analyze images in extreme detail. Answer visual questions precisely."
     }
