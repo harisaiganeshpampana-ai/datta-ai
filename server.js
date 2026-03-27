@@ -25,7 +25,8 @@ app.use((req, res, next) => {
 })
 
 app.use(cors({ origin: "*", methods: ["GET","POST","PUT","DELETE","OPTIONS"], allowedHeaders: ["Content-Type","Authorization","x-chat-id"] }))
-app.use(express.json())
+app.use(express.json({ limit: "20mb" }))
+app.use(express.urlencoded({ extended: true, limit: "20mb" }))
 app.use(express.urlencoded({ extended: true }))
 app.use(session({ secret: process.env.JWT_SECRET || "datta-secret", resave: false, saveUninitialized: false }))
 app.use(passport.initialize())
@@ -1585,16 +1586,20 @@ app.post("/lens", authMiddleware, async (req, res) => {
     const { image, prompt } = req.body
     if (!image) return res.status(400).json({ error: "Image required" })
 
+    // Trim base64 if too large (max 4MB)
+    const maxLen = 4 * 1024 * 1024 * 1.33 // base64 overhead
+    const trimmedImage = image.length > maxLen ? image.substring(0, maxLen) : image
+
     const completion = await groq.chat.completions.create({
       model: "meta-llama/llama-4-scout-17b-16e-instruct",
       messages: [{
         role: "user",
         content: [
-          { type: "text", text: prompt || "Analyze this image in detail." },
-          { type: "image_url", image_url: { url: "data:image/jpeg;base64," + image } }
+          { type: "text", text: prompt || "Analyze this image in detail. Describe everything you see." },
+          { type: "image_url", image_url: { url: "data:image/jpeg;base64," + trimmedImage } }
         ]
       }],
-      max_tokens: 2048,
+      max_tokens: 1024,
       temperature: 0.3
     })
 
