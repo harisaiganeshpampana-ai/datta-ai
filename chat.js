@@ -468,7 +468,6 @@ async function send() {
         ${fileBubble}
         ${text ? `<div>${text}</div>` : ""}
       </div>
-      <div class="avatar">🧑</div>
     </div>
   `
 
@@ -501,7 +500,6 @@ async function send() {
     : { main:"#00ff88", glow:"rgba(0,255,136,0.4)", label:"Thinking...", icon:"" }
 
   aiDiv.innerHTML = `
-    <div class="avatar">🤖</div>
     <div class="dattaThinking">
       <div class="thinkOrb" style="--orb-color:${orbColors.main};--orb-glow:${orbColors.glow};">
         <div class="thinkOrbCore"></div>
@@ -567,7 +565,6 @@ async function send() {
           : "Upgrade your plan."
 
         aiDiv.innerHTML = `
-          <div class="avatar">🤖</div>
           <div class="aiContent">
             <div style="background:#1a0800;border:1px solid #ff440033;border-radius:16px;padding:20px;text-align:center;max-width:300px;">
               <div style="font-size:32px;margin-bottom:10px;">⏳</div>
@@ -594,7 +591,6 @@ async function send() {
       if (msgInput2) { msgInput2.disabled = false }
       const msg = errData.message || errData.error || "Something went wrong"
       aiDiv.innerHTML = `
-        <div class="avatar">🤖</div>
         <div class="aiBubble" style="color:#ff8844;">⚠️ ${msg}. Please try again.</div>
       `
       hideStopBtn()
@@ -608,7 +604,6 @@ async function send() {
 
     // Replace typing indicator with response bubble
     aiDiv.innerHTML = `
-      <div class="avatar">🤖</div>
       <div class="aiContent">
         <div class="aiBubble">
           <span class="stream"></span>
@@ -702,7 +697,6 @@ async function send() {
       console.log("Request cancelled")
     } else {
       aiDiv.innerHTML = `
-        <div class="avatar">🤖</div>
         <div class="aiBubble" style="color:#f88;">⚠️ Something went wrong. Please try again.</div>
       `
     }
@@ -810,13 +804,11 @@ async function openChat(chatId) {
       chatBox.innerHTML += `
         <div class="messageRow userRow">
           <div class="userBubble">${m.content}</div>
-          <div class="avatar">🧑</div>
         </div>
       `
     } else {
       chatBox.innerHTML += `
         <div class="messageRow">
-          <div class="avatar">🤖</div>
           <div class="aiContent">
             <div class="aiBubble">${marked.parse(m.content)}</div>
             <div class="aiActions">
@@ -1663,12 +1655,10 @@ async function processVoiceQuery(query) {
     chatBox.innerHTML += `
       <div class="messageRow userRow">
         <div class="userBubble">🎤 ${query}</div>
-        <div class="avatar">🧑</div>
       </div>
     `
     chatBox.innerHTML += `
       <div class="messageRow">
-        <div class="avatar">🤖</div>
         <div class="aiContent">
           <div class="aiBubble">${marked.parse(fullText.split("CHATID")[0])}</div>
         </div>
