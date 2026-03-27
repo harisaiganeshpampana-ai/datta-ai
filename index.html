@@ -59,7 +59,22 @@
   <!-- TOP: Logo + New Chat -->
   <div class="sidebarTop">
     <div class="sidebarBrand">Datta AI</div>
-    <button class="newChatBtn" onclick="newChat()">
+    <!-- Persona mode selector -->
+  <div id="personaBar" style="padding:0 8px 8px;">
+    <div style="font-size:10px;color:#444;letter-spacing:1px;text-transform:uppercase;padding:4px 4px 6px;">AI Mode</div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;">
+      <button onclick="setPersona('none','Normal')" style="padding:4px 10px;background:#111;border:1px solid #222;border-radius:12px;color:#666;font-size:11px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">Normal</button>
+<button onclick="setPersona('lawyer','Lawyer')" style="padding:4px 10px;background:#111;border:1px solid #222;border-radius:12px;color:#666;font-size:11px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">⚖️ Lawyer</button>
+      <button onclick="setPersona('teacher','Teacher')" style="padding:4px 10px;background:#111;border:1px solid #222;border-radius:12px;color:#666;font-size:11px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">📚 Teacher</button>
+      <button onclick="setPersona('chef','Chef')" style="padding:4px 10px;background:#111;border:1px solid #222;border-radius:12px;color:#666;font-size:11px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">👨‍🍳 Chef</button>
+      <button onclick="setPersona('fitness','Fitness')" style="padding:4px 10px;background:#111;border:1px solid #222;border-radius:12px;color:#666;font-size:11px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">💪 Fitness</button>
+    </div>
+  </div>
+
+  <!-- Referral button -->
+  <button onclick="showReferral()" style="margin:0 8px 8px;padding:10px;background:#0a1a0a;border:1px solid #00ff8822;border-radius:12px;color:#00ff88;font-size:12px;cursor:pointer;width:calc(100% - 16px);font-family:'Josefin Sans',sans-serif;letter-spacing:1px;">🎁 Invite Friends · Get Bonus</button>
+
+  <button class="newChatBtn" onclick="newChat()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10"></circle>
         <line x1="12" y1="8" x2="12" y2="16"></line>
