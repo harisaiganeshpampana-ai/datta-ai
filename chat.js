@@ -436,11 +436,21 @@ async function send() {
   hideWelcome()
   document.body.classList.add("chat-started")
 
-  // Show user bubble with file info if attached
+  // Show user bubble with image preview if attached
+  let fileBubble = ""
+  if (file) {
+    if (file.type.startsWith("image/")) {
+      const imgUrl = URL.createObjectURL(file)
+      fileBubble = `<div style="margin-bottom:8px;"><img src="${imgUrl}" style="max-width:220px;max-height:200px;border-radius:10px;display:block;" alt="attached image"></div>`
+    } else {
+      fileBubble = `<div style="font-size:12px;color:#aaa;margin-bottom:6px;background:#1a1a1a;padding:6px 10px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;"><span>📄</span><span>${file.name}</span></div>`
+    }
+  }
+
   chatBox.innerHTML += `
     <div class="messageRow userRow">
       <div class="userBubble">
-        ${file ? `<div style="font-size:12px;opacity:0.75;margin-bottom:4px;">📄 ${file.name}</div>` : ""}
+        ${fileBubble}
         ${text ? `<div>${text}</div>` : ""}
       </div>
       <div class="avatar">🧑</div>
@@ -498,13 +508,26 @@ async function send() {
   // Build FormData
   controller = new AbortController()
   const formData = new FormData()
-  formData.append("message", text)
+  // If image with no text, add helpful default prompt
+  const finalText = (!text && file && file.type.startsWith("image/"))
+    ? "Please analyze and describe this image in detail."
+    : text
+  formData.append("message", finalText)
   formData.append("chatId", currentChatId || "")
   formData.append("token", getToken())
   formData.append("language", localStorage.getItem("datta_language") || "English")
 
+  formData.append("model", localStorage.getItem("datta_model") || "llama-3.1-8b-instant")
+  formData.append("style", localStorage.getItem("datta_ai_style") || "Balanced")
+  formData.append("ainame", localStorage.getItem("datta_ai_name") || "Datta AI")
+
   if (file) {
     formData.append("image", file)
+    // If image attached, use vision model automatically
+    if (file.type.startsWith("image/")) {
+      formData.set("model", "meta-llama/llama-4-scout-17b-16e-instruct")
+      console.log("Image attached - using vision model")
+    }
   }
 
   showStopBtn()
