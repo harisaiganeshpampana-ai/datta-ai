@@ -344,6 +344,13 @@
   })
   document.addEventListener("DOMContentLoaded", function() {
     closePlusMenu()
+    // Close sheet when input is focused (keyboard opens)
+    var msgInput = document.getElementById("message")
+    if (msgInput) {
+      msgInput.addEventListener("focus", function() {
+        closePlusMenu()
+      })
+    }
   })
 
   // FILE HELPERS
