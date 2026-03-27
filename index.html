@@ -2,30 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script>
-// FORCE UPDATE CHECK - runs before anything else
-(function() {
-  var CURRENT_VERSION = "37"
-  var storedVersion = localStorage.getItem("app_version")
-  localStorage.setItem("app_version", CURRENT_VERSION)
-  
-  if (storedVersion && storedVersion !== CURRENT_VERSION) {
-    // Clear caches silently
-    if ("caches" in window) {
-      caches.keys().then(function(keys) {
-        keys.forEach(function(key) { caches.delete(key) })
-      })
-    }
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(regs) {
-        regs.forEach(function(r) { r.unregister() })
-      })
-    }
-    // Show update banner instead of reloading
-    window._showUpdateBanner = true
-  }
-})()
-</script>
+
 <title>Datta AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <link rel="stylesheet" href="style.css?v=37">
@@ -843,7 +820,6 @@
 
 <script>
 // VERSION CHECK - runs first before anything else
-const APP_VERSION = "3.5"
 const SERVER = "https://datta-ai-server.onrender.com"
 
 async function checkVersion() {
@@ -994,12 +970,7 @@ function hardUpdate() {
 }
 window.hardUpdate = hardUpdate
 
-window.addEventListener("load", function() {
-  if (window._showUpdateBanner) {
-    var b = document.getElementById("forceBanner")
-    if (b) b.style.display = "block"
-  }
-})
+
 </script>
 </body>
 </html>
