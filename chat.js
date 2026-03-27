@@ -1800,7 +1800,7 @@ function changeModel(model) {
   const modelNames = {
     "llama-3.3-70b-versatile": "Fast",
     "llama-3.1-8b-instant": "Instant",
-    "deepseek-r1-distill-llama-70b": "Reasoning",
+    "llama3-70b-8192": "Reasoning",
     "llama-3.1-70b-versatile": "Mixtral"
   }
   showToast("Model: " + (modelNames[model] || model))
@@ -1842,13 +1842,13 @@ window.showToast = showToast
 const modelData = {
   d21:    { model: "llama-3.1-8b-instant",                        icon: "", name: "Datta 2.1" },
   d42:    { model: "llama-3.3-70b-versatile",                     icon: "", name: "Datta 4.2" },
-  d48:    { model: "deepseek-r1-distill-llama-70b",               icon: "", name: "Datta 4.8" },
+  d48:    { model: "llama3-70b-8192",               icon: "", name: "Datta 4.8" },
   d54:    { model: "llama-3.1-70b-versatile",                          icon: "", name: "Datta 5.4" },
   chitra: { model: "meta-llama/llama-4-scout-17b-16e-instruct",   icon: "", name: "Datta Vision" },
   // Legacy support
   veda:   { model: "llama-3.3-70b-versatile",  icon: "", name: "Datta 4.2" },
   surya:  { model: "llama-3.1-8b-instant",     icon: "", name: "Datta 2.1" },
-  agni:   { model: "deepseek-r1-distill-llama-70b", icon: "", name: "Datta 4.8" },
+  agni:   { model: "llama3-70b-8192", icon: "", name: "Datta 4.8" },
   brahma: { model: "llama-3.1-70b-versatile",       icon: "", name: "Datta 5.4" }
 }
 
