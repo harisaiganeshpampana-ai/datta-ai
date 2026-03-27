@@ -2,11 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Nunito:wght@300;400;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Josefin+Sans:wght@300;400;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <title>Settings - Datta AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+
+
 <style>
 * { margin:0; padding:0; box-sizing:border-box; font-family:system-ui,Arial,sans-serif; }
 
@@ -190,6 +193,17 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
 .stylePill.active { background:#0a2a1a; border-color:var(--accent); color:var(--accent); }
 
 /* LOGOUT */
+.fontCard {
+  padding: 16px;
+  background: #111;
+  border: 1px solid #1e1e1e;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.fontCard:hover { background: #161616; border-color: #2a2a2a; }
+.fontCard.active { border-color: #00ff8866; background: #0a1a0f; }
+
 .voiceCard {
   background: var(--bg3);
   border: 2px solid var(--border);
@@ -372,6 +386,77 @@ async function deleteAllChats() {
   } catch(e) { showMsg("danger", "Failed to delete", "error") }
 }
 
+// FONT FUNCTIONS
+const fontFamilies = {
+  elegant: "'Cormorant Garamond', serif",
+  modern:  "'Inter', sans-serif",
+  classic: "'Georgia', serif",
+  rounded: "'Nunito', sans-serif",
+  mono:    "'Courier New', monospace"
+}
+
+function setFont(key, label) {
+  localStorage.setItem("datta_font", key)
+  localStorage.setItem("datta_font_label", label)
+  // Update active card
+  document.querySelectorAll(".fontCard").forEach(c => c.classList.remove("active"))
+  const card = document.getElementById("font-" + key)
+  if (card) card.classList.add("active")
+  // Apply font
+  applyFont(key)
+  const desc = document.getElementById("fontDesc")
+  if (desc) desc.textContent = label
+  showMsg("font", "Font applied!", "success")
+  setTimeout(() => closePanel("font"), 800)
+}
+
+function applyFont(key) {
+  const family = fontFamilies[key] || fontFamilies.elegant
+  document.documentElement.style.setProperty("--chat-font", family)
+  // Apply to body
+  const style = document.getElementById("datta-font-style") || document.createElement("style")
+  style.id = "datta-font-style"
+  style.textContent = `.aiBubble, .aiBubble p, .aiBubble li { font-family: ${family} !important; }`
+  document.head.appendChild(style)
+}
+
+function previewFontSize(size) {
+  const preview = document.querySelector("#panel-fontsize .panelBody > div > div:first-child")
+  if (preview) preview.style.fontSize = size + "px"
+  const val = document.getElementById("fontSizeValue")
+  const labels = { 12:"Small", 13:"Small", 14:"Small", 15:"Medium", 16:"Medium", 17:"Medium", 18:"Large", 19:"Large", 20:"Large", 21:"Extra Large", 22:"Extra Large" }
+  if (val) val.textContent = (labels[size] || "Custom") + " (" + size + ")"
+}
+
+function saveFontSize(size) {
+  size = parseInt(size)
+  localStorage.setItem("datta_font_size", size)
+  // Apply globally
+  const style = document.getElementById("datta-size-style") || document.createElement("style")
+  style.id = "datta-size-style"
+  style.textContent = `.aiBubble, .aiBubble p, .aiBubble li, .userBubble { font-size: ${size}px !important; }`
+  document.head.appendChild(style)
+  const labels = { 12:"Small", 13:"Small", 14:"Small", 15:"Medium", 16:"Medium", 17:"Medium", 18:"Large", 19:"Large", 20:"Large", 21:"Extra Large", 22:"Extra Large" }
+  const desc = document.getElementById("fontsizeDesc")
+  if (desc) desc.textContent = (labels[size] || "Custom") + " (" + size + ")"
+  const slider = document.getElementById("fontSizeSlider")
+  if (slider) slider.value = size
+  previewFontSize(size)
+}
+
+function loadSavedFont() {
+  const savedFont = localStorage.getItem("datta_font") || "elegant"
+  const savedSize = parseInt(localStorage.getItem("datta_font_size") || "16")
+  applyFont(savedFont)
+  saveFontSize(savedSize)
+  // Update active card
+  document.querySelectorAll(".fontCard").forEach(c => c.classList.remove("active"))
+  const card = document.getElementById("font-" + savedFont)
+  if (card) card.classList.add("active")
+  const desc = document.getElementById("fontDesc")
+  if (desc) desc.textContent = localStorage.getItem("datta_font_label") || "Elegant (Default)"
+}
+
 function copyEmail() {
   navigator.clipboard.writeText("harisaiganeshpampana@gmail.com")
     .then(() => alert("Email copied!"))
@@ -550,6 +635,20 @@ function previewVoice() {
       <div class="settingLeft">
         <div class="settingIcon" style="background:#2a1a1a;">🖼️</div>
         <div><div class="settingLabel">Chat Wallpaper</div><div class="settingDesc" id="wallpaperDesc">None</div></div>
+      </div>
+      <div class="settingArrow">›</div>
+    </div>
+    <div class="settingRow" onclick="openPanel('font')">
+      <div class="settingLeft">
+        <div class="settingIcon" style="background:#1a2a1a;">Aa</div>
+        <div><div class="settingLabel">Font Style</div><div class="settingDesc" id="fontDesc">Elegant (Default)</div></div>
+      </div>
+      <div class="settingArrow">›</div>
+    </div>
+    <div class="settingRow" onclick="openPanel('fontsize')">
+      <div class="settingLeft">
+        <div class="settingIcon" style="background:#2a1a2a;">T</div>
+        <div><div class="settingLabel">Font Size</div><div class="settingDesc" id="fontsizeDesc">Medium</div></div>
       </div>
       <div class="settingArrow">›</div>
     </div>
@@ -1250,6 +1349,77 @@ async function deleteAccount() {
     if (!res.ok) return showMsg("deleteAccount", data.error || "Failed", "error")
     localStorage.clear(); window.location.href = "login.html"
   } catch(e) { showMsg("deleteAccount", "Server error", "error") }
+}
+
+// FONT FUNCTIONS
+const fontFamilies = {
+  elegant: "'Cormorant Garamond', serif",
+  modern:  "'Inter', sans-serif",
+  classic: "'Georgia', serif",
+  rounded: "'Nunito', sans-serif",
+  mono:    "'Courier New', monospace"
+}
+
+function setFont(key, label) {
+  localStorage.setItem("datta_font", key)
+  localStorage.setItem("datta_font_label", label)
+  // Update active card
+  document.querySelectorAll(".fontCard").forEach(c => c.classList.remove("active"))
+  const card = document.getElementById("font-" + key)
+  if (card) card.classList.add("active")
+  // Apply font
+  applyFont(key)
+  const desc = document.getElementById("fontDesc")
+  if (desc) desc.textContent = label
+  showMsg("font", "Font applied!", "success")
+  setTimeout(() => closePanel("font"), 800)
+}
+
+function applyFont(key) {
+  const family = fontFamilies[key] || fontFamilies.elegant
+  document.documentElement.style.setProperty("--chat-font", family)
+  // Apply to body
+  const style = document.getElementById("datta-font-style") || document.createElement("style")
+  style.id = "datta-font-style"
+  style.textContent = `.aiBubble, .aiBubble p, .aiBubble li { font-family: ${family} !important; }`
+  document.head.appendChild(style)
+}
+
+function previewFontSize(size) {
+  const preview = document.querySelector("#panel-fontsize .panelBody > div > div:first-child")
+  if (preview) preview.style.fontSize = size + "px"
+  const val = document.getElementById("fontSizeValue")
+  const labels = { 12:"Small", 13:"Small", 14:"Small", 15:"Medium", 16:"Medium", 17:"Medium", 18:"Large", 19:"Large", 20:"Large", 21:"Extra Large", 22:"Extra Large" }
+  if (val) val.textContent = (labels[size] || "Custom") + " (" + size + ")"
+}
+
+function saveFontSize(size) {
+  size = parseInt(size)
+  localStorage.setItem("datta_font_size", size)
+  // Apply globally
+  const style = document.getElementById("datta-size-style") || document.createElement("style")
+  style.id = "datta-size-style"
+  style.textContent = `.aiBubble, .aiBubble p, .aiBubble li, .userBubble { font-size: ${size}px !important; }`
+  document.head.appendChild(style)
+  const labels = { 12:"Small", 13:"Small", 14:"Small", 15:"Medium", 16:"Medium", 17:"Medium", 18:"Large", 19:"Large", 20:"Large", 21:"Extra Large", 22:"Extra Large" }
+  const desc = document.getElementById("fontsizeDesc")
+  if (desc) desc.textContent = (labels[size] || "Custom") + " (" + size + ")"
+  const slider = document.getElementById("fontSizeSlider")
+  if (slider) slider.value = size
+  previewFontSize(size)
+}
+
+function loadSavedFont() {
+  const savedFont = localStorage.getItem("datta_font") || "elegant"
+  const savedSize = parseInt(localStorage.getItem("datta_font_size") || "16")
+  applyFont(savedFont)
+  saveFontSize(savedSize)
+  // Update active card
+  document.querySelectorAll(".fontCard").forEach(c => c.classList.remove("active"))
+  const card = document.getElementById("font-" + savedFont)
+  if (card) card.classList.add("active")
+  const desc = document.getElementById("fontDesc")
+  if (desc) desc.textContent = localStorage.getItem("datta_font_label") || "Elegant (Default)"
 }
 
 function copyEmail() {
