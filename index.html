@@ -294,7 +294,7 @@
     var o = document.getElementById("addToChatOverlay")
     if (!s || !o) return
     SHEET_OPEN = true
-    s.setAttribute("style", "position:fixed!important;bottom:0!important;left:0!important;right:0!important;background:#111!important;border-radius:20px 20px 0 0!important;z-index:88889!important;padding:0 0 40px!important;transition:bottom 0.3s ease!important;max-width:600px!important;margin:0 auto!important;")
+    s.setAttribute("style", "position:fixed!important;bottom:0!important;left:0!important;right:0!important;background:#111!important;border-radius:20px 20px 0 0!important;z-index:88889!important;padding:0 0 40px!important;transition:transform 0.3s ease!important;max-width:600px!important;margin:0 auto!important;transform:translateY(0)!important;")
     o.setAttribute("style", "position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;background:rgba(0,0,0,0.7)!important;z-index:88888!important;display:block!important;")
   }
 
@@ -302,7 +302,7 @@
     var s = document.getElementById("addToChatSheet")
     var o = document.getElementById("addToChatOverlay")
     SHEET_OPEN = false
-    if (s) s.setAttribute("style", "position:fixed!important;bottom:-120%!important;left:0!important;right:0!important;background:#111!important;border-radius:20px 20px 0 0!important;z-index:88889!important;padding:0 0 40px!important;transition:bottom 0.3s ease!important;max-width:600px!important;margin:0 auto!important;")
+    if (s) s.setAttribute("style", "position:fixed!important;bottom:0!important;left:0!important;right:0!important;background:#111!important;border-radius:20px 20px 0 0!important;z-index:88889!important;padding:0 0 40px!important;transition:transform 0.3s ease!important;max-width:600px!important;margin:0 auto!important;transform:translateY(120%)!important;")
     if (o) o.setAttribute("style", "position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;background:rgba(0,0,0,0.7)!important;z-index:88888!important;display:none!important;")
   }
 
@@ -618,7 +618,7 @@
 
 <!-- ADD TO CHAT BOTTOM SHEET -->
 <div id="addToChatOverlay" onclick="closePlusMenu()" style="position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;background:rgba(0,0,0,0.7)!important;z-index:88888!important;display:none!important;"></div>
-<div id="addToChatSheet" style="position:fixed!important;bottom:-120%!important;left:0!important;right:0!important;background:#111!important;border-radius:20px 20px 0 0!important;z-index:88889!important;padding:0 0 40px!important;transition:bottom 0.3s ease!important;max-width:600px!important;margin:0 auto!important;">
+<div id="addToChatSheet" style="position:fixed!important;bottom:0!important;left:0!important;right:0!important;background:#111!important;border-radius:20px 20px 0 0!important;z-index:88889!important;padding:0 0 40px!important;transition:transform 0.3s ease!important;max-width:600px!important;margin:0 auto!important;transform:translateY(120%)!important;">
   <div class="sheetHandle"></div>
   <div class="sheetHeader">
     <button class="sheetCloseBtn" onclick="closePlusMenu()">✕</button>
