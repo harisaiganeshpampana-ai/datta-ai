@@ -133,7 +133,7 @@ function showStopBtn() {
   const stop = document.getElementById("stopBtn")
   const send = document.getElementById("sendBtn")
   const mic = document.getElementById("micBtn")
-  if (stop) stop.style.display = "flex"
+  if (stop) stop.style.cssText = "display:flex!important;width:36px;height:36px;border-radius:50%;background:#ff4444;border:none;color:white;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;animation:stopPulse 1.5s infinite;"
   if (send) send.style.display = "none"
   if (mic) mic.style.display = "none"
 }
@@ -143,8 +143,8 @@ function hideStopBtn() {
   const send = document.getElementById("sendBtn")
   const mic = document.getElementById("micBtn")
   if (stop) stop.style.display = "none"
-  if (send) send.style.display = "flex"
-  if (mic) mic.style.display = "flex"
+  if (send) send.style.cssText = "display:flex!important"
+  if (mic) mic.style.cssText = "display:flex!important"
 }
 
 function stopGeneration() {
@@ -657,17 +657,31 @@ async function send() {
         streamText += chunk
       }
 
-      // Check if image response
-      const isImgResponse = streamText.includes("pollinations.ai") || streamText.includes("DATTA_IMAGE")
+      // Check if image response - never show raw DATTA_IMAGE text
+      const isImgResponse = streamText.includes("DATTA_IMAGE_START") || streamText.includes("pollinations.ai")
       if (isImgResponse) {
         const container = aiDiv.querySelector(".aiContent") || aiDiv
-        if (streamText.includes("DATTA_IMAGE_END") || streamText.includes("pollinations.ai")) {
+        if (streamText.includes("DATTA_IMAGE_END")) {
           container.innerHTML = renderImageResponse(streamText)
         } else {
-          span.innerHTML = '<span style="color:#888;font-size:13px;">🎨 Generating image...</span>'
+          // Show animation while generating
+          span.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px;color:#aaa;font-size:14px;">
+              <span style="font-size:20px;">🎨</span>
+              <span>Generating your image...</span>
+              <span style="display:inline-flex;gap:3px;">
+                <span style="width:6px;height:6px;border-radius:50%;background:#00ff88;animation:dot 1.2s infinite 0s;display:inline-block;"></span>
+                <span style="width:6px;height:6px;border-radius:50%;background:#00ff88;animation:dot 1.2s infinite 0.4s;display:inline-block;"></span>
+                <span style="width:6px;height:6px;border-radius:50%;background:#00ff88;animation:dot 1.2s infinite 0.8s;display:inline-block;"></span>
+              </span>
+            </div>
+            <style>@keyframes dot{0%,100%{opacity:0.2}50%{opacity:1}}</style>
+          `
         }
       } else {
-        span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>'
+        // Clean text - remove any stray DATTA_ markers
+        const cleanText = streamText.split("DATTA_IMAGE_START")[0]
+        span.innerHTML = marked.parse(cleanText) + '<span class="cursor">▌</span>'
       }
       scrollBottom()
       lucide.createIcons()
