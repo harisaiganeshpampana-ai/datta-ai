@@ -1630,6 +1630,17 @@ app.get("/version", (req, res) => {
 })
 
 app.get("/", (req, res) => res.json({ status: "Datta AI Server running", version: "3.5" }))
+
+// KEEP ALIVE - ping self every 14 minutes to prevent Render sleep
+const SELF_URL = process.env.RENDER_EXTERNAL_URL || "https://datta-ai-server.onrender.com"
+setInterval(async () => {
+  try {
+    await fetch(SELF_URL + "/ping")
+    console.log("Keep-alive ping sent")
+  } catch(e) {}
+}, 14 * 60 * 1000) // 14 minutes
+
+app.get("/ping", (req, res) => res.json({ alive: true, time: new Date().toISOString() }))
 app.get("/health", (req, res) => res.json({ status: "ok", uptime: process.uptime() }))
 
 const PORT = process.env.PORT || 3000
