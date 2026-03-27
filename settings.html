@@ -421,7 +421,7 @@ function applyFont(key) {
 }
 
 function previewFontSize(size) {
-  const preview = document.querySelector("#panel-fontsize .panelBody > div > div:first-child")
+  const preview = document.getElementById("fontPreviewText")
   if (preview) preview.style.fontSize = size + "px"
   const val = document.getElementById("fontSizeValue")
   const labels = { 12:"Small", 13:"Small", 14:"Small", 15:"Medium", 16:"Medium", 17:"Medium", 18:"Large", 19:"Large", 20:"Large", 21:"Extra Large", 22:"Extra Large" }
@@ -995,6 +995,67 @@ function previewVoice() {
 </div>
 
 <!-- MEMORY PANEL -->
+<!-- FONT STYLE PANEL -->
+<div class="panel" id="panel-font">
+  <div class="panelHeader">
+    <button class="panelBack" onclick="closePanel('font')">←</button>
+    <div class="panelTitle">Font Style</div>
+  </div>
+  <div class="panelBody" onclick="event.stopPropagation()">
+    <div class="msg" id="msg-font"></div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="fontCard active" id="font-elegant" onclick="setFont('elegant','Elegant')">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:white;margin-bottom:4px;">The quick brown fox</div>
+        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;">Elegant · Cormorant Garamond</div>
+      </div>
+      <div class="fontCard" id="font-modern" onclick="setFont('modern','Modern')">
+        <div style="font-family:'Inter',sans-serif;font-size:17px;color:white;margin-bottom:4px;">The quick brown fox</div>
+        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;">Modern · Inter</div>
+      </div>
+      <div class="fontCard" id="font-classic" onclick="setFont('classic','Classic')">
+        <div style="font-family:'Georgia',serif;font-size:18px;color:white;margin-bottom:4px;">The quick brown fox</div>
+        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;">Classic · Georgia</div>
+      </div>
+      <div class="fontCard" id="font-rounded" onclick="setFont('rounded','Rounded')">
+        <div style="font-family:'Nunito',sans-serif;font-size:18px;color:white;margin-bottom:4px;">The quick brown fox</div>
+        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;">Rounded · Nunito</div>
+      </div>
+      <div class="fontCard" id="font-mono" onclick="setFont('mono','Monospace')">
+        <div style="font-family:'Courier New',monospace;font-size:15px;color:white;margin-bottom:4px;">The quick brown fox</div>
+        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;">Mono · Courier New</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FONT SIZE PANEL -->
+<div class="panel" id="panel-fontsize">
+  <div class="panelHeader">
+    <button class="panelBack" onclick="closePanel('fontsize')">←</button>
+    <div class="panelTitle">Font Size</div>
+  </div>
+  <div class="panelBody" onclick="event.stopPropagation()">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div id="fontPreviewText" style="font-size:18px;color:white;font-family:'Cormorant Garamond',serif;margin-bottom:8px;">Preview — The quick brown fox</div>
+      <div style="font-size:12px;color:#555;">Adjust size below</div>
+    </div>
+    <input type="range" min="12" max="22" value="16" id="fontSizeSlider"
+      oninput="previewFontSize(this.value)"
+      onchange="saveFontSize(this.value)"
+      style="width:100%;margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:20px;">
+      <span>Small</span>
+      <span id="fontSizeValue">Medium (16)</span>
+      <span>Large</span>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="saveFontSize(13)" style="flex:1;padding:10px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;color:#aaa;font-size:12px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">Small</button>
+      <button onclick="saveFontSize(16)" style="flex:1;padding:10px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;color:#aaa;font-size:14px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">Medium</button>
+      <button onclick="saveFontSize(19)" style="flex:1;padding:10px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;color:#aaa;font-size:17px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">Large</button>
+    </div>
+  </div>
+</div>
+
 <div class="panel" id="panel-memory" onclick="closePanel('memory')">
 <div class="panelBox" onclick="event.stopPropagation()">
   <div class="panelHeader">
@@ -1350,78 +1411,6 @@ async function deleteAccount() {
     localStorage.clear(); window.location.href = "login.html"
   } catch(e) { showMsg("deleteAccount", "Server error", "error") }
 }
-
-// FONT FUNCTIONS
-const fontFamilies = {
-  elegant: "'Cormorant Garamond', serif",
-  modern:  "'Inter', sans-serif",
-  classic: "'Georgia', serif",
-  rounded: "'Nunito', sans-serif",
-  mono:    "'Courier New', monospace"
-}
-
-function setFont(key, label) {
-  localStorage.setItem("datta_font", key)
-  localStorage.setItem("datta_font_label", label)
-  // Update active card
-  document.querySelectorAll(".fontCard").forEach(c => c.classList.remove("active"))
-  const card = document.getElementById("font-" + key)
-  if (card) card.classList.add("active")
-  // Apply font
-  applyFont(key)
-  const desc = document.getElementById("fontDesc")
-  if (desc) desc.textContent = label
-  showMsg("font", "Font applied!", "success")
-  setTimeout(() => closePanel("font"), 800)
-}
-
-function applyFont(key) {
-  const family = fontFamilies[key] || fontFamilies.elegant
-  document.documentElement.style.setProperty("--chat-font", family)
-  // Apply to body
-  const style = document.getElementById("datta-font-style") || document.createElement("style")
-  style.id = "datta-font-style"
-  style.textContent = `.aiBubble, .aiBubble p, .aiBubble li { font-family: ${family} !important; }`
-  document.head.appendChild(style)
-}
-
-function previewFontSize(size) {
-  const preview = document.querySelector("#panel-fontsize .panelBody > div > div:first-child")
-  if (preview) preview.style.fontSize = size + "px"
-  const val = document.getElementById("fontSizeValue")
-  const labels = { 12:"Small", 13:"Small", 14:"Small", 15:"Medium", 16:"Medium", 17:"Medium", 18:"Large", 19:"Large", 20:"Large", 21:"Extra Large", 22:"Extra Large" }
-  if (val) val.textContent = (labels[size] || "Custom") + " (" + size + ")"
-}
-
-function saveFontSize(size) {
-  size = parseInt(size)
-  localStorage.setItem("datta_font_size", size)
-  // Apply globally
-  const style = document.getElementById("datta-size-style") || document.createElement("style")
-  style.id = "datta-size-style"
-  style.textContent = `.aiBubble, .aiBubble p, .aiBubble li, .userBubble { font-size: ${size}px !important; }`
-  document.head.appendChild(style)
-  const labels = { 12:"Small", 13:"Small", 14:"Small", 15:"Medium", 16:"Medium", 17:"Medium", 18:"Large", 19:"Large", 20:"Large", 21:"Extra Large", 22:"Extra Large" }
-  const desc = document.getElementById("fontsizeDesc")
-  if (desc) desc.textContent = (labels[size] || "Custom") + " (" + size + ")"
-  const slider = document.getElementById("fontSizeSlider")
-  if (slider) slider.value = size
-  previewFontSize(size)
-}
-
-function loadSavedFont() {
-  const savedFont = localStorage.getItem("datta_font") || "elegant"
-  const savedSize = parseInt(localStorage.getItem("datta_font_size") || "16")
-  applyFont(savedFont)
-  saveFontSize(savedSize)
-  // Update active card
-  document.querySelectorAll(".fontCard").forEach(c => c.classList.remove("active"))
-  const card = document.getElementById("font-" + savedFont)
-  if (card) card.classList.add("active")
-  const desc = document.getElementById("fontDesc")
-  if (desc) desc.textContent = localStorage.getItem("datta_font_label") || "Elegant (Default)"
-}
-
 function copyEmail() {
   navigator.clipboard.writeText("harisaiganeshpampana@gmail.com")
     .then(() => alert("Email copied!"))
