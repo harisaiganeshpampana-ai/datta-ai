@@ -898,10 +898,27 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       console.log("Generating image:", imagePrompt)
       let imageUrl = null
 
-      // IMAGE GENERATION - Together AI FLUX (best quality)
+      // IMAGE GENERATION
       const seed = Math.floor(Math.random() * 999999)
 
-      // 1. Together AI - FLUX model (best quality)
+      // 1. Pollinations FIRST - fastest and most reliable
+      try {
+        console.log("Trying Pollinations FLUX...")
+        const polUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed + "&enhance=true"
+        const polRes = await fetch(polUrl, {
+          headers: { "User-Agent": "DattaAI/1.0" },
+          signal: AbortSignal.timeout(25000)
+        })
+        if (polRes.ok) {
+          const buf = await polRes.arrayBuffer()
+          if (buf.byteLength > 5000) {
+            imageUrl = "data:image/jpeg;base64," + Buffer.from(buf).toString("base64")
+            console.log("Pollinations success! Size:", buf.byteLength)
+          }
+        }
+      } catch(e) { console.log("Pollinations error:", e.message) }
+
+      // 2. Together AI FLUX as fallback (with 20s timeout)
       if (!imageUrl && process.env.TOGETHER_API_KEY) {
         try {
           console.log("Trying Together AI FLUX...")
@@ -919,7 +936,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
               steps: 4,
               n: 1,
               seed: seed
-            })
+            }),
+            signal: AbortSignal.timeout(20000)
           })
           if (togetherRes.ok) {
             const togetherData = await togetherRes.json()
@@ -927,41 +945,25 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
             const imgUrl = togetherData.data?.[0]?.url
             if (imgB64) {
               imageUrl = "data:image/jpeg;base64," + imgB64
-              console.log("Together AI FLUX success!")
+              console.log("Together AI success!")
             } else if (imgUrl) {
-              const imgRes = await fetch(imgUrl)
+              const imgRes = await fetch(imgUrl, { signal: AbortSignal.timeout(10000) })
               if (imgRes.ok) {
                 const buf = await imgRes.arrayBuffer()
                 imageUrl = "data:image/jpeg;base64," + Buffer.from(buf).toString("base64")
-                console.log("Together AI FLUX URL success!")
               }
             }
           } else {
             const err = await togetherRes.json().catch(() => ({}))
-            console.log("Together AI image error:", err.error?.message || togetherRes.status)
+            console.log("Together AI error:", err.error?.message || togetherRes.status)
           }
-        } catch(e) { console.log("Together AI image error:", e.message) }
+        } catch(e) { console.log("Together AI error:", e.message) }
       }
 
-      // 2. Fallback - Pollinations
+      // 3. Last resort - direct Pollinations URL
       if (!imageUrl) {
-        try {
-          console.log("Fallback: Pollinations...")
-          const polUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed
-          const polRes = await fetch(polUrl, { headers: { "User-Agent": "DattaAI/1.0" }, signal: AbortSignal.timeout(30000) })
-          if (polRes.ok) {
-            const buf = await polRes.arrayBuffer()
-            if (buf.byteLength > 10000) {
-              imageUrl = "data:image/jpeg;base64," + Buffer.from(buf).toString("base64")
-              console.log("Pollinations success!")
-            }
-          }
-        } catch(e) {
-          console.log("Pollinations error:", e.message)
-        }
-        if (!imageUrl) {
-          imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed
-        }
+        imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed
+        console.log("Using direct Pollinations URL as last resort")
       }
 
       const responseText = "DATTA_IMAGE_START\n![" + imagePrompt + "](" + imageUrl + ")\nPROMPT:" + imagePrompt + "\nDATTA_IMAGE_END"
