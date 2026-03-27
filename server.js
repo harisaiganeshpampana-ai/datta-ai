@@ -114,7 +114,21 @@ function sanitizeError(err) {
   return { userMsg: "Something went wrong. Please try again.", code: "unknown" }
 }
 
-// MEMORY SCHEMA - persistent user memory
+// USAGE SCHEMA - persists in MongoDB so refreshes don't reset
+const UsageSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", unique: true },
+  messagesUsed: { type: Number, default: 0 },
+  imagesUsed: { type: Number, default: 0 },
+  totalMessages: { type: Number, default: 0 },
+  totalImages: { type: Number, default: 0 },
+  windowStart: { type: Date, default: Date.now },
+  imageWindowStart: { type: Date, default: Date.now },
+  firstEverMessage: { type: Boolean, default: true },
+  updatedAt: { type: Date, default: Date.now }
+})
+const Usage = mongoose.model("Usage", UsageSchema)
+
+// MEMORY SCHEMA - persists user memory
 const MemorySchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   key: String,
@@ -134,41 +148,82 @@ const planLimits = {
 }
 const rateLimitStore = {}
 
-function checkAndUpdateLimit(userId, plan, type) {
+// MongoDB-based usage tracking - persists across refreshes and restarts
+async function checkAndUpdateLimitDB(userId, plan, type) {
   const limits = planLimits[plan] || planLimits.free
   if (limits[type] === 999999) return { allowed: true }
 
-  const key = userId.toString() + "_" + type
-  const now = Date.now()
+  const now = new Date()
   const resetMs = limits.resetHours * 60 * 60 * 1000
 
-  if (!rateLimitStore[key]) rateLimitStore[key] = { count: 0, windowStart: now, totalEver: 0 }
-  const store = rateLimitStore[key]
-
-  // Reset window if time passed
-  if (resetMs > 0 && resetMs < 999999 * 3600 * 1000 && now - store.windowStart > resetMs) {
-    store.count = 0
-    store.windowStart = now
+  let usage = await Usage.findOne({ userId })
+  if (!usage) {
+    usage = await Usage.create({ userId, windowStart: now, imageWindowStart: now })
   }
 
-  // Free plan special logic - first 25 free, then only 8 per session
-  let limit = limits[type]
-  if (plan === "free" && type === "messages") {
-    if (store.totalEver >= 25) {
-      limit = 8  // After first 25, only 8 per reset period
+  // Reset window if time passed
+  if (type === "messages" && resetMs > 0 && resetMs < 999999 * 3600 * 1000) {
+    if (now - usage.windowStart > resetMs) {
+      usage.messagesUsed = 0
+      usage.windowStart = now
+    }
+  }
+  if (type === "images" && resetMs > 0 && resetMs < 999999 * 3600 * 1000) {
+    if (now - usage.imageWindowStart > resetMs) {
+      usage.imagesUsed = 0
+      usage.imageWindowStart = now
     }
   }
 
-  if (store.count >= limit) {
-    const waitMs = resetMs > 0 && resetMs < 999999 * 3600 * 1000
-      ? resetMs - (now - store.windowStart)
-      : 0
-    const waitMins = waitMs > 0 ? Math.ceil(waitMs / 60000) : 0
-    return { allowed: false, type, plan, waitMins, limit, totalEver: store.totalEver }
+  // Free plan: first 25 messages free, then 8 per session
+  let limit = limits[type]
+  if (plan === "free" && type === "messages") {
+    if (usage.totalMessages >= 25) limit = 8
   }
 
-  store.count++
-  store.totalEver = (store.totalEver || 0) + 1
+  const current = type === "messages" ? usage.messagesUsed : usage.imagesUsed
+
+  if (current >= limit) {
+    const windowStart = type === "messages" ? usage.windowStart : usage.imageWindowStart
+    const waitMs = resetMs > 0 && resetMs < 999999 * 3600 * 1000
+      ? resetMs - (now - windowStart) : 0
+    const waitMins = waitMs > 0 ? Math.ceil(waitMs / 60000) : 0
+    return { allowed: false, type, plan, waitMins, limit }
+  }
+
+  // Increment
+  if (type === "messages") {
+    usage.messagesUsed++
+    usage.totalMessages++
+  } else {
+    usage.imagesUsed++
+    usage.totalImages++
+  }
+  usage.updatedAt = now
+  await usage.save()
+
+  return { allowed: true, used: current + 1, limit }
+}
+
+// Keep old sync function as fallback
+function checkAndUpdateLimit(userId, plan, type) {
+  const limits = planLimits[plan] || planLimits.free
+  if (limits[type] === 999999) return { allowed: true }
+  const key = userId.toString() + "_" + type
+  const now = Date.now()
+  const resetMs = limits.resetHours * 60 * 60 * 1000
+  if (!rateLimitStore[key]) rateLimitStore[key] = { count: 0, windowStart: now, totalEver: 0 }
+  const store = rateLimitStore[key]
+  if (resetMs > 0 && resetMs < 999999 * 3600 * 1000 && now - store.windowStart > resetMs) {
+    store.count = 0; store.windowStart = now
+  }
+  let limit = limits[type]
+  if (plan === "free" && type === "messages" && store.totalEver >= 25) limit = 8
+  if (store.count >= limit) {
+    const waitMs = resetMs > 0 && resetMs < 999999*3600*1000 ? resetMs-(now-store.windowStart) : 0
+    return { allowed: false, type, plan, waitMins: waitMs>0?Math.ceil(waitMs/60000):0, limit }
+  }
+  store.count++; store.totalEver = (store.totalEver||0)+1
   return { allowed: true, used: store.count, limit }
 }
 
@@ -1122,31 +1177,33 @@ app.post("/chats/fix-titles", authMiddleware, async (req, res) => {
   } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
-// USER USAGE ROUTE
+// USER USAGE ROUTE - reads from MongoDB
 app.get("/user/usage", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id
     const sub = await Subscription.findOne({ userId, active: true }).catch(() => null)
     const plan = sub ? sub.plan : "free"
-
-    const msgKey = userId.toString() + "_messages"
-    const imgKey = userId.toString() + "_images"
-    const msgStore = rateLimitStore[msgKey] || { count: 0, windowStart: Date.now(), totalEver: 0 }
-    const imgStore = rateLimitStore[imgKey] || { count: 0, windowStart: Date.now() }
-
     const limits = planLimits[plan] || planLimits.free
+
+    const usage = await Usage.findOne({ userId }) || { messagesUsed:0, imagesUsed:0, totalMessages:0, totalImages:0, windowStart: new Date(), imageWindowStart: new Date() }
+
+    const now = new Date()
     const resetMs = limits.resetHours * 60 * 60 * 1000
-    const now = Date.now()
-    const resetIn = resetMs > 0 ? Math.max(0, resetMs - (now - msgStore.windowStart)) : 0
+    const resetIn = resetMs > 0 ? Math.max(0, resetMs - (now - usage.windowStart)) : 0
+
+    // Apply free plan logic
+    let msgLimit = limits.messages
+    if (plan === "free" && usage.totalMessages >= 25) msgLimit = 8
 
     res.json({
       plan,
-      messagesUsed: msgStore.count || 0,
-      imagesUsed: imgStore.count || 0,
-      totalMessagesEver: msgStore.totalEver || 0,
+      messagesUsed: usage.messagesUsed || 0,
+      imagesUsed: usage.imagesUsed || 0,
+      totalMessagesEver: usage.totalMessages || 0,
+      totalImagesEver: usage.totalImages || 0,
       resetIn,
       limits: {
-        messages: limits.messages,
+        messages: msgLimit,
         images: limits.images,
         resetHours: limits.resetHours
       }
