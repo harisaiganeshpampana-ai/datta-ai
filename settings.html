@@ -887,15 +887,21 @@ async function loadUsage() {
 }
 
 async function loadMemory() {
+  const countEl = document.getElementById("memoryCount")
+  if (countEl) countEl.textContent = "Loading..."
   try {
-    const res = await fetch(SERVER + "/memory?token=" + getToken())
+    const res = await fetch(SERVER + "/memory?token=" + getToken(), {
+      signal: AbortSignal.timeout(8000)
+    })
     const memories = await res.json()
     const count = Array.isArray(memories) ? memories.length : 0
-    const countEl = document.getElementById("memoryCount")
     if (countEl) countEl.textContent = count + " things remembered"
     const list = document.getElementById("memoryList")
     if (!list) return
-    if (!count) { list.innerHTML = '<div style="color:#666;font-size:13px;padding:8px;">Nothing remembered yet. Start chatting!</div>'; return }
+    if (!count) { 
+      list.innerHTML = '<div style="color:#666;font-size:13px;padding:8px;">Nothing remembered yet. Start chatting!</div>'
+      return 
+    }
     list.innerHTML = memories.map(m => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg3);border-radius:10px;margin-bottom:8px;">
         <div>
@@ -905,7 +911,9 @@ async function loadMemory() {
         <button onclick="deleteMemory('${m.key}')" style="background:none;border:none;color:#666;cursor:pointer;font-size:16px;">✕</button>
       </div>
     `).join("")
-  } catch(e) {}
+  } catch(e) {
+    if (countEl) countEl.textContent = "Could not load (server waking up)"
+  }
 }
 
 async function deleteMemory(key) {
@@ -992,13 +1000,17 @@ window.addEventListener("load", function() {
   const avatar = localStorage.getItem("datta_avatar")
   if (avatar) setAvatar(avatar)
 
-  // Load plan
+  // Load plan from localStorage immediately
+  const planNames = { free:"Free Plan", pro:"Pro Plan", max:"Max Plan", ultramax:"Ultra Max Plan", basic:"Pro Plan", enterprise:"Ultra Max Plan" }
+  const cachedPlan = localStorage.getItem("datta_plan") || "free"
+  const planEl = document.getElementById("userPlan")
+  if (planEl) planEl.textContent = planNames[cachedPlan] || "Free Plan"
+  // Update from server in background
   fetch(SERVER + "/payment/subscription?token=" + getToken())
     .then(r => r.json())
     .then(d => {
-      const planNames = { free:"Arambh Free", basic:"Shakti Basic", pro:"Agni Pro", enterprise:"Brahma Enterprise" }
-      const planEl = document.getElementById("userPlan")
       if (planEl) planEl.textContent = planNames[d.plan] || d.plan
+      localStorage.setItem("datta_plan", d.plan)
     }).catch(() => {})
 
   // Apply saved theme
