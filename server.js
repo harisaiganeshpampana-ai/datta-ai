@@ -141,7 +141,7 @@ const MemorySchema = new mongoose.Schema({
 const Memory = mongoose.model("Memory", MemorySchema)
 
 const planLimits = {
-  free:      { messages: 25,     images: 3,      resetHours: 99999, firstTimeMessages: 25, afterMessages: 8 },
+  free:      { messages: 25,     images: 0,      resetHours: 99999, firstTimeMessages: 25, afterMessages: 8 },
   pro:       { messages: 100,    images: 20,     resetHours: 4 },
   max:       { messages: 200,    images: 30,     resetHours: 3 },
   ultramax:  { messages: 999999, images: 100,    resetHours: 0 },
@@ -836,6 +836,16 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
 
     if (isImageRequest(message)) {
       if (!userIsAdmin) {
+        // Free plan cannot generate images
+        if (userPlan === "free") {
+          return res.status(429).json({
+            error: "IMAGE_LIMIT",
+            message: "Image generation is not available on the Free plan. Upgrade to Pro to generate images!",
+            plan: userPlan,
+            waitMins: 0,
+            limit: 0
+          })
+        }
         const imgCheck = await checkAndUpdateLimitDB(userId, userPlan, "images")
         if (!imgCheck.allowed) return res.status(429).json({ 
           error: "IMAGE_LIMIT", 
@@ -884,104 +894,75 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
 
     // IMAGE GENERATION
     if (message && isImageRequest(message)) {
-      const imagePrompt = getImagePrompt(message)
+      const rawPrompt = getImagePrompt(message)
+      // Enhance prompt for better quality
+      const imagePrompt = rawPrompt + ", highly detailed, professional photography, 4K quality, sharp focus, beautiful lighting, award winning"
       console.log("Generating image:", imagePrompt)
       let imageUrl = null
 
-      // IMAGE GENERATION - Try multiple free services
+      // IMAGE GENERATION - Together AI FLUX (best quality)
       const seed = Math.floor(Math.random() * 999999)
 
-      // 1. Try Stable Horde (100% free, no key needed)
-      try {
-        console.log("Trying Stable Horde...")
-        const hordeRes = await fetch("https://stablehorde.net/api/v2/generate/async", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": process.env.STABLE_HORDE_KEY || "0000000000"
-          },
-          body: JSON.stringify({
-            prompt: imagePrompt,
-            params: { width: 512, height: 512, steps: 20, n: 1, sampler_name: "k_euler" },
-            models: ["stable_diffusion"],
-            r2: true
+      // 1. Together AI - FLUX model (best quality)
+      if (!imageUrl && process.env.TOGETHER_API_KEY) {
+        try {
+          console.log("Trying Together AI FLUX...")
+          const togetherRes = await fetch("https://api.together.xyz/v1/images/generations", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer " + process.env.TOGETHER_API_KEY
+            },
+            body: JSON.stringify({
+              model: "black-forest-labs/FLUX.1-schnell-Free",
+              prompt: imagePrompt,
+              width: 1024,
+              height: 1024,
+              steps: 4,
+              n: 1,
+              seed: seed
+            })
           })
-        })
-        if (hordeRes.ok) {
-          const hordeData = await hordeRes.json()
-          const jobId = hordeData.id
-          console.log("Horde job ID:", jobId)
-
-          // Poll for result (max 60 seconds)
-          for (let i = 0; i < 12; i++) {
-            await new Promise(r => setTimeout(r, 5000))
-            const statusRes = await fetch("https://stablehorde.net/api/v2/generate/check/" + jobId)
-            const statusData = await statusRes.json()
-            if (statusData.done) {
-              const resultRes = await fetch("https://stablehorde.net/api/v2/generate/status/" + jobId)
-              const resultData = await resultRes.json()
-              if (resultData.generations && resultData.generations[0]) {
-                const imgData = resultData.generations[0]
-                if (imgData.img && imgData.img.startsWith("http")) {
-                  // Download and convert to base64
-                  const imgRes = await fetch(imgData.img)
-                  if (imgRes.ok) {
-                    const buf = await imgRes.arrayBuffer()
-                    imageUrl = "data:image/webp;base64," + Buffer.from(buf).toString("base64")
-                    console.log("Stable Horde success!")
-                  }
-                } else if (imgData.img) {
-                  imageUrl = "data:image/webp;base64," + imgData.img
-                  console.log("Stable Horde base64 success!")
-                }
-                break
+          if (togetherRes.ok) {
+            const togetherData = await togetherRes.json()
+            const imgB64 = togetherData.data?.[0]?.b64_json
+            const imgUrl = togetherData.data?.[0]?.url
+            if (imgB64) {
+              imageUrl = "data:image/jpeg;base64," + imgB64
+              console.log("Together AI FLUX success!")
+            } else if (imgUrl) {
+              const imgRes = await fetch(imgUrl)
+              if (imgRes.ok) {
+                const buf = await imgRes.arrayBuffer()
+                imageUrl = "data:image/jpeg;base64," + Buffer.from(buf).toString("base64")
+                console.log("Together AI FLUX URL success!")
               }
             }
-            console.log("Horde waiting... queue:", statusData.queue_position)
+          } else {
+            const err = await togetherRes.json().catch(() => ({}))
+            console.log("Together AI image error:", err.error?.message || togetherRes.status)
           }
-        }
-      } catch(e) {
-        console.log("Stable Horde error:", e.message)
+        } catch(e) { console.log("Together AI image error:", e.message) }
       }
 
-      // 2. Try Dezgo (free tier)
-      if (!imageUrl && process.env.DEZGO_API_KEY) {
-        try {
-          console.log("Trying Dezgo...")
-          const dezgoRes = await fetch("https://api.dezgo.com/text2image", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-Dezgo-Key": process.env.DEZGO_API_KEY },
-            body: JSON.stringify({ prompt: imagePrompt, model: "dreamshaper_8", width: 512, height: 512, steps: 25 })
-          })
-          if (dezgoRes.ok) {
-            const buf = await dezgoRes.arrayBuffer()
-            imageUrl = "data:image/jpeg;base64," + Buffer.from(buf).toString("base64")
-            console.log("Dezgo success!")
-          }
-        } catch(e) { console.log("Dezgo error:", e.message) }
-      }
-
-      // 3. Fetch Pollinations server-side as base64 (avoids CORS)
+      // 2. Fallback - Pollinations
       if (!imageUrl) {
         try {
-          console.log("Trying Pollinations server-side fetch...")
+          console.log("Fallback: Pollinations...")
           const polUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed
-          const polRes = await fetch(polUrl, { headers: { "User-Agent": "DattaAI/1.0" } })
+          const polRes = await fetch(polUrl, { headers: { "User-Agent": "DattaAI/1.0" }, signal: AbortSignal.timeout(30000) })
           if (polRes.ok) {
             const buf = await polRes.arrayBuffer()
             if (buf.byteLength > 10000) {
               imageUrl = "data:image/jpeg;base64," + Buffer.from(buf).toString("base64")
-              console.log("Pollinations base64 success! Size:", buf.byteLength)
-            } else {
-              console.log("Pollinations returned too small:", buf.byteLength)
-              imageUrl = polUrl
+              console.log("Pollinations success!")
             }
-          } else {
-            imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=turbo&seed=" + seed
           }
         } catch(e) {
           console.log("Pollinations error:", e.message)
-          imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=512&height=512&nologo=true&seed=" + seed
+        }
+        if (!imageUrl) {
+          imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed
         }
       }
 
