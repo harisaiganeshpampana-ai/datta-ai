@@ -2,10 +2,12 @@
 // SINGLE INIT - runs everything on load
 // ═══════════════════════════════════════════
 window.addEventListener("DOMContentLoaded", function() {
-  // Always make sure sheet is closed on load
   var s = document.getElementById("addToChatSheet")
   var o = document.getElementById("addToChatOverlay")
-  if (s) s.style.setProperty("bottom","-120%","important")
+  if (s) {
+    s.style.setProperty("transform","translateY(120%)","important")
+    s.style.setProperty("bottom","0","important")
+  }
   if (o) o.style.setProperty("display","none","important")
 })
 
