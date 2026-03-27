@@ -893,8 +893,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // IMAGE GENERATION
     if (message && isImageRequest(message)) {
       const rawPrompt = getImagePrompt(message)
-      // Enhance prompt for better quality
-      const imagePrompt = rawPrompt + ", highly detailed, professional photography, 4K quality, sharp focus, beautiful lighting, award winning"
+      // Light enhancement only - don't override the user's intent
+      const imagePrompt = rawPrompt + ", high quality, detailed, beautiful"
       console.log("Generating image:", imagePrompt)
       let imageUrl = null
 
@@ -1079,9 +1079,13 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "persona-lawyer","persona-teacher","persona-chef","persona-fitness"
     ]
     const chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.1-8b-instant"
-    // Map all models to Groq - Together AI disabled (no credits)
+    // Map all models to valid Groq models
     const modelMap = {
-      "meta-llama/llama-4-maverick-17b-128e-instruct": "llama-3.3-70b-versatile"
+      "meta-llama/llama-4-maverick-17b-128e-instruct": "llama-3.3-70b-versatile",
+      "persona-lawyer":  "llama-3.3-70b-versatile",
+      "persona-teacher": "llama-3.3-70b-versatile",
+      "persona-chef":    "llama-3.3-70b-versatile",
+      "persona-fitness": "llama-3.3-70b-versatile"
     }
     const resolvedModel = modelMap[chosenModel] || chosenModel
     const model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : resolvedModel
