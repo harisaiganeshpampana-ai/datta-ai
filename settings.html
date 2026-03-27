@@ -211,6 +211,42 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
 </head>
 <body>
 <script>
+// VOICE FUNCTIONS - defined early so onclick works immediately
+function selectVoice(key) {
+  localStorage.setItem("datta_voice", key)
+  document.querySelectorAll(".voiceCard").forEach(c => c.classList.remove("active"))
+  const card = document.getElementById("vcrd-" + key)
+  if (card) card.classList.add("active")
+}
+
+function previewVoice() {
+  const key = localStorage.getItem("datta_voice") || "aria"
+  const names = { aria:"Aria", james:"James", sofia:"Sofia", indian:"Riya", british:"Oliver" }
+  const langs = { aria:"en-US", james:"en-US", sofia:"en-GB", indian:"en-IN", british:"en-GB" }
+  const rates = { aria:0.95, james:0.9, sofia:1.0, indian:0.9, british:0.9 }
+  const pitches = { aria:1.1, james:0.85, sofia:1.2, indian:1.0, british:0.9 }
+  const name = names[key] || "Aria"
+  const u = new SpeechSynthesisUtterance("Hi! I am " + name + ", your Datta AI voice assistant.")
+  u.lang = langs[key] || "en-US"
+  u.rate = rates[key] || 0.95
+  u.pitch = pitches[key] || 1.0
+  const voices = window.speechSynthesis.getVoices()
+  const kwds = {
+    aria:["Samantha","Zira","Google US English"],
+    james:["David","Google UK English Male","Daniel"],
+    sofia:["Karen","Moira","Google UK English Female"],
+    indian:["Lekha","Veena","en-IN"],
+    british:["Arthur","Oliver","en-GB"]
+  }
+  const kw = kwds[key] || []
+  for (const k of kw) {
+    const v = voices.find(v => v.name.includes(k) || v.lang.includes(k))
+    if (v) { u.voice = v; break }
+  }
+  window.speechSynthesis.cancel()
+  window.speechSynthesis.speak(u)
+}
+
 // Load user data IMMEDIATELY - runs before body renders
 (function() {
   try {
