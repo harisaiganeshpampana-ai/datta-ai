@@ -1189,7 +1189,10 @@ app.get("/user/usage", authMiddleware, async (req, res) => {
 
     const now = new Date()
     const resetMs = limits.resetHours * 60 * 60 * 1000
-    const resetIn = resetMs > 0 ? Math.max(0, resetMs - (now - usage.windowStart)) : 0
+    // Free plan never resets - show 0 resetIn
+    const resetIn = (plan === "free" || resetMs <= 0 || limits.resetHours >= 9999)
+      ? 0
+      : Math.max(0, resetMs - (now - usage.windowStart))
 
     // Apply free plan logic
     let msgLimit = limits.messages
