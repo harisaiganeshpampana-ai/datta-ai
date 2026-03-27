@@ -493,30 +493,25 @@ async function send() {
   let aiDiv = document.createElement("div")
   aiDiv.className = "messageRow"
 
-  if (willGenImage) {
-    aiDiv.innerHTML = `
-      <div class="avatar">🤖</div>
-      <div class="aiBubble searchingIndicator" style="background:#1a0a2a!important;border-color:#4a1a6a!important;">
-        <span class="searchIcon">🎨</span>
-        <span class="searchText" style="color:#cc88ff;">Generating image...</span>
+  // Glowing orb pulse animation
+  const orbColors = willGenImage
+    ? { main:"#cc88ff", glow:"rgba(180,100,255,0.4)", label:"Creating image...", icon:"🎨" }
+    : willSearch
+    ? { main:"#00ccff", glow:"rgba(0,200,255,0.4)", label:"Searching web...", icon:"🌐" }
+    : { main:"#00ff88", glow:"rgba(0,255,136,0.4)", label:"Thinking...", icon:"" }
+
+  aiDiv.innerHTML = `
+    <div class="avatar">🤖</div>
+    <div class="dattaThinking">
+      <div class="thinkOrb" style="--orb-color:${orbColors.main};--orb-glow:${orbColors.glow};">
+        <div class="thinkOrbCore"></div>
+        <div class="thinkOrbRing r1"></div>
+        <div class="thinkOrbRing r2"></div>
+        <div class="thinkOrbRing r3"></div>
       </div>
-    `
-  } else if (willSearch) {
-    aiDiv.innerHTML = `
-      <div class="avatar">🤖</div>
-      <div class="aiBubble searchingIndicator">
-        <span class="searchIcon">🌐</span>
-        <span class="searchText">Searching the web...</span>
-      </div>
-    `
-  } else {
-    aiDiv.innerHTML = `
-      <div class="avatar">🤖</div>
-      <div class="aiBubble typing">
-        <span></span><span></span><span></span>
-      </div>
-    `
-  }
+      <div class="thinkLabel">${orbColors.icon ? orbColors.icon + " " : ""}${orbColors.label}</div>
+    </div>
+  `
   chatBox.appendChild(aiDiv)
   chatBox.scrollTop = chatBox.scrollHeight
 
