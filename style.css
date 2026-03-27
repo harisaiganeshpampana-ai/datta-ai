@@ -4293,3 +4293,14 @@ input, textarea, select { touch-action: manipulation; }
 
 .modelDropItem:hover { background: #1a1a1a !important; }
 .modelDropItem.active { background: #0a1a0f !important; }
+
+/* FIX: Chat padding so input bar doesn't cover messages */
+.chat {
+  padding-bottom: 160px !important;
+}
+
+@media (max-width: 768px) {
+  .chat {
+    padding-bottom: 180px !important;
+  }
+}
