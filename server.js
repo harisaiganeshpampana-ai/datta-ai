@@ -918,8 +918,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
         }
       } catch(e) { console.log("Pollinations error:", e.message) }
 
-      // 2. Together AI FLUX as fallback (with 20s timeout)
-      if (!imageUrl && process.env.TOGETHER_API_KEY) {
+      // 2. Together AI FLUX - skip if no credits
+      if (false && !imageUrl && process.env.TOGETHER_API_KEY) {
         try {
           console.log("Trying Together AI FLUX...")
           const togetherRes = await fetch("https://api.together.xyz/v1/images/generations", {
@@ -1073,14 +1073,19 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "llama-3.1-8b-instant",                          // Datta 2.1
       "llama-3.3-70b-versatile",                        // Datta 4.2
       "gemma2-9b-it",                                   // Datta 4.8
-      "meta-llama/llama-4-maverick-17b-128e-instruct",  // Datta 5.4
+      "meta-llama/llama-4-maverick-17b-128e-instruct",  // Datta 5.4 (fallback to 70b)
       "meta-llama/llama-4-scout-17b-16e-instruct",      // Datta Vision
       // Persona models
       "persona-lawyer","persona-teacher","persona-chef","persona-fitness"
     ]
     const chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.1-8b-instant"
-    const model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : chosenModel
-    const useTogether = (chosenModel === "meta-llama/llama-4-maverick-17b-128e-instruct" || chosenModel.startsWith("persona-")) && process.env.TOGETHER_API_KEY
+    // Map all models to Groq - Together AI disabled (no credits)
+    const modelMap = {
+      "meta-llama/llama-4-maverick-17b-128e-instruct": "llama-3.3-70b-versatile"
+    }
+    const resolvedModel = modelMap[chosenModel] || chosenModel
+    const model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : resolvedModel
+    const useTogether = false
     const style = req.body.style || "Balanced"
     const ainame = req.body.ainame || "Datta AI"
     const styleNotes = {
@@ -1100,7 +1105,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Detect if code/build task needs max tokens
     const msgLower = message.toLowerCase()
     const isCodeTask = ["build","create","write","make","code","website","app","script","program","html","python","javascript","fix","debug","error","update","improve","full","complete","function","class","api"].some(k => msgLower.includes(k))
-    const maxTok = isImageFile ? 4096 : (useTogether ? 16000 : isCodeTask ? 8192 : 6144)
+    const isD54 = chosenModel === "meta-llama/llama-4-maverick-17b-128e-instruct"
+    const maxTok = isImageFile ? 4096 : isD54 ? 8192 : isCodeTask ? 8192 : 6144
 
     const now = new Date()
     const timeStr = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })
@@ -1169,13 +1175,8 @@ QUALITY RULES:
       ? "llama-3.3-70b-versatile"  // personas use fast model
       : "deepseek-ai/DeepSeek-V3"  // Datta 5.4 uses DeepSeek
 
-    if (useTogether) {
-      stream = await callTogetherAI(
-        [...history, { role: "user", content: typeof finalUserContent === "string" ? finalUserContent : (message || "") }],
-        systemWithMemory,
-        maxTok,
-        togetherModel
-      )
+    if (false) {
+      // Together AI disabled - no credits
     } else {
       stream = await groq.chat.completions.create({
         model,
@@ -1185,7 +1186,7 @@ QUALITY RULES:
           { role: "user", content: finalUserContent }
         ],
         max_tokens: maxTok,
-        temperature: 0.75,
+        temperature: isD54 ? 0.3 : 0.75,
         stream: true
       })
     }
