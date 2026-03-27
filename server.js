@@ -872,10 +872,16 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       if (results) searchContext = "\n\n[Web Search Results]\n" + results + "\n[End of Search Results]"
     }
 
-    const history = chat.messages.slice(0, -1).slice(-6).map(m => ({
-      role: m.role === "assistant" ? "assistant" : "user",
-      content: m.content.substring(0, 2000)
-    }))
+    const history = chat.messages.slice(0, -1).slice(-6)
+      .filter(m => {
+        // Skip messages with base64 images in history (too large)
+        if (typeof m.content === "string" && m.content.includes("data:image")) return false
+        return true
+      })
+      .map(m => ({
+        role: m.role === "assistant" ? "assistant" : "user",
+        content: typeof m.content === "string" ? m.content.substring(0, 2000) : "[ image message ]"
+      }))
     const isImageFile = file && file.mimetype?.startsWith("image/")
     let userContent
     if (isImageFile) {
@@ -910,40 +916,40 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Detect if code/build task needs max tokens
     const msgLower = message.toLowerCase()
     const isCodeTask = ["build","create","write","make","code","website","app","script","program","html","python","javascript","fix","debug","error","update","improve","full","complete","function","class","api"].some(k => msgLower.includes(k))
-    const maxTok = isImageFile ? 1024 : (isCodeTask ? 8192 : 4096)
+    const maxTok = isImageFile ? 4096 : (isCodeTask ? 8192 : 4096)
 
     const now = new Date()
     const timeStr = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })
     const dateStr = now.toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
-    const systemPrompt = `You are ${ainame} - a powerful AI Agent. Today is ${dateStr}, ${timeStr} IST.
+    const imageNote = isImageFile ? " You are analyzing an image. Describe ALL objects, text, colors, people, context, background in detail." : ""
 
-RESPONSE FORMATTING RULES:
-- Use **bold** for important terms and key points
-- Use proper headings (## for sections, ### for subsections)
-- Use bullet points for lists of items
-- Use numbered lists for steps/instructions
-- Use code blocks with language specified for ALL code
-- Add blank lines between sections for readability
-- Keep responses clean, structured and easy to scan
-- For simple questions: answer directly in 1-3 sentences
-- For complex questions: use headings and structure
+    // Each model has unique behavior
+    const modelPersonas = {
+      "llama-3.1-8b-instant":                      "You are Datta 2.1 - fast and concise. Give brief, clear answers. Best for quick questions and simple tasks.",
+      "llama-3.3-70b-versatile":                   "You are Datta 4.2 - balanced and capable. Handle coding, writing, analysis well. Give thorough focused answers.",
+      "deepseek-r1-distill-llama-70b":             "You are Datta 4.8 - advanced reasoning AI. Think step by step. Excel at math, logic, complex coding. Show your reasoning.",
+      "mixtral-8x7b-32768":                        "You are Datta 5.4 - the most powerful model. Handle extremely complex tasks, long documents, expert coding, detailed analysis.",
+      "meta-llama/llama-4-scout-17b-16e-instruct": "You are Datta Vision - multimodal AI. Analyze images in extreme detail. Answer visual questions precisely."
+    }
+
+    const persona = modelPersonas[model] || modelPersonas["llama-3.3-70b-versatile"]
+
+    const systemPrompt = persona + imageNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + `
+
+RESPONSE FORMATTING:
+- Use **bold** for key terms
+- Use ## headings for sections
+- Use bullet points for lists
+- Use numbered lists for steps
+- Always use code blocks with language for code
+- Simple questions: 1-3 sentences. Complex: use structure.
 
 QUALITY RULES:
-1. ALWAYS give COMPLETE, FULL, 100% WORKING code - never truncate
+1. ALWAYS give COMPLETE WORKING code - never truncate
 2. For websites/apps: give the ENTIRE code, copy-paste ready
 3. When fixing bugs: show the COMPLETE fixed file
-4. NEVER say "I cannot", "I am unable", "as an AI", "I don't have the capability" - just solve it
-5. NEVER suggest Python code to generate images - the app already handles image generation
-6. If asked to create/generate/draw any image - just say "Generating your image..." and let the system handle it
-7. Always use proper markdown code blocks with language
-8. Think step by step for complex problems
-9. You are expert in: HTML, CSS, JS, React, Python, Node.js, SQL, Java, C++, ALL languages
-10. Responses should be production-ready and professional${langNote}${styleNote}${searchNote}`
-
-    // Combine all context
-    const finalUserContent = typeof userContent === "string"
-      ? userContent + urlContext
-      : userContent
+4. NEVER say "I cannot" - just solve it
+5. Expert in: HTML, CSS, JS, React, Python, Node.js, SQL, Java, C++, ALL languages` + langNote + styleNote + searchNote
 
     const systemWithMemory = systemPrompt + memoryContext
 
@@ -965,6 +971,13 @@ QUALITY RULES:
       if (token) { full += token; res.write(token) }
     }
 
+    // Store user message with image reference (not full base64)
+    if (isImageFile && chat.messages.length > 0) {
+      const lastMsg = chat.messages[chat.messages.length - 1]
+      if (lastMsg && lastMsg.role === "user" && Array.isArray(lastMsg.content)) {
+        lastMsg.content = "[Image: " + file.originalname + "] " + (message || "")
+      }
+    }
     chat.messages.push({ role: "assistant", content: full })
 
     // Save memories from this conversation (non-blocking)
