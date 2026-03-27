@@ -268,18 +268,26 @@
 <script src="chat.js?v=39"></script>
 
 <script>
-  // SPLASH SCREEN - 3 seconds then smooth fade out
+  // SPLASH SCREEN - skip if returning from settings
   window.addEventListener("load", function() {
-    setTimeout(function() {
-      const splash = document.getElementById("splash")
-      if (splash) {
-        splash.classList.add("hide")
-        // Remove from DOM after fade completes
-        setTimeout(function() {
-          if (splash.parentNode) splash.parentNode.removeChild(splash)
-        }, 700)
-      }
-    }, 3000)
+    const fromSettings = localStorage.getItem("datta_last_chat")
+    const splash = document.getElementById("splash")
+    const delay = fromSettings ? 0 : 2500
+
+    if (fromSettings && splash) {
+      // Hide splash immediately
+      splash.style.display = "none"
+      if (splash.parentNode) splash.parentNode.removeChild(splash)
+    } else {
+      setTimeout(function() {
+        if (splash) {
+          splash.classList.add("hide")
+          setTimeout(function() {
+            if (splash.parentNode) splash.parentNode.removeChild(splash)
+          }, 700)
+        }
+      }, delay)
+    }
   })
 
   // BOTTOM SHEET - proper toggle
