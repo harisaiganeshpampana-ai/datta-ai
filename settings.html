@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <title>Settings - Datta AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -212,6 +213,177 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
 <body>
 <script>
 // PANEL + CORE FUNCTIONS - must be first
+// ALL SETTINGS FUNCTIONS - defined early so all onclicks work
+const SERVER = "https://datta-ai-server.onrender.com"
+function getToken() { return localStorage.getItem("datta_token") || "" }
+function getUser() { try { return JSON.parse(localStorage.getItem("datta_user")||"{}") } catch(e) { return {} } }
+
+function applyThemeToPage(name) {
+  const themes = {
+    dark:   { "--bg":"#0a0a0a","--bg2":"#111","--bg3":"#1a1a1a","--text":"#ffffff","--text2":"#aaaaaa","--text3":"#666666","--border":"#222222","--accent":"#00ff88" },
+    light:  { "--bg":"#ffffff","--bg2":"#f5f5f5","--bg3":"#eeeeee","--text":"#000000","--text2":"#444444","--text3":"#888888","--border":"#dddddd","--accent":"#00aa55" },
+    midnight: { "--bg":"#050510","--bg2":"#0a0a1a","--bg3":"#10102a","--text":"#e0e0ff","--text2":"#9090cc","--text3":"#5050aa","--border":"#1a1a3a","--accent":"#7070ff" },
+    forest: { "--bg":"#050f08","--bg2":"#0a1a0f","--bg3":"#102018","--text":"#e0ffe0","--text2":"#80bb80","--text3":"#408040","--border":"#1a2f1a","--accent":"#40ff80" },
+    sunset: { "--bg":"#0f0805","--bg2":"#1a120a","--bg3":"#251a10","--text":"#fff0e0","--text2":"#ccaa80","--text3":"#aa8040","--border":"#2f1f0f","--accent":"#ff8040" },
+    ocean:  { "--bg":"#05080f","--bg2":"#0a1020","--bg3":"#101828","--text":"#e0f0ff","--text2":"#80a8cc","--text3":"#4080aa","--border":"#0f1e30","--accent":"#40a0ff" }
+  }
+  const t = themes[name] || themes.dark
+  const root = document.documentElement
+  Object.entries(t).forEach(([k,v]) => root.style.setProperty(k, v))
+}
+
+function setTheme(name) {
+  localStorage.setItem("datta_theme", name)
+  applyThemeToPage(name)
+  document.querySelectorAll(".themeCard").forEach(c => c.classList.remove("active"))
+  const card = document.getElementById("theme-" + name)
+  if (card) card.classList.add("active")
+  const desc = document.getElementById("themeDesc")
+  if (desc) desc.textContent = name.charAt(0).toUpperCase() + name.slice(1)
+  showMsg("theme", "Theme applied!", "success")
+  setTimeout(() => closePanel("theme"), 800)
+}
+
+function setWallpaper(name) {
+  localStorage.setItem("datta_wallpaper", name)
+  document.querySelectorAll(".wallpaperCard").forEach(c => c.classList.remove("active"))
+  const card = document.getElementById("wp-" + name)
+  if (card) card.classList.add("active")
+  const desc = document.getElementById("wallpaperDesc")
+  if (desc) desc.textContent = name === "none" ? "None" : name.charAt(0).toUpperCase() + name.slice(1)
+  setTimeout(() => closePanel("wallpaper"), 600)
+}
+
+function pickCustomWallpaper() {
+  const input = document.createElement("input")
+  input.type = "file"; input.accept = "image/*"
+  input.onchange = e => {
+    const file = e.target.files[0]; if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => {
+      localStorage.setItem("datta_wallpaper_custom", ev.target.result)
+      localStorage.setItem("datta_wallpaper", "custom")
+      const desc = document.getElementById("wallpaperDesc")
+      if (desc) desc.textContent = "Custom"
+      closePanel("wallpaper")
+    }
+    reader.readAsDataURL(file)
+  }
+  input.click()
+}
+
+function saveAIName() {
+  const inp = document.getElementById("ainameInput")
+  if (!inp) return
+  const name = inp.value.trim()
+  if (!name) return showMsg("ainame", "Enter a name", "error")
+  localStorage.setItem("datta_ai_name", name)
+  const desc = document.getElementById("ainameDesc")
+  if (desc) desc.textContent = name
+  showMsg("ainame", "AI name saved!", "success")
+  setTimeout(() => closePanel("ainame"), 1000)
+}
+
+function setStyle(style) {
+  localStorage.setItem("datta_ai_style", style)
+  document.querySelectorAll(".stylePill").forEach(p => p.classList.remove("active"))
+  const desc = document.getElementById("aistyleDesc")
+  if (desc) desc.textContent = style
+  showMsg("aistyle", "Style saved!", "success")
+  setTimeout(() => closePanel("aistyle"), 600)
+}
+
+function setLanguage(lang) {
+  localStorage.setItem("datta_language", lang)
+  const desc = document.getElementById("langDesc")
+  if (desc) desc.textContent = lang
+  setTimeout(() => closePanel("language"), 600)
+}
+
+function uploadPhoto() {
+  const input = document.createElement("input")
+  input.type = "file"; input.accept = "image/*"
+  input.onchange = e => {
+    const file = e.target.files[0]; if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => {
+      localStorage.setItem("datta_avatar", ev.target.result)
+      setAvatar(ev.target.result)
+    }
+    reader.readAsDataURL(file)
+  }
+  input.click()
+}
+
+function setAvatar(dataUrl) {
+  const img = document.getElementById("userAvatarImg")
+  const letter = document.getElementById("userAvatarLetter")
+  if (img) { img.src = dataUrl; img.style.display = "block" }
+  if (letter) letter.style.display = "none"
+}
+
+async function changeUsername() {
+  const inp = document.getElementById("newUsername")
+  if (!inp) return
+  const val = inp.value.trim()
+  if (!val || val.length < 3) return showMsg("username", "Min 3 characters", "error")
+  try {
+    const res = await fetch(SERVER + "/auth/update-username", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ username: val, token: getToken() })
+    })
+    const data = await res.json()
+    if (!res.ok) return showMsg("username", data.error || "Failed", "error")
+    const user = getUser(); user.username = val
+    localStorage.setItem("datta_user", JSON.stringify(user))
+    const nameEl = document.getElementById("userName")
+    const letterEl = document.getElementById("userAvatarLetter")
+    if (nameEl) nameEl.textContent = val
+    if (letterEl) letterEl.textContent = val[0].toUpperCase()
+    showMsg("username", "Username updated!", "success")
+    setTimeout(() => closePanel("username"), 1200)
+  } catch(e) { showMsg("username", "Server error", "error") }
+}
+
+async function changePassword() {
+  const cur = document.getElementById("currentPassword")?.value
+  const nw = document.getElementById("newPassword")?.value
+  const cf = document.getElementById("confirmPassword")?.value
+  if (!cur || !nw || !cf) return showMsg("password", "Fill all fields", "error")
+  if (nw.length < 6) return showMsg("password", "Min 6 characters", "error")
+  if (nw !== cf) return showMsg("password", "Passwords dont match", "error")
+  try {
+    const res = await fetch(SERVER + "/auth/change-password", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ currentPassword: cur, newPassword: nw, token: getToken() })
+    })
+    const data = await res.json()
+    if (!res.ok) return showMsg("password", data.error || "Failed", "error")
+    showMsg("password", "Password changed!", "success")
+    setTimeout(() => closePanel("password"), 1200)
+  } catch(e) { showMsg("password", "Server error", "error") }
+}
+
+async function deleteAllChats() {
+  if (!confirm("Delete all chats? This cannot be undone.")) return
+  try {
+    await fetch(SERVER + "/chats/all?token=" + getToken(), { method: "DELETE" })
+    showMsg("danger", "All chats deleted!", "success")
+  } catch(e) { showMsg("danger", "Failed to delete", "error") }
+}
+
+function copyEmail() {
+  navigator.clipboard.writeText("harisaiganeshpampana@gmail.com")
+    .then(() => alert("Email copied!"))
+    .catch(() => alert("harisaiganeshpampana@gmail.com"))
+}
+
+function logout() {
+  localStorage.removeItem("datta_token")
+  localStorage.removeItem("datta_user")
+  window.location.href = "login.html"
+}
+
 function openPanel(name) {
   const el = document.getElementById("panel-" + name)
   if (el) {
