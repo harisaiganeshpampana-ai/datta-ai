@@ -950,12 +950,16 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const systemPrompt = persona + imageNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + `
 
 RESPONSE FORMATTING:
-- Use **bold** for key terms
-- Use ## headings for sections
-- Use bullet points for lists
+- Use **bold** for key terms only - not every other word
+- Use ## headings only for long responses with multiple sections
+- Use bullet points for lists of 3+ items
 - Use numbered lists for steps
 - Always use code blocks with language for code
-- Simple questions: 1-3 sentences. Complex: use structure.
+- Simple questions: answer in 1-3 sentences, NO headings, NO bullets
+- Medium questions: short paragraphs, minimal formatting
+- Complex questions: use headings and structure only when necessary
+- AVOID excessive formatting - keep it natural and readable
+- Do NOT add unnecessary line breaks between every point
 
 QUALITY RULES:
 1. ALWAYS give COMPLETE WORKING code - never truncate
