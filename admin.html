@@ -137,14 +137,16 @@ async function loadStats() {
     document.getElementById("totalUsers").textContent = d.totalUsers.toLocaleString()
     document.getElementById("totalChats").textContent = d.totalChats.toLocaleString()
     document.getElementById("totalMessages").textContent = d.totalMessages.toLocaleString()
-    document.getElementById("totalRevenue").textContent = "Rs." + ((d.revenue.basic + d.revenue.pro + d.revenue.enterprise)).toLocaleString()
+    const totalRev = (d.revenue.basic||0) + (d.revenue.pro||0) + (d.revenue.enterprise||0) + (d.revenue.max||0) + (d.revenue.ultramax||0)
+    document.getElementById("totalRevenue").textContent = "Rs." + totalRev.toLocaleString()
     document.getElementById("newUsersToday").textContent = d.newUsersToday
     document.getElementById("newChatsToday").textContent = d.newChatsToday
     document.getElementById("planFree").textContent = (d.planStats.free || 0) + " users"
-    document.getElementById("planBasic").textContent = (d.planStats.basic || 0) + " users — Rs." + (d.revenue.basic).toLocaleString()
-    document.getElementById("planPro").textContent = (d.planStats.pro || 0) + " users — Rs." + (d.revenue.pro).toLocaleString()
-    document.getElementById("planEnterprise").textContent = (d.planStats.enterprise || 0) + " users — Rs." + (d.revenue.enterprise).toLocaleString()
-    document.getElementById("totalRevDisplay").textContent = "Rs." + (d.revenue.basic + d.revenue.pro + d.revenue.enterprise).toLocaleString()
+    document.getElementById("planBasic").textContent = ((d.planStats.pro||0) + (d.planStats.basic||0)) + " users — Rs." + ((d.revenue.pro||0)+(d.revenue.basic||0)).toLocaleString()
+    document.getElementById("planPro").textContent = (d.planStats.max || 0) + " users — Rs." + (d.revenue.max||0).toLocaleString()
+    document.getElementById("planEnterprise").textContent = ((d.planStats.ultramax||0)+(d.planStats.enterprise||0)) + " users — Rs." + ((d.revenue.ultramax||0)+(d.revenue.enterprise||0)).toLocaleString()
+    const totalRev2 = (d.revenue.basic||0)+(d.revenue.pro||0)+(d.revenue.max||0)+(d.revenue.ultramax||0)+(d.revenue.enterprise||0)
+    document.getElementById("totalRevDisplay").textContent = "Rs." + totalRev2.toLocaleString()
   } catch(e) { console.error(e) }
 }
 
@@ -159,7 +161,11 @@ async function loadUsers(page = 1) {
       ${d.users.map(u => `<tr>
         <td>${u.username}</td>
         <td style="color:#888">${u.email || "-"}</td>
-        <td><span class="planBadge" style="background:#0a2a1a;color:#00ff88">${u.plan}</span></td>
+        <td><span class="planBadge" style="
+          background:${u.plan==='free'?'#0a1a0a':u.plan==='pro'?'#1a1a0a':u.plan==='max'?'#0a0a2a':'#2a0a1a'};
+          color:${u.plan==='free'?'#00ff88':u.plan==='pro'?'#ffaa00':u.plan==='max'?'#aa66ff':'#ff44aa'}">
+          ${u.plan==='free'?'🌱 Free':u.plan==='pro'?'⚡ Pro':u.plan==='max'?'🚀 Max':u.plan==='ultramax'?'👑 Ultra Max':'🌱 Free'}
+        </span></td>
         <td style="color:#666">${new Date(u.createdAt).toLocaleDateString()}</td>
         <td><button class="deleteUserBtn" onclick="deleteUser('${u._id}')">Delete</button></td>
       </tr>`).join("")}
