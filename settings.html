@@ -210,6 +210,25 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
 </style>
 </head>
 <body>
+<script>
+// Load user data IMMEDIATELY from localStorage - no waiting
+(function() {
+  try {
+    var user = JSON.parse(localStorage.getItem("datta_user") || "{}")
+    var uname = user.username || user.name || "User"
+    var uemail = user.email || ""
+    // Set as soon as DOM elements exist
+    document.addEventListener("DOMContentLoaded", function() {
+      var nameEl = document.getElementById("userName")
+      var emailEl = document.getElementById("userEmail")
+      var letterEl = document.getElementById("userAvatarLetter")
+      if (nameEl) nameEl.textContent = uname
+      if (emailEl) emailEl.textContent = uemail
+      if (letterEl) letterEl.textContent = (uname[0] || "U").toUpperCase()
+    })
+  } catch(e) {}
+})()
+</script>
 
 <div class="header">
   <button class="backBtn" onclick="window.location.href='index.html'">← Back</button>
@@ -228,8 +247,8 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
       <div class="editPhotoBtn">📷</div>
     </div>
     <div style="flex:1">
-      <div class="userName" id="userName">Loading...</div>
-      <div class="userEmail" id="userEmail">Loading...</div>
+      <div class="userName" id="userName">User</div>
+      <div class="userEmail" id="userEmail"></div>
       <div class="userPlan" id="userPlan">Free Plan</div>
     </div>
   </div>
@@ -989,12 +1008,17 @@ function goBack() {
 window.addEventListener("load", function() {
   if (!getToken()) { window.location.href = "login.html"; return }
 
+  // User data already loaded by inline script above
   const user = getUser()
   const uname = user.username || user.name || "User"
   const uemail = user.email || ""
-  document.getElementById("userName").textContent = uname
-  document.getElementById("userAvatarLetter").textContent = (uname[0] || "G").toUpperCase()
-  if (uemail) document.getElementById("userEmail").textContent = uemail
+  // Update in case inline script missed
+  var nameEl = document.getElementById("userName")
+  var emailEl = document.getElementById("userEmail") 
+  var letterEl = document.getElementById("userAvatarLetter")
+  if (nameEl && nameEl.textContent === "User") nameEl.textContent = uname
+  if (emailEl && !emailEl.textContent) emailEl.textContent = uemail
+  if (letterEl) letterEl.textContent = (uname[0] || "U").toUpperCase()
 
   // Load saved avatar
   const avatar = localStorage.getItem("datta_avatar")
