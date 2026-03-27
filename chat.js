@@ -781,7 +781,7 @@ async function loadSidebar() {
         localStorage.removeItem("datta_last_chat")
         showWelcome()
       }
-    } else if (!lastChatId) {
+    } else if (!lastChatId && !currentChatId) {
       showWelcome()
     }
   } catch(e) {
@@ -1082,6 +1082,8 @@ function hideWelcome() {
 }
 
 function showWelcome() {
+  // Only show if no active chat
+  if (currentChatId) return
   const w = document.getElementById("welcomeScreen")
   if (w) {
     w.style.setProperty("display", "flex", "important")
