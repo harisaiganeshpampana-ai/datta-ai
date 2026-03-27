@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; font-family:system-ui,Arial,sans-serif; }
+
 body {
   min-height: 100vh;
   background: #0a0a0a;
@@ -15,6 +16,8 @@ body {
   justify-content: center;
   overflow-x: hidden;
 }
+
+/* Background glow */
 body::before {
   content: '';
   position: fixed;
@@ -24,11 +27,14 @@ body::before {
   background: radial-gradient(circle, rgba(0,255,136,0.07) 0%, transparent 70%);
   pointer-events: none;
 }
+
 .container {
   width: 100%;
   max-width: 420px;
   padding: 24px 20px;
 }
+
+/* LOGO */
 .logo {
   display: flex;
   flex-direction: column;
@@ -36,12 +42,14 @@ body::before {
   margin-bottom: 32px;
   animation: fadeDown 0.6s ease forwards;
 }
+
 .logoRing {
   position: relative;
   width: 72px; height: 72px;
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 14px;
 }
+
 .logoRing::before {
   content: '';
   position: absolute; inset: -3px;
@@ -51,16 +59,20 @@ body::before {
   filter: blur(2px);
   opacity: 0.8;
 }
+
 .logoRing::after {
   content: ''; position: absolute; inset: 1px;
   border-radius: 50%; background: #0a0a0a;
 }
+
 @keyframes spin { to { transform: rotate(360deg); } }
+
 .logoRing img {
   width: 62px; height: 62px;
   border-radius: 50%; object-fit: cover;
   position: relative; z-index: 1;
 }
+
 .logoTitle {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 32px;
@@ -70,14 +82,18 @@ body::before {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
 .logoSub {
   font-size: 13px; color: #555;
   margin-top: 4px; letter-spacing: 1px;
 }
+
 @keyframes fadeDown {
   from { opacity:0; transform:translateY(-20px); }
-  to { opacity:1; transform:translateY(0); }
+  to   { opacity:1; transform:translateY(0); }
 }
+
+/* CARD */
 .card {
   background: #111;
   border: 1px solid #222;
@@ -85,10 +101,13 @@ body::before {
   padding: 28px 24px;
   animation: fadeUp 0.6s ease 0.2s both;
 }
+
 @keyframes fadeUp {
   from { opacity:0; transform:translateY(20px); }
-  to { opacity:1; transform:translateY(0); }
+  to   { opacity:1; transform:translateY(0); }
 }
+
+/* TABS */
 .tabs {
   display: flex;
   background: #1a1a1a;
@@ -96,6 +115,7 @@ body::before {
   padding: 4px;
   margin-bottom: 24px;
 }
+
 .tab {
   flex: 1; padding: 9px;
   background: none; border: none;
@@ -105,28 +125,36 @@ body::before {
   cursor: pointer; transition: all 0.2s;
   letter-spacing: 0.5px;
 }
+
 .tab.active {
   background: #222; color: white;
 }
+
+/* FORM */
 .formSection { display: none; }
 .formSection.active { display: block; }
+
 .formTitle {
   font-size: 20px; font-weight: 700;
   margin-bottom: 6px;
 }
+
 .formSub {
   font-size: 13px; color: #555;
   margin-bottom: 22px;
 }
+
 .field {
   margin-bottom: 14px;
 }
+
 .field label {
   display: block;
   font-size: 12px; color: #888;
   margin-bottom: 6px; font-weight: 500;
   letter-spacing: 0.5px; text-transform: uppercase;
 }
+
 .field input {
   width: 100%;
   padding: 12px 14px;
@@ -137,10 +165,14 @@ body::before {
   outline: none;
   transition: border-color 0.2s;
 }
+
 .field input:focus {
   border-color: #00ff88;
 }
+
 .field input::placeholder { color: #444; }
+
+/* SUBMIT BTN */
 .submitBtn {
   width: 100%;
   padding: 13px;
@@ -151,9 +183,12 @@ body::before {
   margin-top: 6px;
   transition: opacity 0.2s, transform 0.1s;
 }
+
 .submitBtn:hover { opacity: 0.9; }
 .submitBtn:active { transform: scale(0.98); }
 .submitBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* DIVIDER */
 .divider {
   display: flex; align-items: center;
   gap: 12px; margin: 20px 0;
@@ -162,9 +197,12 @@ body::before {
 .divider::before, .divider::after {
   content: ''; flex: 1; height: 1px; background: #222;
 }
+
+/* SOCIAL BTNS */
 .socialBtns {
   display: flex; flex-direction: column; gap: 10px;
 }
+
 .socialBtn {
   width: 100%; padding: 12px;
   background: #1a1a1a;
@@ -176,13 +214,18 @@ body::before {
   justify-content: center; gap: 10px;
   transition: background 0.2s, border-color 0.2s;
 }
+
 .socialBtn:hover {
   background: #222; border-color: #333;
 }
+
 .socialBtn img { width: 20px; height: 20px; }
+
+/* PHONE ROW */
 .phoneRow {
   display: flex; gap: 8px;
 }
+
 .phoneRow .countryCode {
   width: 80px; padding: 12px 10px;
   background: #1a1a1a;
@@ -191,7 +234,10 @@ body::before {
   color: white; font-size: 15px;
   outline: none;
 }
+
 .phoneRow .field { flex: 1; margin: 0; }
+
+/* GUEST BTN */
 .guestBtn {
   width: 100%; padding: 12px;
   background: none;
@@ -201,7 +247,10 @@ body::before {
   cursor: pointer; margin-top: 10px;
   transition: all 0.2s;
 }
+
 .guestBtn:hover { border-color: #444; color: #aaa; }
+
+/* ERROR / SUCCESS */
 .msg {
   padding: 10px 14px;
   border-radius: 8px;
@@ -209,9 +258,11 @@ body::before {
   margin-bottom: 14px;
   display: none;
 }
+
 .msg.error { background: #2a1010; border: 1px solid #441010; color: #ff6666; display: block; }
 .msg.success { background: #0a2a1a; border: 1px solid #104410; color: #44ff88; display: block; }
-.msg.warn { background: #2a2010; border: 1px solid #443010; color: #ffcc44; display: block; }
+
+/* LOADING SPINNER */
 .spinner {
   width: 18px; height: 18px;
   border: 2px solid rgba(255,255,255,0.3);
@@ -221,29 +272,19 @@ body::before {
   display: inline-block; vertical-align: middle;
   margin-right: 6px;
 }
-/* Server status indicator */
-.serverStatus {
-  font-size: 11px;
-  color: #555;
-  text-align: center;
-  margin-top: 8px;
-  display: none;
-}
-.serverStatus.visible { display: block; }
-.serverStatus.waking { color: #ffaa00; }
-.serverStatus.ready { color: #00ff88; }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 </head>
 <body>
+
 <div class="container">
 
   <!-- LOGO -->
   <div class="logo">
     <div class="logoRing">
-      <img src="logo.jpeg" alt="Datta AI">
+      <img src="logo.png" alt="Datta AI">
     </div>
     <div class="logoTitle">Datta AI</div>
     <div class="logoSub">Your personal AI assistant</div>
@@ -266,6 +307,7 @@ body::before {
     <div class="formSection active" id="loginSection">
       <div class="formTitle">Welcome back</div>
       <div class="formSub">Login to continue to Datta AI</div>
+
       <div class="field">
         <label>Email</label>
         <input type="email" id="loginEmail" placeholder="you@example.com">
@@ -274,8 +316,11 @@ body::before {
         <label>Password</label>
         <input type="password" id="loginPassword" placeholder="Enter your password">
       </div>
-      <button class="submitBtn" id="loginBtn" onclick="handleLogin()">Login</button>
+
+      <button class="submitBtn" onclick="handleLogin()">Login</button>
+
       <div class="divider">or continue with</div>
+
       <div class="socialBtns">
         <button class="socialBtn" onclick="handleGoogle()">
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
@@ -285,6 +330,7 @@ body::before {
           📱 Continue with Phone
         </button>
       </div>
+
       <button class="guestBtn" onclick="handleGuest()">
         👤 Continue as Guest
       </button>
@@ -294,6 +340,7 @@ body::before {
     <div class="formSection" id="signupSection">
       <div class="formTitle">Create account</div>
       <div class="formSub">Join Datta AI for free</div>
+
       <div class="field">
         <label>Username</label>
         <input type="text" id="signupUsername" placeholder="Choose a username">
@@ -306,14 +353,18 @@ body::before {
         <label>Password</label>
         <input type="password" id="signupPassword" placeholder="Min 6 characters">
       </div>
-      <button class="submitBtn" id="signupBtn" onclick="handleSignup()">Create Account</button>
+
+      <button class="submitBtn" onclick="handleSignup()">Create Account</button>
+
       <div class="divider">or continue with</div>
+
       <div class="socialBtns">
         <button class="socialBtn" onclick="handleGoogle()">
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
           Continue with Google
         </button>
       </div>
+
       <button class="guestBtn" onclick="handleGuest()">
         👤 Continue as Guest
       </button>
@@ -322,26 +373,24 @@ body::before {
     <!-- PHONE SECTION -->
     <div class="formSection" id="phoneSection">
       <div class="formTitle">Phone Login</div>
-      <div class="formSub">We'll send a 6-digit OTP to your number</div>
+      <div class="formSub">Enter your phone number</div>
 
       <div class="field">
         <label>Phone Number</label>
         <div class="phoneRow">
           <input class="countryCode" type="text" id="countryCode" value="+91">
           <div class="field">
-            <input type="tel" id="phoneNumber" placeholder="9876543210" maxlength="10">
+            <input type="tel" id="phoneNumber" placeholder="9876543210">
           </div>
         </div>
       </div>
 
-      <!-- OTP field — hidden until OTP is sent -->
       <div class="field" id="otpField" style="display:none;">
         <label>OTP</label>
-        <input type="number" id="otpCode" placeholder="Enter 6-digit OTP" maxlength="6">
+        <input type="text" id="otpInput" placeholder="Enter 6-digit OTP" maxlength="6">
       </div>
 
       <button class="submitBtn" id="phoneBtn" onclick="handlePhone()">Send OTP</button>
-      <div class="serverStatus" id="serverStatus"></div>
 
       <button class="guestBtn" onclick="switchTab('login')" style="margin-top:10px;">
         ← Back to Login
@@ -352,308 +401,316 @@ body::before {
 </div>
 
 <script>
-const SERVER = "https://datta-ai-server.onrender.com";
+const SERVER = "https://datta-ai-server.onrender.com"
 
-// ─── WAKE UP SERVER ON PAGE LOAD ────────────────────────────────────────────
-// Render free tier sleeps after 15 min. Ping it immediately so it's ready.
-(function wakeServer() {
-  const status = document.getElementById("serverStatus");
-  fetch(SERVER + "/health", { method: "GET" })
-    .then(r => {
-      if (r.ok) {
-        status.textContent = "✅ Server ready";
-        status.className = "serverStatus visible ready";
-        setTimeout(() => status.classList.remove("visible"), 3000);
-      }
-    })
-    .catch(() => {
-      // Server is cold-starting, show warning only when on phone tab
-      status.textContent = "⚠️ Server is waking up... (may take 30s)";
-      status.className = "serverStatus visible waking";
-    });
-})();
-
-// ─── HANDLE OAUTH TOKEN IN URL ───────────────────────────────────────────────
+// Run immediately on script load - dont wait for window load
 ;(function() {
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("token");
+  const params = new URLSearchParams(window.location.search)
+  const token = params.get("token")
   if (token) {
-    localStorage.setItem("datta_token", token);
-    const userStr = params.get("user");
+    localStorage.setItem("datta_token", token)
+    const userStr = params.get("user")
     if (userStr) {
-      try { localStorage.setItem("datta_user", decodeURIComponent(userStr)); } catch(e) {}
+      try {
+        localStorage.setItem("datta_user", decodeURIComponent(userStr))
+      } catch(e) {}
     }
-    const hasPlan = localStorage.getItem("datta_plan");
-    window.location.replace(hasPlan ? "index.html" : "pricing.html");
+    window.location.replace("index.html")
   }
-})();
+})()
 
-// ─── CHECK IF ALREADY LOGGED IN ──────────────────────────────────────────────
+// Check if already logged in
 window.addEventListener("load", function() {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("token")) return;
-  const token = localStorage.getItem("datta_token");
-  let user = null;
-  try {
-    const raw = localStorage.getItem("datta_user");
-    if (raw && raw !== "null") user = JSON.parse(raw);
-  } catch(e) {}
-  if (token && user) window.location.href = "index.html";
-  handleGoogleCallback();
-});
+  const params = new URLSearchParams(window.location.search)
+  if (params.get("token")) return // already handling above
 
-// ─── TAB SWITCHING ────────────────────────────────────────────────────────────
+  const token = localStorage.getItem("datta_token")
+  let user = null
+  try {
+    const raw = localStorage.getItem("datta_user")
+    if (raw && raw !== "null") user = JSON.parse(raw)
+  } catch(e) {}
+  if (token && user) {
+    window.location.href = "index.html"
+  }
+
+  handleGoogleCallback()
+})
+
 function switchTab(tab) {
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-  document.querySelectorAll(".formSection").forEach(s => s.classList.remove("active"));
-  clearMsg();
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"))
+  document.querySelectorAll(".formSection").forEach(s => s.classList.remove("active"))
+  clearMsg()
 
   if (tab === "login") {
-    document.querySelectorAll(".tab")[0].classList.add("active");
-    document.getElementById("loginSection").classList.add("active");
+    document.querySelectorAll(".tab")[0].classList.add("active")
+    document.getElementById("loginSection").classList.add("active")
   } else if (tab === "signup") {
-    document.querySelectorAll(".tab")[1].classList.add("active");
-    document.getElementById("signupSection").classList.add("active");
+    document.querySelectorAll(".tab")[1].classList.add("active")
+    document.getElementById("signupSection").classList.add("active")
   } else if (tab === "phone") {
-    document.getElementById("phoneSection").classList.add("active");
-    // Show server status on phone tab so user knows if server is waking
-    document.getElementById("serverStatus").classList.add("visible");
+    document.getElementById("phoneSection").classList.add("active")
   }
 }
 
-// ─── MESSAGES ────────────────────────────────────────────────────────────────
 function showMsg(text, type) {
-  const el = document.getElementById("msg");
-  el.textContent = text;
-  el.className = "msg " + type;
+  const el = document.getElementById("msg")
+  el.textContent = text
+  el.className = "msg " + type
 }
+
 function clearMsg() {
-  const el = document.getElementById("msg");
-  el.className = "msg";
-  el.textContent = "";
+  const el = document.getElementById("msg")
+  el.className = "msg"
+  el.textContent = ""
 }
 
-// ─── EMAIL LOGIN ──────────────────────────────────────────────────────────────
-async function handleLogin() {
-  const email = document.getElementById("loginEmail").value.trim();
-  const password = document.getElementById("loginPassword").value;
-  clearMsg();
-  if (!email || !password) return showMsg("Please fill in all fields", "error");
+function setLoading(btnId, loading) {
+  const btn = document.getElementById(btnId) || document.querySelector(".submitBtn")
+  if (loading) {
+    btn.disabled = true
+    btn.innerHTML = '<span class="spinner"></span> Please wait...'
+  } else {
+    btn.disabled = false
+  }
+}
 
-  const btn = document.getElementById("loginBtn");
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Logging in...';
+// EMAIL LOGIN
+async function handleLogin() {
+  const email = document.getElementById("loginEmail").value.trim()
+  const password = document.getElementById("loginPassword").value
+  clearMsg()
+
+  if (!email || !password) return showMsg("Please fill in all fields", "error")
+
+  const btn = document.querySelectorAll(".submitBtn")[0]
+  btn.disabled = true
+  btn.innerHTML = '<span class="spinner"></span> Logging in...'
 
   try {
     const res = await fetch(SERVER + "/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
+    })
+    const data = await res.json()
+
     if (!res.ok) {
-      showMsg(data.error || "Login failed", "error");
-      btn.disabled = false; btn.textContent = "Login";
-      return;
+      showMsg(data.error || "Login failed", "error")
+      btn.disabled = false
+      btn.textContent = "Login"
+      return
     }
-    localStorage.setItem("datta_token", data.token);
-    localStorage.setItem("datta_user", JSON.stringify(data.user));
-    showMsg("Login successful! Redirecting...", "success");
-    setTimeout(() => {
-      const hasPlan = localStorage.getItem("datta_plan");
-      window.location.href = hasPlan ? "index.html" : "pricing.html";
-    }, 1000);
+
+    localStorage.setItem("datta_token", data.token)
+    localStorage.setItem("datta_user", JSON.stringify(data.user))
+    showMsg("Login successful! Redirecting...", "success")
+    setTimeout(() => window.location.href = "index.html", 1000)
+
   } catch (e) {
-    showMsg("Server is starting up. Please wait 30 seconds and try again.", "error");
-    btn.disabled = false; btn.textContent = "Login";
+    showMsg("Server error. Please try again.", "error")
+    btn.disabled = false
+    btn.textContent = "Login"
   }
 }
 
-// ─── EMAIL SIGNUP ─────────────────────────────────────────────────────────────
+// EMAIL SIGNUP
 async function handleSignup() {
-  const username = document.getElementById("signupUsername").value.trim();
-  const email = document.getElementById("signupEmail").value.trim();
-  const password = document.getElementById("signupPassword").value;
-  clearMsg();
-  if (!username || !email || !password) return showMsg("Please fill in all fields", "error");
-  if (password.length < 6) return showMsg("Password must be at least 6 characters", "error");
-  if (username.length < 3) return showMsg("Username must be at least 3 characters", "error");
+  const username = document.getElementById("signupUsername").value.trim()
+  const email = document.getElementById("signupEmail").value.trim()
+  const password = document.getElementById("signupPassword").value
+  clearMsg()
 
-  const btn = document.getElementById("signupBtn");
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Creating account...';
+  if (!username || !email || !password) return showMsg("Please fill in all fields", "error")
+  if (password.length < 6) return showMsg("Password must be at least 6 characters", "error")
+  if (username.length < 3) return showMsg("Username must be at least 3 characters", "error")
+
+  const btn = document.querySelectorAll(".submitBtn")[1]
+  btn.disabled = true
+  btn.innerHTML = '<span class="spinner"></span> Creating account...'
 
   try {
     const res = await fetch(SERVER + "/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, email, password })
-    });
-    const data = await res.json();
+    })
+    const data = await res.json()
+
     if (!res.ok) {
-      showMsg(data.error || "Signup failed", "error");
-      btn.disabled = false; btn.textContent = "Create Account";
-      return;
+      showMsg(data.error || "Signup failed", "error")
+      btn.disabled = false
+      btn.textContent = "Create Account"
+      return
     }
-    localStorage.setItem("datta_token", data.token);
-    localStorage.setItem("datta_user", JSON.stringify(data.user));
-    showMsg("Account created! Redirecting...", "success");
-    setTimeout(() => window.location.href = "pricing.html", 1000);
+
+    localStorage.setItem("datta_token", data.token)
+    localStorage.setItem("datta_user", JSON.stringify(data.user))
+    showMsg("Account created! Redirecting...", "success")
+    setTimeout(() => window.location.href = "index.html", 1000)
+
   } catch (e) {
-    showMsg("Server is starting up. Please wait 30 seconds and try again.", "error");
-    btn.disabled = false; btn.textContent = "Create Account";
+    showMsg("Server error. Please try again.", "error")
+    btn.disabled = false
+    btn.textContent = "Create Account"
   }
 }
 
-// ─── PHONE OTP ────────────────────────────────────────────────────────────────
-let otpSent = false;
-
+// PHONE OTP
+let otpSent = false
 async function handlePhone() {
-  const code = document.getElementById("countryCode").value.trim();
-  const phone = document.getElementById("phoneNumber").value.trim();
-  const btn = document.getElementById("phoneBtn");
-  const statusEl = document.getElementById("serverStatus");
+  const code = document.getElementById("countryCode").value.trim()
+  const phone = document.getElementById("phoneNumber").value.trim()
+  const btn = document.getElementById("phoneBtn")
 
   if (!otpSent) {
-    // ── SEND OTP ──
-    if (!phone || phone.length < 10) return showMsg("Enter a valid 10-digit phone number", "error");
-    clearMsg();
-
-    const fullPhone = code + phone;
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Sending OTP...';
-    statusEl.textContent = "Contacting server...";
-    statusEl.className = "serverStatus visible waking";
+    if (!phone) return showMsg("Enter your phone number", "error")
+    clearMsg()
+    btn.disabled = true
+    btn.innerHTML = '<span class="spinner"></span> Sending OTP...'
 
     try {
       const res = await fetch(SERVER + "/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: fullPhone })
-      });
-      const data = await res.json();
-
+        body: JSON.stringify({ phone: code + phone })
+      })
+      const data = await res.json()
       if (!res.ok) {
-        showMsg(data.error || "Failed to send OTP. Check your Twilio setup.", "error");
-        btn.disabled = false; btn.textContent = "Send OTP";
-        statusEl.className = "serverStatus";
-        return;
+        showMsg(data.error || "Failed to send OTP", "error")
+        btn.disabled = false
+        btn.textContent = "Send OTP"
+        return
       }
-
-      // SUCCESS — show OTP field
-      otpSent = true;
-      document.getElementById("otpField").style.display = "block";
-      document.getElementById("otpCode").focus();
-      btn.disabled = false;
-      btn.textContent = "Verify OTP";
-      statusEl.textContent = "✅ OTP sent!";
-      statusEl.className = "serverStatus visible ready";
-      showMsg("OTP sent to " + fullPhone, "success");
-
+      otpSent = true
+      document.getElementById("otpField").style.display = "block"
+      btn.disabled = false
+      btn.textContent = "Verify OTP"
+      showMsg("OTP sent to " + code + phone, "success")
     } catch (e) {
-      showMsg("Server is waking up (Render free tier). Please wait 30 seconds and try again.", "error");
-      btn.disabled = false; btn.textContent = "Send OTP";
-      statusEl.textContent = "⚠️ Server cold-starting, retry in 30s";
-      statusEl.className = "serverStatus visible waking";
+      showMsg("Server error", "error")
+      btn.disabled = false
+      btn.textContent = "Send OTP"
     }
 
   } else {
-    // ── VERIFY OTP ──
-    // FIX: use id="otpCode" — the one inside phoneSection (not any duplicate)
-    const otp = document.getElementById("otpCode").value.trim();
-    if (!otp || otp.length < 4) return showMsg("Enter the OTP you received", "error");
-    clearMsg();
-
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Verifying...';
-
-    const fullPhone = document.getElementById("countryCode").value.trim()
-                    + document.getElementById("phoneNumber").value.trim();
+    const otp = document.getElementById("otpInput").value.trim()
+    if (!otp) return showMsg("Enter the OTP", "error")
+    clearMsg()
+    btn.disabled = true
+    btn.innerHTML = '<span class="spinner"></span> Verifying...'
 
     try {
       const res = await fetch(SERVER + "/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: fullPhone, otp })
-      });
-      const data = await res.json();
-
+        body: JSON.stringify({ phone: document.getElementById("countryCode").value + document.getElementById("phoneNumber").value, otp })
+      })
+      const data = await res.json()
       if (!res.ok) {
-        showMsg(data.error || "Invalid OTP. Please try again.", "error");
-        btn.disabled = false; btn.textContent = "Verify OTP";
-        return;
+        showMsg(data.error || "Invalid OTP", "error")
+        btn.disabled = false
+        btn.textContent = "Verify OTP"
+        return
       }
-
-      localStorage.setItem("datta_token", data.token);
-      localStorage.setItem("datta_user", JSON.stringify(data.user));
-      showMsg("✅ Verified! Redirecting...", "success");
-      setTimeout(() => {
-        const hasPlan = localStorage.getItem("datta_plan");
-        window.location.href = hasPlan ? "index.html" : "pricing.html";
-      }, 1000);
-
+      localStorage.setItem("datta_token", data.token)
+      localStorage.setItem("datta_user", JSON.stringify(data.user))
+      showMsg("Verified! Redirecting...", "success")
+      setTimeout(() => window.location.href = "index.html", 1000)
     } catch (e) {
-      showMsg("Server error. Please try again.", "error");
-      btn.disabled = false; btn.textContent = "Verify OTP";
+      showMsg("Server error", "error")
+      btn.disabled = false
+      btn.textContent = "Verify OTP"
     }
   }
 }
 
-// Allow resend OTP — reset state
-function resetOtp() {
-  otpSent = false;
-  document.getElementById("otpField").style.display = "none";
-  document.getElementById("otpCode").value = "";
-  document.getElementById("phoneBtn").textContent = "Send OTP";
-  clearMsg();
-}
-
-// ─── GOOGLE LOGIN ─────────────────────────────────────────────────────────────
+// GOOGLE LOGIN - Real OAuth
 function handleGoogle() {
-  window.location.href = SERVER + "/auth/google";
+  window.location.href = "https://datta-ai-server.onrender.com/auth/google"
 }
 
+// Handle Google callback token in URL
 function handleGoogleCallback() {
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("token");
-  const userStr = params.get("user");
-  const error = params.get("error");
-  if (error) { showMsg("Google login failed. Please try again.", "error"); return; }
+  const params = new URLSearchParams(window.location.search)
+  const token = params.get("token")
+  const userStr = params.get("user")
+  const error = params.get("error")
+
+  if (error) {
+    showMsg("Google login failed. Please try again.", "error")
+    return
+  }
+
   if (token) {
     try {
-      localStorage.setItem("datta_token", token);
+      // Save token
+      localStorage.setItem("datta_token", token)
+
+      // Save user if provided
       if (userStr) {
-        const user = JSON.parse(decodeURIComponent(userStr));
-        localStorage.setItem("datta_user", JSON.stringify(user));
+        const user = JSON.parse(decodeURIComponent(userStr))
+        localStorage.setItem("datta_user", JSON.stringify(user))
       }
-      window.history.replaceState({}, document.title, window.location.pathname);
-      const hasPlan = localStorage.getItem("datta_plan");
-      window.location.replace(hasPlan ? "index.html" : "pricing.html");
+
+      // Clean URL and redirect immediately
+      window.history.replaceState({}, document.title, window.location.pathname)
+      window.location.replace("index.html")
     } catch (e) {
-      showMsg("Login error. Please try again.", "error");
+      console.error("Callback error:", e)
+      showMsg("Login error. Please try again.", "error")
     }
   }
 }
 
-// ─── GUEST LOGIN ──────────────────────────────────────────────────────────────
+// GUEST LOGIN
 function handleGuest() {
-  const guestId = "guest_" + Date.now();
-  const guestUser = { username: "Guest", email: "", isGuest: true, id: guestId };
-  localStorage.setItem("datta_token", "guest_" + guestId);
-  localStorage.setItem("datta_user", JSON.stringify(guestUser));
-  localStorage.setItem("datta_plan", "arambh");
-  window.location.href = "index.html";
+  const guestId = "guest_" + Date.now()
+  const guestUser = { username: "Guest", email: "", isGuest: true, id: guestId }
+  localStorage.setItem("datta_token", "guest_" + guestId)
+  localStorage.setItem("datta_user", JSON.stringify(guestUser))
+  window.location.href = "index.html"
 }
 
-// ─── ENTER KEY SUPPORT ────────────────────────────────────────────────────────
+// Enter key support
 document.addEventListener("keydown", function(e) {
-  if (e.key !== "Enter") return;
-  const active = document.querySelector(".formSection.active");
-  if (!active) return;
-  if (active.id === "loginSection") handleLogin();
-  else if (active.id === "signupSection") handleSignup();
-  else if (active.id === "phoneSection") handlePhone();
-});
+  if (e.key !== "Enter") return
+  const active = document.querySelector(".formSection.active")
+  if (!active) return
+  if (active.id === "loginSection") handleLogin()
+  else if (active.id === "signupSection") handleSignup()
+  else if (active.id === "phoneSection") handlePhone()
+})
+</script>
+
+<script>
+// Check if server is awake, show message if waking up
+async function checkServer() {
+  const status = document.getElementById("serverStatus")
+  if (!status) return
+  try {
+    const start = Date.now()
+    const res = await fetch("https://datta-ai-server.onrender.com/ping", { 
+      signal: AbortSignal.timeout(5000) 
+    })
+    if (res.ok) {
+      status.style.display = "none"
+    }
+  } catch(e) {
+    // Server is sleeping - show wake up message
+    status.style.display = "flex"
+    status.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;background:#111;border:1px solid #222;border-radius:12px;padding:12px 16px;margin:12px 0;">
+        <div style="width:10px;height:10px;border-radius:50%;background:#ffaa00;animation:pulse 1s infinite;flex-shrink:0;"></div>
+        <div style="font-size:13px;color:#aaa;">Server is waking up... please wait 30 seconds ☕</div>
+      </div>
+      <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}</style>
+    `
+    // Retry every 5 seconds
+    setTimeout(checkServer, 5000)
+  }
+}
+checkServer()
 </script>
 </body>
 </html>
