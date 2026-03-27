@@ -2530,12 +2530,19 @@ async function captureAndAnalyze() {
   const canvas = document.getElementById("lensCanvas")
   const btn = document.getElementById("lensCaptureBtn")
 
-  // Capture frame
-  canvas.width = video.videoWidth
-  canvas.height = video.videoHeight
+  // Capture and COMPRESS frame - resize to max 800px
+  const maxSize = 800
+  let w = video.videoWidth
+  let h = video.videoHeight
+  if (w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize }
+  if (h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize }
+
+  canvas.width = w
+  canvas.height = h
   const ctx = canvas.getContext("2d")
-  ctx.drawImage(video, 0, 0)
-  const imageData = canvas.toDataURL("image/jpeg", 0.9)
+  ctx.drawImage(video, 0, 0, w, h)
+  // Quality 0.7 = good quality but smaller size
+  const imageData = canvas.toDataURL("image/jpeg", 0.7)
   lensLastImage = imageData
 
   // Show loading
