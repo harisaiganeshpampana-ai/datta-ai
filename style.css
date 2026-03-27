@@ -4514,3 +4514,29 @@ code, pre, .aiBubble code, .aiBubble pre {
   font-weight: 600 !important;
   letter-spacing: 1px !important;
 }
+
+/* STOP BUTTON - exact same style as send button, same position */
+.stopBtn {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 50% !important;
+  background: #ff4444 !important;
+  border: none !important;
+  color: white !important;
+  display: none !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  animation: stopPulse 1.5s infinite !important;
+}
+
+.stopBtn:hover {
+  background: #ff2222 !important;
+  transform: scale(1.05) !important;
+}
+
+@keyframes stopPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,68,68,0.5); }
+  50% { box-shadow: 0 0 0 6px rgba(255,68,68,0); }
+}
