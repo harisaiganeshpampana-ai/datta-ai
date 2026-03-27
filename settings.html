@@ -306,37 +306,18 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
   </div>
 
   <!-- MEMORY -->
-  <!-- USAGE SECTION -->
+  <!-- USAGE SECTION - links to dedicated usage page -->
   <div class="sectionLabel">Your Usage</div>
-  <div class="section" style="padding:16px;">
-    <div id="usageLoading" style="color:#666;font-size:13px;text-align:center;padding:8px;">Loading usage...</div>
-    <div id="usageContent" style="display:none;">
-      <div style="margin-bottom:14px;">
-        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-          <span style="font-size:13px;color:#aaa;">💬 Messages</span>
-          <span style="font-size:12px;color:#666;" id="msgUsageText">0 / 25</span>
-        </div>
-        <div style="background:#1a1a1a;border-radius:20px;height:8px;overflow:hidden;">
-          <div id="msgUsageBar" style="height:100%;border-radius:20px;background:linear-gradient(90deg,#00ff88,#00ccff);width:0%;transition:width 1s ease;"></div>
-        </div>
-        <div style="font-size:11px;color:#555;margin-top:4px;" id="msgResetText"></div>
-      </div>
-      <div style="margin-bottom:14px;">
-        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-          <span style="font-size:13px;color:#aaa;">🎨 Images</span>
-          <span style="font-size:12px;color:#666;" id="imgUsageText">0 / 3</span>
-        </div>
-        <div style="background:#1a1a1a;border-radius:20px;height:8px;overflow:hidden;">
-          <div id="imgUsageBar" style="height:100%;border-radius:20px;background:linear-gradient(90deg,#aa44ff,#ff44aa);width:0%;transition:width 1s ease;"></div>
-        </div>
-      </div>
-      <div style="background:#0a0a0a;border:1px solid #1e1e1e;border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center;">
+  <div class="section">
+    <div class="settingRow" onclick="window.location.href='usage.html'">
+      <div class="settingLeft">
+        <div class="settingIcon" style="background:#0a1a2a;">📊</div>
         <div>
-          <div style="font-size:14px;font-weight:600;color:white;" id="planNameUsage">Free Plan</div>
-          <div style="font-size:11px;color:#555;margin-top:2px;" id="planSubUsage">Upgrade for more</div>
+          <div class="settingLabel">View Usage</div>
+          <div class="settingDesc" id="usageQuickDesc">Loading...</div>
         </div>
-        <button id="upgradeUsageBtn" onclick="window.location.href='pricing.html'" style="padding:7px 16px;background:linear-gradient(135deg,#00cc6a,#00aaff);border:none;border-radius:20px;color:white;font-size:12px;font-weight:700;cursor:pointer;">Upgrade</button>
       </div>
+      <div class="settingArrow">›</div>
     </div>
   </div>
 
@@ -442,7 +423,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
         <div class="settingIcon" style="background:#0a1a1a;">✉️</div>
         <div>
           <div class="settingLabel">Contact Support</div>
-          <div class="settingDesc">harisaiganeshpampana@gmail.com</div>
+          <div class="settingDesc"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a7cfc6d5ced4c6cec0c6c9c2d4cfd7c6cad7c6c9c6e7c0cac6cecb89c4c8ca">[email&#160;protected]</a></div>
         </div>
       </div>
       <div class="settingArrow">›</div>
@@ -652,7 +633,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
 </div>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 const SERVER = "https://datta-ai-server.onrender.com"
 const THEMES = {
   dark:     { bg:"#0a0a0a", bg2:"#111", bg3:"#1a1a1a", border:"#222", text:"#fff", text2:"#aaa", text3:"#666", accent:"#00ff88", accent2:"#00ccff" },
@@ -1045,16 +1026,4 @@ window.addEventListener("load", function() {
   })
 
   // Load language
-  const lang = localStorage.getItem("datta_language") || "English"
-  document.getElementById("langDesc").textContent = lang
-
-  // Load usage
-  loadUsage()
-  // Load memory count
-  loadUsage()
-  loadMemory()
-  loadSavedVoiceSetting()
-})
-</script>
-</body>
-</html>
+  const lang = localS
