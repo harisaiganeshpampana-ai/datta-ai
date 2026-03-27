@@ -2,9 +2,40 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script>
+// FORCE UPDATE CHECK - runs before anything else
+(function() {
+  var CURRENT_VERSION = "37"
+  var storedVersion = localStorage.getItem("app_version")
+  
+  if (storedVersion && storedVersion !== CURRENT_VERSION) {
+    // New version detected - clear everything and reload
+    localStorage.setItem("app_version", CURRENT_VERSION)
+    
+    // Clear all caches
+    if ("caches" in window) {
+      caches.keys().then(function(keys) {
+        keys.forEach(function(key) { caches.delete(key) })
+      })
+    }
+    
+    // Unregister service worker then reload
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(r) { r.unregister() })
+        window.location.reload(true)
+      })
+    } else {
+      window.location.reload(true)
+    }
+  } else {
+    localStorage.setItem("app_version", CURRENT_VERSION)
+  }
+})()
+</script>
 <title>Datta AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=37">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,6 +54,13 @@
 </head>
 
 <body>
+
+<!-- FORCE UPDATE BANNER - shows when new version available -->
+<div id="forceBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:999999;background:linear-gradient(135deg,#00cc6a,#00aaff);padding:14px 20px;text-align:center;">
+  <div style="font-size:14px;font-weight:700;color:white;margin-bottom:8px;">🚀 New update available!</div>
+  <button onclick="hardUpdate()" style="padding:8px 24px;background:white;border:none;border-radius:20px;color:#00aa55;font-size:13px;font-weight:800;cursor:pointer;">Update Now</button>
+  <button onclick="document.getElementById('forceBanner').style.display='none'" style="margin-left:10px;padding:8px 16px;background:rgba(255,255,255,0.2);border:none;border-radius:20px;color:white;font-size:13px;cursor:pointer;">Later</button>
+</div>
 
 <!-- UPDATE GATE - shows before app if update required -->
 <div id="updateGate" style="display:none;position:fixed;inset:0;background:#080808;z-index:999999;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;">
@@ -289,7 +327,7 @@
 
 </div>
 
-<script src="chat.js?v=6"></script>
+<script src="chat.js?v=37"></script>
 
 <script>
   // SPLASH SCREEN - 3 seconds then smooth fade out
@@ -972,5 +1010,23 @@ checkVersion()
 }
 </style>
 
+<script>
+function hardUpdate() {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(regs) {
+      regs.forEach(function(r) { r.unregister() })
+    })
+  }
+  if ("caches" in window) {
+    caches.keys().then(function(keys) {
+      keys.forEach(function(k) { caches.delete(k) })
+    })
+  }
+  setTimeout(function() {
+    window.location.href = window.location.href.split("?")[0] + "?t=" + Date.now()
+  }, 500)
+}
+window.hardUpdate = hardUpdate
+</script>
 </body>
 </html>
