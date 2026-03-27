@@ -4374,3 +4374,143 @@ input, textarea, select { touch-action: manipulation; }
   .welcomeTitle { font-size: 22px !important; }
   .chip { font-size: 13px !important; padding: 10px 14px !important; }
 }
+
+/* MIC BUTTON - inline listener */
+.micBtn {
+  background: none !important;
+  border: none !important;
+  color: #555 !important;
+  cursor: pointer !important;
+  padding: 6px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s !important;
+  flex-shrink: 0 !important;
+}
+
+.micBtn:hover { color: #00ff88 !important; }
+
+.micBtn.listening {
+  color: #ff4444 !important;
+  animation: micPulse 1s infinite !important;
+}
+
+@keyframes micPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+/* Input placeholder when listening */
+#message.listening {
+  color: #00ff88 !important;
+}
+
+/* ═══════════════════════════════════════
+   PREMIUM ELEGANT FONT SYSTEM - Datta AI
+   ═══════════════════════════════════════ */
+
+/* Base - everything uses Josefin Sans (clean, geometric, premium) */
+* {
+  font-family: 'Josefin Sans', sans-serif !important;
+  letter-spacing: 0.3px !important;
+}
+
+/* AI responses - Cormorant Garamond (elegant, literary, unique) */
+.aiBubble,
+.aiBubble p,
+.aiBubble li,
+.aiBubble td,
+.aiBubble blockquote {
+  font-family: 'Cormorant Garamond', serif !important;
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  line-height: 1.8 !important;
+  letter-spacing: 0.2px !important;
+}
+
+/* Bold text in AI responses */
+.aiBubble strong, .aiBubble b {
+  font-family: 'Cormorant Garamond', serif !important;
+  font-weight: 600 !important;
+  color: #fff !important;
+}
+
+/* Headings in AI responses - Playfair Display */
+.aiBubble h1, .aiBubble h2, .aiBubble h3 {
+  font-family: 'Playfair Display', serif !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* App title - Josefin Sans bold */
+.topTitle, .sidebarBrand, .splashName {
+  font-family: 'Josefin Sans', sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: 6px !important;
+}
+
+/* Input field - Josefin Sans light */
+#message, input, textarea, select {
+  font-family: 'Josefin Sans', sans-serif !important;
+  font-weight: 300 !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* User bubbles */
+.userBubble {
+  font-family: 'Josefin Sans', sans-serif !important;
+  font-weight: 300 !important;
+  letter-spacing: 0.4px !important;
+}
+
+/* Buttons */
+button {
+  font-family: 'Josefin Sans', sans-serif !important;
+  letter-spacing: 1px !important;
+}
+
+/* Welcome title */
+.welcomeTitle {
+  font-family: 'Playfair Display', serif !important;
+  font-weight: 700 !important;
+  letter-spacing: 1px !important;
+  font-style: italic !important;
+}
+
+/* Welcome subtitle */
+.welcomeSub {
+  font-family: 'Josefin Sans', sans-serif !important;
+  font-weight: 300 !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  font-size: 11px !important;
+}
+
+/* Code blocks - keep monospace */
+code, pre, .aiBubble code, .aiBubble pre {
+  font-family: 'Courier New', monospace !important;
+  letter-spacing: 0 !important;
+}
+
+/* Chat title sidebar */
+.chatTitle {
+  font-family: 'Josefin Sans', sans-serif !important;
+  font-weight: 300 !important;
+  letter-spacing: 0.3px !important;
+}
+
+/* Section labels */
+.sectionLabel {
+  font-family: 'Josefin Sans', sans-serif !important;
+  font-weight: 600 !important;
+  letter-spacing: 3px !important;
+}
+
+/* Model pill */
+.inputModelSingle, .activeModelName {
+  font-family: 'Josefin Sans', sans-serif !important;
+  font-weight: 600 !important;
+  letter-spacing: 1px !important;
+}
