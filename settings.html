@@ -211,7 +211,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
 </head>
 <body>
 <script>
-// VOICE FUNCTIONS - defined early so onclick works immediately
+// VOICE FUNCTIONS
 function selectVoice(key) {
   localStorage.setItem("datta_voice", key)
   document.querySelectorAll(".voiceCard").forEach(c => c.classList.remove("active"))
@@ -219,32 +219,96 @@ function selectVoice(key) {
   if (card) card.classList.add("active")
 }
 
+function getBestVoice(key) {
+  const allVoices = window.speechSynthesis.getVoices()
+  if (!allVoices.length) return null
+
+  // Voice profiles - gender and language based matching
+  const profiles = {
+    aria:    { gender:"female", langs:["en-US","en_US"], keywords:["Samantha","Zira","Google US English Female","Microsoft Zira","en-US"] },
+    james:   { gender:"male",   langs:["en-US","en_US"], keywords:["David","Google US English Male","Microsoft David","Alex","en-US"] },
+    sofia:   { gender:"female", langs:["en-GB","en_GB"], keywords:["Google UK English Female","Microsoft Hazel","Karen","Moira","en-GB"] },
+    indian:  { gender:"female", langs:["en-IN","en_IN"], keywords:["Google हिन्दी","Lekha","Veena","Rishi","en-IN"] },
+    british: { gender:"male",   langs:["en-GB","en_GB"], keywords:["Google UK English Male","Microsoft George","Daniel","Oliver","en-GB"] }
+  }
+
+  const profile = profiles[key] || profiles.aria
+
+  // Try exact keyword match first
+  for (const kw of profile.keywords) {
+    const v = allVoices.find(v => v.name.includes(kw))
+    if (v) return v
+  }
+
+  // Try lang + gender match
+  const langVoices = allVoices.filter(v => profile.langs.some(l => v.lang.startsWith(l.split("_")[0])))
+  if (langVoices.length) {
+    // Try gender match by name heuristics
+    const maleNames = ["david","james","daniel","george","oliver","alex","ryan","tom","richard","male","man"]
+    const femaleNames = ["samantha","zira","karen","sofia","aria","female","woman","girl","victoria","lisa"]
+    const genderWords = profile.gender === "male" ? maleNames : femaleNames
+    const gendered = langVoices.find(v => genderWords.some(g => v.name.toLowerCase().includes(g)))
+    if (gendered) return gendered
+    return langVoices[0]
+  }
+
+  // Fallback: any english voice with gender hint
+  const engVoices = allVoices.filter(v => v.lang.startsWith("en"))
+  if (engVoices.length) {
+    const maleNames = ["david","james","daniel","george","oliver","alex","ryan","tom","male","man"]
+    const femaleNames = ["samantha","zira","karen","sofia","aria","victoria","female","woman"]
+    const genderWords = profile.gender === "male" ? maleNames : femaleNames
+    const gendered = engVoices.find(v => genderWords.some(g => v.name.toLowerCase().includes(g)))
+    if (gendered) return gendered
+    // Male voices are usually listed after female - pick based on index
+    return profile.gender === "male"
+      ? engVoices[Math.floor(engVoices.length / 2)]
+      : engVoices[0]
+  }
+
+  return null
+}
+
+function speakWithVoice(text, key, onDone) {
+  window.speechSynthesis.cancel()
+  const u = new SpeechSynthesisUtterance(text)
+
+  const settings = {
+    aria:    { rate:0.95, pitch:1.15, lang:"en-US" },
+    james:   { rate:0.88, pitch:0.75, lang:"en-US" },
+    sofia:   { rate:1.0,  pitch:1.1,  lang:"en-GB" },
+    indian:  { rate:0.92, pitch:1.05, lang:"en-IN" },
+    british: { rate:0.88, pitch:0.8,  lang:"en-GB" }
+  }
+
+  const s = settings[key] || settings.aria
+  u.rate = s.rate
+  u.pitch = s.pitch
+  u.lang = s.lang
+  if (onDone) u.onend = onDone
+
+  // Wait for voices to load if needed
+  function trySpeak() {
+    const voice = getBestVoice(key)
+    if (voice) u.voice = voice
+    window.speechSynthesis.speak(u)
+  }
+
+  if (window.speechSynthesis.getVoices().length === 0) {
+    window.speechSynthesis.onvoiceschanged = () => {
+      window.speechSynthesis.onvoiceschanged = null
+      trySpeak()
+    }
+  } else {
+    trySpeak()
+  }
+}
+
 function previewVoice() {
   const key = localStorage.getItem("datta_voice") || "aria"
   const names = { aria:"Aria", james:"James", sofia:"Sofia", indian:"Riya", british:"Oliver" }
-  const langs = { aria:"en-US", james:"en-US", sofia:"en-GB", indian:"en-IN", british:"en-GB" }
-  const rates = { aria:0.95, james:0.9, sofia:1.0, indian:0.9, british:0.9 }
-  const pitches = { aria:1.1, james:0.85, sofia:1.2, indian:1.0, british:0.9 }
   const name = names[key] || "Aria"
-  const u = new SpeechSynthesisUtterance("Hi! I am " + name + ", your Datta AI voice assistant.")
-  u.lang = langs[key] || "en-US"
-  u.rate = rates[key] || 0.95
-  u.pitch = pitches[key] || 1.0
-  const voices = window.speechSynthesis.getVoices()
-  const kwds = {
-    aria:["Samantha","Zira","Google US English"],
-    james:["David","Google UK English Male","Daniel"],
-    sofia:["Karen","Moira","Google UK English Female"],
-    indian:["Lekha","Veena","en-IN"],
-    british:["Arthur","Oliver","en-GB"]
-  }
-  const kw = kwds[key] || []
-  for (const k of kw) {
-    const v = voices.find(v => v.name.includes(k) || v.lang.includes(k))
-    if (v) { u.voice = v; break }
-  }
-  window.speechSynthesis.cancel()
-  window.speechSynthesis.speak(u)
+  speakWithVoice("Hi! I am " + name + ", your Datta AI voice assistant. How can I help you today?", key)
 }
 
 // Load user data IMMEDIATELY - runs before body renders
