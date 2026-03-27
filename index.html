@@ -5,7 +5,7 @@
 
 <title>Datta AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
-<link rel="stylesheet" href="style.css?v=38">
+<link rel="stylesheet" href="style.css?v=39">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -195,7 +195,7 @@
 
 
 
-    <div class="inputWrap" id="inputWrap" style="position:relative;">
+    <div class="inputWrap" id="inputWrap">
 
       <!-- Hidden file inputs -->
       <input type="file" id="imageInput" accept="image/*,.pdf,.txt,.csv,.js,.py,.html,.css,.json,.md,.doc,.docx" style="display:none;">
@@ -218,26 +218,7 @@
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
       </div>
-      <!-- Model dropdown popup -->
-      <div id="modelDropdown" style="display:none;position:fixed;bottom:100px;left:12px;right:12px;background:#111;border:1px solid #333;border-radius:16px;z-index:99999;padding:8px;box-shadow:0 -8px 32px rgba(0,0,0,0.8);">
-        <div style="font-size:11px;color:#555;padding:4px 8px 8px;text-transform:uppercase;letter-spacing:1px;">Select Model</div>
-        <div class="modelDropItem active" id="mdi-d21" onclick="selectInputModel('llama-3.1-8b-instant','d21','Datta 2.1')">
-          <div><div style="font-size:14px;font-weight:600;color:white;">Datta 2.1</div><div style="font-size:11px;color:#555;">Fast and simple</div></div>
-          <span style="color:#00ff88;font-weight:700;" id="mdic-d21">✓</span>
-        </div>
-        <div class="modelDropItem" id="mdi-d42" onclick="selectInputModel('llama-3.3-70b-versatile','d42','Datta 4.2')">
-          <div><div style="font-size:14px;font-weight:600;color:white;">Datta 4.2</div><div style="font-size:11px;color:#555;">Balanced and capable</div></div>
-          <span style="color:#00ff88;font-weight:700;" id="mdic-d42"></span>
-        </div>
-        <div class="modelDropItem" id="mdi-d48" onclick="selectInputModel('llama3-70b-8192','d48','Datta 4.8')">
-          <div><div style="font-size:14px;font-weight:600;color:white;">Datta 4.8</div><div style="font-size:11px;color:#555;">Deep reasoning</div></div>
-          <span style="color:#00ff88;font-weight:700;" id="mdic-d48"></span>
-        </div>
-        <div class="modelDropItem" id="mdi-d54" onclick="selectInputModel('llama-3.1-70b-versatile','d54','Datta 5.4')">
-          <div><div style="font-size:14px;font-weight:600;color:white;">Datta 5.4</div><div style="font-size:11px;color:#555;">Most powerful</div></div>
-          <span style="color:#00ff88;font-weight:700;" id="mdic-d54"></span>
-        </div>
-      </div>
+
 
       <!-- Bottom row -->
       <div class="inputRow">
@@ -283,7 +264,7 @@
 
 </div>
 
-<script src="chat.js?v=38"></script>
+<script src="chat.js?v=39"></script>
 
 <script>
   // SPLASH SCREEN - 3 seconds then smooth fade out
@@ -987,5 +968,26 @@ window.hardUpdate = hardUpdate
 
 
 </script>
+
+<!-- MODEL DROPDOWN - at body level so it's not clipped -->
+<div id="modelDropdown" style="display:none;position:fixed;bottom:90px;left:12px;right:12px;background:#111;border:1px solid #333;border-radius:16px;z-index:99999;padding:8px;box-shadow:0 -8px 32px rgba(0,0,0,0.8);" onclick="event.stopPropagation()">
+  <div style="font-size:11px;color:#555;padding:4px 8px 8px;text-transform:uppercase;letter-spacing:1px;">Select Model</div>
+  <div class="modelDropItem active" id="mdi-d21" onclick="selectInputModel('llama-3.1-8b-instant','d21','Datta 2.1')">
+    <div><div style="font-size:14px;font-weight:600;color:white;">Datta 2.1</div><div style="font-size:11px;color:#555;">Fast and simple</div></div>
+    <span style="color:#00ff88;font-weight:700;" id="mdic-d21">✓</span>
+  </div>
+  <div class="modelDropItem" id="mdi-d42" onclick="selectInputModel('llama-3.3-70b-versatile','d42','Datta 4.2')">
+    <div><div style="font-size:14px;font-weight:600;color:white;">Datta 4.2</div><div style="font-size:11px;color:#555;">Balanced and capable</div></div>
+    <span style="color:#00ff88;font-weight:700;" id="mdic-d42"></span>
+  </div>
+  <div class="modelDropItem" id="mdi-d48" onclick="selectInputModel('llama3-70b-8192','d48','Datta 4.8')">
+    <div><div style="font-size:14px;font-weight:600;color:white;">Datta 4.8</div><div style="font-size:11px;color:#555;">Deep reasoning</div></div>
+    <span style="color:#00ff88;font-weight:700;" id="mdic-d48"></span>
+  </div>
+  <div class="modelDropItem" id="mdi-d54" onclick="selectInputModel('meta-llama/llama-4-maverick-17b-128e-instruct','d54','Datta 5.4')">
+    <div><div style="font-size:14px;font-weight:600;color:white;">Datta 5.4</div><div style="font-size:11px;color:#555;">Most powerful</div></div>
+    <span style="color:#00ff88;font-weight:700;" id="mdic-d54"></span>
+  </div>
+</div>
 </body>
 </html>
