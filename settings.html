@@ -211,6 +211,25 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
 </head>
 <body>
 <script>
+// PANEL + CORE FUNCTIONS - must be first
+function openPanel(name) {
+  const el = document.getElementById("panel-" + name)
+  if (el) {
+    el.classList.add("show")
+    if (name === "memory" && typeof loadMemory === "function") loadMemory()
+  }
+}
+function closePanel(name) {
+  const el = document.getElementById("panel-" + name)
+  if (el) el.classList.remove("show")
+}
+function showMsg(id, text, type) {
+  const el = document.getElementById("msg-" + id)
+  if (!el) return
+  el.textContent = text; el.className = "msg " + type
+  setTimeout(() => { el.className = "msg"; el.textContent = "" }, 3000)
+}
+
 // VOICE FUNCTIONS
 function selectVoice(key) {
   localStorage.setItem("datta_voice", key)
