@@ -211,22 +211,14 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
 </head>
 <body>
 <script>
-// Load user data IMMEDIATELY from localStorage - no waiting
+// Load user data IMMEDIATELY - runs before body renders
 (function() {
   try {
     var user = JSON.parse(localStorage.getItem("datta_user") || "{}")
-    var uname = user.username || user.name || "User"
+    var uname = user.username || user.name || ""
     var uemail = user.email || ""
-    // Set as soon as DOM elements exist
-    document.addEventListener("DOMContentLoaded", function() {
-      var nameEl = document.getElementById("userName")
-      var emailEl = document.getElementById("userEmail")
-      var letterEl = document.getElementById("userAvatarLetter")
-      if (nameEl) nameEl.textContent = uname
-      if (emailEl) emailEl.textContent = uemail
-      if (letterEl) letterEl.textContent = (uname[0] || "U").toUpperCase()
-    })
-  } catch(e) {}
+    window._settingsUser = { uname: uname, uemail: uemail }
+  } catch(e) { window._settingsUser = { uname: "", uemail: "" } }
 })()
 </script>
 
@@ -247,7 +239,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
       <div class="editPhotoBtn">📷</div>
     </div>
     <div style="flex:1">
-      <div class="userName" id="userName">User</div>
+      <div class="userName" id="userName" style="min-height:24px;"></div>
       <div class="userEmail" id="userEmail"></div>
       <div class="userPlan" id="userPlan">Free Plan</div>
     </div>
@@ -333,7 +325,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
         <div class="settingIcon" style="background:#0a1a2a;">📊</div>
         <div>
           <div class="settingLabel">View Usage</div>
-          <div class="settingDesc" id="usageQuickDesc">Loading...</div>
+          <div class="settingDesc" id="usageQuickDesc">Tap to view →</div>
         </div>
       </div>
       <div class="settingArrow">›</div>
@@ -379,7 +371,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
     <div class="settingRow" onclick="openPanel('memory')">
       <div class="settingLeft">
         <div class="settingIcon" style="background:#1a0a2a;">🧠</div>
-        <div><div class="settingLabel">What AI Remembers</div><div class="settingDesc" id="memoryCount">Loading...</div></div>
+        <div><div class="settingLabel">What AI Remembers</div><div class="settingDesc" id="memoryCount">Tap to view memories →</div></div>
       </div>
       <div class="settingArrow">›</div>
     </div>
@@ -907,7 +899,7 @@ async function loadUsage() {
 
 async function loadMemory() {
   const countEl = document.getElementById("memoryCount")
-  if (countEl) countEl.textContent = "Loading..."
+  // memory count will update when panel opens
   try {
     const res = await fetch(SERVER + "/memory?token=" + getToken(), {
       signal: AbortSignal.timeout(8000)
@@ -1008,16 +1000,16 @@ function goBack() {
 window.addEventListener("load", function() {
   if (!getToken()) { window.location.href = "login.html"; return }
 
-  // User data already loaded by inline script above
+  // Load user data immediately
+  const su = window._settingsUser || {}
   const user = getUser()
-  const uname = user.username || user.name || "User"
-  const uemail = user.email || ""
-  // Update in case inline script missed
-  var nameEl = document.getElementById("userName")
-  var emailEl = document.getElementById("userEmail") 
-  var letterEl = document.getElementById("userAvatarLetter")
-  if (nameEl && nameEl.textContent === "User") nameEl.textContent = uname
-  if (emailEl && !emailEl.textContent) emailEl.textContent = uemail
+  const uname = su.uname || user.username || user.name || "User"
+  const uemail = su.uemail || user.email || ""
+  const nameEl = document.getElementById("userName")
+  const emailEl = document.getElementById("userEmail")
+  const letterEl = document.getElementById("userAvatarLetter")
+  if (nameEl) nameEl.textContent = uname
+  if (emailEl) emailEl.textContent = uemail
   if (letterEl) letterEl.textContent = (uname[0] || "U").toUpperCase()
 
   // Load saved avatar
