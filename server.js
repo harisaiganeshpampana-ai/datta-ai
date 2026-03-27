@@ -824,10 +824,28 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
 
     if (isImageRequest(message)) {
       const imgCheck = await checkAndUpdateLimitDB(userId, userPlan, "images")
-      if (!imgCheck.allowed) return res.status(429).json({ error: "IMAGE_LIMIT", plan: userPlan, waitMins: imgCheck.waitMins, limit: imgCheck.limit })
+      if (!imgCheck.allowed) return res.status(429).json({ 
+        error: "IMAGE_LIMIT", 
+        message: "Image generation limit reached. Upgrade your plan for more images.",
+        plan: userPlan, 
+        waitMins: imgCheck.waitMins, 
+        limit: imgCheck.limit 
+      })
     } else {
       const msgCheck = await checkAndUpdateLimitDB(userId, userPlan, "messages")
-      if (!msgCheck.allowed) return res.status(429).json({ error: "MESSAGE_LIMIT", plan: userPlan, waitMins: msgCheck.waitMins, limit: msgCheck.limit })
+      if (!msgCheck.allowed) {
+        const waitMins = msgCheck.waitMins || 0
+        const msg = waitMins > 0
+          ? `You've reached your message limit. Resets in ${Math.ceil(waitMins)} minutes.`
+          : "You've reached your message limit. Upgrade to continue."
+        return res.status(429).json({ 
+          error: "MESSAGE_LIMIT", 
+          message: msg,
+          plan: userPlan, 
+          waitMins: waitMins, 
+          limit: msgCheck.limit 
+        })
+      }
     }
 
     let chat = null
