@@ -562,6 +562,58 @@ async function send() {
       body: formData
     })
 
+    // Check for errors FIRST before streaming
+    if (!res.ok) {
+      let errData = {}
+      try { errData = await res.json() } catch(e) {}
+      
+      hideStopBtn()
+
+      if (errData.error === "MESSAGE_LIMIT") {
+        const waitMins = errData.waitMins || 0
+        const plan = errData.plan || "free"
+        const isForever = waitMins > 10000
+        const waitText = isForever
+          ? "Upgrade your plan to continue chatting."
+          : waitMins > 0
+          ? `Resets in ${Math.ceil(waitMins)} minutes.`
+          : "Upgrade your plan."
+
+        aiDiv.innerHTML = `
+          <div class="avatar">🤖</div>
+          <div class="aiContent">
+            <div style="background:#1a0800;border:1px solid #ff440033;border-radius:16px;padding:20px;text-align:center;max-width:300px;">
+              <div style="font-size:32px;margin-bottom:10px;">⏳</div>
+              <div style="font-weight:700;color:white;margin-bottom:6px;font-size:16px;">Message limit reached</div>
+              <div style="font-size:13px;color:#888;margin-bottom:4px;">${waitText}</div>
+              <div style="font-size:12px;color:#555;margin-bottom:16px;">Free plan: 25 msgs total, then 8/session</div>
+              <a href="pricing.html" style="display:inline-block;padding:10px 24px;background:linear-gradient(135deg,#00cc6a,#00aaff);border-radius:20px;color:white;font-size:14px;font-weight:700;text-decoration:none;">⚡ Upgrade Now</a>
+            </div>
+          </div>
+        `
+        // Re-enable send button so user can try upgrading
+        const sendBtn = document.getElementById("sendBtn")
+        const msgInput = document.getElementById("message")
+        if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
+        if (msgInput) { msgInput.disabled = false; msgInput.placeholder = "Upgrade to continue..." }
+        hideStopBtn()
+        return
+      }
+
+      // Other errors - re-enable input
+      const sendBtn2 = document.getElementById("sendBtn")
+      const msgInput2 = document.getElementById("message")
+      if (sendBtn2) { sendBtn2.disabled = false; sendBtn2.style.opacity = "1" }
+      if (msgInput2) { msgInput2.disabled = false }
+      const msg = errData.message || errData.error || "Something went wrong"
+      aiDiv.innerHTML = `
+        <div class="avatar">🤖</div>
+        <div class="aiBubble" style="color:#ff8844;">⚠️ ${msg}. Please try again.</div>
+      `
+      hideStopBtn()
+      return
+    }
+
     const chatIdFromHeader = res.headers.get("x-chat-id")
     if (!currentChatId && chatIdFromHeader) {
       currentChatId = chatIdFromHeader
@@ -634,6 +686,11 @@ async function send() {
     loadSidebar()
 
   } catch (err) {
+    hideStopBtn()
+    const sendBtn = document.getElementById("sendBtn")
+    const msgInput = document.getElementById("message")
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
+    if (msgInput) { msgInput.disabled = false }
     if (err.name === "AbortError") {
       console.log("Request cancelled")
     } else {
@@ -641,7 +698,6 @@ async function send() {
         <div class="avatar">🤖</div>
         <div class="aiBubble" style="color:#f88;">⚠️ Something went wrong. Please try again.</div>
       `
-      console.error("Send error:", err)
     }
   }
 }
@@ -897,13 +953,82 @@ async function regenerateFrom(btn) {
 
 
 // ─── VOICE INPUT ──────────────────────────────────────────────────────────────
+// MIC BUTTON - inline listener like Google
+let _micRecognition = null
+let _micActive = false
+
 function startAssistant() {
-  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)()
-  recognition.lang = "en-US"
-  recognition.start()
-  recognition.onresult = (e) => {
-    document.getElementById("message").value = e.results[0][0].transcript
-    send()
+  if (_micActive) {
+    stopMicListener()
+    return
+  }
+
+  if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
+    showToast("Voice not supported in this browser")
+    return
+  }
+
+  const input = document.getElementById("message")
+  const micBtn = document.getElementById("micBtn")
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+  _micRecognition = new SR()
+  _micRecognition.lang = localStorage.getItem("datta_voice_lang") || "en-IN"
+  _micRecognition.continuous = false
+  _micRecognition.interimResults = true
+
+  _micActive = true
+
+  // Show listening state on mic button
+  if (micBtn) {
+    micBtn.style.color = "#ff4444"
+    micBtn.style.transform = "scale(1.2)"
+  }
+  if (input) {
+    input.placeholder = "🎤 Listening..."
+    input.style.color = "#00ff88"
+  }
+
+  _micRecognition.onresult = (e) => {
+    let interim = ""
+    let final = ""
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript
+      else interim += e.results[i][0].transcript
+    }
+    if (input) input.value = final || interim
+    if (final) {
+      stopMicListener()
+      setTimeout(() => send(), 300)
+    }
+  }
+
+  _micRecognition.onerror = (e) => {
+    stopMicListener()
+    showToast("Voice error: " + e.error)
+  }
+
+  _micRecognition.onend = () => {
+    stopMicListener()
+  }
+
+  _micRecognition.start()
+}
+
+function stopMicListener() {
+  _micActive = false
+  const input = document.getElementById("message")
+  const micBtn = document.getElementById("micBtn")
+  if (micBtn) {
+    micBtn.style.color = ""
+    micBtn.style.transform = ""
+  }
+  if (input) {
+    input.placeholder = "Ask Datta AI anything..."
+    input.style.color = ""
+  }
+  if (_micRecognition) {
+    try { _micRecognition.stop() } catch(e) {}
+    _micRecognition = null
   }
 }
 
@@ -1353,8 +1478,21 @@ function setVoiceStatus(text, mode) {
     if (mode === "speaking") orb.classList.add("speaking")
   }
   if (micBtn) {
-    micBtn.classList.toggle("active", mode === "listening")
+    if (mode === "listening") {
+      micBtn.textContent = "🔴 Listening... (tap to stop)"
+      micBtn.style.background = "linear-gradient(135deg,#ff4444,#ff8844)"
+    } else if (mode === "speaking") {
+      micBtn.textContent = "🔊 Speaking..."
+      micBtn.style.background = "linear-gradient(135deg,#aa44ff,#00ccff)"
+    } else {
+      micBtn.innerHTML = "🎤 Tap to Speak"
+      micBtn.style.background = "linear-gradient(135deg,#00cc6a,#00aaff)"
+    }
   }
+}
+
+function setVoiceLang(lang) {
+  window._voiceLang = lang
 }
 
 function setVoiceText(text) {
@@ -1380,7 +1518,7 @@ function startListening() {
 
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
   voiceRecognition = new SpeechRecognition()
-  voiceRecognition.lang = "en-US"
+  voiceRecognition.lang = window._voiceLang || "en-IN"
   voiceRecognition.continuous = false
   voiceRecognition.interimResults = true
 
@@ -1649,9 +1787,8 @@ function stopSpeaking() {
 }
 
 // Update the assistant button to open voice overlay
-window.startAssistant = function() {
-  openVoiceAssistant()
-}
+window.startAssistant = startAssistant
+window.stopMicListener = stopMicListener
 
 window.openVoiceAssistant = openVoiceAssistant
 window.closeVoiceAssistant = closeVoiceAssistant
