@@ -1,4 +1,5 @@
 import express from "express"
+import pdfParse from "pdf-parse/lib/pdf-parse.js"
 import cors from "cors"
 import dotenv from "dotenv"
 import mongoose from "mongoose"
@@ -1025,8 +1026,55 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     if (isImageFile) {
       userContent = [{ type: "text", text: (message || "Analyze this image.") + searchContext }, { type: "image_url", image_url: { url: "data:" + file.mimetype + ";base64," + file.buffer.toString("base64") } }]
     } else if (file) {
-      try { userContent = (message ? message + "\n\n" : "") + "[File: " + file.originalname + "]\n\n" + file.buffer.toString("utf-8") + searchContext }
-      catch(e) { userContent = (message ? message + "\n\n" : "") + "[File: " + file.originalname + "]" + searchContext }
+      try {
+        const isPDF = file.mimetype === "application/pdf" || file.originalname?.toLowerCase().endsWith(".pdf")
+        
+        if (isPDF) {
+          // Extract text from PDF using basic text extraction
+          const pdfBuffer = file.buffer
+          // Simple PDF text extraction - look for text streams
+          let pdfText = ""
+          try {
+            const pdfStr = pdfBuffer.toString("binary")
+            // Extract readable text from PDF binary
+            const textMatches = pdfStr.match(/BT[\s\S]*?ET/g) || []
+            const tjMatches = pdfStr.match(/\(([^)]{1,500})\)\s*Tj/g) || []
+            const textContent = tjMatches.map(m => m.replace(/\(([^)]*)\)\s*Tj/, "$1")).join(" ")
+            
+            // Also try to get plain readable chars
+            const readable = pdfStr.replace(/[^ -~
+
+	]/g, " ").replace(/\s+/g, " ")
+            const words = readable.split(" ").filter(w => w.length > 2 && /^[a-zA-Z0-9.,!?;:'"()-]+$/.test(w))
+            pdfText = textContent || words.join(" ")
+            pdfText = pdfText.substring(0, 8000) // Limit to 8000 chars
+          } catch(e) {
+            pdfText = "Could not extract text from PDF"
+          }
+          
+          userContent = (message ? message + "
+
+" : "") + 
+            "[PDF File: " + file.originalname + "]
+
+" +
+            "PDF Content:
+" + pdfText + searchContext
+        } else {
+          // Text files - read as UTF-8
+          const fileText = file.buffer.toString("utf-8").substring(0, 8000)
+          userContent = (message ? message + "
+
+" : "") + 
+            "[File: " + file.originalname + "]
+
+" + fileText + searchContext
+        }
+      } catch(e) { 
+        userContent = (message ? message + "
+
+" : "") + "[File: " + file.originalname + " - could not read content]" + searchContext 
+      }
     } else {
       userContent = message + searchContext
     }
