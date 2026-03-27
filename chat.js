@@ -9,6 +9,13 @@ window.addEventListener("DOMContentLoaded", function() {
     s.style.setProperty("bottom","0","important")
   }
   if (o) o.style.setProperty("display","none","important")
+
+  // If returning from settings with a last chat - hide welcome immediately
+  const lastChat = localStorage.getItem("datta_last_chat")
+  if (lastChat) {
+    const welcome = document.getElementById("welcomeScreen")
+    if (welcome) welcome.style.display = "none"
+  }
 })
 
 
@@ -348,6 +355,7 @@ function getToken() {
 window.addEventListener("beforeunload", function() {
   if (currentChatId) {
     localStorage.setItem("datta_last_chat", currentChatId)
+    localStorage.setItem("datta_came_from_settings", "0")
   }
 })
 
@@ -688,23 +696,23 @@ async function loadSidebar() {
       history.appendChild(div)
     })
 
-    // Restore last chat - only on first load
-    if (!window._chatRestored) {
-      window._chatRestored = true
-      const lastChatId = localStorage.getItem("datta_last_chat")
-      if (lastChatId && chats.length > 0) {
-        const exists = chats.some(c => c._id === lastChatId)
-        if (exists) {
-          openChat(lastChatId)
-          setTimeout(() => {
-            document.querySelectorAll(".chatItem").forEach(d => d.classList.remove("active"))
-            const activeDiv = history.querySelector("[data-chat-id='" + lastChatId + "']")
-            if (activeDiv) activeDiv.classList.add("active")
-          }, 300)
-        } else {
-          localStorage.removeItem("datta_last_chat")
-        }
+    // Restore last chat every time
+    const lastChatId = localStorage.getItem("datta_last_chat")
+    if (lastChatId && chats.length > 0 && !currentChatId) {
+      const exists = chats.some(c => c._id === lastChatId)
+      if (exists) {
+        openChat(lastChatId)
+        setTimeout(() => {
+          document.querySelectorAll(".chatItem").forEach(d => d.classList.remove("active"))
+          const activeDiv = history.querySelector("[data-chat-id='" + lastChatId + "']")
+          if (activeDiv) activeDiv.classList.add("active")
+        }, 200)
+      } else {
+        localStorage.removeItem("datta_last_chat")
+        showWelcome()
       }
+    } else if (!lastChatId) {
+      showWelcome()
     }
   } catch(e) {
     console.error("Sidebar error:", e.message)
