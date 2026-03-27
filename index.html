@@ -842,5 +842,94 @@ function doUpdate() {
 // Run version check immediately
 checkVersion()
 </script>
+
+<!-- AI LENS MODAL -->
+<div id="lensOverlay" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;flex-direction:column;">
+
+  <!-- Header -->
+  <div style="position:absolute;top:0;left:0;right:0;z-index:10;padding:16px;display:flex;align-items:center;justify-content:space-between;">
+    <button onclick="closeLens()" style="background:rgba(0,0,0,0.6);border:none;color:white;width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+    <div style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;color:white;">
+      <span style="color:#00ff88;">✦</span> AI Lens
+    </div>
+    <div style="width:40px;"></div>
+  </div>
+
+  <!-- Camera viewfinder -->
+  <video id="lensVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+  <canvas id="lensCanvas" style="display:none;"></canvas>
+
+  <!-- Scan frame overlay -->
+  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+    <div id="scanFrame" style="width:260px;height:260px;position:relative;">
+      <!-- Corner borders -->
+      <div style="position:absolute;top:0;left:0;width:40px;height:40px;border-top:3px solid #00ff88;border-left:3px solid #00ff88;border-radius:4px 0 0 0;"></div>
+      <div style="position:absolute;top:0;right:0;width:40px;height:40px;border-top:3px solid #00ff88;border-right:3px solid #00ff88;border-radius:0 4px 0 0;"></div>
+      <div style="position:absolute;bottom:0;left:0;width:40px;height:40px;border-bottom:3px solid #00ff88;border-left:3px solid #00ff88;border-radius:0 0 0 4px;"></div>
+      <div style="position:absolute;bottom:0;right:0;width:40px;height:40px;border-bottom:3px solid #00ff88;border-right:3px solid #00ff88;border-radius:0 0 4px 0;"></div>
+      <!-- Scan line -->
+      <div id="scanLine" style="position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#00ff88,transparent);animation:scanMove 2s linear infinite;top:0;"></div>
+    </div>
+  </div>
+
+  <!-- Scan mode buttons -->
+  <div style="position:absolute;bottom:120px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10;">
+    <button class="lensModeBtn active" id="lensMode-identify" onclick="setLensMode('identify')">🔍 Identify</button>
+    <button class="lensModeBtn" id="lensMode-text" onclick="setLensMode('text')">📝 Read Text</button>
+    <button class="lensModeBtn" id="lensMode-translate" onclick="setLensMode('translate')">🌐 Translate</button>
+    <button class="lensModeBtn" id="lensMode-solve" onclick="setLensMode('solve')">🧮 Solve</button>
+  </div>
+
+  <!-- Capture button -->
+  <div style="position:absolute;bottom:30px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:20px;z-index:10;">
+    <input type="file" id="lensGallery" accept="image/*" style="display:none;" onchange="lensFromGallery(this)">
+    <button onclick="document.getElementById('lensGallery').click()" style="background:rgba(255,255,255,0.15);border:none;color:white;width:48px;height:48px;border-radius:50%;font-size:20px;cursor:pointer;">🖼️</button>
+    <button onclick="captureAndAnalyze()" id="lensCaptureBtn" style="width:72px;height:72px;border-radius:50%;background:white;border:4px solid #00ff88;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;">📸</button>
+    <button onclick="toggleLensFlash()" style="background:rgba(255,255,255,0.15);border:none;color:white;width:48px;height:48px;border-radius:50%;font-size:20px;cursor:pointer;" id="flashBtn">⚡</button>
+  </div>
+
+  <!-- Result panel -->
+  <div id="lensResult" style="display:none;position:absolute;bottom:0;left:0;right:0;background:#111;border-radius:24px 24px 0 0;padding:20px;max-height:60%;overflow-y:auto;z-index:20;">
+    <div style="width:36px;height:4px;background:#333;border-radius:2px;margin:0 auto 16px;"></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <span style="font-size:18px;">✦</span>
+      <span style="font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;color:#00ff88;">AI Lens Result</span>
+    </div>
+    <div id="lensResultText" style="font-size:14px;color:#ccc;line-height:1.7;"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button onclick="sendLensToChat()" style="flex:1;padding:12px;background:linear-gradient(135deg,#00cc6a,#00aaff);border:none;border-radius:12px;color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">💬 Ask More</button>
+      <button onclick="document.getElementById('lensResult').style.display='none'" style="padding:12px 16px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;color:#aaa;font-size:14px;cursor:pointer;">✕</button>
+    </div>
+  </div>
+
+</div>
+
+<style>
+@keyframes scanMove {
+  0% { top: 0; }
+  50% { top: calc(100% - 2px); }
+  100% { top: 0; }
+}
+
+.lensModeBtn {
+  padding: 6px 12px;
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  color: #aaa;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  font-family: 'Rajdhani', sans-serif;
+}
+
+.lensModeBtn.active {
+  background: rgba(0,255,136,0.15);
+  border-color: #00ff8866;
+  color: #00ff88;
+}
+</style>
+
 </body>
 </html>
