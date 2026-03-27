@@ -132,15 +132,21 @@ window.addCodeCopyButtons = addCodeCopyButtons
 function showStopBtn() {
   const stop = document.getElementById("stopBtn")
   const send = document.getElementById("sendBtn")
-  if (stop) stop.style.display = "flex"
-  if (send) send.style.display = "none"
+  if (stop) {
+    stop.classList.add("active")
+    stop.style.setProperty("display", "flex", "important")
+  }
+  if (send) send.style.setProperty("display", "none", "important")
 }
 
 function hideStopBtn() {
   const stop = document.getElementById("stopBtn")
   const send = document.getElementById("sendBtn")
-  if (stop) stop.style.display = "none"
-  if (send) send.style.display = "flex"
+  if (stop) {
+    stop.classList.remove("active")
+    stop.style.setProperty("display", "none", "important")
+  }
+  if (send) send.style.setProperty("display", "flex", "important")
 }
 
 function stopGeneration() {
@@ -963,13 +969,13 @@ async function regenerateFrom(btn) {
 
 
 // ─── VOICE INPUT ──────────────────────────────────────────────────────────────
-// MIC BUTTON - inline listener like Google
+// MIC BUTTON - inline listener like Google (just types in input, does NOT open overlay)
 let _micRecognition = null
 let _micActive = false
 
-function startAssistant() {
+function startVoiceListener() {
   if (_micActive) {
-    stopMicListener()
+    stopVoiceListener()
     return
   }
 
@@ -1007,24 +1013,24 @@ function startAssistant() {
     }
     if (input) input.value = final || interim
     if (final) {
-      stopMicListener()
+      stopVoiceListener()
       setTimeout(() => send(), 300)
     }
   }
 
   _micRecognition.onerror = (e) => {
-    stopMicListener()
+    stopVoiceListener()
     showToast("Voice error: " + e.error)
   }
 
   _micRecognition.onend = () => {
-    stopMicListener()
+    stopVoiceListener()
   }
 
   _micRecognition.start()
 }
 
-function stopMicListener() {
+function stopVoiceListener() {
   _micActive = false
   const input = document.getElementById("message")
   const micBtn = document.getElementById("micBtn")
@@ -1584,6 +1590,9 @@ async function processVoiceQuery(query) {
 
   setVoiceStatus("Thinking...", "speaking")
   setVoiceText(query)
+  // Clear previous AI response
+  const aiTextEl = document.getElementById("voiceAIText")
+  if (aiTextEl) aiTextEl.textContent = ""
 
   // Check for close commands
   const closeCmds = ["close", "stop", "exit", "bye", "goodbye", "dismiss"]
@@ -1797,8 +1806,26 @@ function stopSpeaking() {
 }
 
 // Update the assistant button to open voice overlay
-window.startAssistant = startAssistant
-window.stopMicListener = stopMicListener
+window.startVoiceListener = startVoiceListener
+window.stopVoiceListener = stopVoiceListener
+window.startAssistant = openVoiceAssistant
+
+// Send last voice text to chat
+window.sendVoiceToChat = function() {
+  const voiceText = document.getElementById("voiceText")
+  const text = voiceText ? voiceText.textContent.trim() : ""
+  if (!text) return
+  closeVoiceAssistant()
+  const input = document.getElementById("message")
+  if (input) {
+    input.value = text
+    send()
+  }
+}
+
+window.setVoiceLang = function(lang) {
+  window._voiceLang = lang
+}
 
 window.openVoiceAssistant = openVoiceAssistant
 window.closeVoiceAssistant = closeVoiceAssistant
