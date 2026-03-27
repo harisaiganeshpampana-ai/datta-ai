@@ -212,7 +212,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
 <body>
 
 <div class="header">
-  <button class="backBtn" onclick="goBack()">← Back</button>
+  <button class="backBtn" onclick="window.location.href='index.html'">← Back</button>
   <div class="headerTitle">Settings</div>
 </div>
 
@@ -982,11 +982,11 @@ window.addEventListener("load", function() {
   if (!getToken()) { window.location.href = "login.html"; return }
 
   const user = getUser()
-  if (user.username) {
-    document.getElementById("userName").textContent = user.username
-    document.getElementById("userAvatarLetter").textContent = (user.username[0] || "G").toUpperCase()
-  }
-  if (user.email) document.getElementById("userEmail").textContent = user.email
+  const uname = user.username || user.name || "User"
+  const uemail = user.email || ""
+  document.getElementById("userName").textContent = uname
+  document.getElementById("userAvatarLetter").textContent = (uname[0] || "G").toUpperCase()
+  if (uemail) document.getElementById("userEmail").textContent = uemail
 
   // Load saved avatar
   const avatar = localStorage.getItem("datta_avatar")
