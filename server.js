@@ -833,14 +833,14 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
 
     const sub = await Subscription.findOne({ userId, active: true }).catch(() => null)
     const userPlan = sub ? sub.plan : "free"
+    const userIsAdmin = isAdmin(req)
 
     if (isImageRequest(message)) {
       if (!userIsAdmin) {
-        // Free plan cannot generate images
         if (userPlan === "free") {
           return res.status(429).json({
             error: "IMAGE_LIMIT",
-            message: "Image generation is not available on the Free plan. Upgrade to Pro to generate images!",
+            message: "Image generation is not available on the Free plan. Upgrade to Pro!",
             plan: userPlan,
             waitMins: 0,
             limit: 0
@@ -856,9 +856,6 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
         })
       }
     } else {
-      // Admin bypass - no limits
-      const userIsAdmin = isAdmin(req)
-      
       if (!userIsAdmin) {
         const msgCheck = await checkAndUpdateLimitDB(userId, userPlan, "messages")
         if (!msgCheck.allowed) {
