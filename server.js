@@ -1717,10 +1717,7 @@ app.get("/version", (req, res) => {
 
 app.get("/", (req, res) => res.json({ status: "Datta AI Server running", version: "3.5" }))
 
-// TOGETHER AI - dedicated coding API for Datta 5.4
 
-  return response
-}
 
 // KEEP ALIVE - ping self every 14 minutes to prevent Render sleep
 const SELF_URL = process.env.RENDER_EXTERNAL_URL || "https://datta-ai-server.onrender.com"
