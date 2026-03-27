@@ -77,7 +77,7 @@ body { background:#0a0a0a; color:white; min-height:100vh; }
 <body>
 
 <div class="header">
-  <button class="backBtn" onclick="history.back()">← Back</button>
+  <button class="backBtn" onclick="window.location.href='settings.html'">← Back</button>
   <div class="headerTitle">Your Usage</div>
 </div>
 
@@ -117,7 +117,7 @@ function getPlanEmoji(plan) {
   return emojis[plan] || "🌱"
 }
 
-async function loadUsage() {
+async function loadUsage() { // returns promise
   try {
     const res = await fetch(SERVER + "/user/usage?token=" + getToken())
     if (!res.ok) throw new Error("Failed")
@@ -231,7 +231,16 @@ async function loadUsage() {
 
 window.addEventListener("load", function() {
   if (!getToken()) { window.location.href = "login.html"; return }
-  loadUsage()
+  
+  // Show timeout message if server is slow
+  const timeoutId = setTimeout(() => {
+    const el = document.getElementById("content")
+    if (el && el.innerHTML.includes("Loading")) {
+      el.innerHTML = '<div class="loading">⚠️ Server is waking up... please wait 30 seconds and refresh</div>'
+    }
+  }, 10000)
+  
+  loadUsage().then(() => clearTimeout(timeoutId)).catch(() => clearTimeout(timeoutId))
 })
 </script>
 </body>
