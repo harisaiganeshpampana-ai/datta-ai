@@ -2391,63 +2391,62 @@ if ("serviceWorker" in navigator) {
 window.confirmDelete = confirmDelete
 window.deleteChat = deleteChat
 
-// INPUT BAR MODEL SELECTOR
-let _dropdownOpen = false
+// ── MODEL DROPDOWN ──────────────────────────────────────────────────────────
+let _ddOpen = false
 
 function toggleModelDropdown() {
+  _ddOpen = !_ddOpen
   const dd = document.getElementById("modelDropdown")
-  if (!dd) return
-  _dropdownOpen = !_dropdownOpen
-  dd.style.display = _dropdownOpen ? "block" : "none"
+  if (dd) dd.style.display = _ddOpen ? "block" : "none"
 }
 
 function closeModelDropdown() {
+  _ddOpen = false
   const dd = document.getElementById("modelDropdown")
   if (dd) dd.style.display = "none"
-  _dropdownOpen = false
 }
 
-// Close dropdown when clicking outside
 document.addEventListener("click", function(e) {
-  if (!e.target.closest(".inputModelBar") && !e.target.closest("#modelDropdown")) {
+  if (!e.target.closest("#activeModelPill") && !e.target.closest("#modelDropdown")) {
     closeModelDropdown()
   }
 })
 
 function selectInputModel(modelId, key, label) {
-  // Update active model pill text
-  const activePill = document.getElementById("activeModelName")
-  if (activePill) activePill.textContent = label
+  // Update pill text
+  const pill = document.getElementById("activeModelName")
+  if (pill) pill.textContent = label
 
-  // Update dropdown checkmarks
+  // Update checkmarks
   document.querySelectorAll(".modelDropItem").forEach(d => d.classList.remove("active"))
-  document.querySelectorAll(".mdiCheck").forEach(c => c.textContent = "")
+  const allChecks = document.querySelectorAll("[id^='mdic-']")
+  allChecks.forEach(c => c.textContent = "")
   const item = document.getElementById("mdi-" + key)
   const check = document.getElementById("mdic-" + key)
   if (item) item.classList.add("active")
   if (check) check.textContent = "✓"
 
-  // Save model
+  // Save
   localStorage.setItem("datta_model", modelId)
   localStorage.setItem("datta_model_key", key)
 
-  // Sync with topbar
+  // Sync topbar
   const btnName = document.getElementById("modelBtnName")
   if (btnName) btnName.textContent = label
 
-  // Close dropdown
   closeModelDropdown()
+  showToast(label)
 }
 
-// Load saved model on startup
+// Init on load
 window.addEventListener("DOMContentLoaded", function() {
-  const savedKey = localStorage.getItem("datta_model_key") || "d21"
-  const saved = modelData[savedKey]
-  if (saved) {
-    const activePill = document.getElementById("activeModelName")
-    if (activePill) activePill.textContent = saved.name
-    const item = document.getElementById("mdi-" + savedKey)
-    const check = document.getElementById("mdic-" + savedKey)
+  const key = localStorage.getItem("datta_model_key") || "d21"
+  const m = modelData[key]
+  if (m) {
+    const pill = document.getElementById("activeModelName")
+    if (pill) pill.textContent = m.name
+    const item = document.getElementById("mdi-" + key)
+    const check = document.getElementById("mdic-" + key)
     if (item) item.classList.add("active")
     if (check) check.textContent = "✓"
   }
@@ -2455,6 +2454,7 @@ window.addEventListener("DOMContentLoaded", function() {
 
 window.toggleModelDropdown = toggleModelDropdown
 window.closeModelDropdown = closeModelDropdown
+window.selectInputModel = selectInputModel
 
 window.selectInputModel = selectInputModel
 
