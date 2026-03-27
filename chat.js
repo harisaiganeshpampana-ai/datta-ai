@@ -1801,7 +1801,7 @@ function changeModel(model) {
     "llama-3.3-70b-versatile": "Fast",
     "llama-3.1-8b-instant": "Instant",
     "deepseek-r1-distill-llama-70b": "Reasoning",
-    "mixtral-8x7b-32768": "Mixtral"
+    "llama-3.1-70b-versatile": "Mixtral"
   }
   showToast("Model: " + (modelNames[model] || model))
 }
@@ -1843,13 +1843,13 @@ const modelData = {
   d21:    { model: "llama-3.1-8b-instant",                        icon: "", name: "Datta 2.1" },
   d42:    { model: "llama-3.3-70b-versatile",                     icon: "", name: "Datta 4.2" },
   d48:    { model: "deepseek-r1-distill-llama-70b",               icon: "", name: "Datta 4.8" },
-  d54:    { model: "mixtral-8x7b-32768",                          icon: "", name: "Datta 5.4" },
+  d54:    { model: "llama-3.1-70b-versatile",                          icon: "", name: "Datta 5.4" },
   chitra: { model: "meta-llama/llama-4-scout-17b-16e-instruct",   icon: "", name: "Datta Vision" },
   // Legacy support
   veda:   { model: "llama-3.3-70b-versatile",  icon: "", name: "Datta 4.2" },
   surya:  { model: "llama-3.1-8b-instant",     icon: "", name: "Datta 2.1" },
   agni:   { model: "deepseek-r1-distill-llama-70b", icon: "", name: "Datta 4.8" },
-  brahma: { model: "mixtral-8x7b-32768",       icon: "", name: "Datta 5.4" }
+  brahma: { model: "llama-3.1-70b-versatile",       icon: "", name: "Datta 5.4" }
 }
 
 let currentModelKey = "veda"
@@ -2411,3 +2411,176 @@ window.addEventListener("DOMContentLoaded", function() {
 })
 
 window.selectInputModel = selectInputModel
+
+// ══════════════════════════════════════════════════════
+// AI LENS - Google Lens like feature
+// ══════════════════════════════════════════════════════
+let lensStream = null
+let lensMode = "identify"
+let lensLastImage = null
+
+const lensModePrompts = {
+  identify: "Look at this image carefully. Identify everything you see - objects, people, places, brands, animals, plants. Give a detailed description of what this is and any relevant information about it.",
+  text: "Read and extract ALL text visible in this image. Format it clearly. Include any numbers, signs, labels, or written content. If it's a document, preserve the structure.",
+  translate: "Read all text in this image and translate it to English. Also identify what language it is. If already in English, summarize the content.",
+  solve: "Analyze this image which likely contains a math problem, equation, or question. Solve it step by step and show the complete working and final answer."
+}
+
+async function openLens() {
+  const overlay = document.getElementById("lensOverlay")
+  if (!overlay) return
+  overlay.style.display = "flex"
+  document.getElementById("lensResult").style.display = "none"
+
+  try {
+    lensStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }
+    })
+    const video = document.getElementById("lensVideo")
+    video.srcObject = lensStream
+  } catch(e) {
+    alert("Camera access denied. Please allow camera access.")
+    closeLens()
+  }
+}
+
+function closeLens() {
+  const overlay = document.getElementById("lensOverlay")
+  if (overlay) overlay.style.display = "none"
+  if (lensStream) {
+    lensStream.getTracks().forEach(t => t.stop())
+    lensStream = null
+  }
+}
+
+function setLensMode(mode) {
+  lensMode = mode
+  document.querySelectorAll(".lensModeBtn").forEach(b => b.classList.remove("active"))
+  const btn = document.getElementById("lensMode-" + mode)
+  if (btn) btn.classList.add("active")
+}
+
+async function captureAndAnalyze() {
+  const video = document.getElementById("lensVideo")
+  const canvas = document.getElementById("lensCanvas")
+  const btn = document.getElementById("lensCaptureBtn")
+
+  // Capture frame
+  canvas.width = video.videoWidth
+  canvas.height = video.videoHeight
+  const ctx = canvas.getContext("2d")
+  ctx.drawImage(video, 0, 0)
+  const imageData = canvas.toDataURL("image/jpeg", 0.9)
+  lensLastImage = imageData
+
+  // Show loading
+  btn.textContent = "⏳"
+  btn.disabled = true
+  const resultDiv = document.getElementById("lensResult")
+  const resultText = document.getElementById("lensResultText")
+  resultDiv.style.display = "block"
+  resultText.innerHTML = '<div style="color:#555;font-size:13px;">🔍 Analyzing image...</div>'
+
+  try {
+    // Send to AI
+    const base64 = imageData.split(",")[1]
+    const prompt = lensModePrompts[lensMode]
+
+    const res = await fetch("https://datta-ai-server.onrender.com/lens", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: base64, prompt, token: getToken() })
+    })
+
+    const data = await res.json()
+    if (data.result) {
+      resultText.innerHTML = data.result.replace(/\n/g, "<br>").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    } else {
+      resultText.innerHTML = '<div style="color:#ff6666;">Failed to analyze. Try again.</div>'
+    }
+  } catch(e) {
+    resultText.innerHTML = '<div style="color:#ff6666;">Error: ' + e.message + '</div>'
+  }
+
+  btn.textContent = "📸"
+  btn.disabled = false
+}
+
+function lensFromGallery(input) {
+  const file = input.files[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = async (e) => {
+    lensLastImage = e.target.result
+    const btn = document.getElementById("lensCaptureBtn")
+    const resultDiv = document.getElementById("lensResult")
+    const resultText = document.getElementById("lensResultText")
+    resultDiv.style.display = "block"
+    resultText.innerHTML = '<div style="color:#555;font-size:13px;">🔍 Analyzing image...</div>'
+    btn.textContent = "⏳"
+    btn.disabled = true
+
+    try {
+      const base64 = e.target.result.split(",")[1]
+      const prompt = lensModePrompts[lensMode]
+      const res = await fetch("https://datta-ai-server.onrender.com/lens", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: base64, prompt, token: getToken() })
+      })
+      const data = await res.json()
+      if (data.result) {
+        resultText.innerHTML = data.result.replace(/\n/g, "<br>").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      }
+    } catch(e) {
+      resultText.innerHTML = '<div style="color:#ff6666;">Error: ' + e.message + '</div>'
+    }
+    btn.textContent = "📸"
+    btn.disabled = false
+  }
+  reader.readAsDataURL(file)
+}
+
+function sendLensToChat() {
+  closeLens()
+  if (!lensLastImage) return
+  // Convert base64 to blob and set as file input
+  fetch(lensLastImage)
+    .then(r => r.blob())
+    .then(blob => {
+      const file = new File([blob], "lens-capture.jpg", { type: "image/jpeg" })
+      const dt = new DataTransfer()
+      dt.items.add(file)
+      const input = document.getElementById("imageInput")
+      if (input) {
+        input.files = dt.files
+        showFilePreview(file)
+      }
+      // Focus message input
+      const msg = document.getElementById("message")
+      if (msg) { msg.focus(); msg.placeholder = "Ask about this image..." }
+    })
+}
+
+function toggleLensFlash() {
+  if (!lensStream) return
+  const track = lensStream.getVideoTracks()[0]
+  if (!track) return
+  const btn = document.getElementById("flashBtn")
+  try {
+    const caps = track.getCapabilities()
+    if (caps.torch) {
+      const settings = track.getSettings()
+      track.applyConstraints({ advanced: [{ torch: !settings.torch }] })
+      btn.textContent = settings.torch ? "⚡" : "🔦"
+    }
+  } catch(e) {}
+}
+
+window.openLens = openLens
+window.closeLens = closeLens
+window.setLensMode = setLensMode
+window.captureAndAnalyze = captureAndAnalyze
+window.lensFromGallery = lensFromGallery
+window.sendLensToChat = sendLensToChat
+window.toggleLensFlash = toggleLensFlash
