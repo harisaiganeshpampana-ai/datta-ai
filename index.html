@@ -201,7 +201,7 @@
 
 
 
-    <div class="inputWrap" id="inputWrap">
+    <div class="inputWrap" id="inputWrap" style="position:relative;">
 
       <!-- Hidden file inputs -->
       <input type="file" id="imageInput" accept="image/*,.pdf,.txt,.csv,.js,.py,.html,.css,.json,.md,.doc,.docx" style="display:none;">
@@ -217,11 +217,32 @@
       </div>
 
       <!-- Model selector row - INSIDE input box like Claude -->
+      <!-- Single model pill - click shows all models like Claude -->
       <div class="inputModelBar">
-        <button class="inputModelPill active" id="imp-d21" onclick="selectInputModel('llama-3.1-8b-instant','d21','Datta 2.1')">Datta 2.1</button>
-        <button class="inputModelPill" id="imp-d42" onclick="selectInputModel('llama-3.3-70b-versatile','d42','Datta 4.2')">Datta 4.2</button>
-        <button class="inputModelPill" id="imp-d48" onclick="selectInputModel('deepseek-r1-distill-llama-70b','d48','Datta 4.8')">Datta 4.8</button>
-        <button class="inputModelPill" id="imp-d54" onclick="selectInputModel('mixtral-8x7b-32768','d54','Datta 5.4')">Datta 5.4</button>
+        <button class="inputModelSingle" id="activeModelPill" onclick="toggleModelDropdown()">
+          <span id="activeModelName">Datta 2.1</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+      <!-- Model dropdown popup -->
+      <div id="modelDropdown" style="display:none;position:absolute;bottom:calc(100% + 4px);left:8px;right:8px;background:#111;border:1px solid #222;border-radius:16px;z-index:9000;padding:8px;box-shadow:0 -8px 24px rgba(0,0,0,0.6);">
+        <div style="font-size:11px;color:#555;padding:4px 8px 8px;text-transform:uppercase;letter-spacing:1px;">Select Model</div>
+        <div class="modelDropItem active" id="mdi-d21" onclick="selectInputModel('llama-3.1-8b-instant','d21','Datta 2.1')">
+          <div><div style="font-size:14px;font-weight:600;color:white;">Datta 2.1</div><div style="font-size:11px;color:#555;">Fast and simple</div></div>
+          <span style="color:#00ff88;font-weight:700;" id="mdic-d21">✓</span>
+        </div>
+        <div class="modelDropItem" id="mdi-d42" onclick="selectInputModel('llama-3.3-70b-versatile','d42','Datta 4.2')">
+          <div><div style="font-size:14px;font-weight:600;color:white;">Datta 4.2</div><div style="font-size:11px;color:#555;">Balanced and capable</div></div>
+          <span style="color:#00ff88;font-weight:700;" id="mdic-d42"></span>
+        </div>
+        <div class="modelDropItem" id="mdi-d48" onclick="selectInputModel('llama3-70b-8192','d48','Datta 4.8')">
+          <div><div style="font-size:14px;font-weight:600;color:white;">Datta 4.8</div><div style="font-size:11px;color:#555;">Deep reasoning</div></div>
+          <span style="color:#00ff88;font-weight:700;" id="mdic-d48"></span>
+        </div>
+        <div class="modelDropItem" id="mdi-d54" onclick="selectInputModel('llama-3.1-70b-versatile','d54','Datta 5.4')">
+          <div><div style="font-size:14px;font-weight:600;color:white;">Datta 5.4</div><div style="font-size:11px;color:#555;">Most powerful</div></div>
+          <span style="color:#00ff88;font-weight:700;" id="mdic-d54"></span>
+        </div>
       </div>
 
       <!-- Bottom row -->
