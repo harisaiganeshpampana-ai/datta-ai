@@ -145,9 +145,58 @@ function stopGeneration() {
     controller = null
   }
   hideStopBtn()
+  // Show stopped indicator on current AI bubble
+  const streams = document.querySelectorAll(".stream")
+  if (streams.length > 0) {
+    const last = streams[streams.length - 1]
+    const current = last.innerHTML
+    if (current) {
+      last.innerHTML = marked.parse(last.textContent) + '<span style="font-size:11px;color:#555;margin-left:4px;">· stopped</span>'
+    }
+  }
 }
 
 window.stopGeneration = stopGeneration
+
+// Edit user message and resend
+function editMessage(btn) {
+  const row = btn.closest(".messageRow")
+  const bubble = row.querySelector(".userBubble")
+  const originalText = bubble.textContent.trim()
+  
+  // Put text back in input
+  const input = document.getElementById("message")
+  if (input) {
+    input.value = originalText
+    input.focus()
+    // Move cursor to end
+    input.setSelectionRange(input.value.length, input.value.length)
+  }
+  showToast("Edit your message and send")
+}
+
+// Retry last user message
+function retryMessage(btn) {
+  const row = btn.closest(".messageRow")
+  const bubble = row.querySelector(".userBubble")
+  const text = bubble.textContent.trim()
+  if (!text) return
+  
+  // Remove all messages from this point onwards
+  const allRows = Array.from(document.querySelectorAll(".messageRow"))
+  const idx = allRows.indexOf(row)
+  for (let i = idx; i < allRows.length; i++) {
+    allRows[i].remove()
+  }
+  
+  // Resend
+  const input = document.getElementById("message")
+  if (input) input.value = text
+  send()
+}
+
+window.editMessage = editMessage
+window.retryMessage = retryMessage
 
 // RENDER IMAGE RESPONSE - Datta AI unique style
 function renderImageResponse(text) {
@@ -626,6 +675,9 @@ async function send() {
     let span = aiDiv.querySelector(".stream")
 
     while (true) {
+      // Check if user stopped generation
+      if (!controller) break
+
       const { done, value } = await reader.read()
       if (done) break
 
@@ -647,8 +699,31 @@ async function send() {
       lucide.createIcons()
     }
 
-    // Final render
+    // Final render - remove cursor
     span.innerHTML = marked.parse(streamText)
+
+    // Add action buttons to user messages after generation
+    chatBox.querySelectorAll(".userBubble").forEach(bubble => {
+      if (!bubble.closest(".messageRow").querySelector(".userActions")) {
+        const row = bubble.closest(".messageRow")
+        const txt = bubble.textContent.trim()
+        const actions = document.createElement("div")
+        actions.className = "userActions"
+        actions.innerHTML = `
+          <button class="uaBtn" title="Copy" onclick="navigator.clipboard.writeText('${txt.replace(/'/g,"\'")}');showToast('Copied!')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+          <button class="uaBtn" title="Edit & resend" onclick="editMessage(this)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="uaBtn" title="Retry" onclick="retryMessage(this)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+          </button>
+        `
+        row.appendChild(actions)
+      }
+    })
+
     lucide.createIcons()
     hideStopBtn()
     loadSidebar()
