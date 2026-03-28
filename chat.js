@@ -195,6 +195,34 @@ function retryMessage(btn) {
   send()
 }
 
+// Send lens result to chat
+function lensSendToChat() {
+  const result = lensLastResult
+  if (!result) { showToast("Capture an image first"); return }
+  closeLens()
+  // Add to chat as AI response
+  const chatBox = document.getElementById("chatBox")
+  if (!chatBox) return
+  hideWelcome()
+  const aiDiv = document.createElement("div")
+  aiDiv.className = "messageRow"
+  aiDiv.innerHTML = `
+    <div class="aiContent">
+      <div class="aiBubble" id="lensResultBubble"></div>
+/g, "<br>").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")}</div>
+      <div class="aiActions">
+        <button class="actionBtn" title="Copy" onclick="navigator.clipboard.writeText(this.closest('.messageRow').querySelector('.aiBubble').innerText);showToast('Copied!')">
+          <i data-lucide="copy"></i>
+        </button>
+      </div>
+    </div>`
+  chatBox.appendChild(aiDiv)
+  chatBox.scrollTop = chatBox.scrollHeight
+  lucide.createIcons()
+  showToast("Result added to chat!")
+}
+window.lensSendToChat = lensSendToChat
+
 window.editMessage = editMessage
 window.retryMessage = retryMessage
 
@@ -2660,14 +2688,23 @@ window.selectInputModel = selectInputModel
 // AI LENS - Google Lens like feature
 // ══════════════════════════════════════════════════════
 let lensStream = null
-let lensMode = "identify"
+let lensMode = "smart"
 let lensLastImage = null
+let lensLastResult = ""
 
 const lensModePrompts = {
-  identify: "Look at this image carefully. Identify everything you see - objects, people, places, brands, animals, plants. Give a detailed description of what this is and any relevant information about it.",
-  text: "Read and extract ALL text visible in this image. Format it clearly. Include any numbers, signs, labels, or written content. If it's a document, preserve the structure.",
-  translate: "Read all text in this image and translate it to English. Also identify what language it is. If already in English, summarize the content.",
-  solve: "Analyze this image which likely contains a math problem, equation, or question. Solve it step by step and show the complete working and final answer."
+  smart: `You are an AI with Google Lens-level intelligence. Analyze this image and:
+1. If it contains a QUESTION or PROBLEM (math, science, general knowledge, riddle) → SOLVE IT DIRECTLY with a clear answer
+2. If it contains TEXT → Read and extract all text clearly  
+3. If it shows an OBJECT, PRODUCT, PLANT, ANIMAL, PLACE → Identify it with key facts
+4. If it shows CODE → Explain and debug it
+5. If it shows a DOCUMENT or FORM → Extract the key information
+
+Be like Google Lens: give a DIRECT, USEFUL answer immediately. No preamble. Start with the answer.`,
+  identify: "Identify everything in this image. Objects, brands, places, people, animals, plants. Give name + key facts about the most prominent thing. Be specific and direct.",
+  text: "Extract ALL text from this image exactly as written. Preserve formatting. Include numbers, signs, labels. If a question is found, also answer it.",
+  solve: "This image likely contains a math problem, equation, or question. SOLVE IT completely. Show step-by-step working. Give the final answer clearly at the end.",
+  translate: "Read all text in this image. Identify the language and translate to English. Also answer any questions found in the text."
 }
 
 async function openLens() {
@@ -2699,9 +2736,19 @@ function closeLens() {
 
 function setLensMode(mode) {
   lensMode = mode
-  document.querySelectorAll(".lensModeBtn").forEach(b => b.classList.remove("active"))
+  document.querySelectorAll(".lensModeBtn").forEach(b => {
+    b.classList.remove("active")
+    b.style.background = "rgba(255,255,255,0.05)"
+    b.style.borderColor = "#333"
+    b.style.color = "#aaa"
+  })
   const btn = document.getElementById("lensMode-" + mode)
-  if (btn) btn.classList.add("active")
+  if (btn) {
+    btn.classList.add("active")
+    btn.style.background = "rgba(0,255,136,0.2)"
+    btn.style.borderColor = "#00ff88"
+    btn.style.color = "#00ff88"
+  }
 }
 
 async function captureAndAnalyze() {
@@ -2724,16 +2771,23 @@ async function captureAndAnalyze() {
   const imageData = canvas.toDataURL("image/jpeg", 0.7)
   lensLastImage = imageData
 
-  // Show loading
-  btn.textContent = "⏳"
-  btn.disabled = true
+  // Show result panel with loading
   const resultDiv = document.getElementById("lensResult")
   const resultText = document.getElementById("lensResultText")
   resultDiv.style.display = "block"
-  resultText.innerHTML = '<div style="color:#555;font-size:13px;">🔍 Analyzing image...</div>'
+  resultText.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;color:#555;font-size:13px;">
+      <div class="thinkOrb" style="--orb-color:#00ff88;--orb-glow:rgba(0,255,136,0.3);width:20px;height:20px;flex-shrink:0;">
+        <div class="thinkOrbCore" style="width:8px;height:8px;"></div>
+      </div>
+      <span>Analyzing image...</span>
+    </div>`
+
+  // Change capture btn to loading
+  const capBtn = document.getElementById("lensCaptureBtn")
+  if (capBtn) capBtn.style.opacity = "0.5"
 
   try {
-    // Send to AI
     const base64 = imageData.split(",")[1]
     const prompt = lensModePrompts[lensMode]
 
@@ -2745,16 +2799,23 @@ async function captureAndAnalyze() {
 
     const data = await res.json()
     if (data.result) {
-      resultText.innerHTML = data.result.replace(/\n/g, "<br>").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      lensLastResult = data.result
+      // Render with markdown-like formatting
+      const formatted = data.result
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*(.*?)\*/g, "<em>$1</em>")
+        .replace(/^#{1,3} (.+)$/gm, "<div style='font-weight:700;color:white;margin:8px 0 4px;'>$1</div>")
+        .replace(/\n\n/g, "<br><br>")
+        .replace(/\n/g, "<br>")
+      resultText.innerHTML = formatted
     } else {
-      resultText.innerHTML = '<div style="color:#ff6666;">Failed to analyze. Try again.</div>'
+      resultText.innerHTML = '<div style="color:#ff6666;">Could not analyze. Try again.</div>'
     }
   } catch(e) {
     resultText.innerHTML = '<div style="color:#ff6666;">Error: ' + e.message + '</div>'
   }
 
-  btn.textContent = "📸"
-  btn.disabled = false
+  if (capBtn) capBtn.style.opacity = "1"
 }
 
 function lensFromGallery(input) {
