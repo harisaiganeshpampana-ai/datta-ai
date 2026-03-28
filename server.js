@@ -564,11 +564,25 @@ app.post("/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body
     if (!email || !password) return res.status(400).json({ error: "Email and password required" })
-    const user = await User.findOne({ email: email.toLowerCase() })
-    if (!user || !user.password) return res.status(400).json({ error: "Invalid email or password" })
-    if (!await bcrypt.compare(password, user.password)) return res.status(400).json({ error: "Invalid email or password" })
-    res.json({ token: generateToken(user), user: { id: user._id, username: user.username, email: user.email } })
-  } catch(err) { res.status(500).json({ error: "Server error" }) }
+    
+    // Try exact email match first, then case-insensitive
+    let user = await User.findOne({ email: email.toLowerCase().trim() })
+    if (!user) user = await User.findOne({ email: { $regex: new RegExp("^" + email.trim() + "$", "i") } })
+    
+    if (!user) return res.status(400).json({ error: "No account found with this email. Please sign up first." })
+    if (!user.password) return res.status(400).json({ error: "This account uses a different login method. Try phone OTP." })
+    
+    const match = await bcrypt.compare(password, user.password)
+    if (!match) return res.status(400).json({ error: "Wrong password. Please check and try again." })
+    
+    res.json({ 
+      token: generateToken(user), 
+      user: { id: user._id, username: user.username, email: user.email, emailVerified: user.emailVerified }
+    })
+  } catch(err) { 
+    console.error("Login error:", err)
+    res.status(500).json({ error: "Server error. Please try again." }) 
+  }
 })
 
 // SEND OTP - Fast2SMS (free, all Indian numbers) with Twilio fallback
