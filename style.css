@@ -4690,3 +4690,33 @@ code, pre, .aiBubble code, .aiBubble pre {
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
 }
+
+/* ── USER MESSAGE ACTIONS (copy, edit, retry) ── */
+.userActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.messageRow:hover .userActions { opacity: 1; }
+
+.uaBtn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: none;
+  border: 1px solid #1e1e1e;
+  color: #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.uaBtn:hover {
+  background: #1a1a1a;
+  color: #aaa;
+  border-color: #333;
+}
