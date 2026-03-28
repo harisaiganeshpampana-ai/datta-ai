@@ -158,7 +158,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
   transform: translateX(-2px);
 }
 .panelBack::before {
-  content: "←";
+  content: "'";
   font-size: 16px;
 }
 
@@ -216,7 +216,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
 .stylePill.active { background:#0a2a1a; border-color:var(--accent); color:var(--accent); }
 
 /* LOGOUT */
-/* ── PERSONA CARDS ── */
+/* '' PERSONA CARDS '' */
 .personaCard {
   display: flex;
   align-items: center;
@@ -252,7 +252,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
   background: #00ff88;
 }
 
-/* ── FONT CARDS ── */
+/* '' FONT CARDS '' */
 .fontCard {
   padding: 14px 16px;
   background: #0f0f0f;
@@ -504,7 +504,7 @@ function setPersonaSettings(key, label) {
   if (check) check.style.display = "block"
   const desc = document.getElementById("personaDesc")
   if (desc) desc.textContent = label
-  showMsg("persona", "✓ " + label + " mode active", "success")
+  showMsg("persona", "' " + label + " mode active", "success")
   setTimeout(() => closePanel("persona"), 800)
 }
 
@@ -533,7 +533,7 @@ function setFont(key, label) {
   applyFont(key)
   const desc = document.getElementById("fontDesc")
   if (desc) desc.textContent = label
-  showMsg("font", "✓ " + label + " font applied", "success")
+  showMsg("font", "' " + label + " font applied", "success")
   setTimeout(() => closePanel("font"), 800)
 }
 
@@ -576,7 +576,7 @@ function saveFontSize(size) {
   const btn = document.getElementById("szbtn-" + nearest)
   if (btn) btn.classList.add("active")
 
-  showMsg("fontsize", "✓ Font size saved!", "success")
+  showMsg("fontsize", "' Font size saved!", "success")
 }
 
 function loadSavedFont() {
@@ -641,7 +641,7 @@ function getBestVoice(key) {
     aria:    { gender:"female", langs:["en-US","en_US"], keywords:["Samantha","Zira","Google US English Female","Microsoft Zira","en-US"] },
     james:   { gender:"male",   langs:["en-US","en_US"], keywords:["David","Google US English Male","Microsoft David","Alex","en-US"] },
     sofia:   { gender:"female", langs:["en-GB","en_GB"], keywords:["Google UK English Female","Microsoft Hazel","Karen","Moira","en-GB"] },
-    indian:  { gender:"female", langs:["en-IN","en_IN"], keywords:["Google हिन्दी","Lekha","Veena","Rishi","en-IN"] },
+    indian:  { gender:"female", langs:["en-IN","en_IN"], keywords:["Google ''''''","Lekha","Veena","Rishi","en-IN"] },
     british: { gender:"male",   langs:["en-GB","en_GB"], keywords:["Google UK English Male","Microsoft George","Daniel","Oliver","en-GB"] }
   }
 
@@ -736,7 +736,7 @@ function previewVoice() {
 </script>
 
 <div class="header">
-  <button class="backBtn" onclick="window.location.href='index.html'">← Back</button>
+  <button class="backBtn" onclick="window.location.href='index.html'">' Back</button>
   <div class="headerTitle">Settings</div>
 </div>
 
@@ -749,7 +749,7 @@ function previewVoice() {
         <img id="userAvatarImg" style="display:none">
         <span id="userAvatarLetter">G</span>
       </div>
-      <div class="editPhotoBtn">📷</div>
+      <div class="editPhotoBtn">'</div>
     </div>
     <div style="flex:1">
       <div class="userName" id="userName" style="min-height:24px;"></div>
@@ -763,31 +763,31 @@ function previewVoice() {
   <div class="section">
     <div class="settingRow" onclick="openPanel('theme')">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a1a2a;">🎨</div>
+        <div class="settingIcon" style="background:#1a1a2a;">'</div>
         <div><div class="settingLabel">Theme</div><div class="settingDesc" id="themeDesc">Dark</div></div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
     <div class="settingRow" onclick="openPanel('wallpaper')">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#2a1a1a;">🖼️</div>
+        <div class="settingIcon" style="background:#2a1a1a;">''</div>
         <div><div class="settingLabel">Chat Wallpaper</div><div class="settingDesc" id="wallpaperDesc">None</div></div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
     <div class="settingRow" onclick="openPanel('font')">
       <div class="settingLeft">
         <div class="settingIcon" style="background:#1a2a1a;">Aa</div>
         <div><div class="settingLabel">Font Style</div><div class="settingDesc" id="fontDesc">Elegant (Default)</div></div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
     <div class="settingRow" onclick="openPanel('fontsize')">
       <div class="settingLeft">
         <div class="settingIcon" style="background:#2a1a2a;">T</div>
         <div><div class="settingLabel">Font Size</div><div class="settingDesc" id="fontsizeDesc">Medium</div></div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
   </div>
 
@@ -796,31 +796,31 @@ function previewVoice() {
   <div class="section">
     <div class="settingRow" onclick="openPanel('ainame')">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#0a2a1a;">🤖</div>
+        <div class="settingIcon" style="background:#0a2a1a;">'</div>
         <div><div class="settingLabel">AI Name</div><div class="settingDesc" id="ainameDesc">Datta AI</div></div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
     <div class="settingRow" onclick="openPanel('aistyle')">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#2a2a0a;">✍️</div>
+        <div class="settingIcon" style="background:#2a2a0a;">''</div>
         <div><div class="settingLabel">Response Style</div><div class="settingDesc" id="aistyleDesc">Balanced</div></div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
     <div class="settingRow" onclick="openPanel('persona')">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a0a2a;">🎭</div>
+        <div class="settingIcon" style="background:#1a0a2a;">'</div>
         <div><div class="settingLabel">AI Mode</div><div class="settingDesc" id="personaDesc">Normal</div></div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
     <div class="settingRow" onclick="openPanel('language')">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#0a1a2a;">🌐</div>
+        <div class="settingIcon" style="background:#0a1a2a;">'</div>
         <div><div class="settingLabel">AI Language</div><div class="settingDesc" id="langDesc">English</div></div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
   </div>
 
@@ -829,24 +829,24 @@ function previewVoice() {
   <div class="section">
     <div class="settingRow" onclick="openPanel('username')">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a2a1a;">👤</div>
+        <div class="settingIcon" style="background:#1a2a1a;">'</div>
         <div><div class="settingLabel">Change Username</div><div class="settingDesc">Update display name</div></div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
     <div class="settingRow" onclick="openPanel('password')">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a1a2a;">🔑</div>
+        <div class="settingIcon" style="background:#1a1a2a;">'</div>
         <div><div class="settingLabel">Change Password</div><div class="settingDesc">Update your password</div></div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
     <div class="settingRow" onclick="window.location.href='pricing.html'">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#2a1a0a;">⚡</div>
+        <div class="settingIcon" style="background:#2a1a0a;">'</div>
         <div><div class="settingLabel">Upgrade Plan</div><div class="settingDesc">Unlock more features</div></div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
   </div>
 
@@ -856,13 +856,13 @@ function previewVoice() {
   <div class="section">
     <div class="settingRow" onclick="window.location.href='usage.html'">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#0a1a2a;">📊</div>
+        <div class="settingIcon" style="background:#0a1a2a;">'</div>
         <div>
           <div class="settingLabel">View Usage</div>
-          <div class="settingDesc" id="usageQuickDesc">Tap to view →</div>
+          <div class="settingDesc" id="usageQuickDesc">Tap to view '</div>
         </div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
   </div>
 
@@ -872,42 +872,42 @@ function previewVoice() {
     <div style="font-size:12px;color:#666;margin-bottom:12px;">Choose voice for Datta AI</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
       <div class="voiceCard active" id="vcrd-aria" onclick="selectVoice('aria')">
-        <div style="font-size:24px;margin-bottom:4px;">👩</div>
+        <div style="font-size:24px;margin-bottom:4px;">'</div>
         <div style="font-size:13px;font-weight:600;">Aria</div>
         <div style="font-size:11px;color:#666;">US Female</div>
       </div>
       <div class="voiceCard" id="vcrd-james" onclick="selectVoice('james')">
-        <div style="font-size:24px;margin-bottom:4px;">👨</div>
+        <div style="font-size:24px;margin-bottom:4px;">'</div>
         <div style="font-size:13px;font-weight:600;">James</div>
         <div style="font-size:11px;color:#666;">US Male</div>
       </div>
       <div class="voiceCard" id="vcrd-sofia" onclick="selectVoice('sofia')">
-        <div style="font-size:24px;margin-bottom:4px;">👩‍🦰</div>
+        <div style="font-size:24px;margin-bottom:4px;">'''</div>
         <div style="font-size:13px;font-weight:600;">Sofia</div>
         <div style="font-size:11px;color:#666;">UK Female</div>
       </div>
       <div class="voiceCard" id="vcrd-indian" onclick="selectVoice('indian')">
-        <div style="font-size:24px;margin-bottom:4px;">👩🏽</div>
+        <div style="font-size:24px;margin-bottom:4px;">''</div>
         <div style="font-size:13px;font-weight:600;">Riya</div>
         <div style="font-size:11px;color:#666;">Indian Female</div>
       </div>
       <div class="voiceCard" id="vcrd-british" onclick="selectVoice('british')">
-        <div style="font-size:24px;margin-bottom:4px;">👨‍💼</div>
+        <div style="font-size:24px;margin-bottom:4px;">'''</div>
         <div style="font-size:13px;font-weight:600;">Oliver</div>
         <div style="font-size:11px;color:#666;">UK Male</div>
       </div>
     </div>
-    <button onclick="previewVoice()" style="width:100%;margin-top:12px;padding:10px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;color:#aaa;font-size:13px;cursor:pointer;transition:all 0.2s;">🔊 Preview Selected Voice</button>
+    <button onclick="previewVoice()" style="width:100%;margin-top:12px;padding:10px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;color:#aaa;font-size:13px;cursor:pointer;transition:all 0.2s;">' Preview Selected Voice</button>
   </div>
 
   <div class="sectionLabel">Memory</div>
   <div class="section">
     <div class="settingRow" onclick="openPanel('memory')">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a0a2a;">🧠</div>
-        <div><div class="settingLabel">What AI Remembers</div><div class="settingDesc" id="memoryCount">Tap to view memories →</div></div>
+        <div class="settingIcon" style="background:#1a0a2a;">'</div>
+        <div><div class="settingLabel">What AI Remembers</div><div class="settingDesc" id="memoryCount">Tap to view memories '</div></div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
   </div>
 
@@ -916,17 +916,17 @@ function previewVoice() {
   <div class="section">
     <div class="settingRow" onclick="openPanel('deleteChats')">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#2a1010;">🗑️</div>
+        <div class="settingIcon" style="background:#2a1010;">''</div>
         <div><div class="settingLabel" style="color:#ff6666;">Delete All Chats</div><div class="settingDesc">Clear chat history</div></div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
     <div class="settingRow" onclick="openPanel('deleteAccount')">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#2a1010;">❌</div>
+        <div class="settingIcon" style="background:#2a1010;">'</div>
         <div><div class="settingLabel" style="color:#ff6666;">Delete Account</div><div class="settingDesc">Permanently remove account</div></div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
   </div>
 
@@ -935,57 +935,57 @@ function previewVoice() {
   <div class="section">
     <div class="settingRow" onclick="window.open('privacy.html')">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#0a0a2a;">🔒</div>
+        <div class="settingIcon" style="background:#0a0a2a;">'</div>
         <div>
           <div class="settingLabel">Privacy Policy</div>
           <div class="settingDesc">How we handle your data</div>
         </div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
     <div class="settingRow" onclick="window.open('terms.html')">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#0a1a0a;">📄</div>
+        <div class="settingIcon" style="background:#0a1a0a;">'</div>
         <div>
           <div class="settingLabel">Terms of Service</div>
           <div class="settingDesc">Rules for using Datta AI</div>
         </div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
     <div class="settingRow" onclick="window.open('https://datta-ai.com')">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a0a0a;">🌐</div>
+        <div class="settingIcon" style="background:#1a0a0a;">'</div>
         <div>
           <div class="settingLabel">Website</div>
           <div class="settingDesc">datta-ai.com</div>
         </div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
     <div class="settingRow" onclick="copyEmail()">
       <div class="settingLeft">
-        <div class="settingIcon" style="background:#0a1a1a;">✉️</div>
+        <div class="settingIcon" style="background:#0a1a1a;">''</div>
         <div>
           <div class="settingLabel">Contact Support</div>
           <div class="settingDesc"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a7cfc6d5ced4c6cec0c6c9c2d4cfd7c6cad7c6c9c6e7c0cac6cecb89c4c8ca">[email&#160;protected]</a></div>
         </div>
       </div>
-      <div class="settingArrow">›</div>
+      <div class="settingArrow">'</div>
     </div>
   </div>
 
   <!-- APP INFO -->
   <div style="text-align:center;padding:16px 0 8px;">
     <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;background:linear-gradient(135deg,#00ff88,#00ccff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">DATTA AI</div>
-    <div style="font-size:12px;color:#333;margin-top:4px;">Version 3.5 · Made with ❤️ in India</div>
+    <div style="font-size:12px;color:#333;margin-top:4px;">Version 3.5 ' Made with '' in India</div>
   </div>
 
-  <button class="logoutBtn" onclick="logout()">🚪 Log Out</button>
+  <button class="logoutBtn" onclick="logout()">' Log Out</button>
 
 </div>
 
-<!-- ─── PANELS ─── -->
+<!-- ''' PANELS ''' -->
 
 <!-- THEME PANEL -->
 <div class="panel" id="panel-theme" onclick="closePanel('theme')">
@@ -997,33 +997,33 @@ function previewVoice() {
   <div class="themeGrid">
     <div class="themeCard" id="theme-dark" onclick="setTheme('dark')">
       <div class="themePreview" style="background:linear-gradient(135deg,#0a0a0a,#1a1a1a);border:1px solid #222;"></div>
-      <div class="themeName">🌙 Dark</div>
-      <div class="themeCheck">✓</div>
+      <div class="themeName">' Dark</div>
+      <div class="themeCheck">'</div>
     </div>
     <div class="themeCard" id="theme-light" onclick="setTheme('light')">
       <div class="themePreview" style="background:linear-gradient(135deg,#f5f5f5,#e8e8e8);border:1px solid #ddd;"></div>
-      <div class="themeName">☀️ Light</div>
-      <div class="themeCheck">✓</div>
+      <div class="themeName">'' Light</div>
+      <div class="themeCheck">'</div>
     </div>
     <div class="themeCard" id="theme-midnight" onclick="setTheme('midnight')">
       <div class="themePreview" style="background:linear-gradient(135deg,#000020,#000840);border:1px solid #001166;"></div>
-      <div class="themeName">🌌 Midnight</div>
-      <div class="themeCheck">✓</div>
+      <div class="themeName">' Midnight</div>
+      <div class="themeCheck">'</div>
     </div>
     <div class="themeCard" id="theme-forest" onclick="setTheme('forest')">
       <div class="themePreview" style="background:linear-gradient(135deg,#0a1a0a,#0a2a0a);border:1px solid #1a4a1a;"></div>
-      <div class="themeName">🌿 Forest</div>
-      <div class="themeCheck">✓</div>
+      <div class="themeName">' Forest</div>
+      <div class="themeCheck">'</div>
     </div>
     <div class="themeCard" id="theme-ocean" onclick="setTheme('ocean')">
       <div class="themePreview" style="background:linear-gradient(135deg,#000a1a,#001a2a);border:1px solid #003366;"></div>
-      <div class="themeName">🌊 Ocean</div>
-      <div class="themeCheck">✓</div>
+      <div class="themeName">' Ocean</div>
+      <div class="themeCheck">'</div>
     </div>
     <div class="themeCard" id="theme-sunset" onclick="setTheme('sunset')">
       <div class="themePreview" style="background:linear-gradient(135deg,#1a0a00,#2a0a1a);border:1px solid #442200;"></div>
-      <div class="themeName">🌅 Sunset</div>
-      <div class="themeCheck">✓</div>
+      <div class="themeName">' Sunset</div>
+      <div class="themeCheck">'</div>
     </div>
   </div>
 </div>
@@ -1045,7 +1045,7 @@ function previewVoice() {
     <div class="wallpaperCard" id="wp-gradient2" style="background:linear-gradient(135deg,#0a1a0a,#1a2a0a,#0a1a1a);" onclick="setWallpaper('gradient2')"></div>
     <div class="wallpaperCard" id="wp-stars" style="background:#000;background-image:radial-gradient(circle,#fff 1px,transparent 1px);background-size:30px 30px;" onclick="setWallpaper('stars')"></div>
     <div class="wallpaperCard" id="wp-mesh" style="background:linear-gradient(135deg,#00ff8811,#00ccff11,#aa44ff11);" onclick="setWallpaper('mesh')"></div>
-    <div class="wallpaperCard" style="background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:11px;color:#666;" onclick="pickCustomWallpaper()">📷 Custom</div>
+    <div class="wallpaperCard" style="background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:11px;color:#666;" onclick="pickCustomWallpaper()">' Custom</div>
   </div>
 </div>
 </div>
@@ -1072,14 +1072,14 @@ function previewVoice() {
     <button class="panelBack" onclick="closePanel('aistyle')">Back</button>
   </div>
   <div class="stylePills" id="stylePills">
-    <div class="stylePill" onclick="setStyle('Balanced')">⚖️ Balanced</div>
-    <div class="stylePill" onclick="setStyle('Short')">⚡ Short & Quick</div>
-    <div class="stylePill" onclick="setStyle('Detailed')">📖 Detailed</div>
-    <div class="stylePill" onclick="setStyle('Formal')">👔 Formal</div>
-    <div class="stylePill" onclick="setStyle('Casual')">😊 Casual & Friendly</div>
-    <div class="stylePill" onclick="setStyle('Technical')">🔧 Technical</div>
-    <div class="stylePill" onclick="setStyle('Creative')">🎨 Creative</div>
-    <div class="stylePill" onclick="setStyle('Simple')">🧒 Simple & Clear</div>
+    <div class="stylePill" onclick="setStyle('Balanced')">'' Balanced</div>
+    <div class="stylePill" onclick="setStyle('Short')">' Short & Quick</div>
+    <div class="stylePill" onclick="setStyle('Detailed')">' Detailed</div>
+    <div class="stylePill" onclick="setStyle('Formal')">' Formal</div>
+    <div class="stylePill" onclick="setStyle('Casual')">' Casual & Friendly</div>
+    <div class="stylePill" onclick="setStyle('Technical')">' Technical</div>
+    <div class="stylePill" onclick="setStyle('Creative')">' Creative</div>
+    <div class="stylePill" onclick="setStyle('Simple')">' Simple & Clear</div>
   </div>
 </div>
 </div>
@@ -1092,16 +1092,16 @@ function previewVoice() {
     <button class="panelBack" onclick="closePanel('language')">Back</button>
   </div>
   <div class="stylePills">
-    <div class="stylePill" onclick="setLanguage('English')">🇺🇸 English</div>
-    <div class="stylePill" onclick="setLanguage('Hindi')">🇮🇳 Hindi</div>
-    <div class="stylePill" onclick="setLanguage('Telugu')">🇮🇳 Telugu</div>
-    <div class="stylePill" onclick="setLanguage('Tamil')">🇮🇳 Tamil</div>
-    <div class="stylePill" onclick="setLanguage('Kannada')">🇮🇳 Kannada</div>
-    <div class="stylePill" onclick="setLanguage('Malayalam')">🇮🇳 Malayalam</div>
-    <div class="stylePill" onclick="setLanguage('Spanish')">🇪🇸 Spanish</div>
-    <div class="stylePill" onclick="setLanguage('French')">🇫🇷 French</div>
-    <div class="stylePill" onclick="setLanguage('Arabic')">🇸🇦 Arabic</div>
-    <div class="stylePill" onclick="setLanguage('Chinese')">🇨🇳 Chinese</div>
+    <div class="stylePill" onclick="setLanguage('English')">'' English</div>
+    <div class="stylePill" onclick="setLanguage('Hindi')">'' Hindi</div>
+    <div class="stylePill" onclick="setLanguage('Telugu')">'' Telugu</div>
+    <div class="stylePill" onclick="setLanguage('Tamil')">'' Tamil</div>
+    <div class="stylePill" onclick="setLanguage('Kannada')">'' Kannada</div>
+    <div class="stylePill" onclick="setLanguage('Malayalam')">'' Malayalam</div>
+    <div class="stylePill" onclick="setLanguage('Spanish')">'' Spanish</div>
+    <div class="stylePill" onclick="setLanguage('French')">'' French</div>
+    <div class="stylePill" onclick="setLanguage('Arabic')">'' Arabic</div>
+    <div class="stylePill" onclick="setLanguage('Chinese')">'' Chinese</div>
   </div>
 </div>
 </div>
@@ -1138,6 +1138,34 @@ function previewVoice() {
 </div>
 </div>
 
+<!-- VOICE PANEL -->
+<div class="panel" id="panel-voice">
+  <div class="panelHeader">
+    <button class="panelBack" onclick="closePanel('voice')">Back</button>
+    <div class="panelTitle">Voice Assistant</div>
+  </div>
+  <div class="panelBody" onclick="event.stopPropagation()">
+    <div class="msg" id="msg-voice"></div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="voiceCard" id="vc-female" onclick="selectVoice('female',this)">
+        <div class="vcName">Female (Default)</div>
+        <div class="vcDesc">Friendly and clear</div>
+        <button class="vcPreview" onclick="previewVoice('Hello, I am Datta AI','female',event)">Preview</button>
+      </div>
+      <div class="voiceCard" id="vc-male" onclick="selectVoice('male',this)">
+        <div class="vcName">Male</div>
+        <div class="vcDesc">Deep and professional</div>
+        <button class="vcPreview" onclick="previewVoice('Hello, I am Datta AI','male',event)">Preview</button>
+      </div>
+      <div class="voiceCard" id="vc-neutral" onclick="selectVoice('neutral',this)">
+        <div class="vcName">Neutral</div>
+        <div class="vcDesc">Balanced tone</div>
+        <button class="vcPreview" onclick="previewVoice('Hello, I am Datta AI','neutral',event)">Preview</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MEMORY PANEL -->
 <!-- AI MODE / PERSONA PANEL -->
 <div class="panel" id="panel-persona">
@@ -1149,44 +1177,44 @@ function previewVoice() {
     <p style="font-size:13px;color:#555;margin-bottom:16px;line-height:1.6;">Choose a special mode. The AI will behave like an expert in that field.</p>
     <div style="display:flex;flex-direction:column;gap:8px;">
       <div class="personaCard active" id="persona-none" onclick="setPersonaSettings('none','Normal')">
-        <div style="font-size:22px;flex-shrink:0;">💬</div>
+        <div style="font-size:22px;flex-shrink:0;">'</div>
         <div style="flex:1;">
           <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">Normal</div>
           <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">Default Datta AI</div>
         </div>
-        <div class="personaCheck" id="pcheck-none" style="color:#00ff88;font-size:18px;font-weight:700;">✓</div>
+        <div class="personaCheck" id="pcheck-none" style="color:#00ff88;font-size:18px;font-weight:700;">'</div>
       </div>
       <div class="personaCard" id="persona-lawyer" onclick="setPersonaSettings('lawyer','Lawyer')">
-        <div style="font-size:22px;flex-shrink:0;">⚖️</div>
+        <div style="font-size:22px;flex-shrink:0;">''</div>
         <div style="flex:1;">
           <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">Lawyer</div>
           <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">Legal information & guidance</div>
         </div>
-        <div class="personaCheck" id="pcheck-lawyer" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</div>
+        <div class="personaCheck" id="pcheck-lawyer" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">'</div>
       </div>
       <div class="personaCard" id="persona-teacher" onclick="setPersonaSettings('teacher','Teacher')">
-        <div style="font-size:22px;flex-shrink:0;">📚</div>
+        <div style="font-size:22px;flex-shrink:0;">'</div>
         <div style="flex:1;">
           <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">Teacher</div>
           <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">Explains concepts simply</div>
         </div>
-        <div class="personaCheck" id="pcheck-teacher" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</div>
+        <div class="personaCheck" id="pcheck-teacher" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">'</div>
       </div>
       <div class="personaCard" id="persona-chef" onclick="setPersonaSettings('chef','Chef')">
-        <div style="font-size:22px;flex-shrink:0;">👨‍🍳</div>
+        <div style="font-size:22px;flex-shrink:0;">'''</div>
         <div style="flex:1;">
           <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">Chef</div>
           <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">Recipes & cooking guidance</div>
         </div>
-        <div class="personaCheck" id="pcheck-chef" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</div>
+        <div class="personaCheck" id="pcheck-chef" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">'</div>
       </div>
       <div class="personaCard" id="persona-fitness" onclick="setPersonaSettings('fitness','Fitness Coach')">
-        <div style="font-size:22px;flex-shrink:0;">💪</div>
+        <div style="font-size:22px;flex-shrink:0;">'</div>
         <div style="flex:1;">
           <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">Fitness Coach</div>
           <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">Workouts & nutrition plans</div>
         </div>
-        <div class="personaCheck" id="pcheck-fitness" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</div>
+        <div class="personaCheck" id="pcheck-fitness" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">'</div>
       </div>
     </div>
   </div>
@@ -1204,37 +1232,37 @@ function previewVoice() {
       <div class="fontCard active" id="font-elegant" onclick="setFont('elegant','Elegant')">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:white;">The quick brown fox</div>
-          <span class="fontCheck" id="fcheck-elegant" style="color:#00ff88;font-size:18px;font-weight:700;">✓</span>
+          <span class="fontCheck" id="fcheck-elegant" style="color:#00ff88;font-size:18px;font-weight:700;">'</span>
         </div>
-        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Elegant · Cormorant Garamond</div>
+        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Elegant ' Cormorant Garamond</div>
       </div>
       <div class="fontCard" id="font-modern" onclick="setFont('modern','Modern')">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div style="font-family:'Inter',sans-serif;font-size:17px;color:white;">The quick brown fox</div>
-          <span class="fontCheck" id="fcheck-modern" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</span>
+          <span class="fontCheck" id="fcheck-modern" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">'</span>
         </div>
-        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Modern · Inter</div>
+        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Modern ' Inter</div>
       </div>
       <div class="fontCard" id="font-classic" onclick="setFont('classic','Classic')">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div style="font-family:'Georgia',serif;font-size:18px;color:white;">The quick brown fox</div>
-          <span class="fontCheck" id="fcheck-classic" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</span>
+          <span class="fontCheck" id="fcheck-classic" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">'</span>
         </div>
-        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Classic · Georgia</div>
+        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Classic ' Georgia</div>
       </div>
       <div class="fontCard" id="font-rounded" onclick="setFont('rounded','Rounded')">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div style="font-family:'Nunito',sans-serif;font-size:18px;color:white;">The quick brown fox</div>
-          <span class="fontCheck" id="fcheck-rounded" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</span>
+          <span class="fontCheck" id="fcheck-rounded" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">'</span>
         </div>
-        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Rounded · Nunito</div>
+        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Rounded ' Nunito</div>
       </div>
       <div class="fontCard" id="font-mono" onclick="setFont('mono','Monospace')">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div style="font-family:'Courier New',monospace;font-size:15px;color:white;">The quick brown fox</div>
-          <span class="fontCheck" id="fcheck-mono" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</span>
+          <span class="fontCheck" id="fcheck-mono" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">'</span>
         </div>
-        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Mono · Courier New</div>
+        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Mono ' Courier New</div>
       </div>
     </div>
   </div>
@@ -1248,7 +1276,7 @@ function previewVoice() {
   </div>
   <div class="panelBody" onclick="event.stopPropagation()">
     <div style="text-align:center;margin-bottom:24px;">
-      <div id="fontPreviewText" style="font-size:18px;color:white;font-family:'Cormorant Garamond',serif;margin-bottom:8px;">Preview — The quick brown fox</div>
+      <div id="fontPreviewText" style="font-size:18px;color:white;font-family:'Cormorant Garamond',serif;margin-bottom:8px;">Preview ' The quick brown fox</div>
       <div style="font-size:12px;color:#555;">Adjust size below</div>
     </div>
     <input type="range" min="12" max="22" value="16" id="fontSizeSlider"
@@ -1271,11 +1299,11 @@ function previewVoice() {
 <div class="panel" id="panel-memory" onclick="closePanel('memory')">
 <div class="panelBox" onclick="event.stopPropagation()">
   <div class="panelHeader">
-    <div class="panelTitle">🧠 AI Memory</div>
+    <div class="panelTitle">' AI Memory</div>
     <button class="panelBack" onclick="closePanel('memory')">Back</button>
   </div>
   <div id="memoryList" style="margin-bottom:16px;max-height:300px;overflow-y:auto;"></div>
-  <button class="dangerBtn" onclick="clearAllMemory()">🗑️ Clear All Memory</button>
+  <button class="dangerBtn" onclick="clearAllMemory()">'' Clear All Memory</button>
 </div>
 </div>
 
@@ -1329,174 +1357,9 @@ const WALLPAPERS = {
   mesh: "linear-gradient(135deg,#00ff8811,#00ccff11,#aa44ff11)"
 }
 
-function getToken() { return localStorage.getItem("datta_token") || "" }
-function getUser() { try { return JSON.parse(localStorage.getItem("datta_user")||"{}") } catch(e) { return {} } }
-
 // Apply theme to THIS page
-function applyThemeToPage(themeName) {
-  const t = THEMES[themeName] || THEMES.dark
-  const root = document.documentElement
-  Object.entries(t).forEach(([k, v]) => root.style.setProperty("--" + k, v))
-}
-
 // Apply theme EVERYWHERE (saves and notifies)
-function setTheme(name) {
-  localStorage.setItem("datta_theme", name)
-  applyThemeToPage(name)
-  document.querySelectorAll(".themeCard").forEach(c => c.classList.remove("active"))
-  const card = document.getElementById("theme-" + name)
-  if (card) card.classList.add("active")
-  document.getElementById("themeDesc").textContent = name.charAt(0).toUpperCase() + name.slice(1)
-  showMsg("theme", "Theme applied!", "success")
-  setTimeout(() => closePanel("theme"), 800)
-}
-
-function setWallpaper(name) {
-  localStorage.setItem("datta_wallpaper", name)
-  document.querySelectorAll(".wallpaperCard").forEach(c => c.classList.remove("active"))
-  const card = document.getElementById("wp-" + name)
-  if (card) card.classList.add("active")
-  document.getElementById("wallpaperDesc").textContent = name === "none" ? "None" : name.charAt(0).toUpperCase() + name.slice(1)
-  setTimeout(() => closePanel("wallpaper"), 600)
-}
-
-function pickCustomWallpaper() {
-  const input = document.createElement("input")
-  input.type = "file"; input.accept = "image/*"
-  input.onchange = e => {
-    const file = e.target.files[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = ev => {
-      localStorage.setItem("datta_wallpaper_custom", ev.target.result)
-      localStorage.setItem("datta_wallpaper", "custom")
-      document.getElementById("wallpaperDesc").textContent = "Custom"
-      closePanel("wallpaper")
-    }
-    reader.readAsDataURL(file)
-  }
-  input.click()
-}
-
-function saveAIName() {
-  const name = document.getElementById("ainameInput").value.trim()
-  if (!name) return showMsg("ainame", "Enter a name", "error")
-  localStorage.setItem("datta_ai_name", name)
-  document.getElementById("ainameDesc").textContent = name
-  showMsg("ainame", "AI name saved!", "success")
-  setTimeout(() => closePanel("ainame"), 1000)
-}
-
-function setStyle(style) {
-  localStorage.setItem("datta_ai_style", style)
-  document.querySelectorAll(".stylePill").forEach(p => p.classList.remove("active"))
-  event.target.classList.add("active")
-  document.getElementById("aistyleDesc").textContent = style
-  setTimeout(() => closePanel("aistyle"), 600)
-}
-
-function setLanguage(lang) {
-  localStorage.setItem("datta_language", lang)
-  document.getElementById("langDesc").textContent = lang
-  setTimeout(() => closePanel("language"), 600)
-}
-
-function uploadPhoto() {
-  const input = document.createElement("input")
-  input.type = "file"; input.accept = "image/*"
-  input.onchange = e => {
-    const file = e.target.files[0]; if (!file) return
-    const reader = new FileReader()
-    reader.onload = ev => {
-      localStorage.setItem("datta_avatar", ev.target.result)
-      setAvatar(ev.target.result)
-    }
-    reader.readAsDataURL(file)
-  }
-  input.click()
-}
-
-function setAvatar(dataUrl) {
-  const img = document.getElementById("userAvatarImg")
-  const letter = document.getElementById("userAvatarLetter")
-  if (img) { img.src = dataUrl; img.style.display = "block" }
-  if (letter) letter.style.display = "none"
-}
-
-async function changeUsername() {
-  const val = document.getElementById("newUsername").value.trim()
-  if (!val || val.length < 3) return showMsg("username", "Min 3 characters", "error")
-  try {
-    const res = await fetch(SERVER + "/auth/update-username", {
-      method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ username: val, token: getToken() })
-    })
-    const data = await res.json()
-    if (!res.ok) return showMsg("username", data.error || "Failed", "error")
-    const user = getUser(); user.username = val
-    localStorage.setItem("datta_user", JSON.stringify(user))
-    document.getElementById("userName").textContent = val
-    document.getElementById("userAvatarLetter").textContent = val[0].toUpperCase()
-    showMsg("username", "Username updated!", "success")
-    setTimeout(() => closePanel("username"), 1200)
-  } catch(e) { showMsg("username", "Server error", "error") }
-}
-
-async function changePassword() {
-  const cur = document.getElementById("currentPassword").value
-  const nw = document.getElementById("newPassword").value
-  const cf = document.getElementById("confirmPassword").value
-  if (!cur || !nw || !cf) return showMsg("password", "Fill all fields", "error")
-  if (nw.length < 6) return showMsg("password", "Min 6 characters", "error")
-  if (nw !== cf) return showMsg("password", "Passwords don't match", "error")
-  try {
-    const res = await fetch(SERVER + "/auth/change-password", {
-      method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ currentPassword: cur, newPassword: nw, token: getToken() })
-    })
-    const data = await res.json()
-    if (!res.ok) return showMsg("password", data.error || "Failed", "error")
-    showMsg("password", "Password changed!", "success")
-    setTimeout(() => closePanel("password"), 1200)
-  } catch(e) { showMsg("password", "Server error", "error") }
-}
-
 // VOICE FUNCTIONS
-function selectVoice(key) {
-  localStorage.setItem("datta_voice", key)
-  document.querySelectorAll(".voiceCard").forEach(c => c.classList.remove("active"))
-  const card = document.getElementById("vcrd-" + key)
-  if (card) card.classList.add("active")
-}
-
-function previewVoice() {
-  const key = localStorage.getItem("datta_voice") || "aria"
-  const names = { aria:"Aria", james:"James", sofia:"Sofia", indian:"Riya", british:"Oliver" }
-  const langs = { aria:"en-US", james:"en-US", sofia:"en-GB", indian:"en-IN", british:"en-GB" }
-  const rates = { aria:0.95, james:0.9, sofia:1.0, indian:0.9, british:0.9 }
-  const pitches = { aria:1.1, james:0.85, sofia:1.2, indian:1.0, british:0.9 }
-  const name = names[key] || "Aria"
-  const u = new SpeechSynthesisUtterance("Hi! I am " + name + ", your Datta AI voice assistant. How can I help you today?")
-  u.lang = langs[key] || "en-US"
-  u.rate = rates[key] || 0.95
-  u.pitch = pitches[key] || 1.0
-  const voices = window.speechSynthesis.getVoices()
-  const kwds = {
-    aria:["Samantha","Zira","Google US English"],
-    james:["David","Google UK English Male","Daniel"],
-    sofia:["Karen","Moira","Google UK English Female"],
-    indian:["Lekha","Veena","en-IN"],
-    british:["Arthur","Oliver","en-GB"]
-  }
-  const kw = kwds[key] || []
-  for (const k of kw) {
-    const v = voices.find(v => v.name.includes(k) || v.lang.includes(k))
-    if (v) { u.voice = v; break }
-  }
-  window.speechSynthesis.cancel()
-  window.speechSynthesis.speak(u)
-}
-
 // Load saved voice
 function loadSavedVoiceSetting() {
   const saved = localStorage.getItem("datta_voice") || "aria"
@@ -1540,7 +1403,7 @@ async function loadUsage() {
     }, 100)
 
     const planNames = { free:"Free Plan", pro:"Pro Plan", max:"Max Plan", ultramax:"Ultra Max Plan" }
-    const planSubs  = { free:"25 msgs · 3 images", pro:"100 msgs/4hrs · 20 images", max:"200 msgs/3hrs · 30 images", ultramax:"Unlimited everything" }
+    const planSubs  = { free:"25 msgs ' 3 images", pro:"100 msgs/4hrs ' 20 images", max:"200 msgs/3hrs ' 30 images", ultramax:"Unlimited everything" }
     document.getElementById("planNameUsage").textContent = planNames[plan] || "Free Plan"
     document.getElementById("planSubUsage").textContent = planSubs[plan] || ""
 
@@ -1582,7 +1445,7 @@ async function loadMemory() {
           <div style="font-size:13px;color:var(--text);font-weight:500;">${m.key.replace(/_/g," ")}</div>
           <div style="font-size:12px;color:var(--text3);">${JSON.stringify(m.value)}</div>
         </div>
-        <button onclick="deleteMemory('${m.key}')" style="background:none;border:none;color:#666;cursor:pointer;font-size:16px;">✕</button>
+        <button onclick="deleteMemory('${m.key}')" style="background:none;border:none;color:#666;cursor:pointer;font-size:16px;">'</button>
       </div>
     `).join("")
   } catch(e) {
@@ -1601,15 +1464,6 @@ async function clearAllMemory() {
   loadMemory()
 }
 
-async function deleteAllChats() {
-  try {
-    const res = await fetch(SERVER + "/chats/all?token=" + getToken(), { method: "DELETE" })
-    if (!res.ok) return showMsg("deleteChats", "Failed", "error")
-    showMsg("deleteChats", "All chats deleted!", "success")
-    setTimeout(() => closePanel("deleteChats"), 1200)
-  } catch(e) { showMsg("deleteChats", "Server error", "error") }
-}
-
 async function deleteAccount() {
   const pw = document.getElementById("deletePassword").value
   if (!pw) return showMsg("deleteAccount", "Enter password", "error")
@@ -1623,35 +1477,6 @@ async function deleteAccount() {
     localStorage.clear(); window.location.href = "login.html"
   } catch(e) { showMsg("deleteAccount", "Server error", "error") }
 }
-function copyEmail() {
-  navigator.clipboard.writeText("harisaiganeshpampana@gmail.com")
-    .then(() => alert("Email copied!"))
-    .catch(() => alert("harisaiganeshpampana@gmail.com"))
-}
-
-function logout() {
-  if (!confirm("Log out?")) return
-  localStorage.removeItem("datta_token")
-  localStorage.removeItem("datta_user")
-  window.location.href = "login.html"
-}
-
-function openPanel(name) {
-  document.getElementById("panel-" + name).classList.add("show")
-  if (name === "memory") loadMemory()
-}
-
-function closePanel(name) {
-  document.getElementById("panel-" + name).classList.remove("show")
-}
-
-function showMsg(id, text, type) {
-  const el = document.getElementById("msg-" + id)
-  if (!el) return
-  el.textContent = text; el.className = "msg " + type
-  setTimeout(() => { el.className = "msg"; el.textContent = "" }, 3000)
-}
-
 function goBack() {
   window.location.href = "index.html"
 }
