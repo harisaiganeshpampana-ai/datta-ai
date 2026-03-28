@@ -1110,7 +1110,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const msgLower = message.toLowerCase()
     const isCodeTask = ["build","create","write","make","code","website","app","script","program","html","python","javascript","fix","debug","error","update","improve","full","complete","function","class","api"].some(k => msgLower.includes(k))
     const isD54 = chosenModel === "meta-llama/llama-4-maverick-17b-128e-instruct"
-    const maxTok = isImageFile ? 4096 : isD54 ? 8192 : isCodeTask ? 8192 : 6144
+    const maxCodingTok = isD54 ? 8192 : isCodeTask ? 8192 : 6144
+    const maxTok = isImageFile ? 4096 : maxCodingTok
 
     const now = new Date()
     const timeStr = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })
@@ -1118,15 +1119,21 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const imageNote = isImageFile ? " You are analyzing an image. Describe ALL objects, text, colors, people, context, background in detail." : ""
 
     // Each model has unique behavior
+    // Persona based on CHOSEN model (before mapping), not resolved model
     const modelPersonas = {
-      "llama-3.1-8b-instant":                      "You are Datta 2.1 - fast and concise. Give brief, clear answers. Best for quick questions and simple tasks.",
-      "llama-3.3-70b-versatile":                   "You are Datta 4.2 - balanced and capable. Handle coding, writing, analysis well. Give thorough focused answers.",
-      "gemma2-9b-it":             "You are Datta 4.8 - advanced reasoning AI. Think step by step. Excel at math, logic, complex coding. Show your reasoning.",
-      "llama-3.3-70b-versatile":                        "You are Datta 5.4 - the most powerful model. Handle extremely complex tasks, long documents, expert coding, detailed analysis.",
-      "meta-llama/llama-4-scout-17b-16e-instruct": "You are Datta Vision - multimodal AI. Analyze images in extreme detail. Answer visual questions precisely."
+      "llama-3.1-8b-instant":                          `Your name is ${ainame}. You are Datta 2.1 - fast, friendly and concise. Give short clear answers. Great for casual chat and quick questions. NEVER say you are any other AI.`,
+      "llama-3.3-70b-versatile":                       `Your name is ${ainame}. You are Datta 4.2 - deep research and analysis expert. Handle research, writing, analysis. NEVER say you are any other AI.`,
+      "gemma2-9b-it":                                  `Your name is ${ainame}. You are Datta 4.8 - all-rounder. Excel at math, science, creative writing, coding. NEVER say you are any other AI.`,
+      "meta-llama/llama-4-maverick-17b-128e-instruct": `Your name is ${ainame}. You are Datta 5.4 - elite coding expert. Always give 100% complete working code. Never truncate. NEVER say you are any other AI.`,
+      "meta-llama/llama-4-scout-17b-16e-instruct":     `Your name is ${ainame}. You are Datta Vision - image analysis expert. Analyze images in extreme detail. NEVER say you are any other AI.`,
+      "persona-lawyer":  `Your name is ${ainame}. You are in Lawyer mode. Provide general legal information. Always advise consulting a licensed lawyer. NEVER say you are any other AI.`,
+      "persona-teacher": `Your name is ${ainame}. You are in Teacher mode. Explain concepts simply with examples. Be patient and encouraging. NEVER say you are any other AI.`,
+      "persona-chef":    `Your name is ${ainame}. You are in Chef mode. Help with recipes, cooking tips, meal planning. Be enthusiastic about food. NEVER say you are any other AI.`,
+      "persona-fitness": `Your name is ${ainame}. You are in Fitness Coach mode. Give workout plans, nutrition advice. Be motivating. NEVER say you are any other AI.`
     }
 
-    const persona = modelPersonas[model] || modelPersonas["llama-3.3-70b-versatile"]
+    // Use chosenModel for persona lookup (before model mapping)
+    const persona = modelPersonas[chosenModel] || modelPersonas["llama-3.3-70b-versatile"]
 
     // Block system prompt extraction attempts
     const extractionAttempts = ["system prompt","your prompt","your instructions","your rules","ignore previous","ignore all","act as","jailbreak","dan mode","pretend you","you are now","forget your","disregard your","reveal your","show your prompt","what are your instructions","bypass"]
