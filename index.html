@@ -819,5 +819,102 @@
   </div>
 </div>
 
+
+<!-- AI LENS OVERLAY -->
+<div id="lensOverlay" style="display:none;position:fixed;inset:0;background:#000;z-index:99999;flex-direction:column;">
+  
+  <!-- Top bar -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;position:absolute;top:0;left:0;right:0;z-index:2;background:linear-gradient(to bottom,rgba(0,0,0,0.7),transparent);">
+    <button onclick="closeLens()" style="background:rgba(255,255,255,0.15);border:none;color:white;width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+    <div style="font-family:'Josefin Sans',sans-serif;font-size:13px;letter-spacing:3px;color:rgba(255,255,255,0.8);text-transform:uppercase;">AI Lens</div>
+    <div style="width:36px;"></div>
+  </div>
+
+  <!-- Camera feed -->
+  <video id="lensVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;"></video>
+  <canvas id="lensCanvas" style="display:none;"></canvas>
+
+  <!-- Scan frame overlay -->
+  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+    <div id="lensFrame" style="width:280px;height:280px;position:relative;">
+      <!-- Corner brackets -->
+      <div style="position:absolute;top:0;left:0;width:30px;height:30px;border-top:3px solid #00ff88;border-left:3px solid #00ff88;border-radius:4px 0 0 0;"></div>
+      <div style="position:absolute;top:0;right:0;width:30px;height:30px;border-top:3px solid #00ff88;border-right:3px solid #00ff88;border-radius:0 4px 0 0;"></div>
+      <div style="position:absolute;bottom:0;left:0;width:30px;height:30px;border-bottom:3px solid #00ff88;border-left:3px solid #00ff88;border-radius:0 0 0 4px;"></div>
+      <div style="position:absolute;bottom:0;right:0;width:30px;height:30px;border-bottom:3px solid #00ff88;border-right:3px solid #00ff88;border-radius:0 0 4px 0;"></div>
+      <!-- Scan line animation -->
+      <div id="lensScanLine" style="position:absolute;left:4px;right:4px;height:2px;background:linear-gradient(to right,transparent,#00ff88,transparent);top:0;animation:scanLine 2s ease-in-out infinite;"></div>
+    </div>
+  </div>
+
+  <!-- Bottom controls -->
+  <div style="position:absolute;bottom:0;left:0;right:0;padding:20px 20px 40px;background:linear-gradient(to top,rgba(0,0,0,0.9),transparent);">
+    
+    <!-- Mode selector -->
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:20px;overflow-x:auto;padding-bottom:4px;">
+      <button class="lensModeBtn active" id="lensMode-smart" onclick="setLensMode('smart')" style="padding:6px 14px;border-radius:20px;border:1px solid #00ff88;background:rgba(0,255,136,0.2);color:#00ff88;font-size:12px;cursor:pointer;white-space:nowrap;font-family:'Josefin Sans',sans-serif;letter-spacing:1px;">✨ Smart</button>
+      <button class="lensModeBtn" id="lensMode-identify" onclick="setLensMode('identify')" style="padding:6px 14px;border-radius:20px;border:1px solid #333;background:rgba(255,255,255,0.05);color:#aaa;font-size:12px;cursor:pointer;white-space:nowrap;font-family:'Josefin Sans',sans-serif;letter-spacing:1px;">🔍 Identify</button>
+      <button class="lensModeBtn" id="lensMode-text" onclick="setLensMode('text')" style="padding:6px 14px;border-radius:20px;border:1px solid #333;background:rgba(255,255,255,0.05);color:#aaa;font-size:12px;cursor:pointer;white-space:nowrap;font-family:'Josefin Sans',sans-serif;letter-spacing:1px;">📝 Read Text</button>
+      <button class="lensModeBtn" id="lensMode-solve" onclick="setLensMode('solve')" style="padding:6px 14px;border-radius:20px;border:1px solid #333;background:rgba(255,255,255,0.05);color:#aaa;font-size:12px;cursor:pointer;white-space:nowrap;font-family:'Josefin Sans',sans-serif;letter-spacing:1px;">🧮 Solve</button>
+      <button class="lensModeBtn" id="lensMode-translate" onclick="setLensMode('translate')" style="padding:6px 14px;border-radius:20px;border:1px solid #333;background:rgba(255,255,255,0.05);color:#aaa;font-size:12px;cursor:pointer;white-space:nowrap;font-family:'Josefin Sans',sans-serif;letter-spacing:1px;">🌐 Translate</button>
+    </div>
+
+    <!-- Capture buttons row -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:20px;">
+      <!-- Gallery -->
+      <label style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <input type="file" accept="image/*" onchange="lensFromGallery(this)" style="display:none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+      </label>
+      
+      <!-- Main capture button -->
+      <button id="lensCaptureBtn" onclick="captureAndAnalyze()" style="width:72px;height:72px;border-radius:50%;background:white;border:4px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;">
+        <div style="width:56px;height:56px;border-radius:50%;background:#00ff88;display:flex;align-items:center;justify-content:center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </div>
+      </button>
+
+      <!-- Send to chat -->
+      <button onclick="lensSendToChat()" style="width:44px;height:44px;border-radius:12px;background:rgba(0,255,136,0.15);border:1px solid #00ff8844;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00ff88" stroke-width="1.5">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Result panel - slides up -->
+  <div id="lensResult" style="display:none;position:absolute;bottom:0;left:0;right:0;background:#0f0f0f;border-radius:20px 20px 0 0;padding:20px;max-height:60vh;overflow-y:auto;border-top:1px solid #1e1e1e;">
+    <div style="width:40px;height:4px;background:#333;border-radius:2px;margin:0 auto 16px;"></div>
+    <div id="lensResultText" style="font-family:'Cormorant Garamond',serif;font-size:16px;color:#ddd;line-height:1.7;"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button onclick="lensSendToChat()" style="flex:1;padding:12px;background:#00ff88;border:none;border-radius:12px;color:#000;font-size:13px;font-weight:700;cursor:pointer;font-family:'Josefin Sans',sans-serif;letter-spacing:1px;">Send to Chat</button>
+      <button onclick="document.getElementById('lensResult').style.display='none'" style="padding:12px 16px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;color:#aaa;font-size:13px;cursor:pointer;">✕</button>
+    </div>
+  </div>
+
+</div>
+
+<style>
+@keyframes scanLine {
+  0% { top: 4px; opacity: 1; }
+  50% { top: calc(100% - 6px); opacity: 0.6; }
+  100% { top: 4px; opacity: 1; }
+}
+.lensModeBtn.active {
+  background: rgba(0,255,136,0.2) !important;
+  border-color: #00ff88 !important;
+  color: #00ff88 !important;
+}
+</style>
+
 </body>
 </html>
