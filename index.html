@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <script>
-// Apply saved font & size IMMEDIATELY before render
+// Apply saved font & size via CSS variables - runs before render
 (function(){
   const fonts = {
     elegant:"'Cormorant Garamond',serif",
@@ -15,14 +15,10 @@
   const font = localStorage.getItem("datta_font") || "elegant"
   const size = localStorage.getItem("datta_font_size") || "16"
   const family = fonts[font] || fonts.elegant
-  const s = document.createElement("style")
-  s.id = "datta-live-font"
-  s.textContent = `
-    .aiBubble, .aiBubble p, .aiBubble li, .aiBubble td { font-family: ${family} !important; font-size: ${size}px !important; line-height: 1.8 !important; }
-    .userBubble { font-size: ${size}px !important; }
-    .stream { font-family: ${family} !important; font-size: ${size}px !important; }
-  `
-  document.head.appendChild(s)
+  // Set CSS variables on root - highest priority without !important wars
+  document.documentElement.style.setProperty("--ai-font", family)
+  document.documentElement.style.setProperty("--ai-font-size", size + "px")
+  document.documentElement.style.setProperty("--user-font-size", size + "px")
 })()
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
