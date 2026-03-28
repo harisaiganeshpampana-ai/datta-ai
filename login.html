@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Josefin+Sans:wght@300;400;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>Datta AI - Login</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
@@ -273,9 +276,9 @@ body::before {
   margin-right: 6px;
 }
 </style>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+
+
+
 </head>
 <body>
 
@@ -322,18 +325,13 @@ body::before {
       <div class="divider">or continue with</div>
 
       <div class="socialBtns">
-        <button class="socialBtn" onclick="handleGoogle()">
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-          Continue with Google
-        </button>
+
         <button class="socialBtn" onclick="switchTab('phone')">
           📱 Continue with Phone
         </button>
       </div>
 
-      <button class="guestBtn" onclick="handleGuest()">
-        👤 Continue as Guest
-      </button>
+
     </div>
 
     <!-- SIGNUP SECTION -->
@@ -358,16 +356,9 @@ body::before {
 
       <div class="divider">or continue with</div>
 
-      <div class="socialBtns">
-        <button class="socialBtn" onclick="handleGoogle()">
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-          Continue with Google
-        </button>
-      </div>
 
-      <button class="guestBtn" onclick="handleGuest()">
-        👤 Continue as Guest
-      </button>
+
+
     </div>
 
     <!-- PHONE SECTION -->
@@ -434,7 +425,6 @@ window.addEventListener("load", function() {
     window.location.href = "index.html"
   }
 
-  handleGoogleCallback()
 })
 
 function switchTab(tab) {
@@ -625,52 +615,9 @@ async function handlePhone() {
   }
 }
 
-// GOOGLE LOGIN - Real OAuth
-function handleGoogle() {
-  window.location.href = "https://datta-ai-server.onrender.com/auth/google"
-}
+// Google login removed - coming soon
 
-// Handle Google callback token in URL
-function handleGoogleCallback() {
-  const params = new URLSearchParams(window.location.search)
-  const token = params.get("token")
-  const userStr = params.get("user")
-  const error = params.get("error")
 
-  if (error) {
-    showMsg("Google login failed. Please try again.", "error")
-    return
-  }
-
-  if (token) {
-    try {
-      // Save token
-      localStorage.setItem("datta_token", token)
-
-      // Save user if provided
-      if (userStr) {
-        const user = JSON.parse(decodeURIComponent(userStr))
-        localStorage.setItem("datta_user", JSON.stringify(user))
-      }
-
-      // Clean URL and redirect immediately
-      window.history.replaceState({}, document.title, window.location.pathname)
-      window.location.replace("index.html")
-    } catch (e) {
-      console.error("Callback error:", e)
-      showMsg("Login error. Please try again.", "error")
-    }
-  }
-}
-
-// GUEST LOGIN
-function handleGuest() {
-  const guestId = "guest_" + Date.now()
-  const guestUser = { username: "Guest", email: "", isGuest: true, id: guestId }
-  localStorage.setItem("datta_token", "guest_" + guestId)
-  localStorage.setItem("datta_user", JSON.stringify(guestUser))
-  window.location.href = "index.html"
-}
 
 // Enter key support
 document.addEventListener("keydown", function(e) {
