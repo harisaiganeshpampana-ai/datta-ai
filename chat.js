@@ -1,6 +1,6 @@
-// ═══════════════════════════════════════════
+// '''''''''''''''''''''''''''''''''''''''''''
 // SINGLE INIT - runs everything on load
-// ═══════════════════════════════════════════
+// '''''''''''''''''''''''''''''''''''''''''''
 window.addEventListener("DOMContentLoaded", function() {
   var s = document.getElementById("addToChatSheet")
   var o = document.getElementById("addToChatOverlay")
@@ -32,7 +32,7 @@ async function shareChatLink() {
     const data = await res.json()
     if (data.url) {
       await navigator.clipboard.writeText(data.url)
-      showToast("Share link copied! 🔗")
+      showToast("Share link copied! '")
     }
   } catch(e) { showToast("Failed to create share link") }
 }
@@ -64,9 +64,9 @@ async function executeCode(btn) {
     }
 
     if (result.errors) {
-      outputDiv.innerHTML = '<div class="codeOutputErr">❌ ' + result.errors + '</div>'
+      outputDiv.innerHTML = '<div class="codeOutputErr">' + result.errors + '</div>'
     } else if (result.output) {
-      outputDiv.innerHTML = '<div class="codeOutputOk">▶ Output:<br><pre>' + result.output + '</pre></div>'
+      outputDiv.innerHTML = '<div class="codeOutputOk">Output:<br><pre>' + result.output + '</pre></div>'
     } else {
       outputDiv.innerHTML = '<div class="codeOutputOk">✓ Ran successfully (no output)</div>'
     }
@@ -199,103 +199,6 @@ window.editMessage = editMessage
 window.retryMessage = retryMessage
 
 // RENDER IMAGE RESPONSE - Datta AI unique style
-function renderImageResponse(text) {
-  let imgUrl = null
-  let prompt = "Generated Image"
-
-  if (text.includes("DATTA_IMAGE_START")) {
-    const promptMatch = text.match(/PROMPT:([^\n]+)/)
-    if (promptMatch) prompt = promptMatch[1].trim()
-    const base64Match = text.match(/!\[[^\]]*\]\((data:image[^)]{0,10000000})\)/)
-    const urlMatch = text.match(/!\[[^\]]*\]\((https:[^)]+)\)/)
-    if (base64Match) imgUrl = base64Match[1]
-    else if (urlMatch) imgUrl = urlMatch[1]
-  } else {
-    const imgMatch = text.match(/!\[([^\]]*)\]\(([^)]+)\)/)
-    const promptMatch = text.match(/PROMPT:(.+)/) || text.match(/\*Prompt: ([^*]+)\*/)
-    if (!imgMatch) return marked.parse(text)
-    imgUrl = imgMatch[2]
-    if (promptMatch) prompt = promptMatch[1].trim()
-  }
-
-  if (!imgUrl) return marked.parse(text)
-  const altText = prompt
-  const uid = "ig" + Date.now()
-
-  return `<div class="dattaImgWrap" id="${uid}">
-  <div class="dattaImgLabel" id="${uid}lbl">
-    <span class="dattaImgIcon">🎨</span>
-    <span>Creating your image...</span>
-  </div>
-  <div class="dattaImgBox">
-    <div class="dattaShimmer" id="${uid}shimmer">
-      <div class="imgGenCanvas">
-        <div class="imgGenParticle" style="--d:0s;--x:20%;--y:30%"></div>
-        <div class="imgGenParticle" style="--d:0.3s;--x:70%;--y:20%"></div>
-        <div class="imgGenParticle" style="--d:0.6s;--x:50%;--y:60%"></div>
-        <div class="imgGenParticle" style="--d:0.9s;--x:80%;--y:70%"></div>
-        <div class="imgGenParticle" style="--d:1.2s;--x:30%;--y:80%"></div>
-        <div class="imgGenParticle" style="--d:1.5s;--x:60%;--y:40%"></div>
-        <div class="imgGenBrush"></div>
-        <div class="imgGenCenter">
-          <div class="imgGenRing r1"></div>
-          <div class="imgGenRing r2"></div>
-          <div class="imgGenRing r3"></div>
-          <div class="imgGenIcon">🎨</div>
-        </div>
-      </div>
-      <div class="shimmerText" id="${uid}txt">Generating with AI...</div>
-    </div>
-    <img src="${imgUrl}" alt="${altText}" class="dattaImg" style="display:none;opacity:0;"
-      onload="
-        var w=document.getElementById('${uid}');
-        var s=document.getElementById('${uid}shimmer');
-        var l=document.getElementById('${uid}lbl');
-        var a=document.getElementById('${uid}actions');
-        if(s)s.style.display='none';
-        if(l)l.innerHTML='<span class=dattaImgIcon>✨</span><span>${prompt}</span>';
-        if(a)a.style.display='flex';
-        this.style.display='block';
-        setTimeout(function(){var img=document.querySelector('#${uid} .dattaImg');if(img)img.style.opacity='1';},10);
-      "
-      onerror="
-        var img=this;
-        var s=document.getElementById('${uid}shimmer');
-        var retries=parseInt(img.dataset.retries||0);
-        // Only retry for URL images (not base64)
-        if(!img.src.startsWith('data:') && retries < 3){
-          img.dataset.retries=retries+1;
-          if(s && s.querySelector) s.querySelector && (s.querySelector('.shimmerText').textContent='Retrying... ('+(retries+1)+'/3)');
-          setTimeout(function(){
-            var seed=Math.floor(Math.random()*999999);
-            var newSrc=img.src.replace(/seed=\d+/,'seed='+seed);
-            if(newSrc===img.src) newSrc=img.src+'&r='+seed;
-            img.src=newSrc;
-          }, 3000);
-        } else {
-          if(s)s.innerHTML='<div style=\'padding:32px;color:#888;text-align:center;font-size:13px\'>❌ Image service busy. Try again in a moment.</div>';
-        }
-      "
-    >
-  </div>
-  <div class="dattaImgActions" id="${uid}actions" style="display:none;">
-    <button class="dattaImgBtn" onclick="downloadImage('${imgUrl}','${prompt}')">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Download
-    </button>
-    <button class="dattaImgBtn" onclick="regenerateImage('${prompt}',this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-      Regenerate
-    </button>
-    <button class="dattaImgBtn likeImgBtn" onclick="likeImage(this)" title="Like">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
-    </button>
-    <button class="dattaImgBtn dislikeImgBtn" onclick="dislikeImage(this)" title="Dislike">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
-    </button>
-  </div>
-</div>`
-}
 
 function downloadImage(url, prompt) {
   const a = document.createElement("a")
@@ -375,7 +278,6 @@ function startImgLoadingText(uid) {
   window["imgInterval_" + uid] = interval
 }
 window.startImgLoadingText = startImgLoadingText
-window.renderImageResponse = renderImageResponse
 // AUTH CHECK - redirect to login if not logged in
 // Configure marked for clean rendering
 if (typeof marked !== 'undefined') {
@@ -532,19 +434,14 @@ async function send() {
 
   // Detect request type for indicator
   const searchTriggers = ["latest","recent","today","yesterday","this week","current","now","live","breaking","news","who is","what is the","price of","weather","score","2025","2026","happened","update","trending","stock","crypto","bitcoin","search for","find","look up","ipl","cricket","match","movie","released","launched","election","gold","petrol"]
-  const imageTriggers = ["generate image","create image","make image","draw","generate photo","create photo","make photo","generate picture","create picture","image of","picture of","photo of","draw me","paint","illustrate","sketch","generate art","create art"]
-
   const willSearch = searchTriggers.some(t => text.toLowerCase().includes(t))
-  const willGenImage = imageTriggers.some(t => text.toLowerCase().includes(t))
 
   // Show appropriate indicator
   let aiDiv = document.createElement("div")
   aiDiv.className = "messageRow"
 
   // Glowing orb pulse animation
-  const orbColors = willGenImage
-    ? { main:"#cc88ff", glow:"rgba(180,100,255,0.4)", label:"Creating image...", icon:"🎨" }
-    : willSearch
+  const orbColors = willSearch
     ? { main:"#00ccff", glow:"rgba(0,200,255,0.4)", label:"Searching web...", icon:"🌐" }
     : { main:"#00ff88", glow:"rgba(0,255,136,0.4)", label:"Thinking...", icon:"" }
 
