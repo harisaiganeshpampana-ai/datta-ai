@@ -539,11 +539,14 @@ function setFont(key, label) {
 
 function applyFont(key) {
   const family = fontFamilies[key] || fontFamilies.elegant
-  document.documentElement.style.setProperty("--chat-font", family)
-  // Apply to body
-  const style = document.getElementById("datta-font-style") || document.createElement("style")
-  style.id = "datta-font-style"
-  style.textContent = `.aiBubble, .aiBubble p, .aiBubble li { font-family: ${family} !important; }`
+  const size = localStorage.getItem("datta_font_size") || "16"
+  const style = document.getElementById("datta-live-font") || document.getElementById("datta-font-style") || document.createElement("style")
+  style.id = "datta-live-font"
+  style.textContent = `
+    .aiBubble, .aiBubble p, .aiBubble li, .aiBubble td { font-family: ${family} !important; font-size: ${size}px !important; line-height: 1.8 !important; }
+    .userBubble { font-size: ${size}px !important; }
+    .stream { font-family: ${family} !important; font-size: ${size}px !important; }
+  `
   document.head.appendChild(style)
 }
 
@@ -558,21 +561,27 @@ function previewFontSize(size) {
 function saveFontSize(size) {
   size = parseInt(size)
   localStorage.setItem("datta_font_size", size)
+
+  // Apply to preview in settings page
   const style = document.getElementById("datta-size-style") || document.createElement("style")
   style.id = "datta-size-style"
-  style.textContent = `.aiBubble, .aiBubble p, .aiBubble li, .userBubble { font-size: ${size}px !important; }`
+  style.textContent = `.aiBubble, .aiBubble p, .aiBubble li, .userBubble, .stream { font-size: ${size}px !important; }`
   document.head.appendChild(style)
+
   const labels = { 12:"Small", 13:"Small", 14:"Small", 15:"Medium", 16:"Medium", 17:"Medium", 18:"Large", 19:"Large", 20:"Large", 21:"Extra Large", 22:"Extra Large" }
   const desc = document.getElementById("fontsizeDesc")
   if (desc) desc.textContent = labels[size] || "Custom"
   const slider = document.getElementById("fontSizeSlider")
   if (slider) slider.value = size
   previewFontSize(size)
+
   // Highlight active size button
   document.querySelectorAll(".sizeBtn").forEach(b => b.classList.remove("active"))
   const nearest = size <= 14 ? 13 : size <= 17 ? 16 : 19
   const btn = document.getElementById("szbtn-" + nearest)
   if (btn) btn.classList.add("active")
+
+  showMsg("fontsize", "✓ Font size saved!", "success")
 }
 
 function loadSavedFont() {
