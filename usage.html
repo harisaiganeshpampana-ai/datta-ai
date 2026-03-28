@@ -3,245 +3,308 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Usage - Datta AI</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<title>Usage · Datta AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&family=Cormorant+Garamond:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-* { margin:0; padding:0; box-sizing:border-box; font-family:system-ui,Arial,sans-serif; }
-body { background:#0a0a0a; color:white; min-height:100vh; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0a0a0a; color:#fff; font-family:'Josefin Sans',sans-serif; min-height:100vh; }
 
-.header {
-  position:sticky; top:0; background:#111; border-bottom:1px solid #222;
-  padding:14px 20px; display:flex; align-items:center; gap:14px; z-index:100;
+.topBar {
+  display:flex; align-items:center; gap:14px;
+  padding:16px 20px; border-bottom:1px solid #111;
+  position:sticky; top:0; background:#0a0a0a; z-index:10;
 }
-.backBtn { background:#1e1e1e; border:none; color:white; padding:8px 16px; border-radius:20px; cursor:pointer; font-size:14px; }
-.headerTitle { font-family:'Rajdhani',sans-serif; font-size:18px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
-
-.container { max-width:680px; margin:0 auto; padding:24px 16px 60px; }
-
-/* PLAN CARD */
-.planCard {
-  background:#111; border:1px solid #222; border-radius:20px;
-  padding:20px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between;
+.backBtn {
+  width:34px; height:34px; border-radius:50%;
+  background:#111; border:1px solid #1e1e1e;
+  color:#aaa; font-size:16px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  text-decoration:none; transition:all 0.15s;
 }
-.planInfo { }
-.planName { font-family:'Rajdhani',sans-serif; font-size:22px; font-weight:700; letter-spacing:0.5px; }
-.planSub { font-size:13px; color:#666; margin-top:2px; }
-.planBadge { padding:6px 16px; border-radius:20px; font-size:13px; font-weight:700; }
-.badge-free { background:#0a2a1a; color:#00ff88; border:1px solid #00ff8833; }
-.badge-pro { background:#1a1a0a; color:#ffaa00; border:1px solid #ffaa0033; }
-.badge-max { background:#0a0a2a; color:#aa66ff; border:1px solid #aa66ff33; }
-.badge-ultramax { background:#2a0a1a; color:#ff44aa; border:1px solid #ff44aa33; }
+.backBtn:hover { background:#1a1a1a; color:white; }
+.pageTitle { font-size:16px; font-weight:600; letter-spacing:2px; color:white; }
 
-/* SECTION */
-.sectionLabel { font-size:11px; color:#555; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; margin:20px 0 10px; }
+.page { max-width:480px; margin:0 auto; padding:24px 20px 40px; }
 
-/* USAGE CARD */
-.usageCard { background:#111; border:1px solid #1e1e1e; border-radius:16px; padding:18px; margin-bottom:10px; }
-.usageHeader { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
-.usageTitle { font-size:15px; font-weight:600; color:#ddd; display:flex; align-items:center; gap:8px; }
-.usageCount { font-size:13px; color:#666; }
-.progressBar { background:#1a1a1a; border-radius:20px; height:8px; overflow:hidden; margin-bottom:8px; }
-.progressFill { height:100%; border-radius:20px; transition:width 1s ease; }
-.progressGreen { background:linear-gradient(90deg,#00ff88,#00ccff); }
-.progressPurple { background:linear-gradient(90deg,#aa44ff,#ff44aa); }
-.progressRed { background:linear-gradient(90deg,#ff4444,#ff8844); }
-.progressOrange { background:linear-gradient(90deg,#ff8800,#ffcc00); }
-.usageMeta { font-size:12px; color:#555; }
-
-/* STATS GRID */
-.statsGrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
-.statCard { background:#111; border:1px solid #1e1e1e; border-radius:14px; padding:16px; text-align:center; }
-.statValue { font-family:'Rajdhani',sans-serif; font-size:28px; font-weight:700; background:linear-gradient(135deg,#00ff88,#00ccff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-.statLabel { font-size:11px; color:#555; margin-top:4px; text-transform:uppercase; letter-spacing:0.5px; }
-
-/* RESET TIMER */
-.resetCard { background:#0a1a0a; border:1px solid #00ff8822; border-radius:14px; padding:16px; display:flex; align-items:center; gap:12px; margin-bottom:20px; }
-.resetIcon { font-size:24px; }
-.resetText { flex:1; }
-.resetTitle { font-size:14px; font-weight:600; color:#00ff88; }
-.resetSub { font-size:12px; color:#555; margin-top:2px; }
-.resetTime { font-family:'Rajdhani',sans-serif; font-size:18px; font-weight:700; color:#00ff88; }
-
-/* UPGRADE CTA */
-.upgradeCta {
-  background:linear-gradient(135deg,#0a2a1a,#0a1a2a); border:1px solid #00ff8822;
-  border-radius:16px; padding:20px; text-align:center; margin-top:16px;
+/* Plan badge */
+.planBadge {
+  display:inline-flex; align-items:center; gap:8px;
+  padding:6px 16px; border-radius:20px;
+  background:#0a1a0a; border:1px solid #00ff8833;
+  font-size:12px; font-weight:600; color:#00ff88;
+  letter-spacing:1px; text-transform:uppercase;
+  margin-bottom:32px;
 }
-.upgradeTitle { font-family:'Rajdhani',sans-serif; font-size:18px; font-weight:700; margin-bottom:6px; }
-.upgradeSub { font-size:13px; color:#666; margin-bottom:16px; }
-.upgradeBtn { padding:12px 32px; background:linear-gradient(135deg,#00cc6a,#00aaff); border:none; border-radius:20px; color:white; font-size:14px; font-weight:700; cursor:pointer; font-family:'Rajdhani',sans-serif; letter-spacing:0.5px; }
 
-.loading { text-align:center; color:#555; padding:40px; font-size:14px; }
+/* Ring chart */
+.ringWrap {
+  display:flex; flex-direction:column; align-items:center;
+  margin-bottom:32px;
+}
+.ringContainer {
+  position:relative; width:200px; height:200px; margin-bottom:20px;
+}
+.ringContainer svg { transform:rotate(-90deg); }
+.ringBg { fill:none; stroke:#1a1a1a; stroke-width:14; }
+.ringFill {
+  fill:none; stroke-width:14;
+  stroke-linecap:round;
+  transition:stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1);
+}
+.ringCenter {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+}
+.ringPct { font-size:42px; font-weight:700; line-height:1; }
+.ringLabel { font-size:11px; color:#555; letter-spacing:2px; text-transform:uppercase; margin-top:4px; }
+.ringSubLabel { font-size:13px; color:#666; margin-top:4px; font-family:'Cormorant Garamond',serif; }
+
+/* Milestones */
+.milestones {
+  display:flex; gap:6px; width:100%; margin-bottom:32px;
+}
+.milestone {
+  flex:1; padding:10px 6px; border-radius:12px;
+  background:#0f0f0f; border:1px solid #1a1a1a;
+  text-align:center; transition:all 0.3s;
+}
+.milestone.reached { background:#0a1a0a; border-color:#00ff8840; }
+.milestone.reached.warning { background:#1a1000; border-color:#ffaa0040; }
+.milestone.reached.danger { background:#1a0000; border-color:#ff444040; }
+.ms-pct { font-size:13px; font-weight:700; color:#333; }
+.milestone.reached .ms-pct { color:#00ff88; }
+.milestone.reached.warning .ms-pct { color:#ffaa00; }
+.milestone.reached.danger .ms-pct { color:#ff4444; }
+.ms-icon { font-size:16px; margin-bottom:2px; }
+
+/* Stats row */
+.statsRow {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:10px; margin-bottom:24px;
+}
+.statCard {
+  padding:16px; background:#0f0f0f;
+  border:1px solid #1a1a1a; border-radius:16px;
+}
+.statLabel { font-size:11px; color:#555; letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; }
+.statValue { font-size:22px; font-weight:700; color:white; }
+.statSub { font-size:11px; color:#444; margin-top:3px; }
+
+/* Reset timer */
+.resetBox {
+  padding:14px 16px; background:#0f0f0f;
+  border:1px solid #1a1a1a; border-radius:14px;
+  display:flex; align-items:center; gap:12px;
+  margin-bottom:24px;
+}
+.resetIcon { font-size:20px; flex-shrink:0; }
+.resetText { font-size:13px; color:#666; }
+.resetTime { font-size:15px; font-weight:600; color:#00ff88; }
+
+/* Upgrade banner */
+.upgradeBanner {
+  padding:20px; background:#0a0f0a;
+  border:1px solid #00ff8822; border-radius:16px;
+  text-align:center; display:none;
+}
+.upgradeBanner.show { display:block; }
+.upgradeTitle { font-size:15px; font-weight:700; margin-bottom:6px; }
+.upgradeDesc { font-size:12px; color:#666; margin-bottom:14px; }
+.upgradeBtn {
+  display:inline-block; padding:10px 28px;
+  background:linear-gradient(135deg,#00ff88,#00ccff);
+  border-radius:20px; color:#000; font-size:13px;
+  font-weight:700; text-decoration:none;
+  font-family:'Josefin Sans',sans-serif; letter-spacing:1px;
+}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <button class="backBtn" onclick="window.location.href='settings.html'">← Back</button>
-  <div class="headerTitle">Your Usage</div>
+<div class="topBar">
+  <a href="index.html" class="backBtn">←</a>
+  <div class="pageTitle">Usage</div>
 </div>
 
-<div class="container">
-  <div id="content"><div class="loading">⏳ Loading your usage...</div></div>
+<div class="page">
+  <div class="planBadge">🌱 <span id="planName">Free Plan</span></div>
+
+  <!-- Ring chart -->
+  <div class="ringWrap">
+    <div class="ringContainer">
+      <svg width="200" height="200" viewBox="0 0 200 200">
+        <circle class="ringBg" cx="100" cy="100" r="86"/>
+        <circle class="ringFill" id="msgRing" cx="100" cy="100" r="86"
+          stroke="#00ff88"
+          stroke-dasharray="540"
+          stroke-dashoffset="540"/>
+      </svg>
+      <div class="ringCenter">
+        <div class="ringPct" id="pctText">0%</div>
+        <div class="ringLabel">Used</div>
+        <div class="ringSubLabel" id="usedText">0 of 50</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Milestones -->
+  <div class="milestones">
+    <div class="milestone" id="ms25">
+      <div class="ms-icon">🔔</div>
+      <div class="ms-pct">25%</div>
+    </div>
+    <div class="milestone" id="ms50">
+      <div class="ms-icon">⚡</div>
+      <div class="ms-pct">50%</div>
+    </div>
+    <div class="milestone" id="ms90">
+      <div class="ms-icon">⚠️</div>
+      <div class="ms-pct">90%</div>
+    </div>
+    <div class="milestone" id="ms100">
+      <div class="ms-icon">🔒</div>
+      <div class="ms-pct">100%</div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="statsRow">
+    <div class="statCard">
+      <div class="statLabel">Messages left</div>
+      <div class="statValue" id="msgsLeft">50</div>
+      <div class="statSub" id="msgsLeftSub">of 50 today</div>
+    </div>
+    <div class="statCard">
+      <div class="statLabel">Total sent</div>
+      <div class="statValue" id="totalMsgs">0</div>
+      <div class="statSub">all time</div>
+    </div>
+  </div>
+
+  <!-- Reset timer -->
+  <div class="resetBox" id="resetBox" style="display:none;">
+    <div class="resetIcon">⏱️</div>
+    <div>
+      <div class="resetText">Resets in</div>
+      <div class="resetTime" id="resetTimer">—</div>
+    </div>
+  </div>
+
+  <!-- Upgrade -->
+  <div class="upgradeBanner" id="upgradeBanner">
+    <div class="upgradeTitle">You're running low!</div>
+    <div class="upgradeDesc">Upgrade to Pro for 100 messages every 4 hours + image generation</div>
+    <a href="pricing.html" class="upgradeBtn">⚡ Upgrade Plan</a>
+  </div>
 </div>
 
 <script>
 const SERVER = "https://datta-ai-server.onrender.com"
-function getToken() { return localStorage.getItem("datta_token") || "" }
 
-function formatTime(ms) {
-  if (!ms || ms <= 0) return "Now"
-  if (ms > 365 * 24 * 60 * 60 * 1000) return "Never"
-  const mins = Math.ceil(ms / 60000)
-  if (mins < 60) return mins + " min"
-  const hrs = Math.ceil(mins / 60)
-  if (hrs > 999) return "Never"
-  return hrs + " hr" + (hrs > 1 ? "s" : "")
+function getToken() { return localStorage.getItem("datta_token") }
+
+function getRingColor(pct) {
+  if (pct >= 90) return "#ff4444"
+  if (pct >= 50) return "#ffaa00"
+  return "#00ff88"
 }
 
-function getPlanBadge(plan) {
-  const badges = {
-    free: 'badge-free', pro: 'badge-pro',
-    max: 'badge-max', ultramax: 'badge-ultramax'
+function updateMilestones(pct) {
+  const ms = [
+    { id:"ms25", threshold:25, cls:"" },
+    { id:"ms50", threshold:50, cls:"warning" },
+    { id:"ms90", threshold:90, cls:"danger" },
+    { id:"ms100", threshold:100, cls:"danger" }
+  ]
+  ms.forEach(m => {
+    const el = document.getElementById(m.id)
+    el.classList.remove("reached","warning","danger")
+    if (pct >= m.threshold) {
+      el.classList.add("reached")
+      if (m.cls) el.classList.add(m.cls)
+    }
+  })
+}
+
+function animateRing(pct) {
+  const circumference = 540
+  const offset = circumference - (pct / 100) * circumference
+  const ring = document.getElementById("msgRing")
+  const color = getRingColor(pct)
+  ring.style.stroke = color
+  setTimeout(() => { ring.style.strokeDashoffset = offset }, 100)
+  document.getElementById("pctText").style.color = color
+}
+
+function startResetTimer(waitMins) {
+  const box = document.getElementById("resetBox")
+  const timer = document.getElementById("resetTimer")
+  if (!waitMins || waitMins <= 0) { box.style.display = "none"; return }
+  box.style.display = "flex"
+  let remaining = waitMins * 60
+  function tick() {
+    const h = Math.floor(remaining / 3600)
+    const m = Math.floor((remaining % 3600) / 60)
+    const s = remaining % 60
+    timer.textContent = h > 0
+      ? `${h}h ${m}m ${s}s`
+      : m > 0 ? `${m}m ${s}s` : `${s}s`
+    if (remaining <= 0) { location.reload(); return }
+    remaining--
+    setTimeout(tick, 1000)
   }
-  return badges[plan] || 'badge-free'
+  tick()
 }
 
-function getPlanName(plan) {
-  const names = { free:"Free Plan", pro:"Pro Plan", max:"Max Plan", ultramax:"Ultra Max Plan" }
-  return names[plan] || "Free Plan"
-}
+async function loadUsage() {
+  const token = getToken()
+  if (!token) { window.location.href = "login.html"; return }
 
-function getPlanEmoji(plan) {
-  const emojis = { free:"🌱", pro:"⚡", max:"🚀", ultramax:"👑" }
-  return emojis[plan] || "🌱"
-}
-
-async function loadUsage() { // returns promise
   try {
-    const res = await fetch(SERVER + "/user/usage?token=" + getToken())
-    if (!res.ok) throw new Error("Failed")
-    const d = await res.json()
+    const res = await fetch(SERVER + "/user/usage?token=" + token)
+    const data = await res.json()
 
-    const plan = d.plan || "free"
-    const msgUsed = d.messagesUsed || 0
-    const imgUsed = d.imagesUsed || 0
-    const msgLimit = d.limits?.messages || 25
-    const imgLimit = d.limits?.images || 3
-    const totalMsgs = d.totalMessagesEver || 0
-    const totalImgs = d.totalImagesEver || 0
-    const resetIn = d.resetIn || 0
+    const plan = data.plan || "free"
+    const used = data.messagesUsed || 0
+    const limit = data.limit || 50
+    const total = data.totalMessages || 0
+    const waitMins = data.waitMins || 0
 
-    const msgPct = msgLimit >= 999999 ? 0 : Math.min(100, Math.round(msgUsed / msgLimit * 100))
-    const imgPct = imgLimit >= 999999 ? 0 : Math.min(100, Math.round(imgUsed / (imgLimit || 3) * 100))
+    const pct = Math.min(100, Math.round((used / limit) * 100))
 
-    const msgColor = msgPct > 80 ? "progressRed" : msgPct > 50 ? "progressOrange" : "progressGreen"
-    const imgColor = imgPct > 80 ? "progressRed" : imgPct > 50 ? "progressOrange" : "progressPurple"
+    // Plan name
+    const planNames = { free:"Free Plan", pro:"Pro Plan", max:"Max Plan", ultramax:"Ultra Max", basic:"Basic Plan" }
+    document.getElementById("planName").textContent = planNames[plan] || "Free Plan"
 
-    const msgLimitText = msgLimit >= 999999 ? "Unlimited" : msgLimit
-    const imgLimitText = imgLimit >= 999999 ? "Unlimited" : imgLimit
+    // Ring
+    document.getElementById("pctText").textContent = pct + "%"
+    document.getElementById("usedText").textContent = used + " of " + limit
+    animateRing(pct)
 
-    document.getElementById("content").innerHTML = `
+    // Milestones
+    updateMilestones(pct)
 
-      <!-- PLAN CARD -->
-      <div class="planCard">
-        <div class="planInfo">
-          <div class="planName">${getPlanEmoji(plan)} ${getPlanName(plan)}</div>
-          <div class="planSub">Active subscription</div>
-        </div>
-        <div class="planBadge ${getPlanBadge(plan)}">${plan.toUpperCase()}</div>
-      </div>
+    // Stats
+    document.getElementById("msgsLeft").textContent = Math.max(0, limit - used)
+    document.getElementById("msgsLeftSub").textContent = "of " + limit + " this period"
+    document.getElementById("totalMsgs").textContent = total
 
-      <!-- STATS -->
-      <div class="sectionLabel">All Time Stats</div>
-      <div class="statsGrid">
-        <div class="statCard">
-          <div class="statValue">${totalMsgs.toLocaleString()}</div>
-          <div class="statLabel">Total Messages</div>
-        </div>
-        <div class="statCard">
-          <div class="statValue">${totalImgs.toLocaleString()}</div>
-          <div class="statLabel">Images Generated</div>
-        </div>
-      </div>
+    // Reset timer
+    startResetTimer(waitMins)
 
-      <!-- CURRENT USAGE -->
-      <div class="sectionLabel">Current Period Usage</div>
-
-      <div class="usageCard">
-        <div class="usageHeader">
-          <div class="usageTitle">💬 Messages</div>
-          <div class="usageCount">${msgUsed} / ${msgLimitText}</div>
-        </div>
-        <div class="progressBar">
-          <div class="progressFill ${msgColor}" id="msgBar" style="width:0%"></div>
-        </div>
-        <div class="usageMeta">
-          ${msgPct >= 100 ? "⚠️ Limit reached" : msgPct + "% used this period"}
-          ${plan === "free" && totalMsgs >= 25 ? " · 8 msg/session after first 25" : ""}
-        </div>
-      </div>
-
-      <div class="usageCard">
-        <div class="usageHeader">
-          <div class="usageTitle">🎨 Images</div>
-          <div class="usageCount">${imgUsed} / ${imgLimitText}</div>
-        </div>
-        <div class="progressBar">
-          <div class="progressFill ${imgColor}" id="imgBar" style="width:0%"></div>
-        </div>
-        <div class="usageMeta">${imgPct >= 100 ? "⚠️ Limit reached" : imgPct + "% used today"}</div>
-      </div>
-
-      ${plan !== "free" && resetIn > 0 ? `
-      <div class="resetCard">
-        <div class="resetIcon">⏰</div>
-        <div class="resetText">
-          <div class="resetTitle">Resets in</div>
-          <div class="resetSub">Your message limit refreshes automatically</div>
-        </div>
-        <div class="resetTime">${formatTime(resetIn)}</div>
-      </div>` : plan === "free" ? `
-      <div class="resetCard" style="background:#1a0a00;border-color:#ff880022;">
-        <div class="resetIcon">⚠️</div>
-        <div class="resetText">
-          <div class="resetTitle" style="color:#ff8844;">Free Plan Limit</div>
-          <div class="resetSub">First 25 messages free · then 8 per session · never fully resets</div>
-        </div>
-      </div>` : ""}
-
-      ${plan === "free" ? `
-      <div class="upgradeCta">
-        <div class="upgradeTitle">🚀 Need More?</div>
-        <div class="upgradeSub">Upgrade to Pro for 100 messages per session and 20 images daily</div>
-        <button class="upgradeBtn" onclick="window.location.href='pricing.html'">Upgrade Plan →</button>
-      </div>` : ""}
-    `
-
-    // Animate bars
-    setTimeout(() => {
-      document.getElementById("msgBar").style.width = (msgLimit >= 999999 ? 5 : msgPct) + "%"
-      document.getElementById("imgBar").style.width = (imgLimit >= 999999 ? 5 : imgPct) + "%"
-    }, 100)
+    // Upgrade banner at 90%+
+    if (pct >= 90 && plan === "free") {
+      document.getElementById("upgradeBanner").classList.add("show")
+    }
 
   } catch(e) {
-    document.getElementById("content").innerHTML = '<div class="loading">Could not load usage. Please try again.</div>'
+    console.error("Usage error:", e)
   }
 }
 
-window.addEventListener("load", function() {
-  if (!getToken()) { window.location.href = "login.html"; return }
-  
-  // Show timeout message if server is slow
-  const timeoutId = setTimeout(() => {
-    const el = document.getElementById("content")
-    if (el && el.innerHTML.includes("Loading")) {
-      el.innerHTML = '<div class="loading">⚠️ Server is waking up... please wait 30 seconds and refresh</div>'
-    }
-  }, 10000)
-  
-  loadUsage().then(() => clearTimeout(timeoutId)).catch(() => clearTimeout(timeoutId))
-})
+loadUsage()
 </script>
 </body>
 </html>
