@@ -554,22 +554,6 @@ async function send() {
       
       hideStopBtn()
 
-      if (errData.error === "IMAGE_LIMIT") {
-        const isPlanBlock = errData.plan === "free"
-        aiDiv.innerHTML = `
-          <div class="aiContent">
-            <div style="background:#1a0a1a;border:1px solid #aa44ff33;border-radius:16px;padding:20px;text-align:center;max-width:300px;">
-              <div style="font-size:32px;margin-bottom:10px;">🎨</div>
-              <div style="font-weight:700;color:white;margin-bottom:6px;font-size:15px;">${isPlanBlock ? "Images not in Free plan" : "Image limit reached"}</div>
-              <div style="font-size:13px;color:#888;margin-bottom:16px;">${isPlanBlock ? "Upgrade to Pro to generate unlimited images!" : "Daily image limit reached. Upgrade for more."}</div>
-              <a href="pricing.html" style="display:inline-block;padding:10px 24px;background:linear-gradient(135deg,#aa44ff,#ff44aa);border-radius:20px;color:white;font-size:14px;font-weight:700;text-decoration:none;">⚡ Upgrade Now</a>
-            </div>
-          </div>
-        `
-        hideStopBtn()
-        return
-      }
-
       if (errData.error === "MESSAGE_LIMIT") {
         const waitMins = errData.waitMins || 0
         const plan = errData.plan || "free"
@@ -655,50 +639,16 @@ async function send() {
         streamText += chunk
       }
 
-      // Image response detection - never show raw markers
-      const isImgResponse = streamText.includes("DATTA_IMAGE_START") || streamText.includes("pollinations.ai")
-      if (isImgResponse) {
-        if (streamText.includes("DATTA_IMAGE_END")) {
-          // Image complete - render it
-          const container = aiDiv.querySelector(".aiContent") || aiDiv
-          container.innerHTML = renderImageResponse(streamText)
-        } else {
-          // Still generating - show only animation, hide raw text
-          span.innerHTML = `<div style="display:flex;align-items:center;gap:10px;color:#888;font-size:14px;padding:8px 0;">
-            <span style="font-size:22px;">🎨</span>
-            <span>Generating your image...</span>
-            <span style="display:inline-flex;gap:3px;margin-left:4px;">
-              <span style="width:5px;height:5px;border-radius:50%;background:#00ff88;animation:imgDot 1s infinite 0s;display:inline-block;"></span>
-              <span style="width:5px;height:5px;border-radius:50%;background:#00ff88;animation:imgDot 1s infinite 0.3s;display:inline-block;"></span>
-              <span style="width:5px;height:5px;border-radius:50%;background:#00ff88;animation:imgDot 1s infinite 0.6s;display:inline-block;"></span>
-            </span>
-          </div>
-          <style>@keyframes imgDot{0%,100%{opacity:0.2;transform:scale(0.8)}50%{opacity:1;transform:scale(1)}}</style>`
-        }
-      } else {
-        // Normal text - split off any image markers
-        const cleanText = streamText.includes("DATTA_IMAGE_START")
-          ? streamText.split("DATTA_IMAGE_START")[0]
-          : streamText
-        if (cleanText.trim()) {
-          span.innerHTML = marked.parse(cleanText) + '<span class="cursor">▌</span>'
-        }
+      // Normal text rendering
+      if (streamText.trim()) {
+        span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>'
       }
       scrollBottom()
       lucide.createIcons()
     }
 
     // Final render
-    const isImgResponseFinal = streamText.includes("DATTA_IMAGE_START") || streamText.includes("pollinations.ai")
-    if (isImgResponseFinal) {
-      const container = aiDiv.querySelector(".aiContent") || aiDiv
-      container.innerHTML = renderImageResponse(streamText)
-    } else {
-      const finalClean = streamText.includes("DATTA_IMAGE_START")
-        ? streamText.split("DATTA_IMAGE_START")[0]
-        : streamText
-      span.innerHTML = marked.parse(finalClean)
-    }
+    span.innerHTML = marked.parse(streamText)
     lucide.createIcons()
     hideStopBtn()
     loadSidebar()
