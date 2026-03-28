@@ -540,14 +540,12 @@ function setFont(key, label) {
 function applyFont(key) {
   const family = fontFamilies[key] || fontFamilies.elegant
   const size = localStorage.getItem("datta_font_size") || "16"
-  const style = document.getElementById("datta-live-font") || document.getElementById("datta-font-style") || document.createElement("style")
-  style.id = "datta-live-font"
-  style.textContent = `
-    .aiBubble, .aiBubble p, .aiBubble li, .aiBubble td { font-family: ${family} !important; font-size: ${size}px !important; line-height: 1.8 !important; }
-    .userBubble { font-size: ${size}px !important; }
-    .stream { font-family: ${family} !important; font-size: ${size}px !important; }
-  `
-  document.head.appendChild(style)
+  // Update CSS variables - works everywhere
+  document.documentElement.style.setProperty("--ai-font", family)
+  document.documentElement.style.setProperty("--ai-font-size", size + "px")
+  // Update preview in settings
+  const preview = document.getElementById("fontPreviewText")
+  if (preview) { preview.style.fontFamily = family; preview.style.fontSize = size + "px" }
 }
 
 function previewFontSize(size) {
@@ -561,12 +559,9 @@ function previewFontSize(size) {
 function saveFontSize(size) {
   size = parseInt(size)
   localStorage.setItem("datta_font_size", size)
-
-  // Apply to preview in settings page
-  const style = document.getElementById("datta-size-style") || document.createElement("style")
-  style.id = "datta-size-style"
-  style.textContent = `.aiBubble, .aiBubble p, .aiBubble li, .userBubble, .stream { font-size: ${size}px !important; }`
-  document.head.appendChild(style)
+  // Update CSS variable
+  document.documentElement.style.setProperty("--ai-font-size", size + "px")
+  document.documentElement.style.setProperty("--user-font-size", size + "px")
 
   const labels = { 12:"Small", 13:"Small", 14:"Small", 15:"Medium", 16:"Medium", 17:"Medium", 18:"Large", 19:"Large", 20:"Large", 21:"Extra Large", 22:"Extra Large" }
   const desc = document.getElementById("fontsizeDesc")
