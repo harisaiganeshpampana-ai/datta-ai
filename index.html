@@ -367,24 +367,23 @@
     if (!document.hidden) closePlusMenu()
   })
 
-  // Close sheet when touching outside - but NOT model pill or dropdown
+  // Close sheet ONLY when clicking the overlay or chat area
   document.addEventListener("touchstart", function(e) {
     if (!SHEET_OPEN) return
-    if (e.target.closest("#addToChatSheet")) return
-    if (e.target.closest("#plusBtn")) return
-    if (e.target.closest("#activeModelPill")) return
-    if (e.target.closest("#modelDropdown")) return
-    closePlusMenu()
+    var sheet = document.getElementById("addToChatSheet")
+    if (!sheet) return
+    // Only close if touching the dimmed overlay (not the sheet itself or any input controls)
+    var inputArea = document.querySelector(".inputArea") || document.querySelector(".inputWrap")
+    if (e.target.id === "addToChatOverlay") {
+      closePlusMenu()
+    }
   }, { passive: true })
 
-  // Also close on desktop click outside
   document.addEventListener("click", function(e) {
     if (!SHEET_OPEN) return
-    if (e.target.closest("#addToChatSheet")) return
-    if (e.target.closest("#plusBtn")) return
-    if (e.target.closest("#activeModelPill")) return
-    if (e.target.closest("#modelDropdown")) return
-    closePlusMenu()
+    if (e.target.id === "addToChatOverlay") {
+      closePlusMenu()
+    }
   })
 
   // Force close on page load
@@ -768,694 +767,57 @@
 
 
 <!-- MODEL PICKER MODAL -->
-<div class="modelPickerOverlay" id="modelPickerOverlay" onclick="closeModelPicker()"></div>
-<div class="modelPickerModal" id="modelPickerModal">
-  <div class="modelPickerHeader">
-    <div class="modelPickerTitle">Choose Model</div>
-    <button class="modelPickerClose" onclick="closeModelPicker()">✕</button>
-  </div>
-  <div class="modelPickerList">
-
-    <!-- Datta 2.1 -->
-    <div class="modelCard active" id="mcard-d21" onclick="selectModel('llama-3.1-8b-instant','d21','','Datta 2.1')">
-      <div class="modelCardLeft">
-        <div class="modelCardIcon" style="background:linear-gradient(135deg,#1a1a1a,#2a2a2a);font-size:13px;font-weight:800;color:#aaa;font-family:Rajdhani,sans-serif;">2.1</div>
-        <div>
-          <div class="modelCardName">Datta 2.1 <span class="modelBadge free">FREE</span></div>
-          <div class="modelCardDesc">Lightweight model — default for Free plan. Simple and fast answers.</div>
-          <div class="modelCardFeatures">
-            <span class="mf">✓ Fast responses</span>
-            <span class="mf">✓ Simple Q&A</span>
-            <span class="mf">✓ Basic coding</span>
-            <span class="mf">✓ Uses limits slowly</span>
-          </div>
-        </div>
-      </div>
-      <div class="modelCardCheck" id="check-d21">✓</div>
-    </div>
-
-    <!-- Datta 4.2 -->
-    <div class="modelCard" id="mcard-d42" onclick="selectModel('llama-3.3-70b-versatile','d42','','Datta 4.2')">
-      <div class="modelCardLeft">
-        <div class="modelCardIcon" style="background:linear-gradient(135deg,#0a2a1a,#0a1a2a);font-size:13px;font-weight:800;color:#00ff88;font-family:Rajdhani,sans-serif;">4.2</div>
-        <div>
-          <div class="modelCardName">Datta 4.2 <span class="modelBadge free">FREE</span></div>
-          <div class="modelCardDesc">Balanced model — good for Pro users. Handles most tasks well.</div>
-          <div class="modelCardFeatures">
-            <span class="mf">✓ Good coding</span>
-            <span class="mf">✓ Writing & analysis</span>
-            <span class="mf">✓ Research tasks</span>
-            <span class="mf">✓ 70B parameters</span>
-          </div>
-        </div>
-      </div>
-      <div class="modelCardCheck" id="check-d42"></div>
-    </div>
-
-    <!-- Datta 4.8 -->
-    <div class="modelCard" id="mcard-d48" onclick="selectModel('deepseek-r1-distill-llama-70b','d48','','Datta 4.8')">
-      <div class="modelCardLeft">
-        <div class="modelCardIcon" style="background:linear-gradient(135deg,#1a0a2a,#2a0a1a);font-size:13px;font-weight:800;color:#aa66ff;font-family:Rajdhani,sans-serif;">4.8</div>
-        <div>
-          <div class="modelCardName">Datta 4.8 <span class="modelBadge pro">MAX</span></div>
-          <div class="modelCardDesc">Advanced reasoning model — great for Max plan. Deep thinking & logic.</div>
-          <div class="modelCardFeatures">
-            <span class="mf">✓ Deep reasoning</span>
-            <span class="mf">✓ Math & logic</span>
-            <span class="mf">✓ Complex coding</span>
-            <span class="mf">✓ Research & analysis</span>
-          </div>
-        </div>
-      </div>
-      <div class="modelCardCheck" id="check-d48"></div>
-    </div>
-
-    <!-- Datta 5.4 -->
-    <div class="modelCard" id="mcard-d54" onclick="selectModel('mixtral-8x7b-32768','d54','','Datta 5.4')">
-      <div class="modelCardLeft">
-        <div class="modelCardIcon" style="background:linear-gradient(135deg,#2a0a0a,#1a0a2a);font-size:13px;font-weight:800;color:#ff6644;font-family:Rajdhani,sans-serif;">5.4</div>
-        <div>
-          <div class="modelCardName">Datta 5.4 <span class="modelBadge vision">ULTRA</span></div>
-          <div class="modelCardDesc">Most powerful model — best on Ultra Max. Uses limits fast on lower plans.</div>
-          <div class="modelCardFeatures">
-            <span class="mf">✓ Ultra powerful</span>
-            <span class="mf">✓ 32K long context</span>
-            <span class="mf">✓ Creative writing</span>
-            <span class="mf">✓ Advanced coding</span>
-          </div>
-        </div>
-      </div>
-      <div class="modelCardCheck" id="check-d54"></div>
-    </div>
-
-  </div>
 </div>
 
-<script>
-// VERSION CHECK - runs first before anything else
-const SERVER = "https://datta-ai-server.onrender.com"
 
-async function checkVersion() {
-  try {
-    const res = await fetch(SERVER + "/version?v=" + APP_VERSION, { cache: "no-store" })
-    const data = await res.json()
-
-    if (data.updateRequired) {
-      // Just show banner - don't block app or redirect
-      const banner = document.getElementById("forceBanner")
-      if (banner) banner.style.display = "block"
-    }
-  } catch(e) {
-    // Server unreachable - allow app to open normally
-    console.log("Version check skipped")
-  }
-}
-
-function doUpdate() {
-  const btn = document.querySelector("#updateGate button")
-  if (btn) { btn.textContent = "Updating..."; btn.disabled = true }
-
-  // Clear all caches
-  if ("caches" in window) {
-    caches.keys().then(keys => keys.forEach(k => caches.delete(k)))
-  }
-
-  // Unregister service worker
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.getRegistrations().then(regs => {
-      regs.forEach(r => r.unregister())
-    })
-  }
-
-  // Hard reload
-  setTimeout(() => {
-    window.location.reload(true)
-  }, 500)
-}
-
-// Run version check immediately
-checkVersion()
-</script>
-
-<!-- AI LENS MODAL -->
-<div id="lensOverlay" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;flex-direction:column;">
-
-  <!-- Header -->
-  <div style="position:absolute;top:0;left:0;right:0;z-index:10;padding:16px;display:flex;align-items:center;justify-content:space-between;">
-    <button onclick="closeLens()" style="background:rgba(0,0,0,0.6);border:none;color:white;width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
-    <div style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;color:white;">
-      <span style="color:#00ff88;">✦</span> AI Lens
-    </div>
-    <div style="width:40px;"></div>
-  </div>
-
-  <!-- Camera viewfinder -->
-  <video id="lensVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video>
-  <canvas id="lensCanvas" style="display:none;"></canvas>
-
-  <!-- Scan frame overlay -->
-  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
-    <div id="scanFrame" style="width:260px;height:260px;position:relative;">
-      <!-- Corner borders -->
-      <div style="position:absolute;top:0;left:0;width:40px;height:40px;border-top:3px solid #00ff88;border-left:3px solid #00ff88;border-radius:4px 0 0 0;"></div>
-      <div style="position:absolute;top:0;right:0;width:40px;height:40px;border-top:3px solid #00ff88;border-right:3px solid #00ff88;border-radius:0 4px 0 0;"></div>
-      <div style="position:absolute;bottom:0;left:0;width:40px;height:40px;border-bottom:3px solid #00ff88;border-left:3px solid #00ff88;border-radius:0 0 0 4px;"></div>
-      <div style="position:absolute;bottom:0;right:0;width:40px;height:40px;border-bottom:3px solid #00ff88;border-right:3px solid #00ff88;border-radius:0 0 4px 0;"></div>
-      <!-- Scan line -->
-      <div id="scanLine" style="position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#00ff88,transparent);animation:scanMove 2s linear infinite;top:0;"></div>
-    </div>
-  </div>
-
-  <!-- Scan mode buttons -->
-  <div style="position:absolute;bottom:120px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10;">
-    <button class="lensModeBtn active" id="lensMode-identify" onclick="setLensMode('identify')">🔍 Identify</button>
-    <button class="lensModeBtn" id="lensMode-text" onclick="setLensMode('text')">📝 Read Text</button>
-    <button class="lensModeBtn" id="lensMode-translate" onclick="setLensMode('translate')">🌐 Translate</button>
-    <button class="lensModeBtn" id="lensMode-solve" onclick="setLensMode('solve')">🧮 Solve</button>
-  </div>
-
-  <!-- Capture button -->
-  <div style="position:absolute;bottom:30px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:20px;z-index:10;">
-    <input type="file" id="lensGallery" accept="image/*" style="display:none;" onchange="lensFromGallery(this)">
-    <button onclick="document.getElementById('lensGallery').click()" style="background:rgba(255,255,255,0.15);border:none;color:white;width:48px;height:48px;border-radius:50%;font-size:20px;cursor:pointer;">🖼️</button>
-    <button onclick="captureAndAnalyze()" id="lensCaptureBtn" style="width:72px;height:72px;border-radius:50%;background:white;border:4px solid #00ff88;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;">📸</button>
-    <button onclick="toggleLensFlash()" style="background:rgba(255,255,255,0.15);border:none;color:white;width:48px;height:48px;border-radius:50%;font-size:20px;cursor:pointer;" id="flashBtn">⚡</button>
-  </div>
-
-  <!-- Result panel -->
-  <div id="lensResult" style="display:none;position:absolute;bottom:0;left:0;right:0;background:#111;border-radius:24px 24px 0 0;padding:20px;max-height:60%;overflow-y:auto;z-index:20;">
-    <div style="width:36px;height:4px;background:#333;border-radius:2px;margin:0 auto 16px;"></div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-      <span style="font-size:18px;">✦</span>
-      <span style="font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;color:#00ff88;">AI Lens Result</span>
-    </div>
-    <div id="lensResultText" style="font-size:14px;color:#ccc;line-height:1.7;"></div>
-    <div style="display:flex;gap:8px;margin-top:16px;">
-      <button onclick="sendLensToChat()" style="flex:1;padding:12px;background:linear-gradient(135deg,#00cc6a,#00aaff);border:none;border-radius:12px;color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">💬 Ask More</button>
-      <button onclick="document.getElementById('lensResult').style.display='none'" style="padding:12px 16px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;color:#aaa;font-size:14px;cursor:pointer;">✕</button>
-    </div>
-  </div>
-
-</div>
-
-<style>
-@keyframes scanMove {
-  0% { top: 0; }
-  50% { top: calc(100% - 2px); }
-  100% { top: 0; }
-}
-
-.lensModeBtn {
-  padding: 6px 12px;
-  background: rgba(0,0,0,0.6);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 20px;
-  color: #aaa;
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s;
-  font-family: 'Rajdhani', sans-serif;
-}
-
-.lensModeBtn.active {
-  background: rgba(0,255,136,0.15);
-  border-color: #00ff8866;
-  color: #00ff88;
-}
-</style>
-
-<script>
-function hardUpdate() {
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function(regs) {
-      regs.forEach(function(r) { r.unregister() })
-    })
-  }
-  if ("caches" in window) {
-    caches.keys().then(function(keys) {
-      keys.forEach(function(k) { caches.delete(k) })
-    })
-  }
-  setTimeout(function() {
-    window.location.reload(true)
-  }, 300)
-}
-window.hardUpdate = hardUpdate
-
-
-</script>
-
-<!-- ATTRIBUTION - required for Llama/Groq usage -->
-<div style="display:none;" id="attribution">
-  Powered by Meta Llama models via Groq inference. 
-  Datta AI is an independent product not affiliated with Meta or Groq.
-</div>
-
-<!-- MODEL DROPDOWN - at body level so it's not clipped -->
-<div id="modelDropdown" style="display:none;position:fixed;bottom:90px;left:12px;right:12px;background:#111;border:1px solid #333;border-radius:16px;z-index:99999;padding:8px;box-shadow:0 -8px 32px rgba(0,0,0,0.8);" onclick="event.stopPropagation()">
-  <div style="font-size:11px;color:#555;padding:4px 8px 8px;text-transform:uppercase;letter-spacing:1px;">Select Model</div>
+<!-- MODEL DROPDOWN -->
+<div id="modelDropdown" style="display:none;position:fixed;bottom:90px;left:12px;right:12px;background:#111;border:1px solid #1e1e1e;border-radius:16px;z-index:99999;padding:8px;box-shadow:0 -8px 32px rgba(0,0,0,0.9);max-width:560px;margin:0 auto;" onclick="event.stopPropagation()">
+  <div style="font-size:10px;color:#444;padding:6px 10px 8px;letter-spacing:2px;text-transform:uppercase;">Select Model</div>
 
   <div class="modelDropItem active" id="mdi-d21" onclick="selectInputModel('llama-3.1-8b-instant','d21','Datta 2.1')">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div style="width:34px;height:34px;border-radius:10px;background:#111;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">💬</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:36px;height:36px;border-radius:10px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#aaa;flex-shrink:0;">2.1</div>
       <div>
         <div style="font-size:14px;font-weight:600;color:white;font-family:'Josefin Sans',sans-serif;">Datta 2.1</div>
-        <div style="font-size:11px;color:#555;margin-top:1px;">Casual chat · General questions · Quick answers</div>
+        <div style="font-size:11px;color:#555;margin-top:1px;">Casual chat · Quick answers</div>
       </div>
     </div>
     <span style="color:#00ff88;font-weight:700;font-size:16px;" id="mdic-d21">✓</span>
   </div>
 
   <div class="modelDropItem" id="mdi-d42" onclick="selectInputModel('llama-3.3-70b-versatile','d42','Datta 4.2')">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div style="width:34px;height:34px;border-radius:10px;background:#0a1a2a;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🔍</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:36px;height:36px;border-radius:10px;background:#0a1a2a;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#00ff88;flex-shrink:0;">4.2</div>
       <div>
         <div style="font-size:14px;font-weight:600;color:white;font-family:'Josefin Sans',sans-serif;">Datta 4.2</div>
-        <div style="font-size:11px;color:#555;margin-top:1px;">Deep search · Research · News · Facts · Analysis</div>
+        <div style="font-size:11px;color:#555;margin-top:1px;">Deep search · Research · Analysis</div>
       </div>
     </div>
     <span style="color:#00ff88;font-weight:700;font-size:16px;" id="mdic-d42"></span>
   </div>
 
   <div class="modelDropItem" id="mdi-d48" onclick="selectInputModel('llama-3.1-70b-specdec','d48','Datta 4.8')">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div style="width:34px;height:34px;border-radius:10px;background:#1a0a2a;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">⚡</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:36px;height:36px;border-radius:10px;background:#1a0a2a;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#aa66ff;flex-shrink:0;">4.8</div>
       <div>
         <div style="font-size:14px;font-weight:600;color:white;font-family:'Josefin Sans',sans-serif;">Datta 4.8</div>
-        <div style="font-size:11px;color:#555;margin-top:1px;">All-rounder · Writing · Math · Science · Creative</div>
+        <div style="font-size:11px;color:#555;margin-top:1px;">All-rounder · Writing · Math · Science</div>
       </div>
     </div>
     <span style="color:#00ff88;font-weight:700;font-size:16px;" id="mdic-d48"></span>
   </div>
 
   <div class="modelDropItem" id="mdi-d54" onclick="selectInputModel('meta-llama/llama-4-maverick-17b-128e-instruct','d54','Datta 5.4')">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div style="width:34px;height:34px;border-radius:10px;background:#2a0a0a;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">💻</div>
-      <div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:4px 0 12px;">
-    <!-- Camera -->
-    <button class="sheetBigBtn" onclick="triggerCamera();closePlusMenu()">
-      <div class="sheetBigIcon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-          <circle cx="12" cy="13" r="4"/>
-        </svg>
-      </div>
-      <span>Camera</span>
-    </button>
-    <!-- Photo -->
-    <button class="sheetBigBtn" onclick="triggerPhoto();closePlusMenu()">
-      <div class="sheetBigIcon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <rect x="3" y="3" width="18" height="18" rx="2"/>
-          <circle cx="8.5" cy="8.5" r="1.5"/>
-          <polyline points="21 15 16 10 5 21"/>
-        </svg>
-      </div>
-      <span>Photo</span>
-    </button>
-    <!-- Files -->
-    <button class="sheetBigBtn" onclick="triggerFile();closePlusMenu()">
-      <div class="sheetBigIcon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/>
-          <line x1="12" y1="3" x2="12" y2="15"/>
-        </svg>
-      </div>
-      <span>Files</span>
-    </button>
-  </div>
-
-  <div class="sheetDivider"></div>
-
-  <!-- Voice Assistant Row -->
-  <div class="sheetRow" onclick="openVoiceAssistant();closePlusMenu()">
-    <div class="sheetRowLeft">
-      <div class="sheetRowIcon" style="background:#0a1a2a;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00ccff" stroke-width="2">
-          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-          <line x1="12" y1="19" x2="12" y2="23"/>
-          <line x1="8" y1="23" x2="16" y2="23"/>
-        </svg>
-      </div>
-      <div>
-        <div class="sheetRowLabel">Voice Assistant</div>
-        <div class="sheetRowSub">Talk to Datta AI</div>
-      </div>
-    </div>
-    <span class="sheetRowArrow">›</span>
-  </div>
-
-  <!-- AI Lens Row -->
-  <div class="sheetRow" onclick="openLens();closePlusMenu()">
-    <div class="sheetRowLeft">
-      <div class="sheetRowIcon" style="background:#0a2a0a;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00ff88" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          <line x1="11" y1="8" x2="11" y2="14"/>
-          <line x1="8" y1="11" x2="14" y2="11"/>
-        </svg>
-      </div>
-      <div>
-        <div class="sheetRowLabel">AI Lens</div>
-        <div class="sheetRowSub">Scan &amp; analyze anything</div>
-      </div>
-    </div>
-    <span class="sheetRowArrow">›</span>
-  </div>
-
-  <!-- Web Search Row -->
-  <div class="sheetRow" onclick="document.getElementById('message').value='search: ';document.getElementById('message').focus();closePlusMenu()">
-    <div class="sheetRowLeft">
-      <div class="sheetRowIcon" style="background:#1a1a0a;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffcc00" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-      </div>
-      <div>
-        <div class="sheetRowLabel">Web Search</div>
-        <div class="sheetRowSub">Search the internet</div>
-      </div>
-    </div>
-    <span class="sheetRowArrow">›</span>
-  </div>
-
-  <!-- Export Chat Row -->
-  <div class="sheetRow" onclick="exportChat();closePlusMenu()">
-    <div class="sheetRowLeft">
-      <div class="sheetRowIcon" style="background:#1a0a1a;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#aa66ff" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-      </div>
-      <div>
-        <div class="sheetRowLabel">Export Chat</div>
-        <div class="sheetRowSub">Download as text file</div>
-      </div>
-    </div>
-    <span class="sheetRowArrow">›</span>
-  </div>
-
-
-<!-- MODEL PICKER MODAL -->
-<div class="modelPickerOverlay" id="modelPickerOverlay" onclick="closeModelPicker()"></div>
-<div class="modelPickerModal" id="modelPickerModal">
-  <div class="modelPickerHeader">
-    <div class="modelPickerTitle">Choose Model</div>
-    <button class="modelPickerClose" onclick="closeModelPicker()">✕</button>
-  </div>
-  <div class="modelPickerList">
-
-    <!-- Datta 2.1 -->
-    <div class="modelCard active" id="mcard-d21" onclick="selectModel('llama-3.1-8b-instant','d21','','Datta 2.1')">
-      <div class="modelCardLeft">
-        <div class="modelCardIcon" style="background:linear-gradient(135deg,#1a1a1a,#2a2a2a);font-size:13px;font-weight:800;color:#aaa;font-family:Rajdhani,sans-serif;">2.1</div>
-        <div>
-          <div class="modelCardName">Datta 2.1 <span class="modelBadge free">FREE</span></div>
-          <div class="modelCardDesc">Lightweight model — default for Free plan. Simple and fast answers.</div>
-          <div class="modelCardFeatures">
-            <span class="mf">✓ Fast responses</span>
-            <span class="mf">✓ Simple Q&A</span>
-            <span class="mf">✓ Basic coding</span>
-            <span class="mf">✓ Uses limits slowly</span>
-          </div>
-        </div>
-      </div>
-      <div class="modelCardCheck" id="check-d21">✓</div>
-    </div>
-
-    <!-- Datta 4.2 -->
-    <div class="modelCard" id="mcard-d42" onclick="selectModel('llama-3.3-70b-versatile','d42','','Datta 4.2')">
-      <div class="modelCardLeft">
-        <div class="modelCardIcon" style="background:linear-gradient(135deg,#0a2a1a,#0a1a2a);font-size:13px;font-weight:800;color:#00ff88;font-family:Rajdhani,sans-serif;">4.2</div>
-        <div>
-          <div class="modelCardName">Datta 4.2 <span class="modelBadge free">FREE</span></div>
-          <div class="modelCardDesc">Balanced model — good for Pro users. Handles most tasks well.</div>
-          <div class="modelCardFeatures">
-            <span class="mf">✓ Good coding</span>
-            <span class="mf">✓ Writing & analysis</span>
-            <span class="mf">✓ Research tasks</span>
-            <span class="mf">✓ 70B parameters</span>
-          </div>
-        </div>
-      </div>
-      <div class="modelCardCheck" id="check-d42"></div>
-    </div>
-
-    <!-- Datta 4.8 -->
-    <div class="modelCard" id="mcard-d48" onclick="selectModel('deepseek-r1-distill-llama-70b','d48','','Datta 4.8')">
-      <div class="modelCardLeft">
-        <div class="modelCardIcon" style="background:linear-gradient(135deg,#1a0a2a,#2a0a1a);font-size:13px;font-weight:800;color:#aa66ff;font-family:Rajdhani,sans-serif;">4.8</div>
-        <div>
-          <div class="modelCardName">Datta 4.8 <span class="modelBadge pro">MAX</span></div>
-          <div class="modelCardDesc">Advanced reasoning model — great for Max plan. Deep thinking & logic.</div>
-          <div class="modelCardFeatures">
-            <span class="mf">✓ Deep reasoning</span>
-            <span class="mf">✓ Math & logic</span>
-            <span class="mf">✓ Complex coding</span>
-            <span class="mf">✓ Research & analysis</span>
-          </div>
-        </div>
-      </div>
-      <div class="modelCardCheck" id="check-d48"></div>
-    </div>
-
-    <!-- Datta 5.4 -->
-    <div class="modelCard" id="mcard-d54" onclick="selectModel('mixtral-8x7b-32768','d54','','Datta 5.4')">
-      <div class="modelCardLeft">
-        <div class="modelCardIcon" style="background:linear-gradient(135deg,#2a0a0a,#1a0a2a);font-size:13px;font-weight:800;color:#ff6644;font-family:Rajdhani,sans-serif;">5.4</div>
-        <div>
-          <div class="modelCardName">Datta 5.4 <span class="modelBadge vision">ULTRA</span></div>
-          <div class="modelCardDesc">Most powerful model — best on Ultra Max. Uses limits fast on lower plans.</div>
-          <div class="modelCardFeatures">
-            <span class="mf">✓ Ultra powerful</span>
-            <span class="mf">✓ 32K long context</span>
-            <span class="mf">✓ Creative writing</span>
-            <span class="mf">✓ Advanced coding</span>
-          </div>
-        </div>
-      </div>
-      <div class="modelCardCheck" id="check-d54"></div>
-    </div>
-
-  </div>
-</div>
-
-<script>
-// VERSION CHECK - runs first before anything else
-// SERVER already declared above
-
-async function checkVersion() {
-  try {
-    const res = await fetch(SERVER + "/version?v=" + APP_VERSION, { cache: "no-store" })
-    const data = await res.json()
-
-    if (data.updateRequired) {
-      // Just show banner - don't block app or redirect
-      const banner = document.getElementById("forceBanner")
-      if (banner) banner.style.display = "block"
-    }
-  } catch(e) {
-    // Server unreachable - allow app to open normally
-    console.log("Version check skipped")
-  }
-}
-
-function doUpdate() {
-  const btn = document.querySelector("#updateGate button")
-  if (btn) { btn.textContent = "Updating..."; btn.disabled = true }
-
-  // Clear all caches
-  if ("caches" in window) {
-    caches.keys().then(keys => keys.forEach(k => caches.delete(k)))
-  }
-
-  // Unregister service worker
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.getRegistrations().then(regs => {
-      regs.forEach(r => r.unregister())
-    })
-  }
-
-  // Hard reload
-  setTimeout(() => {
-    window.location.reload(true)
-  }, 500)
-}
-
-// Run version check immediately
-checkVersion()
-</script>
-
-<!-- AI LENS MODAL -->
-<div id="lensOverlay" style="display:none;position:fixed;inset:0;background:#000;z-index:9999;flex-direction:column;">
-
-  <!-- Header -->
-  <div style="position:absolute;top:0;left:0;right:0;z-index:10;padding:16px;display:flex;align-items:center;justify-content:space-between;">
-    <button onclick="closeLens()" style="background:rgba(0,0,0,0.6);border:none;color:white;width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
-    <div style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;color:white;">
-      <span style="color:#00ff88;">✦</span> AI Lens
-    </div>
-    <div style="width:40px;"></div>
-  </div>
-
-  <!-- Camera viewfinder -->
-  <video id="lensVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video>
-  <canvas id="lensCanvas" style="display:none;"></canvas>
-
-  <!-- Scan frame overlay -->
-  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
-    <div id="scanFrame" style="width:260px;height:260px;position:relative;">
-      <!-- Corner borders -->
-      <div style="position:absolute;top:0;left:0;width:40px;height:40px;border-top:3px solid #00ff88;border-left:3px solid #00ff88;border-radius:4px 0 0 0;"></div>
-      <div style="position:absolute;top:0;right:0;width:40px;height:40px;border-top:3px solid #00ff88;border-right:3px solid #00ff88;border-radius:0 4px 0 0;"></div>
-      <div style="position:absolute;bottom:0;left:0;width:40px;height:40px;border-bottom:3px solid #00ff88;border-left:3px solid #00ff88;border-radius:0 0 0 4px;"></div>
-      <div style="position:absolute;bottom:0;right:0;width:40px;height:40px;border-bottom:3px solid #00ff88;border-right:3px solid #00ff88;border-radius:0 0 4px 0;"></div>
-      <!-- Scan line -->
-      <div id="scanLine" style="position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#00ff88,transparent);animation:scanMove 2s linear infinite;top:0;"></div>
-    </div>
-  </div>
-
-  <!-- Scan mode buttons -->
-  <div style="position:absolute;bottom:120px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10;">
-    <button class="lensModeBtn active" id="lensMode-identify" onclick="setLensMode('identify')">🔍 Identify</button>
-    <button class="lensModeBtn" id="lensMode-text" onclick="setLensMode('text')">📝 Read Text</button>
-    <button class="lensModeBtn" id="lensMode-translate" onclick="setLensMode('translate')">🌐 Translate</button>
-    <button class="lensModeBtn" id="lensMode-solve" onclick="setLensMode('solve')">🧮 Solve</button>
-  </div>
-
-  <!-- Capture button -->
-  <div style="position:absolute;bottom:30px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:20px;z-index:10;">
-    <input type="file" id="lensGallery" accept="image/*" style="display:none;" onchange="lensFromGallery(this)">
-    <button onclick="document.getElementById('lensGallery').click()" style="background:rgba(255,255,255,0.15);border:none;color:white;width:48px;height:48px;border-radius:50%;font-size:20px;cursor:pointer;">🖼️</button>
-    <button onclick="captureAndAnalyze()" id="lensCaptureBtn" style="width:72px;height:72px;border-radius:50%;background:white;border:4px solid #00ff88;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;">📸</button>
-    <button onclick="toggleLensFlash()" style="background:rgba(255,255,255,0.15);border:none;color:white;width:48px;height:48px;border-radius:50%;font-size:20px;cursor:pointer;" id="flashBtn">⚡</button>
-  </div>
-
-  <!-- Result panel -->
-  <div id="lensResult" style="display:none;position:absolute;bottom:0;left:0;right:0;background:#111;border-radius:24px 24px 0 0;padding:20px;max-height:60%;overflow-y:auto;z-index:20;">
-    <div style="width:36px;height:4px;background:#333;border-radius:2px;margin:0 auto 16px;"></div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-      <span style="font-size:18px;">✦</span>
-      <span style="font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;color:#00ff88;">AI Lens Result</span>
-    </div>
-    <div id="lensResultText" style="font-size:14px;color:#ccc;line-height:1.7;"></div>
-    <div style="display:flex;gap:8px;margin-top:16px;">
-      <button onclick="sendLensToChat()" style="flex:1;padding:12px;background:linear-gradient(135deg,#00cc6a,#00aaff);border:none;border-radius:12px;color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">💬 Ask More</button>
-      <button onclick="document.getElementById('lensResult').style.display='none'" style="padding:12px 16px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;color:#aaa;font-size:14px;cursor:pointer;">✕</button>
-    </div>
-  </div>
-
-</div>
-
-<style>
-@keyframes scanMove {
-  0% { top: 0; }
-  50% { top: calc(100% - 2px); }
-  100% { top: 0; }
-}
-
-.lensModeBtn {
-  padding: 6px 12px;
-  background: rgba(0,0,0,0.6);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 20px;
-  color: #aaa;
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s;
-  font-family: 'Rajdhani', sans-serif;
-}
-
-.lensModeBtn.active {
-  background: rgba(0,255,136,0.15);
-  border-color: #00ff8866;
-  color: #00ff88;
-}
-</style>
-
-<script>
-function hardUpdate() {
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function(regs) {
-      regs.forEach(function(r) { r.unregister() })
-    })
-  }
-  if ("caches" in window) {
-    caches.keys().then(function(keys) {
-      keys.forEach(function(k) { caches.delete(k) })
-    })
-  }
-  setTimeout(function() {
-    window.location.reload(true)
-  }, 300)
-}
-window.hardUpdate = hardUpdate
-
-
-</script>
-
-<!-- ATTRIBUTION - required for Llama/Groq usage -->
-<div style="display:none;" id="attribution">
-  Powered by Meta Llama models via Groq inference. 
-  Datta AI is an independent product not affiliated with Meta or Groq.
-</div>
-
-<!-- MODEL DROPDOWN - at body level so it's not clipped -->
-<div id="modelDropdown" style="display:none;position:fixed;bottom:90px;left:12px;right:12px;background:#111;border:1px solid #333;border-radius:16px;z-index:99999;padding:8px;box-shadow:0 -8px 32px rgba(0,0,0,0.8);" onclick="event.stopPropagation()">
-  <div style="font-size:11px;color:#555;padding:4px 8px 8px;text-transform:uppercase;letter-spacing:1px;">Select Model</div>
-
-  <div class="modelDropItem active" id="mdi-d21" onclick="selectInputModel('llama-3.1-8b-instant','d21','Datta 2.1')">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div style="width:34px;height:34px;border-radius:10px;background:#111;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">💬</div>
-      <div>
-        <div style="font-size:14px;font-weight:600;color:white;font-family:'Josefin Sans',sans-serif;">Datta 2.1</div>
-        <div style="font-size:11px;color:#555;margin-top:1px;">Casual chat · General questions · Quick answers</div>
-      </div>
-    </div>
-    <span style="color:#00ff88;font-weight:700;font-size:16px;" id="mdic-d21">✓</span>
-  </div>
-
-  <div class="modelDropItem" id="mdi-d42" onclick="selectInputModel('llama-3.3-70b-versatile','d42','Datta 4.2')">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div style="width:34px;height:34px;border-radius:10px;background:#0a1a2a;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🔍</div>
-      <div>
-        <div style="font-size:14px;font-weight:600;color:white;font-family:'Josefin Sans',sans-serif;">Datta 4.2</div>
-        <div style="font-size:11px;color:#555;margin-top:1px;">Deep search · Research · News · Facts · Analysis</div>
-      </div>
-    </div>
-    <span style="color:#00ff88;font-weight:700;font-size:16px;" id="mdic-d42"></span>
-  </div>
-
-  <div class="modelDropItem" id="mdi-d48" onclick="selectInputModel('llama-3.1-70b-specdec','d48','Datta 4.8')">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div style="width:34px;height:34px;border-radius:10px;background:#1a0a2a;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">⚡</div>
-      <div>
-        <div style="font-size:14px;font-weight:600;color:white;font-family:'Josefin Sans',sans-serif;">Datta 4.8</div>
-        <div style="font-size:11px;color:#555;margin-top:1px;">All-rounder · Writing · Math · Science · Creative</div>
-      </div>
-    </div>
-    <span style="color:#00ff88;font-weight:700;font-size:16px;" id="mdic-d48"></span>
-  </div>
-
-  <div class="modelDropItem" id="mdi-d54" onclick="selectInputModel('meta-llama/llama-4-maverick-17b-128e-instruct','d54','Datta 5.4')">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div style="width:34px;height:34px;border-radius:10px;background:#2a0a0a;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">💻</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:36px;height:36px;border-radius:10px;background:#2a0a0a;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#ff6644;flex-shrink:0;">5.4</div>
       <div>
         <div style="font-size:14px;font-weight:600;color:white;font-family:'Josefin Sans',sans-serif;">Datta 5.4</div>
-        <div style="font-size:11px;color:#555;margin-top:1px;">Full coding · Debugging · Web apps · All languages</div>
+        <div style="font-size:11px;color:#555;margin-top:1px;">Full coding · Debugging · All languages</div>
       </div>
     </div>
     <span style="color:#00ff88;font-weight:700;font-size:16px;" id="mdic-d54"></span>
   </div>
 </div>
+
 </body>
 </html>
