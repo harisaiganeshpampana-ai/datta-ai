@@ -1220,7 +1220,75 @@ body.light .sInput { background: #f5f5f5; border-color: #ddd; color: #111; }
 body.light .sSelect { background: #f5f5f5; border-color: #ddd; color: #111; }
 body.light .sidebarProfile { border-top-color: #e0e0e0; }
 body.light .profileName { color: #111; }
-body.light 
+
+/* Light theme - comprehensive fixes for all invisible text */
+body.light .topTitle { color: #111 !important; }
+body.light .chatBox { background: #f5f5f5; }
+body.light .messageRow { color: #111; }
+
+/* AI bubble */
+body.light .aiBubble { background: #fff; color: #111 !important; border: 1px solid #e0e0e0; }
+body.light .aiBubble p { color: #111 !important; }
+body.light .aiBubble li { color: #111 !important; }
+body.light .aiBubble h1, body.light .aiBubble h2, body.light .aiBubble h3 { color: #111 !important; }
+body.light .aiBubble strong { color: #000 !important; }
+body.light .aiBubble code { background: #f0f0f0; color: #d63031; }
+body.light .aiBubble pre { background: #f0f0f0; border: 1px solid #ddd; }
+body.light .aiBubble pre code { color: #2d3436; }
+body.light .stream { color: #111 !important; }
+
+/* User bubble */
+body.light .userBubble { background: #111; color: #fff !important; }
+
+/* Input area */
+body.light .inputWrap { background: #fff; border: 1px solid #ddd; }
+body.light #message { color: #111 !important; background: transparent; }
+body.light #message::placeholder { color: #aaa; }
+body.light .sendBtn { background: #111; color: #fff; }
+body.light .micBtn { color: #666; }
+
+/* Model pill */
+body.light .inputModelSingle { background: #f0f0f0; border-color: #ddd; color: #111; }
+body.light .activeModelName { color: #111; }
+body.light .modelDropdown { background: #fff; border-color: #ddd; }
+body.light .modelDropItem { color: #111; }
+body.light .modelDropItem:hover { background: #f5f5f5; }
+
+/* Sidebar */
+body.light .sidebar { background: #fafafa; }
+body.light .chatTitle { color: #333 !important; }
+body.light .chatTime { color: #999 !important; }
+body.light .sectionLabel { color: #999 !important; }
+body.light #history { color: #333; }
+body.light .newChatBtn { background: #111; color: #fff; }
+
+/* Welcome screen */
+body.light .welcomeScreen { background: #f5f5f5; }
+body.light .welcomeTitle { color: #111 !important; }
+body.light .welcomeSub { color: #888 !important; }
+body.light .chip { background: #fff; border-color: #e0e0e0; color: #333 !important; }
+body.light .chip:hover { background: #f0f0f0; color: #111 !important; }
+
+/* Topbar icons */
+body.light .topIconBtn { color: #666; border-color: #e0e0e0; }
+body.light .topIconBtn:hover { background: #f0f0f0; color: #111; }
+
+/* Thinking animation */
+body.light .thinkLabel { color: #666 !important; }
+
+/* Code blocks */
+body.light .codeBlock { background: #f8f8f8; border: 1px solid #e0e0e0; }
+body.light .codeLang { color: #666; background: #eee; }
+body.light .copyCodeBtn { color: #666; }
+
+/* Action buttons */
+body.light .actionBtn { color: #999; }
+body.light .actionBtn:hover { color: #333; background: #f0f0f0; }
+
+/* Toast */
+body.light .toast { background: #333; color: #fff; }
+
+
 
 /* WEB SEARCH INDICATOR */
 .searchingIndicator {
