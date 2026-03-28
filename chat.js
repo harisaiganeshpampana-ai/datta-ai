@@ -554,6 +554,22 @@ async function send() {
       
       hideStopBtn()
 
+      if (errData.error === "IMAGE_LIMIT") {
+        const isPlanBlock = errData.plan === "free"
+        aiDiv.innerHTML = `
+          <div class="aiContent">
+            <div style="background:#1a0a1a;border:1px solid #aa44ff33;border-radius:16px;padding:20px;text-align:center;max-width:300px;">
+              <div style="font-size:32px;margin-bottom:10px;">🎨</div>
+              <div style="font-weight:700;color:white;margin-bottom:6px;font-size:15px;">${isPlanBlock ? "Images not in Free plan" : "Image limit reached"}</div>
+              <div style="font-size:13px;color:#888;margin-bottom:16px;">${isPlanBlock ? "Upgrade to Pro to generate unlimited images!" : "Daily image limit reached. Upgrade for more."}</div>
+              <a href="pricing.html" style="display:inline-block;padding:10px 24px;background:linear-gradient(135deg,#aa44ff,#ff44aa);border-radius:20px;color:white;font-size:14px;font-weight:700;text-decoration:none;">⚡ Upgrade Now</a>
+            </div>
+          </div>
+        `
+        hideStopBtn()
+        return
+      }
+
       if (errData.error === "MESSAGE_LIMIT") {
         const waitMins = errData.waitMins || 0
         const plan = errData.plan || "free"
