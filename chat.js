@@ -1997,56 +1997,10 @@ const modelData = {
   brahma: { model: "llama-3.3-70b-versatile",       icon: "", name: "Datta 5.4" }
 }
 
-let currentModelKey = "veda"
-
-function openModelPicker() {
-  document.getElementById("modelPickerOverlay").classList.add("show")
-  document.getElementById("modelPickerModal").classList.add("show")
-}
-
-function closeModelPicker() {
-  document.getElementById("modelPickerOverlay").classList.remove("show")
-  document.getElementById("modelPickerModal").classList.remove("show")
-}
-
-function selectModel(modelId, key, icon, name) {
-  currentModelKey = key
-
-  // Update all cards
-  document.querySelectorAll(".modelCard").forEach(c => c.classList.remove("active"))
-  document.querySelectorAll(".modelCardCheck").forEach(c => c.textContent = "")
-
-  const card = document.getElementById("mcard-" + key)
-  const check = document.getElementById("check-" + key)
-  if (card) card.classList.add("active")
-  if (check) check.textContent = "✓"
-
-  // Update topbar button
-  const btnName = document.getElementById("modelBtnName")
-  if (btnName) btnName.textContent = name
-
-  // Update input bar pills
-  document.querySelectorAll(".inputModelPill").forEach(p => p.classList.remove("active"))
-  const pill = document.getElementById("imp-" + key)
-  if (pill) pill.classList.add("active")
-
-  // Save
-  localStorage.setItem("datta_model", modelId)
-  localStorage.setItem("datta_model_key", key)
-
-  showToast("Model: " + name)
-  setTimeout(closeModelPicker, 400)
-}
-
-// Load saved model on startup
-window.addEventListener("DOMContentLoaded", function() {
-  const savedKey = localStorage.getItem("datta_model_key") || "d21"
-  const saved = modelData[savedKey]
-  if (saved) {
-    selectModel(saved.model, savedKey, saved.icon, saved.name)
-  }
-})
-
+// Model picker removed - using modelDropdown only
+function openModelPicker() { toggleModelDropdown() }
+function closeModelPicker() { closeModelDropdown() }
+function selectModel(modelId, key, icon, name) { selectInputModel(modelId, key, name) }
 window.openModelPicker = openModelPicker
 window.closeModelPicker = closeModelPicker
 window.selectModel = selectModel
