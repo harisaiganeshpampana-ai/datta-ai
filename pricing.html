@@ -266,7 +266,12 @@ body{background:#0a0a0a;color:#fff;font-family:'Josefin Sans',sans-serif;min-hei
 const SERVER = "https://datta-ai-server.onrender.com"
 let isYearly = false, selectedPlan = null
 const M = { pro:999, max:2499, ultramax:4999 }
-const Y = { pro:799, max:1999, ultramax:3999 }
+// Yearly = total amount paid once per year (20% off monthly*12)
+const Y = { 
+  pro:    9590,    // ₹999 x 12 = ₹11,988 → 20% off = ₹9,590
+  max:    23990,   // ₹2499 x 12 = ₹29,988 → 20% off = ₹23,990
+  ultramax: 47990  // ₹4999 x 12 = ₹59,988 → 20% off = ₹47,990
+}
 const names = { free:"Free", pro:"Pro", max:"Max", ultramax:"Ultra Max" }
 
 const limits = {
@@ -360,17 +365,28 @@ function toggleBill(){
   document.getElementById("billTrack").classList.toggle("on", isYearly)
   document.getElementById("lbl-m").classList.toggle("on", !isYearly)
   document.getElementById("lbl-y").classList.toggle("on", isYearly)
-  const p = isYearly ? Y : M
-  const per = isYearly ? "/month · billed yearly" : "/month"
-  document.getElementById("pro-p").textContent = p.pro.toLocaleString("en-IN")
-  document.getElementById("max-p").textContent = p.max.toLocaleString("en-IN")
-  document.getElementById("ultra-p").textContent = p.ultramax.toLocaleString("en-IN")
-  document.getElementById("pro-per").textContent = per
-  document.getElementById("max-per").textContent = per
-  document.getElementById("ultra-per").textContent = per
-  document.getElementById("pro-old").textContent = isYearly ? "₹"+M.pro+"/mo normally" : ""
-  document.getElementById("max-old").textContent = isYearly ? "₹"+M.max+"/mo normally" : ""
-  document.getElementById("ultra-old").textContent = isYearly ? "₹"+M.ultramax+"/mo normally" : ""
+  if(isYearly){
+    // Show TOTAL yearly price paid once
+    document.getElementById("pro-p").textContent = Y.pro.toLocaleString("en-IN")
+    document.getElementById("max-p").textContent = Y.max.toLocaleString("en-IN")
+    document.getElementById("ultra-p").textContent = Y.ultramax.toLocaleString("en-IN")
+    document.getElementById("pro-per").textContent = "/year · Save ₹"+(M.pro*12-Y.pro).toLocaleString("en-IN")
+    document.getElementById("max-per").textContent = "/year · Save ₹"+(M.max*12-Y.max).toLocaleString("en-IN")
+    document.getElementById("ultra-per").textContent = "/year · Save ₹"+(M.ultramax*12-Y.ultramax).toLocaleString("en-IN")
+    document.getElementById("pro-old").textContent = "₹"+(M.pro*12).toLocaleString("en-IN")+" if monthly"
+    document.getElementById("max-old").textContent = "₹"+(M.max*12).toLocaleString("en-IN")+" if monthly"
+    document.getElementById("ultra-old").textContent = "₹"+(M.ultramax*12).toLocaleString("en-IN")+" if monthly"
+  } else {
+    document.getElementById("pro-p").textContent = M.pro.toLocaleString("en-IN")
+    document.getElementById("max-p").textContent = M.max.toLocaleString("en-IN")
+    document.getElementById("ultra-p").textContent = M.ultramax.toLocaleString("en-IN")
+    document.getElementById("pro-per").textContent = "/month"
+    document.getElementById("max-per").textContent = "/month"
+    document.getElementById("ultra-per").textContent = "/month"
+    document.getElementById("pro-old").textContent = ""
+    document.getElementById("max-old").textContent = ""
+    document.getElementById("ultra-old").textContent = ""
+  }
 }
 
 function showLimit(plan){
@@ -393,9 +409,10 @@ function closeLimitModal(){
 
 function openPay(plan){
   selectedPlan = plan
-  const p = isYearly ? Y : M
-  document.getElementById("payPlanName").textContent = names[plan] + " Plan"
-  document.getElementById("payPlanPrice").textContent = "₹" + p[plan].toLocaleString("en-IN")
+  const amount = isYearly ? Y[plan] : M[plan]
+  const label = isYearly ? names[plan]+" Plan (Yearly)" : names[plan]+" Plan (Monthly)"
+  document.getElementById("payPlanName").textContent = label
+  document.getElementById("payPlanPrice").textContent = "₹" + amount.toLocaleString("en-IN")
   document.getElementById("payMsg").textContent = ""
   document.getElementById("payOverlay").classList.add("show")
 }
@@ -413,8 +430,7 @@ async function payRazorpay(){
   msg.textContent = "Creating order..."
   msg.style.color = "#888"
   try{
-    const p = isYearly ? Y : M
-    const amount = p[selectedPlan]
+    const amount = isYearly ? Y[selectedPlan] : M[selectedPlan]
     const res = await fetch(SERVER+"/payment/razorpay-order",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
