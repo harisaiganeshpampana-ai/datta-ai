@@ -921,29 +921,39 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
         const isPDF = file.mimetype === "application/pdf" || file.originalname?.toLowerCase().endsWith(".pdf")
         
         if (isPDF) {
-          // Extract text from PDF using basic text extraction
-          const pdfBuffer = file.buffer
-          // Simple PDF text extraction - look for text streams
           let pdfText = ""
           try {
-            const pdfStr = pdfBuffer.toString("binary")
-            // Extract readable text from PDF binary
-            const textMatches = pdfStr.match(/BT[\s\S]*?ET/g) || []
-            const tjMatches = pdfStr.match(/\(([^)]{1,500})\)\s*Tj/g) || []
-            const textContent = tjMatches.map(m => m.replace(/\(([^)]*)\)\s*Tj/, "$1")).join(" ")
-            
-            // Also try to get plain readable chars
-            const readable = pdfStr.replace(/[^\x20-\x7E]/g, " ").replace(/\s+/g, " ")
-            const words = readable.split(" ").filter(w => w.length > 2 && /^[a-zA-Z0-9.,!?;:'"()-]+$/.test(w))
-            pdfText = textContent || words.join(" ")
-            pdfText = pdfText.substring(0, 8000) // Limit to 8000 chars
+            // Use pdf-parse library for proper text extraction
+            const pdfData = await pdfParse(file.buffer)
+            pdfText = (pdfData.text || "").trim()
+            console.log("PDF extracted:", pdfText.length, "chars, pages:", pdfData.numpages)
+            // Limit to 12000 chars to fit in context
+            if (pdfText.length > 12000) pdfText = pdfText.substring(0, 12000) + "\n...[truncated]"
           } catch(e) {
-            pdfText = "Could not extract text from PDF"
+            console.log("pdf-parse failed:", e.message)
+            // Fallback: extract readable ASCII text
+            try {
+              const raw = file.buffer.toString("latin1")
+              const words = []
+              let word = ""
+              for (const ch of raw) {
+                const code = ch.charCodeAt(0)
+                if (code >= 32 && code <= 126) word += ch
+                else if (word.length > 2) { words.push(word); word = "" }
+                else word = ""
+              }
+              pdfText = words.filter(w => /[a-zA-Z]{2,}/.test(w)).join(" ").substring(0, 8000)
+            } catch(e2) {
+              pdfText = ""
+            }
           }
-          
-          userContent = (message ? message + "\n\n" : "") + 
-            "[PDF: " + file.originalname + "]\n\n" +
-            (pdfText || "Could not extract PDF text") + searchContext
+
+          if (!pdfText || pdfText.length < 20) {
+            userContent = (message || "Please describe this PDF") + "\n\n[PDF: " + file.originalname + "]\n\nCould not extract text from this PDF. It may be scanned/image-based."
+          } else {
+            userContent = (message ? message + "\n\n" : "") +
+              "[PDF: " + file.originalname + "]\n\nPDF CONTENT:\n" + pdfText + searchContext
+          }
         } else {
           // Text files - read as UTF-8
           const fileText = file.buffer.toString("utf-8").substring(0, 8000)
