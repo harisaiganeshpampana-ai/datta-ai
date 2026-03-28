@@ -226,10 +226,14 @@
       <input type="file" id="photoInput" accept="image/*" style="display:none;">
 
       <!-- File preview -->
-      <div id="filePreviewWrap" style="display:none;">
+      <div id="filePreviewWrap" style="display:none;padding:4px 4px 0;">
         <div class="filePreviewChip">
-          <span id="filePreview"></span>
-          <button id="clearFile" onclick="clearFileSelection()">✕</button>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00ff88" stroke-width="2" style="flex-shrink:0;">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          <span id="filePreview" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;"></span>
+          <button id="clearFile" onclick="clearFileSelection()" title="Remove file">✕</button>
         </div>
       </div>
 
@@ -424,14 +428,22 @@
   }
 
   function clearFileSelection() {
+    // Clear all file inputs including PDF
     ["cameraInput","photoInput","imageInput"].forEach(id => {
       const el = document.getElementById(id)
       if (el) el.value = ""
     })
+    // Clear global file variable used in send()
+    window._selectedFile = null
+    if (typeof window._chatFile !== "undefined") window._chatFile = null
+    // Reset preview UI
     const preview = document.getElementById("filePreview")
     const wrap = document.getElementById("filePreviewWrap")
     if (preview) preview.textContent = ""
     if (wrap) wrap.style.display = "none"
+    // Focus input
+    const msg = document.getElementById("message")
+    if (msg) msg.focus()
   }
 
   window.clearFileSelection = clearFileSelection
