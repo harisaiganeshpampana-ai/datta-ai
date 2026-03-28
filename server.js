@@ -142,7 +142,7 @@ const MemorySchema = new mongoose.Schema({
 const Memory = mongoose.model("Memory", MemorySchema)
 
 const planLimits = {
-  free:      { messages: 25,     images: 0,      resetHours: 99999, firstTimeMessages: 25, afterMessages: 8 },
+  free:      { messages: 50,     images: 0,      resetHours: 24,    firstTimeMessages: 50, afterMessages: 20 },
   pro:       { messages: 100,    images: 20,     resetHours: 4 },
   max:       { messages: 200,    images: 30,     resetHours: 3 },
   ultramax:  { messages: 999999, images: 100,    resetHours: 0 },
@@ -178,10 +178,12 @@ async function checkAndUpdateLimitDB(userId, plan, type) {
     }
   }
 
-  // Free plan: first 25 messages free, then 8 per session
+  // Free plan: first 50 messages ever, then 20/day
   let limit = limits[type]
   if (plan === "free" && type === "messages") {
-    if (usage.totalMessages >= 25) limit = 8
+    if (usage.totalMessages >= 50) {
+      limit = 20  // 20 per day after first 50
+    }
   }
 
   const current = type === "messages" ? usage.messagesUsed : usage.imagesUsed
@@ -221,7 +223,7 @@ function checkAndUpdateLimit(userId, plan, type) {
     store.count = 0; store.windowStart = now
   }
   let limit = limits[type]
-  if (plan === "free" && type === "messages" && store.totalEver >= 25) limit = 8
+  if (plan === "free" && type === "messages" && store.totalEver >= 50) limit = 20
   if (store.count >= limit) {
     const waitMs = resetMs > 0 && resetMs < 999999*3600*1000 ? resetMs-(now-store.windowStart) : 0
     return { allowed: false, type, plan, waitMins: waitMs>0?Math.ceil(waitMs/60000):0, limit }
