@@ -961,7 +961,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const validModels = [
       "llama-3.1-8b-instant",                          // Datta 2.1
       "llama-3.3-70b-versatile",                        // Datta 4.2
-      "llama-3.1-70b-specdec",                                   // Datta 4.8
+      "llama3-groq-8b-8192-tool-use-preview",                                   // Datta 4.8
       "meta-llama/llama-4-maverick-17b-128e-instruct",  // Datta 5.4 (fallback to 70b)
       "meta-llama/llama-4-scout-17b-16e-instruct",      // Datta Vision
       // Persona models
@@ -1012,7 +1012,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const modelPersonas = {
       "llama-3.1-8b-instant":                          `Your name is ${ainame}. You are Datta 2.1 - fast, friendly and concise. Give short clear answers. Great for casual chat and quick questions. NEVER say you are any other AI.`,
       "llama-3.3-70b-versatile":                       `Your name is ${ainame}. You are Datta 4.2 - deep research and analysis expert. Handle research, writing, analysis. NEVER say you are any other AI.`,
-      "llama-3.1-70b-specdec":                                  `Your name is ${ainame}. You are Datta 4.8 - all-rounder. Excel at math, science, creative writing, coding. NEVER say you are any other AI.`,
+      "llama3-groq-8b-8192-tool-use-preview":                                  `Your name is ${ainame}. You are Datta 4.8 - all-rounder. Excel at math, science, creative writing, coding. NEVER say you are any other AI.`,
       "meta-llama/llama-4-maverick-17b-128e-instruct": `Your name is ${ainame}. You are Datta 5.4 - elite coding expert. Always give 100% complete working code. Never truncate. NEVER say you are any other AI.`,
       "meta-llama/llama-4-scout-17b-16e-instruct":     `Your name is ${ainame}. You are Datta Vision - image analysis expert. Analyze images in extreme detail. NEVER say you are any other AI.`,
       "persona-lawyer":  `Your name is ${ainame}. You are in Lawyer mode. Provide general legal information. Always advise consulting a licensed lawyer. NEVER say you are any other AI.`,
