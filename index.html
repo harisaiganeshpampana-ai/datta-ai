@@ -2,6 +2,29 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script>
+// Apply saved font & size IMMEDIATELY before render
+(function(){
+  const fonts = {
+    elegant:"'Cormorant Garamond',serif",
+    modern:"'Inter',sans-serif",
+    classic:"'Georgia',serif",
+    rounded:"'Nunito',sans-serif",
+    mono:"'Courier New',monospace"
+  }
+  const font = localStorage.getItem("datta_font") || "elegant"
+  const size = localStorage.getItem("datta_font_size") || "16"
+  const family = fonts[font] || fonts.elegant
+  const s = document.createElement("style")
+  s.id = "datta-live-font"
+  s.textContent = `
+    .aiBubble, .aiBubble p, .aiBubble li, .aiBubble td { font-family: ${family} !important; font-size: ${size}px !important; line-height: 1.8 !important; }
+    .userBubble { font-size: ${size}px !important; }
+    .stream { font-family: ${family} !important; font-size: ${size}px !important; }
+  `
+  document.head.appendChild(s)
+})()
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Nunito:wght@300;400;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Josefin+Sans:wght@300;400;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
