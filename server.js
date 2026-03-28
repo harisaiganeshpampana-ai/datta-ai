@@ -142,7 +142,7 @@ const MemorySchema = new mongoose.Schema({
 const Memory = mongoose.model("Memory", MemorySchema)
 
 const planLimits = {
-  free:      { messages: 50,     images: 0,      resetHours: 24,    firstTimeMessages: 50, afterMessages: 20 },
+  free:      { messages: 50,     images: 0,      resetHours: 5,     firstTimeMessages: 50, afterMessages: 20 },
   pro:       { messages: 100,    images: 20,     resetHours: 4 },
   max:       { messages: 200,    images: 30,     resetHours: 3 },
   ultramax:  { messages: 999999, images: 100,    resetHours: 0 },
@@ -1339,22 +1339,23 @@ app.get("/user/usage", authMiddleware, async (req, res) => {
       ? 0
       : Math.max(0, resetMs - (now - usage.windowStart))
 
-    // Apply free plan logic
+    // Apply free plan logic - first 50 free, then 20 per 5 hours
     let msgLimit = limits.messages
-    if (plan === "free" && usage.totalMessages >= 25) msgLimit = 8
+    if (plan === "free" && (usage.totalMessages || 0) >= 50) msgLimit = 20
+
+    const waitMins = resetIn > 0 ? Math.ceil(resetIn / 60000) : 0
 
     res.json({
       plan,
       messagesUsed: usage.messagesUsed || 0,
       imagesUsed: usage.imagesUsed || 0,
-      totalMessagesEver: usage.totalMessages || 0,
-      totalImagesEver: usage.totalImages || 0,
-      resetIn,
-      limits: {
-        messages: msgLimit,
-        images: limits.images,
-        resetHours: limits.resetHours
-      }
+      totalMessages: usage.totalMessages || 0,
+      totalImages: usage.totalImages || 0,
+      limit: msgLimit,
+      imageLimit: limits.images,
+      resetHours: limits.resetHours,
+      waitMins,
+      resetIn
     })
   } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
