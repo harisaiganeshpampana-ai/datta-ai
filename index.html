@@ -236,7 +236,7 @@
       <!-- Model selector row - INSIDE input box like Claude -->
       <!-- Single model pill - click shows all models like Claude -->
       <div class="inputModelBar">
-        <button class="inputModelSingle" id="activeModelPill" onclick="toggleModelDropdown()">
+        <button class="inputModelSingle" id="activeModelPill" onclick="event.stopPropagation();toggleModelDropdown()">
           <span id="activeModelName">Datta 2.1</span>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
@@ -367,15 +367,25 @@
     if (!document.hidden) closePlusMenu()
   })
 
-  // CRITICAL: Close sheet on any scroll or touch on chat area
+  // Close sheet when touching outside - but NOT model pill or dropdown
   document.addEventListener("touchstart", function(e) {
-    var sheet = document.getElementById("addToChatSheet")
-    var plusBtn = document.getElementById("plusBtn")
-    if (!sheet || !plusBtn) return
-    if (!e.target.closest("#addToChatSheet") && !e.target.closest("#plusBtn")) {
-      closePlusMenu()
-    }
+    if (!SHEET_OPEN) return
+    if (e.target.closest("#addToChatSheet")) return
+    if (e.target.closest("#plusBtn")) return
+    if (e.target.closest("#activeModelPill")) return
+    if (e.target.closest("#modelDropdown")) return
+    closePlusMenu()
   }, { passive: true })
+
+  // Also close on desktop click outside
+  document.addEventListener("click", function(e) {
+    if (!SHEET_OPEN) return
+    if (e.target.closest("#addToChatSheet")) return
+    if (e.target.closest("#plusBtn")) return
+    if (e.target.closest("#activeModelPill")) return
+    if (e.target.closest("#modelDropdown")) return
+    closePlusMenu()
+  })
 
   // Force close on page load
   window.addEventListener("load", function() {
@@ -1028,7 +1038,7 @@ window.hardUpdate = hardUpdate
     <span style="color:#00ff88;font-weight:700;font-size:16px;" id="mdic-d42"></span>
   </div>
 
-  <div class="modelDropItem" id="mdi-d48" onclick="selectInputModel('gemma2-9b-it','d48','Datta 4.8')">
+  <div class="modelDropItem" id="mdi-d48" onclick="selectInputModel('llama-3.1-70b-specdec','d48','Datta 4.8')">
     <div style="display:flex;align-items:center;gap:10px;">
       <div style="width:34px;height:34px;border-radius:10px;background:#1a0a2a;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">⚡</div>
       <div>
@@ -1425,7 +1435,7 @@ window.hardUpdate = hardUpdate
     <span style="color:#00ff88;font-weight:700;font-size:16px;" id="mdic-d42"></span>
   </div>
 
-  <div class="modelDropItem" id="mdi-d48" onclick="selectInputModel('gemma2-9b-it','d48','Datta 4.8')">
+  <div class="modelDropItem" id="mdi-d48" onclick="selectInputModel('llama-3.1-70b-specdec','d48','Datta 4.8')">
     <div style="display:flex;align-items:center;gap:10px;">
       <div style="width:34px;height:34px;border-radius:10px;background:#1a0a2a;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">⚡</div>
       <div>
