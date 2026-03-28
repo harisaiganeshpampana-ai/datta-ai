@@ -2006,9 +2006,9 @@ body.light .toast { background: #333; color: #fff; }
 
 .sheetTopBtns {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
-  padding: 8px 16px 16px;
+  padding: 12px 16px;
 }
 
 .sheetBigBtn {
@@ -2016,29 +2016,31 @@ body.light .toast { background: #333; color: #fff; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 20px 10px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
-  border-radius: 14px;
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
+  gap: 8px;
+  padding: 14px 8px;
+  background: #111;
+  border: 1px solid #1e1e1e;
+  border-radius: 16px;
+  color: #aaa;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
   cursor: pointer;
   transition: all 0.2s;
+  font-family: 'Josefin Sans', sans-serif;
 }
-
-.sheetBigBtn:hover { background: #222; border-color: #333; }
-.sheetBigBtn:active { transform: scale(0.97); }
+.sheetBigBtn:hover { background: #161616; border-color: #2a2a2a; color: white; }
+.sheetBigBtn:active { transform: scale(0.96); }
 
 .sheetBigIcon {
-  width: 52px; height: 52px;
-  background: #222;
-  border-radius: 12px;
+  width: 46px;
+  height: 46px;
+  background: #1a1a1a;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ccc;
+  color: #888;
 }
 
 .sheetDivider {
