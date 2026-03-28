@@ -142,12 +142,12 @@ const MemorySchema = new mongoose.Schema({
 const Memory = mongoose.model("Memory", MemorySchema)
 
 const planLimits = {
-  free:      { messages: 50,     images: 0,      resetHours: 5,     firstTimeMessages: 50, afterMessages: 20 },
-  pro:       { messages: 100,    images: 20,     resetHours: 4 },
-  max:       { messages: 200,    images: 30,     resetHours: 3 },
-  ultramax:  { messages: 999999, images: 100,    resetHours: 0 },
-  basic:     { messages: 100,    images: 20,     resetHours: 4 },
-  enterprise:{ messages: 999999, images: 100,    resetHours: 0 }
+  free:      { messages: 50,     images: 0,       resetHours: 5  },
+  pro:       { messages: 150,    images: 20,      resetHours: 4  },
+  max:       { messages: 2000,   images: 50,      resetHours: 3  },
+  ultramax:  { messages: 999999, images: 999999,  resetHours: 0  },
+  basic:     { messages: 150,    images: 20,      resetHours: 4  },
+  enterprise:{ messages: 999999, images: 999999,  resetHours: 0  }
 }
 const rateLimitStore = {}
 
@@ -223,7 +223,7 @@ function checkAndUpdateLimit(userId, plan, type) {
     store.count = 0; store.windowStart = now
   }
   let limit = limits[type]
-  if (plan === "free" && type === "messages" && store.totalEver >= 50) limit = 20
+  // simple limit - no special free logic needed
   if (store.count >= limit) {
     const waitMs = resetMs > 0 && resetMs < 999999*3600*1000 ? resetMs-(now-store.windowStart) : 0
     return { allowed: false, type, plan, waitMins: waitMs>0?Math.ceil(waitMs/60000):0, limit }
@@ -838,26 +838,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const userPlan = sub ? sub.plan : "free"
     const userIsAdmin = isAdmin(req)
 
-    if (isImageRequest(message)) {
-      if (!userIsAdmin) {
-        if (userPlan === "free") {
-          return res.status(429).json({
-            error: "IMAGE_LIMIT",
-            message: "Image generation is not available on the Free plan. Upgrade to Pro!",
-            plan: userPlan,
-            waitMins: 0,
-            limit: 0
-          })
-        }
-        const imgCheck = await checkAndUpdateLimitDB(userId, userPlan, "images")
-        if (!imgCheck.allowed) return res.status(429).json({ 
-          error: "IMAGE_LIMIT", 
-          message: "Image generation limit reached. Upgrade your plan for more images.",
-          plan: userPlan, 
-          waitMins: imgCheck.waitMins, 
-          limit: imgCheck.limit 
-        })
-      }
+    if (false) {
+      // Image generation removed
     } else {
       if (!userIsAdmin) {
         const msgCheck = await checkAndUpdateLimitDB(userId, userPlan, "messages")
@@ -1339,9 +1321,7 @@ app.get("/user/usage", authMiddleware, async (req, res) => {
       ? 0
       : Math.max(0, resetMs - (now - usage.windowStart))
 
-    // Apply free plan logic - first 50 free, then 20 per 5 hours
     let msgLimit = limits.messages
-    if (plan === "free" && (usage.totalMessages || 0) >= 50) msgLimit = 20
 
     const waitMins = resetIn > 0 ? Math.ceil(resetIn / 60000) : 0
 
