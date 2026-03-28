@@ -318,19 +318,7 @@ function needsWebSearch(message) {
   return triggers.some(t => msg.includes(t))
 }
 
-function isImageRequest(message) {
-  if (!message) return false
-  const msg = message.toLowerCase()
-  return ["generate image","create image","make image","generate a image","create a image","generate an image","create an image","make an image","generate photo","create photo","generate picture","create picture","generate art","create art","make art","draw","paint","illustrate","sketch","image of","picture of","photo of","show me a image","show me an image","genrate","generat"].some(t => msg.includes(t))
-}
 
-function getImagePrompt(message) {
-  let prompt = message.trim()
-  const removes = ["generate an image of","create an image of","generate a image of","create a image of","generate image of","create image of","generate an image","create an image","generate a image","create a image","generate image","create image","make image","generate photo","create photo","generate picture","create picture","generate art","create art","make art","draw me a","draw me an","draw me","draw a","draw an","draw","paint a","paint an","paint","illustrate","sketch of","sketch a","sketch","image of a","image of an","image of","picture of","photo of","genrate an","genrate a","genrate","generat an","generat a","generat"]
-  removes.sort((a, b) => b.length - a.length)
-  removes.forEach(r => { prompt = prompt.replace(new RegExp("^" + r.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*", "i"), "") })
-  return prompt.trim() || message
-}
 
 // -- BROWSE URL (using Tavily extract) ----------------------------------------
 async function browseUrl(url) {
@@ -874,90 +862,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     res.setHeader("x-chat-id", chat._id.toString())
     res.setHeader("Content-Type", "text/plain")
 
-    // IMAGE GENERATION
-    if (message && isImageRequest(message)) {
-      const rawPrompt = getImagePrompt(message)
-      // Light enhancement only - don't override the user's intent
-      const imagePrompt = rawPrompt + ", high quality, detailed, beautiful"
-      console.log("Generating image:", imagePrompt)
-      let imageUrl = null
 
-      // IMAGE GENERATION
-      const seed = Math.floor(Math.random() * 999999)
-
-      // 1. Pollinations FIRST - fastest and most reliable
-      try {
-        console.log("Trying Pollinations FLUX...")
-        const polUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed + "&enhance=true"
-        const polRes = await fetch(polUrl, {
-          headers: { "User-Agent": "DattaAI/1.0" },
-          signal: AbortSignal.timeout(25000)
-        })
-        if (polRes.ok) {
-          const buf = await polRes.arrayBuffer()
-          if (buf.byteLength > 5000) {
-            imageUrl = "data:image/jpeg;base64," + Buffer.from(buf).toString("base64")
-            console.log("Pollinations success! Size:", buf.byteLength)
-          }
-        }
-      } catch(e) { console.log("Pollinations error:", e.message) }
-
-      // 2. Together AI FLUX - skip if no credits
-      if (false && !imageUrl && process.env.TOGETHER_API_KEY) {
-        try {
-          console.log("Trying Together AI FLUX...")
-          const togetherRes = await fetch("https://api.together.xyz/v1/images/generations", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": "Bearer " + process.env.TOGETHER_API_KEY
-            },
-            body: JSON.stringify({
-              model: "black-forest-labs/FLUX.1-schnell-Free",
-              prompt: imagePrompt,
-              width: 1024,
-              height: 1024,
-              steps: 4,
-              n: 1,
-              seed: seed
-            }),
-            signal: AbortSignal.timeout(20000)
-          })
-          if (togetherRes.ok) {
-            const togetherData = await togetherRes.json()
-            const imgB64 = togetherData.data?.[0]?.b64_json
-            const imgUrl = togetherData.data?.[0]?.url
-            if (imgB64) {
-              imageUrl = "data:image/jpeg;base64," + imgB64
-              console.log("Together AI success!")
-            } else if (imgUrl) {
-              const imgRes = await fetch(imgUrl, { signal: AbortSignal.timeout(10000) })
-              if (imgRes.ok) {
-                const buf = await imgRes.arrayBuffer()
-                imageUrl = "data:image/jpeg;base64," + Buffer.from(buf).toString("base64")
-              }
-            }
-          } else {
-            const err = await togetherRes.json().catch(() => ({}))
-            console.log("Together AI error:", err.error?.message || togetherRes.status)
-          }
-        } catch(e) { console.log("Together AI error:", e.message) }
-      }
-
-      // 3. Last resort - direct Pollinations URL
-      if (!imageUrl) {
-        imageUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(imagePrompt) + "?width=1024&height=1024&nologo=true&model=flux&seed=" + seed
-        console.log("Using direct Pollinations URL as last resort")
-      }
-
-      const responseText = "DATTA_IMAGE_START\n![" + imagePrompt + "](" + imageUrl + ")\nPROMPT:" + imagePrompt + "\nDATTA_IMAGE_END"
-      res.write(responseText)
-      chat.messages.push({ role: "assistant", content: responseText })
-      await chat.save()
-      res.write("CHATID" + chat._id)
-      res.end()
-      return
-    }
 
     // BROWSE URL - if message contains a URL
     let urlContext = ""
