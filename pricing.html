@@ -2,10 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Josefin+Sans:wght@300;400;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>Datta AI - Plans</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+
+
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; font-family:system-ui,Arial,sans-serif; }
@@ -151,79 +154,11 @@ body { background:#0a0a0a; color:white; min-height:100vh; }
       <span class="pricePeriod">/month</span>
     </div>
     <ul class="planFeatureList">
-      <li><span class="fi yes">✓</span><span>First 25 messages free</span></li>
-      <li><span class="fi yes">✓</span><span>Then only 8 msg/session</span></li>
-      <li><span class="fi yes">✓</span><span>3 image generations</span></li>
-      <li><span class="fi yes">✓</span><span>Voice assistant</span></li>
-      <li><span class="fi yes">✓</span><span>Web search</span></li>
-      <li><span class="fi no">✗</span><span>More messages</span></li>
-      <li><span class="fi no">✗</span><span>API access</span></li>
-    </ul>
-    <button class="planBtn free-btn current-btn" id="btn-free">Current Plan</button>
-  </div>
-
-  <!-- PRO -->
-  <div class="planCard" id="card-pro">
-    <div class="planEmoji">⚡</div>
-    <div class="planName">Pro</div>
-    <div class="planDesc">For regular users who need more</div>
-    <div class="planPrice">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-        <span class="priceAmount" id="proPrice">Rs.99</span>
-        <span style="background:#ff440022;color:#ff6644;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700;border:1px solid #ff440044;">TRIAL</span>
-      </div>
-      <span class="pricePeriod" id="proPeriod">/month</span>
-      <div style="font-size:11px;color:#888;margin-top:2px;">First month trial · then Rs.1,000/mo</div>
-      <div class="savingLine" style="display:none;font-size:12px;color:#00ff88;margin-top:4px;" id="proSaving"></div>
-    </div>
-    <ul class="planFeatureList">
-      <li><span class="fi yes">✓</span><span>100 messages per 4 hours</span></li>
-      <li><span class="fi yes">✓</span><span>Reset every 2 hours</span></li>
-      <li><span class="fi yes">✓</span><span>20 image generations/day</span></li>
-      <li><span class="fi yes">✓</span><span>Voice assistant</span></li>
-      <li><span class="fi yes">✓</span><span>Web search</span></li>
-      <li><span class="fi yes">✓</span><span>All AI models</span></li>
-      <li><span class="fi no">✗</span><span>API access</span></li>
-    </ul>
-    <button class="planBtn pro-btn" id="btn-pro" onclick="openPay('pro')">Get Pro — ₹99 Trial</button>
-  </div>
-
-  <!-- MAX -->
-  <div class="planCard popular" id="card-max">
-    <div class="popularTag">⭐ Most Popular</div>
-    <div class="planEmoji">🚀</div>
-    <div class="planName">Max</div>
-    <div class="planDesc">Best for power users & creators</div>
-    <div class="planPrice">
-      <span class="priceAmount" id="maxPrice">Rs.2,500</span>
-      <span class="pricePeriod" id="maxPeriod">/month</span>
-      <div class="savingLine" style="display:none;font-size:12px;color:#00ff88;margin-top:4px;" id="maxSaving"></div>
-    </div>
-    <ul class="planFeatureList">
-      <li><span class="fi yes">✓</span><span>200 messages per 3 hours</span></li>
-      <li><span class="fi yes">✓</span><span>Reset every 2 hours</span></li>
-      <li><span class="fi yes">✓</span><span>30 image generations/day</span></li>
-      <li><span class="fi yes">✓</span><span>Voice assistant</span></li>
-      <li><span class="fi yes">✓</span><span>Web search</span></li>
-      <li><span class="fi yes">✓</span><span>All AI models</span></li>
-      <li><span class="fi yes">✓</span><span>Custom AI name</span></li>
-    </ul>
-    <button class="planBtn max-btn" id="btn-max" onclick="openPay('max')">Get Max</button>
-  </div>
-
-  <!-- ULTRA MAX -->
-  <div class="planCard" id="card-ultramax">
-    <div class="planEmoji">👑</div>
-    <div class="planName">Ultra Max</div>
-    <div class="planDesc">For teams & businesses</div>
-    <div class="planPrice">
-      <span class="priceAmount" id="ultramaxPrice">Rs.5,000</span>
-      <span class="pricePeriod" id="ultramaxPeriod">/month</span>
-      <div class="savingLine" style="display:none;font-size:12px;color:#00ff88;margin-top:4px;" id="ultramaxSaving"></div>
-    </div>
-    <ul class="planFeatureList">
-      <li><span class="fi yes">✓</span><span>Unlimited everything</span></li>
-      <li><span class="fi yes">✓</span><span>Unlimited image generation</span></li>
+      
+      
+      
+      
+      
       <li><span class="fi yes">✓</span><span>API access (1000 req/day)</span></li>
       <li><span class="fi yes">✓</span><span>Priority faster responses</span></li>
       <li><span class="fi yes">✓</span><span>Custom AI name</span></li>
