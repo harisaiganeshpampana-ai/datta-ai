@@ -263,17 +263,18 @@ async function webSearch(query) {
   try {
     const key = process.env.TAVILY_API_KEY
     if (!key) return null
+    const isFactualQuery = ["father of","mother of","inventor of","founded by","discovered by","who invented","who is the"].some(t => query.toLowerCase().includes(t))
+    const searchQuery = isFactualQuery ? query + " Wikipedia" : query
     const response = await fetch("https://api.tavily.com/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         api_key: key,
-        query,
+        query: searchQuery,
         search_depth: "advanced",
-        max_results: 10,
+        max_results: 7,
         include_answer: true,
-        include_raw_content: false,
-        include_domains: []
+        include_raw_content: false
       })
     })
     if (!response.ok) return null
