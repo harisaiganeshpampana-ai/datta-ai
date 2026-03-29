@@ -1,3 +1,6 @@
+const SERVER = SERVER + ""
+
+
 // '''''''''''''''''''''''''''''''''''''''''''
 // SINGLE INIT - runs everything on load
 // '''''''''''''''''''''''''''''''''''''''''''
@@ -24,7 +27,7 @@ async function shareChatLink() {
   if (!currentChatId) { showToast("Start a chat first!"); return }
   try {
     showToast("Creating share link...")
-    const res = await fetch("https://datta-ai-server.onrender.com/chat/" + currentChatId + "/share", {
+    const res = await fetch(SERVER + "/chat/" + currentChatId + "/share", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token: getToken() })
@@ -47,7 +50,7 @@ async function executeCode(btn) {
   btn.disabled = true
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/execute", {
+    const res = await fetch(SERVER + "/execute", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code, language: lang, token: getToken() })
@@ -656,7 +659,7 @@ async function send() {
   showStopBtn()
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/chat", {
+    const res = await fetch(SERVER + "/chat", {
       method: "POST",
       signal: controller.signal,
       body: formData
@@ -867,7 +870,7 @@ let sidebarFixDone = false
 
 async function loadSidebar() {
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/chats?token=" + getToken())
+    const res = await fetch(SERVER + "/chats?token=" + getToken())
 
     // If 401 redirect to login
     if (res.status === 401) {
@@ -889,7 +892,7 @@ async function loadSidebar() {
       const badTitles = ["hi","hii","hiii","hello","hey","helo","hai","new conversation","new chat"]
       const hasBad = chats.some(c => badTitles.includes(c.title.toLowerCase().trim()))
       if (hasBad) {
-        fetch("https://datta-ai-server.onrender.com/chats/fix-titles?token=" + getToken(), {
+        fetch(SERVER + "/chats/fix-titles?token=" + getToken(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token: getToken() })
@@ -954,7 +957,7 @@ async function openChat(chatId) {
   chatBox.innerHTML = ""
   hideWelcome()
 
-  const res = await fetch("https://datta-ai-server.onrender.com/chat/" + chatId + "?token=" + getToken())
+  const res = await fetch(SERVER + "/chat/" + chatId + "?token=" + getToken())
   const messages = await res.json()
 
   messages.forEach(m => {
@@ -1021,7 +1024,7 @@ function confirmDelete(e, id) {
 async function deleteChat(id, chatItem) {
   try {
     if (chatItem) chatItem.style.opacity = "0.4"
-    await fetch("https://datta-ai-server.onrender.com/chat/" + id + "?token=" + getToken(), {
+    await fetch(SERVER + "/chat/" + id + "?token=" + getToken(), {
       method: "DELETE"
     })
     if (chatItem) chatItem.remove()
@@ -1072,7 +1075,7 @@ async function regenerateFrom(btn) {
 
   controller = new AbortController()
 
-  const res = await fetch("https://datta-ai-server.onrender.com/chat", {
+  const res = await fetch(SERVER + "/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     signal: controller.signal,
@@ -1419,7 +1422,7 @@ async function changeUsername() {
   if (newUsername.length < 3) return showSettingsMsg("Username must be at least 3 characters", "error")
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/auth/update-username", {
+    const res = await fetch(SERVER + "/auth/update-username", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: newUsername, token: datta_token })
@@ -1455,7 +1458,7 @@ async function changePassword() {
   if (newPass !== confirm) return showSettingsMsg("Passwords do not match", "error")
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/auth/change-password", {
+    const res = await fetch(SERVER + "/auth/change-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ currentPassword: current, newPassword: newPass, token: datta_token })
@@ -1520,7 +1523,7 @@ async function deleteAllChats() {
   if (!confirm("Are you sure? This will delete ALL your chats permanently!")) return
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/chats/all?token=" + getToken(), {
+    const res = await fetch(SERVER + "/chats/all?token=" + getToken(), {
       method: "DELETE"
     })
     if (!res.ok) return showSettingsMsg("Failed to delete chats", "error")
@@ -1543,7 +1546,7 @@ async function deleteAccount() {
   if (!confirm("This will PERMANENTLY delete your account. Are you absolutely sure?")) return
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/auth/delete-account", {
+    const res = await fetch(SERVER + "/auth/delete-account", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password, token: datta_token })
@@ -1769,7 +1772,7 @@ async function processVoiceQuery(query) {
     formData.append("ainame", localStorage.getItem("datta_ai_name") || "Datta AI")
     formData.append("voice", "true")
 
-    const res = await fetch("https://datta-ai-server.onrender.com/chat", {
+    const res = await fetch(SERVER + "/chat", {
       method: "POST",
       body: formData
     })
@@ -1997,7 +2000,7 @@ const planVersions = {
 
 async function loadUserVersion() {
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/payment/subscription?token=" + getToken())
+    const res = await fetch(SERVER + "/payment/subscription?token=" + getToken())
     if (!res.ok) return
     const data = await res.json()
     const plan = data.plan || "free"
@@ -2377,7 +2380,7 @@ window.copyCodeBlock = copyCodeBlock
 // ══════════════════════════════════════════════════════
 async function saveDailyMemory(key, value) {
   try {
-    await fetch("https://datta-ai-server.onrender.com/memory/" + key, {
+    await fetch(SERVER + "/memory/" + key, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ value, token: getToken() })
@@ -2938,7 +2941,7 @@ window.addEventListener("DOMContentLoaded", async function() {
 
   // Check if already verified from server
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/payment/subscription?token=" + getToken())
+    const res = await fetch(SERVER + "/payment/subscription?token=" + getToken())
     if (!res.ok) return
   } catch(e) { return }
 
@@ -2966,7 +2969,7 @@ window.addEventListener("DOMContentLoaded", async function() {
 
 async function resendVerification() {
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/auth/resend-verification", {
+    const res = await fetch(SERVER + "/auth/resend-verification", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token: getToken() })
@@ -3094,7 +3097,7 @@ window.deleteChat = deleteChat
 async function exportChat() {
   if (!currentChatId) return showToast("No chat to export")
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/chat/" + currentChatId + "/export?token=" + getToken())
+    const res = await fetch(SERVER + "/chat/" + currentChatId + "/export?token=" + getToken())
     if (!res.ok) return showToast("Export failed")
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)
@@ -3111,7 +3114,7 @@ window.exportChat = exportChat
 // REFERRAL
 async function showReferral() {
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/referral/code?token=" + getToken())
+    const res = await fetch(SERVER + "/referral/code?token=" + getToken())
     const data = await res.json()
     const msg = `Your referral code: ${data.code}
 
@@ -3402,7 +3405,7 @@ async function captureAndAnalyze() {
     const base64 = imageData.split(",")[1]
     const prompt = lensModePrompts[lensMode]
 
-    const res = await fetch("https://datta-ai-server.onrender.com/lens", {
+    const res = await fetch(SERVER + "/lens", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ image: base64, prompt, token: getToken() })
@@ -3446,7 +3449,7 @@ function lensFromGallery(input) {
     try {
       const base64 = e.target.result.split(",")[1]
       const prompt = lensModePrompts[lensMode]
-      const res = await fetch("https://datta-ai-server.onrender.com/lens", {
+      const res = await fetch(SERVER + "/lens", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: base64, prompt, token: getToken() })
