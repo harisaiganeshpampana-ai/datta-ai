@@ -525,32 +525,83 @@ async function send() {
   })
   if (typeof clearFileSelection === "function") clearFileSelection()
 
-  // Detect request type for indicator
-  const searchTriggers = ["latest news","breaking news","live score","stock price","crypto price","bitcoin price","gold price","petrol price","weather in","weather today","who won","election result","trending now","ipl 2025","ipl 2026","world cup","search for","look up","news about","just happened","announced today"]
-  const willSearch = searchTriggers.some(t => text.toLowerCase().includes(t))
+  // Detect request type for smart thinking steps
+  const msgLow = text.toLowerCase()
+  const willSearch = ["latest news","breaking news","live score","stock price","crypto price","bitcoin price","gold price","petrol price","weather in","weather today","who won","election result","trending now","ipl 2025","ipl 2026","world cup","search for","look up","news about","just happened","announced today"].some(t => msgLow.includes(t))
+  const willCode = ["build","create a website","write code","make an app","html","python","javascript","css","react","debug","fix this code","script"].some(t => msgLow.includes(t))
+  const willAnalyze = ["analyze","analyse","explain","summarize","what is","who is","how does","why does","pdf","document","file"].some(t => msgLow.includes(t))
+  const willPlan = ["business plan","fitness plan","study plan","workout plan","meal plan","project plan","roadmap","strategy"].some(t => msgLow.includes(t))
 
-  // Show appropriate indicator
+  // Build smart thinking steps
+  function getThinkingSteps() {
+    if (willSearch) return [
+      { icon:"🔍", text:"Reading your question..." },
+      { icon:"🌐", text:"Searching the web..." },
+      { icon:"📊", text:"Analyzing results..." },
+      { icon:"✍️", text:"Writing answer..." }
+    ]
+    if (willCode) return [
+      { icon:"🧠", text:"Understanding requirements..." },
+      { icon:"🏗️", text:"Planning structure..." },
+      { icon:"💻", text:"Writing code..." },
+      { icon:"✅", text:"Reviewing output..." }
+    ]
+    if (willPlan) return [
+      { icon:"📋", text:"Understanding your goal..." },
+      { icon:"🔎", text:"Researching best practices..." },
+      { icon:"🏗️", text:"Building your plan..." },
+      { icon:"✍️", text:"Writing full document..." }
+    ]
+    if (willAnalyze) return [
+      { icon:"📖", text:"Reading content..." },
+      { icon:"🧠", text:"Processing information..." },
+      { icon:"💡", text:"Forming insights..." },
+      { icon:"✍️", text:"Writing response..." }
+    ]
+    return [
+      { icon:"🧠", text:"Thinking..." },
+      { icon:"💡", text:"Forming answer..." }
+    ]
+  }
+
+  const steps = getThinkingSteps()
+
   let aiDiv = document.createElement("div")
   aiDiv.className = "messageRow"
-
-  // Glowing orb pulse animation
-  const orbColors = willSearch
-    ? { main:"#00ccff", glow:"rgba(0,200,255,0.4)", label:"Searching web...", icon:"🌐" }
-    : { main:"#00ff88", glow:"rgba(0,255,136,0.4)", label:"Thinking...", icon:"" }
-
   aiDiv.innerHTML = `
-    <div class="dattaThinking">
-      <div class="thinkOrb" style="--orb-color:${orbColors.main};--orb-glow:${orbColors.glow};">
-        <div class="thinkOrbCore"></div>
-        <div class="thinkOrbRing r1"></div>
-        <div class="thinkOrbRing r2"></div>
-        <div class="thinkOrbRing r3"></div>
+    <div class="thinkingBlock" id="thinkingBlock">
+      <div class="thinkingHeader">
+        <div class="thinkingOrb"></div>
+        <span class="thinkingTitle">Thinking</span>
+        <span class="thinkingDots"><span>.</span><span>.</span><span>.</span></span>
       </div>
-      <div class="thinkLabel">${orbColors.icon ? orbColors.icon + " " : ""}${orbColors.label}</div>
+      <div class="thinkingSteps" id="thinkingSteps">
+        ${steps.map((s,i) => `
+          <div class="thinkStep" id="thinkStep${i}" style="opacity:0;transform:translateY(6px);transition:all 0.3s ease ${i*0.4}s;">
+            <span class="thinkStepIcon">${s.icon}</span>
+            <span class="thinkStepText">${s.text}</span>
+            <span class="thinkStepLoader" id="stepLoader${i}"></span>
+          </div>`).join("")}
+      </div>
     </div>
   `
   chatBox.appendChild(aiDiv)
   chatBox.scrollTop = chatBox.scrollHeight
+
+  // Animate steps in sequence
+  steps.forEach((s, i) => {
+    setTimeout(() => {
+      const el = document.getElementById("thinkStep" + i)
+      if (el) { el.style.opacity = "1"; el.style.transform = "translateY(0)" }
+      // Mark previous step done
+      if (i > 0) {
+        const prev = document.getElementById("stepLoader" + (i-1))
+        const prevEl = document.getElementById("thinkStep" + (i-1))
+        if (prev) prev.innerHTML = '<span style="color:#00ff88;">✓</span>'
+        if (prevEl) prevEl.style.opacity = "0.5"
+      }
+    }, i * 400)
+  })
 
   // Build FormData
   controller = new AbortController()
@@ -663,6 +714,21 @@ async function send() {
     if (!currentChatId && chatIdFromHeader) {
       currentChatId = chatIdFromHeader
       localStorage.setItem("datta_last_chat", currentChatId)
+    }
+
+    // Mark all thinking steps as done before replacing
+    const thinkBlock = document.getElementById("thinkingBlock")
+    if (thinkBlock) {
+      const allSteps = thinkBlock.querySelectorAll(".thinkStep")
+      allSteps.forEach(s => {
+        s.style.opacity = "0.4"
+        const loader = s.querySelector(".thinkStepLoader")
+        if (loader) loader.innerHTML = '<span style="color:#00ff88;font-size:11px;">✓</span>'
+      })
+      const orb = thinkBlock.querySelector(".thinkingOrb")
+      if (orb) { orb.style.background = "#00ff88"; orb.style.animation = "none" }
+      // Brief pause then swap
+      await new Promise(r => setTimeout(r, 300))
     }
 
     // Replace typing indicator with response bubble
