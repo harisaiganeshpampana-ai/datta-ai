@@ -610,6 +610,8 @@ async function send() {
   const finalText = (!text && file && file.type.startsWith("image/"))
     ? "Please analyze and describe this image in detail."
     : text
+  // Save for retry
+  window.lastUserMsg = finalText
   formData.append("message", finalText)
   formData.append("chatId", currentChatId || "")
   formData.append("token", getToken())
@@ -714,6 +716,13 @@ async function send() {
     if (!currentChatId && chatIdFromHeader) {
       currentChatId = chatIdFromHeader
       localStorage.setItem("datta_last_chat", currentChatId)
+    }
+
+    // Upgrade Render message for long tasks
+    if (!res.ok && res.status === 504) {
+      aiDiv.innerHTML = `<div class="aiContent"><div class="aiBubble" style="background:#110a0a;border:1px solid #ff444422;"><div style="color:#ff8888;font-weight:600;margin-bottom:8px;">⏱️ Server timeout</div><div style="color:#888;font-size:13px;margin-bottom:12px;">This task was too large for the free server. Try breaking it into smaller parts, or upgrade Render to paid plan.</div></div></div>`
+      hideStopBtn()
+      return
     }
 
     // Mark all thinking steps as done before replacing
@@ -829,8 +838,24 @@ async function send() {
     if (err.name === "AbortError") {
       console.log("Request cancelled")
     } else {
+      console.error("Chat error:", err.message)
       aiDiv.innerHTML = `
-        <div class="aiBubble" style="color:#f88;">⚠️ Something went wrong. Please try again.</div>
+        <div class="aiContent">
+          <div class="aiBubble" style="background:#110a0a;border:1px solid #ff444422;">
+            <div style="color:#ff8888;font-size:15px;font-weight:600;margin-bottom:8px;">⚠️ Connection issue</div>
+            <div style="color:#888;font-size:13px;margin-bottom:14px;">The server took too long to respond. This happens when the server is waking up (free plan). Please wait 10 seconds and try again.</div>
+            <div style="display:flex;gap:8px;">
+              <button onclick="document.getElementById('message').value='${(lastUserMsg||"").replace(/'/g,"\'")}';sendMessage()" 
+                style="padding:8px 18px;background:#00ff8822;border:1px solid #00ff8844;border-radius:10px;color:#00ff88;font-size:13px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">
+                🔄 Try Again
+              </button>
+              <button onclick="this.closest('.aiContent').closest('.messageRow').remove()"
+                style="padding:8px 14px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;color:#666;font-size:13px;cursor:pointer;">
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
       `
     }
   }
