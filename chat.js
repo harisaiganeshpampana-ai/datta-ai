@@ -1,4 +1,4 @@
-const SERVER = "https://datta-ai-server.onrender.com"
+const SERVER = "https://datta-ai-production.up.railway.app"
 
 
 // '''''''''''''''''''''''''''''''''''''''''''
