@@ -1013,7 +1013,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "llama-3.1-8b-instant",                          // Datta 2.1
       "llama-3.3-70b-versatile",                        // Datta 4.2
       "llama-3.3-70b-versatile",                                   // Datta 4.8
-      "meta-llama/llama-4-maverick-17b-128e-instruct-fp8-fast",  // Datta 5.4 (fallback to 70b)
+      "llama-3.3-70b-versatile",  // Datta 5.4 (fallback to 70b)
       "meta-llama/llama-4-scout-17b-16e-instruct",      // Datta Vision
       // Persona models
       "datta-1.1",
@@ -1031,7 +1031,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "datta-2.1":  "llama-3.1-8b-instant",
       "datta-4.2":  "llama-3.3-70b-versatile",
       "datta-4.8":  "llama-3.3-70b-versatile",
-      "datta-5.4":  "meta-llama/llama-4-maverick-17b-128e-instruct-fp8-fast",
+      "datta-5.4":  "llama-3.3-70b-versatile",
       // Persona modes use Datta 1.1 (8b) or 4.2 (70b)
       "persona-lawyer":   "llama-3.1-8b-instant",
       "persona-teacher":  "llama-3.1-8b-instant",
@@ -1072,11 +1072,11 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     let autoSwitchMsg = ""
     if (isCodeTask && !isImageFile && nonCodingModels.includes(resolvedModel) && !chosenModel.startsWith("persona-")) {
       autoSwitchMsg = "Switching to **Datta 5.4** for this coding task...\n\n"
-      resolvedModel = "meta-llama/llama-4-maverick-17b-128e-instruct-fp8-fast"
+      resolvedModel = "llama-3.3-70b-versatile"
     }
     // Now set final model AFTER any auto-switch
     let model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : resolvedModel
-    const isD54 = resolvedModel === "meta-llama/llama-4-maverick-17b-128e-instruct-fp8-fast"
+    const isD54 = resolvedModel === "llama-3.3-70b-versatile"
     const maxCodingTok = isD54 ? 8192 : isCodeTask ? 8192 : 6144
     const maxTok = isImageFile ? 4096 : maxCodingTok
 
@@ -1104,7 +1104,7 @@ ONLY handle: research, facts, news, analysis, writing, explanations, general kno
 If asked to write code or build apps: say "I am Datta 4.2, switching you to Datta 5.4 (coding expert)..." - the system will handle the switch automatically.
 Give clear helpful answers in simple English. NEVER say you are any other AI.`,
 
-      "meta-llama/llama-4-maverick-17b-128e-instruct-fp8-fast": `Your name is ${ainame}. You are Datta 5.4 - the ONLY coding expert in Datta AI.
+      "llama-3.3-70b-versatile": `Your name is ${ainame}. You are Datta 5.4 - the ONLY coding expert in Datta AI.
 Write 100% complete working code. Never truncate. All languages supported.
 Explain briefly after code. NEVER say you are any other AI.`,
       "meta-llama/llama-4-scout-17b-16e-instruct":     `Your name is ${ainame}. You are Datta Vision - image analysis expert. Analyze images in extreme detail. NEVER say you are any other AI.`,
