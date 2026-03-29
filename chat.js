@@ -307,9 +307,74 @@ function startImgLoadingText(uid) {
 }
 window.startImgLoadingText = startImgLoadingText
 // AUTH CHECK - redirect to login if not logged in
-// Configure marked for clean rendering
+// Configure marked with enhanced rendering - emojis, icons, beautiful output
 if (typeof marked !== 'undefined') {
+  const renderer = new marked.Renderer()
+
+  // Beautiful headings with emoji icons
+  renderer.heading = function(text, level) {
+    const icons = { 1:"✨", 2:"📌", 3:"▶️" }
+    const sizes = { 1:"22px", 2:"18px", 3:"16px" }
+    const icon = icons[level] || "•"
+    return `<div style="display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-weight:700;font-size:${sizes[level]};color:#fff;font-family:'Josefin Sans',sans-serif;letter-spacing:0.5px;">
+      <span>${icon}</span><span>${text}</span>
+    </div>`
+  }
+
+  // Beautiful list items with checkmark style
+  renderer.listitem = function(text) {
+    return `<li style="display:flex;gap:8px;align-items:flex-start;margin:6px 0;line-height:1.7;">
+      <span style="color:#00ff88;flex-shrink:0;margin-top:2px;">›</span>
+      <span>${text}</span>
+    </li>`
+  }
+
+  // Beautiful unordered list
+  renderer.list = function(body, ordered) {
+    const tag = ordered ? "ol" : "ul"
+    return `<${tag} style="padding:0;margin:10px 0;list-style:none;">${body}</${tag}>`
+  }
+
+  // Beautiful blockquote
+  renderer.blockquote = function(quote) {
+    return `<blockquote style="border-left:3px solid #00ff88;padding:10px 16px;margin:12px 0;background:#0a1a0a;border-radius:0 8px 8px 0;color:#aaa;font-style:italic;">${quote}</blockquote>`
+  }
+
+  // Code with syntax highlight style
+  renderer.code = function(code, lang) {
+    const langLabel = lang ? `<span style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;">${lang}</span>` : ""
+    return `<div style="margin:12px 0;border-radius:10px;overflow:hidden;border:1px solid #1e1e1e;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#0a0a0a;border-bottom:1px solid #1a1a1a;">
+        ${langLabel}
+        <button onclick="navigator.clipboard.writeText(this.closest('div').nextElementSibling.innerText);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)"
+          style="font-size:11px;color:#555;background:none;border:none;cursor:pointer;font-family:'Josefin Sans',sans-serif;letter-spacing:1px;">Copy</button>
+      </div>
+      <pre style="margin:0;padding:14px;background:#0d0d0d;overflow-x:auto;"><code style="font-family:'Courier New',monospace;font-size:13px;color:#e0e0e0;line-height:1.6;">${code.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</code></pre>
+    </div>`
+  }
+
+  // Inline code
+  renderer.codespan = function(code) {
+    return `<code style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:5px;padding:2px 7px;font-size:13px;color:#00ff88;font-family:'Courier New',monospace;">${code}</code>`
+  }
+
+  // Strong/bold
+  renderer.strong = function(text) {
+    return `<strong style="color:#fff;font-weight:700;">${text}</strong>`
+  }
+
+  // Horizontal rule as divider
+  renderer.hr = function() {
+    return `<hr style="border:none;border-top:1px solid #1e1e1e;margin:16px 0;">`
+  }
+
+  // Links
+  renderer.link = function(href, title, text) {
+    return `<a href="${href}" target="_blank" style="color:#00ccff;text-decoration:none;border-bottom:1px solid #00ccff44;">${text} ↗</a>`
+  }
+
   marked.setOptions({
+    renderer,
     breaks: true,
     gfm: true,
     headerIds: false,
