@@ -570,7 +570,14 @@ app.post("/auth/login", async (req, res) => {
     if (!user) user = await User.findOne({ email: { $regex: new RegExp("^" + email.trim() + "$", "i") } })
     
     if (!user) return res.status(400).json({ error: "No account found with this email. Please sign up first." })
-    if (!user.password) return res.status(400).json({ error: "This account uses a different login method. Try phone OTP." })
+    
+    // If Google account with no password - auto set the provided password
+    if (!user.password) {
+      const hashed = await bcrypt.hash(password, 10)
+      await User.findByIdAndUpdate(user._id, { password: hashed })
+      user.password = hashed
+      console.log("Set password for Google account:", user.email)
+    }
     
     const match = await bcrypt.compare(password, user.password)
     if (!match) return res.status(400).json({ error: "Wrong password. Please check and try again." })
