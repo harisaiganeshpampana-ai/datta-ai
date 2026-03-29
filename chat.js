@@ -461,7 +461,7 @@ async function send() {
   if (typeof clearFileSelection === "function") clearFileSelection()
 
   // Detect request type for indicator
-  const searchTriggers = ["latest","recent","today","yesterday","this week","current","now","live","breaking","news","who is","what is the","price of","weather","score","2025","2026","happened","update","trending","stock","crypto","bitcoin","search for","find","look up","ipl","cricket","match","movie","released","launched","election","gold","petrol"]
+  const searchTriggers = ["latest news","breaking news","live score","stock price","crypto price","bitcoin price","gold price","petrol price","weather in","weather today","who won","election result","trending now","ipl 2025","ipl 2026","world cup","search for","look up","news about","just happened","announced today"]
   const willSearch = searchTriggers.some(t => text.toLowerCase().includes(t))
 
   // Show appropriate indicator
