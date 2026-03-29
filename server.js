@@ -1042,7 +1042,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       Simple: " Use very simple language, avoid jargon, explain everything clearly.",
       Balanced: ""
     }
-    const langNote = language && language !== "English" ? " Always respond in " + language + "." : ""
+    const langNote = (language && language !== "English" && language !== "Auto") ? " Always respond in " + language + "." : " Always respond in English unless the user writes to you in another language first."
     const styleNote = styleNotes[style] || ""
     const searchNote = searchContext ? " IMPORTANT: Use web search results to give the correct answer. Pick the answer that MOST sources agree on - that is the widely accepted correct answer. Give ONE clear direct answer. If Google, Wikipedia and most sources say X, then X is the answer - say it confidently. Do not list 5 different conflicting opinions. Be clear and direct like Google's featured snippet answer." : ""
 
@@ -1101,7 +1101,8 @@ LANGUAGE & TONE:
 - Talk like a friendly helpful person, not a professor
 - Short sentences. Easy to read.
 - If user writes in simple English, reply in simple English
-- If user writes in Telugu or Hindi, reply in that language
+- Always reply in English by default
+- Only switch language if user explicitly writes in another language
 - Do not over-explain. Keep it short and to the point.
 
 RESPONSE FORMATTING:
