@@ -4790,3 +4790,116 @@ code, pre, .aiBubble code, .aiBubble pre {
   margin: 8px 0;
   font-style: italic;
 }
+
+/* ── THINKING BLOCK (Claude-style) ── */
+.thinkingBlock {
+  background: #0a0a0a;
+  border: 1px solid #1a1a1a;
+  border-radius: 16px;
+  padding: 16px 20px;
+  max-width: 340px;
+  margin: 4px 0;
+}
+
+.thinkingHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.thinkingOrb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #00ff88;
+  box-shadow: 0 0 8px rgba(0,255,136,0.6);
+  animation: thinkPulse 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes thinkPulse {
+  0%,100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+
+.thinkingTitle {
+  font-family: 'Josefin Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.thinkingDots {
+  display: flex;
+  gap: 2px;
+}
+.thinkingDots span {
+  color: #333;
+  font-size: 16px;
+  animation: dotBlink 1.2s infinite;
+}
+.thinkingDots span:nth-child(2) { animation-delay: 0.2s; }
+.thinkingDots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotBlink {
+  0%,100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+
+.thinkingSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.thinkStep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.thinkStepIcon {
+  font-size: 15px;
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+}
+
+.thinkStepText {
+  font-size: 13px;
+  color: #888;
+  flex: 1;
+  font-family: 'Josefin Sans', sans-serif;
+  letter-spacing: 0.3px;
+}
+
+.thinkStepLoader {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+/* Active step loader spinner */
+.thinkStep:last-child:not([style*="opacity: 0"]) .thinkStepLoader::before {
+  content: '';
+  display: block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid #333;
+  border-top-color: #00ff88;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Light theme */
+body.light .thinkingBlock { background: #f9f9f9; border-color: #eee; }
+body.light .thinkingTitle { color: #aaa; }
+body.light .thinkStepText { color: #888; }
