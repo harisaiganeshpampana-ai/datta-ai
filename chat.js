@@ -595,6 +595,7 @@ async function send() {
     const chatIdFromHeader = res.headers.get("x-chat-id")
     if (!currentChatId && chatIdFromHeader) {
       currentChatId = chatIdFromHeader
+      localStorage.setItem("datta_last_chat", currentChatId)
     }
 
     // Replace typing indicator with response bubble
