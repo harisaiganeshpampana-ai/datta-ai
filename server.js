@@ -308,7 +308,7 @@ function needsWebSearch(message) {
   if (noSearchPatterns.some(p => p.test(msg))) return false
 
   const triggers = [
-    // Current events only - need fresh data
+    // Current events - need fresh data
     "latest news","breaking news","today's news",
     "live score","current score","match score",
     "stock price","crypto price","bitcoin price","gold price today","petrol price today",
@@ -317,6 +317,10 @@ function needsWebSearch(message) {
     "trending now","just happened","announced today",
     "released today","launched today","new movie released","new song released",
     "ipl 2025","ipl 2026","world cup 2025","world cup 2026",
+    // Factual questions - search to get correct answer
+    "father of","mother of","inventor of","founded by","discovered by","invented by",
+    "who invented","who discovered","who founded","who created","who wrote","who is the",
+    "capital of","president of","prime minister of","population of","tallest","longest","largest","smallest","fastest","richest","poorest",
     // Explicit search intent
     "search for","look up","find me","google this","news about",
     // Local places
@@ -1039,7 +1043,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }
     const langNote = language && language !== "English" ? " Always respond in " + language + "." : ""
     const styleNote = styleNotes[style] || ""
-    const searchNote = searchContext ? " IMPORTANT: Use the web search results carefully. Pick the MOST RELIABLE and CONSISTENT information. If sources disagree, mention the most widely accepted answer first. Give ONE clear direct answer - do NOT list all conflicting opinions as if they are all equally valid. Be decisive and clear. Do not say 'visit this website'. Give the answer yourself." : ""
+    const searchNote = searchContext ? " IMPORTANT: Use web search results to give the correct answer. Pick the answer that MOST sources agree on - that is the widely accepted correct answer. Give ONE clear direct answer. If Google, Wikipedia and most sources say X, then X is the answer - say it confidently. Do not list 5 different conflicting opinions. Be clear and direct like Google's featured snippet answer." : ""
 
     // Detect if code/build task needs max tokens
     const msgLower = message.toLowerCase()
