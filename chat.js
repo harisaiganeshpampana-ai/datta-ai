@@ -799,10 +799,12 @@ async function send() {
       if (chunk.includes("CHATID")) {
         const parts = chunk.split("CHATID")
         streamText += parts[0]
-        currentChatId = parts[1]
+        currentChatId = parts[1].trim()
       } else {
         streamText += chunk
       }
+      // Remove leading keep-alive spaces
+      if (streamText.startsWith(" ") && streamText.trim() === "") continue
 
       // Detect auto-switch to Datta 5.4
       if (streamText.includes("Switching to **Datta 5.4**") || streamText.includes("switching you to Datta 5.4")) {
