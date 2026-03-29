@@ -1024,18 +1024,26 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Map all models to valid Groq models
     // Datta 1.1 = llama-3.1-8b-instant used specifically for AI modes
     // All persona modes auto-use Datta 1.1 (fast, focused responses)
+    // Model ID map - frontend sends short IDs, map to real Groq model IDs
     const modelMap = {
-      "meta-llama/llama-4-maverick-17b-128e-instruct": "llama-3.3-70b-versatile",
-      "datta-1.1":       "llama-3.1-8b-instant",
-      "persona-lawyer":  "llama-3.1-8b-instant",
-      "persona-teacher": "llama-3.1-8b-instant",
-      "persona-chef":    "llama-3.1-8b-instant",
-      "persona-fitness": "llama-3.1-8b-instant",
-      "persona-upsc":    "llama-3.3-70b-versatile",
-      "persona-student": "llama-3.1-8b-instant",
+      // Datta models
+      "datta-1.1":  "llama-3.1-8b-instant",
+      "datta-2.1":  "llama-3.1-8b-instant",
+      "datta-4.2":  "llama-3.3-70b-versatile",
+      "datta-4.8":  "llama-3.3-70b-versatile",
+      "datta-5.4":  "meta-llama/llama-4-maverick-17b-128e-instruct",
+      // Persona modes use Datta 1.1 (8b) or 4.2 (70b)
+      "persona-lawyer":   "llama-3.1-8b-instant",
+      "persona-teacher":  "llama-3.1-8b-instant",
+      "persona-chef":     "llama-3.1-8b-instant",
+      "persona-fitness":  "llama-3.1-8b-instant",
+      "persona-upsc":     "llama-3.3-70b-versatile",
+      "persona-student":  "llama-3.1-8b-instant",
       "persona-interview":"llama-3.1-8b-instant",
       "persona-business": "llama-3.3-70b-versatile"
     }
+    // If frontend sends full Groq model ID directly, use as-is
+    // If it sends a short name, map it
     let resolvedModel = modelMap[chosenModel] || chosenModel
     // model assigned after auto-switch logic below
     const useTogether = false
@@ -1060,13 +1068,10 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const isCodeTask = ["build","create","write","make","code","website","app","script","program","html","python","javascript","fix","debug","error","update","improve","full","complete","function","class","api","css","react","node","sql","java","c++","php","typescript","flutter","kotlin","swift","bash","linux","docker","git"].some(k => msgLower.includes(k))
     
     // Auto-switch to Datta 5.4 for coding if user is on 2.1, 4.2, or 4.8
-    const nonCodingModels = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "llama-3.1-70b-specdec"]
-    const isCodingModel = resolvedModel === "meta-llama/llama-4-maverick-17b-128e-instruct"
+    const nonCodingModels = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
+    let autoSwitchMsg = ""
     if (isCodeTask && !isImageFile && nonCodingModels.includes(resolvedModel) && !chosenModel.startsWith("persona-")) {
-      // Send auto-switch message and redirect to 5.4
-      const switchMsg = " Switching to **Datta 5.4** (coding expert) for this task...\n\n"
-      res.write(switchMsg)
-      // Override model to Datta 5.4
+      autoSwitchMsg = "Switching to **Datta 5.4** for this coding task...\n\n"
       resolvedModel = "meta-llama/llama-4-maverick-17b-128e-instruct"
     }
     // Now set final model AFTER any auto-switch
@@ -1183,6 +1188,9 @@ QUALITY RULES:
     const togetherModel = chosenModel.startsWith("persona-") 
       ? "llama-3.3-70b-versatile"  // personas use fast model
       : "deepseek-ai/DeepSeek-V3"  // Datta 5.4 uses DeepSeek
+
+    // Write auto-switch notification before streaming
+    if (autoSwitchMsg) res.write(autoSwitchMsg)
 
     if (false) {
       // Together AI disabled - no credits
