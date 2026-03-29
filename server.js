@@ -23,7 +23,7 @@ dotenv.config()
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } })
 const app = express()
 
-// ⚡ PING FIRST - Railway healthcheck must pass immediately
+// PING FIRST - Railway healthcheck must pass immediately
 app.get("/ping", (req, res) => res.json({ alive: true }))
 app.get("/health", (req, res) => res.json({ status: "ok" }))
 
@@ -60,8 +60,6 @@ mongoose.connect(process.env.MONGO_URI || "mongodb://localhost/datta")
 // Health check BEFORE anything else - Railway needs this to pass
 app.get("/ping", (req, res) => res.json({ alive: true, time: new Date().toISOString() }))
 app.get("/health", (req, res) => res.json({ status: "ok", uptime: process.uptime() }))
-  .then(() => console.log("MongoDB connected"))
-  .catch(err => console.error("Mongo error:", err))
 
 const otpStore = {}
 
