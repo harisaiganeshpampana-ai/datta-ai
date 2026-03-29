@@ -328,14 +328,23 @@ body {
 
 /* BUBBLES */
 .userBubble {
-  background: linear-gradient(135deg, #00cc6a, #00aa55);
-  color: #fff;
-  padding: 12px 16px;
-  border-radius: 18px 18px 4px 18px;
+  background: #1a1a2e;
+  color: #e8e8ff;
+  padding: 12px 18px;
+  border-radius: 18px 4px 18px 18px;
   max-width: 72%;
   font-weight: 400;
-  line-height: 1.6;
-  box-shadow: 0 2px 8px rgba(0,204,106,0.2);
+  line-height: 1.7;
+  border: 1px solid #2a2a4a;
+  position: relative;
+  overflow: hidden;
+}
+.userBubble::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(100,100,255,0.08), transparent);
+  pointer-events: none;
 }
 
 .aiContent {
@@ -1226,7 +1235,7 @@ body.light .main { background: #f5f5f5; }
 body.light .inputWrap { background: #fff; border: 1px solid #e0e0e0; }
 body.light .inputWrap input { color: #111; }
 body.light .aiBubble { background: #fff; color: #111; border: 1px solid #e0e0e0; }
-body.light .userBubble { background: #22c55e; color: white; }
+body.light .userBubble { background: #1a1a2e; color: #e8e8ff !important; border-color: #2a2a4a; }
 body.light .modalBox { background: #fff; border-color: #e0e0e0; }
 body.light .modalHeader { background: #fff; }
 body.light .sInput { background: #f5f5f5; border-color: #ddd; color: #111; }
@@ -1240,7 +1249,7 @@ body.light .chatBox { background: #f5f5f5; }
 body.light .messageRow { color: #111; }
 
 /* AI bubble */
-body.light .aiBubble { background: #f8f9fa; color: #111 !important; border: 1px solid #e0e0e0; }
+body.light .aiBubble { background: #f9f9f9; color: #111 !important; border: 1px solid #eaeaea; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
 body.light .aiBubble p { color: #111 !important; }
 body.light .aiBubble li { color: #111 !important; }
 body.light .aiBubble h1, body.light .aiBubble h2, body.light .aiBubble h3 { color: #111 !important; }
@@ -1380,29 +1389,18 @@ body.light .toast { background: #333; color: #fff; }
 
 /* Remove old aiBubble max-width restriction for better look */
 .aiBubble {
-  background: #161616;
-  border: 1px solid #222;
-  border-radius: 16px;
-  padding: 14px 18px;
+  background: #111;
+  border: 1px solid #1e1e1e;
+  border-radius: 4px 18px 18px 18px;
+  padding: 16px 20px;
   max-width: 100%;
-  line-height: 1.8;
+  line-height: 1.85;
   position: relative;
-}
-
-/* Subtle left accent line */
-.aiBubble::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 12px;
-  bottom: 12px;
-  width: 3px;
-  background: linear-gradient(to bottom, #00ff88, #00ccff);
-  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .aiContent {
-  max-width: 80%;
+  max-width: 82%;
 }
 
 /* GENERATED IMAGE DISPLAY */
