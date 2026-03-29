@@ -505,6 +505,24 @@ async function send() {
   const _now = new Date()
   formData.append("userTime", _now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }))
   formData.append("userDate", _now.toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" }))
+  
+  // If user asks "near me" - try to get location
+  const _msgLower = (finalText || "").toLowerCase()
+  const _needsLocation = ["near me", "nearby", "nearest", "around me", "close to me", "in my area"].some(t => _msgLower.includes(t))
+  const _savedLocation = localStorage.getItem("datta_user_city")
+  if (_needsLocation && _savedLocation) {
+    formData.append("userLocation", _savedLocation)
+  } else if (_needsLocation && navigator.geolocation) {
+    // Try to get city from browser
+    try {
+      const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000 }))
+      const lat = pos.coords.latitude.toFixed(4)
+      const lng = pos.coords.longitude.toFixed(4)
+      formData.append("userLocation", "coordinates: " + lat + "," + lng)
+    } catch(e) {
+      // Location denied - AI will ask
+    }
+  }
 
   if (file) {
     formData.append("image", file)
