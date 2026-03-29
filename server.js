@@ -1296,9 +1296,11 @@ QUALITY RULES:
       } catch(e) {}
     }
     await chat.save()
+    clearInterval(keepAliveInterval)
     res.write("CHATID" + chat._id)
     res.end()
   } catch(err) {
+    clearInterval(keepAliveInterval)
     console.error("Chat error:", err.message)
     if (!res.headersSent) res.status(500).send("Server error: " + err.message)
     else res.end()
