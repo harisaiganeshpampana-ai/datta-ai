@@ -1037,7 +1037,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "persona-business": "llama-3.3-70b-versatile"
     }
     let resolvedModel = modelMap[chosenModel] || chosenModel
-    let model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : resolvedModel
+    // model assigned after auto-switch logic below
     const useTogether = false
     const style = req.body.style || "Balanced"
     const ainame = req.body.ainame || "Datta AI"
@@ -1069,7 +1069,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       // Override model to Datta 5.4
       resolvedModel = "meta-llama/llama-4-maverick-17b-128e-instruct"
     }
-    const isD54 = chosenModel === "meta-llama/llama-4-maverick-17b-128e-instruct"
+    // Now set final model AFTER any auto-switch
+    let model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : resolvedModel
+    const isD54 = resolvedModel === "meta-llama/llama-4-maverick-17b-128e-instruct"
     const maxCodingTok = isD54 ? 8192 : isCodeTask ? 8192 : 6144
     const maxTok = isImageFile ? 4096 : maxCodingTok
 
