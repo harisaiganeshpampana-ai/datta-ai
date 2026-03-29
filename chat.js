@@ -2621,11 +2621,40 @@ function updateModeIndicator(key, label) {
   }
 }
 
-// Load mode indicator on start
-window.addEventListener("DOMContentLoaded", function() {
+// Reload mode indicator from localStorage every time page is visible
+function initModeIndicator() {
   const savedKey = localStorage.getItem("datta_persona") || "none"
   const savedLabel = localStorage.getItem("datta_persona_label") || "Normal"
   updateModeIndicator(savedKey, savedLabel)
+  // Also restore model pill
+  const pill = document.getElementById("activeModelName")
+  if (pill) {
+    if (savedKey && savedKey !== "none") {
+      pill.textContent = "Datta 1.1"
+    } else {
+      const modelKey = localStorage.getItem("datta_model_key") || "d21"
+      const names = { d21:"Datta 2.1", d42:"Datta 4.2", d48:"Datta 4.8", d54:"Datta 5.4" }
+      pill.textContent = names[modelKey] || "Datta 2.1"
+    }
+  }
+}
+
+// Run on initial load
+window.addEventListener("load", initModeIndicator)
+
+// Run when user comes BACK from settings page (pageshow fires on back navigation)
+window.addEventListener("pageshow", function(e) {
+  initModeIndicator()
+})
+
+// Run when tab becomes visible again
+document.addEventListener("visibilitychange", function() {
+  if (!document.hidden) initModeIndicator()
+})
+
+// Run when window gets focus (user switches back)
+window.addEventListener("focus", function() {
+  initModeIndicator()
 })
 
 window.setPersona = setPersona
