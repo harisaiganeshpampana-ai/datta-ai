@@ -1037,12 +1037,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const maxCodingTok = isD54 ? 8192 : isCodeTask ? 8192 : 6144
     const maxTok = isImageFile ? 4096 : maxCodingTok
 
-    const now = new Date()
-    // Always use IST (UTC+5:30) regardless of server timezone
-    const istOffset = 5.5 * 60 * 60 * 1000
-    const istNow = new Date(now.getTime() + istOffset)
-    const timeStr = istNow.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })
-    const dateStr = istNow.toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Kolkata" })
+    // Use browser's actual local time sent from frontend
+    const timeStr = req.body.userTime || new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })
+    const dateStr = req.body.userDate || new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Kolkata" })
     const imageNote = isImageFile ? " You are analyzing an image. Describe ALL objects, text, colors, people, context, background in detail." : ""
 
     // Each model has unique behavior
