@@ -1076,8 +1076,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }
     // Now set final model AFTER any auto-switch
     let model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : resolvedModel
-    const isD54 = resolvedModel === "llama-3.3-70b-versatile"
-    const maxCodingTok = isD54 ? 8192 : isCodeTask ? 8192 : 6144
+    const isD54 = true // always use max tokens since all models are same
+    const isLargeTask = ["portfolio","full website","complete website","business plan","full app","complete app","all sections"].some(k => msgLower.includes(k))
+    const maxCodingTok = (isLargeTask || isCodeTask) ? 8192 : 6144
     const maxTok = isImageFile ? 4096 : maxCodingTok
 
     // Use browser's actual local time sent from frontend
@@ -1175,9 +1176,10 @@ RESPONSE FORMATTING:
 - Useful emojis: checkmark, cross, lightbulb, warning, fire, note, target, bolt, pin, rocket
 
 QUALITY RULES:
-1. ALWAYS give COMPLETE WORKING code - never truncate
-2. For websites/apps: give the ENTIRE code, copy-paste ready
+1. ALWAYS give COMPLETE WORKING code - NEVER truncate or stop midway
+2. For websites/apps: give the ENTIRE HTML/CSS/JS in ONE file - copy-paste ready
 3. When fixing bugs: show the COMPLETE fixed file
+4. For portfolio/personal website tasks: write the FULL HTML file with ALL sections - About, Skills, Projects, Contact. Do NOT ask questions, just generate it with example content.
 4. NEVER say "I cannot" or "I don't have access" - just solve it
 5. If [PDF: ...] in context - READ IT DIRECTLY and answer
 6. If [WEBSITE CONTENT] in context - analyze it directly
