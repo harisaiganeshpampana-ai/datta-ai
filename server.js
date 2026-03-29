@@ -293,27 +293,31 @@ async function webSearch(query) {
 
 function needsWebSearch(message) {
   if (!message) return false
-  const msg = message.toLowerCase()
+  const msg = message.toLowerCase().trim()
+
+  // Never search for these - AI knows them directly
+  const noSearchPatterns = [
+    /^what (is|are) (the )?(time|date|day|year)/,
+    /^(what|tell me) (time|date|day)/,
+    /^(current |today.?s )?(time|date|day)/,
+    /^(hi|hello|hey|how are you|what can you do)/,
+    /^(explain|define|describe|summarize|write|create|build|code|help)/,
+    /^(what is|what are) [a-z ]{1,30}$/,  // short factual - AI knows
+  ]
+  if (noSearchPatterns.some(p => p.test(msg))) return false
+
   const triggers = [
-    // Current events
-    "latest","recent","today","yesterday","this week","current","now","live","breaking",
-    "news","happened","update","trending","2024","2025","2026",
-    // Factual knowledge questions
-    "who is","who was","who invented","who discovered","who founded","who created","who wrote",
-    "what is the","what are","what was","when did","when was","where is","where was",
-    "how many","how much","which country","which city","which state",
-    "father of","mother of","inventor of","founder of","capital of",
-    "president of","prime minister","governor","minister","ceo","chairman",
-    "population of","area of","height of","length of","distance",
-    "history of","origin of","born in","died in","age of",
-    // Prices & finance
-    "price of","cost of","weather","score","stock","crypto","bitcoin","gold",
-    "petrol","diesel","rate","exchange","currency","salary","income",
-    // Entertainment & sports
-    "ipl","cricket","match","movie","released","launched","election","sports",
-    "actor","actress","singer","player","team","award","winner","champion",
-    // Search intent
-    "tell me about","explain","define","describe","search for","find","look up"
+    // Current events - need fresh data
+    "latest news","breaking news","recent news","today's news",
+    "live score","current score","match score",
+    "stock price","crypto price","bitcoin price","gold price","petrol price",
+    "weather in","weather today","forecast",
+    "who won","election result","election 2025","election 2026",
+    "trending now","viral","just happened","announced today",
+    "released today","launched today","new movie","new song",
+    "ipl 2025","ipl 2026","world cup","champions league",
+    // Explicit search intent
+    "search for","look up","find me","google","news about"
   ]
   return triggers.some(t => msg.includes(t))
 }
@@ -1034,8 +1038,11 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const maxTok = isImageFile ? 4096 : maxCodingTok
 
     const now = new Date()
-    const timeStr = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })
-    const dateStr = now.toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+    // Always use IST (UTC+5:30) regardless of server timezone
+    const istOffset = 5.5 * 60 * 60 * 1000
+    const istNow = new Date(now.getTime() + istOffset)
+    const timeStr = istNow.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })
+    const dateStr = istNow.toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Kolkata" })
     const imageNote = isImageFile ? " You are analyzing an image. Describe ALL objects, text, colors, people, context, background in detail." : ""
 
     // Each model has unique behavior
