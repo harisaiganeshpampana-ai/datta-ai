@@ -308,17 +308,19 @@ function needsWebSearch(message) {
   if (noSearchPatterns.some(p => p.test(msg))) return false
 
   const triggers = [
-    // Current events - need fresh data
-    "latest news","breaking news","recent news","today's news",
+    // Current events only - need fresh data
+    "latest news","breaking news","today's news",
     "live score","current score","match score",
-    "stock price","crypto price","bitcoin price","gold price","petrol price",
+    "stock price","crypto price","bitcoin price","gold price today","petrol price today",
     "weather in","weather today","forecast",
     "who won","election result","election 2025","election 2026",
-    "trending now","viral","just happened","announced today",
-    "released today","launched today","new movie","new song",
-    "ipl 2025","ipl 2026","world cup","champions league",
+    "trending now","just happened","announced today",
+    "released today","launched today","new movie released","new song released",
+    "ipl 2025","ipl 2026","world cup 2025","world cup 2026",
     // Explicit search intent
-    "search for","look up","find me","google","news about"
+    "search for","look up","find me","google this","news about",
+    // Local places
+    "restaurant in","hotel in","hospital in","shops in","near me"
   ]
   return triggers.some(t => msg.includes(t))
 }
@@ -1037,7 +1039,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }
     const langNote = language && language !== "English" ? " Always respond in " + language + "." : ""
     const styleNote = styleNotes[style] || ""
-    const searchNote = searchContext ? " IMPORTANT: Use the web search results to give a COMPLETE, DETAILED answer. Tell the user ALL the news/information directly. Do NOT say 'visit this website' or 'go to this link' or 'read more at'. Give the full answer yourself using the search results. Include key details, dates, names, numbers from the results. Only mention source names at the end briefly." : ""
+    const searchNote = searchContext ? " IMPORTANT: Use the web search results carefully. Pick the MOST RELIABLE and CONSISTENT information. If sources disagree, mention the most widely accepted answer first. Give ONE clear direct answer - do NOT list all conflicting opinions as if they are all equally valid. Be decisive and clear. Do not say 'visit this website'. Give the answer yourself." : ""
 
     // Detect if code/build task needs max tokens
     const msgLower = message.toLowerCase()
