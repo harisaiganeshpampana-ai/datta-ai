@@ -406,6 +406,9 @@ function setStyle(style) {
 
 function setLanguage(lang) {
   localStorage.setItem("datta_language", lang)
+  document.querySelectorAll("[id^='lang-']").forEach(el => el.classList.remove("active"))
+  const el = document.getElementById("lang-" + lang)
+  if (el) el.classList.add("active")
   const desc = document.getElementById("langDesc")
   if (desc) desc.textContent = lang
   setTimeout(() => closePanel("language"), 600)
@@ -1092,14 +1095,14 @@ function previewVoice() {
     <button class="panelBack" onclick="closePanel('language')">Back</button>
   </div>
   <div class="stylePills">
-    <div class="stylePill" onclick="setLanguage('English')">'' English</div>
-    <div class="stylePill" onclick="setLanguage('Hindi')">'' Hindi</div>
-    <div class="stylePill" onclick="setLanguage('Telugu')">'' Telugu</div>
-    <div class="stylePill" onclick="setLanguage('Tamil')">'' Tamil</div>
-    <div class="stylePill" onclick="setLanguage('Kannada')">'' Kannada</div>
-    <div class="stylePill" onclick="setLanguage('Malayalam')">'' Malayalam</div>
-    <div class="stylePill" onclick="setLanguage('Spanish')">'' Spanish</div>
-    <div class="stylePill" onclick="setLanguage('French')">'' French</div>
+    <div class="stylePill active" id="lang-English" onclick="setLanguage('English')">🇬🇧 English</div>
+    <div class="stylePill" id="lang-Hindi" onclick="setLanguage('Hindi')">🇮🇳 Hindi</div>
+    <div class="stylePill" id="lang-Telugu" onclick="setLanguage('Telugu')">🇮🇳 Telugu</div>
+    <div class="stylePill" id="lang-Tamil" onclick="setLanguage('Tamil')">🇮🇳 Tamil</div>
+    <div class="stylePill" id="lang-Kannada" onclick="setLanguage('Kannada')">🇮🇳 Kannada</div>
+    <div class="stylePill" id="lang-Malayalam" onclick="setLanguage('Malayalam')">🇮🇳 Malayalam</div>
+    <div class="stylePill" id="lang-Spanish" onclick="setLanguage('Spanish')">🇪🇸 Spanish</div>
+    <div class="stylePill" id="lang-French" onclick="setLanguage('French')">🇫🇷 French</div>
     <div class="stylePill" onclick="setLanguage('Arabic')">'' Arabic</div>
     <div class="stylePill" onclick="setLanguage('Chinese')">'' Chinese</div>
   </div>
