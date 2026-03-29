@@ -325,7 +325,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; transition:
 <script>
 // PANEL + CORE FUNCTIONS - must be first
 // ALL SETTINGS FUNCTIONS - defined early so all onclicks work
-const SERVER = "https://datta-ai-server.onrender.com"
+const SERVER = "https://datta-ai-production.up.railway.app"
 function getToken() { return localStorage.getItem("datta_token") || "" }
 function getUser() { try { return JSON.parse(localStorage.getItem("datta_user")||"{}") } catch(e) { return {} } }
 
@@ -1371,7 +1371,7 @@ function previewVoice() {
 </div>
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-const SERVER = "https://datta-ai-server.onrender.com"
+const SERVER = "https://datta-ai-production.up.railway.app"
 const THEMES = {
   dark:     { bg:"#0a0a0a", bg2:"#111", bg3:"#1a1a1a", border:"#222", text:"#fff", text2:"#aaa", text3:"#666", accent:"#00ff88", accent2:"#00ccff" },
   light:    { bg:"#f5f5f5", bg2:"#fff", bg3:"#f0f0f0", border:"#ddd", text:"#111", text2:"#555", text3:"#999", accent:"#00aa55", accent2:"#0088cc" },
@@ -1405,7 +1405,7 @@ function loadSavedVoiceSetting() {
 
 async function loadUsage() {
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/user/usage?token=" + getToken())
+    const res = await fetch("https://datta-ai-production.up.railway.app/user/usage?token=" + getToken())
     if (!res.ok) throw new Error("Failed")
     const data = await res.json()
 
