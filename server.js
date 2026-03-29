@@ -500,7 +500,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "https://datta-ai-server.onrender.com/auth/google/callback"
+    callbackURL: "https://datta-ai-production.up.railway.app/auth/google/callback"
   }, async (accessToken, refreshToken, profile, done) => {
     try {
       let user = await User.findOne({ googleId: profile.id })
@@ -1885,7 +1885,7 @@ app.get("/", (req, res) => res.json({ status: "Datta AI Server running", version
 
 
 // KEEP ALIVE - ping self every 5 minutes to prevent Render sleep
-const SELF_URL = process.env.RAILWAY_PUBLIC_DOMAIN ? "https://" + process.env.RAILWAY_PUBLIC_DOMAIN : process.env.RENDER_EXTERNAL_URL || "https://datta-ai-server.onrender.com"
+const SELF_URL = process.env.RAILWAY_PUBLIC_DOMAIN ? "https://" + process.env.RAILWAY_PUBLIC_DOMAIN : process.env.RENDER_EXTERNAL_URL || "https://datta-ai-production.up.railway.app"
 setInterval(async () => {
   try {
     await fetch(SELF_URL + "/ping")
