@@ -1116,8 +1116,11 @@ QUALITY RULES:
 12. For local places (restaurants, shops, hospitals etc) - use web search results to give real names, addresses, phone numbers, timings, ratings. Be specific and useful.
 13. NEVER say "I couldn't find much information" or "I am not aware of your location" - always give the best answer possible.
 14. If user asks about restaurants/places and location is unknown - just ask "Which city are you in?" in ONE line.
-15. When web search results are provided - use ALL the information to give a complete, detailed, useful answer. List actual place names, addresses, ratings.
-16. Be like a helpful local friend who knows everything - food, places, travel, life advice, not just tech.` + langNote + styleNote + searchNote
+15. When web search results are provided - use ONLY the information in those results. NEVER make up or guess addresses, phone numbers, ratings, timings or any details.
+16. If search results don't have enough info about a specific place - say honestly "I found limited information about this place. Please check Google Maps or Zomato for accurate details." Then give whatever real info IS available.
+17. NEVER hallucinate or fabricate restaurant details, addresses, phone numbers, ratings. Only state what you actually found.
+18. For restaurant queries - suggest user check Google Maps, Zomato, or Swiggy for most accurate real-time info.
+19. Be like a helpful friend - honest when you don't know, useful when you do.` + langNote + styleNote + searchNote
 
     // Combine user content with URL context
     const finalUserContent = typeof userContent === "string"
