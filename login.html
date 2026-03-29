@@ -396,7 +396,7 @@ body::before {
 </div>
 
 <script>
-const SERVER = "https://datta-ai-server.onrender.com"
+const SERVER = "https://datta-ai-production.up.railway.app"
 
 // Run immediately on script load - dont wait for window load
 ;(function() {
@@ -641,7 +641,7 @@ async function checkServer() {
   if (!status) return
   try {
     const start = Date.now()
-    const res = await fetch("https://datta-ai-server.onrender.com/ping", { 
+    const res = await fetch("https://datta-ai-production.up.railway.app/ping", { 
       signal: AbortSignal.timeout(5000) 
     })
     if (res.ok) {
