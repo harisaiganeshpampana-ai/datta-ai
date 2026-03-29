@@ -36,9 +36,11 @@ app.use(passport.session())
 passport.serializeUser((u, done) => done(null, u))
 passport.deserializeUser((u, done) => done(null, u))
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "missing" })
 
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI || "mongodb://localhost/datta")
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => console.error("MongoDB error:", err.message))
   .then(() => console.log("MongoDB connected"))
   .catch(err => console.error("Mongo error:", err))
 
