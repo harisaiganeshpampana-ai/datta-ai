@@ -1205,26 +1205,53 @@ QUALITY RULES:
     // Write auto-switch notification before streaming
     if (autoSwitchMsg) res.write(autoSwitchMsg)
 
-    if (false) {
-      // Together AI disabled - no credits
-    } else {
-      stream = await groq.chat.completions.create({
-        model,
-        messages: [
-          { role: "system", content: systemWithMemory },
-          ...history,
-          { role: "user", content: finalUserContent }
-        ],
-        max_tokens: maxTok,
-        temperature: isD54 ? 0.3 : 0.75,
-        stream: true
-      })
+    // Build messages array
+    const groqMessages = [
+      { role: "system", content: systemWithMemory },
+      ...history,
+      { role: "user", content: finalUserContent }
+    ]
+
+    // Try with primary model, fallback to 8b if error
+    let full = ""
+    let attempts = [model, "llama-3.1-8b-instant"]
+    let lastError = null
+
+    for (let attempt = 0; attempt < attempts.length; attempt++) {
+      const tryModel = attempts[attempt]
+      try {
+        stream = await groq.chat.completions.create({
+          model: tryModel,
+          messages: groqMessages,
+          max_tokens: maxTok,
+          temperature: 0.7,
+          stream: true
+        })
+
+        for await (const part of stream) {
+          const token = part.choices?.[0]?.delta?.content
+          if (token) { full += token; res.write(token) }
+        }
+        lastError = null
+        break // success - exit retry loop
+
+      } catch(groqErr) {
+        lastError = groqErr
+        console.error("Groq error (attempt " + (attempt+1) + "):", groqErr.message)
+        if (attempt === 0 && attempts.length > 1) {
+          // Write fallback notice and retry with smaller model
+          res.write("\n\nSwitching to faster model...\n\n")
+          full = ""
+          continue
+        }
+      }
     }
 
-    let full = ""
-    for await (const part of stream) {
-      const token = part.choices?.[0]?.delta?.content
-      if (token) { full += token; res.write(token) }
+    // If all attempts failed
+    if (lastError && full === "") {
+      const errMsg = "I'm having trouble connecting right now. Please try again in a few seconds."
+      res.write(errMsg)
+      full = errMsg
     }
 
     // Store user message with image reference (not full base64)
