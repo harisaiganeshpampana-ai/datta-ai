@@ -2,7 +2,7 @@
   "name": "Datta AI",
   "short_name": "Datta AI",
   "description": "Your powerful AI Agent",
-  "start_url": "/datta-ai/index.html",
+  "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#00ff88",
@@ -40,5 +40,6 @@
       "url": "/datta-ai/pricing.html",
       "description": "View plans"
     }
-  ]
+  ],
+  "scope": "/"
 }
