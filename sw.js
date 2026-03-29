@@ -1,4 +1,4 @@
-const V = "v38"
+const V = "v39"
 self.addEventListener("install", () => self.skipWaiting())
 self.addEventListener("activate", e => {
   e.waitUntil(
@@ -14,5 +14,5 @@ self.addEventListener("fetch", e => {
 })
 self.addEventListener("push", e => {
   const d = e.data?.json() || {title:"Datta AI",body:"New message!"}
-  e.waitUntil(self.registration.showNotification(d.title,{body:d.body,icon:"/datta-ai/logo.png"}))
+  e.waitUntil(self.registration.showNotification(d.title,{body:d.body,icon:"/logo.png"}))
 })
