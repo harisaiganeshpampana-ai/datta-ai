@@ -328,11 +328,14 @@ body {
 
 /* BUBBLES */
 .userBubble {
-  background: #22c55e;
-  color: black;
-  padding: 10px 14px;
-  border-radius: 12px;
-  max-width: 65%;
+  background: linear-gradient(135deg, #00cc6a, #00aa55);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 18px 18px 4px 18px;
+  max-width: 72%;
+  font-weight: 400;
+  line-height: 1.6;
+  box-shadow: 0 2px 8px rgba(0,204,106,0.2);
 }
 
 .aiContent {
@@ -1237,7 +1240,7 @@ body.light .chatBox { background: #f5f5f5; }
 body.light .messageRow { color: #111; }
 
 /* AI bubble */
-body.light .aiBubble { background: #fff; color: #111 !important; border: 1px solid #e0e0e0; }
+body.light .aiBubble { background: #f8f9fa; color: #111 !important; border: 1px solid #e0e0e0; }
 body.light .aiBubble p { color: #111 !important; }
 body.light .aiBubble li { color: #111 !important; }
 body.light .aiBubble h1, body.light .aiBubble h2, body.light .aiBubble h3 { color: #111 !important; }
@@ -1377,15 +1380,29 @@ body.light .toast { background: #333; color: #fff; }
 
 /* Remove old aiBubble max-width restriction for better look */
 .aiBubble {
-  background: transparent !important;
-  padding: 4px 0 !important;
-  border-radius: 0 !important;
-  max-width: 100% !important;
-  line-height: 1.6;
+  background: #161616;
+  border: 1px solid #222;
+  border-radius: 16px;
+  padding: 14px 18px;
+  max-width: 100%;
+  line-height: 1.8;
+  position: relative;
+}
+
+/* Subtle left accent line */
+.aiBubble::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  background: linear-gradient(to bottom, #00ff88, #00ccff);
+  border-radius: 3px;
 }
 
 .aiContent {
-  max-width: 75%;
+  max-width: 80%;
 }
 
 /* GENERATED IMAGE DISPLAY */
@@ -4738,4 +4755,51 @@ code, pre, .aiBubble code, .aiBubble pre {
   background: #1a1a1a;
   color: #aaa;
   border-color: #333;
+}
+
+/* ── AI BUBBLE CONTENT POLISH ── */
+.aiBubble p { margin-bottom: 10px; }
+.aiBubble p:last-child { margin-bottom: 0; }
+.aiBubble h1, .aiBubble h2, .aiBubble h3 {
+  color: #fff;
+  margin: 14px 0 6px;
+  font-family: 'Josefin Sans', sans-serif;
+}
+.aiBubble ul, .aiBubble ol {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+.aiBubble li { margin-bottom: 4px; }
+.aiBubble strong { color: #fff; }
+.aiBubble a { color: #00ccff; }
+.aiBubble code {
+  background: #0a0a0a;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 13px;
+  color: #00ff88;
+  font-family: 'Courier New', monospace;
+}
+.aiBubble pre {
+  background: #0a0a0a;
+  border: 1px solid #1e1e1e;
+  border-radius: 10px;
+  padding: 14px;
+  overflow-x: auto;
+  margin: 10px 0;
+}
+.aiBubble pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #e0e0e0;
+  font-size: 13px;
+}
+.aiBubble blockquote {
+  border-left: 3px solid #00ff88;
+  padding-left: 12px;
+  color: #888;
+  margin: 8px 0;
+  font-style: italic;
 }
