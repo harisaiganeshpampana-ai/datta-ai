@@ -803,8 +803,7 @@ async function send() {
       } else {
         streamText += chunk
       }
-      // Remove leading keep-alive spaces
-      if (streamText.startsWith(" ") && streamText.trim() === "") continue
+
 
       // Detect auto-switch to Datta 5.4
       if (streamText.includes("Switching to **Datta 5.4**") || streamText.includes("switching you to Datta 5.4")) {
