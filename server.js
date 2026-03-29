@@ -1883,7 +1883,7 @@ app.get("/", (req, res) => res.json({ status: "Datta AI Server running", version
 
 
 // KEEP ALIVE - ping self every 14 minutes to prevent Render sleep
-const SELF_URL = process.env.RENDER_EXTERNAL_URL || "https://datta-ai-server.onrender.com"
+const SELF_URL = process.env.RAILWAY_PUBLIC_DOMAIN ? "https://" + process.env.RAILWAY_PUBLIC_DOMAIN : process.env.RENDER_EXTERNAL_URL || "https://datta-ai-server.onrender.com"
 setInterval(async () => {
   try {
     await fetch(SELF_URL + "/ping")
