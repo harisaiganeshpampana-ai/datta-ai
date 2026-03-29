@@ -498,10 +498,13 @@ async function send() {
   formData.append("chatId", currentChatId || "")
   formData.append("token", getToken())
   formData.append("language", localStorage.getItem("datta_language") || "English")
-
   formData.append("model", getPersonaModel())
   formData.append("style", localStorage.getItem("datta_ai_style") || "Balanced")
   formData.append("ainame", localStorage.getItem("datta_ai_name") || "Datta AI")
+  // Send user's actual local time from browser
+  const _now = new Date()
+  formData.append("userTime", _now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }))
+  formData.append("userDate", _now.toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" }))
 
   if (file) {
     formData.append("image", file)
