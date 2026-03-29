@@ -1,4 +1,4 @@
-const SERVER = "https://datta-ai-production.up.railway.app"
+const SERVER = "https://datta-ai-production-c077.up.railway.app"
 
 
 // '''''''''''''''''''''''''''''''''''''''''''
@@ -658,10 +658,29 @@ async function send() {
 
   showStopBtn()
 
+  // Auto-retry fetch - silently retry up to 4 times
+  async function fetchWithRetry(url, options, maxTries = 4) {
+    for (let i = 0; i < maxTries; i++) {
+      try {
+        const ctrl = new AbortController()
+        const timer = setTimeout(() => ctrl.abort(), 50000)
+        const r = await fetch(url, { ...options, signal: ctrl.signal })
+        clearTimeout(timer)
+        return r
+      } catch(e) {
+        if (i === maxTries - 1) throw e
+        // Update thinking message
+        const title = document.querySelector(".thinkingTitle")
+        if (title) title.textContent = "Connecting... (" + (i+2) + "/" + maxTries + ")"
+        await new Promise(r => setTimeout(r, 5000)) // wait 5 sec
+        controller = new AbortController()
+      }
+    }
+  }
+
   try {
-    const res = await fetch(SERVER + "/chat", {
+    const res = await fetchWithRetry(SERVER + "/chat", {
       method: "POST",
-      signal: controller.signal,
       body: formData
     })
 
