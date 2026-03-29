@@ -52,12 +52,8 @@ passport.deserializeUser((u, done) => done(null, u))
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "missing" })
 
-// Connect MongoDB (non-blocking)
-mongoose.connect(process.env.MONGO_URI || "mongodb://localhost/datta")
-  .then(() => console.log("MongoDB connected"))
-  .catch(err => console.error("MongoDB error:", err.message))
+mongoose.connect(process.env.MONGO_URI).then(() => console.log("MongoDB connected")).catch(e => console.error("DB error:", e.message))
 
-// Health check BEFORE anything else - Railway needs this to pass
 app.get("/ping", (req, res) => res.json({ alive: true, time: new Date().toISOString() }))
 app.get("/health", (req, res) => res.json({ status: "ok", uptime: process.uptime() }))
 
@@ -1911,7 +1907,7 @@ setInterval(async () => {
     await fetch(SELF_URL + "/ping")
     console.log("Keep-alive ping sent")
   } catch(e) {}
-}, 4 * 60 * 1000) // 4 minutes - keep alive
+}, 14 * 60 * 1000) // 14 minutes
 
 
 
