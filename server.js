@@ -778,7 +778,7 @@ app.get("/payment/subscription", authMiddleware, async (req, res) => {
 app.post("/payment/activate", authMiddleware, async (req, res) => {
   try {
     const { plan, method, paymentId, period } = req.body
-    if (!["free","pro","max","ultramax","basic","enterprise"].includes(plan)) return res.status(400).json({ error: "Invalid plan" })
+    if (!["free","mini","pro","max","ultramax","basic","enterprise"].includes(plan)) return res.status(400).json({ error: "Invalid plan" })
     const endDate = new Date()
     endDate.setMonth(endDate.getMonth() + (period === "yearly" ? 12 : 1))
     await Subscription.findOneAndUpdate({ userId: req.user.id }, { plan, period, paymentId, method, startDate: new Date(), endDate, active: true }, { upsert: true, new: true })
