@@ -637,16 +637,6 @@ async function send() {
         streamText += chunk
       }
 
-      // Detect auto-switch to Datta 5.4
-      if (streamText.includes("Switching to **Datta 5.4**") || streamText.includes("switching you to Datta 5.4")) {
-        const pill = document.getElementById("activeModelName")
-        if (pill && pill.textContent !== "Datta 5.4") {
-          pill.textContent = "Datta 5.4"
-          pill.style.color = "#ff6644"
-          setTimeout(() => { pill.style.color = "" }, 3000)
-        }
-      }
-
       // Normal text rendering
       if (streamText.trim()) {
         span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>'
@@ -2603,20 +2593,13 @@ function setPersona(key, label) {
 
 function updateModeIndicator(key, label) {
   const btn = document.getElementById("modeIndicator")
-  const pill = document.getElementById("activeModelName")
   if (!btn) return
   if (!key || key === "none") {
     btn.style.display = "none"
-    // Restore actual model name in pill
-    const savedKey = localStorage.getItem("datta_model_key") || "d21"
-    const savedName = { d21:"Datta 2.1", d42:"Datta 4.2", d48:"Datta 4.8", d54:"Datta 5.4" }
-    if (pill) pill.textContent = savedName[savedKey] || "Datta 2.1"
   } else {
-    const icons = { lawyer:"⚖️", teacher:"📚", chef:"👨‍🍳", fitness:"💪", upsc:"🏛️", student:"📖", interview:"🎯", business:"💼" }
-    btn.textContent = (icons[key] || "✨") + " " + label
+    const icons = { lawyer:"⚖️", teacher:"📚", chef:"👨‍🍳", fitness:"💪" }
+    btn.textContent = (icons[key] || "") + " " + label
     btn.style.display = "flex"
-    // Show Datta 1.1 in model pill
-    if (pill) pill.textContent = "Datta 1.1"
   }
 }
 
@@ -2632,10 +2615,7 @@ window.updateModeIndicator = updateModeIndicator
 
 function getPersonaModel() {
   const persona = localStorage.getItem("datta_persona")
-  if (persona && persona !== "none") {
-    // Auto-switch to Datta 1.1 for persona modes
-    return "persona-" + persona
-  }
+  if (persona && persona !== "none") return "persona-" + persona
   return localStorage.getItem("datta_model") || "llama-3.1-8b-instant"
 }
 
