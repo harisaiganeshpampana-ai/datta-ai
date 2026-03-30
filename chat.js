@@ -1,3 +1,6 @@
+const SERVER = "https://datta-ai-server.onrender.com"
+
+
 // '''''''''''''''''''''''''''''''''''''''''''
 // SINGLE INIT - runs everything on load
 // '''''''''''''''''''''''''''''''''''''''''''
@@ -24,7 +27,7 @@ async function shareChatLink() {
   if (!currentChatId) { showToast("Start a chat first!"); return }
   try {
     showToast("Creating share link...")
-    const res = await fetch("https://datta-ai-server.onrender.com/chat/" + currentChatId + "/share", {
+    const res = await fetch(SERVER + "/chat/" + currentChatId + "/share", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token: getToken() })
@@ -47,7 +50,7 @@ async function executeCode(btn) {
   btn.disabled = true
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/execute", {
+    const res = await fetch(SERVER + "/execute", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code, language: lang, token: getToken() })
@@ -617,6 +620,7 @@ async function send() {
   formData.append("token", getToken())
   formData.append("language", localStorage.getItem("datta_language") || "English")
   formData.append("model", getPersonaModel())
+  formData.append("modelKey", localStorage.getItem("datta_model_key") || "d21")
   formData.append("style", localStorage.getItem("datta_ai_style") || "Balanced")
   formData.append("ainame", localStorage.getItem("datta_ai_name") || "Datta AI")
   // Send user's actual local time from browser
@@ -655,10 +659,29 @@ async function send() {
 
   showStopBtn()
 
+  // Auto-retry fetch - silently retry up to 4 times
+  async function fetchWithRetry(url, options, maxTries = 4) {
+    for (let i = 0; i < maxTries; i++) {
+      try {
+        const ctrl = new AbortController()
+        const timer = setTimeout(() => ctrl.abort(), 50000)
+        const r = await fetch(url, { ...options, signal: ctrl.signal })
+        clearTimeout(timer)
+        return r
+      } catch(e) {
+        if (i === maxTries - 1) throw e
+        // Update thinking message
+        const title = document.querySelector(".thinkingTitle")
+        if (title) title.textContent = "Connecting... (" + (i+2) + "/" + maxTries + ")"
+        await new Promise(r => setTimeout(r, 5000)) // wait 5 sec
+        controller = new AbortController()
+      }
+    }
+  }
+
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/chat", {
+    const res = await fetchWithRetry(SERVER + "/chat", {
       method: "POST",
-      signal: controller.signal,
       body: formData
     })
 
@@ -777,10 +800,11 @@ async function send() {
       if (chunk.includes("CHATID")) {
         const parts = chunk.split("CHATID")
         streamText += parts[0]
-        currentChatId = parts[1]
+        currentChatId = parts[1].trim()
       } else {
         streamText += chunk
       }
+
 
       // Detect auto-switch to Datta 5.4
       if (streamText.includes("Switching to **Datta 5.4**") || streamText.includes("switching you to Datta 5.4")) {
@@ -830,30 +854,61 @@ async function send() {
     loadSidebar()
 
   } catch (err) {
-    hideStopBtn()
-    const sendBtn = document.getElementById("sendBtn")
-    const msgInput = document.getElementById("message")
-    if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
-    if (msgInput) { msgInput.disabled = false }
     if (err.name === "AbortError") {
-      console.log("Request cancelled")
+      hideStopBtn()
+      const sendBtn = document.getElementById("sendBtn")
+      const msgInput = document.getElementById("message")
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
+      if (msgInput) { msgInput.disabled = false }
+      return
+    }
+
+    // Auto retry up to 3 times silently
+    console.error("Chat error:", err.message)
+    const retryCount = (window._retryCount || 0) + 1
+    window._retryCount = retryCount
+
+    if (retryCount <= 3) {
+      // Update thinking block to show retrying
+      const tb = aiDiv.querySelector(".thinkingBlock")
+      if (tb) {
+        const title = tb.querySelector(".thinkingTitle")
+        if (title) title.textContent = "Retrying " + retryCount + "/3"
+      }
+      // Wait then retry automatically
+      await new Promise(r => setTimeout(r, 5000))
+      // Ping server to wake it
+      fetch(SERVER + "/ping").catch(() => {})
+      await new Promise(r => setTimeout(r, 2000))
+      // Retry
+      hideStopBtn()
+      const sendBtn = document.getElementById("sendBtn")
+      const msgInput = document.getElementById("message")
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
+      if (msgInput) { msgInput.disabled = false }
+      // Remove the thinking div and resend
+      aiDiv.remove()
+      const inp = document.getElementById("message")
+      if (inp && window.lastUserMsg) {
+        inp.value = window.lastUserMsg
+        send()
+      }
     } else {
-      console.error("Chat error:", err.message)
+      window._retryCount = 0
+      hideStopBtn()
+      const sendBtn = document.getElementById("sendBtn")
+      const msgInput = document.getElementById("message")
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
+      if (msgInput) { msgInput.disabled = false }
       aiDiv.innerHTML = `
         <div class="aiContent">
           <div class="aiBubble" style="background:#110a0a;border:1px solid #ff444422;">
-            <div style="color:#ff8888;font-size:15px;font-weight:600;margin-bottom:8px;">⚠️ Connection issue</div>
-            <div style="color:#888;font-size:13px;margin-bottom:14px;">The server took too long to respond. This happens when the server is waking up (free plan). Please wait 10 seconds and try again.</div>
-            <div style="display:flex;gap:8px;">
-              <button onclick="document.getElementById('message').value='${(lastUserMsg||"").replace(/'/g,"\'")}';sendMessage()" 
-                style="padding:8px 18px;background:#00ff8822;border:1px solid #00ff8844;border-radius:10px;color:#00ff88;font-size:13px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">
-                🔄 Try Again
-              </button>
-              <button onclick="this.closest('.aiContent').closest('.messageRow').remove()"
-                style="padding:8px 14px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;color:#666;font-size:13px;cursor:pointer;">
-                Dismiss
-              </button>
-            </div>
+            <div style="color:#ff8888;font-size:15px;font-weight:600;margin-bottom:8px;">Connection failed after 3 retries</div>
+            <div style="color:#888;font-size:13px;margin-bottom:14px;">Please check your internet and try again.</div>
+            <button onclick="this.closest('.messageRow').remove();document.getElementById('message').value=window.lastUserMsg||'';document.getElementById('message').focus()"
+              style="padding:8px 18px;background:#00ff8822;border:1px solid #00ff8844;border-radius:10px;color:#00ff88;font-size:13px;cursor:pointer;">
+              Try Again
+            </button>
           </div>
         </div>
       `
@@ -867,7 +922,7 @@ let sidebarFixDone = false
 
 async function loadSidebar() {
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/chats?token=" + getToken())
+    const res = await fetch(SERVER + "/chats?token=" + getToken())
 
     // If 401 redirect to login
     if (res.status === 401) {
@@ -889,7 +944,7 @@ async function loadSidebar() {
       const badTitles = ["hi","hii","hiii","hello","hey","helo","hai","new conversation","new chat"]
       const hasBad = chats.some(c => badTitles.includes(c.title.toLowerCase().trim()))
       if (hasBad) {
-        fetch("https://datta-ai-server.onrender.com/chats/fix-titles?token=" + getToken(), {
+        fetch(SERVER + "/chats/fix-titles?token=" + getToken(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token: getToken() })
@@ -954,7 +1009,7 @@ async function openChat(chatId) {
   chatBox.innerHTML = ""
   hideWelcome()
 
-  const res = await fetch("https://datta-ai-server.onrender.com/chat/" + chatId + "?token=" + getToken())
+  const res = await fetch(SERVER + "/chat/" + chatId + "?token=" + getToken())
   const messages = await res.json()
 
   messages.forEach(m => {
@@ -1021,7 +1076,7 @@ function confirmDelete(e, id) {
 async function deleteChat(id, chatItem) {
   try {
     if (chatItem) chatItem.style.opacity = "0.4"
-    await fetch("https://datta-ai-server.onrender.com/chat/" + id + "?token=" + getToken(), {
+    await fetch(SERVER + "/chat/" + id + "?token=" + getToken(), {
       method: "DELETE"
     })
     if (chatItem) chatItem.remove()
@@ -1072,7 +1127,7 @@ async function regenerateFrom(btn) {
 
   controller = new AbortController()
 
-  const res = await fetch("https://datta-ai-server.onrender.com/chat", {
+  const res = await fetch(SERVER + "/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     signal: controller.signal,
@@ -1307,6 +1362,23 @@ function saveChatTitle(title) {
 window.send = send
 loadSidebar()
 
+// Load smart suggestions for welcome screen
+async function loadSmartSuggestions() {
+  const chips = document.getElementById("suggestionChips")
+  if (!chips) return
+  // Just use static chips - no API call needed
+  // Dynamic chips from server were causing [object Object] error
+  chips.innerHTML = `
+    <button class="chip" onclick="useChip(this)">🌐 Build me a portfolio website</button>
+    <button class="chip" onclick="useChip(this)">🐍 Write a Python web scraper</button>
+    <button class="chip" onclick="useChip(this)">📰 Latest tech news today</button>
+    <button class="chip" onclick="useChip(this)">🧠 Explain machine learning</button>
+    <button class="chip" onclick="useChip(this)">✍️ Write a poem about nature</button>
+    <button class="chip" onclick="useChip(this)">💼 Create a business plan</button>
+  `
+}
+window.loadSmartSuggestions = loadSmartSuggestions
+
 // SHOW SIDEBAR SECTION
 function showSection(name) {
   // Hide all sections
@@ -1419,7 +1491,7 @@ async function changeUsername() {
   if (newUsername.length < 3) return showSettingsMsg("Username must be at least 3 characters", "error")
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/auth/update-username", {
+    const res = await fetch(SERVER + "/auth/update-username", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: newUsername, token: datta_token })
@@ -1455,7 +1527,7 @@ async function changePassword() {
   if (newPass !== confirm) return showSettingsMsg("Passwords do not match", "error")
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/auth/change-password", {
+    const res = await fetch(SERVER + "/auth/change-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ currentPassword: current, newPassword: newPass, token: datta_token })
@@ -1520,7 +1592,7 @@ async function deleteAllChats() {
   if (!confirm("Are you sure? This will delete ALL your chats permanently!")) return
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/chats/all?token=" + getToken(), {
+    const res = await fetch(SERVER + "/chats/all?token=" + getToken(), {
       method: "DELETE"
     })
     if (!res.ok) return showSettingsMsg("Failed to delete chats", "error")
@@ -1543,7 +1615,7 @@ async function deleteAccount() {
   if (!confirm("This will PERMANENTLY delete your account. Are you absolutely sure?")) return
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/auth/delete-account", {
+    const res = await fetch(SERVER + "/auth/delete-account", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password, token: datta_token })
@@ -1769,7 +1841,7 @@ async function processVoiceQuery(query) {
     formData.append("ainame", localStorage.getItem("datta_ai_name") || "Datta AI")
     formData.append("voice", "true")
 
-    const res = await fetch("https://datta-ai-server.onrender.com/chat", {
+    const res = await fetch(SERVER + "/chat", {
       method: "POST",
       body: formData
     })
@@ -1997,7 +2069,7 @@ const planVersions = {
 
 async function loadUserVersion() {
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/payment/subscription?token=" + getToken())
+    const res = await fetch(SERVER + "/payment/subscription?token=" + getToken())
     if (!res.ok) return
     const data = await res.json()
     const plan = data.plan || "free"
@@ -2377,7 +2449,7 @@ window.copyCodeBlock = copyCodeBlock
 // ══════════════════════════════════════════════════════
 async function saveDailyMemory(key, value) {
   try {
-    await fetch("https://datta-ai-server.onrender.com/memory/" + key, {
+    await fetch(SERVER + "/memory/" + key, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ value, token: getToken() })
@@ -2938,7 +3010,7 @@ window.addEventListener("DOMContentLoaded", async function() {
 
   // Check if already verified from server
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/payment/subscription?token=" + getToken())
+    const res = await fetch(SERVER + "/payment/subscription?token=" + getToken())
     if (!res.ok) return
   } catch(e) { return }
 
@@ -2966,7 +3038,7 @@ window.addEventListener("DOMContentLoaded", async function() {
 
 async function resendVerification() {
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/auth/resend-verification", {
+    const res = await fetch(SERVER + "/auth/resend-verification", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token: getToken() })
@@ -3094,7 +3166,7 @@ window.deleteChat = deleteChat
 async function exportChat() {
   if (!currentChatId) return showToast("No chat to export")
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/chat/" + currentChatId + "/export?token=" + getToken())
+    const res = await fetch(SERVER + "/chat/" + currentChatId + "/export?token=" + getToken())
     if (!res.ok) return showToast("Export failed")
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)
@@ -3111,7 +3183,7 @@ window.exportChat = exportChat
 // REFERRAL
 async function showReferral() {
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/referral/code?token=" + getToken())
+    const res = await fetch(SERVER + "/referral/code?token=" + getToken())
     const data = await res.json()
     const msg = `Your referral code: ${data.code}
 
@@ -3293,6 +3365,54 @@ window.toggleModelDropdown = toggleModelDropdown
 window.closeModelDropdown = closeModelDropdown
 window.selectInputModel = selectInputModel
 
+// Check if user can access premium models
+function checkModelAccess(key) {
+  const plan = localStorage.getItem("datta_plan") || "free"
+  const freePlans = ["free"]
+  const miniPlans = ["free", "mini"]
+  
+  if (key === "d54" && miniPlans.includes(plan)) {
+    closeModelDropdown()
+    // Show upgrade prompt
+    const modal = document.createElement("div")
+    modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;"
+    modal.innerHTML = `
+      <div style="background:#111;border:1px solid #aa66ff44;border-radius:20px;padding:28px;max-width:320px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:12px;">🔒</div>
+        <div style="font-size:18px;font-weight:700;color:white;margin-bottom:8px;">Datta 5.4 is Pro+</div>
+        <div style="font-size:13px;color:#888;margin-bottom:20px;">Datta 5.4 coding model requires Pro plan or above.</div>
+        <a href="pricing.html" style="display:block;padding:12px;background:linear-gradient(135deg,#aa66ff,#00ccff);border-radius:12px;color:white;font-weight:700;text-decoration:none;margin-bottom:10px;">Upgrade to Pro — ₹999/mo</a>
+        <button onclick="this.closest('div').parentElement.remove()" style="background:none;border:none;color:#555;cursor:pointer;font-size:13px;">Maybe later</button>
+      </div>`
+    modal.onclick = e => { if(e.target===modal) modal.remove() }
+    document.body.appendChild(modal)
+    return
+  }
+  
+  if (key === "d48" && freePlans.includes(plan)) {
+    closeModelDropdown()
+    const modal = document.createElement("div")
+    modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;"
+    modal.innerHTML = `
+      <div style="background:#111;border:1px solid #ff880044;border-radius:20px;padding:28px;max-width:320px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:12px;">🔒</div>
+        <div style="font-size:18px;font-weight:700;color:white;margin-bottom:8px;">Datta 4.8 is Mini+</div>
+        <div style="font-size:13px;color:#888;margin-bottom:20px;">Upgrade to Mini plan to unlock Datta 4.8.</div>
+        <a href="pricing.html" style="display:block;padding:12px;background:linear-gradient(135deg,#ff8800,#ffaa00);border-radius:12px;color:#000;font-weight:700;text-decoration:none;margin-bottom:10px;">Upgrade to Mini — ₹199/mo</a>
+        <button onclick="this.closest('div').parentElement.remove()" style="background:none;border:none;color:#555;cursor:pointer;font-size:13px;">Maybe later</button>
+      </div>`
+    modal.onclick = e => { if(e.target===modal) modal.remove() }
+    document.body.appendChild(modal)
+    return
+  }
+  
+  // Has access - select the model
+  const models = { d48: { id:"llama-3.3-70b-versatile", name:"Datta 4.8" }, d54: { id:"llama-3.3-70b-versatile", name:"Datta 5.4" } }
+  const m = models[key]
+  if (m) selectInputModel(m.id, key, m.name)
+}
+window.checkModelAccess = checkModelAccess
+
 window.selectInputModel = selectInputModel
 
 // ══════════════════════════════════════════════════════
@@ -3402,7 +3522,7 @@ async function captureAndAnalyze() {
     const base64 = imageData.split(",")[1]
     const prompt = lensModePrompts[lensMode]
 
-    const res = await fetch("https://datta-ai-server.onrender.com/lens", {
+    const res = await fetch(SERVER + "/lens", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ image: base64, prompt, token: getToken() })
@@ -3446,7 +3566,7 @@ function lensFromGallery(input) {
     try {
       const base64 = e.target.result.split(",")[1]
       const prompt = lensModePrompts[lensMode]
-      const res = await fetch("https://datta-ai-server.onrender.com/lens", {
+      const res = await fetch(SERVER + "/lens", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: base64, prompt, token: getToken() })
