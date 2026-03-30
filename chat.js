@@ -3347,6 +3347,54 @@ window.toggleModelDropdown = toggleModelDropdown
 window.closeModelDropdown = closeModelDropdown
 window.selectInputModel = selectInputModel
 
+// Check if user can access premium models
+function checkModelAccess(key) {
+  const plan = localStorage.getItem("datta_plan") || "free"
+  const freePlans = ["free"]
+  const miniPlans = ["free", "mini"]
+  
+  if (key === "d54" && miniPlans.includes(plan)) {
+    closeModelDropdown()
+    // Show upgrade prompt
+    const modal = document.createElement("div")
+    modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;"
+    modal.innerHTML = `
+      <div style="background:#111;border:1px solid #aa66ff44;border-radius:20px;padding:28px;max-width:320px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:12px;">🔒</div>
+        <div style="font-size:18px;font-weight:700;color:white;margin-bottom:8px;">Datta 5.4 is Pro+</div>
+        <div style="font-size:13px;color:#888;margin-bottom:20px;">Datta 5.4 coding model requires Pro plan or above.</div>
+        <a href="pricing.html" style="display:block;padding:12px;background:linear-gradient(135deg,#aa66ff,#00ccff);border-radius:12px;color:white;font-weight:700;text-decoration:none;margin-bottom:10px;">Upgrade to Pro — ₹999/mo</a>
+        <button onclick="this.closest('div').parentElement.remove()" style="background:none;border:none;color:#555;cursor:pointer;font-size:13px;">Maybe later</button>
+      </div>`
+    modal.onclick = e => { if(e.target===modal) modal.remove() }
+    document.body.appendChild(modal)
+    return
+  }
+  
+  if (key === "d48" && freePlans.includes(plan)) {
+    closeModelDropdown()
+    const modal = document.createElement("div")
+    modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;"
+    modal.innerHTML = `
+      <div style="background:#111;border:1px solid #ff880044;border-radius:20px;padding:28px;max-width:320px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:12px;">🔒</div>
+        <div style="font-size:18px;font-weight:700;color:white;margin-bottom:8px;">Datta 4.8 is Mini+</div>
+        <div style="font-size:13px;color:#888;margin-bottom:20px;">Upgrade to Mini plan to unlock Datta 4.8.</div>
+        <a href="pricing.html" style="display:block;padding:12px;background:linear-gradient(135deg,#ff8800,#ffaa00);border-radius:12px;color:#000;font-weight:700;text-decoration:none;margin-bottom:10px;">Upgrade to Mini — ₹199/mo</a>
+        <button onclick="this.closest('div').parentElement.remove()" style="background:none;border:none;color:#555;cursor:pointer;font-size:13px;">Maybe later</button>
+      </div>`
+    modal.onclick = e => { if(e.target===modal) modal.remove() }
+    document.body.appendChild(modal)
+    return
+  }
+  
+  // Has access - select the model
+  const models = { d48: { id:"llama-3.3-70b-versatile", name:"Datta 4.8" }, d54: { id:"llama-3.3-70b-versatile", name:"Datta 5.4" } }
+  const m = models[key]
+  if (m) selectInputModel(m.id, key, m.name)
+}
+window.checkModelAccess = checkModelAccess
+
 window.selectInputModel = selectInputModel
 
 // ══════════════════════════════════════════════════════
