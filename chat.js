@@ -620,6 +620,7 @@ async function send() {
   formData.append("token", getToken())
   formData.append("language", localStorage.getItem("datta_language") || "English")
   formData.append("model", getPersonaModel())
+  formData.append("modelKey", localStorage.getItem("datta_model_key") || "d21")
   formData.append("style", localStorage.getItem("datta_ai_style") || "Balanced")
   formData.append("ainame", localStorage.getItem("datta_ai_name") || "Datta AI")
   // Send user's actual local time from browser
@@ -1360,6 +1361,23 @@ function saveChatTitle(title) {
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 window.send = send
 loadSidebar()
+
+// Load smart suggestions for welcome screen
+async function loadSmartSuggestions() {
+  const chips = document.getElementById("suggestionChips")
+  if (!chips) return
+  // Just use static chips - no API call needed
+  // Dynamic chips from server were causing [object Object] error
+  chips.innerHTML = `
+    <button class="chip" onclick="useChip(this)">🌐 Build me a portfolio website</button>
+    <button class="chip" onclick="useChip(this)">🐍 Write a Python web scraper</button>
+    <button class="chip" onclick="useChip(this)">📰 Latest tech news today</button>
+    <button class="chip" onclick="useChip(this)">🧠 Explain machine learning</button>
+    <button class="chip" onclick="useChip(this)">✍️ Write a poem about nature</button>
+    <button class="chip" onclick="useChip(this)">💼 Create a business plan</button>
+  `
+}
+window.loadSmartSuggestions = loadSmartSuggestions
 
 // SHOW SIDEBAR SECTION
 function showSection(name) {
