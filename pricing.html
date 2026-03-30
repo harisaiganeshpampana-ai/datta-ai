@@ -295,16 +295,29 @@ body{background:#0a0a0a;color:#fff;font-family:'Josefin Sans',sans-serif;min-hei
 <script>
 const SERVER = "https://datta-ai-server.onrender.com"
 let isYearly = false, selectedPlan = null
-const M = { pro:999, max:2499, ultramax:4999 }
-// Yearly = total amount paid once per year (20% off monthly*12)
+const M = { mini:199, pro:999, max:2499, ultramax:4999 }
 const Y = { 
-  pro:    9590,    // ₹999 x 12 = ₹11,988 → 20% off = ₹9,590
-  max:    23990,   // ₹2499 x 12 = ₹29,988 → 20% off = ₹23,990
-  ultramax: 47990  // ₹4999 x 12 = ₹59,988 → 20% off = ₹47,990
+  mini:   1910,
+  pro:    9590,
+  max:    23990,
+  ultramax: 47990
 }
-const names = { free:"Free", pro:"Pro", max:"Max", ultramax:"Ultra Max" }
+const names = { free:"Free", mini:"Mini", pro:"Pro", max:"Max", ultramax:"Ultra Max" }
 
 const limits = {
+  mini: {
+    name: "Mini Plan",
+    rows: [
+      { k: "Messages per session", v: "100 messages" },
+      { k: "Session reset", v: "Every 4 hours" },
+      { k: "Models available", v: "Datta 2.1 & 4.2 (4.8 unlocked, 5.4 locked)" },
+      { k: "Web search", v: "Included" },
+      { k: "File & PDF upload", v: "Up to 10MB" },
+      { k: "Voice assistant", v: "Included" },
+      { k: "All AI modes", v: "All 9 modes" }
+    ],
+    note: "Mini plan resets every 4 hours."
+  },
   free: {
     name: "Free Plan",
     rows: [
@@ -312,7 +325,7 @@ const limits = {
       { k: "Session reset", v: "Every 5 hours" },
       { k: "Weekly limit", v: "~200 messages" },
       { k: "Daily limit", v: "~240 messages (approx)" },
-      { k: "Models available", v: "All 4 models (2.1, 4.2, 4.8, 5.4)" },
+      { k: "Models available", v: "Datta 2.1 & 4.2 only (4.8 & 5.4 locked)" },
       { k: "Web search", v: "✓ Included" },
       { k: "File & PDF upload", v: "✓ Up to 10MB" },
       { k: "Voice assistant", v: "✓ Included" },
@@ -332,7 +345,7 @@ const limits = {
       { k: "Session reset", v: "Every 4 hours" },
       { k: "Weekly limit", v: "~6,300 messages" },
       { k: "Daily limit", v: "~900 messages" },
-      { k: "Models available", v: "All 4 models (2.1, 4.2, 4.8, 5.4)" },
+      { k: "Models available", v: "Datta 2.1 & 4.2 only (4.8 & 5.4 locked)" },
       { k: "Web search", v: "✓ Included" },
       { k: "File & PDF upload", v: "✓ Up to 25MB" },
       { k: "Voice assistant", v: "✓ Included" },
@@ -352,7 +365,7 @@ const limits = {
       { k: "Session reset", v: "Every 3 hours" },
       { k: "Weekly limit", v: "~112,000 messages" },
       { k: "Daily limit", v: "~16,000 messages" },
-      { k: "Models available", v: "All 4 models (2.1, 4.2, 4.8, 5.4)" },
+      { k: "Models available", v: "Datta 2.1 & 4.2 only (4.8 & 5.4 locked)" },
       { k: "Web search", v: "✓ + Deep research mode" },
       { k: "File & PDF upload", v: "✓ Up to 50MB" },
       { k: "Voice assistant", v: "✓ Included" },
@@ -372,7 +385,7 @@ const limits = {
       { k: "Session reset", v: "No limit" },
       { k: "Weekly limit", v: "Unlimited" },
       { k: "Daily limit", v: "Unlimited" },
-      { k: "Models available", v: "All 4 models (2.1, 4.2, 4.8, 5.4)" },
+      { k: "Models available", v: "Datta 2.1 & 4.2 only (4.8 & 5.4 locked)" },
       { k: "Web search", v: "✓ + Deep research mode" },
       { k: "File & PDF upload", v: "✓ Up to 100MB" },
       { k: "Voice assistant", v: "✓ Included" },
@@ -439,6 +452,7 @@ function closeLimitModal(){
 
 function openPay(plan){
   selectedPlan = plan
+  window._selectedPlanAmount = null // reset so payRazorpay uses M/Y
   const amount = isYearly ? Y[plan] : M[plan]
   const label = isYearly ? names[plan]+" Plan (Yearly)" : names[plan]+" Plan (Monthly)"
   document.getElementById("payPlanName").textContent = label
@@ -452,6 +466,22 @@ function closePay(){
   selectedPlan = null
 }
 
+// selectPlan - called when user clicks plan button
+function selectPlan(plan, period, amount) {
+  selectedPlan = plan
+  // Store for payment
+  window._selectedPlanAmount = amount
+  window._selectedPlanPeriod = period
+  // Update modal content
+  const planName = document.getElementById("payPlanName")
+  const planPrice = document.getElementById("payPlanPrice")
+  if (planName) planName.textContent = (names[plan] || plan) + " Plan"
+  if (planPrice) planPrice.textContent = "Rs." + amount + "/" + period
+  // Show the modal
+  const overlay = document.getElementById("payOverlay")
+  if (overlay) overlay.classList.add("show")
+}
+
 async function payRazorpay(){
   if(!selectedPlan) return
   const token = getToken()
@@ -460,11 +490,12 @@ async function payRazorpay(){
   msg.textContent = "Creating order..."
   msg.style.color = "#888"
   try{
-    const amount = isYearly ? Y[selectedPlan] : M[selectedPlan]
+    const amount = window._selectedPlanAmount || (isYearly ? Y[selectedPlan] : M[selectedPlan])
+    const period = window._selectedPlanPeriod || (isYearly ? "yearly" : "monthly")
     const res = await fetch(SERVER+"/payment/razorpay-order",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({plan:selectedPlan,amount,token})
+      body:JSON.stringify({plan:selectedPlan,amount,period,token})
     })
     const data = await res.json()
     if(!data.orderId){ msg.textContent = data.error||"Failed"; msg.style.color="#ff4444"; return }
