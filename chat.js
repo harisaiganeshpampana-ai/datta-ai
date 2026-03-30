@@ -853,30 +853,61 @@ async function send() {
     loadSidebar()
 
   } catch (err) {
-    hideStopBtn()
-    const sendBtn = document.getElementById("sendBtn")
-    const msgInput = document.getElementById("message")
-    if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
-    if (msgInput) { msgInput.disabled = false }
     if (err.name === "AbortError") {
-      console.log("Request cancelled")
+      hideStopBtn()
+      const sendBtn = document.getElementById("sendBtn")
+      const msgInput = document.getElementById("message")
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
+      if (msgInput) { msgInput.disabled = false }
+      return
+    }
+
+    // Auto retry up to 3 times silently
+    console.error("Chat error:", err.message)
+    const retryCount = (window._retryCount || 0) + 1
+    window._retryCount = retryCount
+
+    if (retryCount <= 3) {
+      // Update thinking block to show retrying
+      const tb = aiDiv.querySelector(".thinkingBlock")
+      if (tb) {
+        const title = tb.querySelector(".thinkingTitle")
+        if (title) title.textContent = "Retrying " + retryCount + "/3"
+      }
+      // Wait then retry automatically
+      await new Promise(r => setTimeout(r, 5000))
+      // Ping server to wake it
+      fetch(SERVER + "/ping").catch(() => {})
+      await new Promise(r => setTimeout(r, 2000))
+      // Retry
+      hideStopBtn()
+      const sendBtn = document.getElementById("sendBtn")
+      const msgInput = document.getElementById("message")
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
+      if (msgInput) { msgInput.disabled = false }
+      // Remove the thinking div and resend
+      aiDiv.remove()
+      const inp = document.getElementById("message")
+      if (inp && window.lastUserMsg) {
+        inp.value = window.lastUserMsg
+        send()
+      }
     } else {
-      console.error("Chat error:", err.message)
+      window._retryCount = 0
+      hideStopBtn()
+      const sendBtn = document.getElementById("sendBtn")
+      const msgInput = document.getElementById("message")
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
+      if (msgInput) { msgInput.disabled = false }
       aiDiv.innerHTML = `
         <div class="aiContent">
           <div class="aiBubble" style="background:#110a0a;border:1px solid #ff444422;">
-            <div style="color:#ff8888;font-size:15px;font-weight:600;margin-bottom:8px;">⚠️ Connection issue</div>
-            <div style="color:#888;font-size:13px;margin-bottom:14px;">The server took too long to respond. This happens when the server is waking up (free plan). Please wait 10 seconds and try again.</div>
-            <div style="display:flex;gap:8px;">
-              <button onclick="document.getElementById('message').value='${(lastUserMsg||"").replace(/'/g,"\'")}';sendMessage()" 
-                style="padding:8px 18px;background:#00ff8822;border:1px solid #00ff8844;border-radius:10px;color:#00ff88;font-size:13px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">
-                🔄 Try Again
-              </button>
-              <button onclick="this.closest('.aiContent').closest('.messageRow').remove()"
-                style="padding:8px 14px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;color:#666;font-size:13px;cursor:pointer;">
-                Dismiss
-              </button>
-            </div>
+            <div style="color:#ff8888;font-size:15px;font-weight:600;margin-bottom:8px;">Connection failed after 3 retries</div>
+            <div style="color:#888;font-size:13px;margin-bottom:14px;">Please check your internet and try again.</div>
+            <button onclick="this.closest('.messageRow').remove();document.getElementById('message').value=window.lastUserMsg||'';document.getElementById('message').focus()"
+              style="padding:8px 18px;background:#00ff8822;border:1px solid #00ff8844;border-radius:10px;color:#00ff88;font-size:13px;cursor:pointer;">
+              Try Again
+            </button>
           </div>
         </div>
       `
