@@ -1013,39 +1013,22 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "llama-3.1-8b-instant",                          // Datta 2.1
       "llama-3.3-70b-versatile",                        // Datta 4.2
       "llama-3.3-70b-versatile",                                   // Datta 4.8
-      "meta-llama/llama-4-maverick-17b-128e-instruct-fp8-fast",  // Datta 5.4 (fallback to 70b)
+      "meta-llama/llama-4-maverick-17b-128e-instruct",  // Datta 5.4 (fallback to 70b)
       "meta-llama/llama-4-scout-17b-16e-instruct",      // Datta Vision
       // Persona models
-      "datta-1.1",
-      "persona-lawyer","persona-teacher","persona-chef","persona-fitness",
-      "persona-upsc","persona-student","persona-interview","persona-business"
+      "persona-lawyer","persona-teacher","persona-chef","persona-fitness"
     ]
     const chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.1-8b-instant"
     // Map all models to valid Groq models
-    // Datta 1.1 = llama-3.1-8b-instant used specifically for AI modes
-    // All persona modes auto-use Datta 1.1 (fast, focused responses)
-    // Model ID map - frontend sends short IDs, map to real Groq model IDs
     const modelMap = {
-      // Datta models
-      "datta-1.1":  "llama-3.1-8b-instant",
-      "datta-2.1":  "llama-3.1-8b-instant",
-      "datta-4.2":  "llama-3.3-70b-versatile",
-      "datta-4.8":  "llama-3.3-70b-versatile",
-      "datta-5.4":  "meta-llama/llama-4-maverick-17b-128e-instruct-fp8-fast",
-      // Persona modes use Datta 1.1 (8b) or 4.2 (70b)
-      "persona-lawyer":   "llama-3.1-8b-instant",
-      "persona-teacher":  "llama-3.1-8b-instant",
-      "persona-chef":     "llama-3.1-8b-instant",
-      "persona-fitness":  "llama-3.1-8b-instant",
-      "persona-upsc":     "llama-3.3-70b-versatile",
-      "persona-student":  "llama-3.1-8b-instant",
-      "persona-interview":"llama-3.1-8b-instant",
-      "persona-business": "llama-3.3-70b-versatile"
+      "meta-llama/llama-4-maverick-17b-128e-instruct": "llama-3.3-70b-versatile",
+      "persona-lawyer":  "llama-3.3-70b-versatile",
+      "persona-teacher": "llama-3.3-70b-versatile",
+      "persona-chef":    "llama-3.3-70b-versatile",
+      "persona-fitness": "llama-3.3-70b-versatile"
     }
-    // If frontend sends full Groq model ID directly, use as-is
-    // If it sends a short name, map it
-    let resolvedModel = modelMap[chosenModel] || chosenModel
-    // model assigned after auto-switch logic below
+    const resolvedModel = modelMap[chosenModel] || chosenModel
+    const model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : resolvedModel
     const useTogether = false
     const style = req.body.style || "Balanced"
     const ainame = req.body.ainame || "Datta AI"
@@ -1065,18 +1048,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
 
     // Detect if code/build task needs max tokens
     const msgLower = message.toLowerCase()
-    const isCodeTask = ["build","create","write","make","code","website","app","script","program","html","python","javascript","fix","debug","error","update","improve","full","complete","function","class","api","css","react","node","sql","java","c++","php","typescript","flutter","kotlin","swift","bash","linux","docker","git"].some(k => msgLower.includes(k))
-    
-    // Auto-switch to Datta 5.4 for coding if user is on 2.1, 4.2, or 4.8
-    const nonCodingModels = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
-    let autoSwitchMsg = ""
-    if (isCodeTask && !isImageFile && nonCodingModels.includes(resolvedModel) && !chosenModel.startsWith("persona-")) {
-      autoSwitchMsg = "Switching to **Datta 5.4** for this coding task...\n\n"
-      resolvedModel = "meta-llama/llama-4-maverick-17b-128e-instruct-fp8-fast"
-    }
-    // Now set final model AFTER any auto-switch
-    let model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : resolvedModel
-    const isD54 = resolvedModel === "meta-llama/llama-4-maverick-17b-128e-instruct-fp8-fast"
+    const isCodeTask = ["build","create","write","make","code","website","app","script","program","html","python","javascript","fix","debug","error","update","improve","full","complete","function","class","api"].some(k => msgLower.includes(k))
+    const isD54 = chosenModel === "meta-llama/llama-4-maverick-17b-128e-instruct"
     const maxCodingTok = isD54 ? 8192 : isCodeTask ? 8192 : 6144
     const maxTok = isImageFile ? 4096 : maxCodingTok
 
@@ -1094,29 +1067,14 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Each model has unique behavior
     // Persona based on CHOSEN model (before mapping), not resolved model
     const modelPersonas = {
-      "llama-3.1-8b-instant": `Your name is ${ainame}. You are Datta 2.1 - friendly chat assistant. 
-ONLY handle: casual chat, simple questions, general knowledge, fun conversations.
-If asked to write code or build apps: say "I am Datta 2.1, I am not for coding. Switching to Datta 5.4 for you..." - the system will handle the switch automatically.
-Talk simply and friendly. Short answers. NEVER say you are any other AI.`,
-
-      "llama-3.3-70b-versatile": `Your name is ${ainame}. You are Datta 4.2 - research and analysis expert.
-ONLY handle: research, facts, news, analysis, writing, explanations, general knowledge.
-If asked to write code or build apps: say "I am Datta 4.2, switching you to Datta 5.4 (coding expert)..." - the system will handle the switch automatically.
-Give clear helpful answers in simple English. NEVER say you are any other AI.`,
-
-      "meta-llama/llama-4-maverick-17b-128e-instruct-fp8-fast": `Your name is ${ainame}. You are Datta 5.4 - the ONLY coding expert in Datta AI.
-Write 100% complete working code. Never truncate. All languages supported.
-Explain briefly after code. NEVER say you are any other AI.`,
+      "llama-3.1-8b-instant":                          `Your name is ${ainame}. You are Datta 2.1. Talk simply and friendly. Give short, easy answers. Use everyday English like ChatGPT. NEVER say you are any other AI.`,
+      "llama-3.3-70b-versatile":                       `Your name is ${ainame}. You are Datta 4.2. Give helpful, clear answers in simple English. Not too long, not too short. Like a smart friend explaining things. NEVER say you are any other AI.`,
+      "meta-llama/llama-4-maverick-17b-128e-instruct": `Your name is ${ainame}. You are Datta 5.4 - coding expert. Give complete working code. Explain briefly in simple words. NEVER say you are any other AI.`,
       "meta-llama/llama-4-scout-17b-16e-instruct":     `Your name is ${ainame}. You are Datta Vision - image analysis expert. Analyze images in extreme detail. NEVER say you are any other AI.`,
       "persona-lawyer":  `Your name is ${ainame}. You are in Lawyer mode. Provide general legal information. Always advise consulting a licensed lawyer. NEVER say you are any other AI.`,
       "persona-teacher": `Your name is ${ainame}. You are in Teacher mode. Explain concepts simply with examples. Be patient and encouraging. NEVER say you are any other AI.`,
       "persona-chef":    `Your name is ${ainame}. You are in Chef mode. Help with recipes, cooking tips, meal planning. Be enthusiastic about food. NEVER say you are any other AI.`,
-      "datta-1.1": `Your name is ${ainame}. You are Datta 1.1 - a specialized AI mode assistant. You are focused, helpful and give precise answers based on the selected mode. NEVER say you are any other AI.`,
-      "persona-fitness": `Your name is ${ainame}. You are in Fitness Coach mode. Give workout plans, nutrition advice. Be motivating. NEVER say you are any other AI.`,
-      "persona-upsc": `Your name is ${ainame}. You are in UPSC Expert mode. Help with UPSC Civil Services preparation. Cover all subjects: History, Geography, Polity, Economy, Science, Current Affairs, Ethics. Give precise factual answers. Use simple English. Format answers in points for easy memorization. Cover prelims and mains both. NEVER say you are any other AI.`,
-      "persona-student": `Your name is ${ainame}. You are in Student Helper mode. Help with school and college studies - Math, Science, English, Social Studies, all subjects. Explain concepts simply with examples. Help with homework, assignments, exam prep. Use very simple language. NEVER say you are any other AI.`,
-      "persona-interview": `Your name is ${ainame}. You are in Interview Coach mode. Help with job interview preparation. Give common questions and ideal answers. Help with resume, soft skills, technical interviews, HR rounds. Be practical and encouraging. NEVER say you are any other AI.`,
-      "persona-business": `Your name is ${ainame}. You are in Business Advisor mode. Help with business ideas, startups, marketing, finance, GST, business plans. Give practical Indian business advice. NEVER say you are any other AI.`
+      "persona-fitness": `Your name is ${ainame}. You are in Fitness Coach mode. Give workout plans, nutrition advice. Be motivating. NEVER say you are any other AI.`
     }
 
     // Use chosenModel for persona lookup (before model mapping)
@@ -1188,9 +1146,6 @@ QUALITY RULES:
     const togetherModel = chosenModel.startsWith("persona-") 
       ? "llama-3.3-70b-versatile"  // personas use fast model
       : "deepseek-ai/DeepSeek-V3"  // Datta 5.4 uses DeepSeek
-
-    // Write auto-switch notification before streaming
-    if (autoSwitchMsg) res.write(autoSwitchMsg)
 
     if (false) {
       // Together AI disabled - no credits
