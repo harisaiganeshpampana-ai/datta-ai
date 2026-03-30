@@ -1033,17 +1033,16 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "persona-upsc","persona-student","persona-interview","persona-business"
     ]
     let chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.1-8b-instant"
-    
-    // Lock 4.8 and 5.4 for free/mini plans
-    const premiumModels = ["llama-3.3-70b-versatile_54","datta-5.4"]
-    const midModels = ["llama-3.3-70b-versatile_48","datta-4.8"]
-    const freePlans = ["free"]
-    const miniPlans = ["free","mini"]
-    
-    if (freePlans.includes(userPlan) && (premiumModels.includes(chosenModel) || midModels.includes(chosenModel))) {
-      // Free users trying to use 4.8 or 5.4
+    const modelKey = req.body.modelKey || "d21" // d21, d42, d48, d54
+
+    // Lock 4.8 and 5.4 for free users
+    // d48 = Datta 4.8, d54 = Datta 5.4
+    const is48 = modelKey === "d48"
+    const is54 = modelKey === "d54"
+
+    if (userPlan === "free" && (is48 || is54)) {
       res.setHeader("Content-Type","text/plain")
-      res.write("** Datta 4.8 and 5.4 are locked on Free plan.**\n\nUpgrade to Mini (Rs.199/mo) or Pro (Rs.999/mo) to unlock all models!\n\nUpgrade at pricing.html")
+      res.write("This model is locked on Free plan. Upgrade to Mini (Rs.199/mo) or Pro (Rs.999/mo) to unlock. Visit pricing.html to upgrade!")
       chat.messages.push({ role:"assistant", content:"Model locked. Upgrade required." })
       await chat.save()
       res.write("CHATID" + chat._id)
