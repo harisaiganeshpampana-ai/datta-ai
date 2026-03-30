@@ -1,8 +1,4 @@
 import express from "express"
-import { createRequire } from "module"
-const require = createRequire(import.meta.url)
-let pdfParse
-try { pdfParse = require("pdf-parse") } catch(e) { pdfParse = null; console.log("pdf-parse not available") }
 import cors from "cors"
 import dotenv from "dotenv"
 import mongoose from "mongoose"
@@ -12,11 +8,11 @@ import Groq from "groq-sdk"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import passport from "passport"
-let GoogleStrategy
-try { const g = await import("passport-google-oauth20"); GoogleStrategy = g.Strategy } catch(e) { GoogleStrategy = null }
+import { Strategy as GoogleStrategy } from "passport-google-oauth20"
 import session from "express-session"
-let twilio
-try { const t = await import("twilio"); twilio = t.default } catch(e) { twilio = null }
+import twilio from "twilio"
+import pdfParse from "pdf-parse/lib/pdf-parse.js"
+import nodemailer from "nodemailer"
 
 dotenv.config()
 
@@ -489,8 +485,7 @@ async function sendVerificationEmail(email, token, username) {
       </html>
     `
     // Use nodemailer with Gmail
-    const nodemailer = await import("nodemailer")
-    const transporter = nodemailer.default.createTransport({
+    const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: { user: GMAIL_USER, pass: GMAIL_PASS }
     })
