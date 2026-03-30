@@ -1087,10 +1087,10 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }
     // Now set final model AFTER any auto-switch
     let model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : resolvedModel
-    const isD54 = true // always use max tokens since all models are same
     const isLargeTask = ["portfolio","full website","complete website","business plan","full app","complete app","all sections"].some(k => msgLower.includes(k))
-    const maxCodingTok = (isLargeTask || isCodeTask) ? 8192 : 6144
-    const maxTok = isImageFile ? 4096 : maxCodingTok
+    // Keep tokens lower to avoid Render 30s timeout - Groq is fast so 4096 still gives good code
+    const maxCodingTok = isLargeTask ? 6000 : isCodeTask ? 4096 : 3000
+    const maxTok = isImageFile ? 2048 : maxCodingTok
 
     // Use browser's actual local time sent from frontend
     const timeStr = req.body.userTime || new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })
