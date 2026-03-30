@@ -134,16 +134,46 @@ body{background:#0a0a0a;color:#fff;font-family:'Josefin Sans',sans-serif;min-hei
       <div class="keyStatLabel">Standard usage · 50 msgs per session</div>
     </div>
     <ul class="features">
-      <li><span class="y">✓</span><span>All 4 Datta AI models</span></li>
+      <li><span class="y">✓</span><span>Datta 2.1 &amp; 4.2 models</span></li>
       <li><span class="y">✓</span><span>Web search</span></li>
       <li><span class="y">✓</span><span>File &amp; PDF upload</span></li>
       <li><span class="y">✓</span><span>Voice assistant</span></li>
-      <li><span class="n">✗</span><span>All AI models</span></li>
+      <li><span class="n">🔒</span><span>Datta 4.8 &amp; 5.4 (locked)</span></li>
+      <li><span class="n">🔒</span><span>Code generation (locked)</span></li>
       <li><span class="n">✗</span><span>Priority responses</span></li>
-      <li><span class="n">✗</span><span>Custom AI name</span></li>
     </ul>
     <button class="planBtn btn-free" id="btn-free" disabled>Current Plan</button>
     <div class="limitLink" onclick="showLimit('free')">See usage limits ↗</div>
+  </div>
+
+  <!-- MINI -->
+  <div class="card" id="card-mini" style="border:1px solid #ff880033;">
+    <div class="cardTop">
+      <div class="cardIcon">⭐</div>
+      <div class="cardName">Mini</div>
+      <div class="cardDesc">Best starter plan for daily use</div>
+    </div>
+    <div class="priceArea">
+      <div class="priceMain"><sup>₹</sup><span>199</span></div>
+      <div class="pricePer">/month</div>
+    </div>
+    <div class="keyStat">
+      <div class="keyStatNum" style="color:#ff8800;">2×</div>
+      <div class="keyStatLabel">More than Free · 100 msgs per 4hrs</div>
+    </div>
+    <ul class="features">
+      <li><span class="y">✓</span><span>Datta 2.1 &amp; 4.2 models</span></li>
+      <li><span class="y">✓</span><span>100 messages per 4 hours</span></li>
+      <li><span class="y">✓</span><span>Web search &amp; PDF upload</span></li>
+      <li><span class="y">✓</span><span>Voice assistant</span></li>
+      <li><span class="y">✓</span><span>All 9 AI modes</span></li>
+      <li><span class="n">🔒</span><span>Datta 4.8 &amp; 5.4 (Pro only)</span></li>
+    </ul>
+    <button class="planBtn" id="btn-mini" onclick="selectPlan('mini','monthly',199)"
+      style="background:linear-gradient(135deg,#ff8800,#ffaa00);color:#000;font-weight:700;">
+      Get Mini — ₹199/mo
+    </button>
+    <div class="limitLink" onclick="showLimit('mini')">See usage limits ↗</div>
   </div>
 
   <!-- PRO -->
