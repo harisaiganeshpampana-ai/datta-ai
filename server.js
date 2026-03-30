@@ -1221,11 +1221,6 @@ QUALITY RULES:
     // Write auto-switch notification before streaming
     if (autoSwitchMsg) res.write(autoSwitchMsg)
 
-    // KEEPALIVE - send space every 5s so Render never times out
-    const keepAliveInterval = setInterval(() => {
-      try { if (!res.writableEnded) res.write(" ") } catch(e) {}
-    }, 5000)
-
     // Build messages array
     const groqMessages = [
       { role: "system", content: systemWithMemory },
@@ -1296,11 +1291,9 @@ QUALITY RULES:
       } catch(e) {}
     }
     await chat.save()
-    clearInterval(keepAliveInterval)
     res.write("CHATID" + chat._id)
     res.end()
   } catch(err) {
-    clearInterval(keepAliveInterval)
     console.error("Chat error:", err.message)
     if (!res.headersSent) res.status(500).send("Server error: " + err.message)
     else res.end()
