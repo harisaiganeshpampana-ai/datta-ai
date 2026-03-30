@@ -1221,6 +1221,11 @@ QUALITY RULES:
     // Write auto-switch notification before streaming
     if (autoSwitchMsg) res.write(autoSwitchMsg)
 
+    // KEEPALIVE - send space every 5s so Render never times out
+    const keepAliveInterval = setInterval(() => {
+      try { if (!res.writableEnded) res.write(" ") } catch(e) {}
+    }, 5000)
+
     // Build messages array
     const groqMessages = [
       { role: "system", content: systemWithMemory },
@@ -1255,7 +1260,6 @@ QUALITY RULES:
         lastError = groqErr
         console.error("Groq error (attempt " + (attempt+1) + "):", groqErr.message)
         if (attempt === 0 && attempts.length > 1) {
-          // Write fallback notice and retry with smaller model
           res.write("\n\nSwitching to faster model...\n\n")
           full = ""
           continue
