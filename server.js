@@ -153,12 +153,13 @@ const MemorySchema = new mongoose.Schema({
 const Memory = mongoose.model("Memory", MemorySchema)
 
 const planLimits = {
-  free:      { messages: 50,     images: 0,       resetHours: 5  },
-  pro:       { messages: 150,    images: 20,      resetHours: 4  },
-  max:       { messages: 2000,   images: 50,      resetHours: 3  },
-  ultramax:  { messages: 999999, images: 999999,  resetHours: 0  },
-  basic:     { messages: 150,    images: 20,      resetHours: 4  },
-  enterprise:{ messages: 999999, images: 999999,  resetHours: 0  }
+  free:      { messages: 50,     resetHours: 5,  models: ["llama-3.1-8b-instant","llama-3.3-70b-versatile","datta-1.1"] },
+  mini:      { messages: 100,    resetHours: 4,  models: ["llama-3.1-8b-instant","llama-3.3-70b-versatile","datta-1.1","llama-3.3-70b-versatile_48"] },
+  pro:       { messages: 150,    resetHours: 4,  models: ["all"] },
+  max:       { messages: 2000,   resetHours: 3,  models: ["all"] },
+  ultramax:  { messages: 999999, resetHours: 0,  models: ["all"] },
+  basic:     { messages: 150,    resetHours: 4,  models: ["all"] },
+  enterprise:{ messages: 999999, resetHours: 0,  models: ["all"] }
 }
 const rateLimitStore = {}
 
@@ -1031,7 +1032,24 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "persona-lawyer","persona-teacher","persona-chef","persona-fitness",
       "persona-upsc","persona-student","persona-interview","persona-business"
     ]
-    const chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.1-8b-instant"
+    let chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.1-8b-instant"
+    
+    // Lock 4.8 and 5.4 for free/mini plans
+    const premiumModels = ["llama-3.3-70b-versatile_54","datta-5.4"]
+    const midModels = ["llama-3.3-70b-versatile_48","datta-4.8"]
+    const freePlans = ["free"]
+    const miniPlans = ["free","mini"]
+    
+    if (freePlans.includes(userPlan) && (premiumModels.includes(chosenModel) || midModels.includes(chosenModel))) {
+      // Free users trying to use 4.8 or 5.4
+      res.setHeader("Content-Type","text/plain")
+      res.write("** Datta 4.8 and 5.4 are locked on Free plan.**\n\nUpgrade to Mini (Rs.199/mo) or Pro (Rs.999/mo) to unlock all models!\n\nUpgrade at pricing.html")
+      chat.messages.push({ role:"assistant", content:"Model locked. Upgrade required." })
+      await chat.save()
+      res.write("CHATID" + chat._id)
+      res.end()
+      return
+    }
     // Map all models to valid Groq models
     // Datta 1.1 = llama-3.1-8b-instant used specifically for AI modes
     // All persona modes auto-use Datta 1.1 (fast, focused responses)
