@@ -801,7 +801,9 @@ async function send() {
         streamText += parts[0]
         currentChatId = parts[1].trim()
       } else {
-        streamText += chunk
+        // Strip keepalive spaces sent by server
+        const clean = chunk.replace(/^ +$/, "")
+        streamText += clean
       }
 
 
