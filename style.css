@@ -267,22 +267,39 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80px 24px 40px;
   text-align: center;
-  gap: 20px;
-  min-height: 60vh;
+  padding: 64px 24px 48px;
+  gap: 40px;
+  min-height: 62vh;
+  width: 100%;
+}
+
+/* Heading block */
+.welcomeHeading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
 .welcomeTitle {
-  font-size: clamp(24px, 5vw, 34px);
+  font-size: clamp(26px, 5vw, 36px);
   font-weight: 600;
   letter-spacing: -0.5px;
   background: linear-gradient(135deg, #e8e8f8 30%, #00c9a7);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: 10px;
   line-height: 1.2;
+  margin: 0;
+}
+
+.welcomeSub {
+  font-size: 15px;
+  color: rgba(200,200,220,0.42);
+  line-height: 1.6;
+  max-width: 340px;
+  margin: 0;
 }
 
 .suggestions {
@@ -426,17 +443,18 @@ pre {
   cursor: pointer;
 }
 
-/* INPUT AREA */
+/* INPUT AREA - fixed at bottom, centered */
 .inputArea {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 100%;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
-  justify-content: center;
-  padding: 0;
-  border: none;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 16px 28px;
+  background: linear-gradient(to top, #0d0d0f 65%, transparent);
+  z-index: 50;
 }
 
 .inputWrap {
@@ -445,11 +463,16 @@ pre {
   border-radius: 20px;
   padding: 8px 8px 8px 14px;
   transition: all 0.25s;
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .inputWrap:focus-within {
   border-color: rgba(0,201,167,0.45);
   background: rgba(255,255,255,0.07);
-  box-shadow: 0 0 0 3px rgba(0,201,167,0.08);
+  box-shadow: 0 0 0 3px rgba(0,201,167,0.08), 0 4px 24px rgba(0,0,0,0.3);
 }
 .inputWrap:focus-within {
   border-color: rgba(0,201,167,0.5);
@@ -500,12 +523,8 @@ pre {
 .chat-started .inputArea {
   position: fixed;
   bottom: 0;
-  top: auto;
   left: 0;
-  transform: none;
-  padding: 10px;
-  background: #0f0f0f;
-  border-top: 1px solid #2a2a2a;
+  right: 0;
 }
 
 /* FILE UPLOAD */
@@ -5286,4 +5305,176 @@ body.light .chip:hover {
   font-style: italic;
   font-family: 'Josefin Sans', sans-serif;
   letter-spacing: 0.3px;
+}
+
+
+/* ════════════════════════════════════════
+   WELCOME SCREEN — CLEAN REBUILD
+   ════════════════════════════════════════ */
+
+.welcomeScreen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px 120px;
+  pointer-events: all;
+  z-index: 2;
+}
+
+.welcomeInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  width: 100%;
+  max-width: 600px;
+}
+
+/* 1. HEADING */
+.welcomeHeading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.welcomeTitle {
+  font-size: clamp(26px, 5vw, 36px) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.5px !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  background: linear-gradient(135deg, #e8e8f8 30%, #00c9a7) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+.welcomeSub {
+  font-size: 15px !important;
+  color: rgba(200,200,220,0.42) !important;
+  line-height: 1.6 !important;
+  margin: 0 !important;
+  max-width: 340px !important;
+}
+
+/* 2. SUGGESTION GRID — strict 2x2 */
+.suggestionGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+}
+
+.suggCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 18px 20px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  text-align: left;
+  min-height: 96px;
+  font-family: inherit;
+}
+
+.suggCard:hover {
+  background: rgba(0,201,167,0.07);
+  border-color: rgba(0,201,167,0.3);
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 8px 28px rgba(0,201,167,0.1);
+}
+
+.suggCard:active {
+  transform: scale(0.98);
+  box-shadow: none;
+}
+
+.suggIcon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.suggText {
+  font-size: 13px;
+  color: rgba(215,215,235,0.78);
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+/* Hide welcome when chat starts */
+.chat-started .welcomeScreen {
+  display: none !important;
+}
+
+/* ════════════════════════════════════════
+   INPUT AREA — FIXED BOTTOM, CENTERED
+   ════════════════════════════════════════ */
+
+.inputArea {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: auto !important;
+  transform: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  padding: 12px 20px 28px !important;
+  background: linear-gradient(to top, #0d0d0f 55%, transparent) !important;
+  z-index: 50 !important;
+}
+
+.inputWrap {
+  width: 100% !important;
+  max-width: 720px !important;
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 20px !important;
+  padding: 8px 8px 8px 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  transition: border-color 0.25s, box-shadow 0.25s, background 0.25s !important;
+}
+
+.inputWrap:focus-within {
+  border-color: rgba(0,201,167,0.45) !important;
+  background: rgba(255,255,255,0.07) !important;
+  box-shadow: 0 0 0 3px rgba(0,201,167,0.08), 0 8px 32px rgba(0,0,0,0.4) !important;
+}
+
+/* Chat area bottom padding so messages don't hide behind input */
+.chat {
+  padding-bottom: 140px !important;
+}
+
+.chatWrapper {
+  padding-bottom: 0 !important;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .suggestionGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .suggCard {
+    padding: 14px 16px;
+    min-height: 80px;
+  }
+  .welcomeTitle {
+    font-size: 24px !important;
+  }
+  .inputArea {
+    padding: 10px 12px 20px !important;
+  }
 }
