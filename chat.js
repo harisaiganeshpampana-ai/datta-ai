@@ -1,3 +1,6 @@
+const SERVER = "https://datta-ai-server.onrender.com"
+
+
 // '''''''''''''''''''''''''''''''''''''''''''
 // SINGLE INIT - runs everything on load
 // '''''''''''''''''''''''''''''''''''''''''''
@@ -24,7 +27,7 @@ async function shareChatLink() {
   if (!currentChatId) { showToast("Start a chat first!"); return }
   try {
     showToast("Creating share link...")
-    const res = await fetch("https://datta-ai-server.onrender.com/chat/" + currentChatId + "/share", {
+    const res = await fetch(SERVER + "/chat/" + currentChatId + "/share", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token: getToken() })
@@ -47,7 +50,7 @@ async function executeCode(btn) {
   btn.disabled = true
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/execute", {
+    const res = await fetch(SERVER + "/execute", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code, language: lang, token: getToken() })
@@ -128,33 +131,74 @@ function copyCode(btn) {
 window.copyCode = copyCode
 window.addCodeCopyButtons = addCodeCopyButtons
 
-// STOP GENERATION
-function showStopBtn() {
-  document.getElementById("stopBtn").style.display = "flex"
-  document.getElementById("sendBtn").style.display = "none"
+// ── DYNAMIC SEND/STOP BUTTON SYSTEM ──
+let isGenerating = false
+
+function setGenerating(val) {
+  isGenerating = val
+  const btn = document.getElementById("actionMainBtn")
+  const inner = document.getElementById("actionMainBtnInner")
+  if (!btn || !inner) return
+
+  if (val) {
+    // Switch to STOP state
+    btn.classList.remove("send-state")
+    btn.classList.add("stop-state")
+    inner.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="rgba(255,100,100,0.9)">
+      <rect x="3" y="3" width="18" height="18" rx="3"/>
+    </svg>`
+  } else {
+    // Switch to SEND state
+    btn.classList.remove("stop-state")
+    btn.classList.add("send-state")
+    inner.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+      <line x1="12" y1="19" x2="12" y2="5"/>
+      <polyline points="5 12 12 5 19 12"/>
+    </svg>`
+  }
 }
 
-function hideStopBtn() {
-  document.getElementById("stopBtn").style.display = "none"
-  document.getElementById("sendBtn").style.display = "flex"
+function handleMainBtn() {
+  if (isGenerating) {
+    stopGeneration()
+  } else {
+    send()
+  }
 }
+
+function showStopBtn() { setGenerating(true) }
+function hideStopBtn() { setGenerating(false) }
 
 function stopGeneration() {
   if (controller) {
     controller.abort()
     controller = null
   }
-  hideStopBtn()
-  // Show stopped indicator on current AI bubble
+  setGenerating(false)
+
+  // Freeze partial response + show stopped message
   const streams = document.querySelectorAll(".stream")
   if (streams.length > 0) {
     const last = streams[streams.length - 1]
-    const current = last.innerHTML
-    if (current) {
-      last.innerHTML = marked.parse(last.textContent) + '<span style="font-size:11px;color:#555;margin-left:4px;">· stopped</span>'
+    if (last.textContent.trim()) {
+      last.innerHTML = marked.parse(last.textContent)
     }
+    // Show "stopped by user" message
+    const user = JSON.parse(localStorage.getItem("datta_user") || "{}") 
+    const name = user.username || "you"
+    const stopMsg = document.createElement("div")
+    stopMsg.className = "stoppedMsg"
+    stopMsg.textContent = "Response stopped by " + name
+    last.parentElement.appendChild(stopMsg)
   }
+
+  // Re-enable input
+  const msgInput = document.getElementById("message")
+  if (msgInput) { msgInput.disabled = false; msgInput.focus() }
 }
+
+window.handleMainBtn = handleMainBtn
+window.stopGeneration = stopGeneration
 
 window.stopGeneration = stopGeneration
 
@@ -307,9 +351,74 @@ function startImgLoadingText(uid) {
 }
 window.startImgLoadingText = startImgLoadingText
 // AUTH CHECK - redirect to login if not logged in
-// Configure marked for clean rendering
+// Configure marked with enhanced rendering - emojis, icons, beautiful output
 if (typeof marked !== 'undefined') {
+  const renderer = new marked.Renderer()
+
+  // Beautiful headings with emoji icons
+  renderer.heading = function(text, level) {
+    const icons = { 1:"✨", 2:"📌", 3:"▶️" }
+    const sizes = { 1:"22px", 2:"18px", 3:"16px" }
+    const icon = icons[level] || "•"
+    return `<div style="display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-weight:700;font-size:${sizes[level]};color:#fff;font-family:'Josefin Sans',sans-serif;letter-spacing:0.5px;">
+      <span>${icon}</span><span>${text}</span>
+    </div>`
+  }
+
+  // Beautiful list items with checkmark style
+  renderer.listitem = function(text) {
+    return `<li style="display:flex;gap:8px;align-items:flex-start;margin:6px 0;line-height:1.7;">
+      <span style="color:#00ff88;flex-shrink:0;margin-top:2px;">›</span>
+      <span>${text}</span>
+    </li>`
+  }
+
+  // Beautiful unordered list
+  renderer.list = function(body, ordered) {
+    const tag = ordered ? "ol" : "ul"
+    return `<${tag} style="padding:0;margin:10px 0;list-style:none;">${body}</${tag}>`
+  }
+
+  // Beautiful blockquote
+  renderer.blockquote = function(quote) {
+    return `<blockquote style="border-left:3px solid #00ff88;padding:10px 16px;margin:12px 0;background:#0a1a0a;border-radius:0 8px 8px 0;color:#aaa;font-style:italic;">${quote}</blockquote>`
+  }
+
+  // Code with syntax highlight style
+  renderer.code = function(code, lang) {
+    const langLabel = lang ? `<span style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;">${lang}</span>` : ""
+    return `<div style="margin:12px 0;border-radius:10px;overflow:hidden;border:1px solid #1e1e1e;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#0a0a0a;border-bottom:1px solid #1a1a1a;">
+        ${langLabel}
+        <button onclick="navigator.clipboard.writeText(this.closest('div').nextElementSibling.innerText);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)"
+          style="font-size:11px;color:#555;background:none;border:none;cursor:pointer;font-family:'Josefin Sans',sans-serif;letter-spacing:1px;">Copy</button>
+      </div>
+      <pre style="margin:0;padding:14px;background:#0d0d0d;overflow-x:auto;"><code style="font-family:'Courier New',monospace;font-size:13px;color:#e0e0e0;line-height:1.6;">${code.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</code></pre>
+    </div>`
+  }
+
+  // Inline code
+  renderer.codespan = function(code) {
+    return `<code style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:5px;padding:2px 7px;font-size:13px;color:#00ff88;font-family:'Courier New',monospace;">${code}</code>`
+  }
+
+  // Strong/bold
+  renderer.strong = function(text) {
+    return `<strong style="color:#fff;font-weight:700;">${text}</strong>`
+  }
+
+  // Horizontal rule as divider
+  renderer.hr = function() {
+    return `<hr style="border:none;border-top:1px solid #1e1e1e;margin:16px 0;">`
+  }
+
+  // Links
+  renderer.link = function(href, title, text) {
+    return `<a href="${href}" target="_blank" style="color:#00ccff;text-decoration:none;border-bottom:1px solid #00ccff44;">${text} ↗</a>`
+  }
+
   marked.setOptions({
+    renderer,
     breaks: true,
     gfm: true,
     headerIds: false,
@@ -460,32 +569,83 @@ async function send() {
   })
   if (typeof clearFileSelection === "function") clearFileSelection()
 
-  // Detect request type for indicator
-  const searchTriggers = ["latest news","breaking news","live score","stock price","crypto price","bitcoin price","gold price","petrol price","weather in","weather today","who won","election result","trending now","ipl 2025","ipl 2026","world cup","search for","look up","news about","just happened","announced today"]
-  const willSearch = searchTriggers.some(t => text.toLowerCase().includes(t))
+  // Detect request type for smart thinking steps
+  const msgLow = text.toLowerCase()
+  const willSearch = ["latest news","breaking news","live score","stock price","crypto price","bitcoin price","gold price","petrol price","weather in","weather today","who won","election result","trending now","ipl 2025","ipl 2026","world cup","search for","look up","news about","just happened","announced today"].some(t => msgLow.includes(t))
+  const willCode = ["build","create a website","write code","make an app","html","python","javascript","css","react","debug","fix this code","script"].some(t => msgLow.includes(t))
+  const willAnalyze = ["analyze","analyse","explain","summarize","what is","who is","how does","why does","pdf","document","file"].some(t => msgLow.includes(t))
+  const willPlan = ["business plan","fitness plan","study plan","workout plan","meal plan","project plan","roadmap","strategy"].some(t => msgLow.includes(t))
 
-  // Show appropriate indicator
+  // Build smart thinking steps
+  function getThinkingSteps() {
+    if (willSearch) return [
+      { icon:"🔍", text:"Reading your question..." },
+      { icon:"🌐", text:"Searching the web..." },
+      { icon:"📊", text:"Analyzing results..." },
+      { icon:"✍️", text:"Writing answer..." }
+    ]
+    if (willCode) return [
+      { icon:"🧠", text:"Understanding requirements..." },
+      { icon:"🏗️", text:"Planning structure..." },
+      { icon:"💻", text:"Writing code..." },
+      { icon:"✅", text:"Reviewing output..." }
+    ]
+    if (willPlan) return [
+      { icon:"📋", text:"Understanding your goal..." },
+      { icon:"🔎", text:"Researching best practices..." },
+      { icon:"🏗️", text:"Building your plan..." },
+      { icon:"✍️", text:"Writing full document..." }
+    ]
+    if (willAnalyze) return [
+      { icon:"📖", text:"Reading content..." },
+      { icon:"🧠", text:"Processing information..." },
+      { icon:"💡", text:"Forming insights..." },
+      { icon:"✍️", text:"Writing response..." }
+    ]
+    return [
+      { icon:"🧠", text:"Thinking..." },
+      { icon:"💡", text:"Forming answer..." }
+    ]
+  }
+
+  const steps = getThinkingSteps()
+
   let aiDiv = document.createElement("div")
   aiDiv.className = "messageRow"
-
-  // Glowing orb pulse animation
-  const orbColors = willSearch
-    ? { main:"#00ccff", glow:"rgba(0,200,255,0.4)", label:"Searching web...", icon:"🌐" }
-    : { main:"#00ff88", glow:"rgba(0,255,136,0.4)", label:"Thinking...", icon:"" }
-
   aiDiv.innerHTML = `
-    <div class="dattaThinking">
-      <div class="thinkOrb" style="--orb-color:${orbColors.main};--orb-glow:${orbColors.glow};">
-        <div class="thinkOrbCore"></div>
-        <div class="thinkOrbRing r1"></div>
-        <div class="thinkOrbRing r2"></div>
-        <div class="thinkOrbRing r3"></div>
+    <div class="thinkingBlock" id="thinkingBlock">
+      <div class="thinkingHeader">
+        <div class="thinkingOrb"></div>
+        <span class="thinkingTitle">Thinking</span>
+        <span class="thinkingDots"><span>.</span><span>.</span><span>.</span></span>
       </div>
-      <div class="thinkLabel">${orbColors.icon ? orbColors.icon + " " : ""}${orbColors.label}</div>
+      <div class="thinkingSteps" id="thinkingSteps">
+        ${steps.map((s,i) => `
+          <div class="thinkStep" id="thinkStep${i}" style="opacity:0;transform:translateY(6px);transition:all 0.3s ease ${i*0.4}s;">
+            <span class="thinkStepIcon">${s.icon}</span>
+            <span class="thinkStepText">${s.text}</span>
+            <span class="thinkStepLoader" id="stepLoader${i}"></span>
+          </div>`).join("")}
+      </div>
     </div>
   `
   chatBox.appendChild(aiDiv)
   chatBox.scrollTop = chatBox.scrollHeight
+
+  // Animate steps in sequence
+  steps.forEach((s, i) => {
+    setTimeout(() => {
+      const el = document.getElementById("thinkStep" + i)
+      if (el) { el.style.opacity = "1"; el.style.transform = "translateY(0)" }
+      // Mark previous step done
+      if (i > 0) {
+        const prev = document.getElementById("stepLoader" + (i-1))
+        const prevEl = document.getElementById("thinkStep" + (i-1))
+        if (prev) prev.innerHTML = '<span style="color:#00ff88;">✓</span>'
+        if (prevEl) prevEl.style.opacity = "0.5"
+      }
+    }, i * 400)
+  })
 
   // Build FormData
   controller = new AbortController()
@@ -494,11 +654,14 @@ async function send() {
   const finalText = (!text && file && file.type.startsWith("image/"))
     ? "Please analyze and describe this image in detail."
     : text
+  // Save for retry
+  window.lastUserMsg = finalText
   formData.append("message", finalText)
   formData.append("chatId", currentChatId || "")
   formData.append("token", getToken())
   formData.append("language", localStorage.getItem("datta_language") || "English")
   formData.append("model", getPersonaModel())
+  formData.append("modelKey", localStorage.getItem("datta_model_key") || "d21")
   formData.append("style", localStorage.getItem("datta_ai_style") || "Balanced")
   formData.append("ainame", localStorage.getItem("datta_ai_name") || "Datta AI")
   // Send user's actual local time from browser
@@ -507,6 +670,8 @@ async function send() {
   formData.append("userDate", _now.toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" }))
   
   // If user asks "near me" - try to get location
+  // Auto-save to daily memory
+  if (finalText) autoDetectAndSaveMemory(finalText)
   const _msgLower = (finalText || "").toLowerCase()
   const _needsLocation = ["near me", "nearby", "nearest", "around me", "close to me", "in my area"].some(t => _msgLower.includes(t))
   const _savedLocation = localStorage.getItem("datta_user_city")
@@ -535,10 +700,29 @@ async function send() {
 
   showStopBtn()
 
+  // Auto-retry fetch - silently retry up to 4 times
+  async function fetchWithRetry(url, options, maxTries = 4) {
+    for (let i = 0; i < maxTries; i++) {
+      try {
+        const ctrl = new AbortController()
+        const timer = setTimeout(() => ctrl.abort(), 50000)
+        const r = await fetch(url, { ...options, signal: ctrl.signal })
+        clearTimeout(timer)
+        return r
+      } catch(e) {
+        if (i === maxTries - 1) throw e
+        // Update thinking message
+        const title = document.querySelector(".thinkingTitle")
+        if (title) title.textContent = "Connecting... (" + (i+2) + "/" + maxTries + ")"
+        await new Promise(r => setTimeout(r, 5000)) // wait 5 sec
+        controller = new AbortController()
+      }
+    }
+  }
+
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/chat", {
+    const res = await fetchWithRetry(SERVER + "/chat", {
       method: "POST",
-      signal: controller.signal,
       body: formData
     })
 
@@ -595,6 +779,29 @@ async function send() {
     const chatIdFromHeader = res.headers.get("x-chat-id")
     if (!currentChatId && chatIdFromHeader) {
       currentChatId = chatIdFromHeader
+      localStorage.setItem("datta_last_chat", currentChatId)
+    }
+
+    // Upgrade Render message for long tasks
+    if (!res.ok && res.status === 504) {
+      aiDiv.innerHTML = `<div class="aiContent"><div class="aiBubble" style="background:#110a0a;border:1px solid #ff444422;"><div style="color:#ff8888;font-weight:600;margin-bottom:8px;">⏱️ Server timeout</div><div style="color:#888;font-size:13px;margin-bottom:12px;">This task was too large for the free server. Try breaking it into smaller parts, or upgrade Render to paid plan.</div></div></div>`
+      hideStopBtn()
+      return
+    }
+
+    // Mark all thinking steps as done before replacing
+    const thinkBlock = document.getElementById("thinkingBlock")
+    if (thinkBlock) {
+      const allSteps = thinkBlock.querySelectorAll(".thinkStep")
+      allSteps.forEach(s => {
+        s.style.opacity = "0.4"
+        const loader = s.querySelector(".thinkStepLoader")
+        if (loader) loader.innerHTML = '<span style="color:#00ff88;font-size:11px;">✓</span>'
+      })
+      const orb = thinkBlock.querySelector(".thinkingOrb")
+      if (orb) { orb.style.background = "#00ff88"; orb.style.animation = "none" }
+      // Brief pause then swap
+      await new Promise(r => setTimeout(r, 300))
     }
 
     // Replace typing indicator with response bubble
@@ -605,6 +812,8 @@ async function send() {
         </div>
         <div class="aiActions">
           <button class="actionBtn" title="Copy" onclick="copyText(this)"><i data-lucide="copy"></i></button>
+          <button class="actionBtn" title="Download as PDF" onclick="downloadAsPDF(this)"><i data-lucide="file-down"></i></button>
+          <button class="actionBtn" title="Save to File Manager" onclick="saveToFileManager(this)"><i data-lucide="bookmark"></i></button>
           <button class="actionBtn" title="Speak" onclick="speakText(this)"><i data-lucide="volume-2"></i></button>
           <button class="actionBtn" title="Stop" onclick="stopVoice()"><i data-lucide="square"></i></button>
           <button class="actionBtn" title="Regenerate" onclick="regenerateFrom(this)"><i data-lucide="refresh-ccw"></i></button>
@@ -632,9 +841,20 @@ async function send() {
       if (chunk.includes("CHATID")) {
         const parts = chunk.split("CHATID")
         streamText += parts[0]
-        currentChatId = parts[1]
+        currentChatId = parts[1].trim()
       } else {
         streamText += chunk
+      }
+
+
+      // Detect auto-switch to Datta 5.4
+      if (streamText.includes("Switching to **Datta 5.4**") || streamText.includes("switching you to Datta 5.4")) {
+        const pill = document.getElementById("activeModelName")
+        if (pill && pill.textContent !== "Datta 5.4") {
+          pill.textContent = "Datta 5.4"
+          pill.style.color = "#ff6644"
+          setTimeout(() => { pill.style.color = "" }, 3000)
+        }
       }
 
       // Normal text rendering
@@ -675,16 +895,63 @@ async function send() {
     loadSidebar()
 
   } catch (err) {
-    hideStopBtn()
-    const sendBtn = document.getElementById("sendBtn")
-    const msgInput = document.getElementById("message")
-    if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
-    if (msgInput) { msgInput.disabled = false }
     if (err.name === "AbortError") {
-      console.log("Request cancelled")
+      hideStopBtn()
+      const sendBtn = document.getElementById("sendBtn")
+      const msgInput = document.getElementById("message")
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
+      if (msgInput) { msgInput.disabled = false }
+      return
+    }
+
+    // Auto retry up to 3 times silently
+    console.error("Chat error:", err.message)
+    const retryCount = (window._retryCount || 0) + 1
+    window._retryCount = retryCount
+
+    if (retryCount <= 3) {
+      // Update thinking block to show retrying
+      const tb = aiDiv.querySelector(".thinkingBlock")
+      if (tb) {
+        const title = tb.querySelector(".thinkingTitle")
+        if (title) title.textContent = "Retrying " + retryCount + "/3"
+      }
+      // Wait then retry automatically
+      await new Promise(r => setTimeout(r, 5000))
+      // Ping server to wake it
+      fetch(SERVER + "/ping").catch(() => {})
+      await new Promise(r => setTimeout(r, 2000))
+      // Retry
+      hideStopBtn()
+      const sendBtn = document.getElementById("sendBtn")
+      const msgInput = document.getElementById("message")
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
+      if (msgInput) { msgInput.disabled = false }
+      // Remove the thinking div and resend
+      aiDiv.remove()
+      const inp = document.getElementById("message")
+      if (inp && window.lastUserMsg) {
+        inp.value = window.lastUserMsg
+        send()
+      }
     } else {
+      window._retryCount = 0
+      hideStopBtn()
+      const sendBtn = document.getElementById("sendBtn")
+      const msgInput = document.getElementById("message")
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
+      if (msgInput) { msgInput.disabled = false }
       aiDiv.innerHTML = `
-        <div class="aiBubble" style="color:#f88;">⚠️ Something went wrong. Please try again.</div>
+        <div class="aiContent">
+          <div class="aiBubble" style="background:#110a0a;border:1px solid #ff444422;">
+            <div style="color:#ff8888;font-size:15px;font-weight:600;margin-bottom:8px;">Connection failed after 3 retries</div>
+            <div style="color:#888;font-size:13px;margin-bottom:14px;">Please check your internet and try again.</div>
+            <button onclick="this.closest('.messageRow').remove();document.getElementById('message').value=window.lastUserMsg||'';document.getElementById('message').focus()"
+              style="padding:8px 18px;background:#00ff8822;border:1px solid #00ff8844;border-radius:10px;color:#00ff88;font-size:13px;cursor:pointer;">
+              Try Again
+            </button>
+          </div>
+        </div>
       `
     }
   }
@@ -696,7 +963,7 @@ let sidebarFixDone = false
 
 async function loadSidebar() {
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/chats?token=" + getToken())
+    const res = await fetch(SERVER + "/chats?token=" + getToken())
 
     // If 401 redirect to login
     if (res.status === 401) {
@@ -718,7 +985,7 @@ async function loadSidebar() {
       const badTitles = ["hi","hii","hiii","hello","hey","helo","hai","new conversation","new chat"]
       const hasBad = chats.some(c => badTitles.includes(c.title.toLowerCase().trim()))
       if (hasBad) {
-        fetch("https://datta-ai-server.onrender.com/chats/fix-titles?token=" + getToken(), {
+        fetch(SERVER + "/chats/fix-titles?token=" + getToken(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token: getToken() })
@@ -783,7 +1050,7 @@ async function openChat(chatId) {
   chatBox.innerHTML = ""
   hideWelcome()
 
-  const res = await fetch("https://datta-ai-server.onrender.com/chat/" + chatId + "?token=" + getToken())
+  const res = await fetch(SERVER + "/chat/" + chatId + "?token=" + getToken())
   const messages = await res.json()
 
   messages.forEach(m => {
@@ -800,6 +1067,7 @@ async function openChat(chatId) {
             <div class="aiBubble">${marked.parse(m.content)}</div>
             <div class="aiActions">
               <button class="actionBtn" title="Copy" onclick="copyText(this)"><i data-lucide="copy"></i></button>
+              <button class="actionBtn" title="Download as PDF" onclick="downloadAsPDF(this)"><i data-lucide="file-down"></i></button>
               <button class="actionBtn" title="Speak" onclick="speakText(this)"><i data-lucide="volume-2"></i></button>
               <button class="actionBtn" title="Stop" onclick="stopVoice()"><i data-lucide="square"></i></button>
               <button class="actionBtn" title="Regenerate" onclick="regenerateFrom(this)"><i data-lucide="refresh-cw"></i></button>
@@ -849,7 +1117,7 @@ function confirmDelete(e, id) {
 async function deleteChat(id, chatItem) {
   try {
     if (chatItem) chatItem.style.opacity = "0.4"
-    await fetch("https://datta-ai-server.onrender.com/chat/" + id + "?token=" + getToken(), {
+    await fetch(SERVER + "/chat/" + id + "?token=" + getToken(), {
       method: "DELETE"
     })
     if (chatItem) chatItem.remove()
@@ -900,7 +1168,7 @@ async function regenerateFrom(btn) {
 
   controller = new AbortController()
 
-  const res = await fetch("https://datta-ai-server.onrender.com/chat", {
+  const res = await fetch(SERVER + "/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     signal: controller.signal,
@@ -1135,6 +1403,28 @@ function saveChatTitle(title) {
 window.send = send
 loadSidebar()
 
+// Init dynamic button to send state
+window.addEventListener("DOMContentLoaded", function() {
+  setGenerating(false)
+})
+
+// Load smart suggestions for welcome screen
+async function loadSmartSuggestions() {
+  const chips = document.getElementById("suggestionChips")
+  if (!chips) return
+  // Just use static chips - no API call needed
+  // Dynamic chips from server were causing [object Object] error
+  chips.innerHTML = `
+    <button class="chip" onclick="useChip(this)">🌐 Build me a portfolio website</button>
+    <button class="chip" onclick="useChip(this)">🐍 Write a Python web scraper</button>
+    <button class="chip" onclick="useChip(this)">📰 Latest tech news today</button>
+    <button class="chip" onclick="useChip(this)">🧠 Explain machine learning</button>
+    <button class="chip" onclick="useChip(this)">✍️ Write a poem about nature</button>
+    <button class="chip" onclick="useChip(this)">💼 Create a business plan</button>
+  `
+}
+window.loadSmartSuggestions = loadSmartSuggestions
+
 // SHOW SIDEBAR SECTION
 function showSection(name) {
   // Hide all sections
@@ -1247,7 +1537,7 @@ async function changeUsername() {
   if (newUsername.length < 3) return showSettingsMsg("Username must be at least 3 characters", "error")
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/auth/update-username", {
+    const res = await fetch(SERVER + "/auth/update-username", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: newUsername, token: datta_token })
@@ -1283,7 +1573,7 @@ async function changePassword() {
   if (newPass !== confirm) return showSettingsMsg("Passwords do not match", "error")
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/auth/change-password", {
+    const res = await fetch(SERVER + "/auth/change-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ currentPassword: current, newPassword: newPass, token: datta_token })
@@ -1348,7 +1638,7 @@ async function deleteAllChats() {
   if (!confirm("Are you sure? This will delete ALL your chats permanently!")) return
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/chats/all?token=" + getToken(), {
+    const res = await fetch(SERVER + "/chats/all?token=" + getToken(), {
       method: "DELETE"
     })
     if (!res.ok) return showSettingsMsg("Failed to delete chats", "error")
@@ -1371,7 +1661,7 @@ async function deleteAccount() {
   if (!confirm("This will PERMANENTLY delete your account. Are you absolutely sure?")) return
 
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/auth/delete-account", {
+    const res = await fetch(SERVER + "/auth/delete-account", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password, token: datta_token })
@@ -1597,7 +1887,7 @@ async function processVoiceQuery(query) {
     formData.append("ainame", localStorage.getItem("datta_ai_name") || "Datta AI")
     formData.append("voice", "true")
 
-    const res = await fetch("https://datta-ai-server.onrender.com/chat", {
+    const res = await fetch(SERVER + "/chat", {
       method: "POST",
       body: formData
     })
@@ -1825,7 +2115,7 @@ const planVersions = {
 
 async function loadUserVersion() {
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/payment/subscription?token=" + getToken())
+    const res = await fetch(SERVER + "/payment/subscription?token=" + getToken())
     if (!res.ok) return
     const data = await res.json()
     const plan = data.plan || "free"
@@ -2053,6 +2343,385 @@ function selectModel(modelId, key, icon, name) { selectInputModel(modelId, key, 
 window.openModelPicker = openModelPicker
 window.closeModelPicker = closeModelPicker
 window.selectModel = selectModel
+
+
+// ══════════════════════════════════════════════════════
+// FEATURE 1: PDF EXPORT
+// ══════════════════════════════════════════════════════
+function downloadAsPDF(btn) {
+  const bubble = btn.closest(".aiContent").querySelector(".aiBubble")
+  if (!bubble) return showToast("Nothing to export")
+  const html = bubble.innerHTML
+  const text = bubble.innerText
+  const title = text.substring(0,40).replace(/[^a-z0-9]/gi,"-").toLowerCase()
+  const date = new Date().toLocaleString("en-IN")
+
+  // Detect if it's code - offer HTML download directly
+  const codeBlock = bubble.querySelector("pre code")
+  if (codeBlock) {
+    const lang = (codeBlock.className || "").replace("language-","").toLowerCase()
+    const code = codeBlock.innerText
+    const ext = {html:"html",css:"css",javascript:"js",js:"js",python:"py",java:"java"}[lang] || "txt"
+    // Direct file download
+    const blob = new Blob([code], {type:"text/plain"})
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "datta-ai-" + title + "." + ext
+    a.click()
+    URL.revokeObjectURL(url)
+    showToast("Downloaded " + a.download + " !")
+    return
+  }
+
+  // For text content - download as HTML file (opens perfectly everywhere)
+  const fullHtml = `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Datta AI Export</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:860px;margin:0 auto;padding:40px 24px;color:#111;line-height:1.8;background:#fff}
+  .header{display:flex;align-items:center;gap:12px;padding-bottom:20px;border-bottom:2px solid #00cc66;margin-bottom:32px}
+  .logo{width:36px;height:36px;background:#00cc66;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:14px}
+  h1,h2,h3{margin:20px 0 8px;color:#111}
+  p{margin-bottom:12px}
+  ul,ol{padding-left:20px;margin-bottom:12px}
+  li{margin-bottom:6px}
+  code{background:#f4f4f4;padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;color:#d63384}
+  pre{background:#1a1a1a;color:#e0e0e0;padding:20px;border-radius:10px;overflow-x:auto;margin:16px 0}
+  pre code{background:none;color:#e0e0e0;padding:0}
+  table{border-collapse:collapse;width:100%;margin:16px 0}
+  th{background:#f4f4f4;font-weight:700;text-align:left}
+  td,th{border:1px solid #ddd;padding:10px 14px}
+  blockquote{border-left:3px solid #00cc66;padding:10px 16px;background:#f9f9f9;margin:16px 0;color:#555}
+  strong{color:#000;font-weight:700}
+  .footer{margin-top:48px;padding-top:20px;border-top:1px solid #eee;color:#999;font-size:12px;text-align:center}
+  @media print{.footer{position:fixed;bottom:0;width:100%}}
+</style>
+</head><body>
+<div class="header">
+  <div class="logo">D</div>
+  <div>
+    <div style="font-weight:700;font-size:18px;color:#00cc66;">Datta AI</div>
+    <div style="font-size:12px;color:#999;">Generated on ${date}</div>
+  </div>
+</div>
+<div class="content">${html}</div>
+<div class="footer">Generated by Datta AI &middot; datta-ai.com</div>
+</body></html>`
+
+  const blob = new Blob([fullHtml], {type:"text/html"})
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = "datta-ai-" + title + ".html"
+  a.click()
+  URL.revokeObjectURL(url)
+  showToast("Downloaded " + a.download + " !")
+}
+window.downloadAsPDF = downloadAsPDF
+
+// ══════════════════════════════════════════════════════
+// FEATURE 2: CODE PREVIEW - Run HTML/CSS/JS in chat
+// ══════════════════════════════════════════════════════
+function addCodePreview(container) {
+  // Find all code blocks with html/css/js
+  container.querySelectorAll("pre code").forEach(block => {
+    const lang = block.className.replace("language-", "").toLowerCase()
+    if (!["html","css","javascript","js"].includes(lang)) return
+    if (block.closest(".codePreviewWrap")) return
+
+    const wrap = document.createElement("div")
+    wrap.className = "codePreviewWrap"
+    block.parentNode.parentNode.insertBefore(wrap, block.parentNode)
+    wrap.appendChild(block.parentNode)
+
+    const code = block.innerText
+    const previewBtn = document.createElement("div")
+    previewBtn.style.cssText = "display:flex;gap:8px;margin-top:6px;"
+    previewBtn.innerHTML = `
+      <button onclick="runCodePreview(this)" data-code="${encodeURIComponent(code)}" data-lang="${lang}"
+        style="padding:6px 14px;background:#00ff8822;border:1px solid #00ff8844;border-radius:8px;color:#00ff88;font-size:12px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">
+        ▶ Run Preview
+      </button>
+      <button onclick="copyCodeBlock(this)" data-code="${encodeURIComponent(code)}"
+        style="padding:6px 14px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;color:#aaa;font-size:12px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">
+        Copy Code
+      </button>`
+    wrap.appendChild(previewBtn)
+  })
+}
+
+function runCodePreview(btn) {
+  const code = decodeURIComponent(btn.dataset.code)
+  const lang = btn.dataset.lang
+  
+  // Remove existing preview
+  const existing = btn.closest(".codePreviewWrap").querySelector(".livePreview")
+  if (existing) { existing.remove(); btn.textContent = "▶ Run Preview"; return }
+
+  const iframe = document.createElement("iframe")
+  iframe.className = "livePreview"
+  iframe.style.cssText = "width:100%;height:400px;border:1px solid #2a2a2a;border-radius:10px;margin-top:8px;background:white;"
+  iframe.sandbox = "allow-scripts"
+  btn.closest(".codePreviewWrap").appendChild(iframe)
+
+  const doc = iframe.contentDocument || iframe.contentWindow.document
+  doc.open()
+  if (lang === "html") {
+    doc.write(code)
+  } else if (lang === "css") {
+    doc.write(`<html><head><style>${code}</style></head><body><p>CSS Preview</p></body></html>`)
+  } else {
+    doc.write(`<html><body><script>try{${code}}catch(e){document.body.innerHTML='<pre style=color:red>'+e+'</pre>'}<\/script></body></html>`)
+  }
+  doc.close()
+  btn.textContent = "✕ Close Preview"
+  showToast("Preview loaded!")
+}
+
+function copyCodeBlock(btn) {
+  const code = decodeURIComponent(btn.dataset.code)
+  navigator.clipboard.writeText(code).then(() => showToast("Code copied!"))
+}
+
+window.runCodePreview = runCodePreview
+window.copyCodeBlock = copyCodeBlock
+
+// ══════════════════════════════════════════════════════
+// FEATURE 3: DAILY MEMORY - Remember user across days
+// ══════════════════════════════════════════════════════
+async function saveDailyMemory(key, value) {
+  try {
+    await fetch(SERVER + "/memory/" + key, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value, token: getToken() })
+    })
+  } catch(e) {}
+}
+
+// Auto-save fitness/study goals from chat
+function autoDetectAndSaveMemory(text) {
+  const lower = text.toLowerCase()
+  // Detect fitness goals
+  if (/my (weight|goal|target|workout|diet|calories)/.test(lower)) {
+    saveDailyMemory("fitness_context", text.substring(0, 200))
+  }
+  // Detect study topics  
+  if (/(studying|preparing for|exam|syllabus|chapter|subject)/.test(lower)) {
+    saveDailyMemory("study_context", text.substring(0, 200))
+  }
+  // Detect business context
+  if (/(my business|my startup|my company|my app|my product)/.test(lower)) {
+    saveDailyMemory("business_context", text.substring(0, 200))
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// FEATURE 4: FILE MANAGER - Save AI outputs
+// ══════════════════════════════════════════════════════
+let savedFiles = JSON.parse(localStorage.getItem("datta_saved_files") || "[]")
+
+function saveToFileManager(btn) {
+  const bubble = btn.closest(".aiContent").querySelector(".aiBubble")
+  if (!bubble) return
+  
+  const file = {
+    id: Date.now(),
+    title: bubble.innerText.substring(0, 50) + "...",
+    content: bubble.innerHTML,
+    text: bubble.innerText,
+    date: new Date().toLocaleDateString("en-IN"),
+    type: bubble.querySelector("pre") ? "code" : "text"
+  }
+  
+  savedFiles.unshift(file)
+  if (savedFiles.length > 50) savedFiles.pop() // max 50 files
+  localStorage.setItem("datta_saved_files", JSON.stringify(savedFiles))
+  showToast("Saved to File Manager!")
+}
+
+function openFileManager() {
+  const saved = JSON.parse(localStorage.getItem("datta_saved_files") || "[]")
+  
+  // Remove existing
+  document.getElementById("fileManagerModal")?.remove()
+
+  const modal = document.createElement("div")
+  modal.id = "fileManagerModal"
+  modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:flex-end;"
+  modal.innerHTML = `
+    <div style="width:100%;max-width:600px;margin:0 auto;background:#111;border-radius:20px 20px 0 0;max-height:80vh;overflow-y:auto;padding:20px 0 40px;">
+      <div style="width:40px;height:4px;background:#333;border-radius:2px;margin:0 auto 16px;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 20px 16px;">
+        <div style="font-size:16px;font-weight:700;color:white;font-family:'Josefin Sans',sans-serif;letter-spacing:1px;">📁 File Manager</div>
+        <button onclick="document.getElementById('fileManagerModal').remove()" style="background:none;border:none;color:#666;font-size:20px;cursor:pointer;">✕</button>
+      </div>
+      ${saved.length === 0 ? `<div style="text-align:center;color:#555;padding:40px;font-size:14px;">No saved files yet.<br>Click the save button on any AI response.</div>` :
+        saved.map((f,i) => `
+        <div style="padding:12px 20px;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;gap:12px;">
+          <div style="font-size:20px;">${f.type === "code" ? "💻" : "📄"}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.title}</div>
+            <div style="font-size:11px;color:#555;margin-top:2px;">${f.date}</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="downloadFile(${i})" style="padding:5px 10px;background:#1a2a1a;border:1px solid #00ff8833;border-radius:8px;color:#00ff88;font-size:11px;cursor:pointer;">PDF</button>
+            <button onclick="deleteFile(${i})" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#666;font-size:11px;cursor:pointer;">Del</button>
+          </div>
+        </div>`).join("")
+      }
+    </div>`
+  modal.addEventListener("click", e => { if(e.target === modal) modal.remove() })
+  document.body.appendChild(modal)
+}
+
+function downloadFile(idx) {
+  const saved = JSON.parse(localStorage.getItem("datta_saved_files") || "[]")
+  const f = saved[idx]
+  if (!f) return
+  const win = window.open("", "_blank")
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${f.title}</title>
+  <style>body{font-family:system-ui;max-width:800px;margin:40px auto;padding:20px;line-height:1.8;}
+  code{background:#f4f4f4;padding:2px 6px;border-radius:4px;}pre{background:#f4f4f4;padding:16px;border-radius:8px;overflow-x:auto;}
+  .footer{color:#999;font-size:12px;border-top:1px solid #ddd;padding-top:12px;margin-top:24px;}</style>
+  </head><body>
+  <h2 style="color:#00cc66;">Datta AI — Saved File</h2>
+  <div>${f.content}</div>
+  <div class="footer">Saved on ${f.date} · Datta AI · datta-ai.com</div>
+  </body></html>`)
+  win.document.close()
+  setTimeout(() => win.print(), 500)
+}
+
+function deleteFile(idx) {
+  const saved = JSON.parse(localStorage.getItem("datta_saved_files") || "[]")
+  saved.splice(idx, 1)
+  localStorage.setItem("datta_saved_files", JSON.stringify(saved))
+  openFileManager()
+  showToast("File deleted")
+}
+
+window.saveToFileManager = saveToFileManager
+window.openFileManager = openFileManager
+window.downloadFile = downloadFile
+window.deleteFile = deleteFile
+window.autoDetectAndSaveMemory = autoDetectAndSaveMemory
+// ══════════════════════════════════════════════════════
+// AUTO-CHAIN EXECUTION ENGINE
+// ══════════════════════════════════════════════════════
+function autoChainExecution(aiDiv, response, userMsg) {
+  const bubble = aiDiv.querySelector(".aiBubble")
+  if (!bubble) return
+  const msg = (userMsg || "").toLowerCase()
+  const resp = (response || "").toLowerCase()
+
+  // Detect code generation
+  const hasCode = bubble.querySelector("pre code")
+  const isWebsite = hasCode && (msg.includes("website") || msg.includes("html") || msg.includes("app") || msg.includes("calculator") || msg.includes("game"))
+  const isPython = hasCode && (msg.includes("python") || msg.includes(".py"))
+
+  // Detect document tasks
+  const isBusinessPlan = msg.includes("business plan") || msg.includes("business proposal")
+  const isFitnessPlan = msg.includes("fitness plan") || msg.includes("workout plan") || msg.includes("diet plan")
+  const isResume = msg.includes("resume") || msg.includes("cv ")
+  const isStudyPlan = msg.includes("study plan") || msg.includes("study schedule")
+
+  // Build execution panel
+  let actions = []
+
+  if (isWebsite) {
+    const code = bubble.querySelector("pre code")?.innerText || ""
+    const blob = new Blob([code], {type:"text/html"})
+    const url = URL.createObjectURL(blob)
+    actions.push({ label:"▶ Preview Website", icon:"🌐", color:"#00ff88", action:`window.open("${url}","_blank")` })
+    actions.push({ label:"⬇ Download HTML", icon:"💾", color:"#00ccff", action:`downloadCodeDirect(this)`, data:code, ext:"html" })
+    actions.push({ label:"📋 Copy Code", icon:"📋", color:"#aa66ff", action:`copyAllCode(this)`, data:code })
+  } else if (isPython) {
+    const code = bubble.querySelector("pre code")?.innerText || ""
+    actions.push({ label:"⬇ Download .py", icon:"🐍", color:"#ffcc00", action:`downloadCodeDirect(this)`, data:code, ext:"py" })
+    actions.push({ label:"📋 Copy Code", icon:"📋", color:"#aa66ff", action:`copyAllCode(this)`, data:code })
+  } else if (isBusinessPlan || isFitnessPlan || isResume || isStudyPlan) {
+    const type = isBusinessPlan?"business-plan":isFitnessPlan?"fitness-plan":isResume?"resume":"study-plan"
+    actions.push({ label:"⬇ Download Document", icon:"📄", color:"#00ff88", action:`downloadDocument(this)` })
+    actions.push({ label:"📋 Copy All", icon:"📋", color:"#aa66ff", action:`copyAllCode(this)` })
+  } else if (hasCode) {
+    const code = bubble.querySelector("pre code")?.innerText || ""
+    const lang = (bubble.querySelector("pre code")?.className||"").replace("language-","").toLowerCase()
+    const ext = {javascript:"js",python:"py",html:"html",css:"css",java:"java",cpp:"cpp"}[lang]||"txt"
+    actions.push({ label:"⬇ Download ." + ext, icon:"💾", color:"#00ccff", action:`downloadCodeDirect(this)`, data:code, ext })
+    actions.push({ label:"📋 Copy Code", icon:"📋", color:"#aa66ff", action:`copyAllCode(this)`, data:code })
+  }
+
+  if (actions.length === 0) return
+
+  // Render execution panel
+  const panel = document.createElement("div")
+  panel.style.cssText = "margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;"
+  actions.forEach(act => {
+    const btn = document.createElement("button")
+    btn.style.cssText = `padding:8px 16px;border-radius:10px;border:1px solid ${act.color}33;background:${act.color}11;color:${act.color};font-size:12px;cursor:pointer;font-family:'Josefin Sans',sans-serif;letter-spacing:0.5px;transition:all 0.2s;`
+    btn.textContent = act.label
+    if (act.data) btn.dataset.code = act.data
+    if (act.ext) btn.dataset.ext = act.ext
+    btn.setAttribute("onclick", act.action)
+    btn.onmouseover = () => btn.style.background = act.color + "22"
+    btn.onmouseout = () => btn.style.background = act.color + "11"
+    panel.appendChild(btn)
+  })
+
+  bubble.appendChild(panel)
+}
+
+function downloadCodeDirect(btn) {
+  const code = btn.dataset.code || btn.closest(".aiBubble").querySelector("pre code")?.innerText || ""
+  const ext = btn.dataset.ext || "txt"
+  const blob = new Blob([code], {type:"text/plain"})
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = "datta-ai-output." + ext
+  a.click()
+  URL.revokeObjectURL(url)
+  showToast("Downloaded datta-ai-output." + ext)
+}
+
+function copyAllCode(btn) {
+  const code = btn.dataset.code || btn.closest(".aiBubble").querySelector("pre code")?.innerText || ""
+  navigator.clipboard.writeText(code).then(() => { showToast("Code copied!"); btn.textContent = "✓ Copied!" })
+}
+
+function downloadDocument(btn) {
+  const bubble = btn.closest(".aiBubble")
+  const html = bubble.innerHTML
+  const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Datta AI Document</title>
+<style>body{font-family:system-ui;max-width:860px;margin:40px auto;padding:24px;line-height:1.8;color:#111}
+h1,h2,h3{color:#111;margin:20px 0 8px}p{margin-bottom:12px}ul,ol{padding-left:20px;margin:12px 0}
+li{margin-bottom:6px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:10px}
+.header{border-bottom:2px solid #00cc66;padding-bottom:16px;margin-bottom:32px}
+.footer{margin-top:48px;color:#999;font-size:12px;text-align:center;border-top:1px solid #eee;padding-top:16px}</style>
+</head><body>
+<div class="header"><strong style="color:#00cc66;font-size:20px;">Datta AI</strong><br><span style="color:#999;font-size:12px;">Generated on ${new Date().toLocaleString("en-IN")}</span></div>
+${html}
+<div class="footer">Generated by Datta AI &middot; datta-ai.com</div>
+</body></html>`
+  const blob = new Blob([fullHtml], {type:"text/html"})
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = "datta-ai-document.html"
+  a.click()
+  URL.revokeObjectURL(url)
+  showToast("Document downloaded!")
+}
+
+window.autoChainExecution = autoChainExecution
+window.downloadCodeDirect = downloadCodeDirect
+window.copyAllCode = copyAllCode
+window.downloadDocument = downloadDocument
 
 // ══════════════════════════════════════════════════════
 // PWA - Service Worker Registration
@@ -2387,7 +3056,7 @@ window.addEventListener("DOMContentLoaded", async function() {
 
   // Check if already verified from server
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/payment/subscription?token=" + getToken())
+    const res = await fetch(SERVER + "/payment/subscription?token=" + getToken())
     if (!res.ok) return
   } catch(e) { return }
 
@@ -2415,7 +3084,7 @@ window.addEventListener("DOMContentLoaded", async function() {
 
 async function resendVerification() {
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/auth/resend-verification", {
+    const res = await fetch(SERVER + "/auth/resend-verification", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token: getToken() })
@@ -2543,7 +3212,7 @@ window.deleteChat = deleteChat
 async function exportChat() {
   if (!currentChatId) return showToast("No chat to export")
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/chat/" + currentChatId + "/export?token=" + getToken())
+    const res = await fetch(SERVER + "/chat/" + currentChatId + "/export?token=" + getToken())
     if (!res.ok) return showToast("Export failed")
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)
@@ -2560,7 +3229,7 @@ window.exportChat = exportChat
 // REFERRAL
 async function showReferral() {
   try {
-    const res = await fetch("https://datta-ai-server.onrender.com/referral/code?token=" + getToken())
+    const res = await fetch(SERVER + "/referral/code?token=" + getToken())
     const data = await res.json()
     const msg = `Your referral code: ${data.code}
 
@@ -2593,21 +3262,57 @@ function setPersona(key, label) {
 
 function updateModeIndicator(key, label) {
   const btn = document.getElementById("modeIndicator")
+  const pill = document.getElementById("activeModelName")
   if (!btn) return
   if (!key || key === "none") {
     btn.style.display = "none"
+    // Restore actual model name in pill
+    const savedKey = localStorage.getItem("datta_model_key") || "d21"
+    const savedName = { d21:"Datta 2.1", d42:"Datta 4.2", d48:"Datta 4.8", d54:"Datta 5.4" }
+    if (pill) pill.textContent = savedName[savedKey] || "Datta 2.1"
   } else {
-    const icons = { lawyer:"⚖️", teacher:"📚", chef:"👨‍🍳", fitness:"💪" }
-    btn.textContent = (icons[key] || "") + " " + label
+    const icons = { lawyer:"⚖️", teacher:"📚", chef:"👨‍🍳", fitness:"💪", upsc:"🏛️", student:"📖", interview:"🎯", business:"💼" }
+    btn.textContent = (icons[key] || "✨") + " " + label
     btn.style.display = "flex"
+    // Show Datta 1.1 in model pill
+    if (pill) pill.textContent = "Datta 1.1"
   }
 }
 
-// Load mode indicator on start
-window.addEventListener("DOMContentLoaded", function() {
+// Reload mode indicator from localStorage every time page is visible
+function initModeIndicator() {
   const savedKey = localStorage.getItem("datta_persona") || "none"
   const savedLabel = localStorage.getItem("datta_persona_label") || "Normal"
   updateModeIndicator(savedKey, savedLabel)
+  // Also restore model pill
+  const pill = document.getElementById("activeModelName")
+  if (pill) {
+    if (savedKey && savedKey !== "none") {
+      pill.textContent = "Datta 1.1"
+    } else {
+      const modelKey = localStorage.getItem("datta_model_key") || "d21"
+      const names = { d21:"Datta 2.1", d42:"Datta 4.2", d48:"Datta 4.8", d54:"Datta 5.4" }
+      pill.textContent = names[modelKey] || "Datta 2.1"
+    }
+  }
+}
+
+// Run on initial load
+window.addEventListener("load", initModeIndicator)
+
+// Run when user comes BACK from settings page (pageshow fires on back navigation)
+window.addEventListener("pageshow", function(e) {
+  initModeIndicator()
+})
+
+// Run when tab becomes visible again
+document.addEventListener("visibilitychange", function() {
+  if (!document.hidden) initModeIndicator()
+})
+
+// Run when window gets focus (user switches back)
+window.addEventListener("focus", function() {
+  initModeIndicator()
 })
 
 window.setPersona = setPersona
@@ -2615,7 +3320,10 @@ window.updateModeIndicator = updateModeIndicator
 
 function getPersonaModel() {
   const persona = localStorage.getItem("datta_persona")
-  if (persona && persona !== "none") return "persona-" + persona
+  if (persona && persona !== "none") {
+    // Auto-switch to Datta 1.1 for persona modes
+    return "persona-" + persona
+  }
   return localStorage.getItem("datta_model") || "llama-3.1-8b-instant"
 }
 
@@ -2702,6 +3410,54 @@ window.addEventListener("DOMContentLoaded", function() {
 window.toggleModelDropdown = toggleModelDropdown
 window.closeModelDropdown = closeModelDropdown
 window.selectInputModel = selectInputModel
+
+// Check if user can access premium models
+function checkModelAccess(key) {
+  const plan = localStorage.getItem("datta_plan") || "free"
+  const freePlans = ["free"]
+  const miniPlans = ["free", "mini"]
+  
+  if (key === "d54" && miniPlans.includes(plan)) {
+    closeModelDropdown()
+    // Show upgrade prompt
+    const modal = document.createElement("div")
+    modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;"
+    modal.innerHTML = `
+      <div style="background:#111;border:1px solid #aa66ff44;border-radius:20px;padding:28px;max-width:320px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:12px;">🔒</div>
+        <div style="font-size:18px;font-weight:700;color:white;margin-bottom:8px;">Datta 5.4 is Pro+</div>
+        <div style="font-size:13px;color:#888;margin-bottom:20px;">Datta 5.4 coding model requires Pro plan or above.</div>
+        <a href="pricing.html" style="display:block;padding:12px;background:linear-gradient(135deg,#aa66ff,#00ccff);border-radius:12px;color:white;font-weight:700;text-decoration:none;margin-bottom:10px;">Upgrade to Pro — ₹999/mo</a>
+        <button onclick="this.closest('div').parentElement.remove()" style="background:none;border:none;color:#555;cursor:pointer;font-size:13px;">Maybe later</button>
+      </div>`
+    modal.onclick = e => { if(e.target===modal) modal.remove() }
+    document.body.appendChild(modal)
+    return
+  }
+  
+  if (key === "d48" && freePlans.includes(plan)) {
+    closeModelDropdown()
+    const modal = document.createElement("div")
+    modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;"
+    modal.innerHTML = `
+      <div style="background:#111;border:1px solid #ff880044;border-radius:20px;padding:28px;max-width:320px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:12px;">🔒</div>
+        <div style="font-size:18px;font-weight:700;color:white;margin-bottom:8px;">Datta 4.8 is Mini+</div>
+        <div style="font-size:13px;color:#888;margin-bottom:20px;">Upgrade to Mini plan to unlock Datta 4.8.</div>
+        <a href="pricing.html" style="display:block;padding:12px;background:linear-gradient(135deg,#ff8800,#ffaa00);border-radius:12px;color:#000;font-weight:700;text-decoration:none;margin-bottom:10px;">Upgrade to Mini — ₹199/mo</a>
+        <button onclick="this.closest('div').parentElement.remove()" style="background:none;border:none;color:#555;cursor:pointer;font-size:13px;">Maybe later</button>
+      </div>`
+    modal.onclick = e => { if(e.target===modal) modal.remove() }
+    document.body.appendChild(modal)
+    return
+  }
+  
+  // Has access - select the model
+  const models = { d48: { id:"llama-3.3-70b-versatile", name:"Datta 4.8" }, d54: { id:"llama-3.3-70b-versatile", name:"Datta 5.4" } }
+  const m = models[key]
+  if (m) selectInputModel(m.id, key, m.name)
+}
+window.checkModelAccess = checkModelAccess
 
 window.selectInputModel = selectInputModel
 
@@ -2812,7 +3568,7 @@ async function captureAndAnalyze() {
     const base64 = imageData.split(",")[1]
     const prompt = lensModePrompts[lensMode]
 
-    const res = await fetch("https://datta-ai-server.onrender.com/lens", {
+    const res = await fetch(SERVER + "/lens", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ image: base64, prompt, token: getToken() })
@@ -2856,7 +3612,7 @@ function lensFromGallery(input) {
     try {
       const base64 = e.target.result.split(",")[1]
       const prompt = lensModePrompts[lensMode]
-      const res = await fetch("https://datta-ai-server.onrender.com/lens", {
+      const res = await fetch(SERVER + "/lens", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: base64, prompt, token: getToken() })
