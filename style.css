@@ -5744,3 +5744,91 @@ body.notes-open .topbar {
   body.notes-open .inputArea { right: 340px !important; }
   body.notes-open .topbar { padding-right: 356px !important; }
 }
+
+
+/* ── SETTINGS MODAL — fixed overlay, hidden by default ── */
+.settingsModal {
+  display: none;
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0,0,0,0.75) !important;
+  z-index: 9999 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+  overflow: hidden !important;
+}
+.settingsModal.show {
+  display: flex !important;
+}
+.settingsModal .modalBox {
+  background: #111117;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  width: 480px;
+  max-width: 95vw;
+  max-height: 88vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.settingsModal .modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+.settingsModal .modalTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e8e8f0;
+  font-family: 'Josefin Sans', sans-serif;
+  letter-spacing: 0.5px;
+}
+.settingsModal .modalClose {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #888;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+.settingsModal .modalClose:hover {
+  background: rgba(255,80,80,0.15);
+  color: #ff6666;
+}
+
+/* ── TYPING CURSOR ── */
+.typingCursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--accent, #00c9a7);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  border-radius: 1px;
+  animation: cursorBlink 0.6s step-end infinite;
+}
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* Stopped message */
+.stoppedMsg {
+  font-size: 12px;
+  color: rgba(200,100,100,0.65);
+  font-style: italic;
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255,100,100,0.1);
+}
