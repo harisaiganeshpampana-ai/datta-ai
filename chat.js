@@ -2197,9 +2197,10 @@ window.addEventListener("DOMContentLoaded", function() {
 function useChip(btn) {
   const input = document.getElementById("message")
   if (input) {
-    input.value = btn.textContent.replace(/^[^\s]+\s/, "")
+    // Get text from suggText span or fallback to full text
+    const textEl = btn.querySelector(".suggText") || btn.querySelector(".chipText")
+    input.value = textEl ? textEl.textContent.trim() : btn.textContent.replace(/^[^\s]+\s/, "").trim()
     input.focus()
-    // Auto send
     send()
   }
 }
