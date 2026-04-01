@@ -53,10 +53,14 @@ async function callGemini(messages, systemPrompt, maxTokens, res) {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) throw new Error("GEMINI_API_KEY not set")
 
-  // Convert messages to Gemini format
+  // Convert messages to Gemini format — always extract string
   const geminiContents = messages.map(m => ({
     role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: typeof m.content === "string" ? m.content : JSON.stringify(m.content) }]
+    parts: [{ text: typeof m.content === "string" ? m.content : (
+      Array.isArray(m.content)
+        ? m.content.filter(p => p.type === "text").map(p => p.text || "").join("") || "[image]"
+        : JSON.stringify(m.content)
+    )}]
   }))
 
   // Add current user message last
@@ -105,8 +109,8 @@ async function callGemini(messages, systemPrompt, maxTokens, res) {
       if (!data || data === "[DONE]") continue
       try {
         const json = JSON.parse(data)
-        const token = json.candidates?.[0]?.content?.parts?.[0]?.text || ""
-        if (token) { full += token; res.write(token) }
+        const token = json.candidates?.[0]?.content?.parts?.[0]?.text
+        if (token && typeof token === "string") { full += token; res.write(token) }
       } catch(e) {}
     }
   }
@@ -114,6 +118,17 @@ async function callGemini(messages, systemPrompt, maxTokens, res) {
 }
 
 mongoose.connect(process.env.MONGO_URI).then(() => console.log("MongoDB connected")).catch(e => console.error("DB error:", e.message))
+
+// Safe string extractor — prevents [object Object] in AI responses
+function safeStr(val) {
+  if (val === null || val === undefined) return ""
+  if (typeof val === "string") return val
+  if (Array.isArray(val)) {
+    return val.filter(p => p && p.type === "text").map(p => p.text || "").join("") || "[image]"
+  }
+  if (typeof val === "object") return val.text || val.content || JSON.stringify(val)
+  return String(val)
+}
 
 app.get("/ping", (req, res) => res.json({ alive: true, time: new Date().toISOString() }))
 app.get("/health", (req, res) => res.json({ status: "ok", uptime: process.uptime() }))
@@ -366,7 +381,8 @@ async function webSearch(query) {
       "CONTENT: " + (r.content || "").substring(0, 800)
     ).join("\n\n---\n\n")
 
-    return answer + "SEARCH RESULTS:\n\n" + sources
+    const result = answer + "SEARCH RESULTS:\n\n" + sources
+    return typeof result === "string" ? result : null
   } catch(e) { return null }
 }
 
@@ -1021,13 +1037,13 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
 
     const history = chat.messages.slice(0, -1).slice(-6)
       .filter(m => {
-        // Skip messages with base64 images in history (too large)
-        if (typeof m.content === "string" && m.content.includes("data:image")) return false
+        const c = safeStr(m.content)
+        if (c.includes("data:image")) return false  // skip base64 images
         return true
       })
       .map(m => ({
         role: m.role === "assistant" ? "assistant" : "user",
-        content: typeof m.content === "string" ? m.content.substring(0, 2000) : "[ image message ]"
+        content: safeStr(m.content).substring(0, 2000)  // always string
       }))
     const isImageFile = file && file.mimetype?.startsWith("image/")
     let userContent
@@ -1284,10 +1300,10 @@ QUALITY RULES:
 10. Expert in: HTML, CSS, JS, React, Python, Node.js, SQL, Java, C++, ALL languages
 ` + langNote + styleNote + searchNote
 
-    // Combine user content with URL context
+    // Combine user content with URL context — always string for text, array for vision
     const finalUserContent = typeof userContent === "string"
-      ? userContent + urlContext
-      : userContent
+      ? userContent + safeStr(urlContext)
+      : userContent  // keep array for vision model
 
     const systemWithMemory = systemPrompt + memoryContext
 
