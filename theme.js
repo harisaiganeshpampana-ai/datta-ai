@@ -1,107 +1,350 @@
-// ── DATTA AI THEME SYSTEM ─────────────────────────────────────────────────────
+/* ════════════════════════════════════════════════
+   CLEAN THEME SYSTEM — 3 themes only
+   dark | light | eye
+   Applied via: document.body.setAttribute("data-theme", "...")
+   ════════════════════════════════════════════════ */
 
-const THEMES = {
-  dark:     { name:'Dark',     emoji:'🌑', label:'Dark',     bg:'#080800' },
-  light:    { name:'Light',    emoji:'☀️', label:'Light',    bg:'#ffffff' },
-  gray:     { name:'Gray',     emoji:'🩶', label:'Gray',     bg:'#1e1e1e' },
-  midnight: { name:'Midnight', emoji:'🌌', label:'Midnight', bg:'#0a0f1e' },
-  sepia:    { name:'Sepia',    emoji:'📜', label:'Sepia',    bg:'#f4ede4' },
+/* ── CSS VARIABLES ── */
+:root {
+  --bg:       #0d0d0f;
+  --bg2:      #111117;
+  --bg3:      #1a1a20;
+  --text:     #e8e8f0;
+  --text2:    #aaaacc;
+  --text3:    #666688;
+  --border:   rgba(255,255,255,0.08);
+  --card:     rgba(255,255,255,0.04);
+  --accent:   #00c9a7;
+  --accent2:  #0077ff;
+  --input-bg: rgba(255,255,255,0.05);
 }
 
-function applyTheme(themeName) {
-  const theme = THEMES[themeName] || THEMES.dark
-  document.documentElement.setAttribute('data-theme', themeName)
-  localStorage.setItem('datta_theme', themeName)
-  
-  // Update topbar theme button if exists
-  const btn = document.getElementById('themeBtn')
-  if (btn) btn.textContent = theme.emoji
-
-  // Update settings toggle if exists
-  const select = document.getElementById('themeSelect')
-  if (select) select.value = themeName
-
-  // Apply accent color
-  const accent = localStorage.getItem('datta_accent') || '#ffd700'
-  document.documentElement.style.setProperty('--accent', accent)
+[data-theme="dark"] {
+  --bg:       #0d0d0f;
+  --bg2:      #111117;
+  --bg3:      #1a1a20;
+  --text:     #e8e8f0;
+  --text2:    #aaaacc;
+  --text3:    #666688;
+  --border:   rgba(255,255,255,0.08);
+  --card:     rgba(255,255,255,0.04);
+  --accent:   #00c9a7;
+  --accent2:  #0077ff;
+  --input-bg: rgba(255,255,255,0.05);
 }
 
-function getCurrentTheme() {
-  return localStorage.getItem('datta_theme') || 'dark'
+[data-theme="light"] {
+  --bg:       #f8fafc;
+  --bg2:      #ffffff;
+  --bg3:      #f1f5f9;
+  --text:     #111827;
+  --text2:    #374151;
+  --text3:    #6b7280;
+  --border:   #e5e7eb;
+  --card:     #ffffff;
+  --accent:   #059669;
+  --accent2:  #2563eb;
+  --input-bg: #ffffff;
 }
 
-function cycleTheme() {
-  const keys = Object.keys(THEMES)
-  const current = getCurrentTheme()
-  const idx = keys.indexOf(current)
-  const next = keys[(idx + 1) % keys.length]
-  applyTheme(next)
-  showThemeToast(next)
+[data-theme="eye"] {
+  --bg:       #1a1a0a;
+  --bg2:      #222210;
+  --bg3:      #2a2a14;
+  --text:     #e8e0c8;
+  --text2:    #b8a888;
+  --text3:    #786848;
+  --border:   rgba(200,180,100,0.15);
+  --card:     rgba(200,180,100,0.05);
+  --accent:   #c8a030;
+  --accent2:  #a07820;
+  --input-bg: rgba(200,180,100,0.06);
 }
 
-function showThemeToast(themeName) {
-  const theme = THEMES[themeName]
-  let toast = document.getElementById('themeToast')
-  if (!toast) {
-    toast = document.createElement('div')
-    toast.id = 'themeToast'
-    toast.style.cssText = 'position:fixed;top:64px;left:50%;transform:translateX(-50%);background:var(--card-bg);border:1px solid var(--border);border-radius:50px;padding:8px 18px;font-family:Rajdhani,sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;color:var(--accent);z-index:9999;white-space:nowrap;box-shadow:0 4px 20px var(--shadow);transition:opacity 0.3s;'
-    document.body.appendChild(toast)
-  }
-  toast.textContent = theme.emoji + ' ' + theme.label + ' mode'
-  toast.style.opacity = '1'
-  toast.style.display = 'block'
-  clearTimeout(toast._timer)
-  toast._timer = setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.style.display='none', 300) }, 2000)
+/* ── APPLY VARIABLES TO ALL ELEMENTS ── */
+
+body {
+  background: var(--bg) !important;
+  color: var(--text) !important;
 }
 
-function showThemePicker() {
-  document.getElementById('themePickerOverlay')?.remove()
-
-  const overlay = document.createElement('div')
-  overlay.id = 'themePickerOverlay'
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9998;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);'
-  
-  const current = getCurrentTheme()
-  
-  overlay.innerHTML = `
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:24px 24px 0 0;padding:20px;width:100%;max-width:500px;animation:slideUp 0.2s ease;">
-      <style>@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}</style>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--accent);margin-bottom:16px;text-align:center;">🎨 CHOOSE THEME</div>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px;">
-        ${Object.entries(THEMES).map(([key, t]) => `
-          <div onclick="applyTheme('${key}');document.getElementById('themePickerOverlay').remove();showThemeToast('${key}')" 
-            style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;
-            background:${key===current?'rgba(255,215,0,0.1)':'var(--card-bg)'};
-            border:2px solid ${key===current?'var(--accent)':'var(--border)'};
-            border-radius:14px;cursor:pointer;transition:all 0.2s;">
-            <div style="width:32px;height:32px;border-radius:50%;background:${t.bg};border:2px solid var(--border);"></div>
-            <span style="font-family:'Rajdhani',sans-serif;font-size:11px;letter-spacing:1px;color:${key===current?'var(--accent)':'var(--text2)'};">${t.label}</span>
-            <span style="font-size:16px;">${t.emoji}</span>
-          </div>`).join('')}
-      </div>
-      <button onclick="document.getElementById('themePickerOverlay').remove()" 
-        style="width:100%;padding:12px;background:none;border:1px solid var(--border);border-radius:50px;color:var(--text2);font-family:'Rajdhani',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;">
-        Close
-      </button>
-    </div>
-  `
-  
-  overlay.onclick = e => { if(e.target===overlay) overlay.remove() }
-  document.body.appendChild(overlay)
+/* Sidebar */
+.sidebar {
+  background: var(--bg2) !important;
+  border-right: 1px solid var(--border) !important;
+}
+.sidebarBrand, .profileName, .chatTitle {
+  color: var(--text) !important;
+}
+.profileSub, .chatItem .chatIcon {
+  color: var(--text3) !important;
+}
+.chatItem:hover, .chatItem.active {
+  background: var(--card) !important;
+}
+.newChatBtn {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text2) !important;
+}
+.newChatBtn:hover {
+  background: var(--bg3) !important;
 }
 
-// Apply theme on load
-(function() {
-  const saved = localStorage.getItem('datta_theme') || 'dark'
-  const accent = localStorage.getItem('datta_accent') || '#ffd700'
-  document.documentElement.setAttribute('data-theme', saved)
-  document.documentElement.style.setProperty('--accent', accent)
-})()
+/* Topbar */
+.topbar {
+  background: var(--bg2) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.topTitle, .topLogoText {
+  color: var(--text) !important;
+}
+.topIconBtn, .menuBtn {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text2) !important;
+}
 
-// Export
-window.applyTheme = applyTheme
-window.cycleTheme = cycleTheme
-window.showThemePicker = showThemePicker
-window.getCurrentTheme = getCurrentTheme
-window.THEMES = THEMES
+/* Main chat area */
+.main {
+  background: var(--bg) !important;
+}
+.chat {
+  background: var(--bg) !important;
+}
+
+/* Messages */
+.aiBubble {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+.userBubble {
+  background: var(--bg3) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+
+/* Light & Eye: remove glass/transparency on bubbles */
+[data-theme="light"] .aiBubble,
+[data-theme="eye"] .aiBubble {
+  background: var(--card) !important;
+  backdrop-filter: none !important;
+}
+[data-theme="light"] .userBubble,
+[data-theme="eye"] .userBubble {
+  background: var(--bg3) !important;
+  backdrop-filter: none !important;
+}
+
+/* Input area */
+.inputArea {
+  background: linear-gradient(to top, var(--bg) 60%, transparent) !important;
+}
+.inputWrap {
+  background: var(--input-bg) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+.inputWrap:focus-within {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent) !important;
+}
+#message {
+  color: var(--text) !important;
+  background: transparent !important;
+}
+#message::placeholder {
+  color: var(--text3) !important;
+}
+
+/* Model pill */
+#activeModelPill {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text2) !important;
+}
+
+/* Send button */
+.actionMainBtn.send-state {
+  background: linear-gradient(135deg, var(--accent), var(--accent2)) !important;
+}
+
+/* Plus & mic buttons */
+.plusBtn, .micBtn {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text2) !important;
+}
+
+/* Welcome screen */
+.welcomeScreen {
+  background: transparent !important;
+}
+.welcomeSub {
+  color: var(--text3) !important;
+}
+.suggCard {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+}
+.suggCard:hover {
+  background: var(--bg3) !important;
+  border-color: var(--accent) !important;
+}
+.suggText {
+  color: var(--text2) !important;
+}
+
+/* Settings modal */
+.modalBox, .settingsModal .modalBox {
+  background: var(--bg2) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+.sTab {
+  color: var(--text3) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.sTab.active {
+  color: var(--accent) !important;
+  border-bottom: 2px solid var(--accent) !important;
+}
+.sLabel {
+  color: var(--text3) !important;
+}
+.settingsInput, .sInput {
+  background: var(--input-bg) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+.settingsInput:focus, .sInput:focus {
+  border-color: var(--accent) !important;
+}
+
+/* Theme buttons in settings */
+.themeOptions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.themeBtn {
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text2);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.themeBtn:hover {
+  background: var(--bg3);
+  color: var(--text);
+}
+.themeBtn.active {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+  font-weight: 600;
+}
+
+/* Model dropdown */
+#modelDropdown {
+  background: var(--bg2) !important;
+  border: 1px solid var(--border) !important;
+}
+.modelDropItem {
+  color: var(--text) !important;
+}
+.modelDropItem:hover, .modelDropItem.active {
+  background: var(--card) !important;
+}
+
+/* Notes panel */
+#notesPanel {
+  background: var(--bg2) !important;
+  border-left: 1px solid var(--border) !important;
+}
+.notesTextarea {
+  background: transparent !important;
+  color: var(--text) !important;
+}
+.notesTextarea::placeholder {
+  color: var(--text3) !important;
+}
+.notesPanelTitle {
+  color: var(--text) !important;
+}
+.notesPanelBtn {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text2) !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+/* Light theme special fixes */
+[data-theme="light"] body,
+[data-theme="light"] .main,
+[data-theme="light"] .chat {
+  background: #f8fafc !important;
+}
+[data-theme="light"] .topbar {
+  background: #ffffff !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08) !important;
+}
+[data-theme="light"] .sidebar {
+  background: #ffffff !important;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.06) !important;
+}
+[data-theme="light"] .inputArea {
+  background: linear-gradient(to top, #f8fafc 60%, transparent) !important;
+}
+[data-theme="light"] .inputWrap {
+  background: #ffffff !important;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.1) !important;
+}
+[data-theme="light"] .aiBubble {
+  background: #ffffff !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+}
+[data-theme="light"] .userBubble {
+  background: #e8f8f4 !important;
+  border-color: #c8e8e0 !important;
+  color: #0f3028 !important;
+}
+[data-theme="light"] .welcomeTitle {
+  background: linear-gradient(135deg, #111827 30%, #059669) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+[data-theme="light"] .suggCard {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+}
+[data-theme="light"] #message {
+  color: #111827 !important;
+}
+[data-theme="light"] #message::placeholder {
+  color: #9ca3af !important;
+}
+[data-theme="light"] .chatTitle {
+  color: #374151 !important;
+}
+[data-theme="light"] .profileName {
+  color: #111827 !important;
+}
+
+/* Eye comfort special */
+[data-theme="eye"] .welcomeTitle {
+  background: linear-gradient(135deg, #e8e0c8 30%, #c8a030) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
