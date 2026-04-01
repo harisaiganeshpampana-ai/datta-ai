@@ -3674,3 +3674,117 @@ window.captureAndAnalyze = captureAndAnalyze
 window.lensFromGallery = lensFromGallery
 window.sendLensToChat = sendLensToChat
 window.toggleLensFlash = toggleLensFlash
+// ════════════════════════════════════════
+// NOTES FEATURE — desktop/tablet only
+// ════════════════════════════════════════
+let notesOpen = false
+let notesSaveTimer = null
+
+function toggleNotes() {
+  // Block on phones
+  if (window.innerWidth < 768) return
+
+  notesOpen = !notesOpen
+  const panel = document.getElementById("notesPanel")
+  const btn = document.getElementById("notesToggleBtn")
+
+  if (notesOpen) {
+    panel.classList.add("open")
+    btn.classList.add("active")
+    document.body.classList.add("notes-open")
+    // Load saved notes
+    const saved = localStorage.getItem("datta_notes") || ""
+    const textarea = document.getElementById("notesTextarea")
+    if (textarea) {
+      textarea.value = saved
+      updateNotesCount()
+      setTimeout(() => textarea.focus(), 350)
+    }
+  } else {
+    panel.classList.remove("open")
+    btn.classList.remove("active")
+    document.body.classList.remove("notes-open")
+  }
+}
+
+function updateNotesCount() {
+  const textarea = document.getElementById("notesTextarea")
+  const counter = document.getElementById("notesCharCount")
+  if (!textarea || !counter) return
+  const len = textarea.value.length
+  counter.textContent = len + " character" + (len !== 1 ? "s" : "")
+}
+
+function autoSaveNotes() {
+  const textarea = document.getElementById("notesTextarea")
+  const status = document.getElementById("notesSavedStatus")
+  if (!textarea) return
+
+  localStorage.setItem("datta_notes", textarea.value)
+  updateNotesCount()
+
+  // Show saving... then Saved
+  if (status) {
+    status.textContent = "Saving..."
+    status.style.color = "rgba(200,200,100,0.6)"
+    clearTimeout(notesSaveTimer)
+    notesSaveTimer = setTimeout(() => {
+      status.textContent = "Saved"
+      status.style.color = "rgba(0,201,167,0.6)"
+    }, 600)
+  }
+}
+
+function copyNotes() {
+  const textarea = document.getElementById("notesTextarea")
+  if (!textarea || !textarea.value.trim()) { showToast("Nothing to copy"); return }
+  navigator.clipboard.writeText(textarea.value)
+  showToast("Notes copied!")
+}
+
+function clearNotes() {
+  const textarea = document.getElementById("notesTextarea")
+  if (!textarea || !textarea.value.trim()) return
+  if (!confirm("Clear all notes? This cannot be undone.")) return
+  textarea.value = ""
+  localStorage.removeItem("datta_notes")
+  updateNotesCount()
+  showToast("Notes cleared")
+}
+
+function downloadNotes() {
+  const textarea = document.getElementById("notesTextarea")
+  if (!textarea || !textarea.value.trim()) { showToast("Nothing to download"); return }
+  const blob = new Blob([textarea.value], { type: "text/plain" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = "datta-notes-" + new Date().toLocaleDateString("en-IN").replace(/\//g,"-") + ".txt"
+  a.click()
+  URL.revokeObjectURL(url)
+  showToast("Notes downloaded!")
+}
+
+// Auto-save on typing
+window.addEventListener("DOMContentLoaded", function() {
+  const textarea = document.getElementById("notesTextarea")
+  if (textarea) {
+    textarea.addEventListener("input", autoSaveNotes)
+  }
+  // Close notes if window resizes to phone
+  window.addEventListener("resize", function() {
+    if (window.innerWidth < 768 && notesOpen) {
+      notesOpen = false
+      const panel = document.getElementById("notesPanel")
+      const btn = document.getElementById("notesToggleBtn")
+      if (panel) panel.classList.remove("open")
+      if (btn) btn.classList.remove("active")
+      document.body.classList.remove("notes-open")
+    }
+  })
+})
+
+window.toggleNotes = toggleNotes
+window.copyNotes = copyNotes
+window.clearNotes = clearNotes
+window.downloadNotes = downloadNotes
