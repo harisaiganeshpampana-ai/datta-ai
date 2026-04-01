@@ -5478,3 +5478,206 @@ body.light .chip:hover {
     padding: 10px 12px 20px !important;
   }
 }
+
+
+/* ════════════════════════════════════════
+   NOTES FEATURE — DESKTOP/TABLET ONLY
+   ════════════════════════════════════════ */
+
+/* Notes button in topbar — hidden on phones */
+.notesTopBtn {
+  display: none; /* hidden by default */
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  height: 34px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  color: #aaa;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.notesTopBtn:hover {
+  background: rgba(0,201,167,0.08);
+  border-color: rgba(0,201,167,0.3);
+  color: #00c9a7;
+}
+
+.notesTopBtn.active {
+  background: rgba(0,201,167,0.1);
+  border-color: rgba(0,201,167,0.4);
+  color: #00c9a7;
+}
+
+/* NOTES PANEL — slides in from right */
+.notesPanel {
+  position: fixed;
+  top: 0;
+  right: -520px; /* hidden off-screen */
+  width: 420px;
+  height: 100vh;
+  background: #111117;
+  border-left: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  flex-direction: column;
+  z-index: 200;
+  transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+.notesPanel.open {
+  right: 0;
+}
+
+/* When notes open — shrink main content */
+body.notes-open .main {
+  margin-right: 420px;
+  transition: margin-right 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+body.notes-open .inputArea {
+  right: 420px !important;
+  transition: right 0.3s cubic-bezier(0.4,0,0.2,1) !important;
+}
+
+/* Notes panel header */
+.notesPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+  flex-shrink: 0;
+  margin-top: 58px; /* below topbar */
+}
+
+.notesPanelTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e0e0f0;
+  font-family: inherit;
+}
+
+.notesPanelBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #888;
+  transition: background 0.2s, color 0.2s;
+}
+
+.notesPanelBtn:hover {
+  background: rgba(255,255,255,0.1);
+  color: #ddd;
+}
+
+.notesPanelClose:hover {
+  background: rgba(255,80,80,0.12);
+  border-color: rgba(255,80,80,0.3);
+  color: #ff6666;
+}
+
+/* Notes textarea */
+.notesTextarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  padding: 20px;
+  font-size: 14px;
+  line-height: 1.75;
+  color: #d0d0e8;
+  font-family: inherit;
+  caret-color: #00c9a7;
+}
+
+.notesTextarea::placeholder {
+  color: rgba(180,180,210,0.25);
+  line-height: 1.8;
+}
+
+/* Notes footer */
+.notesPanelFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  font-size: 11px;
+  color: rgba(180,180,210,0.35);
+  flex-shrink: 0;
+}
+
+.notesSaved {
+  color: rgba(0,201,167,0.6);
+}
+
+/* Show Notes button ONLY on desktop/tablet (768px+) */
+@media (min-width: 768px) {
+  .notesTopBtn {
+    display: flex;
+  }
+}
+
+/* Hide notes on phones — force close */
+@media (max-width: 767px) {
+  .notesPanel {
+    display: none !important;
+  }
+  body.notes-open .main {
+    margin-right: 0 !important;
+  }
+  body.notes-open .inputArea {
+    right: 0 !important;
+  }
+}
+
+/* Tablet: narrower notes panel */
+@media (min-width: 768px) and (max-width: 1100px) {
+  .notesPanel {
+    width: 340px;
+    right: -360px;
+  }
+  body.notes-open .main {
+    margin-right: 340px;
+  }
+  body.notes-open .inputArea {
+    right: 340px !important;
+  }
+}
+
+/* Light theme */
+body.light .notesPanel {
+  background: #f8f8fa;
+  border-left-color: rgba(0,0,0,0.08);
+}
+body.light .notesTextarea {
+  color: #222;
+}
+body.light .notesPanelHeader {
+  background: rgba(0,0,0,0.02);
+  border-bottom-color: rgba(0,0,0,0.07);
+}
+body.light .notesPanelBtn {
+  background: rgba(0,0,0,0.04);
+  border-color: rgba(0,0,0,0.08);
+  color: #666;
+}
+body.light .notesPanelTitle {
+  color: #111;
+}
