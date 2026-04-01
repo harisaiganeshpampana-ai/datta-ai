@@ -1,3 +1,9 @@
 User-agent: *
 Allow: /
-Sitemap: https://harisaiganeshpampana-ai.github.io/datta-ai/sitemap.xml
+
+# Block private pages
+Disallow: /admin.html
+Disallow: /settings.html
+
+# Sitemap
+Sitemap: https://datta-ai.com/sitemap.xml
