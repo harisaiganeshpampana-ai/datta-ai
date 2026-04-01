@@ -643,6 +643,11 @@
 </script>
 
 
+<!-- SETTINGS MODAL -->
+<div class="settingsModal" id="settingsModal" onclick="if(event.target===this)closeSettings()">
+  <div class="modalBox">
+    <div class="modalHeader">
+      <div class="modalTitle">Settings</div>
       <button class="modalClose" onclick="closeSettings()">✕</button>
     </div>
 
@@ -774,8 +779,8 @@
       </div>
     </div>
 
-  </div>
-</div>
+  </div><!-- /.modalBox -->
+</div><!-- /#settingsModal -->
 
 
 <!-- VOICE ASSISTANT OVERLAY -->
