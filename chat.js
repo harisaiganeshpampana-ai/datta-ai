@@ -170,31 +170,29 @@ function showStopBtn() { setGenerating(true) }
 function hideStopBtn() { setGenerating(false) }
 
 function stopGeneration() {
+  // Abort network request
   if (controller) {
     controller.abort()
     controller = null
   }
   setGenerating(false)
 
-  // Freeze partial response + show stopped message
-  const streams = document.querySelectorAll(".stream")
-  if (streams.length > 0) {
-    const last = streams[streams.length - 1]
-    if (last.textContent.trim()) {
-      last.innerHTML = marked.parse(last.textContent)
-    }
-    // Show "stopped by user" message
-    const user = JSON.parse(localStorage.getItem("datta_user") || "{}") 
-    const name = user.username || "you"
-    const stopMsg = document.createElement("div")
-    stopMsg.className = "stoppedMsg"
-    stopMsg.textContent = "Response stopped by " + name
-    last.parentElement.appendChild(stopMsg)
-  }
-
   // Re-enable input
   const msgInput = document.getElementById("message")
   if (msgInput) { msgInput.disabled = false; msgInput.focus() }
+
+  // The typing loop handles the "stopped" message via typingActive = false
+  // For streams that already finished network but are still typing,
+  // find last .typingCursor and mark as stopped
+  const cursors = document.querySelectorAll(".typingCursor")
+  cursors.forEach(cur => {
+    const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
+    const name = user.username || "you"
+    const msg = document.createElement("div")
+    msg.className = "stoppedMsg"
+    msg.textContent = "Response stopped by " + name
+    cur.replaceWith(msg)
+  })
 }
 
 window.handleMainBtn = handleMainBtn
@@ -829,9 +827,70 @@ async function send() {
     let streamText = ""
     let span = aiDiv.querySelector(".stream")
 
+    // ── TYPING STATE ──────────────────────────────────
+    let typingActive = true      // false = user stopped typing animation
+    let typingDone = false       // true = all chunks received from server
+    let fullText = ""            // complete text from server
+    let displayedLen = 0         // how many chars typed so far
+    const CHAR_DELAY = 18        // ms per character (natural speed)
+
+    // ── TYPING ANIMATION ─────────────────────────────
+    async function runTyping() {
+      while (typingActive) {
+        if (displayedLen < fullText.length) {
+          // Type next chunk — grab multiple chars if behind
+          const lag = fullText.length - displayedLen
+          const step = lag > 80 ? 6 : lag > 30 ? 3 : 1
+          displayedLen = Math.min(displayedLen + step, fullText.length)
+
+          const visible = fullText.slice(0, displayedLen)
+          span.innerHTML = marked.parse(visible) + '<span class="typingCursor">|</span>'
+          scrollBottom()
+
+          // Detect auto-switch model pill
+          if (visible.includes("Switching to **Datta 5.4**") || visible.includes("switching you to Datta 5.4")) {
+            const pill = document.getElementById("activeModelName")
+            if (pill && pill.textContent !== "Datta 5.4") {
+              pill.textContent = "Datta 5.4"
+              pill.style.color = "#ff6644"
+              setTimeout(() => { pill.style.color = "" }, 3000)
+            }
+          }
+
+          await new Promise(r => setTimeout(r, CHAR_DELAY))
+        } else if (typingDone) {
+          // All chars typed and all chunks received — done
+          break
+        } else {
+          // Waiting for more chunks from server
+          await new Promise(r => setTimeout(r, 30))
+        }
+      }
+
+      // Final clean render — remove cursor
+      if (typingActive) {
+        span.innerHTML = marked.parse(fullText.slice(0, displayedLen))
+      } else {
+        // Stopped by user — show what was typed so far
+        const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
+        const name = user.username || "you"
+        span.innerHTML = marked.parse(fullText.slice(0, displayedLen)) +
+          '<div class="stoppedMsg">Response stopped by ' + name + '</div>'
+      }
+      lucide.createIcons()
+    }
+
+    // Start typing animation immediately
+    runTyping()
+
+    // ── READ SERVER CHUNKS ────────────────────────────
     while (true) {
-      // Check if user stopped generation
-      if (!controller) break
+      if (!controller) {
+        // User aborted — stop typing
+        typingActive = false
+        typingDone = true
+        break
+      }
 
       const { done, value } = await reader.read()
       if (done) break
@@ -840,33 +899,24 @@ async function send() {
 
       if (chunk.includes("CHATID")) {
         const parts = chunk.split("CHATID")
-        streamText += parts[0]
+        fullText += parts[0]
         currentChatId = parts[1].trim()
       } else {
-        streamText += chunk
+        // Strip keep-alive spaces
+        if (chunk.trim()) fullText += chunk
       }
-
-
-      // Detect auto-switch to Datta 5.4
-      if (streamText.includes("Switching to **Datta 5.4**") || streamText.includes("switching you to Datta 5.4")) {
-        const pill = document.getElementById("activeModelName")
-        if (pill && pill.textContent !== "Datta 5.4") {
-          pill.textContent = "Datta 5.4"
-          pill.style.color = "#ff6644"
-          setTimeout(() => { pill.style.color = "" }, 3000)
-        }
-      }
-
-      // Normal text rendering
-      if (streamText.trim()) {
-        span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>'
-      }
-      scrollBottom()
-      lucide.createIcons()
     }
 
-    // Final render - remove cursor
-    span.innerHTML = marked.parse(streamText)
+    // Signal typing loop that server is done
+    typingDone = true
+
+    // Wait for typing to finish (or be stopped)
+    while (typingActive && displayedLen < fullText.length) {
+      await new Promise(r => setTimeout(r, 50))
+    }
+
+    // Use fullText for saving (not displayed text)
+    streamText = fullText
 
     // Add action buttons to user messages after generation
     chatBox.querySelectorAll(".userBubble").forEach(bubble => {
