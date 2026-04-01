@@ -5681,3 +5681,66 @@ body.light .notesPanelBtn {
 body.light .notesPanelTitle {
   color: #111;
 }
+
+
+/* ════ NOTES PANEL FIX ════ */
+#notesPanel {
+  position: fixed !important;
+  top: 0 !important;
+  right: -460px !important;
+  width: 420px !important;
+  height: 100vh !important;
+  background: #111117 !important;
+  border-left: 1px solid rgba(255,255,255,0.08) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  z-index: 9999 !important;
+  transition: right 0.3s cubic-bezier(0.4,0,0.2,1) !important;
+  overflow: hidden !important;
+}
+
+#notesPanel.open {
+  right: 0 !important;
+}
+
+body.notes-open .main {
+  margin-right: 420px !important;
+  transition: margin-right 0.3s cubic-bezier(0.4,0,0.2,1) !important;
+}
+
+body.notes-open .inputArea {
+  right: 420px !important;
+  transition: right 0.3s !important;
+}
+
+/* Topbar margin when notes open */
+body.notes-open .topbar {
+  padding-right: 436px !important;
+}
+
+#notesPanel .notesPanelHeader {
+  margin-top: 0 !important;
+  padding: 14px 16px !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  flex-shrink: 0 !important;
+}
+
+#notesPanel .notesTextarea {
+  flex: 1 !important;
+  min-height: 0 !important;
+}
+
+@media (max-width: 767px) {
+  #notesPanel { display: none !important; }
+  #notesToggleBtn { display: none !important; }
+  body.notes-open .main { margin-right: 0 !important; }
+  body.notes-open .inputArea { right: 0 !important; }
+}
+
+@media (min-width: 768px) and (max-width: 1100px) {
+  #notesPanel { width: 340px !important; right: -360px !important; }
+  #notesPanel.open { right: 0 !important; }
+  body.notes-open .main { margin-right: 340px !important; }
+  body.notes-open .inputArea { right: 340px !important; }
+  body.notes-open .topbar { padding-right: 356px !important; }
+}
