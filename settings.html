@@ -378,6 +378,13 @@ textarea.formInput { height: auto; min-height: 100px; }
 .logoutBtn:hover { background:#2a1010; }
 </style>
   <link rel="stylesheet" href="layout.css">
+  <link rel="stylesheet" href="theme.css">
+  <script>
+    (function(){
+      var t = localStorage.getItem("datta_theme") || "dark"
+      document.body.setAttribute("data-theme", ["dark","light","eye"].includes(t) ? t : "dark")
+    })()
+  </script>
 </head>
 <body>
 <script>
@@ -387,30 +394,18 @@ const SERVER = "https://datta-ai-server.onrender.com"
 function getToken() { return localStorage.getItem("datta_token") || "" }
 function getUser() { try { return JSON.parse(localStorage.getItem("datta_user")||"{}") } catch(e) { return {} } }
 
-function applyThemeToPage(name) {
-  const themes = {
-    dark:   { "--bg":"#0a0a0a","--bg2":"#111","--bg3":"#1a1a1a","--text":"#ffffff","--text2":"#aaaaaa","--text3":"#666666","--border":"#222222","--accent":"#00ff88" },
-    light:  { "--bg":"#ffffff","--bg2":"#f5f5f5","--bg3":"#eeeeee","--text":"#000000","--text2":"#444444","--text3":"#888888","--border":"#dddddd","--accent":"#00aa55" },
-    midnight: { "--bg":"#050510","--bg2":"#0a0a1a","--bg3":"#10102a","--text":"#e0e0ff","--text2":"#9090cc","--text3":"#5050aa","--border":"#1a1a3a","--accent":"#7070ff" },
-    forest: { "--bg":"#050f08","--bg2":"#0a1a0f","--bg3":"#102018","--text":"#e0ffe0","--text2":"#80bb80","--text3":"#408040","--border":"#1a2f1a","--accent":"#40ff80" },
-    sunset: { "--bg":"#0f0805","--bg2":"#1a120a","--bg3":"#251a10","--text":"#fff0e0","--text2":"#ccaa80","--text3":"#aa8040","--border":"#2f1f0f","--accent":"#ff8040" },
-    ocean:  { "--bg":"#05080f","--bg2":"#0a1020","--bg3":"#101828","--text":"#e0f0ff","--text2":"#80a8cc","--text3":"#4080aa","--border":"#0f1e30","--accent":"#40a0ff" }
-  }
-  const t = themes[name] || themes.dark
-  const root = document.documentElement
-  Object.entries(t).forEach(([k,v]) => root.style.setProperty(k, v))
-}
-
 function setTheme(name) {
+  if (!["dark","light","eye"].includes(name)) name = "dark"
   localStorage.setItem("datta_theme", name)
-  applyThemeToPage(name)
+  document.body.setAttribute("data-theme", name)
+  document.body.classList.remove("light","light-theme","midnight","forest","ocean","sunset")
   document.querySelectorAll(".themeCard").forEach(c => c.classList.remove("active"))
   const card = document.getElementById("theme-" + name)
   if (card) card.classList.add("active")
   const desc = document.getElementById("themeDesc")
   if (desc) desc.textContent = name.charAt(0).toUpperCase() + name.slice(1)
   showMsg("theme", "Theme applied!", "success")
-  setTimeout(() => closePanel("theme"), 800)
+  setTimeout(() => closePanel("theme"), 600)
 }
 
 function setWallpaper(name) {
@@ -1057,34 +1052,19 @@ function previewVoice() {
   </div>
   <div class="themeGrid">
     <div class="themeCard" id="theme-dark" onclick="setTheme('dark')">
-      <div class="themePreview" style="background:linear-gradient(135deg,#0a0a0a,#1a1a1a);border:1px solid #222;"></div>
-      <div class="themeName">' Dark</div>
-      <div class="themeCheck">'</div>
+      <div class="themePreview" style="background:linear-gradient(135deg,#0d0d0f,#1a1a22);border:1px solid #333;"></div>
+      <div class="themeName">Dark</div>
+      <div class="themeCheck"></div>
     </div>
     <div class="themeCard" id="theme-light" onclick="setTheme('light')">
-      <div class="themePreview" style="background:linear-gradient(135deg,#f5f5f5,#e8e8e8);border:1px solid #ddd;"></div>
-      <div class="themeName">'' Light</div>
-      <div class="themeCheck">'</div>
+      <div class="themePreview" style="background:linear-gradient(135deg,#f8fafc,#e8f0fe);border:1px solid #e5e7eb;"></div>
+      <div class="themeName">Light</div>
+      <div class="themeCheck"></div>
     </div>
-    <div class="themeCard" id="theme-midnight" onclick="setTheme('midnight')">
-      <div class="themePreview" style="background:linear-gradient(135deg,#000020,#000840);border:1px solid #001166;"></div>
-      <div class="themeName">' Midnight</div>
-      <div class="themeCheck">'</div>
-    </div>
-    <div class="themeCard" id="theme-forest" onclick="setTheme('forest')">
-      <div class="themePreview" style="background:linear-gradient(135deg,#0a1a0a,#0a2a0a);border:1px solid #1a4a1a;"></div>
-      <div class="themeName">' Forest</div>
-      <div class="themeCheck">'</div>
-    </div>
-    <div class="themeCard" id="theme-ocean" onclick="setTheme('ocean')">
-      <div class="themePreview" style="background:linear-gradient(135deg,#000a1a,#001a2a);border:1px solid #003366;"></div>
-      <div class="themeName">' Ocean</div>
-      <div class="themeCheck">'</div>
-    </div>
-    <div class="themeCard" id="theme-sunset" onclick="setTheme('sunset')">
-      <div class="themePreview" style="background:linear-gradient(135deg,#1a0a00,#2a0a1a);border:1px solid #442200;"></div>
-      <div class="themeName">' Sunset</div>
-      <div class="themeCheck">'</div>
+    <div class="themeCard" id="theme-eye" onclick="setTheme('eye')">
+      <div class="themePreview" style="background:linear-gradient(135deg,#0f170a,#1a2a12);border:1px solid #2a4a1a;"></div>
+      <div class="themeName">Eye Comfort</div>
+      <div class="themeCheck"></div>
     </div>
   </div>
 </div>
@@ -1430,25 +1410,7 @@ function previewVoice() {
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 const SERVER = "https://datta-ai-server.onrender.com"
-const THEMES = {
-  dark:     { bg:"#0a0a0a", bg2:"#111", bg3:"#1a1a1a", border:"#222", text:"#fff", text2:"#aaa", text3:"#666", accent:"#00ff88", accent2:"#00ccff" },
-  light:    { bg:"#f5f5f5", bg2:"#fff", bg3:"#f0f0f0", border:"#ddd", text:"#111", text2:"#555", text3:"#999", accent:"#00aa55", accent2:"#0088cc" },
-  midnight: { bg:"#000010", bg2:"#000820", bg3:"#001030", border:"#001166", text:"#e0e8ff", text2:"#8899cc", text3:"#445588", accent:"#4488ff", accent2:"#88aaff" },
-  forest:   { bg:"#050f05", bg2:"#0a180a", bg3:"#0f2010", border:"#1a4a1a", text:"#e0ffe0", text2:"#88bb88", text3:"#4a7a4a", accent:"#44cc44", accent2:"#88ff88" },
-  ocean:    { bg:"#000a18", bg2:"#001025", bg3:"#001835", border:"#003366", text:"#e0f0ff", text2:"#7799cc", text3:"#334466", accent:"#0088ff", accent2:"#00ccff" },
-  sunset:   { bg:"#100500", bg2:"#1a0800", bg3:"#220a00", border:"#441500", text:"#fff0e0", text2:"#cc9966", text3:"#775533", accent:"#ff8800", accent2:"#ff4400" }
-}
-
-const WALLPAPERS = {
-  none: "",
-  dots: "radial-gradient(circle,#222 1px,transparent 1px) 0 0/20px 20px",
-  grid: "linear-gradient(#1a1a1a 1px,transparent 1px) 0 0/20px 20px,linear-gradient(90deg,#1a1a1a 1px,transparent 1px) 0 0/20px 20px",
-  waves: "linear-gradient(135deg,#001a2a,#002a3a,#001a2a)",
-  gradient1: "linear-gradient(135deg,#0a0a2a,#1a0a2a,#0a1a2a)",
-  gradient2: "linear-gradient(135deg,#0a1a0a,#1a2a0a,#0a1a1a)",
-  stars: "radial-gradient(circle,#fff 1px,transparent 1px) 0 0/30px 30px",
-  mesh: "linear-gradient(135deg,#00ff8811,#00ccff11,#aa44ff11)"
-}
+// Theme system handled by theme.css and data-theme attribute
 
 // Apply theme to THIS page
 // Apply theme EVERYWHERE (saves and notifies)
