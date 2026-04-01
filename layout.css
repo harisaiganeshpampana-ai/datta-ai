@@ -1,0 +1,251 @@
+/* ════════════════════════════════════════════════════════
+   GLOBAL LAYOUT SYSTEM — clean, centered, consistent
+   Applies to: chat, settings, dashboard, all pages
+   ════════════════════════════════════════════════════════ */
+
+/* 1. BASE RESET */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body { display: flex; flex-direction: column; background: #0d0d0f; color: #e8e8f0; margin: 0; }
+
+/* 2. TOPBAR — always full width, centered content inside */
+.topbar {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 56px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 16px !important;
+  background: rgba(13,13,15,0.92) !important;
+  backdrop-filter: blur(20px) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+  z-index: 100 !important;
+}
+
+/* Topbar inner content centered */
+.topbar > div {
+  display: flex;
+  align-items: center;
+}
+
+/* 3. SIDEBAR — fixed left */
+.sidebar {
+  position: fixed !important;
+  top: 56px !important;
+  left: 0 !important;
+  width: 260px !important;
+  height: calc(100vh - 56px) !important;
+  background: #111117 !important;
+  border-right: 1px solid rgba(255,255,255,0.05) !important;
+  overflow-y: auto !important;
+  z-index: 90 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* 4. MAIN AREA — offset for sidebar, fills remaining space */
+.main {
+  margin-left: 260px !important;
+  margin-top: 56px !important;
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: calc(100vh - 56px) !important;
+  background: #0d0d0f !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* 5. CHAT WRAPPER — fills main, scrollable */
+.chatWrapper {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+/* 6. CHAT SCROLL AREA — max width centered */
+.chat {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 24px 0 160px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+/* Chat messages inner — max width */
+.messageRow {
+  width: 100% !important;
+  max-width: 760px !important;
+  padding: 0 20px !important;
+  margin: 0 auto 4px !important;
+  display: flex !important;
+}
+
+/* 7. INPUT AREA — fixed bottom, always centered */
+.inputArea {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 260px !important;  /* offset for sidebar */
+  right: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  padding: 10px 20px 24px !important;
+  background: linear-gradient(to top, #0d0d0f 60%, transparent) !important;
+  z-index: 80 !important;
+}
+
+/* Input model pill row */
+.inputModelBar {
+  display: flex !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  max-width: 760px !important;
+  padding: 0 2px 8px !important;
+}
+
+/* Input wrap — centered, max width */
+.inputWrap {
+  width: 100% !important;
+  max-width: 760px !important;
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 18px !important;
+  padding: 6px 8px 6px 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  transition: border-color 0.25s, box-shadow 0.25s !important;
+}
+
+.inputWrap:focus-within {
+  border-color: rgba(0,201,167,0.45) !important;
+  box-shadow: 0 0 0 3px rgba(0,201,167,0.08) !important;
+}
+
+/* Input row — mic + input + send in one line */
+.inputRow {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  min-height: 44px !important;
+}
+
+/* Message input — fills row */
+#message, .inputRow input[type="text"] {
+  flex: 1 !important;
+  min-width: 0 !important;
+  height: 44px !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  font-size: 15px !important;
+  color: #e8e8f0 !important;
+  caret-color: #00c9a7 !important;
+  padding: 0 4px !important;
+}
+
+/* Buttons in input row */
+.plusBtn, .micBtn, .actionMainBtn {
+  flex-shrink: 0 !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+}
+
+/* 8. WELCOME SCREEN — centered in main */
+.welcomeScreen {
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 24px 140px !important;
+  z-index: 2 !important;
+}
+
+.chat-started .welcomeScreen {
+  display: none !important;
+}
+
+.welcomeInner {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 40px !important;
+  width: 100% !important;
+  max-width: 600px !important;
+}
+
+/* 9. NOTES PANEL — shift input and main */
+body.notes-open .inputArea {
+  right: 420px !important;
+}
+body.notes-open .main {
+  margin-right: 420px !important;
+}
+
+/* ════════════ RESPONSIVE ════════════ */
+
+/* Tablet (768px – 1024px) */
+@media (max-width: 1024px) and (min-width: 768px) {
+  .sidebar {
+    width: 220px !important;
+  }
+  .main {
+    margin-left: 220px !important;
+  }
+  .inputArea {
+    left: 220px !important;
+  }
+  body.notes-open .main { margin-right: 340px !important; }
+  body.notes-open .inputArea { right: 340px !important; }
+}
+
+/* Mobile (< 768px) */
+@media (max-width: 767px) {
+  .sidebar {
+    width: 280px !important;
+    transform: translateX(-100%) !important;
+    top: 0 !important;
+    height: 100vh !important;
+    z-index: 999 !important;
+  }
+  .sidebar.open, .sidebar.show {
+    transform: translateX(0) !important;
+  }
+  .main {
+    margin-left: 0 !important;
+    margin-top: 56px !important;
+  }
+  .inputArea {
+    left: 0 !important;
+    padding: 8px 12px 20px !important;
+  }
+  .chat {
+    padding: 16px 0 140px !important;
+  }
+  .messageRow {
+    padding: 0 12px !important;
+  }
+  .welcomeScreen {
+    padding: 0 16px 140px !important;
+  }
+  .inputWrap {
+    border-radius: 16px !important;
+  }
+  body.notes-open .main { margin-right: 0 !important; }
+  body.notes-open .inputArea { right: 0 !important; }
+  #notesPanel { display: none !important; }
+}
