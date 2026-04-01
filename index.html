@@ -68,8 +68,29 @@
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <button onclick="toggleSidebar()" class="menuBtn">☰</button>
-  <span class="topTitle">Datta AI</span>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button onclick="toggleSidebar()" class="menuBtn" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#aaa;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#00c9a7,#0055ff);display:flex;align-items:center;justify-content:center;">
+        <svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M9 2L15 6V12L9 16L3 12V6L9 2Z" fill="rgba(255,255,255,0.9)"/><path d="M9 6L12 8V12L9 14L6 12V8L9 6Z" fill="rgba(13,13,15,0.7)"/></svg>
+      </div>
+      <span class="topTitle" style="font-size:16px;font-weight:600;letter-spacing:-0.3px;color:#f0f0f8;">Datta AI</span>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <button id="modeIndicator" onclick="window.location.href='settings.html'" style="display:none;padding:4px 12px;background:#0a1a2a;border:1px solid #00ccff33;border-radius:20px;color:#00ccff;font-size:11px;cursor:pointer;font-family:'Josefin Sans',sans-serif;letter-spacing:0.5px;white-space:nowrap;"></button>
+    <button class="topIconBtn" onclick="openFileManager()" title="File Manager" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#888;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    </button>
+    <button class="topIconBtn" onclick="exportChat()" title="Export" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#888;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    </button>
+    <button onclick="navigateTo('settings.html')" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#888;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
 </div>
 
 <!-- SIDEBAR -->
@@ -196,7 +217,7 @@
   <!-- WELCOME + CHIPS - perfectly centered -->
   <div id="welcomeScreen" class="welcomeScreen">
     <h1 class="welcomeTitle">What can I build for you?</h1>
-    <p class="welcomeSub">Ask anything. Code, create, search, analyze.</p>
+    <p class="welcomeSub" style="font-size:15px;color:rgba(200,200,220,0.45);max-width:340px;line-height:1.6;margin:0;">Ask anything. Code, create, research, analyze.</p>
     <div class="suggestionChips" id="suggestionChips">
       <button class="chip" onclick="useChip(this)">🌐 Build me a portfolio website</button>
       <button class="chip" onclick="useChip(this)">🐍 Write a Python web scraper</button>
@@ -240,7 +261,8 @@
       <!-- Model selector row - INSIDE input box like Claude -->
       <!-- Single model pill - click shows all models like Claude -->
       <div class="inputModelBar">
-        <button class="inputModelSingle" id="activeModelPill" onclick="event.stopPropagation();toggleModelDropdown()">
+        <button class="inputModelSingle" id="activeModelPill" onclick="event.stopPropagation();toggleModelDropdown()" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);border-radius:20px;padding:5px 12px 5px 8px;font-size:12px;color:rgba(200,200,220,0.75);cursor:pointer;transition:all 0.2s;">
+          <span style="width:7px;height:7px;border-radius:50%;background:#00c9a7;box-shadow:0 0 6px #00c9a7;flex-shrink:0;display:inline-block;"></span>
           <span id="activeModelName">Datta 2.1</span>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
@@ -249,7 +271,7 @@
 
       <!-- Bottom row -->
       <div class="inputRow">
-        <button class="plusBtn" id="plusBtn" onclick="event.stopPropagation();togglePlusMenu()">
+        <button class="plusBtn" id="plusBtn" onclick="event.stopPropagation();togglePlusMenu()" style="width:36px;height:36px;border-radius:11px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all 0.2s;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
