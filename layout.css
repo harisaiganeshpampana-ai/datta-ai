@@ -1,54 +1,60 @@
 /* ================================================
-   DATTA AI — GLOBAL LAYOUT SYSTEM
-   Clean flexbox layout, no margin hacks
+   DATTA AI — LAYOUT SYSTEM
+   Pure flexbox, no hacks, no absolute positioning
+   for layout elements
    ================================================ */
 
 *, *::before, *::after { box-sizing: border-box; }
-html { height: 100%; }
-body {
-  margin: 0;
+
+html, body {
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  margin: 0;
   overflow: hidden;
 }
 
-/* ── TOPBAR ── */
+body {
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ════════════════════════════════════════
+   TOPBAR — fixed, full width
+   ════════════════════════════════════════ */
 .topbar {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
   height: 56px !important;
+  z-index: 1000 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  padding: 0 12px !important;
-  z-index: 1000 !important;
+  padding: 0 14px !important;
   flex-shrink: 0 !important;
 }
 
-/* Menu button — always on top, always clickable */
 .menuBtn {
-  position: relative !important;
   z-index: 1001 !important;
-  pointer-events: all !important;
   cursor: pointer !important;
   flex-shrink: 0 !important;
 }
 
-/* ── APP BODY (below topbar) ── */
+/* ════════════════════════════════════════
+   APP BODY — flex row: sidebar + main
+   ════════════════════════════════════════ */
 .app-body {
   display: flex !important;
   flex: 1 !important;
-  margin-top: 56px !important;
   height: calc(100vh - 56px) !important;
+  margin-top: 56px !important;
   overflow: hidden !important;
-  position: relative !important;
 }
 
-/* ── SIDEBAR ── */
+/* ════════════════════════════════════════
+   SIDEBAR
+   ════════════════════════════════════════ */
 .sidebar {
   width: 260px !important;
   flex-shrink: 0 !important;
@@ -57,108 +63,126 @@ body {
   overflow-x: hidden !important;
   display: flex !important;
   flex-direction: column !important;
-  position: relative !important;
   z-index: 90 !important;
-  transition: transform 0.3s ease !important;
 }
 
-/* ── MAIN CONTENT ── */
+/* ════════════════════════════════════════
+   MAIN — flex column: chat + input
+   ════════════════════════════════════════ */
 .main {
   flex: 1 !important;
   min-width: 0 !important;
   display: flex !important;
   flex-direction: column !important;
+  align-items: center !important;   /* centers children horizontally */
   overflow: hidden !important;
-  position: relative !important;
-  margin: 0 !important;
 }
 
-/* ── CHAT WRAPPER ── */
+/* ════════════════════════════════════════
+   CHAT WRAPPER — fills remaining space
+   ════════════════════════════════════════ */
 .chatWrapper {
   flex: 1 !important;
+  width: 100% !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
   position: relative !important;
 }
 
-/* ── CHAT SCROLL AREA ── */
+/* ════════════════════════════════════════
+   CHAT SCROLL AREA
+   ════════════════════════════════════════ */
 .chat {
   flex: 1 !important;
+  width: 100% !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
-  padding: 24px 0 160px !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
+  padding: 24px 0 180px !important;  /* bottom pad = input height + gap */
 }
 
-/* Messages centered */
+/* ════════════════════════════════════════
+   MESSAGE ROWS — centered, max width
+   ════════════════════════════════════════ */
 .messageRow {
   width: 100% !important;
-  max-width: 760px !important;
+  max-width: 800px !important;
   padding: 0 20px !important;
   margin: 0 auto 4px !important;
   display: flex !important;
+  box-sizing: border-box !important;
 }
 
-/* ── INPUT AREA — fixed bottom inside .main ── */
+/* ════════════════════════════════════════
+   INPUT AREA — fixed bottom, centered
+   Key: left is offset by sidebar width
+   ════════════════════════════════════════ */
 .inputArea {
-  position: absolute !important;
+  position: fixed !important;
   bottom: 0 !important;
-  left: 0 !important;
+  left: 260px !important;   /* sidebar width */
   right: 0 !important;
+  z-index: 80 !important;
   display: flex !important;
   flex-direction: column !important;
-  align-items: center !important;
+  align-items: center !important;   /* centers inputWrap */
   padding: 10px 20px 24px !important;
-  z-index: 80 !important;
   pointer-events: none !important;
 }
+
 .inputArea > * {
   pointer-events: all !important;
 }
 
-/* Input model bar */
+/* ════════════════════════════════════════
+   INPUT MODEL BAR
+   ════════════════════════════════════════ */
 .inputModelBar {
   width: 100% !important;
-  max-width: 760px !important;
-  padding: 0 2px 8px !important;
+  max-width: 800px !important;
+  padding: 0 4px 8px !important;
+  display: flex !important;
+  align-items: center !important;
 }
 
-/* Input wrap */
+/* ════════════════════════════════════════
+   INPUT WRAP — centered, max width
+   ════════════════════════════════════════ */
 .inputWrap {
   width: 100% !important;
-  max-width: 760px !important;
+  max-width: 800px !important;
   border-radius: 18px !important;
-  padding: 6px 8px 6px 14px !important;
+  padding: 6px 8px 6px 16px !important;
   display: flex !important;
   flex-direction: column !important;
   transition: border-color 0.2s, box-shadow 0.2s !important;
 }
 
-/* Input row */
+/* ════════════════════════════════════════
+   INPUT ROW — mic + text + send
+   ════════════════════════════════════════ */
 .inputRow {
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
   width: 100% !important;
-  min-height: 44px !important;
+  min-height: 46px !important;
 }
 
-/* Message input */
 #message {
   flex: 1 !important;
   min-width: 0 !important;
-  height: 44px !important;
+  height: 46px !important;
   border: none !important;
   outline: none !important;
   font-size: 15px !important;
-  padding: 0 4px !important;
+  padding: 0 6px !important;
   background: transparent !important;
 }
 
-/* Input buttons */
 .plusBtn, .micBtn, .actionMainBtn {
   flex-shrink: 0 !important;
   width: 38px !important;
@@ -170,33 +194,35 @@ body {
   cursor: pointer !important;
 }
 
-/* ── WELCOME SCREEN ── */
+/* ════════════════════════════════════════
+   WELCOME SCREEN — centered in chatWrapper
+   ════════════════════════════════════════ */
 .welcomeScreen {
   position: absolute !important;
   inset: 0 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 0 24px 160px !important;
+  padding: 0 24px 180px !important;
   z-index: 2 !important;
   pointer-events: none !important;
 }
-.welcomeScreen > * {
-  pointer-events: all !important;
-}
-.chat-started .welcomeScreen {
-  display: none !important;
-}
+.welcomeScreen > * { pointer-events: all !important; }
+
+.chat-started .welcomeScreen { display: none !important; }
+
 .welcomeInner {
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
   gap: 40px !important;
   width: 100% !important;
-  max-width: 600px !important;
+  max-width: 640px !important;
 }
 
-/* ── NOTES PANEL ── */
+/* ════════════════════════════════════════
+   NOTES PANEL
+   ════════════════════════════════════════ */
 #notesPanel {
   position: fixed !important;
   top: 56px !important;
@@ -210,49 +236,11 @@ body {
 }
 #notesPanel.open { right: 0 !important; }
 
-body.notes-open .main { margin-right: 420px !important; }
+body.notes-open .inputArea  { right: 420px !important; }
 
-/* ── MOBILE (< 768px) ── */
-@media (max-width: 767px) {
-  .sidebar {
-    position: fixed !important;
-    top: 56px !important;
-    left: 0 !important;
-    height: calc(100vh - 56px) !important;
-    z-index: 999 !important;
-    transform: translateX(-100%) !important;
-  }
-  .sidebar.open,
-  .sidebar.show {
-    transform: translateX(0) !important;
-    box-shadow: 4px 0 24px rgba(0,0,0,0.4) !important;
-  }
-  .main {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-  }
-  .chat { padding-bottom: 140px !important; }
-  .messageRow { padding: 0 12px !important; }
-  .welcomeScreen { padding: 0 16px 150px !important; }
-  .topThemeSwitch { display: none !important; }
-  body.notes-open .main { margin-right: 0 !important; }
-  #notesPanel { display: none !important; }
-  #notesToggleBtn { display: none !important; }
-}
-
-/* ── TABLET (768px – 1024px) ── */
-@media (min-width: 768px) and (max-width: 1024px) {
-  .sidebar { width: 220px !important; }
-  #notesPanel { width: 320px !important; right: -340px !important; }
-  body.notes-open .main { margin-right: 320px !important; }
-}
-
-/* ── DESKTOP (> 1024px) ── */
-@media (min-width: 1025px) {
-  .sidebar { width: 260px !important; }
-}
-
-/* ── SIDEBAROVERLAY ── */
+/* ════════════════════════════════════════
+   SIDEBAR OVERLAY
+   ════════════════════════════════════════ */
 #sidebarOverlay {
   position: fixed !important;
   inset: 0 !important;
@@ -261,7 +249,9 @@ body.notes-open .main { margin-right: 420px !important; }
   display: none !important;
 }
 
-/* ── SETTINGS PAGE ── */
+/* ════════════════════════════════════════
+   SETTINGS PAGE
+   ════════════════════════════════════════ */
 .settings-container, .container {
   max-width: 860px !important;
   margin: 0 auto !important;
@@ -273,4 +263,76 @@ body.notes-open .main { margin-right: 420px !important; }
   border-radius: 12px !important;
   padding: 20px !important;
   margin-bottom: 16px !important;
+}
+
+/* ════════════════════════════════════════
+   TABLET  768px – 1024px
+   ════════════════════════════════════════ */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .sidebar        { width: 220px !important; }
+  .inputArea      { left: 220px !important; }
+  .inputWrap,
+  .inputModelBar  { max-width: 680px !important; }
+  .messageRow     { max-width: 680px !important; }
+  #notesPanel     { width: 320px !important; right: -340px !important; }
+  body.notes-open .inputArea { right: 320px !important; }
+}
+
+/* ════════════════════════════════════════
+   MOBILE  < 768px
+   ════════════════════════════════════════ */
+@media (max-width: 767px) {
+  /* Sidebar hidden off-screen, slides in */
+  .sidebar {
+    position: fixed !important;
+    top: 56px !important;
+    left: 0 !important;
+    height: calc(100vh - 56px) !important;
+    z-index: 999 !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s ease !important;
+  }
+  .sidebar.open,
+  .sidebar.show {
+    transform: translateX(0) !important;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.4) !important;
+  }
+
+  /* Input spans full width on mobile */
+  .inputArea {
+    left: 0 !important;
+    padding: 8px 12px 20px !important;
+  }
+  .inputWrap,
+  .inputModelBar { max-width: 100% !important; }
+
+  /* Messages full width on mobile */
+  .messageRow {
+    max-width: 100% !important;
+    padding: 0 12px !important;
+  }
+
+  /* Extra bottom padding so input never covers last message */
+  .chat { padding-bottom: 150px !important; }
+
+  /* Welcome screen */
+  .welcomeScreen  { padding: 0 16px 160px !important; }
+  .welcomeInner   { max-width: 100% !important; }
+
+  /* Hide desktop-only elements */
+  .topThemeSwitch { display: none !important; }
+  #notesPanel     { display: none !important; }
+  #notesToggleBtn { display: none !important; }
+
+  /* Notes disabled on mobile */
+  body.notes-open .inputArea  { right: 0 !important; }
+}
+
+/* ════════════════════════════════════════
+   LARGE DESKTOP  > 1400px
+   ════════════════════════════════════════ */
+@media (min-width: 1400px) {
+  .inputWrap,
+  .inputModelBar { max-width: 860px !important; }
+  .messageRow    { max-width: 860px !important; }
 }
