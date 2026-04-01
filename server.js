@@ -48,6 +48,71 @@ passport.deserializeUser((u, done) => done(null, u))
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "missing" })
 
+// ── GEMINI API (Google — free, high quality) ──────────────────────────────
+async function callGemini(messages, systemPrompt, maxTokens, res) {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) throw new Error("GEMINI_API_KEY not set")
+
+  // Convert messages to Gemini format
+  const geminiContents = messages.map(m => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: typeof m.content === "string" ? m.content : JSON.stringify(m.content) }]
+  }))
+
+  // Add current user message last
+  const lastMsg = geminiContents[geminiContents.length - 1]
+  if (!lastMsg || lastMsg.role !== "user") {
+    geminiContents.push({ role: "user", parts: [{ text: "Continue" }] })
+  }
+
+  const body = {
+    system_instruction: { parts: [{ text: systemPrompt }] },
+    contents: geminiContents,
+    generationConfig: {
+      maxOutputTokens: maxTokens,
+      temperature: 0.7
+    }
+  }
+
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=" + apiKey
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  })
+
+  if (!response.ok) {
+    const err = await response.text()
+    throw new Error("Gemini error: " + err.substring(0, 200))
+  }
+
+  // Stream SSE response
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let full = ""
+  let buffer = ""
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split("\n")
+    buffer = lines.pop() || ""
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue
+      const data = line.slice(6).trim()
+      if (!data || data === "[DONE]") continue
+      try {
+        const json = JSON.parse(data)
+        const token = json.candidates?.[0]?.content?.parts?.[0]?.text || ""
+        if (token) { full += token; res.write(token) }
+      } catch(e) {}
+    }
+  }
+  return full
+}
+
 mongoose.connect(process.env.MONGO_URI).then(() => console.log("MongoDB connected")).catch(e => console.error("DB error:", e.message))
 
 app.get("/ping", (req, res) => res.json({ alive: true, time: new Date().toISOString() }))
@@ -1242,41 +1307,67 @@ QUALITY RULES:
       { role: "user", content: finalUserContent }
     ]
 
-    // Try with primary model, fallback to 8b if error
     let full = ""
-    let attempts = [model, "llama-3.1-8b-instant"]
     let lastError = null
 
-    for (let attempt = 0; attempt < attempts.length; attempt++) {
-      const tryModel = attempts[attempt]
+    // ── MODEL ROUTING ─────────────────────────────────────────────────────
+    // Gemini 2.0 Flash = best quality, free (1500 req/day)
+    // Groq = fastest, fallback
+    // modelKey: d21=Datta2.1(groq fast), d42=Datta4.2(gemini), d54=Datta5.4(gemini)
+    const useGemini = process.env.GEMINI_API_KEY && !isImageFile &&
+      (modelKey === "d42" || modelKey === "d54" || modelKey === "d48")
+
+    if (useGemini) {
+      // Primary: Gemini 2.0 Flash
       try {
-        stream = await groq.chat.completions.create({
-          model: tryModel,
-          messages: groqMessages,
-          max_tokens: maxTok,
-          temperature: 0.7,
-          stream: true
-        })
-
-        for await (const part of stream) {
-          const token = part.choices?.[0]?.delta?.content
-          if (token) { full += token; res.write(token) }
-        }
+        console.log("Using Gemini 2.0 Flash for", modelKey)
+        full = await callGemini(
+          [...groqMessages.slice(1)], // skip system (sent separately)
+          groqMessages[0].content,    // system prompt
+          maxTok,
+          res
+        )
         lastError = null
-        break // success - exit retry loop
+      } catch(geminiErr) {
+        console.error("Gemini failed:", geminiErr.message, "- falling back to Groq")
+        lastError = geminiErr
+        full = ""
+        res.write("")  // keep connection alive
+      }
+    }
 
-      } catch(groqErr) {
-        lastError = groqErr
-        console.error("Groq error (attempt " + (attempt+1) + "):", groqErr.message)
-        if (attempt === 0 && attempts.length > 1) {
-          res.write("\n\nSwitching to faster model...\n\n")
-          full = ""
-          continue
+    // Groq fallback (or primary for Datta 2.1 / vision / personas)
+    if (!useGemini || (lastError && full === "")) {
+      if (lastError) res.write("\n\n")  // separator after failed attempt
+      const groqAttempts = [model, "llama-3.1-8b-instant"]
+      for (let attempt = 0; attempt < groqAttempts.length; attempt++) {
+        const tryModel = groqAttempts[attempt]
+        try {
+          stream = await groq.chat.completions.create({
+            model: tryModel,
+            messages: groqMessages,
+            max_tokens: maxTok,
+            temperature: 0.7,
+            stream: true
+          })
+          for await (const part of stream) {
+            const token = part.choices?.[0]?.delta?.content
+            if (token) { full += token; res.write(token) }
+          }
+          lastError = null
+          break
+        } catch(groqErr) {
+          lastError = groqErr
+          console.error("Groq error (attempt " + (attempt+1) + "):", groqErr.message)
+          if (attempt === 0 && groqAttempts.length > 1) {
+            full = ""
+            continue
+          }
         }
       }
     }
 
-    // If all attempts failed
+    // If ALL providers failed
     if (lastError && full === "") {
       const errMsg = "I'm having trouble connecting right now. Please try again in a few seconds."
       res.write(errMsg)
