@@ -22,6 +22,15 @@ window.addEventListener("DOMContentLoaded", function() {
 })
 
 
+// SAFE CONTENT EXTRACTOR — prevents [object Object]
+function safeContent(c) {
+  if (!c && c !== 0) return ""
+  if (typeof c === "string") return c
+  if (Array.isArray(c)) return c.filter(p => p.type === "text").map(p => p.text || "").join("") || "[Image]"
+  if (typeof c === "object") return c.text || c.content || JSON.stringify(c)
+  return String(c)
+}
+
 // SHARE CHAT
 async function shareChatLink() {
   if (!currentChatId) { showToast("Start a chat first!"); return }
@@ -902,8 +911,8 @@ async function send() {
         fullText += parts[0]
         currentChatId = parts[1].trim()
       } else {
-        // Strip keep-alive spaces
-        if (chunk.trim()) fullText += chunk
+        const cleanChunk = safeContent(chunk)
+        if (cleanChunk.trim()) fullText += cleanChunk
       }
     }
 
@@ -1107,14 +1116,14 @@ async function openChat(chatId) {
     if (m.role === "user") {
       chatBox.innerHTML += `
         <div class="messageRow userRow">
-          <div class="userBubble">${m.content}</div>
+          <div class="userBubble">${safeContent(m.content)}</div>
         </div>
       `
     } else {
       chatBox.innerHTML += `
         <div class="messageRow">
           <div class="aiContent">
-            <div class="aiBubble">${marked.parse(m.content)}</div>
+            <div class="aiBubble">${marked.parse(safeContent(m.content))}</div>
             <div class="aiActions">
               <button class="actionBtn" title="Copy" onclick="copyText(this)"><i data-lucide="copy"></i></button>
               <button class="actionBtn" title="Download as PDF" onclick="downloadAsPDF(this)"><i data-lucide="file-down"></i></button>
@@ -1468,12 +1477,10 @@ async function loadSmartSuggestions() {
   // Just use static chips - no API call needed
   // Dynamic chips from server were causing [object Object] error
   chips.innerHTML = `
-    <button class="chip" onclick="useChip(this)">🌐 Build me a portfolio website</button>
-    <button class="chip" onclick="useChip(this)">🐍 Write a Python web scraper</button>
-    <button class="chip" onclick="useChip(this)">📰 Latest tech news today</button>
-    <button class="chip" onclick="useChip(this)">🧠 Explain machine learning</button>
-    <button class="chip" onclick="useChip(this)">✍️ Write a poem about nature</button>
-    <button class="chip" onclick="useChip(this)">💼 Create a business plan</button>
+    <button class="suggCard" onclick="useChip(this)"><span class="suggIcon">🌐</span><span class="suggText">Build me a portfolio website</span></button>
+    <button class="suggCard" onclick="useChip(this)"><span class="suggIcon">🐍</span><span class="suggText">Write a Python web scraper</span></button>
+    <button class="suggCard" onclick="useChip(this)"><span class="suggIcon">🧠</span><span class="suggText">Explain machine learning</span></button>
+    <button class="suggCard" onclick="useChip(this)"><span class="suggIcon">💼</span><span class="suggText">Create a business plan</span></button>
   `
 }
 window.loadSmartSuggestions = loadSmartSuggestions
