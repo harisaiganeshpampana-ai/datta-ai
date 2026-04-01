@@ -104,38 +104,6 @@
   </div>
 </div>
 
-<!-- NOTES PANEL — desktop/tablet only -->
-<div id="notesPanel" class="notesPanel">
-  <div class="notesPanelHeader">
-    <div class="notesPanelTitle">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-      </svg>
-      My Notes
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <button class="notesPanelBtn" onclick="copyNotes()" title="Copy all">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      </button>
-      <button class="notesPanelBtn" onclick="clearNotes()" title="Clear notes">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
-      </button>
-      <button class="notesPanelBtn" onclick="downloadNotes()" title="Download">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      </button>
-      <button class="notesPanelBtn notesPanelClose" onclick="toggleNotes()" title="Close">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-  </div>
-  <textarea id="notesTextarea" class="notesTextarea" placeholder="Take notes here...&#10;&#10;• Your ideas&#10;• Key points from AI&#10;• Anything you want to remember"></textarea>
-  <div class="notesPanelFooter">
-    <span id="notesCharCount">0 characters</span>
-    <span id="notesSavedStatus" class="notesSaved">Saved</span>
-  </div>
-</div>
-
 <!-- SIDEBAR -->
 <div class="sidebar">
 
@@ -370,7 +338,39 @@
 
 </div>
 
-<script src="chat.js?v=40"></script>
+<script src="chat.js?v=41"></script>
+
+<!-- NOTES PANEL — fixed to body, desktop/tablet only -->
+<div id="notesPanel" class="notesPanel">
+  <div class="notesPanelHeader">
+    <div class="notesPanelTitle">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+      </svg>
+      My Notes
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="notesPanelBtn" onclick="copyNotes()" title="Copy all">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+      <button class="notesPanelBtn" onclick="clearNotes()" title="Clear notes">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+      </button>
+      <button class="notesPanelBtn" onclick="downloadNotes()" title="Download">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>
+      <button class="notesPanelBtn notesPanelClose" onclick="toggleNotes()" title="Close">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <textarea id="notesTextarea" class="notesTextarea" placeholder="Take notes here...&#10;&#10;• Your ideas&#10;• Key points from AI&#10;• Anything you want to remember"></textarea>
+  <div class="notesPanelFooter">
+    <span id="notesCharCount">0 characters</span>
+    <span id="notesSavedStatus" class="notesSaved">Saved</span>
+  </div>
+</div>
 
 <script>
   // SPLASH SCREEN - skip if returning from settings
