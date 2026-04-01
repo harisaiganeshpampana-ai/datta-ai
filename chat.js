@@ -1403,9 +1403,12 @@ function saveChatTitle(title) {
 window.send = send
 loadSidebar()
 
-// Init dynamic button to send state
 window.addEventListener("DOMContentLoaded", function() {
+  // Init send/stop button
   setGenerating(false)
+  // Init theme buttons to reflect current theme
+  const t = localStorage.getItem("datta_theme") || "dark"
+  setTheme(t, true)
 })
 
 // Load smart suggestions for welcome screen
@@ -1592,25 +1595,26 @@ async function changePassword() {
 
 // SET THEME
 function setTheme(theme, silent) {
-  // Only allow 3 themes
   if (!["dark","light","eye"].includes(theme)) theme = "dark"
 
-  // Save
+  // Save + apply
   localStorage.setItem("datta_theme", theme)
-
-  // Apply via data-theme attribute (CSS variables handle everything)
   document.body.setAttribute("data-theme", theme)
-
-  // Remove all old theme classes (cleanup legacy)
   document.body.classList.remove("light","light-theme","midnight","forest","ocean","sunset")
 
-  // Update theme buttons active state
+  // Update settings modal buttons (Dark/Light/Eye)
   ;["Dark","Light","Eye"].forEach(t => {
     const btn = document.getElementById("theme" + t)
     if (btn) btn.classList.toggle("active", t.toLowerCase() === theme)
   })
 
-  if (!silent) showSettingsMsg("Theme changed!", "success")
+  // Update topbar switcher buttons
+  ;["Dark","Light","Eye"].forEach(t => {
+    const btn = document.getElementById("topTheme" + t)
+    if (btn) btn.classList.toggle("active", t.toLowerCase() === theme)
+  })
+
+  if (!silent) showSettingsMsg("Theme updated!", "success")
 }
 
 // SET FONT SIZE
@@ -2228,10 +2232,7 @@ document.addEventListener("DOMContentLoaded", function() {
     })
   }
 
-  // Load saved theme
-  const savedTheme = localStorage.getItem("datta_theme")
-  if (savedTheme === "light") applyLightTheme()
-  else applyDarkTheme()
+  // Theme loaded by setTheme() on startup
 
   // Load saved model
   const savedModel = localStorage.getItem("datta_model")
@@ -2241,14 +2242,11 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 })
 
-// ── FEATURE 2: DARK/LIGHT THEME ─────────────────────────────────────────────
+// Theme toggle (cycles dark → light → eye)
 function toggleTheme() {
-  const cur = localStorage.getItem("datta_theme") || "dark"
-  const next = cur === "dark" ? "light" : cur === "light" ? "eye" : "dark"
-  setTheme(next)
+  const cur = document.body.getAttribute("data-theme") || "dark"
+  setTheme(cur === "dark" ? "light" : cur === "light" ? "eye" : "dark")
 }
-function applyLightTheme() { setTheme("light") }
-function applyDarkTheme() { setTheme("dark") }
 window.toggleTheme = toggleTheme
 
 // ── FEATURE 3: MOBILE UI - Auto collapse sidebar on mobile ──────────────────
@@ -2918,34 +2916,8 @@ window.send = function() {
 
 window.trackEvent = trackEvent
 
-// ══════════════════════════════════════════════════════
-// FULL THEME SYSTEM - applies to entire app
-// ══════════════════════════════════════════════════════
-const THEMES = {
-  dark:     { bg:"#0a0a0a", bg2:"#111", bg3:"#1a1a1a", border:"#222", text:"#fff", text2:"#aaa", text3:"#666", accent:"#00ff88", accent2:"#00ccff" },
-  light:    { bg:"#f5f5f5", bg2:"#fff", bg3:"#f0f0f0", border:"#ddd", text:"#111", text2:"#555", text3:"#999", accent:"#00aa55", accent2:"#0088cc" },
-  midnight: { bg:"#000010", bg2:"#000820", bg3:"#001030", border:"#001166", text:"#e0e8ff", text2:"#8899cc", text3:"#445588", accent:"#4488ff", accent2:"#88aaff" },
-  forest:   { bg:"#050f05", bg2:"#0a180a", bg3:"#0f2010", border:"#1a4a1a", text:"#e0ffe0", text2:"#88bb88", text3:"#4a7a4a", accent:"#44cc44", accent2:"#88ff88" },
-  ocean:    { bg:"#000a18", bg2:"#001025", bg3:"#001835", border:"#003366", text:"#e0f0ff", text2:"#7799cc", text3:"#334466", accent:"#0088ff", accent2:"#00ccff" },
-  sunset:   { bg:"#100500", bg2:"#1a0800", bg3:"#220a00", border:"#441500", text:"#fff0e0", text2:"#cc9966", text3:"#775533", accent:"#ff8800", accent2:"#ff4400" }
-}
-
-const WALLPAPERS = {
-  none: "",
-  dots: "radial-gradient(circle,#222 1px,transparent 1px) 0 0/20px 20px",
-  grid: "linear-gradient(#1a1a1a 1px,transparent 1px) 0 0/20px 20px,linear-gradient(90deg,#1a1a1a 1px,transparent 1px) 0 0/20px 20px",
-  waves: "linear-gradient(135deg,#001a2a,#002a3a,#001a2a)",
-  gradient1: "linear-gradient(135deg,#0a0a2a,#1a0a2a,#0a1a2a)",
-  gradient2: "linear-gradient(135deg,#0a1a0a,#1a2a0a,#0a1a1a)",
-  stars: "radial-gradient(circle,#fff 1px,transparent 1px) 0 0/30px 30px",
-  mesh: "linear-gradient(135deg,#00ff8811,#00ccff11,#aa44ff11)"
-}
-
-function applyFullTheme() {
-  // Handled by setTheme() and theme.css variables
-  const theme = localStorage.getItem("datta_theme") || "dark"
-  setTheme(theme, true)
-}
+// applyFullTheme — kept as no-op alias for backward compat
+function applyFullTheme() { setTheme(document.body.getAttribute("data-theme") || "dark", true) }
 window.applyFullTheme = applyFullTheme
 
 // SHOW ADMIN LINK if user is admin
