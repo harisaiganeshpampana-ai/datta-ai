@@ -1,241 +1,226 @@
 /* ================================================
-   DATTA AI — GLOBAL LAYOUT SYSTEM v2
-   This file loads LAST and wins all conflicts.
+   DATTA AI — GLOBAL LAYOUT SYSTEM
+   Clean flexbox layout, no margin hacks
    ================================================ */
 
-/* BASE */
 *, *::before, *::after { box-sizing: border-box; }
 html { height: 100%; }
-body { height: 100%; overflow: hidden; margin: 0; background: #0d0d0f; color: #e8e8f0; display: flex; flex-direction: column; }
+body {
+  margin: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow: hidden;
+}
 
-/* ── TOPBAR ───────────────────────────────────── */
+/* ── TOPBAR ── */
 .topbar {
   position: fixed !important;
-  top: 0 !important; left: 0 !important; right: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
   height: 56px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  padding: 0 16px !important;
-  background: rgba(13,13,15,0.94) !important;
-  backdrop-filter: blur(20px) !important;
-  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
-  z-index: 100 !important;
+  padding: 0 12px !important;
+  z-index: 1000 !important;
+  flex-shrink: 0 !important;
 }
 
-/* ── SIDEBAR ──────────────────────────────────── */
-.sidebar {
-  position: fixed !important;
-  top: 56px !important; left: 0 !important;
-  width: 260px !important;
+/* Menu button — always on top, always clickable */
+.menuBtn {
+  position: relative !important;
+  z-index: 1001 !important;
+  pointer-events: all !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+}
+
+/* ── APP BODY (below topbar) ── */
+.app-body {
+  display: flex !important;
+  flex: 1 !important;
+  margin-top: 56px !important;
   height: calc(100vh - 56px) !important;
-  background: #111117 !important;
-  border-right: 1px solid rgba(255,255,255,0.05) !important;
-  overflow-y: auto !important;
-  z-index: 90 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  transform: translateX(0) !important;
+  overflow: hidden !important;
+  position: relative !important;
 }
 
-/* ── MAIN CONTENT ─────────────────────────────── */
-.main {
-  position: fixed !important;
-  top: 56px !important;
-  left: 260px !important;
-  right: 0 !important;
-  bottom: 0 !important;
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 260px !important;
+  flex-shrink: 0 !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   display: flex !important;
   flex-direction: column !important;
-  background: #0d0d0f !important;
+  position: relative !important;
+  z-index: 90 !important;
+  transition: transform 0.3s ease !important;
+}
+
+/* ── MAIN CONTENT ── */
+.main {
+  flex: 1 !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
   overflow: hidden !important;
+  position: relative !important;
   margin: 0 !important;
 }
 
-/* ── CHAT WRAPPER ─────────────────────────────── */
+/* ── CHAT WRAPPER ── */
 .chatWrapper {
   flex: 1 !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
   position: relative !important;
-  min-height: 0 !important;
 }
 
-/* ── CHAT SCROLL AREA ─────────────────────────── */
+/* ── CHAT SCROLL AREA ── */
 .chat {
   flex: 1 !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
-  padding: 24px 20px 160px !important;
+  padding: 24px 0 160px !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  min-height: 0 !important;
 }
 
-/* ── MESSAGES ─────────────────────────────────── */
+/* Messages centered */
 .messageRow {
   width: 100% !important;
   max-width: 760px !important;
-  padding: 0 !important;
+  padding: 0 20px !important;
   margin: 0 auto 4px !important;
   display: flex !important;
-  align-items: flex-start !important;
 }
 
-.messageRow.userRow {
-  flex-direction: row-reverse !important;
-}
-
-/* ── INPUT AREA — KEY FIX ─────────────────────── */
+/* ── INPUT AREA — fixed bottom inside .main ── */
 .inputArea {
-  position: fixed !important;
+  position: absolute !important;
   bottom: 0 !important;
-  left: 260px !important;
+  left: 0 !important;
   right: 0 !important;
-  top: auto !important;
-  transform: none !important;
-  width: auto !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
   padding: 10px 20px 24px !important;
-  background: linear-gradient(to top, #0d0d0f 55%, transparent) !important;
   z-index: 80 !important;
-  margin: 0 !important;
+  pointer-events: none !important;
+}
+.inputArea > * {
+  pointer-events: all !important;
 }
 
-/* Model pill row */
+/* Input model bar */
 .inputModelBar {
   width: 100% !important;
   max-width: 760px !important;
-  display: flex !important;
-  justify-content: flex-start !important;
-  padding: 0 4px 8px !important;
-  margin: 0 !important;
+  padding: 0 2px 8px !important;
 }
 
 /* Input wrap */
 .inputWrap {
   width: 100% !important;
   max-width: 760px !important;
-  background: rgba(255,255,255,0.05) !important;
-  border: 1px solid rgba(255,255,255,0.1) !important;
   border-radius: 18px !important;
   padding: 6px 8px 6px 14px !important;
   display: flex !important;
   flex-direction: column !important;
-  transition: border-color 0.25s, box-shadow 0.25s !important;
-  margin: 0 auto !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
 }
 
-.inputWrap:focus-within {
-  border-color: rgba(0,201,167,0.45) !important;
-  box-shadow: 0 0 0 3px rgba(0,201,167,0.08) !important;
-  background: rgba(255,255,255,0.07) !important;
-}
-
-/* Input row: plus + text + mic + send */
+/* Input row */
 .inputRow {
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
   width: 100% !important;
-  min-height: 48px !important;
-  padding: 0 !important;
-  margin: 0 !important;
+  min-height: 44px !important;
 }
 
-/* Text input inside row */
+/* Message input */
 #message {
   flex: 1 !important;
   min-width: 0 !important;
   height: 44px !important;
-  background: transparent !important;
   border: none !important;
   outline: none !important;
   font-size: 15px !important;
-  color: #e8e8f0 !important;
-  caret-color: #00c9a7 !important;
   padding: 0 4px !important;
-  font-family: inherit !important;
+  background: transparent !important;
 }
 
-#message::placeholder { color: rgba(200,200,220,0.32) !important; }
-
-/* All input action buttons same size */
-.plusBtn, .micBtn, .actionMainBtn, .stopBtn, .sendBtn {
+/* Input buttons */
+.plusBtn, .micBtn, .actionMainBtn {
   flex-shrink: 0 !important;
   width: 38px !important;
   height: 38px !important;
+  border-radius: 12px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   cursor: pointer !important;
 }
 
-/* ── WELCOME SCREEN ───────────────────────────── */
+/* ── WELCOME SCREEN ── */
 .welcomeScreen {
   position: absolute !important;
-  top: 0 !important; left: 0 !important;
-  right: 0 !important; bottom: 0 !important;
+  inset: 0 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 0 24px 140px !important;
+  padding: 0 24px 160px !important;
   z-index: 2 !important;
+  pointer-events: none !important;
+}
+.welcomeScreen > * {
   pointer-events: all !important;
 }
-
 .chat-started .welcomeScreen {
   display: none !important;
 }
-
 .welcomeInner {
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  text-align: center !important;
   gap: 40px !important;
   width: 100% !important;
   max-width: 600px !important;
 }
 
-/* ── NOTES PANEL ──────────────────────────────── */
-body.notes-open .inputArea {
-  right: 420px !important;
+/* ── NOTES PANEL ── */
+#notesPanel {
+  position: fixed !important;
+  top: 56px !important;
+  right: -460px !important;
+  width: 420px !important;
+  height: calc(100vh - 56px) !important;
+  z-index: 995 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  transition: right 0.3s cubic-bezier(0.4,0,0.2,1) !important;
 }
-body.notes-open .main {
-  right: 420px !important;
-}
+#notesPanel.open { right: 0 !important; }
 
-/* ── SETTINGS / OTHER PAGES ───────────────────── */
-.pageContent {
-  max-width: 1100px !important;
-  margin: 0 auto !important;
-  padding: 80px 20px 40px !important;
-  width: 100% !important;
-}
+body.notes-open .main { margin-right: 420px !important; }
 
-/* ── RESPONSIVE: TABLET (768–1100px) ─────────── */
-@media (min-width: 768px) and (max-width: 1100px) {
-  .sidebar { width: 220px !important; }
-  .main { left: 220px !important; }
-  .inputArea { left: 220px !important; }
-  body.notes-open .main { right: 340px !important; }
-  body.notes-open .inputArea { right: 340px !important; }
-}
-
-/* ── RESPONSIVE: MOBILE (< 768px) ────────────── */
+/* ── MOBILE (< 768px) ── */
 @media (max-width: 767px) {
   .sidebar {
-    transform: translateX(-100%) !important;
-    top: 0 !important;
-    height: 100vh !important;
-    width: 280px !important;
+    position: fixed !important;
+    top: 56px !important;
+    left: 0 !important;
+    height: calc(100vh - 56px) !important;
     z-index: 999 !important;
-    transition: transform 0.3s !important;
+    transform: translateX(-100%) !important;
   }
   .sidebar.open,
   .sidebar.show {
@@ -243,23 +228,49 @@ body.notes-open .main {
     box-shadow: 4px 0 24px rgba(0,0,0,0.4) !important;
   }
   .main {
-    left: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
-  .inputArea {
-    left: 0 !important;
-    padding: 8px 12px 20px !important;
-  }
-  .chat {
-    padding: 16px 12px 140px !important;
-  }
-  .welcomeScreen {
-    padding: 0 16px 140px !important;
-  }
-  .inputWrap {
-    border-radius: 16px !important;
-  }
-  body.notes-open .main { right: 0 !important; }
-  body.notes-open .inputArea { right: 0 !important; }
+  .chat { padding-bottom: 140px !important; }
+  .messageRow { padding: 0 12px !important; }
+  .welcomeScreen { padding: 0 16px 150px !important; }
+  .topThemeSwitch { display: none !important; }
+  body.notes-open .main { margin-right: 0 !important; }
   #notesPanel { display: none !important; }
   #notesToggleBtn { display: none !important; }
+}
+
+/* ── TABLET (768px – 1024px) ── */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .sidebar { width: 220px !important; }
+  #notesPanel { width: 320px !important; right: -340px !important; }
+  body.notes-open .main { margin-right: 320px !important; }
+}
+
+/* ── DESKTOP (> 1024px) ── */
+@media (min-width: 1025px) {
+  .sidebar { width: 260px !important; }
+}
+
+/* ── SIDEBAROVERLAY ── */
+#sidebarOverlay {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0,0,0,0.5) !important;
+  z-index: 998 !important;
+  display: none !important;
+}
+
+/* ── SETTINGS PAGE ── */
+.settings-container, .container {
+  max-width: 860px !important;
+  margin: 0 auto !important;
+  padding: 80px 20px 60px !important;
+  width: 100% !important;
+}
+.settings-card {
+  width: 100% !important;
+  border-radius: 12px !important;
+  padding: 20px !important;
+  margin-bottom: 16px !important;
 }
