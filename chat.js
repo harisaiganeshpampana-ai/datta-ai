@@ -1511,7 +1511,7 @@ function loadSettingsUI() {
   const usernameInput = document.getElementById("newUsername")
   if (usernameInput) usernameInput.placeholder = user.username || "Enter new username"
 
-  // Load theme
+  // Load theme — apply and highlight active button
   const theme = localStorage.getItem("datta_theme") || "dark"
   setTheme(theme, true)
 
@@ -1592,17 +1592,25 @@ async function changePassword() {
 
 // SET THEME
 function setTheme(theme, silent) {
+  // Only allow 3 themes
+  if (!["dark","light","eye"].includes(theme)) theme = "dark"
+
+  // Save
   localStorage.setItem("datta_theme", theme)
-  if (theme === "light") {
-    document.body.classList.add("light")
-    document.getElementById("themeDark")?.classList.remove("active")
-    document.getElementById("themeLight")?.classList.add("active")
-  } else {
-    document.body.classList.remove("light")
-    document.getElementById("themeDark")?.classList.add("active")
-    document.getElementById("themeLight")?.classList.remove("active")
-  }
-  if (!silent) showSettingsMsg("Theme changed to " + theme + " mode!", "success")
+
+  // Apply via data-theme attribute (CSS variables handle everything)
+  document.body.setAttribute("data-theme", theme)
+
+  // Remove all old theme classes (cleanup legacy)
+  document.body.classList.remove("light","light-theme","midnight","forest","ocean","sunset")
+
+  // Update theme buttons active state
+  ;["Dark","Light","Eye"].forEach(t => {
+    const btn = document.getElementById("theme" + t)
+    if (btn) btn.classList.toggle("active", t.toLowerCase() === theme)
+  })
+
+  if (!silent) showSettingsMsg("Theme changed!", "success")
 }
 
 // SET FONT SIZE
@@ -1678,10 +1686,11 @@ async function deleteAccount() {
 
 // Apply saved theme on load
 ;(function() {
+  // Apply theme instantly before page renders (no flash)
   const theme = localStorage.getItem("datta_theme") || "dark"
-  if (theme === "light") document.body.classList.add("light")
+  document.body.setAttribute("data-theme", ["dark","light","eye"].includes(theme) ? theme : "dark")
 
-  // Apply saved language to system prompt
+  // Apply saved language
   const lang = localStorage.getItem("datta_language")
   if (lang) window.dattaLanguage = lang
 })()
@@ -2234,46 +2243,37 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // ── FEATURE 2: DARK/LIGHT THEME ─────────────────────────────────────────────
 function toggleTheme() {
-  const isLight = document.body.classList.contains("light-theme")
-  if (isLight) {
-    applyDarkTheme()
-    localStorage.setItem("datta_theme", "dark")
-  } else {
-    applyLightTheme()
-    localStorage.setItem("datta_theme", "light")
-  }
+  const cur = localStorage.getItem("datta_theme") || "dark"
+  const next = cur === "dark" ? "light" : cur === "light" ? "eye" : "dark"
+  setTheme(next)
 }
-
-function applyLightTheme() {
-  document.body.classList.add("light-theme")
-  const btn = document.getElementById("themeToggleBtn")
-  if (btn) btn.textContent = "☀️"
-}
-
-function applyDarkTheme() {
-  document.body.classList.remove("light-theme")
-  const btn = document.getElementById("themeToggleBtn")
-  if (btn) btn.textContent = "🌙"
-}
-
+function applyLightTheme() { setTheme("light") }
+function applyDarkTheme() { setTheme("dark") }
 window.toggleTheme = toggleTheme
 
 // ── FEATURE 3: MOBILE UI - Auto collapse sidebar on mobile ──────────────────
 function toggleSidebar() {
   const sidebar = document.querySelector(".sidebar")
   if (!sidebar) return
-  sidebar.classList.toggle("show")
 
-  // Add overlay for mobile
+  // Toggle both "open" and "show" for CSS compatibility
+  const isOpen = sidebar.classList.contains("open")
+  sidebar.classList.toggle("open", !isOpen)
+  sidebar.classList.toggle("show", !isOpen)
+
+  // Overlay for mobile
   let overlay = document.getElementById("sidebarOverlay")
   if (!overlay) {
     overlay = document.createElement("div")
     overlay.id = "sidebarOverlay"
-    overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99;display:none;"
-    overlay.onclick = () => { sidebar.classList.remove("show"); overlay.style.display = "none" }
+    overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:998;display:none;"
+    overlay.onclick = () => {
+      sidebar.classList.remove("open","show")
+      overlay.style.display = "none"
+    }
     document.body.appendChild(overlay)
   }
-  overlay.style.display = sidebar.classList.contains("show") ? "block" : "none"
+  overlay.style.display = !isOpen ? "block" : "none"
 }
 
 window.toggleSidebar = toggleSidebar
@@ -2942,60 +2942,10 @@ const WALLPAPERS = {
 }
 
 function applyFullTheme() {
-  const themeName = localStorage.getItem("datta_theme") || "dark"
-  const t = THEMES[themeName] || THEMES.dark
-  const root = document.documentElement
-
-  // Apply CSS variables
-  Object.entries(t).forEach(([k, v]) => root.style.setProperty("--" + k, v))
-
-  // Apply directly to key elements
-  document.body.style.background = t.bg
-  document.body.style.color = t.text
-
-  const sidebar = document.querySelector(".sidebar")
-  if (sidebar) { sidebar.style.background = t.bg2; sidebar.style.borderColor = t.border }
-
-  const topBar = document.querySelector(".topBar, .topbar")
-  if (topBar) { topBar.style.background = t.bg2; topBar.style.borderColor = t.border }
-
-  const inputWrap = document.querySelector(".inputWrap")
-  if (inputWrap) { inputWrap.style.background = t.bg2; inputWrap.style.borderColor = t.border }
-
-  // Apply wallpaper to chat area
-  const chatArea = document.querySelector(".chat, #chat")
-  const wp = localStorage.getItem("datta_wallpaper") || "none"
-  const wpCustom = localStorage.getItem("datta_wallpaper_custom")
-  if (chatArea) {
-    if (wp === "custom" && wpCustom) {
-      chatArea.style.backgroundImage = "url(" + wpCustom + ")"
-      chatArea.style.backgroundSize = "cover"
-    } else if (WALLPAPERS[wp]) {
-      chatArea.style.background = WALLPAPERS[wp]
-    } else {
-      chatArea.style.background = ""
-    }
-  }
-
-  // Update theme toggle button
-  const themeBtn = document.getElementById("themeToggleBtn")
-  if (themeBtn) {
-    const icons = { dark:"🌙", light:"☀️", midnight:"🌌", forest:"🌿", ocean:"🌊", sunset:"🌅" }
-    themeBtn.textContent = icons[themeName] || "🌙"
-  }
-
-  // Apply custom AI name
-  const aiName = localStorage.getItem("datta_ai_name") || "Datta AI"
-  const titles = document.querySelectorAll(".topTitle, .sidebarBrand")
-  titles.forEach(t => { if (!t.textContent.includes("AI") || t.textContent === "DATTA AI") t.textContent = aiName.toUpperCase() })
+  // Handled by setTheme() and theme.css variables
+  const theme = localStorage.getItem("datta_theme") || "dark"
+  setTheme(theme, true)
 }
-
-// Apply theme immediately on load
-applyFullTheme()
-
-// Also apply after DOM loads
-window.addEventListener("DOMContentLoaded", applyFullTheme)
-
 window.applyFullTheme = applyFullTheme
 
 // SHOW ADMIN LINK if user is admin
