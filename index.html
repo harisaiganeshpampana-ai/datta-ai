@@ -291,18 +291,14 @@
             </svg>
           </button>
 
-          <!-- Send button -->
-          <button class="sendBtn" id="sendBtn" onclick="send()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="12" y1="19" x2="12" y2="5"/>
-              <polyline points="5 12 12 5 19 12"/>
-            </svg>
-          </button>
-          <!-- Stop button - shows in place of send while generating -->
-          <button class="stopBtn" id="stopBtn" onclick="stopGeneration()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="3" y="3" width="18" height="18" rx="3"/>
-            </svg>
+          <!-- ONE dynamic button: Send ↔ Stop -->
+          <button class="actionMainBtn" id="actionMainBtn" onclick="handleMainBtn()">
+            <span id="actionMainBtnInner" class="btn-send-state">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                <line x1="12" y1="19" x2="12" y2="5"/>
+                <polyline points="5 12 12 5 19 12"/>
+              </svg>
+            </span>
           </button>
         </div>
       </div>
