@@ -237,8 +237,10 @@ body.notes-open .main {
     z-index: 999 !important;
     transition: transform 0.3s !important;
   }
-  .sidebar.open, .sidebar.show {
+  .sidebar.open,
+  .sidebar.show {
     transform: translateX(0) !important;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.4) !important;
   }
   .main {
     left: 0 !important;
