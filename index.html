@@ -1296,6 +1296,37 @@ body.notes-open .input-area {
 .sidebar {
   transition: width 0.25s ease, opacity 0.25s ease !important;
 }
+
+/* ── ACTION BUTTONS — always clickable, never blocked ── */
+.aiActions, .ai-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  opacity: 0 !important;
+  transition: opacity 0.15s !important;
+  padding: 2px 0 !important;
+  pointer-events: all !important;
+  position: relative !important;
+  z-index: 10 !important;
+}
+.msg-row:hover .aiActions,
+.msg-row:hover .ai-actions { opacity: 1 !important; }
+
+.actionBtn {
+  width: 30px !important; height: 30px !important;
+  border-radius: 7px !important; border: none !important;
+  background: none !important;
+  color: var(--text3) !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  cursor: pointer !important;
+  pointer-events: all !important;
+  position: relative !important; z-index: 10 !important;
+  transition: background 0.12s, color 0.12s !important;
+}
+.actionBtn:hover { background: var(--bg3) !important; color: var(--text) !important; }
+.actionBtn svg, .actionBtn i { pointer-events: none !important; }
+.actionDivider { width:1px; height:14px; background:var(--border); margin:0 2px; flex-shrink:0; }
+
 </style>
 </head>
 
