@@ -1000,13 +1000,17 @@ async function send() {
       await new Promise(r => setTimeout(r, 300))
     }
 
+    // Generate unique messageId for this response
+    const msgId = "msg_" + Date.now() + "_" + Math.random().toString(36).slice(2,7)
+    const _selModel = localStorage.getItem("datta_model_key") || "d21"
+
     // Replace typing indicator with response bubble
     aiDiv.innerHTML = `
       <div class="aiContent">
         <div class="ai-bubble">
           <span class="stream"></span>
         </div>
-        <div class="aiActions">
+        <div class="aiActions" data-msg-id="${msgId}" data-model="${_selModel}">
           <button class="actionBtn" title="Copy" onclick="copyText(this)"><i data-lucide="copy"></i></button>
           <button class="actionBtn" title="Download as PDF" onclick="downloadAsPDF(this)"><i data-lucide="file-down"></i></button>
           <button class="actionBtn" title="Save to File Manager" onclick="saveToFileManager(this)"><i data-lucide="bookmark"></i></button>
@@ -2076,34 +2080,100 @@ window.deleteAllChats = deleteAllChats
 window.deleteAccount = deleteAccount
 
 // LIKE / DISLIKE
-function likeMsg(btn) {
+function _sendFeedback(btn, type) {
+  const actions  = btn.closest(".aiActions, .ai-actions")
+  const msgId    = actions?.getAttribute("data-msg-id") || ""
+  const model    = actions?.getAttribute("data-model") || ""
+  const chatId   = currentChatId || ""
   const wasActive = btn.classList.contains("active")
-  const row = btn.closest(".aiActions, .ai-actions, .msg-row, .messageRow")
-  row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => {
+
+  // Toggle all buttons off first
+  actions?.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => {
     b.classList.remove("active")
     b.style.color = ""
+    b.style.transform = ""
   })
-  if (!wasActive) {
-    btn.classList.add("active")
-    btn.style.color = "#00ff88"
+
+  if (wasActive) return  // toggled off — no backend call needed
+
+  // Highlight chosen button
+  btn.classList.add("active")
+  btn.style.color = type === "like" ? "#00ff88" : "#ff4444"
+  btn.style.transform = "scale(1.2)"
+  setTimeout(() => { btn.style.transform = "" }, 200)
+
+  // Send to backend — fire and forget
+  if (msgId) {
+    fetch(SERVER + "/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messageId: msgId, feedback: type, chatId, model, token: getToken() })
+    })
+    .then(r => r.json())
+    .then(d => { if (d.success) console.log("[FEEDBACK]", type, msgId) })
+    .catch(() => {})  // silent fail — feedback is non-critical
+  }
+
+  // Show dislike popup
+  if (type === "dislike") {
+    _showDislikePopup(btn, msgId, model, chatId)
   }
 }
 
-function dislikeMsg(btn) {
-  const wasActive = btn.classList.contains("active")
-  const row = btn.closest(".aiActions, .ai-actions, .msg-row, .messageRow")
-  row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => {
-    b.classList.remove("active")
-    b.style.color = ""
-  })
-  if (!wasActive) {
-    btn.classList.add("active")
-    btn.style.color = "#ff4444"
+function _showDislikePopup(btn, msgId, model, chatId) {
+  // Remove existing popup
+  document.querySelectorAll(".dislike-popup").forEach(p => p.remove())
+
+  const popup = document.createElement("div")
+  popup.className = "dislike-popup"
+  popup.style.cssText = "position:absolute;bottom:calc(100% + 8px);right:0;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-width:220px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,0.4);"
+  popup.innerHTML = `
+    <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;">What went wrong?</div>
+    ${["Wrong answer","Too short","Too long","Off topic","Other"].map(reason =>
+      `<button onclick="_sendDislikeReason(this,'${reason}','${msgId}','${model}')"
+        style="display:block;width:100%;text-align:left;padding:6px 10px;margin:2px 0;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;">
+        ${reason}
+      </button>`
+    ).join("")}
+    <button onclick="this.closest('.dislike-popup').remove()" style="display:block;width:100%;text-align:center;margin-top:8px;background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;font-family:inherit;">Skip</button>
+  `
+  // Position relative to button
+  const actionsEl = btn.closest(".aiActions, .ai-actions")
+  if (actionsEl) {
+    actionsEl.style.position = "relative"
+    actionsEl.appendChild(popup)
+    // Auto-close after 6s
+    setTimeout(() => popup.remove(), 6000)
   }
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener("click", function handler(e) {
+      if (!popup.contains(e.target)) { popup.remove(); document.removeEventListener("click", handler) }
+    })
+  }, 100)
 }
+
+function _sendDislikeReason(btn, reason, msgId, model) {
+  btn.style.background = "rgba(255,68,68,0.15)"
+  btn.style.borderColor = "rgba(255,68,68,0.4)"
+  btn.style.color = "#ff4444"
+  setTimeout(() => btn.closest(".dislike-popup").remove(), 800)
+
+  // Send reason as additional feedback
+  fetch(SERVER + "/feedback", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messageId: msgId + "_reason", feedback: "dislike", chatId: "", model, reason, token: getToken() })
+  }).catch(() => {})
+}
+
+function likeMsg(btn)    { _sendFeedback(btn, "like") }
+function dislikeMsg(btn) { _sendFeedback(btn, "dislike") }
 
 window.likeMsg = likeMsg
 window.dislikeMsg = dislikeMsg
+window._sendDislikeReason = _sendDislikeReason
 
 // ── VOICE ASSISTANT (SIRI-LIKE) ──────────────────────────────────────────────
 
