@@ -226,10 +226,20 @@ function stopGeneration() {
   // Guard: if already stopped, do nothing
   if (!isGenerating && !controller) return
 
-  // Abort the fetch — this signals both fetchWithRetry and the stream loop
+  // Abort the fetch locally
   if (controller) {
     controller.abort()
     controller = null
+  }
+
+  // Tell server to release the active request lock
+  const token = getToken()
+  if (token) {
+    fetch(SERVER + "/stop", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token })
+    }).catch(() => {})  // fire-and-forget, don't block UI
   }
 
   // Set global stop flag — runTyping() checks this
@@ -866,6 +876,53 @@ async function send() {
       try { errData = await res.json() } catch(e) {}
       
       hideStopBtn()
+
+      if (errData.error === "REQUEST_IN_PROGRESS") {
+        hideStopBtn()
+        showToast("⏳ Please wait for current response to finish")
+        aiDiv.remove()
+        const input = document.getElementById("message")
+        if (input) { input.disabled = false; input.focus() }
+        return
+      }
+
+      if (errData.error === "RATE_LIMIT") {
+        hideStopBtn()
+        aiDiv.innerHTML = `<div class="aiContent"><div class="ai-bubble" style="background:#1a1200;border:1px solid #ffaa0033;border-radius:16px;padding:16px;max-width:300px;">
+          <div style="font-size:22px;margin-bottom:6px;">🐢</div>
+          <div style="font-weight:700;color:var(--text);margin-bottom:4px;">Slow down a bit</div>
+          <div style="font-size:13px;color:var(--text3);">Too many requests. Wait a moment and try again.</div>
+        </div></div>`
+        return
+      }
+
+      if (errData.error === "DUPLICATE_REQUEST") {
+        aiDiv.remove()
+        return  // silently ignore duplicates
+      }
+
+      if (errData.error === "INPUT_TOO_LONG") {
+        hideStopBtn()
+        showToast("⚠️ Message too long. Max 4000 characters.")
+        aiDiv.remove()
+        const input = document.getElementById("message")
+        if (input) input.disabled = false
+        return
+      }
+
+      if (errData.error === "MODEL_LOCKED") {
+        hideStopBtn()
+        aiDiv.innerHTML = `
+          <div class="aiContent">
+            <div class="ai-bubble" style="background:#1a0a00;border:1px solid #ff880033;border-radius:16px;padding:20px;text-align:center;max-width:300px;">
+              <div style="font-size:28px;margin-bottom:8px;">🔒</div>
+              <div style="font-weight:700;color:var(--text);margin-bottom:6px;">Model not available on your plan</div>
+              <div style="font-size:13px;color:var(--text3);margin-bottom:16px;">${errData.message || "Upgrade to access this model."}</div>
+              <a href="pricing.html" style="display:inline-block;padding:10px 20px;background:linear-gradient(135deg,#ff8800,#ffaa00);border-radius:10px;color:#000;font-weight:700;text-decoration:none;font-size:13px;">Upgrade Plan</a>
+            </div>
+          </div>`
+        return
+      }
 
       if (errData.error === "MESSAGE_LIMIT") {
         const waitMins = errData.waitMins || 0
@@ -2534,13 +2591,37 @@ async function loadUserVersion() {
     const subtitle = document.getElementById("planBtnSub")
 
     const planInfo = {
-      free:      { emoji:"🌱", title:"Free Plan",      sub:"50 msgs · All models unlocked" },
-      mini:      { emoji:"⚡", title:"Mini Plan",      sub:"200 msgs · All models · Active" },
-      pro:       { emoji:"🔥", title:"Pro Plan",       sub:"500 msgs · All models · Active" },
-      max:       { emoji:"💎", title:"Max Plan",       sub:"2000 msgs · All models · Active" },
-      ultramax:  { emoji:"👑", title:"Ultra Max Plan", sub:"Unlimited · All models · Active" },
-      basic:     { emoji:"🔥", title:"Pro Plan",       sub:"500 msgs · Active" },
-      enterprise:{ emoji:"👑", title:"Ultra Max Plan", sub:"Unlimited · Active" }
+      free:      { emoji:"🌱", title:"Free Plan",  sub:"40 msgs/day · Datta 2.1 only" },
+      plus:      { emoji:"⚡", title:"Plus Plan",  sub:"300 msgs/day · All models · Active" },
+      pro:       { emoji:"🔥", title:"Pro Plan",   sub:"1000 msgs/day · All models · Active" },
+      mini:      { emoji:"⚡", title:"Mini Plan",  sub:"200 msgs/day · Active" },
+      max:       { emoji:"💎", title:"Max Plan",   sub:"2000 msgs/day · Active" },
+      ultramax:  { emoji:"👑", title:"Ultra Max",  sub:"Unlimited · Active" },
+      basic:     { emoji:"🔥", title:"Pro Plan",   sub:"500 msgs/day · Active" },
+      enterprise:{ emoji:"👑", title:"Enterprise", sub:"Unlimited · Active" }
+    }
+
+    // Update usage display if limits data available
+    if (data.limits && data.limits.messages) {
+      // Fetch current usage from server
+      fetch(SERVER + "/payment/usage?token=" + getToken())
+        .then(r => r.json())
+        .then(u => {
+          if (typeof u.used === "number") {
+            updateUsageDisplay(u.used, data.limits.messages)
+          }
+        })
+        .catch(() => {})
+    }
+
+    // Show/hide Plus badge on Datta 5.4 based on plan
+    const badge = document.getElementById("d54PlanBadge")
+    if (badge) {
+      if (plan === "plus" || plan === "pro" || plan === "max" || plan === "ultramax" || plan === "enterprise") {
+        badge.style.display = "none"  // user has access, no need for badge
+      } else {
+        badge.style.display = ""
+      }
     }
 
     const info = planInfo[plan] || planInfo.free
@@ -3917,12 +3998,46 @@ window.selectInputModel = selectInputModel
 
 // Check if user can access premium models
 function checkModelAccess(key) {
-  // All models available on all plans
-  const models = { d48: { id:"llama-3.3-70b-versatile", name:"Datta 4.8" }, d54: { id:"llama-3.3-70b-versatile", name:"Datta 5.4" } }
+  const plan = localStorage.getItem("datta_plan") || "free"
+  const freeOnlyPlans = ["free"]
+
+  if (key === "d54" && freeOnlyPlans.includes(plan)) {
+    // Show upgrade popup
+    closeModelDropdown()
+    const overlay = document.createElement("div")
+    overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;"
+    overlay.innerHTML = `
+      <div style="background:var(--bg2);border:1px solid rgba(255,136,0,0.3);border-radius:20px;padding:28px 24px;max-width:320px;width:100%;text-align:center;">
+        <div style="font-size:36px;margin-bottom:12px;">🔒</div>
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">Datta 5.4 requires Plus</div>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:6px;">You're on the <strong>Free plan</strong> (40 msgs/day).</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:20px;">Upgrade to <strong>Plus ₹299/mo</strong> for Datta 5.4, 300 msgs/day and priority responses.</div>
+        <a href="pricing.html" style="display:block;padding:12px;background:linear-gradient(135deg,#ff8800,#ffaa00);border-radius:12px;color:#000;font-weight:700;text-decoration:none;margin-bottom:10px;font-size:14px;">Upgrade to Plus — ₹299/mo</a>
+        <button onclick="this.closest('div').parentElement.remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;font-family:inherit;">Maybe later</button>
+      </div>`
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove() }
+    document.body.appendChild(overlay)
+    return
+  }
+
+  // Has access — select the model
+  const models = { d54: { id:"llama-3.3-70b-versatile", name:"Datta 5.4" } }
   const m = models[key]
   if (m) selectInputModel(m.id, key, m.name)
 }
 window.checkModelAccess = checkModelAccess
+
+// Update usage display in model dropdown
+function updateUsageDisplay(used, limit) {
+  const el  = document.getElementById("usageDisplay")
+  const bar = document.getElementById("usageBar")
+  if (!el || !bar) return
+  const pct = Math.min(100, Math.round((used / limit) * 100))
+  el.textContent = used + " / " + limit + " messages used today"
+  bar.style.width = pct + "%"
+  bar.style.background = pct >= 90 ? "#ef4444" : pct >= 70 ? "#f97316" : "var(--accent)"
+}
+window.updateUsageDisplay = updateUsageDisplay
 
 
 // ══════════════════════════════════════════════════════
