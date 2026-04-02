@@ -1,15 +1,14 @@
 /* ================================================
-   DATTA AI — LAYOUT SYSTEM — CLEAN REBUILD
+   DATTA AI — MASTER LAYOUT
+   This file controls ALL positioning.
+   style.css only handles colors/fonts.
    ================================================ */
 
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  overflow-x: hidden;
-  overflow-y: hidden;
+  margin: 0; padding: 0;
+  height: 100%; overflow: hidden;
 }
 
 body {
@@ -30,262 +29,232 @@ body {
   padding: 0 14px;
 }
 
-.menuBtn { cursor: pointer; flex-shrink: 0; z-index: 1001; }
-
 /* ── APP BODY ── */
 .app-body {
   display: flex;
-  margin-top: 56px;
   height: calc(100vh - 56px);
+  margin-top: 56px;
   overflow: hidden;
 }
 
-/* ── SIDEBAR ── */
+/* ── SIDEBAR — visible on desktop, slides on mobile ── */
 .sidebar {
-  width: 260px;
-  flex-shrink: 0;
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
-  z-index: 90;
+  width: 260px !important;
+  flex-shrink: 0 !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  z-index: 90 !important;
+  /* NO transform on desktop — always visible */
+  transform: none !important;
+  position: relative !important;
+  transition: none !important;
 }
 
 /* ── MAIN ── */
 .main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
+  flex: 1 !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  position: relative !important;
 }
 
 /* ── CHAT WRAPPER ── */
 .chatWrapper {
-  flex: 1;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
+  flex: 1 !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  position: relative !important;
 }
 
 /* ── CHAT SCROLL AREA ── */
 .chat {
-  flex: 1;
-  width: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 24px 0 180px;  /* 180px = input height + gap */
+  flex: 1 !important;
+  width: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  padding: 24px 0 180px !important;
 }
 
-/* ── MESSAGE ROWS — centered, max-width ── */
+/* ── MESSAGES ── */
 .messageRow {
-  width: 100%;
-  max-width: 800px;
-  padding: 0 20px;
-  margin: 0 auto 4px;
-  display: flex;
-  box-sizing: border-box;
+  width: 100% !important;
+  max-width: 800px !important;
+  padding: 0 20px !important;
+  margin: 0 auto 4px !important;
+  display: flex !important;
 }
-
-/* User bubble — right aligned */
 .userRow { justify-content: flex-end; }
-.userBubble {
-  max-width: 75%;
-  padding: 12px 16px;
-  border-radius: 18px 4px 18px 18px;
-  word-wrap: break-word;
-  word-break: break-word;
-}
 
-/* AI bubble — left aligned */
-.aiBubble {
-  max-width: 85%;
-  padding: 12px 16px;
-  border-radius: 4px 18px 18px 18px;
-  word-wrap: break-word;
-  word-break: break-word;
-}
-
-/* ════════════════════════════════════════
-   INPUT — fixed, always centered
-   Uses left:50% + translateX trick
-   Works regardless of sidebar
-   ════════════════════════════════════════ */
+/* ── INPUT — ALWAYS CENTERED ── */
+/* 
+  Center formula: sidebar=260px, content width=100vw-260px
+  Center of content = 260px + (100vw-260px)/2
+  Then translateX(-50%) moves left by half of input width
+*/
 .inputArea {
   position: fixed !important;
   bottom: 20px !important;
-  /* Center in remaining space after sidebar */
   left: calc(260px + (100vw - 260px) / 2) !important;
   transform: translateX(-50%) !important;
   right: auto !important;
   width: min(90%, 860px) !important;
-  z-index: 80;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  padding: 0;
-  pointer-events: none;
+  z-index: 500 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  pointer-events: none !important;
 }
-.inputArea > * { pointer-events: all; }
+.inputArea > * { pointer-events: all !important; }
 
 .inputModelBar {
-  width: 100%;
-  padding: 0 4px 8px;
-  display: flex;
-  align-items: center;
+  width: 100% !important;
+  padding: 0 4px 8px !important;
+  display: flex !important;
+  align-items: center !important;
 }
 
 .inputWrap {
-  width: 100%;
-  border-radius: 18px;
-  padding: 6px 8px 6px 16px;
-  display: flex;
-  flex-direction: column;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100% !important;
+  border-radius: 18px !important;
+  padding: 6px 8px 6px 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .inputRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 46px;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  min-height: 46px !important;
 }
 
 #message {
-  flex: 1;
-  min-width: 0;
-  height: 46px;
-  border: none;
-  outline: none;
-  font-size: 15px;
-  padding: 0 6px;
-  background: transparent;
+  flex: 1 !important;
+  min-width: 0 !important;
+  height: 46px !important;
+  border: none !important;
+  outline: none !important;
+  font-size: 15px !important;
+  padding: 0 6px !important;
+  background: transparent !important;
 }
 
 .plusBtn, .micBtn, .actionMainBtn {
-  flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+  flex-shrink: 0 !important;
+  width: 38px !important; height: 38px !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
 }
 
 /* ── WELCOME SCREEN ── */
 .welcomeScreen {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 24px 180px;
-  z-index: 2;
-  pointer-events: none;
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 24px 180px !important;
+  z-index: 2 !important;
+  pointer-events: none !important;
 }
-.welcomeScreen > * { pointer-events: all; }
+.welcomeScreen > * { pointer-events: all !important; }
 .chat-started .welcomeScreen { display: none !important; }
+.chat-started #suggestionChips,
+.chat-started .suggestionGrid { display: none !important; }
 
 .welcomeInner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 40px;
-  width: 100%;
-  max-width: 640px;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 40px !important;
+  width: 100% !important;
+  max-width: 640px !important;
 }
 
-/* Hide suggestions in chat state */
-.chat-started .suggestionGrid,
-.chat-started #suggestionChips { display: none !important; }
-
-/* ── SUGGESTION GRID ── */
 .suggestionGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  width: 100%;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+  width: 100% !important;
 }
 
 /* ── NOTES PANEL ── */
 #notesPanel {
-  position: fixed;
-  top: 56px; right: -460px;
-  width: 420px;
-  height: calc(100vh - 56px);
-  z-index: 995;
-  display: flex;
-  flex-direction: column;
-  transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
+  position: fixed !important;
+  top: 56px !important; right: -460px !important;
+  width: 420px !important;
+  height: calc(100vh - 56px) !important;
+  z-index: 995 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  transition: right 0.3s ease !important;
 }
-#notesPanel.open { right: 0; }
-
+#notesPanel.open { right: 0 !important; }
 body.notes-open .inputArea {
   left: calc(260px + (100vw - 260px - 420px) / 2) !important;
 }
 
 /* ── SIDEBAR OVERLAY ── */
 #sidebarOverlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 998; display: none;
+  position: fixed !important; inset: 0 !important;
+  background: rgba(0,0,0,0.5) !important;
+  z-index: 998 !important; display: none !important;
 }
 
 /* ── SETTINGS ── */
 .settings-container, .container {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 80px 20px 60px;
-  width: 100%;
-}
-.settings-card {
-  width: 100%; border-radius: 12px;
-  padding: 20px; margin-bottom: 16px;
+  max-width: 860px !important;
+  margin: 0 auto !important;
+  padding: 80px 20px 60px !important;
+  width: 100% !important;
 }
 
-/* ════════════════════════════════════════
-   TABLET  768px – 1024px
-   ════════════════════════════════════════ */
+/* ════════ TABLET 768–1024 ════════ */
 @media (min-width: 768px) and (max-width: 1024px) {
-  .sidebar { width: 220px; }
+  .sidebar { width: 220px !important; }
   .inputArea {
     left: calc(220px + (100vw - 220px) / 2) !important;
-    width: min(92%, 720px) !important;
+    width: min(92%, 700px) !important;
   }
-  .messageRow { max-width: 680px; }
-  #notesPanel { width: 320px; right: -340px; }
+  .messageRow { max-width: 680px !important; }
+  #notesPanel { width: 320px !important; right: -340px !important; }
   body.notes-open .inputArea {
     left: calc(220px + (100vw - 220px - 320px) / 2) !important;
   }
 }
 
-/* ════════════════════════════════════════
-   MOBILE  < 768px
-   ════════════════════════════════════════ */
+/* ════════ MOBILE < 768px ════════ */
 @media (max-width: 767px) {
+
+  /* Sidebar: off-screen by default, slides in */
   .sidebar {
-    position: fixed;
-    top: 56px; left: 0;
-    height: calc(100vh - 56px);
-    width: 280px; z-index: 999;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
+    position: fixed !important;
+    top: 56px !important; left: 0 !important;
+    height: calc(100vh - 56px) !important;
+    width: 280px !important;
+    z-index: 999 !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s ease !important;
   }
   .sidebar.open, .sidebar.show {
-    transform: translateX(0);
-    box-shadow: 4px 0 24px rgba(0,0,0,0.4);
+    transform: translateX(0) !important;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.4) !important;
   }
 
-  /* Mobile: center from full viewport */
+  /* Input: center from full width */
   .inputArea {
     left: 50% !important;
     transform: translateX(-50%) !important;
@@ -293,21 +262,17 @@ body.notes-open .inputArea {
     bottom: 12px !important;
   }
 
-  .messageRow { max-width: 100%; padding: 0 12px; }
-  .chat { padding-bottom: 160px; }
-  .welcomeScreen { padding: 0 16px 170px; }
-  .welcomeInner  { max-width: 100%; }
-  .suggestionGrid { gap: 10px; }
+  .messageRow { max-width: 100% !important; padding: 0 12px !important; }
+  .chat { padding-bottom: 160px !important; }
+  .welcomeScreen { padding: 0 16px 170px !important; }
+  .welcomeInner { max-width: 100% !important; }
   .topThemeSwitch { display: none !important; }
-  #notesPanel     { display: none !important; }
-  #notesToggleBtn { display: none !important; }
+  #notesPanel, #notesToggleBtn { display: none !important; }
   body.notes-open .inputArea { left: 50% !important; }
 }
 
-/* ════════════════════════════════════════
-   LARGE DESKTOP > 1400px
-   ════════════════════════════════════════ */
+/* ════════ LARGE > 1400px ════════ */
 @media (min-width: 1400px) {
   .inputArea { width: min(88%, 900px) !important; }
-  .messageRow { max-width: 900px; }
+  .messageRow { max-width: 900px !important; }
 }
