@@ -326,6 +326,9 @@ html, body {
     </button>
   </div>
 
+  <!-- Plan Details Card -->
+  <div id="planDetailsCard" style="display:none;padding:0 16px 4px;"></div>
+
   <!-- Appearance -->
   <div class="section">
     <div class="section-label">Appearance</div>
@@ -562,7 +565,7 @@ html, body {
         <div class="row-icon" style="background:rgba(245,158,11,0.12);">⭐</div>
         <div class="row-content">
           <div class="row-label">Upgrade Plan</div>
-          <div class="row-sub">Mini · Pro · Max · Ultra Max</div>
+          <div class="row-sub">Plus ₹299 · Pro ₹799 · Unlock Datta 5.4</div>
         </div>
         <div class="row-right"><span class="row-arrow">›</span></div>
       </div>
@@ -641,8 +644,71 @@ window.addEventListener("DOMContentLoaded", function() {
 
   // Load plan
   const plan = user.plan || user.subscription || "free"
-  const planMap = { free:"🌱 Free — 50 msgs", mini:"⚡ Mini — 200 msgs", pro:"🔥 Pro — 500 msgs", max:"💎 Max — 2000 msgs", ultramax:"👑 Ultra Max — Unlimited" }
+  const planMap = {
+    free:       "🌱 Free Plan",
+    plus:       "⚡ Plus Plan",
+    pro:        "🔥 Pro Plan",
+    mini:       "⚡ Plus Plan",
+    max:        "💎 Max Plan",
+    ultramax:   "👑 Ultra Max",
+    basic:      "🔥 Pro Plan",
+    enterprise: "👑 Enterprise"
+  }
   document.getElementById("profilePlan").textContent = planMap[plan] || "🌱 Free Plan"
+
+  // Show plan details card
+  const planDetails = {
+    free: {
+      color: "#00ff88", bg: "rgba(0,255,136,0.08)", border: "rgba(0,255,136,0.2)",
+      msgs: "40 messages / day",
+      models: "Datta 2.1 only",
+      features: ["Basic chat", "Web search", "Voice input"],
+      locked: ["Datta 5.4 (coding model)", "Priority responses"],
+      upgrade: "Upgrade to Plus — ₹299/mo"
+    },
+    plus: {
+      color: "#ff8800", bg: "rgba(255,136,0,0.08)", border: "rgba(255,136,0,0.2)",
+      msgs: "300 messages / day",
+      models: "Datta 2.1 + Datta 5.4",
+      features: ["Everything in Free", "Datta 5.4 coding model", "300 msgs/day", "Priority responses"],
+      locked: [],
+      upgrade: null
+    },
+    pro: {
+      color: "#ff4444", bg: "rgba(255,68,68,0.08)", border: "rgba(255,68,68,0.2)",
+      msgs: "1000 messages / day",
+      models: "Datta 2.1 + Datta 5.4",
+      features: ["Everything in Plus", "1000 msgs/day", "Longest responses", "Highest priority"],
+      locked: [],
+      upgrade: null
+    }
+  }
+  const pd = planDetails[plan] || planDetails["plus"] || planDetails.free
+  const planCard = document.getElementById("planDetailsCard")
+  if (planCard) {
+    const lockedHtml = pd.locked.length
+      ? pd.locked.map(l => `<div style="display:flex;align-items:center;gap:6px;margin:3px 0;font-size:12px;color:#555;">🔒 ${l}</div>`).join("")
+      : ""
+    const featuresHtml = pd.features.map(f => `<div style="display:flex;align-items:center;gap:6px;margin:3px 0;font-size:12px;color:var(--text2);">✓ ${f}</div>`).join("")
+    planCard.innerHTML = `
+      <div style="background:${pd.bg};border:1px solid ${pd.border};border-radius:16px;padding:16px 18px;margin-bottom:2px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div>
+            <div style="font-size:15px;font-weight:700;color:${pd.color};">${planMap[plan] || "Free Plan"}</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:2px;">${pd.msgs}</div>
+          </div>
+          <div style="font-size:11px;color:var(--text3);text-align:right;">
+            Models:<br><span style="color:var(--text2);font-weight:600;">${pd.models}</span>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:10px;">
+          ${featuresHtml}
+          ${lockedHtml}
+        </div>
+        ${pd.upgrade ? `<a href="pricing.html" style="display:block;text-align:center;margin-top:12px;padding:10px;background:${pd.bg};border:1px solid ${pd.border};border-radius:10px;color:${pd.color};font-weight:600;font-size:13px;text-decoration:none;">${pd.upgrade}</a>` : ""}
+      </div>`
+    planCard.style.display = "block"
+  }
 
   // Font size
   const fs = localStorage.getItem("datta_font_size_label") || "medium"
