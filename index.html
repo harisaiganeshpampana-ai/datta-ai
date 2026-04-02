@@ -2010,30 +2010,28 @@ body.is-generating .input-wrap {
   <div class="model-drop-item active" id="mdi-d21" onclick="selectInputModel('llama-3.1-8b-instant','d21','Datta 2.1')">
     <div class="model-drop-left">
       <div class="model-badge" style="background:var(--bg3);color:var(--text2);">2.1</div>
-      <div><div class="model-name">Datta 2.1</div><div class="model-desc">Fast · Casual chat · Quick answers</div></div>
+      <div>
+        <div class="model-name">Datta 2.1 <span style="font-size:10px;background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.3);border-radius:4px;padding:1px 5px;margin-left:4px;">Free</span></div>
+        <div class="model-desc">Fast · Chat · All plans</div>
+      </div>
     </div>
     <span class="model-check" id="mdic-d21">✓</span>
   </div>
-  <div class="model-drop-item" id="mdi-d42" onclick="selectInputModel('llama-3.3-70b-versatile','d42','Datta 4.2')">
-    <div class="model-drop-left">
-      <div class="model-badge" style="background:rgba(16,163,127,0.15);color:#10a37f;">4.2</div>
-      <div><div class="model-name">Datta 4.2</div><div class="model-desc">Research · Analysis · Writing</div></div>
-    </div>
-    <span class="model-check" id="mdic-d42"></span>
-  </div>
-  <div class="model-drop-item" id="mdi-d48" onclick="selectInputModel('llama-3.3-70b-versatile','d48','Datta 4.8')">
-    <div class="model-drop-left">
-      <div class="model-badge" style="background:rgba(170,100,255,0.15);color:#aa64ff;">4.8</div>
-      <div><div class="model-name">Datta 4.8</div><div class="model-desc">All-rounder · Math · Science</div></div>
-    </div>
-    <span class="model-check" id="mdic-d48"></span>
-  </div>
-  <div class="model-drop-item" id="mdi-d54" onclick="selectInputModel('llama-3.3-70b-versatile','d54','Datta 5.4')">
+  <div class="model-drop-item" id="mdi-d54" onclick="checkModelAccess('d54')">
     <div class="model-drop-left">
       <div class="model-badge" style="background:rgba(255,80,60,0.15);color:#ff5040;">5.4</div>
-      <div><div class="model-name">Datta 5.4</div><div class="model-desc">Full coding · Debugging</div></div>
+      <div>
+        <div class="model-name">Datta 5.4 <span id="d54PlanBadge" style="font-size:10px;background:rgba(255,136,0,0.15);color:#ff8800;border:1px solid rgba(255,136,0,0.3);border-radius:4px;padding:1px 5px;margin-left:4px;">Plus+</span></div>
+        <div class="model-desc">Coding · Debugging · Complex tasks</div>
+      </div>
     </div>
     <span class="model-check" id="mdic-d54"></span>
+  </div>
+  <div style="padding:10px 12px 6px;border-top:1px solid var(--border);margin-top:4px;">
+    <div id="usageDisplay" style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:5px;"></div>
+    <div style="height:3px;background:var(--bg3);border-radius:3px;overflow:hidden;">
+      <div id="usageBar" style="height:100%;background:var(--accent);border-radius:3px;width:0%;transition:width 0.4s ease;"></div>
+    </div>
   </div>
 </div>
 
@@ -2316,7 +2314,7 @@ document.addEventListener('DOMContentLoaded', function(){
 })
 </script>
 
-<script src="chat.js?v=58"></script>
+<script src="chat.js?v=59"></script>
 
 </body>
 </html>
