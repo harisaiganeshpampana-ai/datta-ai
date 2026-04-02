@@ -1261,8 +1261,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const searchNote = searchContext ? " IMPORTANT: Web search results are provided above. Use them to answer. Write your response as PLAIN TEXT only — no JavaScript, no arrays, no [object Object], no brackets. For sports/IPL: write naturally like 'Today CSK plays against MI at 7:30 PM at Chepauk Stadium'. Extract all values as readable sentences." : ""
 
     // Detect if code/build task needs max tokens
-    const msgLower = message.toLowerCase()
-    const isCodeTask = ["build","create","write","make","code","website","app","script","program","html","python","javascript","fix","debug","error","update","improve","full","complete","function","class","api","css","react","node","sql","java","c++","php","typescript","flutter","kotlin","swift","bash","linux","docker","git"].some(k => msgLower.includes(k))
+    var msgLower = message.toLowerCase()
+    var isCodeTask = ["build","create","write","make","code","website","app","script","program","html","python","javascript","fix","debug","error","update","improve","full","complete","function","class","api","css","react","node","sql","java","c++","php","typescript","flutter","kotlin","swift","bash","linux","docker","git"].some(k => msgLower.includes(k))
     
     // Auto-switch to Datta 5.4 for coding if user is on 2.1, 4.2, or 4.8
     const nonCodingModels = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
@@ -1273,7 +1273,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }
     // Now set final model AFTER any auto-switch
     let model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : resolvedModel
-    const isLargeTask = [
+    var isLargeTask = [
       "portfolio","full website","complete website","business plan",
       "full app","complete app","all sections","food delivery","delivery app",
       "ecommerce","e-commerce","shopping app","social media app","todo app",
@@ -1282,8 +1282,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     ].some(k => msgLower.includes(k))
     // Token limits — stay well within Groq free tier (6000 tok/min for 70b)
     // Only use large tokens when clearly building something
-    const maxCodingTok = isLargeTask ? 4096 : isCodeTask ? 3000 : 1500
-    const maxTok = isImageFile ? 2048 : maxCodingTok
+    var maxCodingTok = isLargeTask ? 4096 : isCodeTask ? 3000 : 1500
+    var maxTok = isImageFile ? 2048 : maxCodingTok
 
     // Use browser's actual local time sent from frontend
     const timeStr = req.body.userTime || new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })
