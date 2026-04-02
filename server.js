@@ -1309,7 +1309,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var nonCodingModels = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
     let autoSwitchMsg = ""
     if (isCodeTask && !isImageFile && nonCodingModels.includes(resolvedModel) && !chosenModel.startsWith("persona-")) {
-      autoSwitchMsg = "Switching to **Datta 5.4** for this coding task...\n\n"
+      autoSwitchMsg = ""  // No switch message — just answer directly
       resolvedModel = "llama-3.3-70b-versatile"
     }
     // Now set final model AFTER any auto-switch
@@ -1387,14 +1387,37 @@ Talk simply and friendly. Short answers. NEVER say you are any other AI.`,
       return
     }
 
-    var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + (isCodeTask ? `
+    // Detect what KIND of code task this is
+    var isNodeTask   = ["node","nodejs","node.js","express","npm","require(","server.js","backend","mongodb","mongoose","dotenv","process.env","package.json"].some(k => msgLower.includes(k))
+    var isFrontendTask = ["html","css","website","webpage","landing page","portfolio","frontend"].some(k => msgLower.includes(k)) && !isNodeTask
 
-When building apps/websites:
+    var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + (isCodeTask ? (isNodeTask ? `
+
+You are answering a Node.js / backend question.
+STRICT RULES:
+1. NEVER put Node.js code inside HTML <script> tags. Node.js runs on the server, not in a browser.
+2. Give code as proper standalone files: server.js, .env, package.json — NOT wrapped in HTML.
+3. Use ES modules (import/export) or CommonJS (require) correctly for Node.js.
+4. For API keys: always use process.env + dotenv. Never hardcode keys.
+5. Show .env file contents (without real values) and explain to add to .gitignore.
+6. First briefly explain what the code does (2 lines), then give complete correct code.
+7. Never truncate. Give full working code.
+` : isFrontendTask ? `
+
+When building frontend websites/apps:
 1. First explain in 2 lines what you are building.
-2. Give COMPLETE working code in one HTML file (HTML+CSS+JS together).
+2. Give COMPLETE working code in ONE HTML file (HTML+CSS+JS together).
 3. Never truncate. Always finish the full code.
 4. After code, give 1 line on how to use it.
 ` : `
+
+When writing code:
+1. Briefly explain what the code does (2 lines).
+2. Give COMPLETE working code with correct language label on code block.
+3. Match the language to the question — Python stays Python, Node.js stays Node.js, never mix.
+4. Never truncate. Finish all code completely.
+5. After code, give 1 line explaining how to run it.
+`) : `
 Be friendly, concise, and helpful. Never write [object Object]. Use bullet points for lists.
 For sports/IPL: state match details directly from search results.
 `) + (searchContext ? "\n\nSEARCH RESULTS (use these to answer):\n" + searchContext : "") + langNote + styleNote
