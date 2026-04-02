@@ -354,9 +354,13 @@ function authMiddleware(req, res, next) {
 async function webSearch(query) {
   try {
     const key = process.env.TAVILY_API_KEY
-    if (!key) return null
-    const isFactualQuery = ["father of","mother of","inventor of","founded by","discovered by","who invented","who is the"].some(t => query.toLowerCase().includes(t))
-    const searchQuery = isFactualQuery ? query + " Wikipedia" : query
+    if (!key) { console.log("TAVILY_API_KEY missing"); return null }
+
+    const isFactual = ["father of","mother of","inventor of","founded by","who invented","who is the"].some(t => query.toLowerCase().includes(t))
+    const searchQuery = isFactual ? query + " Wikipedia" : query
+
+    console.log("Tavily search:", searchQuery)
+
     const response = await fetch("https://api.tavily.com/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -364,34 +368,55 @@ async function webSearch(query) {
         api_key: key,
         query: searchQuery,
         search_depth: "advanced",
-        max_results: 7,
+        max_results: 5,
         include_answer: true,
         include_raw_content: false
       })
     })
-    if (!response.ok) return null
-    const data = await response.json()
-    if (!data.results?.length) return null
 
-    // Build rich context — always plain text, no objects
-    const cleanStr = (s) => {
-      if (!s) return ""
-      if (typeof s !== "string") return String(s)
-      // Remove any [object Object] patterns
-      return s.replace(/\[object Object\]/g, "").replace(/undefined/g, "").trim()
+    if (!response.ok) {
+      console.log("Tavily error:", response.status, await response.text())
+      return null
     }
 
-    const answer = data.answer ? "DIRECT ANSWER: " + cleanStr(data.answer) + "\n\n" : ""
-    const sources = data.results.slice(0, 5).map((r, i) => {
-      const title   = cleanStr(typeof r.title   === "string" ? r.title   : "")
-      const url     = cleanStr(typeof r.url     === "string" ? r.url     : "")
-      const content = cleanStr(typeof r.content === "string" ? r.content : "").substring(0, 800)
-      return "SOURCE " + (i+1) + ": " + title + "\nURL: " + url + "\nCONTENT: " + content
-    }).join("\n\n---\n\n")
+    const data = await response.json()
+    console.log("Tavily got", data.results?.length || 0, "results, answer:", !!data.answer)
 
-    const result = answer + "SEARCH RESULTS:\n\n" + sources
-    return typeof result === "string" ? result : null
-  } catch(e) { return null }
+    if (!data.results?.length && !data.answer) return null
+
+    // Safe string extractor — no objects ever
+    const safe = (v) => {
+      if (v === null || v === undefined) return ""
+      if (typeof v === "string") return v.replace(/\[object Object\]/gi, "").replace(/undefined/g, "").trim()
+      if (typeof v === "number") return String(v)
+      return ""
+    }
+
+    // Build clean text context
+    let context = ""
+
+    // Direct answer first (highest priority)
+    if (data.answer && safe(data.answer)) {
+      context += "DIRECT ANSWER: " + safe(data.answer) + "\n\n"
+    }
+
+    // Source content
+    if (data.results?.length) {
+      context += "SEARCH RESULTS:\n"
+      data.results.slice(0, 5).forEach((r, i) => {
+        const title   = safe(r.title).substring(0, 100)
+        const content = safe(r.content).substring(0, 600)
+        if (title || content) {
+          context += "\n[" + (i+1) + "] " + title + "\n" + content + "\n"
+        }
+      })
+    }
+
+    return context.trim() || null
+  } catch(e) {
+    console.log("Tavily exception:", e.message)
+    return null
+  }
 }
 
 function needsWebSearch(message) {
@@ -433,9 +458,18 @@ function needsWebSearch(message) {
     "search for","look up","find me","google this","news about",
     "what happened","current","latest","recent","update",
     // Local
-    "restaurant in","hotel in","hospital in","shops in","near me"
+    "restaurant in","hotel in","hospital in","shops in","near me",
+    // Telugu/Hindi transliterations for sports
+    "ipl match","ఐపీఎల్","आईपीएल","క్రికెట్","cricket","మ్యాచ్","match",
+    "ఇవాళ","today's ipl","today ipl","aaj ka match","aaj ipl"
   ]
-  return triggers.some(t => msg.includes(t))
+  if (triggers.some(t => msg.includes(t))) return true
+
+  // Unicode sports keywords (Telugu, Hindi scripts)
+  const unicodeSports = ["ఐపీఎల్","మ్యాచ్","క్రికెట్","आईपीएल","क्रिकेट","मैच"]
+  if (unicodeSports.some(u => message.includes(u))) return true
+
+  return false
 }
 
 
@@ -1041,13 +1075,37 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const shouldSearch = message && !urlContext && (needsWebSearch(message) || (isLocalQuery && userLocation))
     
     if (shouldSearch && process.env.TAVILY_API_KEY) {
-      // For local queries, enhance search with location and site targets
       let searchQuery = message
+
+      // For IPL/cricket queries — always search in English regardless of input language
+      const msgLow = message.toLowerCase()
+      const isIPL = msgLow.includes("ipl") || message.includes("ఐపీఎల్") ||
+                    message.includes("आईपीएल") || msgLow.includes("cricket") ||
+                    message.includes("క్రికెట్") || message.includes("क्रिकेट")
+      if (isIPL) {
+        // Very specific search query to get today's actual match
+        const now = new Date()
+        const dd = now.getDate()
+        const mm = now.toLocaleString("en-IN", { month:"long" })
+        const yyyy = now.getFullYear()
+        searchQuery = "IPL 2026 " + dd + " " + mm + " " + yyyy + " today match which teams playing live score"
+        console.log("IPL search query:", searchQuery)
+      }
+
+      // For local queries, add location
       if (isLocalQuery && userLocation) {
         searchQuery = message + " " + userLocation + " India"
       }
+
+      console.log("[SEARCH] Calling Tavily for:", searchQuery)
       const results = await webSearch(searchQuery)
-      if (results) searchContext = "\n\n[Web Search Results]\n" + results + "\n[End of Search Results]"
+      if (results) {
+        searchContext = "\n\n[Web Search Results]\n" + results + "\n[End of Search Results]"
+        console.log("[SEARCH] Got results, length:", results.length)
+        console.log("[SEARCH] First 300 chars:", results.substring(0, 300))
+      } else {
+        console.log("[SEARCH] No results returned")
+      }
     }
 
     const history = chat.messages.slice(0, -1).slice(-6)
@@ -1274,6 +1332,10 @@ Explain briefly after code. NEVER say you are any other AI.`,
     }
 
     const systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + `
+ABSOLUTE RULE: Never write [object Object] in any response. Always write plain readable text.
+If web search results are provided, extract the actual team names, venues, and times from them and write them as plain sentences.
+Example: "Today's IPL match is CSK vs MI at 7:30 PM at Wankhede Stadium."
+` + `
 
 LANGUAGE & TONE:
 - Use simple, clear everyday English like ChatGPT
@@ -1316,12 +1378,28 @@ CRITICAL OUTPUT RULES:
 11. For "near me" queries without location: ask "Which city are you in?" in ONE line
 12. Expert in: HTML, CSS, JS, React, Python, Node.js, SQL, Java, C++, ALL languages
 13. Lists of items: format as bullet points with text, NEVER as raw JavaScript arrays
-` + langNote + styleNote + searchNote
+` + (searchContext ? "\n\nWEB SEARCH RESULTS ARE PROVIDED. YOU MUST USE THEM TO ANSWER. Do not say you don't have information if it's in the search results above." : "") + langNote + styleNote
 
     // Combine user content with URL context — always string for text, array for vision
-    const finalUserContent = typeof userContent === "string"
-      ? userContent + safeStr(urlContext)
-      : userContent  // keep array for vision model
+    // For queries with search results — add hard instruction to USE the results
+    let finalUserContent
+    if (searchContext && typeof userContent === "string") {
+      const isIPLQ = userContent.toLowerCase().includes("ipl") ||
+                     userContent.includes("ఐపీఎల్") ||
+                     userContent.includes("आईपीएल") ||
+                     userContent.toLowerCase().includes("cricket") ||
+                     userContent.includes("match")
+
+      const hardInstruction = isIPLQ
+        ? "\n\n[SYSTEM: You MUST answer using ONLY the web search results above. Extract team names, venue, time from the search results and state them clearly. Format: 'Team A vs Team B at Venue at HH:MM PM'. If search results have the match info, use it. Do NOT say information is unavailable if search results contain it.]"
+        : "\n\n[SYSTEM: Answer using the web search results provided above. Be specific and direct.]"
+
+      finalUserContent = userContent + safeStr(urlContext) + hardInstruction
+    } else {
+      finalUserContent = typeof userContent === "string"
+        ? userContent + safeStr(urlContext)
+        : userContent  // keep array for vision model
+    }
 
     const systemWithMemory = systemPrompt + memoryContext
 
