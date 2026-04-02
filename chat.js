@@ -1,3890 +1,2106 @@
-const SERVER = "https://datta-ai-server.onrender.com"
+import express from "express"
+import cors from "cors"
+import dotenv from "dotenv"
+import mongoose from "mongoose"
+import multer from "multer"
+import crypto from "crypto"
+import Groq from "groq-sdk"
+import bcrypt from "bcryptjs"
+import jwt from "jsonwebtoken"
+import passport from "passport"
+import { Strategy as GoogleStrategy } from "passport-google-oauth20"
+import session from "express-session"
+import twilio from "twilio"
+import pdfParse from "pdf-parse/lib/pdf-parse.js"
+import nodemailer from "nodemailer"
 
+dotenv.config()
 
-// '''''''''''''''''''''''''''''''''''''''''''
-// SINGLE INIT - runs everything on load
-// '''''''''''''''''''''''''''''''''''''''''''
-window.addEventListener("DOMContentLoaded", function() {
-  // Apply saved theme immediately
-  const savedTheme = localStorage.getItem("datta_theme") || "dark"
-  setTheme(savedTheme, true)
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } })
+const app = express()
 
-  // Hide welcome if returning from settings
-  const lastChat = localStorage.getItem("datta_last_chat")
-  if (lastChat) {
-    const welcome = document.getElementById("welcomeScreen")
-    if (welcome) welcome.style.display = "none"
-  }
+// PING FIRST - Railway healthcheck must pass immediately
+app.get("/ping", (req, res) => res.json({ alive: true }))
+app.get("/health", (req, res) => res.json({ status: "ok" }))
+
+// Hide server technology from response headers
+app.use((req, res, next) => {
+  res.removeHeader("X-Powered-By")
+  res.setHeader("Server", "Datta-AI")
+  res.setHeader("X-Content-Type-Options", "nosniff")
+  next()
 })
 
+app.use(cors({ origin: "*", methods: ["GET","POST","PUT","DELETE","OPTIONS"], allowedHeaders: ["Content-Type","Authorization","x-chat-id"] }))
+app.use(express.json({ limit: "20mb" }))
+app.use(express.urlencoded({ extended: true, limit: "20mb" }))
+app.use(express.urlencoded({ extended: true }))
+app.use(session({ 
+  secret: process.env.JWT_SECRET || "datta-secret", 
+  resave: false, 
+  saveUninitialized: false,
+  cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
+}))
+app.use(passport.initialize())
+app.use(passport.session())
+passport.serializeUser((u, done) => done(null, u))
+passport.deserializeUser((u, done) => done(null, u))
 
-// SAFE CONTENT — prevents [object Object] anywhere in UI
-function safeContent(c) {
-  if (c === null || c === undefined) return ""
-  if (typeof c === "string") {
-    return c.split("[object Object]").join("").split("[object object]").join("").split("[Object Object]").join("").trim()
-  }
-  if (typeof c === "number" || typeof c === "boolean") return String(c)
-  if (Array.isArray(c)) {
-    const textParts = c.filter(p => p && p.type === "text").map(p => safeContent(p.text))
-    if (textParts.length) return textParts.join("")
-    return c.map(item => safeContent(item)).filter(Boolean).join("\n")
-  }
-  if (typeof c === "object") {
-    const val = c.text || c.content || c.message || c.name || c.title || c.value
-    if (val) return safeContent(val)
-    try { return JSON.stringify(c, null, 2) } catch(e) { return "" }
-  }
-  return String(c)
-}
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "missing" })
 
+// ── GEMINI API (Google — free, high quality) ──────────────────────────────
+async function callGemini(messages, systemPrompt, maxTokens, res) {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) throw new Error("GEMINI_API_KEY not set")
 
-// ── DOM HELPERS — work with both old and new class names ──────────────────────
-function getAiBubble(el) {
-  return el.closest(".aiContent")?.querySelector(".ai-bubble, .aiBubble")
-    || el.closest(".msg-row, .messageRow")?.querySelector(".ai-bubble, .aiBubble")
-}
-function getUserBubble(el) {
-  return el.closest(".msg-row, .messageRow")?.querySelector(".user-bubble, .userBubble")
-}
-function getMsgRow(el) {
-  return el.closest(".msg-row, .messageRow")
-}
-function getAiContent(el) {
-  return el.closest(".aiContent") || el.closest(".msg-row, .messageRow")
-}
+  // Convert messages to Gemini format — always extract string
+  const geminiContents = messages.map(m => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: typeof m.content === "string" ? m.content : (
+      Array.isArray(m.content)
+        ? m.content.filter(p => p.type === "text").map(p => p.text || "").join("") || "[image]"
+        : JSON.stringify(m.content)
+    )}]
+  }))
 
-function formatResponse(r) { return safeContent(r) }
-
-// SHARE CHAT
-async function shareChatLink() {
-  if (!currentChatId) { showToast("Start a chat first!"); return }
-  try {
-    showToast("Creating share link...")
-    const res = await fetch(SERVER + "/chat/" + currentChatId + "/share", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: getToken() })
-    })
-    const data = await res.json()
-    if (data.url) {
-      await navigator.clipboard.writeText(data.url)
-      showToast("Share link copied! '")
-    }
-  } catch(e) { showToast("Failed to create share link") }
-}
-
-// CODE EXECUTION in chat
-async function executeCode(btn) {
-  const pre = btn.closest(".codeBlockWrap").querySelector("pre")
-  const code = pre.querySelector("code")?.innerText || pre.innerText
-  const lang = pre.querySelector("code")?.className?.replace("language-", "") || "javascript"
-
-  btn.textContent = "Running..."
-  btn.disabled = true
-
-  try {
-    const res = await fetch(SERVER + "/execute", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, language: lang, token: getToken() })
-    })
-    const result = await res.json()
-
-    // Show output below code block
-    const wrap = btn.closest(".codeBlockWrap")
-    let outputDiv = wrap.querySelector(".codeOutput")
-    if (!outputDiv) {
-      outputDiv = document.createElement("div")
-      outputDiv.className = "codeOutput"
-      wrap.appendChild(outputDiv)
-    }
-
-    if (result.errors) {
-      outputDiv.innerHTML = '<div class="codeOutputErr">' + result.errors + '</div>'
-    } else if (result.output) {
-      outputDiv.innerHTML = '<div class="codeOutputOk">Output:<br><pre>' + result.output + '</pre></div>'
-    } else {
-      outputDiv.innerHTML = '<div class="codeOutputOk">✓ Ran successfully (no output)</div>'
-    }
-  } catch(e) {
-    showToast("Execution failed")
-  }
-  btn.textContent = "Run"
-  btn.disabled = false
-}
-
-window.shareChatLink = shareChatLink
-window.executeCode = executeCode
-
-// ADD COPY BUTTONS TO CODE BLOCKS
-function addCodeCopyButtons(container) {
-  if (!container) return
-  const codeBlocks = container.querySelectorAll("pre")
-  codeBlocks.forEach(pre => {
-    if (pre.querySelector(".codeCopyBtn")) return // already has button
-
-    const lang = pre.querySelector("code")?.className?.replace("language-", "") || ""
-
-    const wrapper = document.createElement("div")
-    wrapper.className = "codeBlockWrap"
-
-    const isRunnable = ["javascript","js","python","py"].includes((lang||"").toLowerCase())
-    const header = document.createElement("div")
-    header.className = "codeBlockHeader"
-    header.innerHTML = `
-      <span class="codeLang">${lang || "code"}</span>
-      <div style="display:flex;gap:6px;">
-        ${isRunnable ? `<button class="codeRunBtn" onclick="executeCode(this)">▶ Run</button>` : ""}
-        <button class="codeCopyBtn" onclick="copyCode(this)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          Copy
-        </button>
-      </div>
-    `
-
-    pre.parentNode.insertBefore(wrapper, pre)
-    wrapper.appendChild(header)
-    wrapper.appendChild(pre)
-  })
-}
-
-function copyCode(btn) {
-  const pre = btn.closest(".codeBlockWrap").querySelector("pre")
-  const code = pre.querySelector("code")?.innerText || pre.innerText
-  navigator.clipboard.writeText(code).then(() => {
-    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`
-    btn.style.color = "#00ff88"
-    setTimeout(() => {
-      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`
-      btn.style.color = ""
-    }, 2000)
-  })
-}
-
-window.copyCode = copyCode
-window.addCodeCopyButtons = addCodeCopyButtons
-
-// ── DYNAMIC SEND/STOP BUTTON SYSTEM ──
-let isGenerating = false
-
-function setGenerating(val) {
-  isGenerating = val
-  const btn = document.getElementById("actionMainBtn")
-  const inner = document.getElementById("actionMainBtnInner")
-  if (!btn || !inner) return
-
-  if (val) {
-    // Switch to STOP state
-    btn.classList.remove("send-state")
-    btn.classList.add("stop-state")
-    inner.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="rgba(255,100,100,0.9)">
-      <rect x="3" y="3" width="18" height="18" rx="3"/>
-    </svg>`
-  } else {
-    // Switch to SEND state
-    btn.classList.remove("stop-state")
-    btn.classList.add("send-state")
-    inner.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
-      <line x1="12" y1="19" x2="12" y2="5"/>
-      <polyline points="5 12 12 5 19 12"/>
-    </svg>`
-  }
-}
-
-function handleMainBtn() {
-  if (isGenerating) {
-    stopGeneration()
-  } else {
-    send()
-  }
-}
-
-function showStopBtn() { setGenerating(true) }
-function hideStopBtn() { setGenerating(false) }
-
-function stopGeneration() {
-  // Abort network request
-  if (controller) {
-    controller.abort()
-    controller = null
-  }
-  setGenerating(false)
-
-  // Re-enable input
-  const msgInput = document.getElementById("message")
-  if (msgInput) { msgInput.disabled = false; msgInput.focus() }
-
-  // The typing loop handles the "stopped" message via typingActive = false
-  // For streams that already finished network but are still typing,
-  // find last .typingCursor and mark as stopped
-  const cursors = document.querySelectorAll(".typingCursor")
-  cursors.forEach(cur => {
-    const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
-    const name = user.username || "you"
-    const msg = document.createElement("div")
-    msg.className = "stoppedMsg"
-    msg.textContent = "Response stopped by " + name
-    cur.replaceWith(msg)
-  })
-}
-
-window.handleMainBtn = handleMainBtn
-window.stopGeneration = stopGeneration
-
-// Edit user message and resend
-function editMessage(btn) {
-  const row = getMsgRow(btn)
-  const bubble = row?.querySelector(".user-bubble, .userBubble")
-  const originalText = bubble.textContent.trim()
-  
-  // Put text back in input
-  const input = document.getElementById("message")
-  if (input) {
-    input.value = originalText
-    input.focus()
-    // Move cursor to end
-    input.setSelectionRange(input.value.length, input.value.length)
-  }
-  showToast("Edit your message and send")
-}
-
-// Retry last user message
-function retryMessage(btn) {
-  const row = getMsgRow(btn)
-  const bubble = row?.querySelector(".user-bubble, .userBubble")
-  const text = bubble.textContent.trim()
-  if (!text) return
-  
-  // Remove all messages from this point onwards
-  const allRows = Array.from(document.querySelectorAll(".msg-row, .messageRow"))
-  const idx = allRows.indexOf(row)
-  for (let i = idx; i < allRows.length; i++) {
-    allRows[i].remove()
-  }
-  
-  // Resend
-  const input = document.getElementById("message")
-  if (input) input.value = text
-  send()
-}
-
-// Send lens result to chat
-function lensSendToChat() {
-  const result = lensLastResult
-  if (!result) { showToast("Capture an image first"); return }
-  closeLens()
-  // Add to chat as AI response
-  const chatBox = document.getElementById("chat")
-  if (!chatBox) return
-  hideWelcome()
-  const aiDiv = document.createElement("div")
-  aiDiv.className = "msg-row"
-  aiDiv.innerHTML = `
-    <div class="aiContent">
-      <div class="ai-bubble" id="lensResultBubble"></div>
-/g, "<br>").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")}</div>
-      <div class="aiActions">
-        <button class="actionBtn" title="Copy" onclick="navigator.clipboard.writeText(this.closest('.messageRow').querySelector('.aiBubble').innerText);showToast('Copied!')">
-          <i data-lucide="copy"></i>
-        </button>
-      </div>
-    </div>`
-  chatBox.appendChild(aiDiv)
-  chatBox.scrollTop = chatBox.scrollHeight
-  lucide.createIcons()
-  showToast("Result added to chat!")
-}
-window.lensSendToChat = lensSendToChat
-
-window.editMessage = editMessage
-window.retryMessage = retryMessage
-
-// RENDER IMAGE RESPONSE - Datta AI unique style
-
-function downloadImage(url, prompt) {
-  const a = document.createElement("a")
-  a.href = url
-  a.download = prompt.substring(0, 30).replace(/[^a-z0-9]/gi, "_") + ".jpg"
-  a.target = "_blank"
-  a.click()
-}
-
-async function regenerateImage(prompt, btn) {
-  btn.disabled = true
-  btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 0.6s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Generating...'
-
-  const container = btn.closest(".imageGenContainer")
-  const img = container.querySelector(".generatedImg")
-  const loader = container.querySelector(".imageGenLoader")
-  const result = container.querySelector(".imageGenResult")
-
-  // Show loader
-  result.style.display = "none"
-  loader.style.display = "flex"
-  loader.innerHTML = '<div class="imageGenSpinner"></div><div class="imageGenLoadText">Regenerating...</div>'
-
-  // Generate new image with different seed
-  const seed = Math.floor(Math.random() * 99999)
-  const newUrl = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=1024&height=1024&nologo=true&enhance=true&seed=" + seed
-
-  img.onload = () => {
-    result.style.display = "block"
-    loader.style.display = "none"
-    btn.disabled = false
-    btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Regenerate'
-  }
-  img.onerror = () => {
-    loader.innerHTML = '<div style="color:#f88">Failed. Try again.</div>'
-    btn.disabled = false
-  }
-  img.src = newUrl
-}
-
-function likeImage(btn) {
-  const isActive = btn.classList.toggle("active")
-  btn.style.color = isActive ? "#00ff88" : ""
-  const dislike = btn.closest(".imageGenBtns").querySelector(".dislikeImgBtn")
-  if (dislike) { dislike.classList.remove("active"); dislike.style.color = "" }
-}
-
-function dislikeImage(btn) {
-  const isActive = btn.classList.toggle("active")
-  btn.style.color = isActive ? "#ff4444" : ""
-  const like = btn.closest(".imageGenBtns").querySelector(".likeImgBtn")
-  if (like) { like.classList.remove("active"); like.style.color = "" }
-}
-
-window.downloadImage = downloadImage
-window.regenerateImage = regenerateImage
-window.likeImage = likeImage
-window.dislikeImage = dislikeImage
-// Cycle loading text for image generation
-function startImgLoadingText(uid) {
-  const texts = [
-    "Generating with AI...",
-    "Painting pixels...",
-    "Adding details...",
-    "Almost ready...",
-    "Final touches..."
-  ]
-  let i = 0
-  const el = document.getElementById(uid + "txt")
-  if (!el) return
-  const interval = setInterval(() => {
-    i = (i + 1) % texts.length
-    if (el) el.textContent = texts[i]
-    else clearInterval(interval)
-  }, 1200)
-  // Store interval to clear later
-  window["imgInterval_" + uid] = interval
-}
-window.startImgLoadingText = startImgLoadingText
-// AUTH CHECK - redirect to login if not logged in
-// Configure marked with enhanced rendering - emojis, icons, beautiful output
-if (typeof marked !== 'undefined') {
-  const renderer = new marked.Renderer()
-
-  // Beautiful headings with emoji icons
-  renderer.heading = function(text, level) {
-    const icons = { 1:"✨", 2:"📌", 3:"▶️" }
-    const sizes = { 1:"22px", 2:"18px", 3:"16px" }
-    const icon = icons[level] || "•"
-    return `<div style="display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-weight:700;font-size:${sizes[level]};color:#fff;font-family:'Josefin Sans',sans-serif;letter-spacing:0.5px;">
-      <span>${icon}</span><span>${text}</span>
-    </div>`
+  // Add current user message last
+  const lastMsg = geminiContents[geminiContents.length - 1]
+  if (!lastMsg || lastMsg.role !== "user") {
+    geminiContents.push({ role: "user", parts: [{ text: "Continue" }] })
   }
 
-  // Beautiful list items with checkmark style
-  renderer.listitem = function(text) {
-    return `<li style="display:flex;gap:8px;align-items:flex-start;margin:6px 0;line-height:1.7;">
-      <span style="color:#00ff88;flex-shrink:0;margin-top:2px;">›</span>
-      <span>${text}</span>
-    </li>`
-  }
-
-  // Beautiful unordered list
-  renderer.list = function(body, ordered) {
-    const tag = ordered ? "ol" : "ul"
-    return `<${tag} style="padding:0;margin:10px 0;list-style:none;">${body}</${tag}>`
-  }
-
-  // Beautiful blockquote
-  renderer.blockquote = function(quote) {
-    return `<blockquote style="border-left:3px solid #00ff88;padding:10px 16px;margin:12px 0;background:#0a1a0a;border-radius:0 8px 8px 0;color:#aaa;font-style:italic;">${quote}</blockquote>`
-  }
-
-  // Code with syntax highlight style
-  renderer.code = function(code, lang) {
-    const langLabel = lang ? `<span style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;">${lang}</span>` : ""
-    return `<div style="margin:12px 0;border-radius:10px;overflow:hidden;border:1px solid #1e1e1e;">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#0a0a0a;border-bottom:1px solid #1a1a1a;">
-        ${langLabel}
-        <button onclick="navigator.clipboard.writeText(this.closest('div').nextElementSibling.innerText);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)"
-          style="font-size:11px;color:#555;background:none;border:none;cursor:pointer;font-family:'Josefin Sans',sans-serif;letter-spacing:1px;">Copy</button>
-      </div>
-      <pre style="margin:0;padding:14px;background:#0d0d0d;overflow-x:auto;"><code style="font-family:'Courier New',monospace;font-size:13px;color:#e0e0e0;line-height:1.6;">${code.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</code></pre>
-    </div>`
-  }
-
-  // Inline code
-  renderer.codespan = function(code) {
-    return `<code style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:5px;padding:2px 7px;font-size:13px;color:#00ff88;font-family:'Courier New',monospace;">${code}</code>`
-  }
-
-  // Strong/bold
-  renderer.strong = function(text) {
-    return `<strong style="color:#fff;font-weight:700;">${text}</strong>`
-  }
-
-  // Horizontal rule as divider
-  renderer.hr = function() {
-    return `<hr style="border:none;border-top:1px solid #1e1e1e;margin:16px 0;">`
-  }
-
-  // Links
-  renderer.link = function(href, title, text) {
-    return `<a href="${href}" target="_blank" style="color:#00ccff;text-decoration:none;border-bottom:1px solid #00ccff44;">${text} ↗</a>`
-  }
-
-  marked.setOptions({
-    renderer,
-    breaks: true,
-    gfm: true,
-    headerIds: false,
-    mangle: false
-  })
-}
-
-// Always read token fresh
-function getToken() {
-  return localStorage.getItem("datta_token") || ""
-}
-
-// Save current chat when leaving page
-window.addEventListener("beforeunload", function() {
-  if (currentChatId) {
-    localStorage.setItem("datta_last_chat", currentChatId)
-    localStorage.setItem("datta_came_from_settings", "0")
-  }
-})
-
-// Also save when navigating within the app
-function navigateTo(url) {
-  if (currentChatId) localStorage.setItem("datta_last_chat", currentChatId)
-  window.location.href = url
-}
-window.navigateTo = navigateTo
-
-// Restore last chat - called AFTER sidebar loads
-
-function getUser() {
-  try {
-    const raw = localStorage.getItem("datta_user")
-    if (raw && raw !== "null" && raw !== "undefined") return JSON.parse(raw)
-  } catch(e) {}
-  return null
-}
-
-// AUTH CHECK
-if (!getToken()) {
-  window.location.href = "login.html"
-}
-
-const datta_token = getToken()
-const datta_user = getUser()
-
-// Update sidebar profile with real user info
-window.addEventListener("DOMContentLoaded", function() {
-  if (datta_user) {
-    const nameEl = document.getElementById("profileName") || document.querySelector(".sb-profile-name")
-    const avatarEl = document.getElementById("profileAvatar") || document.querySelector(".sb-avatar")
-    const subEl = document.getElementById("profileSub") || document.querySelector(".sb-profile-sub")
-    if (nameEl) nameEl.textContent = datta_user.username || "User"
-    if (avatarEl) avatarEl.textContent = (datta_user.username || "U")[0].toUpperCase()
-    if (subEl) subEl.textContent = datta_user.isGuest ? "Guest" : (datta_user.email || "Free Plan")
-  }
-})
-
-const chatBox = document.getElementById("chat")
-const sendBtn = document.querySelector(".send")
-const scrollBtn = document.getElementById("scrollDownBtn")
-
-function getAuthHeaders() {
-  return { "Authorization": "Bearer " + getToken() }
-}
-
-let currentChatId = null
-let controller = null
-let userScrolledUp = false
-
-
-// ─── NEW CHAT ────────────────────────────────────────────────────────────────
-function newChat() {
-  currentChatId = null
-  chatBox.innerHTML = ""
-  chatBox.scrollTop = 0
-  localStorage.removeItem("datta_last_chat")
-  // Close sidebar on mobile
-  const sidebar = document.getElementById("sidebar")
-  if (sidebar && window.innerWidth < 768) {
-    sidebar.classList.remove("open")
-    const overlay = document.getElementById("sidebarOverlay")
-    if (overlay) overlay.style.display = "none"
-  }
-  showWelcome()
-  // Reload smart suggestions
-  loadSmartSuggestions()
-  // Focus input
-  const msg = document.getElementById("message")
-  if (msg) setTimeout(() => msg.focus(), 100)
-}
-
-
-// ─── SEND MESSAGE ─────────────────────────────────────────────────────────────
-async function send() {
-
-  const input = document.getElementById("message")
-  const filePreview = document.getElementById("filePreview")
-
-  // Get file from any input source
-  let file = null
-  const fileInputIds = ["cameraInput", "photoInput", "imageInput"]
-  for (const id of fileInputIds) {
-    const el = document.getElementById(id)
-    if (el && el.files && el.files[0]) { file = el.files[0]; break }
-  }
-  const text = input.value.trim()
-
-  // Block send if nothing to send
-  if (!text && !file) return
-
-  // Save chat title - always use the typed message as title
-  if (!currentChatId) {
-    let title = text ? text.substring(0, 40) : "New Chat"
-    if (text && text.length > 40) title += "..."
-    saveChatTitle(title)
-  }
-
-  hideWelcome()
-  document.body.classList.add("chat-started")
-
-  // Show user bubble with image preview if attached
-  let fileBubble = ""
-  if (file) {
-    if (file.type.startsWith("image/")) {
-      const imgUrl = URL.createObjectURL(file)
-      fileBubble = `<div style="margin-bottom:8px;"><img src="${imgUrl}" style="max-width:220px;max-height:200px;border-radius:10px;display:block;" alt="attached image"></div>`
-    } else {
-      fileBubble = `<div style="font-size:12px;color:#aaa;margin-bottom:6px;background:#1a1a1a;padding:6px 10px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;"><span>📄</span><span>${file.name}</span></div>`
+  const body = {
+    system_instruction: { parts: [{ text: systemPrompt }] },
+    contents: geminiContents,
+    generationConfig: {
+      maxOutputTokens: maxTokens,
+      temperature: 0.7
     }
   }
 
-  chatBox.innerHTML += `
-    <div class="msg-row user-row">
-      <div class="user-bubble">
-        ${fileBubble}
-        ${text ? `<div>${text}</div>` : ""}
-      </div>
-    </div>
-  `
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=" + apiKey
 
-  chatBox.scrollTop = chatBox.scrollHeight
-
-  // Clear input + file
-  input.value = ""
-  ;["cameraInput","photoInput","imageInput"].forEach(id => {
-    const el = document.getElementById(id)
-    if (el) el.value = ""
-  })
-  if (typeof clearFileSelection === "function") clearFileSelection()
-
-  // Detect request type for smart thinking steps
-  const msgLow = text.toLowerCase()
-  const willSearch = ["latest news","breaking news","live score","stock price","crypto price","bitcoin price","gold price","petrol price","weather in","weather today","who won","election result","trending now","ipl 2025","ipl 2026","world cup","search for","look up","news about","just happened","announced today"].some(t => msgLow.includes(t))
-  const willCode = ["build","create a website","write code","make an app","html","python","javascript","css","react","debug","fix this code","script"].some(t => msgLow.includes(t))
-  const willAnalyze = ["analyze","analyse","explain","summarize","what is","who is","how does","why does","pdf","document","file"].some(t => msgLow.includes(t))
-  const willPlan = ["business plan","fitness plan","study plan","workout plan","meal plan","project plan","roadmap","strategy"].some(t => msgLow.includes(t))
-
-  // Build smart thinking steps
-  function getThinkingSteps() {
-    if (willSearch) return [
-      { icon:"🔍", text:"Reading your question..." },
-      { icon:"🌐", text:"Searching the web..." },
-      { icon:"📊", text:"Analyzing results..." },
-      { icon:"✍️", text:"Writing answer..." }
-    ]
-    if (willCode) return [
-      { icon:"🧠", text:"Understanding requirements..." },
-      { icon:"🏗️", text:"Planning structure..." },
-      { icon:"💻", text:"Writing code..." },
-      { icon:"✅", text:"Reviewing output..." }
-    ]
-    if (willPlan) return [
-      { icon:"📋", text:"Understanding your goal..." },
-      { icon:"🔎", text:"Researching best practices..." },
-      { icon:"🏗️", text:"Building your plan..." },
-      { icon:"✍️", text:"Writing full document..." }
-    ]
-    if (willAnalyze) return [
-      { icon:"📖", text:"Reading content..." },
-      { icon:"🧠", text:"Processing information..." },
-      { icon:"💡", text:"Forming insights..." },
-      { icon:"✍️", text:"Writing response..." }
-    ]
-    return [
-      { icon:"🧠", text:"Thinking..." },
-      { icon:"💡", text:"Forming answer..." }
-    ]
-  }
-
-  const steps = getThinkingSteps()
-
-  let aiDiv = document.createElement("div")
-  aiDiv.className = "msg-row"
-  aiDiv.innerHTML = `
-    <div class="thinkingBlock" id="thinkingBlock">
-      <div class="thinkingHeader">
-        <div class="thinkingOrb"></div>
-        <span class="thinkingTitle">Thinking</span>
-        <span class="thinkingDots"><span>.</span><span>.</span><span>.</span></span>
-      </div>
-      <div class="thinkingSteps" id="thinkingSteps">
-        ${steps.map((s,i) => `
-          <div class="thinkStep" id="thinkStep${i}" style="opacity:0;transform:translateY(6px);transition:all 0.3s ease ${i*0.4}s;">
-            <span class="thinkStepIcon">${s.icon}</span>
-            <span class="thinkStepText">${s.text}</span>
-            <span class="thinkStepLoader" id="stepLoader${i}"></span>
-          </div>`).join("")}
-      </div>
-    </div>
-  `
-  chatBox.appendChild(aiDiv)
-  chatBox.scrollTop = chatBox.scrollHeight
-
-  // Animate steps in sequence
-  steps.forEach((s, i) => {
-    setTimeout(() => {
-      const el = document.getElementById("thinkStep" + i)
-      if (el) { el.style.opacity = "1"; el.style.transform = "translateY(0)" }
-      // Mark previous step done
-      if (i > 0) {
-        const prev = document.getElementById("stepLoader" + (i-1))
-        const prevEl = document.getElementById("thinkStep" + (i-1))
-        if (prev) prev.innerHTML = '<span style="color:#00ff88;">✓</span>'
-        if (prevEl) prevEl.style.opacity = "0.5"
-      }
-    }, i * 400)
-  })
-
-  // Build FormData
-  controller = new AbortController()
-  const formData = new FormData()
-  // If image with no text, add helpful default prompt
-  const finalText = (!text && file && file.type.startsWith("image/"))
-    ? "Please analyze and describe this image in detail."
-    : text
-  // Save for retry
-  window.lastUserMsg = finalText
-  formData.append("message", finalText)
-  formData.append("chatId", currentChatId || "")
-  formData.append("token", getToken())
-  formData.append("language", localStorage.getItem("datta_language") || "English")
-  formData.append("model", getPersonaModel())
-  formData.append("modelKey", localStorage.getItem("datta_model_key") || "d21")
-  formData.append("style", localStorage.getItem("datta_ai_style") || "Balanced")
-  formData.append("ainame", localStorage.getItem("datta_ai_name") || "Datta AI")
-  // Send user's actual local time from browser
-  const _now = new Date()
-  formData.append("userTime", _now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }))
-  formData.append("userDate", _now.toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" }))
-  
-  // If user asks "near me" - try to get location
-  // Auto-save to daily memory
-  if (finalText) autoDetectAndSaveMemory(finalText)
-  const _msgLower = (finalText || "").toLowerCase()
-  const _needsLocation = ["near me", "nearby", "nearest", "around me", "close to me", "in my area"].some(t => _msgLower.includes(t))
-  const _savedLocation = localStorage.getItem("datta_user_city")
-  if (_needsLocation && _savedLocation) {
-    formData.append("userLocation", _savedLocation)
-  } else if (_needsLocation && navigator.geolocation) {
-    // Try to get city from browser
-    try {
-      const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000 }))
-      const lat = pos.coords.latitude.toFixed(4)
-      const lng = pos.coords.longitude.toFixed(4)
-      formData.append("userLocation", "coordinates: " + lat + "," + lng)
-    } catch(e) {
-      // Location denied - AI will ask
-    }
-  }
-
-  if (file) {
-    formData.append("image", file)
-    // If image attached, use vision model automatically
-    if (file.type.startsWith("image/")) {
-      formData.set("model", "meta-llama/llama-4-scout-17b-16e-instruct")
-      console.log("Image attached - using vision model")
-    }
-  }
-
-  showStopBtn()
-
-  // Auto-retry fetch - silently retry up to 4 times
-  async function fetchWithRetry(url, options, maxTries = 4) {
-    for (let i = 0; i < maxTries; i++) {
-      try {
-        const ctrl = new AbortController()
-        const timer = setTimeout(() => ctrl.abort(), 50000)
-        const r = await fetch(url, { ...options, signal: ctrl.signal })
-        clearTimeout(timer)
-        return r
-      } catch(e) {
-        if (i === maxTries - 1) throw e
-        // Update thinking message
-        const title = document.querySelector(".thinkingTitle")
-        if (title) title.textContent = "Connecting... (" + (i+2) + "/" + maxTries + ")"
-        await new Promise(r => setTimeout(r, 5000)) // wait 5 sec
-        controller = new AbortController()
-      }
-    }
-  }
-
-  try {
-    const res = await fetchWithRetry(SERVER + "/chat", {
-      method: "POST",
-      body: formData
-    })
-
-    // Check for errors FIRST before streaming
-    if (!res.ok) {
-      let errData = {}
-      try { errData = await res.json() } catch(e) {}
-      
-      hideStopBtn()
-
-      if (errData.error === "MESSAGE_LIMIT") {
-        const waitMins = errData.waitMins || 0
-        const plan = errData.plan || "free"
-        const isForever = waitMins > 10000
-        const waitText = isForever
-          ? "Upgrade your plan to continue chatting."
-          : waitMins > 0
-          ? `Resets in ${Math.ceil(waitMins)} minutes.`
-          : "Upgrade your plan."
-
-        aiDiv.innerHTML = `
-          <div class="aiContent">
-            <div style="background:#1a0800;border:1px solid #ff440033;border-radius:16px;padding:20px;text-align:center;max-width:300px;">
-              <div style="font-size:32px;margin-bottom:10px;">⏳</div>
-              <div style="font-weight:700;color:white;margin-bottom:6px;font-size:16px;">Message limit reached</div>
-              <div style="font-size:13px;color:#888;margin-bottom:4px;">${waitText}</div>
-              <div style="font-size:12px;color:#555;margin-bottom:16px;">Free plan: 25 msgs total, then 8/session</div>
-              <a href="pricing.html" style="display:inline-block;padding:10px 24px;background:linear-gradient(135deg,#00cc6a,#00aaff);border-radius:20px;color:white;font-size:14px;font-weight:700;text-decoration:none;">⚡ Upgrade Now</a>
-            </div>
-          </div>
-        `
-        // Re-enable send button so user can try upgrading
-        const sendBtn = document.getElementById("sendBtn")
-        const msgInput = document.getElementById("message")
-        if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
-        if (msgInput) { msgInput.disabled = false; msgInput.placeholder = "Upgrade to continue..." }
-        hideStopBtn()
-        return
-      }
-
-      // Other errors - re-enable input
-      const sendBtn2 = document.getElementById("sendBtn")
-      const msgInput2 = document.getElementById("message")
-      if (sendBtn2) { sendBtn2.disabled = false; sendBtn2.style.opacity = "1" }
-      if (msgInput2) { msgInput2.disabled = false }
-      const msg = errData.message || errData.error || "Something went wrong"
-      aiDiv.innerHTML = `
-        <div class="ai-bubble" style="color:#ff8844;">⚠️ ${msg}. Please try again.</div>
-      `
-      hideStopBtn()
-      return
-    }
-
-    const chatIdFromHeader = res.headers.get("x-chat-id")
-    if (!currentChatId && chatIdFromHeader) {
-      currentChatId = chatIdFromHeader
-      localStorage.setItem("datta_last_chat", currentChatId)
-    }
-
-    // Upgrade Render message for long tasks
-    if (!res.ok && res.status === 504) {
-      aiDiv.innerHTML = `<div class="aiContent"><div class="ai-bubble" style="background:#110a0a;border:1px solid #ff444422;"><div style="color:#ff8888;font-weight:600;margin-bottom:8px;">⏱️ Server timeout</div><div style="color:#888;font-size:13px;margin-bottom:12px;">This task was too large for the free server. Try breaking it into smaller parts, or upgrade Render to paid plan.</div></div></div>`
-      hideStopBtn()
-      return
-    }
-
-    // Mark all thinking steps as done before replacing
-    const thinkBlock = document.getElementById("thinkingBlock")
-    if (thinkBlock) {
-      const allSteps = thinkBlock.querySelectorAll(".thinkStep")
-      allSteps.forEach(s => {
-        s.style.opacity = "0.4"
-        const loader = s.querySelector(".thinkStepLoader")
-        if (loader) loader.innerHTML = '<span style="color:#00ff88;font-size:11px;">✓</span>'
-      })
-      const orb = thinkBlock.querySelector(".thinkingOrb")
-      if (orb) { orb.style.background = "#00ff88"; orb.style.animation = "none" }
-      // Brief pause then swap
-      await new Promise(r => setTimeout(r, 300))
-    }
-
-    // Replace typing indicator with response bubble
-    aiDiv.innerHTML = `
-      <div class="aiContent">
-        <div class="ai-bubble">
-          <span class="stream"></span>
-        </div>
-        <div class="aiActions">
-          <button class="actionBtn" title="Copy" onclick="copyText(this)"><i data-lucide="copy"></i></button>
-          <button class="actionBtn" title="Download as PDF" onclick="downloadAsPDF(this)"><i data-lucide="file-down"></i></button>
-          <button class="actionBtn" title="Save to File Manager" onclick="saveToFileManager(this)"><i data-lucide="bookmark"></i></button>
-          <button class="actionBtn" title="Speak" onclick="speakText(this)"><i data-lucide="volume-2"></i></button>
-          <button class="actionBtn" title="Stop" onclick="stopVoice()"><i data-lucide="square"></i></button>
-          <button class="actionBtn" title="Regenerate" onclick="regenerateFrom(this)"><i data-lucide="refresh-ccw"></i></button>
-          <div class="actionDivider"></div>
-          <button class="actionBtn likeBtn" title="Good response" onclick="likeMsg(this)"><i data-lucide="thumbs-up"></i></button>
-          <button class="actionBtn dislikeBtn" title="Bad response" onclick="dislikeMsg(this)"><i data-lucide="thumbs-down"></i></button>
-        </div>
-      </div>
-    `
-
-    const reader = res.body.getReader()
-    const decoder = new TextDecoder()
-    let streamText = ""
-    let span = aiDiv.querySelector(".stream")
-
-    // ── TYPING STATE ──────────────────────────────────
-    let typingActive = true      // false = user stopped typing animation
-    let typingDone = false       // true = all chunks received from server
-    let fullText = ""            // complete text from server
-    let displayedLen = 0         // how many chars typed so far
-    const CHAR_DELAY = 18        // ms per character (natural speed)
-
-    // ── TYPING ANIMATION ─────────────────────────────
-    async function runTyping() {
-      while (typingActive) {
-        if (displayedLen < fullText.length) {
-          // Type next chunk — grab multiple chars if behind
-          const lag = fullText.length - displayedLen
-          const step = lag > 80 ? 6 : lag > 30 ? 3 : 1
-          displayedLen = Math.min(displayedLen + step, fullText.length)
-
-          const visible = safeContent(fullText.slice(0, displayedLen))
-          span.innerHTML = marked.parse(visible) + '<span class="typingCursor">|</span>'
-          scrollBottom()
-
-          // Detect auto-switch model pill
-          if (visible.includes("Switching to **Datta 5.4**") || visible.includes("switching you to Datta 5.4")) {
-            const pill = document.getElementById("activeModelName")
-            if (pill && pill.textContent !== "Datta 5.4") {
-              pill.textContent = "Datta 5.4"
-              pill.style.color = "#ff6644"
-              setTimeout(() => { pill.style.color = "" }, 3000)
-            }
-          }
-
-          await new Promise(r => setTimeout(r, CHAR_DELAY))
-        } else if (typingDone) {
-          // All chars typed and all chunks received — done
-          break
-        } else {
-          // Waiting for more chunks from server
-          await new Promise(r => setTimeout(r, 30))
-        }
-      }
-
-      // Final clean render — remove cursor
-      if (typingActive) {
-        span.innerHTML = marked.parse(safeContent(fullText.slice(0, displayedLen)))
-      } else {
-        // Stopped by user — show what was typed so far
-        const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
-        const name = user.username || "you"
-        span.innerHTML = marked.parse(safeContent(fullText.slice(0, displayedLen))) +
-          '<div class="stoppedMsg">Response stopped by ' + name + '</div>'
-      }
-      lucide.createIcons()
-    }
-
-    // Start typing animation immediately
-    runTyping()
-
-    // ── READ SERVER CHUNKS ────────────────────────────
-    while (true) {
-      if (!controller) {
-        // User aborted — stop typing
-        typingActive = false
-        typingDone = true
-        break
-      }
-
-      const { done, value } = await reader.read()
-      if (done) break
-
-      const chunk = decoder.decode(value)
-
-      // Debug: catch [object Object] coming from server
-      if (chunk.includes("[object Object]") || chunk.includes("[object object]")) {
-        console.warn("[CHUNK DEBUG] Server sent [object Object]:", chunk.slice(0, 300))
-      }
-
-      if (chunk.includes("CHATID")) {
-        const parts = chunk.split("CHATID")
-        fullText += safeContent(parts[0])
-        currentChatId = (parts[1] || "").trim()
-      } else {
-        const cleanChunk = safeContent(chunk)
-        if (cleanChunk.trim()) fullText += cleanChunk
-      }
-    }
-
-    // Signal typing loop that server is done
-    typingDone = true
-
-    // Wait for typing to finish (or be stopped)
-    while (typingActive && displayedLen < fullText.length) {
-      await new Promise(r => setTimeout(r, 50))
-    }
-
-    // Use fullText for saving (not displayed text)
-    streamText = fullText
-
-    // Add action buttons to user messages after generation
-    chatBox.querySelectorAll(".user-bubble, .userBubble").forEach(bubble => {
-      if (!bubble.closest(".msg-row, .messageRow")?.querySelector(".userActions, .user-actions")) {
-        const row = bubble.closest(".msg-row, .messageRow")
-        const txt = bubble.textContent.trim()
-        const actions = document.createElement("div")
-        actions.className = "userActions"
-        actions.innerHTML = `
-          <button class="uaBtn" title="Copy" onclick="navigator.clipboard.writeText('${txt.replace(/'/g,"\'")}');showToast('Copied!')">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          </button>
-          <button class="uaBtn" title="Edit & resend" onclick="editMessage(this)">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
-          <button class="uaBtn" title="Retry" onclick="retryMessage(this)">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
-          </button>
-        `
-        row.appendChild(actions)
-      }
-    })
-
-    lucide.createIcons()
-    hideStopBtn()
-    loadSidebar()
-
-  } catch (err) {
-    if (err.name === "AbortError") {
-      hideStopBtn()
-      const sendBtn = document.getElementById("sendBtn")
-      const msgInput = document.getElementById("message")
-      if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
-      if (msgInput) { msgInput.disabled = false }
-      return
-    }
-
-    // Auto retry up to 3 times silently
-    console.error("Chat error:", err.message)
-    const retryCount = (window._retryCount || 0) + 1
-    window._retryCount = retryCount
-
-    if (retryCount <= 3) {
-      // Update thinking block to show retrying
-      const tb = aiDiv.querySelector(".thinkingBlock")
-      if (tb) {
-        const title = tb.querySelector(".thinkingTitle")
-        if (title) title.textContent = "Retrying " + retryCount + "/3"
-      }
-      // Wait then retry automatically
-      await new Promise(r => setTimeout(r, 5000))
-      // Ping server to wake it
-      fetch(SERVER + "/ping").catch(() => {})
-      await new Promise(r => setTimeout(r, 2000))
-      // Retry
-      hideStopBtn()
-      const sendBtn = document.getElementById("sendBtn")
-      const msgInput = document.getElementById("message")
-      if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
-      if (msgInput) { msgInput.disabled = false }
-      // Remove the thinking div and resend
-      aiDiv.remove()
-      const inp = document.getElementById("message")
-      if (inp && window.lastUserMsg) {
-        inp.value = window.lastUserMsg
-        send()
-      }
-    } else {
-      window._retryCount = 0
-      hideStopBtn()
-      const sendBtn = document.getElementById("sendBtn")
-      const msgInput = document.getElementById("message")
-      if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
-      if (msgInput) { msgInput.disabled = false }
-      aiDiv.innerHTML = `
-        <div class="aiContent">
-          <div class="ai-bubble" style="background:#110a0a;border:1px solid #ff444422;">
-            <div style="color:#ff8888;font-size:15px;font-weight:600;margin-bottom:8px;">Connection failed after 3 retries</div>
-            <div style="color:#888;font-size:13px;margin-bottom:14px;">Please check your internet and try again.</div>
-            <button onclick="this.closest('.msg-row, .messageRow')?.remove();document.getElementById('message').value=window.lastUserMsg||'';document.getElementById('message').focus()"
-              style="padding:8px 18px;background:#00ff8822;border:1px solid #00ff8844;border-radius:10px;color:#00ff88;font-size:13px;cursor:pointer;">
-              Try Again
-            </button>
-          </div>
-        </div>
-      `
-    }
-  }
-}
-
-
-// ─── LOAD SIDEBAR ─────────────────────────────────────────────────────────────
-let sidebarFixDone = false
-
-async function loadSidebar() {
-  try {
-    const res = await fetch(SERVER + "/chats?token=" + getToken())
-
-    // If 401 redirect to login
-    if (res.status === 401) {
-      localStorage.removeItem("datta_token")
-      localStorage.removeItem("datta_user")
-      window.location.href = "login.html"
-      return
-    }
-
-    const data = await res.json()
-    const chats = Array.isArray(data) ? data : []
-    const history = document.getElementById("history")
-    if (!history) return
-    history.innerHTML = ""
-
-    // Auto-fix bad titles once per session
-    if (!sidebarFixDone && chats.length > 0) {
-      sidebarFixDone = true
-      const badTitles = ["hi","hii","hiii","hello","hey","helo","hai","new conversation","new chat"]
-      const hasBad = chats.some(c => badTitles.includes(c.title.toLowerCase().trim()))
-      if (hasBad) {
-        fetch(SERVER + "/chats/fix-titles?token=" + getToken(), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: getToken() })
-        }).then(r => r.json()).then(d => {
-          if (d.fixed > 0) {
-            console.log("Fixed", d.fixed, "chat titles")
-            loadSidebar() // Reload with fixed titles
-          }
-        }).catch(() => {})
-      }
-    }
-
-    chats.forEach(chat => {
-      let div = document.createElement("div")
-      div.className = "chat-item"
-      div.setAttribute("data-chat-id", chat._id)
-      div.innerHTML = `
-        <svg class="chat-item-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.4;flex-shrink:0;">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
-        <div class="chat-item-title" title="${chat.title}">${chat.title}</div>
-        <button class="chat-item-menu" data-id="${chat._id}" data-title="${chat.title.replace(/"/g,'&quot;')}" onclick="openChatMenu(event,this)" title="More options">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="5" r="1" fill="currentColor"/>
-            <circle cx="12" cy="12" r="1" fill="currentColor"/>
-            <circle cx="12" cy="19" r="1" fill="currentColor"/>
-          </svg>
-        </button>
-      `
-      div.onclick = (e) => {
-        if (e.target.closest(".chat-item-menu")) return
-        openChat(chat._id)
-      }
-      history.appendChild(div)
-    })
-
-    // Restore last chat every time
-    const lastChatId = localStorage.getItem("datta_last_chat")
-    if (lastChatId && chats.length > 0 && !currentChatId) {
-      const exists = chats.some(c => c._id === lastChatId)
-      if (exists) {
-        openChat(lastChatId)
-        setTimeout(() => {
-          document.querySelectorAll(".chat-item").forEach(d => d.classList.remove("active"))
-          const activeDiv = history.querySelector("[data-chat-id='" + lastChatId + "']")
-          if (activeDiv) activeDiv.classList.add("active")
-        }, 200)
-      } else {
-        localStorage.removeItem("datta_last_chat")
-        showWelcome()
-      }
-    } else if (!lastChatId && !currentChatId) {
-      showWelcome()
-    }
-  } catch(e) {
-    console.error("Sidebar error:", e.message)
-  }
-}
-
-
-// ─── OPEN CHAT ────────────────────────────────────────────────────────────────
-async function openChat(chatId) {
-  currentChatId = chatId
-  chatBox.innerHTML = ""
-  hideWelcome()
-
-  const res = await fetch(SERVER + "/chat/" + chatId + "?token=" + getToken())
-  const messages = await res.json()
-
-  messages.forEach(m => {
-    if (m.role === "user") {
-      chatBox.innerHTML += `
-        <div class="msg-row user-row">
-          <div class="user-bubble">${safeContent(m.content)}</div>
-        </div>
-      `
-    } else {
-      chatBox.innerHTML += `
-        <div class="msg-row">
-          <div class="aiContent">
-            <div class="ai-bubble">${marked.parse(safeContent(m.content))}</div>
-            <div class="aiActions">
-              <button class="actionBtn" title="Copy" onclick="copyText(this)"><i data-lucide="copy"></i></button>
-              <button class="actionBtn" title="Download as PDF" onclick="downloadAsPDF(this)"><i data-lucide="file-down"></i></button>
-              <button class="actionBtn" title="Speak" onclick="speakText(this)"><i data-lucide="volume-2"></i></button>
-              <button class="actionBtn" title="Stop" onclick="stopVoice()"><i data-lucide="square"></i></button>
-              <button class="actionBtn" title="Regenerate" onclick="regenerateFrom(this)"><i data-lucide="refresh-cw"></i></button>
-              <div class="actionDivider"></div>
-              <button class="actionBtn likeBtn" title="Good response" onclick="likeMsg(this)"><i data-lucide="thumbs-up"></i></button>
-              <button class="actionBtn dislikeBtn" title="Bad response" onclick="dislikeMsg(this)"><i data-lucide="thumbs-down"></i></button>
-            </div>
-          </div>
-        </div>
-      `
-    }
-  })
-
-  scrollBottom()
-  lucide.createIcons()
-}
-
-
-// ─── DELETE CHAT ──────────────────────────────────────────────────────────────
-// ── CHAT ITEM CONTEXT MENU ────────────────────────────────────────────────────
-function openChatMenu(e, btn) {
-  e.stopPropagation()
-  // Remove any existing menu
-  const existing = document.getElementById("chatContextMenu")
-  if (existing) existing.remove()
-
-  const chatId    = btn.getAttribute("data-id")
-  const chatTitle = btn.getAttribute("data-title")
-
-  const menu = document.createElement("div")
-  menu.id = "chatContextMenu"
-  menu.style.cssText = `
-    position:fixed;
-    background:var(--bg2);
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:4px;
-    z-index:9999;
-    min-width:160px;
-    box-shadow:0 8px 24px rgba(0,0,0,0.4);
-    font-size:13px;
-  `
-
-  menu.innerHTML = `
-    <div class="ctx-item" onclick="startRename('${chatId}','${chatTitle.replace(/'/g,"\'")}');document.getElementById('chatContextMenu').remove()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      Rename
-    </div>
-    <div class="ctx-item ctx-delete" onclick="confirmDelete(null,'${chatId}');document.getElementById('chatContextMenu').remove()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-      Delete
-    </div>
-  `
-
-  // Position near button
-  const rect = btn.getBoundingClientRect()
-  menu.style.top  = (rect.bottom + 4) + "px"
-  menu.style.left = Math.min(rect.left, window.innerWidth - 180) + "px"
-
-  document.body.appendChild(menu)
-
-  // Close on outside click
-  setTimeout(() => {
-    document.addEventListener("click", function closeMenu() {
-      const m = document.getElementById("chatContextMenu")
-      if (m) m.remove()
-      document.removeEventListener("click", closeMenu)
-    })
-  }, 10)
-}
-
-async function startRename(chatId, currentTitle) {
-  const newTitle = prompt("Rename chat:", currentTitle)
-  if (!newTitle || newTitle.trim() === currentTitle) return
-  try {
-    await fetch(SERVER + "/chat/" + chatId + "/rename", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: newTitle.trim(), token: getToken() })
-    })
-    loadSidebar()
-  } catch(e) {
-    showToast("Rename failed")
-  }
-}
-
-function confirmDelete(e, id) {
-  e.stopPropagation()
-  e.preventDefault()
-  // Find the chat item and show inline confirm
-  const chatItem = e.target.closest(".chatItem")
-  if (!chatItem) return
-
-  // Already confirming
-  if (chatItem.querySelector(".deleteConfirm")) {
-    deleteChat(id, chatItem)
-    return
-  }
-
-  const confirm = document.createElement("div")
-  confirm.className = "deleteConfirm"
-  confirm.innerHTML = `
-    <span style="font-size:12px;color:#ff6666;">Delete?</span>
-    <button onclick="deleteChat('${id}', this.closest('.chatItem'))" style="padding:2px 8px;background:#ff4444;border:none;border-radius:6px;color:white;font-size:11px;cursor:pointer;font-weight:700;">Yes</button>
-    <button onclick="this.parentElement.remove()" style="padding:2px 8px;background:#222;border:none;border-radius:6px;color:#aaa;font-size:11px;cursor:pointer;">No</button>
-  `
-  confirm.style.cssText = "display:flex;align-items:center;gap:6px;padding:4px 0;"
-  chatItem.appendChild(confirm)
-
-  // Auto remove after 3 seconds
-  setTimeout(() => confirm.remove(), 3000)
-}
-
-async function deleteChat(id, chatItem) {
-  try {
-    if (chatItem) chatItem.style.opacity = "0.4"
-    await fetch(SERVER + "/chat/" + id + "?token=" + getToken(), {
-      method: "DELETE"
-    })
-    if (chatItem) chatItem.remove()
-    if (currentChatId === id) {
-      currentChatId = null
-      document.getElementById("chat").innerHTML = ""
-      showWelcome()
-    }
-    loadSidebar()
-  } catch(e) {
-    if (chatItem) chatItem.style.opacity = "1"
-  }
-}
-
-
-// ─── COPY TEXT ────────────────────────────────────────────────────────────────
-function copyText(btn) {
-  const bubble = getAiBubble(btn)
-  if (!bubble) return
-  const text = bubble.innerText || bubble.textContent
-  navigator.clipboard.writeText(text).then(() => showToast("Copied!"))
-}
-
-
-// ─── SPEAK TEXT ───────────────────────────────────────────────────────────────
-function speakText(btn) {
-  const bubble = getAiBubble(btn)
-  if (!bubble) return
-  const text = bubble.innerText || bubble.textContent
-  const speech = new SpeechSynthesisUtterance(text)
-  speech.lang = "en-US"
-  speechSynthesis.speak(speech)
-}
-
-
-// ─── STOP VOICE ───────────────────────────────────────────────────────────────
-function stopVoice() {
-  speechSynthesis.cancel()
-}
-
-
-// ─── REGENERATE ───────────────────────────────────────────────────────────────
-async function regenerateFrom(btn) {
-  const row = getMsgRow(btn)
-  const prev = row?.previousElementSibling
-  if (!row || !prev) return
-
-  const text = (prev.querySelector(".user-bubble, .userBubble") || {}).innerText || ""
-  const aiBubble = row.querySelector(".ai-bubble, .aiBubble")
-  aiBubble.innerHTML = `<span class="stream"></span>`
-  const span = aiBubble.querySelector(".stream")
-
-  controller = new AbortController()
-
-  const res = await fetch(SERVER + "/chat", {
+  const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    signal: controller.signal,
-    body: JSON.stringify({
-      message: text,
-      title: text.substring(0, 40),
-      chatId: currentChatId
-    })
+    body: JSON.stringify(body)
   })
 
-  const reader = res.body.getReader()
+  if (!response.ok) {
+    const err = await response.text()
+    throw new Error("Gemini error: " + err.substring(0, 200))
+  }
+
+  // Stream SSE response
+  const reader = response.body.getReader()
   const decoder = new TextDecoder()
-  let streamText = ""
+  let full = ""
+  let buffer = ""
 
   while (true) {
     const { done, value } = await reader.read()
     if (done) break
-
-    const chunk = decoder.decode(value)
-
-    if (chunk.includes("CHATID")) {
-      const parts = chunk.split("CHATID")
-      streamText += parts[0]
-      currentChatId = parts[1]
-    } else {
-      streamText += chunk
-    }
-
-    span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>'
-    scrollBottom()
-  }
-
-  span.innerHTML = marked.parse(streamText)
-  lucide.createIcons()
-}
-
-
-// ─── VOICE INPUT ──────────────────────────────────────────────────────────────
-// MIC BUTTON - inline listener like Google (just types in input, does NOT open overlay)
-let _micRecognition = null
-let _micActive = false
-
-function startVoiceListener() {
-  if (_micActive) {
-    stopVoiceListener()
-    return
-  }
-
-  if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-    showToast("Voice not supported in this browser")
-    return
-  }
-
-  const input = document.getElementById("message")
-  const micBtn = document.getElementById("micBtn")
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-  _micRecognition = new SR()
-  _micRecognition.lang = localStorage.getItem("datta_voice_lang") || "en-IN"
-  _micRecognition.continuous = false
-  _micRecognition.interimResults = true
-
-  _micActive = true
-
-  // Show listening state on mic button
-  if (micBtn) {
-    micBtn.style.color = "#ff4444"
-    micBtn.style.transform = "scale(1.2)"
-  }
-  if (input) {
-    input.placeholder = "🎤 Listening..."
-    input.style.color = "#00ff88"
-  }
-
-  _micRecognition.onresult = (e) => {
-    let interim = ""
-    let final = ""
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) final += e.results[i][0].transcript
-      else interim += e.results[i][0].transcript
-    }
-    if (input) input.value = final || interim
-    if (final) {
-      stopVoiceListener()
-      setTimeout(() => send(), 300)
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split("\n")
+    buffer = lines.pop() || ""
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue
+      const data = line.slice(6).trim()
+      if (!data || data === "[DONE]") continue
+      try {
+        const json = JSON.parse(data)
+        const token = json.candidates?.[0]?.content?.parts?.[0]?.text
+        if (token && typeof token === "string") { full += token; res.write(token) }
+      } catch(e) {}
     }
   }
-
-  _micRecognition.onerror = (e) => {
-    stopVoiceListener()
-    showToast("Voice error: " + e.error)
-  }
-
-  _micRecognition.onend = () => {
-    stopVoiceListener()
-  }
-
-  _micRecognition.start()
+  return full
 }
 
-function stopVoiceListener() {
-  _micActive = false
-  const input = document.getElementById("message")
-  const micBtn = document.getElementById("micBtn")
-  if (micBtn) {
-    micBtn.style.color = ""
-    micBtn.style.transform = ""
+mongoose.connect(process.env.MONGO_URI).then(() => console.log("MongoDB connected")).catch(e => console.error("DB error:", e.message))
+
+// Safe string extractor — prevents [object Object] in AI responses
+function safeStr(val) {
+  if (val === null || val === undefined) return ""
+  if (typeof val === "string") return val
+  if (Array.isArray(val)) {
+    return val.filter(p => p && p.type === "text").map(p => p.text || "").join("") || "[image]"
   }
-  if (input) {
-    input.placeholder = "Ask Datta AI anything..."
-    input.style.color = ""
-  }
-  if (_micRecognition) {
-    try { _micRecognition.stop() } catch(e) {}
-    _micRecognition = null
-  }
+  if (typeof val === "object") return val.text || val.content || JSON.stringify(val)
+  return String(val)
 }
 
+app.get("/ping", (req, res) => res.json({ alive: true, time: new Date().toISOString() }))
+app.get("/health", (req, res) => res.json({ status: "ok", uptime: process.uptime() }))
 
-// ─── TOGGLE MENU ─────────────────────────────────────────────────────────────
-function toggleMenu(e, id) {
-  e.stopPropagation()
-  document.querySelectorAll(".chatMenu").forEach(m => m.style.display = "none")
-  const menu = document.getElementById("menu-" + id)
-  if (menu) menu.style.display = "block"
+const otpStore = {}
+
+// Twilio client - supports both Verify Service and direct SMS
+let twilioClient = null
+if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+  twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+  console.log("Twilio initialized")
+} else {
+  console.warn("Twilio not configured")
 }
 
-window.onclick = () => {
-  document.querySelectorAll(".chatMenu").forEach(m => m.style.display = "none")
-}
-
-
-// ─── SCROLL ───────────────────────────────────────────────────────────────────
-function scrollBottom() {
-  if (userScrolledUp) return
-  chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: "smooth" })
-}
-
-chatBox.addEventListener("scroll", () => {
-  const distFromBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight
-  userScrolledUp = distFromBottom > 150
-  if (scrollBtn) {
-    if (userScrolledUp) scrollBtn.classList.add("show")
-    else scrollBtn.classList.remove("show")
-  }
+// SCHEMAS
+const UserSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true, trim: true },
+  email: { type: String, sparse: true, trim: true },
+  password: String,
+  phone: { type: String, sparse: true },
+  googleId: { type: String, sparse: true },
+  createdAt: { type: Date, default: Date.now }
 })
+const User = mongoose.model("User", UserSchema)
 
-if (scrollBtn) {
-  scrollBtn.addEventListener("click", () => {
-    userScrolledUp = false
-    scrollBottom()
-  })
-}
-
-
-// ─── WELCOME HELPERS ──────────────────────────────────────────────────────────
-function hideWelcome() {
-  document.body.classList.add("chat-started")
-  const w = document.getElementById("welcomeScreen")
-  if (w) w.style.display = "none"
-}
-
-function showWelcome() {
-  if (currentChatId) return
-  document.body.classList.remove("chat-started")
-  const w = document.getElementById("welcomeScreen")
-  if (w) w.style.display = "flex"
-  loadSmartSuggestions()
-}
-
-
-// ─── FILL PROMPT ──────────────────────────────────────────────────────────────
-function fillPrompt(text) {
-  document.getElementById("message").value = text
-  hideWelcome()
-  send()
-}
-
-window.fillPrompt = fillPrompt
-
-
-// ─── SUGGEST BUTTONS ──────────────────────────────────────────────────────────
-document.querySelectorAll(".suggestBtn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const text = btn.getAttribute("data-text")
-    document.getElementById("message").value = text
-    hideWelcome()
-    send()
-  })
+const MessageSchema = new mongoose.Schema({ role: String, content: String })
+const ChatSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  title: { type: String, default: "New chat" },
+  messages: [MessageSchema],
+  createdAt: { type: Date, default: Date.now }
 })
+const Chat = mongoose.model("Chat", ChatSchema)
 
-
-// ─── ENTER KEY ────────────────────────────────────────────────────────────────
-document.getElementById("message").addEventListener("keydown", function (e) {
-  if (e.key === "Enter") {
-    e.preventDefault()
-    send()
-  }
+const SubscriptionSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  plan: { type: String, default: "free" },
+  period: { type: String, default: "monthly" },
+  paymentId: String,
+  method: String,
+  startDate: { type: Date, default: Date.now },
+  endDate: Date,
+  active: { type: Boolean, default: true }
 })
+const Subscription = mongoose.model("Subscription", SubscriptionSchema)
 
-
-// ─── SIDEBAR TOGGLE ───────────────────────────────────────────────────────────
-
-// ─── SAVE CHAT TITLE (local fallback) ────────────────────────────────────────
-function saveChatTitle(title) {
-  const history = document.getElementById("history")
-  if (!history) return
-  const div = document.createElement("div")
-  div.className = "chat-item"
-  div.innerHTML = `<span class="chatTitle">${title}</span>`
-  history.prepend(div)
+// ERROR SANITIZER - never expose internal details to users
+function sanitizeError(err) {
+  const msg = (err?.message || err?.error?.message || String(err) || "").toLowerCase()
+  
+  // Rate limit errors
+  if (msg.includes("rate limit") || msg.includes("429") || msg.includes("tpm") || msg.includes("tokens per minute")) {
+    return { userMsg: "Datta AI is thinking too hard! Please wait a moment and try again.", code: "rate_limit" }
+  }
+  // Model errors
+  if (msg.includes("decommission") || msg.includes("model") || msg.includes("deprecated")) {
+    return { userMsg: "This model is temporarily unavailable. Switching to default model.", code: "model_error" }
+  }
+  // Auth errors
+  if (msg.includes("api key") || msg.includes("unauthorized") || msg.includes("authentication")) {
+    return { userMsg: "Service temporarily unavailable. Please try again.", code: "service_error" }
+  }
+  // Timeout
+  if (msg.includes("timeout") || msg.includes("timed out")) {
+    return { userMsg: "Request timed out. Please try again.", code: "timeout" }
+  }
+  // Network
+  if (msg.includes("network") || msg.includes("fetch") || msg.includes("econnrefused")) {
+    return { userMsg: "Connection error. Please check your internet and try again.", code: "network" }
+  }
+  // Context too long
+  if (msg.includes("context") || msg.includes("too long") || msg.includes("maximum")) {
+    return { userMsg: "Message too long. Please start a new chat.", code: "too_long" }
+  }
+  // Generic fallback - never expose real error
+  return { userMsg: "Something went wrong. Please try again.", code: "unknown" }
 }
 
-
-// ─── SEARCH CHATS ────────────────────────────────────────────────────────────
-// ─── INIT ─────────────────────────────────────────────────────────────────────
-window.send = send
-loadSidebar()
-
-window.addEventListener("DOMContentLoaded", function() {
-  // Init send/stop button
-  setGenerating(false)
-  // Init theme buttons to reflect current theme
-  const t = localStorage.getItem("datta_theme") || "dark"
-  setTheme(t, true)
+// USAGE SCHEMA - persists in MongoDB so refreshes don't reset
+const UsageSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", unique: true },
+  messagesUsed: { type: Number, default: 0 },
+  imagesUsed: { type: Number, default: 0 },
+  totalMessages: { type: Number, default: 0 },
+  totalImages: { type: Number, default: 0 },
+  windowStart: { type: Date, default: Date.now },
+  imageWindowStart: { type: Date, default: Date.now },
+  firstEverMessage: { type: Boolean, default: true },
+  updatedAt: { type: Date, default: Date.now }
 })
+const Usage = mongoose.model("Usage", UsageSchema)
 
-// Load smart suggestions for welcome screen
-async function loadSmartSuggestions() {
-  const chips = document.getElementById("suggestionChips")
-  if (!chips) return
-  // Just use static chips - no API call needed
-  // Dynamic chips from server were causing [object Object] error
-  chips.innerHTML = `
-    <button class="sugg-card" onclick="useChip(this)"><span class="sugg-icon">🌐</span><span class="sugg-text">Build me a portfolio website</span></button>
-    <button class="sugg-card" onclick="useChip(this)"><span class="sugg-icon">🐍</span><span class="sugg-text">Write a Python web scraper</span></button>
-    <button class="sugg-card" onclick="useChip(this)"><span class="sugg-icon">🧠</span><span class="sugg-text">Explain machine learning</span></button>
-    <button class="sugg-card" onclick="useChip(this)"><span class="sugg-icon">💼</span><span class="sugg-text">Create a business plan</span></button>
-  `
+// MEMORY SCHEMA - persists user memory
+const MemorySchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  key: String,
+  value: mongoose.Schema.Types.Mixed,
+  category: { type: String, default: "general" },
+  updatedAt: { type: Date, default: Date.now }
+})
+const Memory = mongoose.model("Memory", MemorySchema)
+
+const planLimits = {
+  free:      { messages: 50,     resetHours: 5,  models: ["all"] },
+  mini:      { messages: 200,    resetHours: 3,  models: ["all"] },
+  pro:       { messages: 500,    resetHours: 2,  models: ["all"] },
+  max:       { messages: 2000,   resetHours: 1,  models: ["all"] },
+  ultramax:  { messages: 999999, resetHours: 0,  models: ["all"] },
+  basic:     { messages: 500,    resetHours: 2,  models: ["all"] },
+  enterprise:{ messages: 999999, resetHours: 0,  models: ["all"] }
 }
-window.loadSmartSuggestions = loadSmartSuggestions
+const rateLimitStore = {}
 
-// SHOW SIDEBAR SECTION
-function showSection(name) {
-  // Hide all sections
-  document.querySelectorAll(".sidebarSection").forEach(s => s.style.display = "none")
-  // Show selected
-  const el = document.getElementById("section-" + name)
-  if (el) el.style.display = "flex"
+// MongoDB-based usage tracking - persists across refreshes and restarts
+async function checkAndUpdateLimitDB(userId, plan, type) {
+  const limits = planLimits[plan] || planLimits.free
+  if (limits[type] === 999999) return { allowed: true }
 
-  // Update active nav
-  document.querySelectorAll(".navItem").forEach(b => b.classList.remove("active"))
-  const btns = document.querySelectorAll(".navItem")
-  const idx = ["chats","projects","artifacts"].indexOf(name)
-  if (btns[idx]) btns[idx].classList.add("active")
+  const now = new Date()
+  const resetMs = limits.resetHours * 60 * 60 * 1000
 
-  // Show/hide recents label and search
-  const showRecents = name === "chats"
-  const recentsLabel = document.getElementById("recentsLabel")
-  const search = document.getElementById("search")
-  if (recentsLabel) recentsLabel.style.display = showRecents ? "block" : "none"
-  if (search) search.style.display = showRecents ? "block" : "none"
-}
-
-window.showSection = showSection
-
-// LOGOUT
-function logout() {
-  localStorage.removeItem("datta_token")
-  localStorage.removeItem("datta_user")
-  window.location.href = "login.html"
-}
-
-window.logout = logout
-
-// ── SETTINGS ─────────────────────────────────────────────────────────────────
-
-function openSettings() {
-  if (typeof event !== "undefined" && event && event.stopPropagation) event.stopPropagation()
-  // Go to the new settings page
-  window.location.href = "settings.html"
-}
-
-function closeSettings() {
-  const modal = document.getElementById("settingsModal")
-  if (modal) modal.classList.remove("show")
-  clearSettingsMsg()
-}
-
-function switchSettingsTab(tab) {
-  // Support both old (.sTab/.sTabContent) and new (.s-tab/.s-tab-pane) class names
-  document.querySelectorAll(".sTab, .s-tab").forEach(t => t.classList.remove("active"))
-  document.querySelectorAll(".sTabContent, .s-tab-pane").forEach(c => c.classList.remove("active"))
-
-  // Activate the clicked tab button
-  const tabBtn = document.getElementById("stab-" + tab)
-  if (tabBtn) tabBtn.classList.add("active")
-
-  // Activate the tab content pane
-  const pane = document.getElementById("tab-" + tab)
-  if (pane) pane.classList.add("active")
-
-  clearSettingsMsg()
-}
-
-function showSettingsMsg(text, type) {
-  const el = document.getElementById("settingsMsg")
-  if (!el) return
-  el.textContent = text
-  el.className = "s-msg " + (type === "success" ? "success" : "error")
-  setTimeout(() => { el.className = "s-msg"; el.textContent = "" }, 3000)
-}
-
-function clearSettingsMsg() {
-  const el = document.getElementById("settingsMsg")
-  if (el) { el.className = "s-msg"; el.textContent = "" }
-}
-
-function loadSettingsUI() {
-  let user = {}
-  try {
-    const raw = localStorage.getItem("datta_user")
-    if (raw && raw !== "null") user = JSON.parse(raw)
-  } catch(e) {}
-  const usernameInput = document.getElementById("newUsername")
-  if (usernameInput) usernameInput.placeholder = user.username || "Enter new username"
-
-  // Load theme — apply and highlight active button
-  const theme = localStorage.getItem("datta_theme") || "dark"
-  setTheme(theme, true)
-
-  // Load language
-  const lang = localStorage.getItem("datta_language") || "English"
-  const langSelect = document.getElementById("aiLanguage")
-  if (langSelect) langSelect.value = lang
-
-  // Load notification settings
-  const notifSettings = JSON.parse(localStorage.getItem("datta_notif") || "{}")
-  const soundToggle = document.getElementById("soundToggle")
-  const notifToggle = document.getElementById("notifToggle")
-  const streamToggle = document.getElementById("streamToggle")
-  if (soundToggle) soundToggle.checked = notifSettings.sound || false
-  if (notifToggle) notifToggle.checked = notifSettings.notif || false
-  if (streamToggle) streamToggle.checked = notifSettings.stream !== false
-}
-
-// CHANGE USERNAME
-async function changeUsername() {
-  const newUsername = document.getElementById("newUsername").value.trim()
-  if (!newUsername) return showSettingsMsg("Please enter a username", "error")
-  if (newUsername.length < 3) return showSettingsMsg("Username must be at least 3 characters", "error")
-
-  try {
-    const res = await fetch(SERVER + "/auth/update-username", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: newUsername, token: datta_token })
-    })
-    const data = await res.json()
-    if (!res.ok) return showSettingsMsg(data.error || "Failed to update", "error")
-
-    // Update local storage
-    const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
-    user.username = newUsername
-    localStorage.setItem("datta_user", JSON.stringify(user))
-
-    // Update sidebar
-    const nameEl = document.getElementById("profileName") || document.querySelector(".sb-profile-name")
-    const avatarEl = document.getElementById("profileAvatar") || document.querySelector(".sb-avatar")
-    if (nameEl) nameEl.textContent = newUsername
-    if (avatarEl) avatarEl.textContent = newUsername[0].toUpperCase()
-
-    showSettingsMsg("Username updated successfully!", "success")
-  } catch (e) {
-    showSettingsMsg("Server error. Try again.", "error")
+  let usage = await Usage.findOne({ userId })
+  if (!usage) {
+    usage = await Usage.create({ userId, windowStart: now, imageWindowStart: now })
   }
-}
 
-// CHANGE PASSWORD
-async function changePassword() {
-  const current = document.getElementById("currentPassword").value
-  const newPass = document.getElementById("newPassword").value
-  const confirm = document.getElementById("confirmPassword").value
-
-  if (!current || !newPass || !confirm) return showSettingsMsg("Please fill all fields", "error")
-  if (newPass.length < 6) return showSettingsMsg("New password must be at least 6 characters", "error")
-  if (newPass !== confirm) return showSettingsMsg("Passwords do not match", "error")
-
-  try {
-    const res = await fetch(SERVER + "/auth/change-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentPassword: current, newPassword: newPass, token: datta_token })
-    })
-    const data = await res.json()
-    if (!res.ok) return showSettingsMsg(data.error || "Failed to change password", "error")
-
-    document.getElementById("currentPassword").value = ""
-    document.getElementById("newPassword").value = ""
-    document.getElementById("confirmPassword").value = ""
-    showSettingsMsg("Password changed successfully!", "success")
-  } catch (e) {
-    showSettingsMsg("Server error. Try again.", "error")
+  // Reset window if time passed
+  if (type === "messages" && resetMs > 0 && resetMs < 999999 * 3600 * 1000) {
+    if (now - usage.windowStart > resetMs) {
+      usage.messagesUsed = 0
+      usage.windowStart = now
+    }
   }
-}
-
-// SET THEME
-function setTheme(theme, silent) {
-  if (!["dark","light","eye"].includes(theme)) theme = "dark"
-  localStorage.setItem("datta_theme", theme)
-
-  // Apply to root — this triggers all CSS variables
-  document.documentElement.setAttribute("data-theme", theme)
-  document.body.setAttribute("data-theme", theme)
-
-  // Topbar buttons: topThemeDark, topThemeLight, topThemeEye
-  ;["Dark","Light","Eye"].forEach(t => {
-    const btn = document.getElementById("topTheme" + t)
-    if (btn) btn.classList.toggle("active", t.toLowerCase() === theme)
-  })
-  // Settings modal buttons: themeDark, themeLight, themeEye
-  ;["Dark","Light","Eye"].forEach(t => {
-    const btn = document.getElementById("theme" + t)
-    if (btn) btn.classList.toggle("active", t.toLowerCase() === theme)
-  })
-
-  if (!silent && typeof showSettingsMsg === "function") showSettingsMsg("Theme applied!", "success")
-}
-
-// SET FONT SIZE
-function setFontSize(size) {
-  document.querySelectorAll(".fontBtn").forEach(b => b.classList.remove("active"))
-  event.target.classList.add("active")
-  const sizes = { small: "13px", medium: "15px", large: "17px" }
-  document.documentElement.style.setProperty("--chat-font-size", sizes[size])
-  document.querySelectorAll(".ai-bubble, .aiBubble, .user-bubble, .userBubble").forEach(el => el.style.fontSize = sizes[size])
-  localStorage.setItem("datta_fontsize", size)
-  showSettingsMsg("Font size set to " + size, "success")
-}
-
-// SAVE LANGUAGE
-function saveLanguage() {
-  const lang = document.getElementById("aiLanguage").value
-  localStorage.setItem("datta_language", lang)
-  showSettingsMsg("AI will now respond in " + lang + "!", "success")
-}
-
-// SAVE NOTIFICATION SETTINGS
-function saveNotifSettings() {
-  const settings = {
-    sound: document.getElementById("soundToggle").checked,
-    notif: document.getElementById("notifToggle").checked,
-    stream: document.getElementById("streamToggle").checked
+  if (type === "images" && resetMs > 0 && resetMs < 999999 * 3600 * 1000) {
+    if (now - usage.imageWindowStart > resetMs) {
+      usage.imagesUsed = 0
+      usage.imageWindowStart = now
+    }
   }
-  localStorage.setItem("datta_notif", JSON.stringify(settings))
-}
 
-// DELETE ALL CHATS
-async function deleteAllChats() {
-  if (!confirm("Are you sure? This will delete ALL your chats permanently!")) return
-
-  try {
-    const res = await fetch(SERVER + "/chats/all?token=" + getToken(), {
-      method: "DELETE"
-    })
-    if (!res.ok) return showSettingsMsg("Failed to delete chats", "error")
-
-    chatBox.innerHTML = ""
-    currentChatId = null
-    showWelcome()
-    loadSidebar()
-    showSettingsMsg("All chats deleted!", "success")
-  } catch (e) {
-    showSettingsMsg("Server error. Try again.", "error")
+  // Free plan: first 50 messages ever, then 20/day
+  let limit = limits[type]
+  if (plan === "free" && type === "messages") {
+    if (usage.totalMessages >= 50) {
+      limit = 20  // 20 per day after first 50
+    }
   }
-}
 
-// DELETE ACCOUNT
-async function deleteAccount() {
-  const password = document.getElementById("deleteAccountPassword").value
-  if (!password) return showSettingsMsg("Enter your password to confirm", "error")
+  const current = type === "messages" ? usage.messagesUsed : usage.imagesUsed
 
-  if (!confirm("This will PERMANENTLY delete your account. Are you absolutely sure?")) return
-
-  try {
-    const res = await fetch(SERVER + "/auth/delete-account", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password, token: datta_token })
-    })
-    const data = await res.json()
-    if (!res.ok) return showSettingsMsg(data.error || "Failed to delete account", "error")
-
-    localStorage.clear()
-    window.location.href = "login.html"
-  } catch (e) {
-    showSettingsMsg("Server error. Try again.", "error")
+  if (current >= limit) {
+    const windowStart = type === "messages" ? usage.windowStart : usage.imageWindowStart
+    const waitMs = resetMs > 0 && resetMs < 999999 * 3600 * 1000
+      ? resetMs - (now - windowStart) : 0
+    const waitMins = waitMs > 0 ? Math.ceil(waitMs / 60000) : 0
+    return { allowed: false, type, plan, waitMins, limit }
   }
-}
 
-// Apply saved theme on load
-;(function() {
-  // Apply theme instantly before page renders (no flash)
-  const theme = localStorage.getItem("datta_theme") || "dark"
-  document.body.setAttribute("data-theme", ["dark","light","eye"].includes(theme) ? theme : "dark")
-
-  // Apply saved language
-  const lang = localStorage.getItem("datta_language")
-  if (lang) window.dattaLanguage = lang
-})()
-
-window.openSettings = openSettings
-window.closeSettings = closeSettings
-window.switchSettingsTab = switchSettingsTab
-window.changeUsername = changeUsername
-window.changePassword = changePassword
-window.setTheme = setTheme
-window.setFontSize = setFontSize
-window.saveLanguage = saveLanguage
-window.saveNotifSettings = saveNotifSettings
-window.deleteAllChats = deleteAllChats
-window.deleteAccount = deleteAccount
-
-// LIKE / DISLIKE
-function likeMsg(btn) {
-  const wasActive = btn.classList.contains("active")
-  const row = btn.closest(".aiActions, .ai-actions, .msg-row, .messageRow")
-  row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => {
-    b.classList.remove("active")
-    b.style.color = ""
-  })
-  if (!wasActive) {
-    btn.classList.add("active")
-    btn.style.color = "#00ff88"
-  }
-}
-
-function dislikeMsg(btn) {
-  const wasActive = btn.classList.contains("active")
-  const row = btn.closest(".aiActions, .ai-actions, .msg-row, .messageRow")
-  row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => {
-    b.classList.remove("active")
-    b.style.color = ""
-  })
-  if (!wasActive) {
-    btn.classList.add("active")
-    btn.style.color = "#ff4444"
-  }
-}
-
-window.likeMsg = likeMsg
-window.dislikeMsg = dislikeMsg
-
-// ── VOICE ASSISTANT (SIRI-LIKE) ──────────────────────────────────────────────
-
-let voiceRecognition = null
-let voiceSynth = window.speechSynthesis
-let isListening  = false
-let isSpeaking   = false
-let voiceActive  = false
-let voiceMuted   = false
-
-// ── STATE MACHINE ─────────────────────────────────────────────────────────────
-function setVA(state) {
-  // state: idle | listening | thinking | speaking
-  const overlay   = document.getElementById("voiceOverlay")
-  const statusEl  = document.getElementById("voiceStatus")
-  const orbEl     = document.getElementById("voiceOrb")
-
-  if (!overlay) return
-
-  // Remove all state classes
-  overlay.classList.remove("va-listening", "va-speaking", "va-thinking")
-
-  const labels = { idle:"Tap to speak", listening:"Listening...", thinking:"Thinking...", speaking:"Speaking..." }
-  if (statusEl) statusEl.textContent = labels[state] || ""
-
-  if (state === "listening") {
-    overlay.classList.add("va-listening")
-    if (orbEl) orbEl.style.background = "linear-gradient(135deg,#ef4444,#f97316)"
-  } else if (state === "speaking") {
-    overlay.classList.add("va-speaking")
-    if (orbEl) orbEl.style.background = "linear-gradient(135deg,#0077ff,#a855f7)"
-  } else if (state === "thinking") {
-    overlay.classList.add("va-thinking")
-    if (orbEl) orbEl.style.background = "linear-gradient(135deg,#a855f7,#ec4899)"
+  // Increment
+  if (type === "messages") {
+    usage.messagesUsed++
+    usage.totalMessages++
   } else {
-    if (orbEl) orbEl.style.background = "linear-gradient(135deg,#10a37f,#0077ff)"
+    usage.imagesUsed++
+    usage.totalImages++
   }
+  usage.updatedAt = now
+  await usage.save()
+
+  return { allowed: true, used: current + 1, limit }
 }
 
-function setVoiceText(text) {
-  const el = document.getElementById("voiceText")
-  if (el) el.textContent = text
-}
-function setVoiceAIText(text) {
-  const el = document.getElementById("voiceAIText")
-  if (el) el.textContent = text
-}
-
-// ── OPEN / CLOSE ──────────────────────────────────────────────────────────────
-function openVoiceAssistant() {
-  voiceActive = true
-  const overlay = document.getElementById("voiceOverlay")
-  if (overlay) overlay.style.display = "flex"
-  setVA("idle")
-  setVoiceText("")
-  setVoiceAIText("")
-  // Greet after short delay
-  setTimeout(() => {
-    if (voiceActive) speakText2("Hello! I am Datta AI. How can I help you?")
-  }, 400)
-}
-
-function closeVoiceAssistant() {
-  voiceActive = false
-  stopListening()
-  stopSpeaking()
-  const overlay = document.getElementById("voiceOverlay")
-  if (overlay) overlay.style.display = "none"
-}
-
-// ── MUTE ──────────────────────────────────────────────────────────────────────
-function toggleVoiceMute() {
-  voiceMuted = !voiceMuted
-  const btn = document.getElementById("vaMuteBtn")
-  if (btn) {
-    btn.style.background  = voiceMuted ? "rgba(239,68,68,0.15)" : "var(--bg2)"
-    btn.style.borderColor = voiceMuted ? "rgba(239,68,68,0.4)"  : "var(--border)"
-    btn.style.color       = voiceMuted ? "#ef4444" : "var(--text2)"
-    btn.title = voiceMuted ? "Unmute" : "Mute"
+// Keep old sync function as fallback
+function checkAndUpdateLimit(userId, plan, type) {
+  const limits = planLimits[plan] || planLimits.free
+  if (limits[type] === 999999) return { allowed: true }
+  const key = userId.toString() + "_" + type
+  const now = Date.now()
+  const resetMs = limits.resetHours * 60 * 60 * 1000
+  if (!rateLimitStore[key]) rateLimitStore[key] = { count: 0, windowStart: now, totalEver: 0 }
+  const store = rateLimitStore[key]
+  if (resetMs > 0 && resetMs < 999999 * 3600 * 1000 && now - store.windowStart > resetMs) {
+    store.count = 0; store.windowStart = now
   }
-  if (voiceMuted && isSpeaking) stopSpeaking()
+  let limit = limits[type]
+  // simple limit - no special free logic needed
+  if (store.count >= limit) {
+    const waitMs = resetMs > 0 && resetMs < 999999*3600*1000 ? resetMs-(now-store.windowStart) : 0
+    return { allowed: false, type, plan, waitMins: waitMs>0?Math.ceil(waitMs/60000):0, limit }
+  }
+  store.count++; store.totalEver = (store.totalEver||0)+1
+  return { allowed: true, used: store.count, limit }
 }
 
-// ── LANGUAGE ──────────────────────────────────────────────────────────────────
-function setVoiceLang(lang) {
-  window._voiceLang = lang === "auto" ? null : lang
+const JWT_SECRET = process.env.JWT_SECRET || "datta-ai-secret-2024"
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://harisaiganeshpampana-ai.github.io/datta-ai"
+
+function generateToken(user) {
+  return jwt.sign({ id: user._id, username: user.username, email: user.email }, JWT_SECRET, { expiresIn: "30d" })
 }
 
-function detectLangFromText(text) {
-  // Simple script detection
-  if (/[ऀ-ॿ]/.test(text)) return "hi-IN"  // Hindi Devanagari
-  if (/[ఀ-౿]/.test(text)) return "te-IN"  // Telugu
-  if (/[஀-௿]/.test(text)) return "ta-IN"  // Tamil
-  if (/[ಀ-೿]/.test(text)) return "kn-IN"  // Kannada
-  return "en-IN"
-}
-
-// ── LISTEN ────────────────────────────────────────────────────────────────────
-function toggleVoiceListening() {
-  if (isListening) stopListening()
-  else             startListening()
-}
-
-function startListening() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-  if (!SR) {
-    setVoiceAIText("Voice not supported in this browser. Please use Chrome.")
-    return
+function authMiddleware(req, res, next) {
+  let token = null
+  const header = req.headers.authorization
+  if (header) token = header.replace("Bearer ", "").trim()
+  if (!token && req.body && req.body.token) token = req.body.token
+  if (!token && req.query && req.query.token) token = req.query.token
+  if (!token) return res.status(401).json({ error: "No token" })
+  if (token.startsWith("guest_")) {
+    req.user = { id: token, username: "Guest", isGuest: true }
+    return next()
   }
-
-  stopSpeaking()
-  setVoiceText("")
-  setVoiceAIText("")
-
-  const langSel = document.getElementById("voiceLangSelect")
-  const chosenLang = (langSel && langSel.value !== "auto") ? langSel.value : "en-IN"
-
-  voiceRecognition = new SR()
-  voiceRecognition.lang            = window._voiceLang || chosenLang
-  voiceRecognition.continuous      = false
-  voiceRecognition.interimResults  = true
-  voiceRecognition.maxAlternatives = 1
-
-  voiceRecognition.onstart = () => {
-    isListening = true
-    setVA("listening")
-  }
-
-  voiceRecognition.onresult = (e) => {
-    let interim = "", final = ""
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) final += e.results[i][0].transcript
-      else interim += e.results[i][0].transcript
-    }
-    setVoiceText(final || interim)
-    if (final.trim()) {
-      stopListening()
-      processVoiceQuery(final.trim())
-    }
-  }
-
-  voiceRecognition.onerror = (e) => {
-    isListening = false
-    const msgs = {
-      "not-allowed":  "Microphone permission denied",
-      "no-speech":    "No speech detected. Tap to try again.",
-      "network":      "Network error. Check connection.",
-      "aborted":      ""
-    }
-    const msg = msgs[e.error] || ("Error: " + e.error)
-    if (msg) setVoiceAIText(msg)
-    setVA("idle")
-  }
-
-  voiceRecognition.onend = () => {
-    isListening = false
-    if (voiceActive && !isSpeaking) setVA("idle")
-  }
-
-  try { voiceRecognition.start() } catch(e) {}
-}
-
-function stopListening() {
-  isListening = false
-  if (voiceRecognition) {
-    try { voiceRecognition.stop() } catch(e) {}
-    voiceRecognition = null
-  }
-  if (voiceActive && !isSpeaking) setVA("idle")
-}
-
-// ── PROCESS QUERY ─────────────────────────────────────────────────────────────
-async function processVoiceQuery(query) {
-  if (!query.trim()) return
-
-  // Close commands
-  const closeCmds = ["close", "stop", "exit", "bye", "goodbye", "dismiss", "band karo"]
-  if (closeCmds.some(c => query.toLowerCase().includes(c))) {
-    speakText2("Goodbye! Have a great day!")
-    setTimeout(closeVoiceAssistant, 1800)
-    return
-  }
-
-  setVA("thinking")
-  setVoiceAIText("...")
-
-  // Auto-detect language from text if auto mode
-  const langSel = document.getElementById("voiceLangSelect")
-  if (!langSel || langSel.value === "auto") {
-    const detected = detectLangFromText(query)
-    if (detected !== "en-IN") window._voiceLang = detected
-  }
-
   try {
-    const formData = new FormData()
-    formData.append("message", query)
-    formData.append("chatId",   currentChatId || "")
-    formData.append("token",    getToken())
-    formData.append("language", localStorage.getItem("datta_language") || "English")
-    formData.append("model",    localStorage.getItem("datta_model") || "llama-3.3-70b-versatile")
-    formData.append("modelKey", localStorage.getItem("datta_model_key") || "d42")
-    formData.append("style",    "Short")  // Voice = short responses
-    formData.append("ainame",   "Datta AI")
-    formData.append("voice",    "true")
+    req.user = jwt.verify(token, JWT_SECRET)
+    next()
+  } catch (e) {
+    return res.status(401).json({ error: "Invalid token" })
+  }
+}
 
-    const res = await fetch(SERVER + "/chat", { method:"POST", body: formData })
-    if (!res.ok) throw new Error("Server error " + res.status)
+// WEB SEARCH
+async function webSearch(query) {
+  try {
+    const key = process.env.TAVILY_API_KEY
+    if (!key) { console.log("TAVILY_API_KEY missing - add it in Render env vars"); return null }
 
-    const chatIdHeader = res.headers.get("x-chat-id")
-    if (!currentChatId && chatIdHeader) {
-      currentChatId = chatIdHeader
-      localStorage.setItem("datta_last_chat", currentChatId)
+    const isFactual = ["father of","mother of","inventor of","founded by","who invented"].some(t => query.toLowerCase().includes(t))
+    const finalQuery = isFactual ? query + " Wikipedia" : query
+    console.log("[SEARCH] Query:", finalQuery)
+
+    const response = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        api_key: key,
+        query: finalQuery,
+        search_depth: "advanced",
+        max_results: 5,
+        include_answer: true,
+        include_raw_content: false
+      })
+    })
+
+    if (!response.ok) {
+      console.log("[SEARCH] Tavily HTTP error:", response.status)
+      return null
     }
 
-    const reader  = res.body.getReader()
-    const decoder = new TextDecoder()
-    let fullText  = ""
+    const data = await response.json()
+    console.log("[SEARCH] Results:", data.results?.length, "Answer:", !!data.answer)
 
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      const chunk = decoder.decode(value)
-      if (chunk.includes("CHATID")) {
-        const parts = chunk.split("CHATID")
-        fullText += safeContent(parts[0])
-        currentChatId = (parts[1] || "").trim()
-        localStorage.setItem("datta_last_chat", currentChatId)
-      } else {
-        fullText += chunk
+    // NUCLEAR SAFE: convert ANY value to plain string — no objects ever
+    function toStr(val) {
+      if (val === null || val === undefined) return ""
+      if (typeof val === "string") return val
+      if (typeof val === "number" || typeof val === "boolean") return String(val)
+      if (Array.isArray(val)) return val.map(toStr).join(", ")
+      if (typeof val === "object") {
+        // Extract any string values from object
+        return Object.values(val).map(toStr).filter(Boolean).join(" ")
       }
+      return String(val)
     }
 
-    // Clean for speech (remove markdown)
-    const cleanText = fullText
-      .replace(/CHATID.*/s, "")
-      .replace(/!\[.*?\]\(.*?\)/g, "Image generated.")
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-      .replace(/#{1,6}\s+/g, "")
-      .replace(/\*\*/g, "").replace(/\*/g, "")
-      .replace(/`{3}[\s\S]*?`{3}/g, "Code block.")
-      .replace(/`/g, "")
-      .replace(/\n{3,}/g, "\n")
-      .trim()
+    // Clean a string — remove ALL JS artifacts
+    function clean(v) {
+      return toStr(v)
+        .replace(/\[object Object\]/gi, "")
+        .replace(/\[object object\]/gi, "")
+        .replace(/undefined/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+    }
 
-    // Show short preview
-    const preview = cleanText.substring(0, 120) + (cleanText.length > 120 ? "…" : "")
-    setVoiceAIText(preview)
+    let lines = []
 
-    // Add to chat UI
-    if (chatBox) {
-      hideWelcome()
-      chatBox.innerHTML += `
-        <div class="msg-row user-row">
-          <div class="user-bubble">🎤 ${query}</div>
+    // Direct answer (most important)
+    if (data.answer) {
+      const ans = clean(data.answer)
+      if (ans) lines.push("ANSWER: " + ans)
+    }
+
+    // Each result as plain sentences
+    if (Array.isArray(data.results)) {
+      data.results.slice(0, 5).forEach((r, i) => {
+        if (!r || typeof r !== "object") return
+        const title   = clean(r.title).slice(0, 120)
+        const content = clean(r.content).slice(0, 500)
+        const url     = clean(r.url).slice(0, 100)
+        if (title || content) {
+          lines.push("SOURCE " + (i+1) + ": " + title)
+          if (content) lines.push(content)
+          if (url) lines.push("URL: " + url)
+          lines.push("")
+        }
+      })
+    }
+
+    const result = lines.join("\n").trim()
+    console.log("[SEARCH] Context length:", result.length)
+    if (result.length > 50) console.log("[SEARCH] Preview:", result.slice(0, 200))
+    return result || null
+
+  } catch(e) {
+    console.log("[SEARCH] Exception:", e.message)
+    return null
+  }
+}
+
+function needsWebSearch(message) {
+  if (!message) return false
+  const msg = message.toLowerCase().trim()
+
+  // Never search for these - AI knows them directly
+  const noSearchPatterns = [
+    /^what (is|are) (the )?(time|date|day|year)/,
+    /^(what|tell me) (time|date|day)/,
+    /^(current |today.?s )?(time|date|day)/,
+    /^(hi|hello|hey|how are you|what can you do)/,
+    /^(explain|define|describe|summarize|write|create|build|code|help)/,
+    /^(what is|what are) [a-z ]{1,30}$/,  // short factual - AI knows
+  ]
+  if (noSearchPatterns.some(p => p.test(msg))) return false
+
+  const triggers = [
+    // Current events
+    "latest news","breaking news","today's news","today news",
+    "live score","current score","match score","match today","today match",
+    "stock price","crypto price","bitcoin price","gold price","petrol price",
+    "weather in","weather today","forecast",
+    "who won","election result","election 2025","election 2026",
+    "trending now","just happened","announced today",
+    "released today","launched today","new movie","new song",
+    // Sports — catch ALL sports queries
+    "ipl","cricket match","cricket score","cricket today",
+    "world cup","t20","test match","odi match",
+    "football match","nfl","nba","fifa","champions league",
+    "today's match","today match","match schedule","match result",
+    "playing today","playing tonight","live match",
+    // Factual
+    "father of","mother of","inventor of","founded by","discovered by","invented by",
+    "who invented","who discovered","who founded","who created","who wrote","who is the",
+    "capital of","president of","prime minister of","population of",
+    "tallest","longest","largest","smallest","fastest","richest","poorest",
+    // Explicit search
+    "search for","look up","find me","google this","news about",
+    "what happened","current","latest","recent","update",
+    // Local
+    "restaurant in","hotel in","hospital in","shops in","near me",
+    // Telugu/Hindi transliterations for sports
+    "ipl match","ఐపీఎల్","आईपीएल","క్రికెట్","cricket","మ్యాచ్","match",
+    "ఇవాళ","today's ipl","today ipl","aaj ka match","aaj ipl"
+  ]
+  if (triggers.some(t => msg.includes(t))) return true
+
+  // Unicode sports keywords (Telugu, Hindi scripts)
+  const unicodeSports = ["ఐపీఎల్","మ్యాచ్","క్రికెట్","आईपीएल","क्रिकेट","मैच"]
+  if (unicodeSports.some(u => message.includes(u))) return true
+
+  return false
+}
+
+
+
+// -- BROWSE URL (using Tavily extract) ----------------------------------------
+async function browseUrl(url) {
+  try {
+    const key = process.env.TAVILY_API_KEY
+    if (!key) return null
+    const response = await fetch("https://api.tavily.com/extract", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ api_key: key, urls: [url] })
+    })
+    if (!response.ok) return null
+    const data = await response.json()
+    const result = data.results?.[0]
+    if (!result) return null
+    return {
+      url: result.url,
+      title: result.title || url,
+      content: (result.raw_content || result.content || "").substring(0, 3000)
+    }
+  } catch(e) {
+    console.error("Browse URL error:", e.message)
+    return null
+  }
+}
+
+// -- SEND WHATSAPP (via CallMeBot - free) -------------------------------------
+async function sendWhatsApp(phone, message) {
+  try {
+    const apiKey = process.env.CALLMEBOT_API_KEY
+    if (!apiKey) {
+      // Try Twilio WhatsApp sandbox
+      const twilioSid = process.env.TWILIO_ACCOUNT_SID
+      const twilioAuth = process.env.TWILIO_AUTH_TOKEN
+      const twilioWaFrom = process.env.TWILIO_WA_FROM || "whatsapp:+14155238886"
+      if (twilioSid && twilioAuth) {
+        const res = await fetch("https://api.twilio.com/2010-04-01/Accounts/" + twilioSid + "/Messages.json", {
+          method: "POST",
+          headers: {
+            "Authorization": "Basic " + Buffer.from(twilioSid + ":" + twilioAuth).toString("base64"),
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          body: new URLSearchParams({
+            To: "whatsapp:" + phone,
+            From: twilioWaFrom,
+            Body: message
+          }).toString()
+        })
+        const data = await res.json()
+        if (res.ok) return { success: true, method: "twilio_wa", sid: data.sid }
+        return { success: false, error: data.message }
+      }
+      return { success: false, error: "WhatsApp not configured. Add CALLMEBOT_API_KEY or TWILIO_WA_FROM to Render." }
+    }
+    // CallMeBot (free WhatsApp API)
+    const encodedMsg = encodeURIComponent(message)
+    const cleanPhone = phone.replace(/[^0-9]/g, "")
+    const res = await fetch("https://api.callmebot.com/whatsapp.php?phone=" + cleanPhone + "&text=" + encodedMsg + "&apikey=" + apiKey)
+    const text = await res.text()
+    if (text.includes("Message queued")) return { success: true, method: "callmebot" }
+    return { success: false, error: text.substring(0, 100) }
+  } catch(e) {
+    return { success: false, error: e.message }
+  }
+}
+
+// -- USER MEMORY HELPERS -------------------------------------------------------
+async function saveMemory(userId, key, value, category) {
+  await Memory.findOneAndUpdate(
+    { userId, key },
+    { userId, key, value, category: category || "general", updatedAt: new Date() },
+    { upsert: true, new: true }
+  )
+}
+
+async function getMemories(userId) {
+  const memories = await Memory.find({ userId }).sort({ updatedAt: -1 }).limit(5)
+  if (!memories.length) return ""
+  const memText = memories.map(m => m.key + ": " + String(m.value).substring(0, 100)).join(", ")
+  return "\n[Memory: " + memText + "]"
+}
+
+async function extractAndSaveMemory(userId, userMessage, aiResponse) {
+  try {
+    // Ask AI to extract memorable facts from conversation
+    const extraction = await groq.chat.completions.create({
+      model: "llama-3.1-8b-instant",
+      messages: [{
+        role: "user",
+        content: `Extract key facts about the user from this conversation that should be remembered for future sessions. Only extract clear personal facts (name, location, preferences, job, etc). Return as JSON array: [{"key": "user_name", "value": "John", "category": "personal"}]. If nothing to remember, return [].
+
+User said: "${userMessage.substring(0, 500)}"
+AI responded: "${aiResponse.substring(0, 200)}"
+
+Return ONLY valid JSON array, nothing else.`
+      }],
+      max_tokens: 200,
+      temperature: 0.1
+    })
+
+    const raw = extraction.choices?.[0]?.message?.content?.trim() || "[]"
+    const clean = raw.replace(/```json|```/g, "").trim()
+    const facts = JSON.parse(clean)
+
+    if (Array.isArray(facts)) {
+      for (const fact of facts) {
+        if (fact.key && fact.value) {
+          await saveMemory(userId, fact.key, fact.value, fact.category || "general")
+        }
+      }
+      if (facts.length > 0) console.log("Saved", facts.length, "memories for user")
+    }
+  } catch(e) {
+    console.log("Memory extraction skipped:", e.message)
+  }
+}
+
+// EMAIL SENDING (using Gmail SMTP - free)
+async function sendVerificationEmail(email, token, username) {
+  try {
+    const GMAIL_USER = process.env.GMAIL_USER
+    const GMAIL_PASS = process.env.GMAIL_APP_PASSWORD
+    if (!GMAIL_USER || !GMAIL_PASS) {
+      console.log("Email not configured - skipping verification email")
+      return false
+    }
+    const verifyUrl = FRONTEND_URL + "/verify-email.html?token=" + token
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <body style="background:#0a0a0a;color:white;font-family:Arial,sans-serif;padding:40px;max-width:500px;margin:0 auto;">
+        <div style="text-align:center;margin-bottom:30px;">
+          <h1 style="font-size:28px;background:linear-gradient(135deg,#00ff88,#00ccff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">DATTA AI</h1>
         </div>
-      `
-      chatBox.innerHTML += `
-        <div class="msg-row">
-          <div class="aiContent">
-            <div class="ai-bubble">${marked.parse(safeContent(fullText.split("CHATID")[0]))}</div>
-          </div>
-        </div>
-      ` 
-      chatBox.scrollTop = chatBox.scrollHeight
-      lucide.createIcons()
+        <h2 style="font-size:22px;margin-bottom:10px;">Verify your email</h2>
+        <p style="color:#888;margin-bottom:24px;">Hi ${username}! Click the button below to verify your email address.</p>
+        <a href="${verifyUrl}" style="display:block;text-align:center;padding:14px 32px;background:linear-gradient(135deg,#00cc6a,#00aaff);border-radius:12px;color:white;font-weight:700;font-size:16px;text-decoration:none;margin-bottom:20px;">Verify Email Address</a>
+        <p style="color:#555;font-size:12px;text-align:center;">Link expires in 24 hours. If you didn't sign up, ignore this email.</p>
+        <p style="color:#333;font-size:12px;text-align:center;margin-top:8px;">Or copy this link: ${verifyUrl}</p>
+      </body>
+      </html>
+    `
+    // Use nodemailer with Gmail
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: GMAIL_USER, pass: GMAIL_PASS }
+    })
+    await transporter.sendMail({
+      from: '"Datta AI" <' + GMAIL_USER + '>',
+      to: email,
+      subject: "Verify your Datta AI account",
+      html
+    })
+    console.log("Verification email sent to:", email)
+    return true
+  } catch(e) {
+    console.log("Email send error:", e.message)
+    return false
+  }
+}
+
+// GOOGLE OAUTH
+if (GoogleStrategy && process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: "https://datta-ai-server.onrender.com/auth/google/callback"
+  }, async (accessToken, refreshToken, profile, done) => {
+    try {
+      let user = await User.findOne({ googleId: profile.id })
+      if (!user) {
+        const firstName = profile.displayName ? profile.displayName.split(" ")[0] : "User"
+        user = await User.create({ googleId: profile.id, username: firstName + "_" + profile.id.slice(-4), email: profile.emails?.[0]?.value || "" })
+      }
+      return done(null, { token: generateToken(user), user: { id: user._id, username: user.username, email: user.email } })
+    } catch(err) { return done(err, null) }
+  }))
+}
+
+// AUTH ROUTES
+app.post("/auth/signup", async (req, res) => {
+  try {
+    const { username, email, password } = req.body
+    if (!username || !email || !password) return res.status(400).json({ error: "All fields required" })
+    if (username.length < 3) return res.status(400).json({ error: "Username min 3 characters" })
+    if (password.length < 6) return res.status(400).json({ error: "Password min 6 characters" })
+    const existing = await User.findOne({ $or: [{ email: email.toLowerCase() }, { username }] })
+    if (existing) return res.status(400).json({ error: existing.username === username ? "Username taken" : "Email already registered" })
+
+    // Generate verify token
+    const verifyToken = crypto.randomBytes(32).toString("hex")
+    const user = await User.create({
+      username,
+      email: email.toLowerCase(),
+      password: await bcrypt.hash(password, 10),
+      emailVerified: false,
+      verifyToken,
+      verifyTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
+    })
+
+    // Send verification email (non-blocking)
+    sendVerificationEmail(email.toLowerCase(), verifyToken, username).catch(() => {})
+
+    // Return token - user can use app but email unverified
+    res.json({
+      token: generateToken(user),
+      user: { id: user._id, username: user.username, email: user.email, emailVerified: false },
+      message: "Account created! Please check your email to verify your account."
+    })
+  } catch(err) { res.status(500).json({ error: "Server error" }) }
+})
+
+// VERIFY EMAIL
+app.get("/auth/verify-email", async (req, res) => {
+  try {
+    const { token } = req.query
+    if (!token) return res.status(400).json({ error: "Token required" })
+    const user = await User.findOne({ verifyToken: token, verifyTokenExpires: { $gt: new Date() } })
+    if (!user) return res.status(400).json({ error: "Invalid or expired token" })
+    await User.findByIdAndUpdate(user._id, { emailVerified: true, verifyToken: null, verifyTokenExpires: null })
+    res.json({ success: true, message: "Email verified successfully!" })
+  } catch(err) { res.status(500).json({ error: "Server error" }) }
+})
+
+// RESEND VERIFICATION EMAIL
+app.post("/auth/resend-verification", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+    if (!user) return res.status(404).json({ error: "User not found" })
+    if (user.emailVerified) return res.json({ message: "Email already verified!" })
+    const verifyToken = crypto.randomBytes(32).toString("hex")
+    await User.findByIdAndUpdate(user._id, {
+      verifyToken,
+      verifyTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
+    })
+    await sendVerificationEmail(user.email, verifyToken, user.username)
+    res.json({ success: true, message: "Verification email sent!" })
+  } catch(err) { res.status(500).json({ error: "Server error" }) }
+})
+
+app.post("/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body
+    if (!email || !password) return res.status(400).json({ error: "Email and password required" })
+    
+    // Try exact email match first, then case-insensitive
+    let user = await User.findOne({ email: email.toLowerCase().trim() })
+    if (!user) user = await User.findOne({ email: { $regex: new RegExp("^" + email.trim() + "$", "i") } })
+    
+    if (!user) return res.status(400).json({ error: "No account found with this email. Please sign up first." })
+    
+    // If Google account with no password - auto set the provided password
+    if (!user.password) {
+      const hashed = await bcrypt.hash(password, 10)
+      await User.findByIdAndUpdate(user._id, { password: hashed })
+      user.password = hashed
+      console.log("Set password for Google account:", user.email)
+    }
+    
+    const match = await bcrypt.compare(password, user.password)
+    if (!match) return res.status(400).json({ error: "Wrong password. Please check and try again." })
+    
+    res.json({ 
+      token: generateToken(user), 
+      user: { id: user._id, username: user.username, email: user.email, emailVerified: user.emailVerified }
+    })
+  } catch(err) { 
+    console.error("Login error:", err)
+    res.status(500).json({ error: "Server error. Please try again." }) 
+  }
+})
+
+// SEND OTP - Fast2SMS (free, all Indian numbers) with Twilio fallback
+app.post("/auth/send-otp", async (req, res) => {
+  try {
+    const { phone } = req.body
+    if (!phone) return res.status(400).json({ error: "Phone number required" })
+
+    // Accept both +91XXXXXXXXXX and 10-digit formats
+    let cleanPhone = phone.replace(/\s+/g, "").trim()
+    let phoneFor2SMS = cleanPhone.replace("+91", "").replace(/^\+/, "")
+    if (phoneFor2SMS.length < 10) return res.status(400).json({ error: "Enter valid 10-digit mobile number" })
+    phoneFor2SMS = phoneFor2SMS.slice(-10) // take last 10 digits
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+    const normalizedPhone = "+91" + phoneFor2SMS
+    otpStore[normalizedPhone] = { otp, expires: Date.now() + 10 * 60 * 1000 }
+    console.log("OTP for", normalizedPhone, ":", otp)
+
+    const fast2smsKey = process.env.FAST2SMS_API_KEY
+
+    // Try Fast2SMS first
+    if (fast2smsKey) {
+      try {
+        const response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
+          method: "POST",
+          headers: { "authorization": fast2smsKey, "Content-Type": "application/json" },
+          body: JSON.stringify({ route: "q", message: "Your Datta AI OTP is " + otp + ". Valid 10 minutes.", language: "english", flash: 0, numbers: phoneFor2SMS })
+        })
+        const data = await response.json()
+        console.log("Fast2SMS:", JSON.stringify(data))
+        if (data.return === true) return res.json({ success: true, message: "OTP sent successfully" })
+        console.error("Fast2SMS failed:", data.message)
+      } catch(e) { console.error("Fast2SMS error:", e.message) }
     }
 
-    loadSidebar()
-
-    // Speak
-    if (!voiceMuted) {
-      setVA("speaking")
-      speakText2(cleanText)
-    } else {
-      setVA("idle")
+    // Try 2Factor.in - force SMS only
+    const twoFactorKey = process.env.TWOFACTOR_API_KEY
+    if (twoFactorKey) {
+      try {
+        // Force SMS channel explicitly
+        const url = "https://2factor.in/API/V1/" + twoFactorKey + "/SMS/+91" + phoneFor2SMS + "/" + otp
+        console.log("2Factor URL:", url)
+        const response = await fetch(url)
+        const data = await response.json()
+        console.log("2Factor response:", JSON.stringify(data))
+        if (data.Status === "Success") return res.json({ success: true, message: "OTP sent via SMS" })
+        console.error("2Factor failed:", data.Details)
+      } catch(e) { console.error("2Factor error:", e.message) }
     }
+
+    // Try MSG91
+    const msg91Key = process.env.MSG91_API_KEY
+    const msg91Template = process.env.MSG91_TEMPLATE_ID
+    if (msg91Key && msg91Template) {
+      try {
+        const response = await fetch("https://control.msg91.com/api/v5/otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "authkey": msg91Key },
+          body: JSON.stringify({ template_id: msg91Template, mobile: "91" + phoneFor2SMS, otp: otp })
+        })
+        const data = await response.json()
+        console.log("MSG91:", JSON.stringify(data))
+        if (data.type === "success") return res.json({ success: true, message: "OTP sent successfully" })
+        console.error("MSG91 failed:", data.message)
+      } catch(e) { console.error("MSG91 error:", e.message) }
+    }
+
+    // All SMS services failed
+    console.log("=== ALL SMS FAILED - OTP for", normalizedPhone, ":", otp, "===")
+    res.status(500).json({ error: "Could not send OTP. Please use Email or Google login." })
 
   } catch(err) {
-    console.error("Voice query error:", err)
-    setVoiceAIText("Something went wrong. Tap to try again.")
-    setVA("idle")
-    if (!voiceMuted) speakText2("Sorry, something went wrong.")
-  }
-}
-
-
-// VOICE PROFILES
-const voiceProfiles = {
-  "aria":    { name: "Aria",    lang: "en-US", rate: 0.95, pitch: 1.1, keywords: ["Google US English","Samantha","Aria","Zira"] },
-  "james":   { name: "James",   lang: "en-US", rate: 0.9,  pitch: 0.85, keywords: ["Google UK English Male","Daniel","James","David"] },
-  "sofia":   { name: "Sofia",   lang: "en-US", rate: 1.0,  pitch: 1.2, keywords: ["Google UK English Female","Karen","Moira","Sofia"] },
-  "neural":  { name: "Neural",  lang: "en-US", rate: 0.95, pitch: 1.0, keywords: ["Neural","Natural","Enhanced","Premium"] },
-  "indian":  { name: "Riya",   lang: "en-IN", rate: 0.9,  pitch: 1.05, gender: "female", keywords: ["Lekha","Veena","Google हिन्दी","en-IN"] },
-  "british": { name: "Oliver", lang: "en-GB", rate: 0.88, pitch: 0.8,  gender: "male",   keywords: ["Google UK English Male","Daniel","George","Arthur","en-GB"] }
-}
-
-function getSelectedVoiceProfile() {
-  return localStorage.getItem("datta_voice") || "aria"
-}
-
-function pickVoice(profile) {
-  const voices = voiceSynth.getVoices()
-  if (!voices.length) return null
-
-  // Debug - log all available voices once
-  if (!window._voicesLogged) {
-    window._voicesLogged = true
-    console.log("Available voices:", voices.map(v => v.name + " (" + v.lang + ")").join(", "))
-  }
-
-  // Try exact keyword match
-  for (const kw of profile.keywords) {
-    const found = voices.find(v => v.name.toLowerCase().includes(kw.toLowerCase()))
-    if (found) { console.log("Voice matched by keyword:", found.name); return found }
-  }
-
-  // Language match
-  const langVoices = voices.filter(v => v.lang.startsWith(profile.lang.split("-")[0]))
-
-  if (langVoices.length) {
-    // Gender match by name
-    const maleWords = ["male","man","david","james","daniel","george","oliver","alex","ryan","tom","richard","peter","john","mark"]
-    const femaleWords = ["female","woman","girl","samantha","zira","karen","sofia","aria","victoria","lisa","susan","alice","emma","kate"]
-    const gWords = profile.gender === "male" ? maleWords : femaleWords
-
-    const gendered = langVoices.find(v => gWords.some(g => v.name.toLowerCase().includes(g)))
-    if (gendered) { console.log("Voice matched by gender+lang:", gendered.name); return gendered }
-
-    // No gender match - for male pick last, for female pick first
-    if (profile.gender === "male") return langVoices[langVoices.length - 1]
-    return langVoices[0]
-  }
-
-  // English fallback
-  const engVoices = voices.filter(v => v.lang.startsWith("en"))
-  if (engVoices.length > 0) {
-    const maleWords = ["male","man","david","james","daniel","george","oliver"]
-    const femaleWords = ["female","woman","samantha","zira","karen","aria"]
-    const gWords = profile.gender === "male" ? maleWords : femaleWords
-    const gendered = engVoices.find(v => gWords.some(g => v.name.toLowerCase().includes(g)))
-    if (gendered) return gendered
-    if (profile.gender === "male" && engVoices.length > 1) return engVoices[engVoices.length - 1]
-    return engVoices[0]
-  }
-
-  return voices[0]
-}
-
-function speakText2(text) {
-  if (!voiceSynth) return
-  stopSpeaking()
-
-  isSpeaking = true
-  setVoiceStatus("Speaking...", "speaking")
-
-  const utterance = new SpeechSynthesisUtterance(text)
-  const profileKey = getSelectedVoiceProfile()
-  const profile = voiceProfiles[profileKey] || voiceProfiles.aria
-
-  utterance.lang = profile.lang
-  utterance.rate = profile.rate
-  utterance.pitch = profile.pitch
-  utterance.volume = 1.0
-
-  // Wait for voices to load then pick
-  const setVoiceAndSpeak = () => {
-    const voice = pickVoice(profile)
-    if (voice) {
-      utterance.voice = voice
-      console.log("Speaking with voice:", voice.name)
-    }
-    utterance.onend = () => {
-      isSpeaking = false
-      if (voiceActive) {
-        setVoiceStatus("Tap to speak", "idle")
-        setTimeout(() => { if (voiceActive) startListening() }, 800)
-      }
-    }
-    utterance.onerror = (e) => {
-      console.log("Speech error:", e)
-      isSpeaking = false
-      setVoiceStatus("Tap to speak", "idle")
-    }
-    voiceSynth.speak(utterance)
-  }
-
-  // Always wait a moment to ensure voices are loaded
-  const availVoices = voiceSynth.getVoices()
-  if (availVoices.length > 0) {
-    setVoiceAndSpeak()
-  } else {
-    voiceSynth.onvoiceschanged = () => {
-      voiceSynth.onvoiceschanged = null
-      setVoiceAndSpeak()
-    }
-    // Fallback if onvoiceschanged never fires
-    setTimeout(() => {
-      if (isSpeaking === false) setVoiceAndSpeak()
-    }, 1000)
-  }
-}
-
-function stopSpeaking() {
-  if (voiceSynth) voiceSynth.cancel()
-  isSpeaking = false
-}
-
-// Update the assistant button to open voice overlay
-window.startVoiceListener = startVoiceListener
-window.stopVoiceListener = stopVoiceListener
-window.startAssistant = openVoiceAssistant
-
-// Send last voice text to chat
-window.sendVoiceToChat = function() {
-  const voiceText = document.getElementById("voiceText")
-  const text = voiceText ? voiceText.textContent.trim() : ""
-  if (!text) return
-  closeVoiceAssistant()
-  const input = document.getElementById("message")
-  if (input) {
-    input.value = text
-    send()
-  }
-}
-
-window.setVoiceLang = function(lang) {
-  window._voiceLang = lang
-}
-
-window.openVoiceAssistant = openVoiceAssistant
-window.closeVoiceAssistant = closeVoiceAssistant
-window.toggleVoiceListening = toggleVoiceListening
-
-// VERSION NAMES based on plan
-const planVersions = {
-  free:      { name: "Free",      version: "Datta 2.1", emoji: "🌱" },
-  pro:       { name: "Pro",       version: "Datta 4.2", emoji: "⚡" },
-  max:       { name: "Max",       version: "Datta 4.8", emoji: "🚀" },
-  ultramax:  { name: "Ultra Max", version: "Datta 5.4", emoji: "👑" },
-  basic:     { name: "Pro",       version: "Datta 4.2", emoji: "⚡" },
-  enterprise:{ name: "Ultra Max", version: "Datta 5.4", emoji: "👑" }
-}
-
-async function loadUserVersion() {
-  try {
-    const res = await fetch(SERVER + "/payment/subscription?token=" + getToken())
-    if (!res.ok) return
-    const data = await res.json()
-    const plan = data.plan || "free"
-    const v = planVersions[plan] || planVersions.free
-
-    // Save plan
-    localStorage.setItem("datta_plan", plan)
-
-    // Update version tag
-    const tag = document.getElementById("versionTag")
-    if (tag) tag.textContent = "DATTA AI " + v.version + " · " + v.name.toUpperCase()
-
-    // Update profile subtitle
-    const sub = document.getElementById("profileSub") || document.querySelector(".sb-profile-sub")
-    if (sub) sub.textContent = v.emoji + " " + v.name + " Plan"
-
-    // Update plan button in sidebar
-    const emoji = document.getElementById("planBtnEmoji")
-    const title = document.getElementById("planBtnTitle")
-    const subtitle = document.getElementById("planBtnSub")
-
-    const planInfo = {
-      free:      { emoji:"🌱", title:"Free Plan",      sub:"50 msgs · All models unlocked" },
-      mini:      { emoji:"⚡", title:"Mini Plan",      sub:"200 msgs · All models · Active" },
-      pro:       { emoji:"🔥", title:"Pro Plan",       sub:"500 msgs · All models · Active" },
-      max:       { emoji:"💎", title:"Max Plan",       sub:"2000 msgs · All models · Active" },
-      ultramax:  { emoji:"👑", title:"Ultra Max Plan", sub:"Unlimited · All models · Active" },
-      basic:     { emoji:"🔥", title:"Pro Plan",       sub:"500 msgs · Active" },
-      enterprise:{ emoji:"👑", title:"Ultra Max Plan", sub:"Unlimited · Active" }
-    }
-
-    const info = planInfo[plan] || planInfo.free
-    if (emoji) emoji.textContent = info.emoji
-    if (title) title.textContent = info.title
-    if (subtitle) subtitle.textContent = info.sub
-
-    // Change button color for paid plans
-    const btn = document.getElementById("planBtn")
-    if (btn) {
-      if (plan === "free") {
-        btn.style.background = "linear-gradient(135deg, #0a2a1a, #0a1a2a)"
-        btn.style.borderColor = "#00ff8833"
-      } else if (plan === "pro") {
-        btn.style.background = "linear-gradient(135deg, #1a1a0a, #2a1a00)"
-        btn.style.borderColor = "#ffaa0033"
-      } else if (plan === "max") {
-        btn.style.background = "linear-gradient(135deg, #0a0a2a, #1a0a2a)"
-        btn.style.borderColor = "#8844ff33"
-      } else if (plan === "ultramax") {
-        btn.style.background = "linear-gradient(135deg, #2a0a1a, #1a0a2a)"
-        btn.style.borderColor = "#ff44aa33"
-      }
-    }
-
-  } catch(e) {
-    console.log("Version load error:", e.message)
-    // Show from localStorage as fallback
-    const plan = localStorage.getItem("datta_plan") || "free"
-    const info = {
-      free:      { emoji:"🌱", title:"Free Plan",      sub:"50 msgs · All models unlocked" },
-      mini:      { emoji:"⚡", title:"Mini Plan",      sub:"200 msgs · Active" },
-      pro:       { emoji:"🔥", title:"Pro Plan",       sub:"500 msgs · Active" },
-      max:       { emoji:"💎", title:"Max Plan",       sub:"2000 msgs · Active" },
-      ultramax:  { emoji:"👑", title:"Ultra Max Plan", sub:"Unlimited · Active" }
-    }[plan] || { emoji:"🌱", title:"Free Plan", sub:"50 msgs · All models" }
-    const emoji = document.getElementById("planBtnEmoji")
-    const title = document.getElementById("planBtnTitle")
-    const sub = document.getElementById("planBtnSub")
-    if (emoji) emoji.textContent = info.emoji
-    if (title) title.textContent = info.title
-    if (sub) sub.textContent = info.sub
-  }
-}
-
-// Load version on startup
-window.addEventListener("DOMContentLoaded", function() {
-  setTimeout(loadUserVersion, 1000)
-})
-
-// SUGGESTION CHIPS
-function useChip(btn) {
-  const input = document.getElementById("message")
-  if (input) {
-    const textEl = btn.querySelector(".sugg-text") || btn.querySelector(".suggText") || btn.querySelector(".chipText")
-    input.value = textEl ? textEl.textContent.trim() : btn.textContent.replace(/^[^\s]+\s/, "").trim()
-    input.focus()
-    send()
-  }
-}
-window.useChip = useChip
-
-// ── FEATURE 1: BUG FIXES ─────────────────────────────────────────────────────
-// Fix Enter key to send message
-document.addEventListener("DOMContentLoaded", function() {
-  const msgInput = document.getElementById("message")
-  if (msgInput) {
-    msgInput.addEventListener("keydown", function(e) {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault()
-        send()
-      }
-    })
-  }
-
-  // Theme loaded by setTheme() on startup
-
-  // Load saved model
-  const savedModel = localStorage.getItem("datta_model")
-  if (savedModel) {
-    const sel = document.getElementById("modelSelect")
-    if (sel) sel.value = savedModel
+    console.error("OTP send error:", err.message)
+    res.status(500).json({ error: "Could not send OTP. Please use Email or Google login." })
   }
 })
 
-// Theme toggle (cycles dark → light → eye)
-function toggleTheme() {
-  const cur = document.body.getAttribute("data-theme") || "dark"
-  setTheme(cur === "dark" ? "light" : cur === "light" ? "eye" : "dark")
-}
-window.toggleTheme = toggleTheme
-
-// ── FEATURE 3: MOBILE UI - Auto collapse sidebar on mobile ──────────────────
-function toggleSidebar() {
-  const sidebar = document.querySelector(".sidebar")
-  if (!sidebar) return
-
-  if (window.innerWidth < 768) {
-    // MOBILE: slide in/out with overlay
-    const isOpen = sidebar.classList.contains("open")
-    sidebar.classList.toggle("open", !isOpen)
-    sidebar.classList.toggle("show", !isOpen)
-    // Use the sb-overlay already in HTML
-    const overlay = document.getElementById("sb-overlay")
-    if (overlay) overlay.style.display = !isOpen ? "block" : "none"
-  } else {
-    // DESKTOP: collapse sidebar width
-    const isCollapsed = sidebar.classList.toggle("sb-collapsed")
-    // Shift input center point
-    const inputArea = document.getElementById("inputArea")
-    if (inputArea) {
-      inputArea.style.left = isCollapsed
-        ? "50%"
-        : "calc(260px + (100vw - 260px) / 2)"
-    }
-  }
-}
-
-window.toggleSidebar = toggleSidebar
-
-
-// ── FEATURE 5: AI MODEL SELECTOR ────────────────────────────────────────────
-function changeModel(model) {
-  localStorage.setItem("datta_model", model)
-  const modelNames = {
-    "llama-3.3-70b-versatile": "Fast",
-    "llama-3.1-8b-instant": "Instant",
-    "llama-3.3-70b-versatile": "Reasoning",
-    "llama-3.3-70b-versatile": "Mixtral"
-  }
-  showToast("Model: " + (modelNames[model] || model))
-}
-
-window.changeModel = changeModel
-
-// ── FEATURE 4B: SHARE CHAT ──────────────────────────────────────────────────
-function shareChat() {
-  shareChatLink()
-}
-
-window.shareChat = shareChat
-
-// ── TOAST NOTIFICATION ───────────────────────────────────────────────────────
-function showToast(msg, duration = 2500) {
-  let toast = document.getElementById("dattaToast")
-  if (!toast) {
-    toast = document.createElement("div")
-    toast.id = "dattaToast"
-    toast.className = "datta-toast"
-    document.body.appendChild(toast)
-  }
-  toast.textContent = msg
-  toast.style.opacity = "1"
-  clearTimeout(toast._timer)
-  toast._timer = setTimeout(() => { toast.style.opacity = "0" }, duration)
-}
-
-window.showToast = showToast
-
-// ── MODEL PICKER ─────────────────────────────────────────────────────────────
-const modelData = {
-  d21:    { model: "llama-3.1-8b-instant",                        icon: "", name: "Datta 2.1" },
-  d42:    { model: "llama-3.3-70b-versatile",                     icon: "", name: "Datta 4.2" },
-  d48:    { model: "llama-3.3-70b-versatile",               icon: "", name: "Datta 4.8" },
-  d54:    { model: "llama-3.3-70b-versatile",                          icon: "", name: "Datta 5.4" },
-  chitra: { model: "meta-llama/llama-4-scout-17b-16e-instruct",   icon: "", name: "Datta Vision" },
-  // Legacy support
-  veda:   { model: "llama-3.3-70b-versatile",  icon: "", name: "Datta 4.2" },
-  surya:  { model: "llama-3.1-8b-instant",     icon: "", name: "Datta 2.1" },
-  agni:   { model: "llama-3.3-70b-versatile", icon: "", name: "Datta 4.8" },
-  brahma: { model: "llama-3.3-70b-versatile",       icon: "", name: "Datta 5.4" }
-}
-
-// Model picker removed - using modelDropdown only
-function openModelPicker() { toggleModelDropdown() }
-function closeModelPicker() { closeModelDropdown() }
-function selectModel(modelId, key, icon, name) { selectInputModel(modelId, key, name) }
-window.openModelPicker = openModelPicker
-window.closeModelPicker = closeModelPicker
-window.selectModel = selectModel
-
-
-// ══════════════════════════════════════════════════════
-// FEATURE 1: PDF EXPORT
-// ══════════════════════════════════════════════════════
-function downloadAsPDF(btn) {
-  const bubble = getAiBubble(btn)
-  if (!bubble) return showToast("Nothing to export")
-  const html = bubble.innerHTML
-  const text = bubble.innerText
-  const title = text.substring(0,40).replace(/[^a-z0-9]/gi,"-").toLowerCase()
-  const date = new Date().toLocaleString("en-IN")
-
-  // Detect if it's code - offer HTML download directly
-  const codeBlock = bubble.querySelector("pre code")
-  if (codeBlock) {
-    const lang = (codeBlock.className || "").replace("language-","").toLowerCase()
-    const code = codeBlock.innerText
-    const ext = {html:"html",css:"css",javascript:"js",js:"js",python:"py",java:"java"}[lang] || "txt"
-    // Direct file download
-    const blob = new Blob([code], {type:"text/plain"})
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "datta-ai-" + title + "." + ext
-    a.click()
-    URL.revokeObjectURL(url)
-    showToast("Downloaded " + a.download + " !")
-    return
-  }
-
-  // For text content - download as HTML file (opens perfectly everywhere)
-  const fullHtml = `<!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Datta AI Export</title>
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:860px;margin:0 auto;padding:40px 24px;color:#111;line-height:1.8;background:#fff}
-  .header{display:flex;align-items:center;gap:12px;padding-bottom:20px;border-bottom:2px solid #00cc66;margin-bottom:32px}
-  .logo{width:36px;height:36px;background:#00cc66;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;font-size:14px}
-  h1,h2,h3{margin:20px 0 8px;color:#111}
-  p{margin-bottom:12px}
-  ul,ol{padding-left:20px;margin-bottom:12px}
-  li{margin-bottom:6px}
-  code{background:#f4f4f4;padding:2px 6px;border-radius:4px;font-family:monospace;font-size:13px;color:#d63384}
-  pre{background:#1a1a1a;color:#e0e0e0;padding:20px;border-radius:10px;overflow-x:auto;margin:16px 0}
-  pre code{background:none;color:#e0e0e0;padding:0}
-  table{border-collapse:collapse;width:100%;margin:16px 0}
-  th{background:#f4f4f4;font-weight:700;text-align:left}
-  td,th{border:1px solid #ddd;padding:10px 14px}
-  blockquote{border-left:3px solid #00cc66;padding:10px 16px;background:#f9f9f9;margin:16px 0;color:#555}
-  strong{color:#000;font-weight:700}
-  .footer{margin-top:48px;padding-top:20px;border-top:1px solid #eee;color:#999;font-size:12px;text-align:center}
-  @media print{.footer{position:fixed;bottom:0;width:100%}}
-</style>
-</head><body>
-<div class="header">
-  <div class="logo">D</div>
-  <div>
-    <div style="font-weight:700;font-size:18px;color:#00cc66;">Datta AI</div>
-    <div style="font-size:12px;color:#999;">Generated on ${date}</div>
-  </div>
-</div>
-<div class="content">${html}</div>
-<div class="footer">Generated by Datta AI &middot; datta-ai.com</div>
-</body></html>`
-
-  const blob = new Blob([fullHtml], {type:"text/html"})
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = "datta-ai-" + title + ".html"
-  a.click()
-  URL.revokeObjectURL(url)
-  showToast("Downloaded " + a.download + " !")
-}
-window.downloadAsPDF = downloadAsPDF
-
-// ══════════════════════════════════════════════════════
-// FEATURE 2: CODE PREVIEW - Run HTML/CSS/JS in chat
-// ══════════════════════════════════════════════════════
-function addCodePreview(container) {
-  // Find all code blocks with html/css/js
-  container.querySelectorAll("pre code").forEach(block => {
-    const lang = block.className.replace("language-", "").toLowerCase()
-    if (!["html","css","javascript","js"].includes(lang)) return
-    if (block.closest(".codePreviewWrap")) return
-
-    const wrap = document.createElement("div")
-    wrap.className = "codePreviewWrap"
-    block.parentNode.parentNode.insertBefore(wrap, block.parentNode)
-    wrap.appendChild(block.parentNode)
-
-    const code = block.innerText
-    const previewBtn = document.createElement("div")
-    previewBtn.style.cssText = "display:flex;gap:8px;margin-top:6px;"
-    previewBtn.innerHTML = `
-      <button onclick="runCodePreview(this)" data-code="${encodeURIComponent(code)}" data-lang="${lang}"
-        style="padding:6px 14px;background:#00ff8822;border:1px solid #00ff8844;border-radius:8px;color:#00ff88;font-size:12px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">
-        ▶ Run Preview
-      </button>
-      <button onclick="copyCodeBlock(this)" data-code="${encodeURIComponent(code)}"
-        style="padding:6px 14px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;color:#aaa;font-size:12px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">
-        Copy Code
-      </button>`
-    wrap.appendChild(previewBtn)
-  })
-}
-
-function runCodePreview(btn) {
-  const code = decodeURIComponent(btn.dataset.code)
-  const lang = btn.dataset.lang
-  
-  // Remove existing preview
-  const existing = btn.closest(".codePreviewWrap").querySelector(".livePreview")
-  if (existing) { existing.remove(); btn.textContent = "▶ Run Preview"; return }
-
-  const iframe = document.createElement("iframe")
-  iframe.className = "livePreview"
-  iframe.style.cssText = "width:100%;height:400px;border:1px solid #2a2a2a;border-radius:10px;margin-top:8px;background:white;"
-  iframe.sandbox = "allow-scripts"
-  btn.closest(".codePreviewWrap").appendChild(iframe)
-
-  const doc = iframe.contentDocument || iframe.contentWindow.document
-  doc.open()
-  if (lang === "html") {
-    doc.write(code)
-  } else if (lang === "css") {
-    doc.write(`<html><head><style>${code}</style></head><body><p>CSS Preview</p></body></html>`)
-  } else {
-    doc.write(`<html><body><script>try{${code}}catch(e){document.body.innerHTML='<pre style=color:red>'+e+'</pre>'}<\/script></body></html>`)
-  }
-  doc.close()
-  btn.textContent = "✕ Close Preview"
-  showToast("Preview loaded!")
-}
-
-function copyCodeBlock(btn) {
-  const code = decodeURIComponent(btn.dataset.code)
-  navigator.clipboard.writeText(code).then(() => showToast("Code copied!"))
-}
-
-window.runCodePreview = runCodePreview
-window.copyCodeBlock = copyCodeBlock
-
-// ══════════════════════════════════════════════════════
-// FEATURE 3: DAILY MEMORY - Remember user across days
-// ══════════════════════════════════════════════════════
-async function saveDailyMemory(key, value) {
+// VERIFY OTP
+app.post("/auth/verify-otp", async (req, res) => {
   try {
-    await fetch(SERVER + "/memory/" + key, {
+    const { phone, otp } = req.body
+    if (!phone || !otp) return res.status(400).json({ error: "Phone and OTP required" })
+
+    let cleanPhone = phone.replace(/\s+/g, "").trim()
+    let phoneFor2SMS = cleanPhone.replace("+91", "").replace(/^\+/, "").slice(-10)
+    const normalizedPhone = "+91" + phoneFor2SMS
+
+    // Verify from our own OTP store
+    const stored = otpStore[normalizedPhone]
+    if (!stored) return res.status(400).json({ error: "No OTP sent. Please request a new OTP." })
+    if (Date.now() > stored.expires) {
+      delete otpStore[normalizedPhone]
+      return res.status(400).json({ error: "OTP expired. Request a new one." })
+    }
+    if (stored.otp !== otp.toString().trim()) {
+      return res.status(400).json({ error: "Incorrect OTP. Please try again." })
+    }
+    delete otpStore[normalizedPhone]
+
+    let user = await User.findOne({ phone: normalizedPhone })
+    if (!user) user = await User.create({ username: "user_" + phoneFor2SMS.slice(-4), phone: normalizedPhone })
+    res.json({ token: generateToken(user), user: { id: user._id, username: user.username } })
+
+  } catch(err) {
+    console.error("OTP verify error:", err.message)
+    if (err.code === 60202) return res.status(400).json({ error: "Too many attempts. Request a new OTP." })
+    res.status(500).json({ error: sanitizeError(err).userMsg })
+  }
+})
+
+app.get("/auth/google", passport.authenticate("google", { scope: ["profile","email"] }))
+app.get("/auth/google/callback",
+  passport.authenticate("google", { session: false, failureRedirect: FRONTEND_URL + "/login.html?error=google_failed" }),
+  (req, res) => { res.redirect(FRONTEND_URL + "/login.html?token=" + req.user.token + "&user=" + encodeURIComponent(JSON.stringify(req.user.user))) }
+)
+
+app.post("/auth/update-username", authMiddleware, async (req, res) => {
+  try {
+    const { username } = req.body
+    if (!username || username.length < 3) return res.status(400).json({ error: "Min 3 characters" })
+    const existing = await User.findOne({ username })
+    if (existing && existing._id.toString() !== req.user.id) return res.status(400).json({ error: "Username taken" })
+    await User.findByIdAndUpdate(req.user.id, { username })
+    res.json({ success: true })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+app.post("/auth/change-password", authMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body
+    const user = await User.findById(req.user.id)
+    if (!user || !user.password) return res.status(400).json({ error: "Cannot change password" })
+    if (!await bcrypt.compare(currentPassword, user.password)) return res.status(400).json({ error: "Wrong current password" })
+    await User.findByIdAndUpdate(req.user.id, { password: await bcrypt.hash(newPassword, 10) })
+    res.json({ success: true })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+app.delete("/auth/delete-account", authMiddleware, async (req, res) => {
+  try {
+    const { password } = req.body
+    const user = await User.findById(req.user.id)
+    if (!user) return res.status(404).json({ error: "User not found" })
+    if (user.password && !await bcrypt.compare(password, user.password)) return res.status(400).json({ error: "Wrong password" })
+    await Chat.deleteMany({ userId: req.user.id })
+    await Subscription.deleteMany({ userId: req.user.id })
+    await User.findByIdAndDelete(req.user.id)
+    res.json({ success: true })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+// SUBSCRIPTION ROUTES
+app.get("/payment/subscription", authMiddleware, async (req, res) => {
+  try {
+    const sub = await Subscription.findOne({ userId: req.user.id, active: true })
+    const plan = sub ? sub.plan : "free"
+    res.json({ plan, period: sub?.period || "monthly", endDate: sub?.endDate || null, limits: planLimits[plan] })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+app.post("/payment/activate", authMiddleware, async (req, res) => {
+  try {
+    const { plan, method, paymentId, period } = req.body
+    if (!["free","mini","pro","max","ultramax","basic","enterprise"].includes(plan)) return res.status(400).json({ error: "Invalid plan" })
+    const endDate = new Date()
+    endDate.setMonth(endDate.getMonth() + (period === "yearly" ? 12 : 1))
+    await Subscription.findOneAndUpdate({ userId: req.user.id }, { plan, period, paymentId, method, startDate: new Date(), endDate, active: true }, { upsert: true, new: true })
+    res.json({ success: true, plan, endDate })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+// Send Razorpay key to frontend safely
+app.get("/payment/razorpay-key", authMiddleware, (req, res) => {
+  const key = process.env.RAZORPAY_KEY_ID
+  if (!key) return res.status(400).json({ error: "Razorpay not configured" })
+  res.json({ key })
+})
+
+// RAZORPAY ORDER
+app.post("/payment/razorpay-order", authMiddleware, async (req, res) => {
+  try {
+    const { amount, plan, period } = req.body
+    const key_id = process.env.RAZORPAY_KEY_ID
+    const key_secret = process.env.RAZORPAY_KEY_SECRET
+    if (!key_id || !key_secret) return res.status(400).json({ error: "Razorpay not configured" })
+    const response = await fetch("https://api.razorpay.com/v1/orders", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ value, token: getToken() })
+      headers: { "Content-Type": "application/json", "Authorization": "Basic " + Buffer.from(key_id + ":" + key_secret).toString("base64") },
+      body: JSON.stringify({ amount: amount * 100, currency: "INR", receipt: "datta_" + Date.now() })
     })
-  } catch(e) {}
-}
-
-// Auto-save fitness/study goals from chat
-function autoDetectAndSaveMemory(text) {
-  const lower = text.toLowerCase()
-  // Detect fitness goals
-  if (/my (weight|goal|target|workout|diet|calories)/.test(lower)) {
-    saveDailyMemory("fitness_context", text.substring(0, 200))
-  }
-  // Detect study topics  
-  if (/(studying|preparing for|exam|syllabus|chapter|subject)/.test(lower)) {
-    saveDailyMemory("study_context", text.substring(0, 200))
-  }
-  // Detect business context
-  if (/(my business|my startup|my company|my app|my product)/.test(lower)) {
-    saveDailyMemory("business_context", text.substring(0, 200))
-  }
-}
-
-// ══════════════════════════════════════════════════════
-// FEATURE 4: FILE MANAGER - Save AI outputs
-// ══════════════════════════════════════════════════════
-let savedFiles = JSON.parse(localStorage.getItem("datta_saved_files") || "[]")
-
-function saveToFileManager(btn) {
-  const bubble = getAiBubble(btn)
-  if (!bubble) return
-  
-  const file = {
-    id: Date.now(),
-    title: bubble.innerText.substring(0, 50) + "...",
-    content: bubble.innerHTML,
-    text: bubble.innerText,
-    date: new Date().toLocaleDateString("en-IN"),
-    type: bubble.querySelector("pre") ? "code" : "text"
-  }
-  
-  savedFiles.unshift(file)
-  if (savedFiles.length > 50) savedFiles.pop() // max 50 files
-  localStorage.setItem("datta_saved_files", JSON.stringify(savedFiles))
-  showToast("Saved to File Manager!")
-}
-
-function openFileManager() {
-  const saved = JSON.parse(localStorage.getItem("datta_saved_files") || "[]")
-  
-  // Remove existing
-  document.getElementById("fileManagerModal")?.remove()
-
-  const modal = document.createElement("div")
-  modal.id = "fileManagerModal"
-  modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:flex-end;"
-  modal.innerHTML = `
-    <div style="width:100%;max-width:600px;margin:0 auto;background:#111;border-radius:20px 20px 0 0;max-height:80vh;overflow-y:auto;padding:20px 0 40px;">
-      <div style="width:40px;height:4px;background:#333;border-radius:2px;margin:0 auto 16px;"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 20px 16px;">
-        <div style="font-size:16px;font-weight:700;color:white;font-family:'Josefin Sans',sans-serif;letter-spacing:1px;">📁 File Manager</div>
-        <button onclick="document.getElementById('fileManagerModal').remove()" style="background:none;border:none;color:#666;font-size:20px;cursor:pointer;">✕</button>
-      </div>
-      ${saved.length === 0 ? `<div style="text-align:center;color:#555;padding:40px;font-size:14px;">No saved files yet.<br>Click the save button on any AI response.</div>` :
-        saved.map((f,i) => `
-        <div style="padding:12px 20px;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;gap:12px;">
-          <div style="font-size:20px;">${f.type === "code" ? "💻" : "📄"}</div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:13px;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.title}</div>
-            <div style="font-size:11px;color:#555;margin-top:2px;">${f.date}</div>
-          </div>
-          <div style="display:flex;gap:6px;">
-            <button onclick="downloadFile(${i})" style="padding:5px 10px;background:#1a2a1a;border:1px solid #00ff8833;border-radius:8px;color:#00ff88;font-size:11px;cursor:pointer;">PDF</button>
-            <button onclick="deleteFile(${i})" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#666;font-size:11px;cursor:pointer;">Del</button>
-          </div>
-        </div>`).join("")
-      }
-    </div>`
-  modal.addEventListener("click", e => { if(e.target === modal) modal.remove() })
-  document.body.appendChild(modal)
-}
-
-function downloadFile(idx) {
-  const saved = JSON.parse(localStorage.getItem("datta_saved_files") || "[]")
-  const f = saved[idx]
-  if (!f) return
-  const win = window.open("", "_blank")
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${f.title}</title>
-  <style>body{font-family:system-ui;max-width:800px;margin:40px auto;padding:20px;line-height:1.8;}
-  code{background:#f4f4f4;padding:2px 6px;border-radius:4px;}pre{background:#f4f4f4;padding:16px;border-radius:8px;overflow-x:auto;}
-  .footer{color:#999;font-size:12px;border-top:1px solid #ddd;padding-top:12px;margin-top:24px;}</style>
-  </head><body>
-  <h2 style="color:#00cc66;">Datta AI — Saved File</h2>
-  <div>${f.content}</div>
-  <div class="footer">Saved on ${f.date} · Datta AI · datta-ai.com</div>
-  </body></html>`)
-  win.document.close()
-  setTimeout(() => win.print(), 500)
-}
-
-function deleteFile(idx) {
-  const saved = JSON.parse(localStorage.getItem("datta_saved_files") || "[]")
-  saved.splice(idx, 1)
-  localStorage.setItem("datta_saved_files", JSON.stringify(saved))
-  openFileManager()
-  showToast("File deleted")
-}
-
-window.saveToFileManager = saveToFileManager
-window.openFileManager = openFileManager
-window.downloadFile = downloadFile
-window.deleteFile = deleteFile
-window.autoDetectAndSaveMemory = autoDetectAndSaveMemory
-// ══════════════════════════════════════════════════════
-// AUTO-CHAIN EXECUTION ENGINE
-// ══════════════════════════════════════════════════════
-function autoChainExecution(aiDiv, response, userMsg) {
-  const bubble = aiDiv.querySelector(".ai-bubble, .aiBubble")
-  if (!bubble) return
-  const msg = (userMsg || "").toLowerCase()
-  const resp = (response || "").toLowerCase()
-
-  // Detect code generation
-  const hasCode = bubble.querySelector("pre code")
-  const isWebsite = hasCode && (msg.includes("website") || msg.includes("html") || msg.includes("app") || msg.includes("calculator") || msg.includes("game"))
-  const isPython = hasCode && (msg.includes("python") || msg.includes(".py"))
-
-  // Detect document tasks
-  const isBusinessPlan = msg.includes("business plan") || msg.includes("business proposal")
-  const isFitnessPlan = msg.includes("fitness plan") || msg.includes("workout plan") || msg.includes("diet plan")
-  const isResume = msg.includes("resume") || msg.includes("cv ")
-  const isStudyPlan = msg.includes("study plan") || msg.includes("study schedule")
-
-  // Build execution panel
-  let actions = []
-
-  if (isWebsite) {
-    const code = bubble.querySelector("pre code")?.innerText || ""
-    const blob = new Blob([code], {type:"text/html"})
-    const url = URL.createObjectURL(blob)
-    actions.push({ label:"▶ Preview Website", icon:"🌐", color:"#00ff88", action:`window.open("${url}","_blank")` })
-    actions.push({ label:"⬇ Download HTML", icon:"💾", color:"#00ccff", action:`downloadCodeDirect(this)`, data:code, ext:"html" })
-    actions.push({ label:"📋 Copy Code", icon:"📋", color:"#aa66ff", action:`copyAllCode(this)`, data:code })
-  } else if (isPython) {
-    const code = bubble.querySelector("pre code")?.innerText || ""
-    actions.push({ label:"⬇ Download .py", icon:"🐍", color:"#ffcc00", action:`downloadCodeDirect(this)`, data:code, ext:"py" })
-    actions.push({ label:"📋 Copy Code", icon:"📋", color:"#aa66ff", action:`copyAllCode(this)`, data:code })
-  } else if (isBusinessPlan || isFitnessPlan || isResume || isStudyPlan) {
-    const type = isBusinessPlan?"business-plan":isFitnessPlan?"fitness-plan":isResume?"resume":"study-plan"
-    actions.push({ label:"⬇ Download Document", icon:"📄", color:"#00ff88", action:`downloadDocument(this)` })
-    actions.push({ label:"📋 Copy All", icon:"📋", color:"#aa66ff", action:`copyAllCode(this)` })
-  } else if (hasCode) {
-    const code = bubble.querySelector("pre code")?.innerText || ""
-    const lang = (bubble.querySelector("pre code")?.className||"").replace("language-","").toLowerCase()
-    const ext = {javascript:"js",python:"py",html:"html",css:"css",java:"java",cpp:"cpp"}[lang]||"txt"
-    actions.push({ label:"⬇ Download ." + ext, icon:"💾", color:"#00ccff", action:`downloadCodeDirect(this)`, data:code, ext })
-    actions.push({ label:"📋 Copy Code", icon:"📋", color:"#aa66ff", action:`copyAllCode(this)`, data:code })
-  }
-
-  if (actions.length === 0) return
-
-  // Render execution panel
-  const panel = document.createElement("div")
-  panel.style.cssText = "margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;"
-  actions.forEach(act => {
-    const btn = document.createElement("button")
-    btn.style.cssText = `padding:8px 16px;border-radius:10px;border:1px solid ${act.color}33;background:${act.color}11;color:${act.color};font-size:12px;cursor:pointer;font-family:'Josefin Sans',sans-serif;letter-spacing:0.5px;transition:all 0.2s;`
-    btn.textContent = act.label
-    if (act.data) btn.dataset.code = act.data
-    if (act.ext) btn.dataset.ext = act.ext
-    btn.setAttribute("onclick", act.action)
-    btn.onmouseover = () => btn.style.background = act.color + "22"
-    btn.onmouseout = () => btn.style.background = act.color + "11"
-    panel.appendChild(btn)
-  })
-
-  bubble.appendChild(panel)
-}
-
-function downloadCodeDirect(btn) {
-  const code = btn.dataset.code || btn.closest(".ai-bubble, .aiBubble").querySelector("pre code")?.innerText || ""
-  const ext = btn.dataset.ext || "txt"
-  const blob = new Blob([code], {type:"text/plain"})
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = "datta-ai-output." + ext
-  a.click()
-  URL.revokeObjectURL(url)
-  showToast("Downloaded datta-ai-output." + ext)
-}
-
-function copyAllCode(btn) {
-  const code = btn.dataset.code || btn.closest(".ai-bubble, .aiBubble").querySelector("pre code")?.innerText || ""
-  navigator.clipboard.writeText(code).then(() => { showToast("Code copied!"); btn.textContent = "✓ Copied!" })
-}
-
-function downloadDocument(btn) {
-  const bubble = btn.closest(".ai-bubble, .aiBubble")
-  const html = bubble.innerHTML
-  const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Datta AI Document</title>
-<style>body{font-family:system-ui;max-width:860px;margin:40px auto;padding:24px;line-height:1.8;color:#111}
-h1,h2,h3{color:#111;margin:20px 0 8px}p{margin-bottom:12px}ul,ol{padding-left:20px;margin:12px 0}
-li{margin-bottom:6px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:10px}
-.header{border-bottom:2px solid #00cc66;padding-bottom:16px;margin-bottom:32px}
-.footer{margin-top:48px;color:#999;font-size:12px;text-align:center;border-top:1px solid #eee;padding-top:16px}</style>
-</head><body>
-<div class="header"><strong style="color:#00cc66;font-size:20px;">Datta AI</strong><br><span style="color:#999;font-size:12px;">Generated on ${new Date().toLocaleString("en-IN")}</span></div>
-${html}
-<div class="footer">Generated by Datta AI &middot; datta-ai.com</div>
-</body></html>`
-  const blob = new Blob([fullHtml], {type:"text/html"})
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = "datta-ai-document.html"
-  a.click()
-  URL.revokeObjectURL(url)
-  showToast("Document downloaded!")
-}
-
-window.autoChainExecution = autoChainExecution
-window.downloadCodeDirect = downloadCodeDirect
-window.copyAllCode = copyAllCode
-window.downloadDocument = downloadDocument
-
-// ══════════════════════════════════════════════════════
-// PWA - Service Worker Registration
-// ══════════════════════════════════════════════════════
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js")
-      .then(() => console.log("SW registered"))
-      .catch(e => console.log("SW error:", e))
-  })
-}
-
-// PWA Install prompt
-let deferredPrompt = null
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault()
-  deferredPrompt = e
-  showInstallBanner()
+    const order = await response.json()
+    if (!response.ok) return res.status(400).json({ error: order.error?.description || "Order creation failed" })
+    res.json({ orderId: order.id, keyId: key_id, amount, plan, period })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
-function showInstallBanner() {
-  if (localStorage.getItem("pwa_dismissed")) return
-  const banner = document.createElement("div")
-  banner.className = "installBanner"
-  banner.id = "installBanner"
-  banner.innerHTML = `
-    <img src="logo.png" alt="Datta AI">
-    <div class="installBannerText">
-      <div class="installBannerTitle">Install Datta AI</div>
-      <div class="installBannerSub">Add to home screen for best experience</div>
-    </div>
-    <button class="installBannerBtn" onclick="installPWA()">Install</button>
-    <button class="installBannerClose" onclick="dismissInstall()">✕</button>
-  `
-  document.body.appendChild(banner)
-}
-
-function installPWA() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt()
-    deferredPrompt.userChoice.then(r => {
-      if (r.outcome === "accepted") showToast("Datta AI installed!")
-      deferredPrompt = null
-    })
-  }
-  dismissInstall()
-}
-
-function dismissInstall() {
-  localStorage.setItem("pwa_dismissed", "1")
-  const b = document.getElementById("installBanner")
-  if (b) b.remove()
-}
-
-window.installPWA = installPWA
-window.dismissInstall = dismissInstall
-
-// ══════════════════════════════════════════════════════
-// PUSH NOTIFICATIONS
-// ══════════════════════════════════════════════════════
-async function requestNotifications() {
-  if (!("Notification" in window)) return
-  if (Notification.permission === "granted") return
-  if (localStorage.getItem("notif_asked")) return
-
-  localStorage.setItem("notif_asked", "1")
-
-  const toast = document.createElement("div")
-  toast.className = "notifToast"
-  toast.innerHTML = `
-    <div class="notifToastTitle">🔔 Stay Updated</div>
-    <div class="notifToastSub">Get notified when Datta AI responds</div>
-    <div class="notifToastBtns">
-      <button class="notifAllow" onclick="allowNotifs(this)">Allow</button>
-      <button class="notifDeny" onclick="this.closest('.notifToast').remove()">No thanks</button>
-    </div>
-  `
-  document.body.appendChild(toast)
-  setTimeout(() => toast.remove(), 8000)
-}
-
-async function allowNotifs(btn) {
-  btn.closest(".notifToast").remove()
-  const perm = await Notification.requestPermission()
-  if (perm === "granted") showToast("Notifications enabled!")
-}
-
-window.allowNotifs = allowNotifs
-
-// Ask after first chat
-setTimeout(requestNotifications, 10000)
-
-// ══════════════════════════════════════════════════════
-// CHAT SEARCH
-// ══════════════════════════════════════════════════════
-let allChats = []
-
-function searchChats(query = "") {
-  const q = query.toLowerCase().trim()
-  const items = document.querySelectorAll(".chat-item")
-  items.forEach(item => {
-    const title = item.querySelector(".chatTitle")?.textContent?.toLowerCase() || ""
-    item.classList.toggle("hidden", q.length > 0 && !title.includes(q))
-  })
-}
-
-window.searchChats = searchChats
-
-// ══════════════════════════════════════════════════════
-// MULTI-LANGUAGE UI
-// ══════════════════════════════════════════════════════
-const UI_STRINGS = {
-  English: { placeholder: "Ask Datta AI anything...", newChat: "New chat", search: "Search chats...", welcome: "What can I build for you?" },
-  Hindi: { placeholder: "Datta AI से पूछें...", newChat: "नई चैट", search: "चैट खोजें...", welcome: "मैं आपके लिए क्या बना सकता हूं?" },
-  Telugu: { placeholder: "Datta AI ని అడగండి...", newChat: "కొత్త చాట్", search: "చాట్లు వెతకండి...", welcome: "నేను మీ కోసం ఏమి నిర్మించగలను?" },
-  Tamil: { placeholder: "Datta AI கேளுங்கள்...", newChat: "புதிய அரட்டை", search: "தேடுங்கள்...", welcome: "நான் உங்களுக்கு என்ன உருவாக்கலாம்?" }
-}
-
-function applyUILanguage(lang) {
-  const strings = UI_STRINGS[lang] || UI_STRINGS.English
-  const msgInput = document.getElementById("message")
-  const searchInput = document.getElementById("chatSearchInput")
-  const welcomeTitle = document.querySelector(".welcomeTitle")
-  if (msgInput) msgInput.placeholder = strings.placeholder
-  if (searchInput) searchInput.placeholder = "🔍 " + strings.search
-  if (welcomeTitle) welcomeTitle.textContent = strings.welcome
-  localStorage.setItem("datta_ui_lang", lang)
-}
-
-// Apply saved UI language
-window.addEventListener("DOMContentLoaded", () => {
-  const saved = localStorage.getItem("datta_ui_lang") || "English"
-  applyUILanguage(saved)
-})
-
-window.applyUILanguage = applyUILanguage
-
-// ══════════════════════════════════════════════════════
-// PROFILE PHOTO UPLOAD
-// ══════════════════════════════════════════════════════
-function uploadProfilePhoto() {
-  const input = document.createElement("input")
-  input.type = "file"
-  input.accept = "image/*"
-  input.onchange = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const dataUrl = ev.target.result
-      localStorage.setItem("datta_avatar", dataUrl)
-      updateProfilePhoto(dataUrl)
-      showToast("Profile photo updated!")
-    }
-    reader.readAsDataURL(file)
-  }
-  input.click()
-}
-
-function updateProfilePhoto(dataUrl) {
-  const avatars = document.querySelectorAll(".profileAvatar, .userAvatarImg")
-  avatars.forEach(a => { a.src = dataUrl; a.style.display = "block" })
-
-  const textAvatars = document.querySelectorAll(".profileInitial, .profileLetter")
-  textAvatars.forEach(a => { a.style.display = "none" })
-}
-
-// Load saved profile photo
-window.addEventListener("DOMContentLoaded", () => {
-  const saved = localStorage.getItem("datta_avatar")
-  if (saved) updateProfilePhoto(saved)
-})
-
-window.uploadProfilePhoto = uploadProfilePhoto
-
-// ══════════════════════════════════════════════════════
-// ANALYTICS (stored locally + server)
-// ══════════════════════════════════════════════════════
-function trackEvent(event, data) {
-  const analytics = JSON.parse(localStorage.getItem("datta_analytics") || "{}")
-  if (!analytics[event]) analytics[event] = 0
-  analytics[event]++
-  analytics.lastSeen = new Date().toISOString()
-  localStorage.setItem("datta_analytics", JSON.stringify(analytics))
-}
-
-// Track message sends
-const origSend = window.send
-window.send = function() {
-  trackEvent("messages_sent")
-  if (origSend) origSend.apply(this, arguments)
-}
-
-window.trackEvent = trackEvent
-
-// applyFullTheme — kept as no-op alias for backward compat
-function applyFullTheme() { setTheme(document.body.getAttribute("data-theme") || "dark", true) }
-window.applyFullTheme = applyFullTheme
-
-// SHOW ADMIN LINK if user is admin
-window.addEventListener("DOMContentLoaded", function() {
-  const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
-  const adminEmails = ["harisaiganeshpampana@gmail.com", "harisaiganesh@gmail.com"]
-  const adminLink = document.getElementById("adminLink")
-  if (adminLink && user.email && adminEmails.includes(user.email)) {
-    adminLink.style.display = "block"
-  }
-})
-
-// SET VOICE
-function setVoice(key) {
-  localStorage.setItem("datta_voice", key)
-
-  // Update UI
-  document.querySelectorAll(".voiceOption").forEach(b => b.classList.remove("active"))
-  const btn = document.getElementById("vopt-" + key)
-  if (btn) btn.classList.add("active")
-
-  // Preview voice
-  const profile = voiceProfiles[key]
-  if (profile) speakText2("Hi! I am " + profile.name + ", your Datta AI voice.")
-}
-
-// Load saved voice on open
-function loadSavedVoice() {
-  const saved = localStorage.getItem("datta_voice") || "aria"
-  document.querySelectorAll(".voiceOption").forEach(b => b.classList.remove("active"))
-  const btn = document.getElementById("vopt-" + saved)
-  if (btn) btn.classList.add("active")
-}
-
-const origOpenVoice = window.openVoiceAssistant
-window.openVoiceAssistant = function() {
-  if (origOpenVoice) origOpenVoice()
-  setTimeout(loadSavedVoice, 100)
-}
-
-window.setVoice = setVoice
-
-// MOBILE KEYBOARD FIX - simple version, no sheet interference
-if (window.innerWidth <= 768) {
-  const msgInput = document.getElementById("message")
-  if (msgInput) {
-    msgInput.addEventListener("focus", () => {
-      setTimeout(() => {
-        chatBox.scrollTop = chatBox.scrollHeight
-      }, 400)
-    })
-  }
-}
-
-// EMAIL VERIFICATION BANNER
-window.addEventListener("DOMContentLoaded", async function() {
-  const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
-  if (!user.email || user.emailVerified) return
-
-  // Check if already verified from server
+// RAZORPAY VERIFY
+app.post("/payment/razorpay-verify", authMiddleware, async (req, res) => {
   try {
-    const res = await fetch(SERVER + "/payment/subscription?token=" + getToken())
-    if (!res.ok) return
-  } catch(e) { return }
-
-  // Show banner if not verified
-  const verified = localStorage.getItem("email_verified")
-  if (verified) return
-
-  const banner = document.createElement("div")
-  banner.id = "verifyBanner"
-  banner.style.cssText = `
-    position:fixed; top:0; left:0; right:0; z-index:9999;
-    background:linear-gradient(135deg,#1a1a00,#2a1a00);
-    border-bottom:1px solid #ffaa0044;
-    padding:10px 16px; display:flex; align-items:center;
-    gap:10px; font-size:13px;
-  `
-  banner.innerHTML = `
-    <span>📧</span>
-    <span style="flex:1;color:#ffaa88;">Verify your email to unlock all features</span>
-    <button onclick="resendVerification()" style="padding:5px 12px;background:#ffaa00;border:none;border-radius:8px;color:#000;font-size:12px;font-weight:700;cursor:pointer;">Resend</button>
-    <button onclick="document.getElementById('verifyBanner').remove();localStorage.setItem('email_verified','dismissed')" style="background:none;border:none;color:#666;cursor:pointer;font-size:16px;">✕</button>
-  `
-  document.body.prepend(banner)
+    const { razorpay_payment_id, razorpay_order_id, razorpay_signature, plan, period } = req.body
+    const key_secret = process.env.RAZORPAY_KEY_SECRET
+    if (!key_secret) return res.status(400).json({ error: "Razorpay not configured" })
+    const expectedSig = crypto.createHmac("sha256", key_secret).update(razorpay_order_id + "|" + razorpay_payment_id).digest("hex")
+    if (expectedSig !== razorpay_signature) return res.status(400).json({ error: "Payment verification failed" })
+    const endDate = new Date()
+    endDate.setMonth(endDate.getMonth() + (period === "yearly" ? 12 : 1))
+    await Subscription.findOneAndUpdate({ userId: req.user.id }, { plan, period, paymentId: razorpay_payment_id, method: "razorpay", startDate: new Date(), endDate, active: true }, { upsert: true, new: true })
+    res.json({ success: true, plan, endDate })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
-async function resendVerification() {
+// STRIPE SESSION
+app.post("/payment/stripe-session", authMiddleware, async (req, res) => {
   try {
-    const res = await fetch(SERVER + "/auth/resend-verification", {
+    const key = process.env.STRIPE_SECRET_KEY
+    if (!key) return res.status(400).json({ error: "Stripe not configured. Please use Razorpay." })
+    const { plan, period, amount } = req.body
+    const planNames = { basic: "Shakti", pro: "Agni", enterprise: "Brahma" }
+    const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: getToken() })
+      headers: { "Authorization": "Bearer " + key, "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        "payment_method_types[]": "card",
+        "line_items[0][price_data][currency]": "usd",
+        "line_items[0][price_data][product_data][name]": "Datta AI " + (planNames[plan]||plan) + " Plan",
+        "line_items[0][price_data][unit_amount]": String(amount * 100),
+        "line_items[0][quantity]": "1",
+        "mode": "payment",
+        "success_url": FRONTEND_URL + "/pricing.html?success=true&plan=" + plan + "&period=" + period,
+        "cancel_url": FRONTEND_URL + "/pricing.html?cancelled=true",
+        "metadata[userId]": req.user.id,
+        "metadata[plan]": plan,
+        "metadata[period]": period
+      }).toString()
     })
-    const data = await res.json()
-    showToast(data.message || "Verification email sent!")
-    document.getElementById("verifyBanner")?.remove()
-    localStorage.setItem("email_verified", "sent")
-  } catch(e) { showToast("Failed to send email") }
-}
+    const session = await response.json()
+    if (!response.ok) return res.status(400).json({ error: session.error?.message || "Stripe session failed" })
+    res.json({ url: session.url })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
 
-window.resendVerification = resendVerification
+// CHAT ROUTE
+app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
+  try {
+    const message = req.body.message || ""
+    const chatId = req.body.chatId || ""
+    const language = req.body.language || "English"
+    const file = req.file || null
+    const userId = req.user.id
+    if (!message && !file) return res.status(400).json({ error: "No message or file" })
 
-// AUTO UPDATE - detect new version and reload
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js").then(reg => {
+    const sub = await Subscription.findOne({ userId, active: true }).catch(() => null)
+    const userPlan = sub ? sub.plan : "free"
+    const userIsAdmin = isAdmin(req)
 
-    // Check for updates every 30 seconds
-    setInterval(() => reg.update(), 30000)
-
-    // New version found - show update toast
-    reg.addEventListener("updatefound", () => {
-      const newWorker = reg.installing
-      newWorker.addEventListener("statechange", () => {
-        if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-          showUpdateToast()
+    if (false) {
+      // Image generation removed
+    } else {
+      if (!userIsAdmin) {
+        const msgCheck = await checkAndUpdateLimitDB(userId, userPlan, "messages")
+        if (!msgCheck.allowed) {
+          const waitMins = msgCheck.waitMins || 0
+          const msg = waitMins > 0
+            ? `You've reached your message limit. Resets in ${Math.ceil(waitMins)} minutes.`
+            : "You've reached your message limit. Upgrade to continue."
+          return res.status(429).json({ 
+            error: "MESSAGE_LIMIT", 
+            message: msg,
+            plan: userPlan, 
+            waitMins: waitMins, 
+            limit: msgCheck.limit 
+          })
         }
-      })
-    })
-  })
-
-  // When new SW takes control - reload page
-  let refreshing = false
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!refreshing) {
-      refreshing = true
-      window.location.reload()
+      }
     }
-  })
-}
 
-function showUpdateToast() {
-  const toast = document.createElement("div")
-  toast.style.cssText = `
-    position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
-    background:#111; border:1px solid #00ff8844;
-    border-radius:16px; padding:12px 20px;
-    display:flex; align-items:center; gap:12px;
-    z-index:9999; box-shadow:0 8px 24px rgba(0,0,0,0.5);
-    animation:slideUp 0.3s ease; white-space:nowrap;
-  `
-  toast.innerHTML = `
-    <span style="font-size:18px;">🚀</span>
-    <span style="font-size:13px;color:#aaa;">New update available!</span>
-    <button onclick="updateApp()" style="padding:6px 14px;background:linear-gradient(135deg,#00cc6a,#00aaff);border:none;border-radius:20px;color:white;font-size:12px;font-weight:700;cursor:pointer;">Update</button>
-    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#555;cursor:pointer;font-size:16px;">✕</button>
-  `
-  document.body.appendChild(toast)
-}
+    let chat = null
+    if (chatId && chatId !== "" && chatId !== "null" && chatId !== "undefined") {
+      try { chat = await Chat.findOne({ _id: chatId, userId }) } catch(e) { chat = null }
+    }
+    if (!chat) {
+      const greetings = ["hi","hii","hello","hey","helo","hai","sup","yo"]
+      const title = greetings.includes(message.trim().toLowerCase()) ? "New conversation" : message.trim().substring(0, 45) + (message.length > 45 ? "..." : "")
+      chat = await Chat.create({ userId, title, messages: [] })
+    }
 
-function updateApp() {
-  if (navigator.serviceWorker.controller) {
-    navigator.serviceWorker.controller.postMessage("skipWaiting")
-  }
-  window.location.reload(true)
-}
+    chat.messages.push({ role: "user", content: message || "[File: " + (file?.originalname || "unknown") + "]" })
+    await chat.save()
+    res.setHeader("x-chat-id", chat._id.toString())
+    res.setHeader("Content-Type", "text/plain")
 
-window.updateApp = updateApp
 
-// FORCE UPDATE - clear all cache and reload
-function forceUpdate() {
-  showToast("Updating app...")
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.getRegistrations().then(regs => {
-      regs.forEach(reg => reg.unregister())
-    })
-  }
-  // Clear all caches
-  if ("caches" in window) {
-    caches.keys().then(keys => {
-      keys.forEach(key => caches.delete(key))
-    })
-  }
-  // Hard reload after 500ms
-  setTimeout(() => window.location.reload(true), 500)
-}
 
-window.forceUpdate = forceUpdate
+    // BROWSE URL - if message contains a URL
+    let urlContext = ""
+    const urlMatch = message && message.match(/https?:\/\/[^\s]+/)
+    if (urlMatch && process.env.TAVILY_API_KEY) {
+      const urlResult = await browseUrl(urlMatch[0])
+      if (urlResult) {
+        urlContext = "\n\n[WEBSITE CONTENT from " + urlResult.url + "]:\n" + urlResult.content.substring(0, 4000) + "\n[End Website Content]"
+        console.log("Browsed URL:", urlMatch[0])
+      }
+    }
 
-// Show update button after 5 seconds
-setTimeout(() => {
-  const btn = document.getElementById("updateBtn")
-  if (btn) btn.style.display = "flex"
-}, 5000)
+    // WHATSAPP - detect send whatsapp request
+    const waMatch = message && message.toLowerCase().match(/send whatsapp to ([+\d]+)[,:]?\s*(.+)/i)
+    if (waMatch) {
+      const waPhone = waMatch[1]
+      const waMsg = waMatch[2]
+      const waResult = await sendWhatsApp(waPhone, waMsg)
+      const waResponse = waResult.success
+        ? "WhatsApp message sent to " + waPhone + "!"
+        : "Failed to send WhatsApp: " + waResult.error
+      res.write(waResponse)
+      chat.messages.push({ role: "assistant", content: waResponse })
+      await chat.save()
+      res.write("CHATID" + chat._id)
+      res.end()
+      return
+    }
 
-// SW update detection
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js").then(reg => {
-    reg.addEventListener("updatefound", () => {
-      const nw = reg.installing
-      nw.addEventListener("statechange", () => {
-        if (nw.state === "installed" && navigator.serviceWorker.controller) {
-          const btn = document.getElementById("updateBtn")
-          if (btn) {
-            btn.style.display = "flex"
-            btn.style.animation = "pulse 1s infinite"
-            btn.title = "New update available! Tap to update"
+    // LOAD USER MEMORY
+    const memoryContext = req.user.isGuest ? "" : await getMemories(userId).catch(() => "")
+
+    // WEB SEARCH
+    let searchContext = ""
+    const isLocalQuery = message && ["restaurant","hotel","shop","cafe","food","near","place","hospital","pharmacy","atm","bank","cinema","mall","park"].some(t => message.toLowerCase().includes(t))
+    const shouldSearch = message && !urlContext && (needsWebSearch(message) || (isLocalQuery && userLocation))
+    
+    if (shouldSearch && process.env.TAVILY_API_KEY) {
+      let searchQuery = message
+
+      // For IPL/cricket queries — always search in English regardless of input language
+      const msgLow = message.toLowerCase()
+      const isIPL = msgLow.includes("ipl") || message.includes("ఐపీఎల్") ||
+                    message.includes("आईपीएल") || msgLow.includes("cricket") ||
+                    message.includes("క్రికెట్") || message.includes("क्रिकेट")
+      if (isIPL) {
+        const now = new Date()
+        const dd   = now.getDate()
+        const mm   = now.toLocaleString("en-US", { month:"long" })
+        const yyyy = now.getFullYear()
+        // Search for today AND upcoming - so AI can give next match if none today
+        searchQuery = "IPL " + yyyy + " schedule today " + dd + " " + mm + " upcoming matches next match"
+        console.log("[IPL SEARCH] Query:", searchQuery)
+      }
+
+      // For local queries, add location
+      if (isLocalQuery && userLocation) {
+        searchQuery = message + " " + userLocation + " India"
+      }
+
+      console.log("[SEARCH] Calling Tavily for:", searchQuery)
+      const results = await webSearch(searchQuery)
+      if (results) {
+        searchContext = "\n\n[Web Search Results]\n" + results + "\n[End of Search Results]"
+        console.log("[SEARCH] Got results, length:", results.length)
+        console.log("[SEARCH] First 300 chars:", results.substring(0, 300))
+      } else {
+        console.log("[SEARCH] No results returned")
+      }
+    }
+
+    // For large code tasks, use less history to save token budget
+    const historyLimit = isCodeTask ? 2 : 4
+    const historyContentLimit = isCodeTask ? 800 : 1500
+    const history = chat.messages.slice(0, -1).slice(-historyLimit)
+      .filter(m => {
+        const c = safeStr(m.content)
+        if (c.includes("data:image")) return false
+        return true
+      })
+      .map(m => ({
+        role: m.role === "assistant" ? "assistant" : "user",
+        content: safeStr(m.content).substring(0, historyContentLimit)
+      }))
+    const isImageFile = file && file.mimetype?.startsWith("image/")
+    let userContent
+    if (isImageFile) {
+      userContent = [{ type: "text", text: (message || "Analyze this image.") + searchContext }, { type: "image_url", image_url: { url: "data:" + file.mimetype + ";base64," + file.buffer.toString("base64") } }]
+    } else if (file) {
+      try {
+        const isPDF = file.mimetype === "application/pdf" || file.originalname?.toLowerCase().endsWith(".pdf")
+        
+        if (isPDF) {
+          let pdfText = ""
+          try {
+            // Use pdf-parse library for proper text extraction
+            if (!pdfParse) throw new Error("pdf-parse not available")
+            const pdfData = await pdfParse(file.buffer)
+            pdfText = (pdfData.text || "").trim()
+            console.log("PDF extracted:", pdfText.length, "chars, pages:", pdfData.numpages)
+            // Limit to 12000 chars to fit in context
+            if (pdfText.length > 12000) pdfText = pdfText.substring(0, 12000) + "\n...[truncated]"
+          } catch(e) {
+            console.log("pdf-parse failed:", e.message)
+            // Fallback: extract readable ASCII text
+            try {
+              const raw = file.buffer.toString("latin1")
+              const words = []
+              let word = ""
+              for (const ch of raw) {
+                const code = ch.charCodeAt(0)
+                if (code >= 32 && code <= 126) word += ch
+                else if (word.length > 2) { words.push(word); word = "" }
+                else word = ""
+              }
+              pdfText = words.filter(w => /[a-zA-Z]{2,}/.test(w)).join(" ").substring(0, 8000)
+            } catch(e2) {
+              pdfText = ""
+            }
           }
-          showToast("🚀 Update available! Tap ↻ to refresh")
-        }
-      })
-    })
-  }).catch(e => console.log("SW:", e))
 
-  let refreshing = false
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!refreshing) { refreshing = true; window.location.reload() }
-  })
+          if (!pdfText || pdfText.length < 20) {
+            userContent = (message || "Please describe this PDF") + "\n\n[PDF: " + file.originalname + "]\n\nCould not extract text from this PDF. It may be scanned/image-based."
+          } else {
+            userContent = (message ? message + "\n\n" : "") +
+              "[PDF: " + file.originalname + "]\n\nPDF CONTENT:\n" + pdfText
+          }
+        } else {
+          // Text files - read as UTF-8
+          const fileText = file.buffer.toString("utf-8").substring(0, 8000)
+          userContent = (message ? message + "\n\n" : "") + 
+            "[File: " + file.originalname + "]\n\n" + fileText
+        }
+      } catch(e) { 
+        userContent = (message ? message + "\n\n" : "") + "[File: " + file.originalname + " - could not read content]"
+      }
+    } else {
+      // searchContext goes in system (as context), not in user message
+      userContent = message
+    }
+
+    const selectedModel = req.body.model || "llama-3.1-8b-instant"
+    const validModels = [
+      "llama-3.1-8b-instant",                          // Datta 2.1
+      "llama-3.3-70b-versatile",                        // Datta 4.2
+      "llama-3.3-70b-versatile",                                   // Datta 4.8
+      "llama-3.3-70b-versatile",  // Datta 5.4 (fallback to 70b)
+      "meta-llama/llama-4-scout-17b-16e-instruct",      // Datta Vision
+      // Persona models
+      "datta-1.1",
+      "persona-lawyer","persona-teacher","persona-chef","persona-fitness",
+      "persona-upsc","persona-student","persona-interview","persona-business"
+    ]
+    let chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.1-8b-instant"
+    const modelKey = req.body.modelKey || "d21" // d21, d42, d48, d54
+
+    // All models available on all plans
+    const is48 = modelKey === "d48"
+    const is54 = modelKey === "d54"
+    // Map all models to valid Groq models
+    // Datta 1.1 = llama-3.1-8b-instant used specifically for AI modes
+    // All persona modes auto-use Datta 1.1 (fast, focused responses)
+    // Model ID map - frontend sends short IDs, map to real Groq model IDs
+    const modelMap = {
+      // Datta models
+      "datta-1.1":  "llama-3.1-8b-instant",
+      "datta-2.1":  "llama-3.1-8b-instant",
+      "datta-4.2":  "llama-3.3-70b-versatile",
+      "datta-4.8":  "llama-3.3-70b-versatile",
+      "datta-5.4":  "llama-3.3-70b-versatile",
+      // Persona modes use Datta 1.1 (8b) or 4.2 (70b)
+      "persona-lawyer":   "llama-3.1-8b-instant",
+      "persona-teacher":  "llama-3.1-8b-instant",
+      "persona-chef":     "llama-3.1-8b-instant",
+      "persona-fitness":  "llama-3.1-8b-instant",
+      "persona-upsc":     "llama-3.3-70b-versatile",
+      "persona-student":  "llama-3.1-8b-instant",
+      "persona-interview":"llama-3.1-8b-instant",
+      "persona-business": "llama-3.3-70b-versatile"
+    }
+    // If frontend sends full Groq model ID directly, use as-is
+    // If it sends a short name, map it
+    let resolvedModel = modelMap[chosenModel] || chosenModel
+    // model assigned after auto-switch logic below
+    const useTogether = false
+    const style = req.body.style || "Balanced"
+    const ainame = req.body.ainame || "Datta AI"
+    const styleNotes = {
+      Short: " Keep responses very brief - 1-3 sentences max unless code is needed.",
+      Detailed: " Give thorough, comprehensive, detailed responses.",
+      Formal: " Use formal professional language.",
+      Casual: " Be friendly, casual and conversational like a friend.",
+      Technical: " Use technical terminology and be precise.",
+      Creative: " Be creative, use analogies and interesting examples.",
+      Simple: " Use very simple language, avoid jargon, explain everything clearly.",
+      Balanced: ""
+    }
+    const langNote = (language && language !== "English" && language !== "Auto") ? " Always respond in " + language + "." : " Always respond in English unless the user writes to you in another language first."
+    const styleNote = styleNotes[style] || ""
+    const searchNote = searchContext ? " IMPORTANT: Web search results are provided above. Use them to answer. Write your response as PLAIN TEXT only — no JavaScript, no arrays, no [object Object], no brackets. For sports/IPL: write naturally like 'Today CSK plays against MI at 7:30 PM at Chepauk Stadium'. Extract all values as readable sentences." : ""
+
+    // Detect if code/build task needs max tokens
+    const msgLower = message.toLowerCase()
+    const isCodeTask = ["build","create","write","make","code","website","app","script","program","html","python","javascript","fix","debug","error","update","improve","full","complete","function","class","api","css","react","node","sql","java","c++","php","typescript","flutter","kotlin","swift","bash","linux","docker","git"].some(k => msgLower.includes(k))
+    
+    // Auto-switch to Datta 5.4 for coding if user is on 2.1, 4.2, or 4.8
+    const nonCodingModels = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
+    let autoSwitchMsg = ""
+    if (isCodeTask && !isImageFile && nonCodingModels.includes(resolvedModel) && !chosenModel.startsWith("persona-")) {
+      autoSwitchMsg = "Switching to **Datta 5.4** for this coding task...\n\n"
+      resolvedModel = "llama-3.3-70b-versatile"
+    }
+    // Now set final model AFTER any auto-switch
+    let model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : resolvedModel
+    const isLargeTask = [
+      "portfolio","full website","complete website","business plan",
+      "full app","complete app","all sections","food delivery","delivery app",
+      "ecommerce","e-commerce","shopping app","social media app","todo app",
+      "calculator app","weather app","chat app","booking app","restaurant app",
+      "build me a","create a full","make a complete","entire app","whole app"
+    ].some(k => msgLower.includes(k))
+    // Token limits: large=8000, code=6000, normal=4000
+    // Groq free tier limits: 70b=6000 tok/min, 8b=14400 tok/min
+    // Keep under limits to avoid 500 errors
+    const maxCodingTok = isLargeTask ? 5000 : isCodeTask ? 4000 : 2048
+    const maxTok = isImageFile ? 2048 : maxCodingTok
+
+    // Use browser's actual local time sent from frontend
+    const timeStr = req.body.userTime || new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })
+    const dateStr = req.body.userDate || new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Kolkata" })
+    const userLocation = req.body.userLocation || ""
+    const locationNote = userLocation ? " User location: " + userLocation + "." : ""
+    // Replace "near me" with actual location in message
+    if (userLocation && message) {
+      message = message.replace(/near me|nearby|nearest|around me|close to me/gi, "in " + userLocation)
+    }
+    const imageNote = isImageFile ? " You are analyzing an image. Describe ALL objects, text, colors, people, context, background in detail." : ""
+
+    // Each model has unique behavior
+    // Persona based on CHOSEN model (before mapping), not resolved model
+    const modelPersonas = {
+      "llama-3.1-8b-instant": `Your name is ${ainame}. You are Datta 2.1 - friendly chat assistant. 
+ONLY handle: casual chat, simple questions, general knowledge, fun conversations.
+If asked to write code or build apps: say "I am Datta 2.1, I am not for coding. Switching to Datta 5.4 for you..." - the system will handle the switch automatically.
+Talk simply and friendly. Short answers. NEVER say you are any other AI.`,
+
+      "llama-3.3-70b-versatile": `Your name is ${ainame}. You are Datta 4.2 - research and analysis expert.
+ONLY handle: research, facts, news, analysis, writing, explanations, general knowledge.
+If asked to write code or build apps: say "I am Datta 4.2, switching you to Datta 5.4 (coding expert)..." - the system will handle the switch automatically.
+Give clear helpful answers in simple English. NEVER say you are any other AI.`,
+
+      "llama-3.3-70b-versatile": `Your name is ${ainame}. You are Datta 5.4 - the ONLY coding expert in Datta AI.
+Write 100% complete working code. Never truncate. All languages supported.
+Explain briefly after code. NEVER say you are any other AI.`,
+      "meta-llama/llama-4-scout-17b-16e-instruct":     `Your name is ${ainame}. You are Datta Vision - image analysis expert. Analyze images in extreme detail. NEVER say you are any other AI.`,
+      "persona-lawyer":  `Your name is ${ainame}. You are in Lawyer mode. Provide general legal information. Always advise consulting a licensed lawyer. NEVER say you are any other AI.`,
+      "persona-teacher": `Your name is ${ainame}. You are in Teacher mode. Explain concepts simply with examples. Be patient and encouraging. NEVER say you are any other AI.`,
+      "persona-chef":    `Your name is ${ainame}. You are in Chef mode. Help with recipes, cooking tips, meal planning. Be enthusiastic about food. NEVER say you are any other AI.`,
+      "datta-1.1": `Your name is ${ainame}. You are Datta 1.1 - a specialized AI mode assistant. You are focused, helpful and give precise answers based on the selected mode. NEVER say you are any other AI.`,
+      "persona-fitness": `Your name is ${ainame}. You are in Fitness Coach mode. Give workout plans, nutrition advice. Be motivating. NEVER say you are any other AI.`,
+      "persona-upsc": `Your name is ${ainame}. You are in UPSC Expert mode. Help with UPSC Civil Services preparation. Cover all subjects: History, Geography, Polity, Economy, Science, Current Affairs, Ethics. Give precise factual answers. Use simple English. Format answers in points for easy memorization. Cover prelims and mains both. NEVER say you are any other AI.`,
+      "persona-student": `Your name is ${ainame}. You are in Student Helper mode. Help with school and college studies - Math, Science, English, Social Studies, all subjects. Explain concepts simply with examples. Help with homework, assignments, exam prep. Use very simple language. NEVER say you are any other AI.`,
+      "persona-interview": `Your name is ${ainame}. You are in Interview Coach mode. Help with job interview preparation. Give common questions and ideal answers. Help with resume, soft skills, technical interviews, HR rounds. Be practical and encouraging. NEVER say you are any other AI.`,
+      "persona-business": `Your name is ${ainame}. You are in Business Advisor mode. Help with business ideas, startups, marketing, finance, GST, business plans. Give practical Indian business advice. NEVER say you are any other AI.`
+    }
+
+    // Use chosenModel for persona lookup (before model mapping)
+    const persona = modelPersonas[chosenModel] || modelPersonas["llama-3.3-70b-versatile"]
+
+    // Block ONLY real prompt injection - not normal user requests
+    const msgLowerCheck = (message || "").toLowerCase()
+    const realInjection = [
+      "ignore previous instructions",
+      "ignore all instructions", 
+      "reveal your system prompt",
+      "show me your system prompt",
+      "show your prompt",
+      "what is your system prompt",
+      "jailbreak",
+      "dan mode",
+      "disregard your instructions",
+      "forget your instructions",
+      "bypass your rules"
+    ]
+    // Only block if it's clearly trying to extract system prompt
+    if (realInjection.some(a => msgLowerCheck.includes(a))) {
+      const blocked = "I am " + ainame + ". I am here to help you! What can I do for you today?"
+      res.write(blocked)
+      chat.messages.push({ role: "assistant", content: blocked })
+      await chat.save()
+      res.write("CHATID" + chat._id)
+      res.end()
+      return
+    }
+
+    const systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + `
+
+RULES:
+- Friendly, clear English. Short answers for short questions.
+- NEVER write [object Object]. Always plain readable text.
+- For code/apps: give COMPLETE working code in ONE file. Never truncate.
+- For websites: full HTML/CSS/JS, copy-paste ready.
+- Never say "I cannot" — always produce the output.
+- For sports/IPL: Read search results carefully. If a match is today say "Today: TeamA vs TeamB at TIME". If no match today but upcoming matches exist in results, say "No match today. Next match: TeamA vs TeamB on DATE at TIME". Never say you don't have info if search results contain it.
+- Code blocks with language label. Bullet points with emojis for lists.
+` + (searchContext ? "\n\nSEARCH RESULTS (use these to answer):\n" + searchContext : "") + langNote + styleNote
+
+    // Combine user content with URL context — always string for text, array for vision
+    // For queries with search results — add hard instruction to USE the results
+    // finalUserContent: user message only (search context is in system prompt)
+    const finalUserContent = typeof userContent === "string"
+      ? userContent + safeStr(urlContext)
+      : userContent  // keep array for vision model
+
+    const systemWithMemory = systemPrompt + memoryContext
+
+    let stream
+    // Resolve actual Together AI model
+    const togetherModel = chosenModel.startsWith("persona-") 
+      ? "llama-3.3-70b-versatile"  // personas use fast model
+      : "deepseek-ai/DeepSeek-V3"  // Datta 5.4 uses DeepSeek
+
+    // Write auto-switch notification before streaming
+    if (autoSwitchMsg) res.write(autoSwitchMsg)
+
+    // Build messages array
+    const groqMessages = [
+      { role: "system", content: systemWithMemory },
+      ...history,
+      { role: "user", content: finalUserContent }
+    ]
+
+    let full = ""
+    let lastError = null
+
+    // Groq only — reliable, fast, no token limits
+    // Debug: log what the AI receives
+    const userMsg = typeof finalUserContent === "string" ? finalUserContent.slice(0, 300) : "[array content]"
+    console.log("[AI INPUT] user message preview:", userMsg)
+    if (searchContext) console.log("[AI INPUT] search context length:", searchContext.length, "preview:", searchContext.slice(0, 200))
+
+    // Try models in order: primary → fast fallback
+    // On rate limit: wait and retry with smaller tokens
+    const groqAttempts = [
+      { model: model,                    tokens: maxTok },
+      { model: "llama-3.1-8b-instant",   tokens: Math.min(maxTok, 4000) },
+      { model: "llama-3.3-70b-versatile", tokens: Math.min(maxTok, 3000) }
+    ]
+
+    for (let attempt = 0; attempt < groqAttempts.length; attempt++) {
+      const { model: tryModel, tokens: tryTokens } = groqAttempts[attempt]
+      // Skip duplicate model
+      if (attempt > 0 && tryModel === groqAttempts[attempt-1].model) continue
+
+      try {
+        console.log("[GROQ] attempt", attempt+1, "model:", tryModel, "tokens:", tryTokens)
+        stream = await groq.chat.completions.create({
+          model: tryModel,
+          messages: groqMessages,
+          max_tokens: tryTokens,
+          temperature: 0.7,
+          stream: true
+        })
+        for await (const part of stream) {
+          const token = part.choices?.[0]?.delta?.content
+          if (token && typeof token === "string") {
+            full += token
+            res.write(token)
+          }
+        }
+        lastError = null
+        console.log("[GROQ] success, tokens generated:", full.length)
+        break
+
+      } catch(groqErr) {
+        lastError = groqErr
+        const status = groqErr.status || groqErr.statusCode || 0
+        console.error("[GROQ] error attempt", attempt+1, "status:", status, "msg:", groqErr.message?.slice(0,100))
+
+        if (attempt < groqAttempts.length - 1) {
+          full = ""
+          // Wait before retry if rate limited
+          if (status === 429 || groqErr.message?.includes("rate")) {
+            console.log("[GROQ] rate limit — waiting 2s before retry")
+            await new Promise(r => setTimeout(r, 2000))
+          } else if (status === 500 || status === 503) {
+            await new Promise(r => setTimeout(r, 1000))
+          }
+          continue
+        }
+      }
+    }
+
+    // If all attempts failed
+    if (lastError && full === "") {
+      const errMsg = "I'm having trouble connecting right now. Please try again in a few seconds."
+      res.write(errMsg)
+      full = errMsg
+    }
+
+    // Store user message with image reference (not full base64)
+    if (isImageFile && chat.messages.length > 0) {
+      const lastMsg = chat.messages[chat.messages.length - 1]
+      if (lastMsg && lastMsg.role === "user" && Array.isArray(lastMsg.content)) {
+        lastMsg.content = "[Image: " + file.originalname + "] " + (message || "")
+      }
+    }
+    // Strip [object Object] from full response before saving or displaying
+    full = full.split("[object Object]").join("")
+    full = full.split("[Object object]").join("")
+    full = full.split("[object object]").join("")
+    full = full.trim()
+
+    chat.messages.push({ role: "assistant", content: full })
+
+    // Save memories from this conversation (non-blocking)
+    if (!req.user.isGuest && message) {
+      extractAndSaveMemory(userId, message, full).catch(() => {})
+    }
+
+    if (chat.messages.length === 4 || chat.title === "New conversation") {
+      try {
+        const t = await groq.chat.completions.create({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: "Generate a very short title (max 5 words, no quotes) for: \"" + message + "\". Just the title." }], max_tokens: 15 })
+        const nt = t.choices?.[0]?.message?.content?.trim()
+        if (nt && !nt.startsWith("[")) chat.title = nt
+      } catch(e) {}
+    }
+    await chat.save()
+    res.write("CHATID" + chat._id)
+    res.end()
+  } catch(err) {
+    console.error("Chat error:", err.message)
+    if (!res.headersSent) res.status(500).send("Server error: " + err.message)
+    else res.end()
+  }
+})
+
+// AUTO FIX BAD TITLES
+app.post("/chats/fix-titles", authMiddleware, async (req, res) => {
+  try {
+    const badTitles = ["hi", "hii", "hiii", "hello", "hey", "helo", "hai", "sup", "yo", "new conversation", "new chat", "hiya"]
+    const chats = await Chat.find({ userId: req.user.id })
+    let fixed = 0
+
+    for (const chat of chats) {
+      const titleLower = chat.title.toLowerCase().trim()
+      if (badTitles.includes(titleLower) && chat.messages.length >= 2) {
+        // Find first real user message
+        const firstReal = chat.messages.find(m =>
+          m.role === "user" && m.content && m.content.length > 3 &&
+          !badTitles.includes(m.content.toLowerCase().trim())
+        )
+        if (firstReal) {
+          try {
+            const t = await groq.chat.completions.create({
+              model: "llama-3.1-8b-instant",
+              messages: [{ role: "user", content: "Generate a very short title (max 5 words, no quotes) for a chat that is about: " + firstReal.content.substring(0, 200) + ". Just the title." }],
+              max_tokens: 15
+            })
+            const newTitle = t.choices?.[0]?.message?.content?.trim()
+            if (newTitle && !newTitle.startsWith("[") && newTitle.length > 2) {
+              chat.title = newTitle
+              await chat.save()
+              fixed++
+            }
+          } catch(e) {}
+        }
+      }
+    }
+    res.json({ success: true, fixed })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+// REFERRAL SYSTEM
+const ReferralSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  code: { type: String, unique: true },
+  referredUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  bonusMessages: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now }
+})
+const Referral = mongoose.model("Referral", ReferralSchema)
+
+// Get or create referral code
+app.get("/referral/code", authMiddleware, async (req, res) => {
+  try {
+    let ref = await Referral.findOne({ userId: req.user.id })
+    if (!ref) {
+      const code = "DATTA" + Math.random().toString(36).substring(2,7).toUpperCase()
+      ref = await Referral.create({ userId: req.user.id, code })
+    }
+    res.json({ code: ref.code, referredCount: ref.referredUsers.length, bonusMessages: ref.bonusMessages })
+  } catch(e) { res.status(500).json({ error: sanitizeError(e).userMsg }) }
+})
+
+// Apply referral code on signup
+app.post("/referral/apply", authMiddleware, async (req, res) => {
+  try {
+    const { code } = req.body
+    const ref = await Referral.findOne({ code: code.toUpperCase() })
+    if (!ref) return res.status(404).json({ error: "Invalid referral code" })
+    if (ref.userId.toString() === req.user.id) return res.status(400).json({ error: "Cannot use your own code" })
+    // Check not already referred
+    if (ref.referredUsers.includes(req.user.id)) return res.status(400).json({ error: "Already used" })
+    // Add bonus - 10 extra messages to referrer
+    ref.referredUsers.push(req.user.id)
+    ref.bonusMessages += 10
+    await ref.save()
+    // Give bonus to new user too
+    let newUserRef = await Referral.findOne({ userId: req.user.id })
+    if (!newUserRef) {
+      const newCode = "DATTA" + Math.random().toString(36).substring(2,7).toUpperCase()
+      await Referral.create({ userId: req.user.id, code: newCode, bonusMessages: 5 })
+    }
+    res.json({ success: true, message: "Referral applied! You both get bonus messages." })
+  } catch(e) { res.status(500).json({ error: sanitizeError(e).userMsg }) }
+})
+
+// USER USAGE ROUTE - reads from MongoDB
+app.get("/user/usage", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id
+    const sub = await Subscription.findOne({ userId, active: true }).catch(() => null)
+    const plan = sub ? sub.plan : "free"
+    const limits = planLimits[plan] || planLimits.free
+
+    const usage = await Usage.findOne({ userId }) || { messagesUsed:0, imagesUsed:0, totalMessages:0, totalImages:0, windowStart: new Date(), imageWindowStart: new Date() }
+
+    const now = new Date()
+    const resetMs = limits.resetHours * 60 * 60 * 1000
+    // Free plan never resets - show 0 resetIn
+    const resetIn = (plan === "free" || resetMs <= 0 || limits.resetHours >= 9999)
+      ? 0
+      : Math.max(0, resetMs - (now - usage.windowStart))
+
+    let msgLimit = limits.messages
+
+    const waitMins = resetIn > 0 ? Math.ceil(resetIn / 60000) : 0
+
+    res.json({
+      plan,
+      messagesUsed: usage.messagesUsed || 0,
+      imagesUsed: usage.imagesUsed || 0,
+      totalMessages: usage.totalMessages || 0,
+      totalImages: usage.totalImages || 0,
+      limit: msgLimit,
+      imageLimit: limits.images,
+      resetHours: limits.resetHours,
+      waitMins,
+      resetIn
+    })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+// MEMORY ROUTES
+app.get("/memory", authMiddleware, async (req, res) => {
+  try {
+    const memories = await Memory.find({ userId: req.user.id }).sort({ updatedAt: -1 })
+    res.json(memories)
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+app.post("/memory", authMiddleware, async (req, res) => {
+  try {
+    const { key, value, category } = req.body
+    if (!key || !value) return res.status(400).json({ error: "Key and value required" })
+    await saveMemory(req.user.id, key, value, category)
+    res.json({ success: true })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+app.delete("/memory/:key", authMiddleware, async (req, res) => {
+  try {
+    await Memory.findOneAndDelete({ userId: req.user.id, key: req.params.key })
+    res.json({ success: true })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+app.delete("/memory", authMiddleware, async (req, res) => {
+  try {
+    await Memory.deleteMany({ userId: req.user.id })
+    res.json({ success: true })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+// CHAT HISTORY
+app.get("/chats", authMiddleware, async (req, res) => { try { res.json(await Chat.find({ userId: req.user.id }).sort({ createdAt: -1 }).select("title createdAt")) } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) } })
+app.get("/chat/:id", authMiddleware, async (req, res) => { try { const c = await Chat.findOne({ _id: req.params.id, userId: req.user.id }); res.json(c ? c.messages : []) } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) } })
+app.delete("/chat/:id", authMiddleware, async (req, res) => { try { await Chat.findOneAndDelete({ _id: req.params.id, userId: req.user.id }); res.json({ success: true }) } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) } })
+app.delete("/chats/all", authMiddleware, async (req, res) => { try { await Chat.deleteMany({ userId: req.user.id }); res.json({ success: true }) } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) } })
+app.post("/chat/:id/rename", authMiddleware, async (req, res) => { try { await Chat.findOneAndUpdate({ _id: req.params.id, userId: req.user.id }, { title: req.body.title }); res.json({ success: true }) } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) } })
+
+// ANALYTICS DASHBOARD
+app.get("/analytics", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id
+    const [totalChats, totalMessages, subscription] = await Promise.all([
+      Chat.countDocuments({ userId }),
+      Chat.aggregate([
+        { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+        { $project: { count: { $size: "$messages" } } },
+        { $group: { _id: null, total: { $sum: "$count" } } }
+      ]),
+      Subscription.findOne({ userId, active: true })
+    ])
+    const msgs = totalMessages[0]?.total || 0
+    res.json({
+      totalChats,
+      totalMessages: msgs,
+      plan: subscription?.plan || "free",
+      memberSince: req.user.iat ? new Date(req.user.iat * 1000).toLocaleDateString() : "Unknown"
+    })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+
+// ------------------------------------------------------
+// ADMIN DASHBOARD ROUTES
+// ------------------------------------------------------
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "harisaiganesh@gmail.com").split(",")
+
+function isAdmin(req) {
+  return req.user && (ADMIN_EMAILS.includes(req.user.email) || req.user.isAdmin)
 }
 
-window.confirmDelete = confirmDelete
-window.deleteChat = deleteChat
+app.get("/admin/stats", authMiddleware, async (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: "Not authorized" })
+  try {
+    const [totalUsers, totalChats, totalMessages, plans] = await Promise.all([
+      User.countDocuments(),
+      Chat.countDocuments(),
+      Chat.aggregate([{ $project: { count: { $size: "$messages" } } }, { $group: { _id: null, total: { $sum: "$count" } } }]),
+      Subscription.aggregate([{ $group: { _id: "$plan", count: { $sum: 1 } } }])
+    ])
+    const today = new Date(); today.setHours(0,0,0,0)
+    const newUsersToday = await User.countDocuments({ createdAt: { $gte: today } })
+    const newChatsToday = await Chat.countDocuments({ createdAt: { $gte: today } })
+    const planStats = {}
+    plans.forEach(p => { planStats[p._id || "free"] = p.count })
+    res.json({
+      totalUsers, totalChats,
+      totalMessages: totalMessages[0]?.total || 0,
+      newUsersToday, newChatsToday,
+      planStats,
+      revenue: {
+        basic: (planStats.basic || 0) * 199,
+        pro: (planStats.pro || 0) * 499,
+        enterprise: (planStats.enterprise || 0) * 1499
+      }
+    })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+app.get("/admin/users", authMiddleware, async (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: "Not authorized" })
+  try {
+    const page = parseInt(req.query.page) || 1
+    const limit = 20
+    const users = await User.find().sort({ createdAt: -1 }).skip((page-1)*limit).limit(limit).select("-password")
+    const total = await User.countDocuments()
+    const subs = await Subscription.find({ active: true })
+    const subMap = {}
+    subs.forEach(s => { subMap[s.userId.toString()] = s.plan })
+    const usersWithPlan = users.map(u => ({ ...u.toObject(), plan: subMap[u._id.toString()] || "free" }))
+    res.json({ users: usersWithPlan, total, pages: Math.ceil(total/limit) })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+app.delete("/admin/user/:id", authMiddleware, async (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: "Not authorized" })
+  try {
+    await Promise.all([
+      User.findByIdAndDelete(req.params.id),
+      Chat.deleteMany({ userId: req.params.id }),
+      Subscription.deleteMany({ userId: req.params.id })
+    ])
+    res.json({ success: true })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+// ------------------------------------------------------
+// PUBLIC API - Let others use Datta AI
+// ------------------------------------------------------
+const ApiKeySchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  key: { type: String, unique: true },
+  name: String,
+  requests: { type: Number, default: 0 },
+  limit: { type: Number, default: 1000 },
+  active: { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now }
+})
+const ApiKey = mongoose.model("ApiKey", ApiKeySchema)
+
+function generateApiKey() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+  let key = "datta_"
+  for (let i = 0; i < 32; i++) key += chars[Math.floor(Math.random() * chars.length)]
+  return key
+}
+
+app.post("/api/keys", authMiddleware, async (req, res) => {
+  try {
+    const { name } = req.body
+    const existing = await ApiKey.countDocuments({ userId: req.user.id })
+    if (existing >= 3) return res.status(400).json({ error: "Max 3 API keys allowed" })
+    const key = await ApiKey.create({ userId: req.user.id, key: generateApiKey(), name: name || "My API Key" })
+    res.json({ key: key.key, name: key.name, limit: key.limit })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+app.get("/api/keys", authMiddleware, async (req, res) => {
+  try {
+    const keys = await ApiKey.find({ userId: req.user.id }).select("-__v")
+    res.json(keys)
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+app.delete("/api/keys/:key", authMiddleware, async (req, res) => {
+  try {
+    await ApiKey.findOneAndDelete({ userId: req.user.id, key: req.params.key })
+    res.json({ success: true })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+// PUBLIC API ENDPOINT
+app.post("/api/v1/chat", async (req, res) => {
+  try {
+    const apiKey = req.headers["x-api-key"] || req.body.api_key
+    if (!apiKey) return res.status(401).json({ error: "API key required. Get one at " + FRONTEND_URL + "/setting.html" })
+    const keyDoc = await ApiKey.findOne({ key: apiKey, active: true })
+    if (!keyDoc) return res.status(401).json({ error: "Invalid API key" })
+    if (keyDoc.requests >= keyDoc.limit) return res.status(429).json({ error: "API limit reached. Upgrade plan for more." })
+
+    const { message, model, language, style } = req.body
+    if (!message) return res.status(400).json({ error: "message is required" })
+
+    await ApiKey.findByIdAndUpdate(keyDoc._id, { $inc: { requests: 1 } })
+
+    const useModel = model || "llama-3.3-70b-versatile"
+    const completion = await groq.chat.completions.create({
+      model: useModel,
+      messages: [
+        { role: "system", content: "You are Datta AI, a helpful assistant." + (language ? " Respond in " + language + "." : "") + (style ? " Style: " + style : "") },
+        { role: "user", content: message }
+      ],
+      max_tokens: 2048
+    })
+
+    res.json({
+      response: completion.choices[0]?.message?.content || "",
+      model: useModel,
+      requests_used: keyDoc.requests + 1,
+      requests_limit: keyDoc.limit
+    })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+// ------------------------------------------------------
+// SHARE CHAT AS PUBLIC LINK
+// ------------------------------------------------------
+const SharedChatSchema = new mongoose.Schema({
+  shareId: { type: String, unique: true },
+  chatId: mongoose.Schema.Types.ObjectId,
+  userId: mongoose.Schema.Types.ObjectId,
+  title: String,
+  messages: Array,
+  createdAt: { type: Date, default: Date.now },
+  views: { type: Number, default: 0 }
+})
+const SharedChat = mongoose.model("SharedChat", SharedChatSchema)
+
+app.post("/chat/:id/share", authMiddleware, async (req, res) => {
+  try {
+    const chat = await Chat.findOne({ _id: req.params.id, userId: req.user.id })
+    if (!chat) return res.status(404).json({ error: "Chat not found" })
+    const existing = await SharedChat.findOne({ chatId: chat._id })
+    if (existing) return res.json({ shareId: existing.shareId, url: FRONTEND_URL + "/share.html?id=" + existing.shareId })
+    const shareId = Math.random().toString(36).substring(2, 10)
+    await SharedChat.create({ shareId, chatId: chat._id, userId: req.user.id, title: chat.title, messages: chat.messages })
+    res.json({ shareId, url: FRONTEND_URL + "/share.html?id=" + shareId })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+app.get("/share/:shareId", async (req, res) => {
+  try {
+    const shared = await SharedChat.findOneAndUpdate({ shareId: req.params.shareId }, { $inc: { views: 1 } }, { new: true })
+    if (!shared) return res.status(404).json({ error: "Shared chat not found" })
+    res.json({ title: shared.title, messages: shared.messages, views: shared.views, createdAt: shared.createdAt })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+// ------------------------------------------------------
+// AI PROJECTS
+// ------------------------------------------------------
+const ProjectSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  name: { type: String, default: "New Project" },
+  description: String,
+  color: { type: String, default: "#00ff88" },
+  emoji: { type: String, default: "-" },
+  chatIds: [mongoose.Schema.Types.ObjectId],
+  files: Array,
+  createdAt: { type: Date, default: Date.now }
+})
+const Project = mongoose.model("Project", ProjectSchema)
+
+app.get("/projects", authMiddleware, async (req, res) => {
+  try { res.json(await Project.find({ userId: req.user.id }).sort({ createdAt: -1 })) }
+  catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+app.post("/projects", authMiddleware, async (req, res) => {
+  try {
+    const { name, description, color, emoji } = req.body
+    const project = await Project.create({ userId: req.user.id, name, description, color, emoji })
+    res.json(project)
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+app.put("/projects/:id", authMiddleware, async (req, res) => {
+  try {
+    const project = await Project.findOneAndUpdate({ _id: req.params.id, userId: req.user.id }, req.body, { new: true })
+    res.json(project)
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+app.delete("/projects/:id", authMiddleware, async (req, res) => {
+  try {
+    await Project.findOneAndDelete({ _id: req.params.id, userId: req.user.id })
+    res.json({ success: true })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+// ------------------------------------------------------
+// CODE EXECUTION (safe JS only)
+// ------------------------------------------------------
+app.post("/execute", authMiddleware, async (req, res) => {
+  try {
+    const { code, language } = req.body
+    if (!code) return res.status(400).json({ error: "No code provided" })
+
+    if (language === "javascript" || language === "js") {
+      const logs = []
+      const errors = []
+      let result = null
+      try {
+        const fn = new Function("console", "Math", "Date", "JSON", "parseInt", "parseFloat", "String", "Number", "Array", "Object",
+          `"use strict"; const output = []; ` + code + `; return output;`
+        )
+        const mockConsole = {
+          log: (...a) => logs.push(a.map(x => typeof x === "object" ? JSON.stringify(x) : String(x)).join(" ")),
+          error: (...a) => errors.push(a.join(" ")),
+          warn: (...a) => logs.push("WARN: " + a.join(" "))
+        }
+        result = fn(mockConsole, Math, Date, JSON, parseInt, parseFloat, String, Number, Array, Object)
+      } catch(e) { errors.push(e.message) }
+      return res.json({ output: logs.join("\n"), errors: errors.join("\n"), language: "javascript" })
+    }
+
+    // For Python - use Judge0 API (free)
+    if (language === "python") {
+      const judge0Key = process.env.JUDGE0_API_KEY
+      if (!judge0Key) {
+        return res.json({ output: "", errors: "Python execution requires JUDGE0_API_KEY in Render. Get free key at rapidapi.com/judge0-official", language: "python" })
+      }
+      const submitRes = await fetch("https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-RapidAPI-Key": judge0Key, "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com" },
+        body: JSON.stringify({ source_code: code, language_id: 71, stdin: "" })
+      })
+      const result = await submitRes.json()
+      return res.json({ output: result.stdout || "", errors: result.stderr || result.compile_output || "", language: "python" })
+    }
+
+    res.json({ output: "", errors: "Language not supported yet. JavaScript and Python are available.", language })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+// SMART SUGGESTIONS based on user history
+app.get("/suggestions", authMiddleware, async (req, res) => {
+  try {
+    const recentChats = await Chat.find({ userId: req.user.id }).sort({ updatedAt: -1 }).limit(3)
+    const topics = recentChats.map(c => c.title).filter(Boolean).join(", ")
+
+    const suggestions = [
+      "Build me a portfolio website",
+      "Write a Python web scraper",
+      "Create an image of a sunset",
+      "Explain quantum computing simply",
+      "Write a business email template",
+      "Create a React todo app"
+    ]
+
+    if (topics) {
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.1-8b-instant",
+        messages: [{ role: "user", content: `Based on these recent chat topics: "${topics}", suggest 4 short follow-up questions or tasks the user might want to do next. Return as JSON array of strings, max 8 words each. Example: ["Build a React dashboard", "Add dark mode to website"]. Return ONLY the JSON array.` }],
+        max_tokens: 100,
+        temperature: 0.8
+      })
+      const raw = completion.choices?.[0]?.message?.content?.trim()
+      try {
+        const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim())
+        if (Array.isArray(parsed)) return res.json(parsed.slice(0, 4))
+      } catch(e) {}
+    }
+
+    res.json(suggestions.sort(() => Math.random() - 0.5).slice(0, 4))
+  } catch(err) {
+    res.json([
+      "Build me a portfolio website",
+      "Create an image of a sunset",
+      "Write a Python script",
+      "Explain AI in simple terms"
+    ])
+  }
+})
+
+// TOGETHER AI - Dedicated coding model for Datta 5.4
+async function callTogetherAI(messages, systemPrompt, maxTokens = 8192, model = "deepseek-ai/DeepSeek-V3") {
+  const apiKey = process.env.TOGETHER_API_KEY
+  if (!apiKey) throw new Error("TOGETHER_API_KEY not configured")
+
+  const response = await fetch("https://api.together.xyz/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + apiKey
+    },
+    body: JSON.stringify({
+      model: model,  // Dynamic model selection
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages
+      ],
+      max_tokens: maxTokens,
+      temperature: 0.3,  // Lower temperature for more precise code
+      stream: true
+    })
+  })
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.error?.message || "Together AI error")
+  }
+
+  return response
+}
 
 // EXPORT CHAT
-async function exportChat() {
-  if (!currentChatId) return showToast("No chat to export")
+app.get("/chat/:id/export", authMiddleware, async (req, res) => {
   try {
-    const res = await fetch(SERVER + "/chat/" + currentChatId + "/export?token=" + getToken())
-    if (!res.ok) return showToast("Export failed")
-    const blob = await res.blob()
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "datta-ai-chat.txt"
-    a.click()
-    URL.revokeObjectURL(url)
-    showToast("Chat exported!")
-  } catch(e) { showToast("Export failed") }
-}
-window.exportChat = exportChat
-
-// REFERRAL
-async function showReferral() {
-  try {
-    const res = await fetch(SERVER + "/referral/code?token=" + getToken())
-    const data = await res.json()
-    const msg = `Your referral code: ${data.code}
-
-Share this with friends!
-You get +10 messages per referral.
-
-You've referred: ${data.referredCount} people
-Bonus messages earned: ${data.bonusMessages}`
-    const shareText = `Try Datta AI - Free AI Assistant!
-Use my code ${data.code} at signup for 5 bonus messages!
-https://datta-ai.com`
-    if (navigator.share) {
-      navigator.share({ title: "Datta AI Referral", text: shareText })
-    } else {
-      navigator.clipboard.writeText(shareText)
-      showToast("Referral link copied!")
-      alert(msg)
-    }
-  } catch(e) { showToast("Could not load referral") }
-}
-window.showReferral = showReferral
-
-// AI PERSONAS
-function setPersona(key, label) {
-  localStorage.setItem("datta_persona", key)
-  localStorage.setItem("datta_persona_label", label)
-  updateModeIndicator(key, label)
-  showToast("Mode: " + label)
-}
-
-function updateModeIndicator(key, label) {
-  const btn = document.getElementById("modeIndicator")
-  const pill = document.getElementById("activeModelName")
-  if (!btn) return
-  if (!key || key === "none") {
-    btn.style.display = "none"
-    // Restore actual model name in pill
-    const savedKey = localStorage.getItem("datta_model_key") || "d21"
-    const savedName = { d21:"Datta 2.1", d42:"Datta 4.2", d48:"Datta 4.8", d54:"Datta 5.4" }
-    if (pill) pill.textContent = savedName[savedKey] || "Datta 2.1"
-  } else {
-    const icons = { lawyer:"⚖️", teacher:"📚", chef:"👨‍🍳", fitness:"💪", upsc:"🏛️", student:"📖", interview:"🎯", business:"💼" }
-    btn.textContent = (icons[key] || "✨") + " " + label
-    btn.style.display = "flex"
-    // Show Datta 1.1 in model pill
-    if (pill) pill.textContent = "Datta 1.1"
-  }
-}
-
-// Reload mode indicator from localStorage every time page is visible
-function initModeIndicator() {
-  const savedKey = localStorage.getItem("datta_persona") || "none"
-  const savedLabel = localStorage.getItem("datta_persona_label") || "Normal"
-  updateModeIndicator(savedKey, savedLabel)
-  // Also restore model pill
-  const pill = document.getElementById("activeModelName")
-  if (pill) {
-    if (savedKey && savedKey !== "none") {
-      pill.textContent = "Datta 1.1"
-    } else {
-      const modelKey = localStorage.getItem("datta_model_key") || "d21"
-      const names = { d21:"Datta 2.1", d42:"Datta 4.2", d48:"Datta 4.8", d54:"Datta 5.4" }
-      pill.textContent = names[modelKey] || "Datta 2.1"
-    }
-  }
-}
-
-// Run on initial load
-window.addEventListener("load", initModeIndicator)
-
-// Run when user comes BACK from settings page (pageshow fires on back navigation)
-window.addEventListener("pageshow", function(e) {
-  initModeIndicator()
-})
-
-// Run when tab becomes visible again
-document.addEventListener("visibilitychange", function() {
-  if (!document.hidden) initModeIndicator()
-})
-
-// Run when window gets focus (user switches back)
-window.addEventListener("focus", function() {
-  initModeIndicator()
-})
-
-window.setPersona = setPersona
-window.updateModeIndicator = updateModeIndicator
-
-function getPersonaModel() {
-  const persona = localStorage.getItem("datta_persona")
-  if (persona && persona !== "none") {
-    // Auto-switch to Datta 1.1 for persona modes
-    return "persona-" + persona
-  }
-  return localStorage.getItem("datta_model") || "llama-3.1-8b-instant"
-}
-
-// ── MODEL DROPDOWN ──────────────────────────────────────────────────────────
-let _ddOpen = false
-let _ddClickTime = 0
-
-function toggleModelDropdown() {
-  _ddClickTime = Date.now()
-  _ddOpen = !_ddOpen
-  const dd = document.getElementById("modelDropdown")
-  if (!dd) return
-  if (_ddOpen) {
-    dd.style.display = "block"
-    dd.style.position = "fixed"
-    // Position above input bar
-    const pill = document.getElementById("activeModelPill")
-    if (pill) {
-      const rect = pill.getBoundingClientRect()
-      dd.style.bottom = (window.innerHeight - rect.top + 8) + "px"
-      dd.style.left = "12px"
-      dd.style.right = "12px"
-      dd.style.zIndex = "99999"
-    }
-  } else {
-    dd.style.display = "none"
-  }
-}
-
-function closeModelDropdown() {
-  _ddOpen = false
-  const dd = document.getElementById("modelDropdown")
-  if (dd) dd.style.display = "none"
-}
-
-// Close when clicking outside - with delay to prevent immediate close
-document.addEventListener("click", function(e) {
-  if (Date.now() - _ddClickTime < 300) return
-  if (!e.target.closest("#activeModelPill") && !e.target.closest("#modelDropdown")) {
-    closeModelDropdown()
-  }
-})
-
-function selectInputModel(modelId, key, label) {
-  // Update pill text
-  const pill = document.getElementById("activeModelName")
-  if (pill) pill.textContent = label
-
-  // Update checkmarks
-  document.querySelectorAll(".modelDropItem").forEach(d => d.classList.remove("active"))
-  const allChecks = document.querySelectorAll("[id^='mdic-']")
-  allChecks.forEach(c => c.textContent = "")
-  const item = document.getElementById("mdi-" + key)
-  const check = document.getElementById("mdic-" + key)
-  if (item) item.classList.add("active")
-  if (check) check.textContent = "✓"
-
-  // Save
-  localStorage.setItem("datta_model", modelId)
-  localStorage.setItem("datta_model_key", key)
-
-  // Sync topbar
-  const btnName = document.getElementById("modelBtnName")
-  if (btnName) btnName.textContent = label
-
-  closeModelDropdown()
-  showToast(label)
-}
-
-// Init on load
-window.addEventListener("DOMContentLoaded", function() {
-  const key = localStorage.getItem("datta_model_key") || "d21"
-  const m = modelData[key]
-  if (m) {
-    const pill = document.getElementById("activeModelName")
-    if (pill) pill.textContent = m.name
-    const item = document.getElementById("mdi-" + key)
-    const check = document.getElementById("mdic-" + key)
-    if (item) item.classList.add("active")
-    if (check) check.textContent = "✓"
-  }
-})
-
-window.toggleModelDropdown = toggleModelDropdown
-window.closeModelDropdown = closeModelDropdown
-window.selectInputModel = selectInputModel
-
-// Check if user can access premium models
-function checkModelAccess(key) {
-  // All models available on all plans
-  const models = { d48: { id:"llama-3.3-70b-versatile", name:"Datta 4.8" }, d54: { id:"llama-3.3-70b-versatile", name:"Datta 5.4" } }
-  const m = models[key]
-  if (m) selectInputModel(m.id, key, m.name)
-}
-window.checkModelAccess = checkModelAccess
-
-
-// ══════════════════════════════════════════════════════
-// AI LENS - Google Lens like feature
-// ══════════════════════════════════════════════════════
-let lensStream = null
-let lensMode = "smart"
-let lensLastImage = null
-let lensLastResult = ""
-
-const lensModePrompts = {
-  smart: `You are an AI with Google Lens-level intelligence. Analyze this image and:
-1. If it contains a QUESTION or PROBLEM (math, science, general knowledge, riddle) → SOLVE IT DIRECTLY with a clear answer
-2. If it contains TEXT → Read and extract all text clearly  
-3. If it shows an OBJECT, PRODUCT, PLANT, ANIMAL, PLACE → Identify it with key facts
-4. If it shows CODE → Explain and debug it
-5. If it shows a DOCUMENT or FORM → Extract the key information
-
-Be like Google Lens: give a DIRECT, USEFUL answer immediately. No preamble. Start with the answer.`,
-  identify: "Identify everything in this image. Objects, brands, places, people, animals, plants. Give name + key facts about the most prominent thing. Be specific and direct.",
-  text: "Extract ALL text from this image exactly as written. Preserve formatting. Include numbers, signs, labels. If a question is found, also answer it.",
-  solve: "This image likely contains a math problem, equation, or question. SOLVE IT completely. Show step-by-step working. Give the final answer clearly at the end.",
-  translate: "Read all text in this image. Identify the language and translate to English. Also answer any questions found in the text."
-}
-
-async function openLens() {
-  const overlay = document.getElementById("lensOverlay")
-  if (!overlay) return
-  overlay.style.display = "flex"
-  document.getElementById("lensResult").style.display = "none"
-
-  try {
-    lensStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }
+    const chat = await Chat.findOne({ _id: req.params.id, userId: req.user.id })
+    if (!chat) return res.status(404).json({ error: "Chat not found" })
+    const sep = "=".repeat(40)
+    const lines = [
+      "DATTA AI - Chat Export",
+      sep,
+      "Title: " + (chat.title || "Untitled"),
+      "Date: " + new Date(chat.createdAt).toLocaleDateString(),
+      sep, ""
+    ]
+    chat.messages.forEach(m => {
+      const role = m.role === "user" ? "You" : "Datta AI"
+      const text = typeof m.content === "string" ? m.content : "[File/Image]"
+      lines.push("[" + role + "]")
+      lines.push(text)
+      lines.push("")
     })
-    const video = document.getElementById("lensVideo")
-    video.srcObject = lensStream
-  } catch(e) {
-    alert("Camera access denied. Please allow camera access.")
-    closeLens()
-  }
-}
+    const output = lines.join("\n")
+    res.setHeader("Content-Type", "text/plain")
+    res.setHeader("Content-Disposition", "attachment; filename=datta-ai-chat.txt")
+    res.send(output)
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+// AI LENS ROUTE
+app.post("/lens", authMiddleware, async (req, res) => {
+  try {
+    const { image, prompt } = req.body
+    if (!image) return res.status(400).json({ error: "Image required" })
 
-function closeLens() {
-  const overlay = document.getElementById("lensOverlay")
-  if (overlay) overlay.style.display = "none"
-  if (lensStream) {
-    lensStream.getTracks().forEach(t => t.stop())
-    lensStream = null
-  }
-}
+    // Trim base64 if too large (max 4MB)
+    const maxLen = 4 * 1024 * 1024 * 1.33 // base64 overhead
+    const trimmedImage = image.length > maxLen ? image.substring(0, maxLen) : image
 
-function setLensMode(mode) {
-  lensMode = mode
-  document.querySelectorAll(".lensModeBtn").forEach(b => {
-    b.classList.remove("active")
-    b.style.background = "rgba(255,255,255,0.05)"
-    b.style.borderColor = "#333"
-    b.style.color = "#aaa"
+    const completion = await groq.chat.completions.create({
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      messages: [{
+        role: "user",
+        content: [
+          { type: "text", text: prompt || "Analyze this image in detail. Describe everything you see." },
+          { type: "image_url", image_url: { url: "data:image/jpeg;base64," + trimmedImage } }
+        ]
+      }],
+      max_tokens: 1024,
+      temperature: 0.3
+    })
+
+    const result = completion.choices?.[0]?.message?.content || "Could not analyze image"
+    res.json({ result })
+  } catch(err) {
+    console.error("Lens error:", err.message)
+    res.status(500).json({ error: sanitizeError(err).userMsg })
+  }
+})
+
+// VERSION CHECK
+const APP_VERSION = "37"
+const MIN_VERSION = "37"
+
+app.get("/version", (req, res) => {
+  const clientVersion = req.query.v || "0"
+  const isBlocked = parseInt(clientVersion) < parseInt(MIN_VERSION)
+  res.json({
+    latest: APP_VERSION,
+    minimum: MIN_VERSION,
+    blocked: isBlocked,
+    updateRequired: isBlocked,
+    updateUrl: process.env.FRONTEND_URL || "https://harisaiganeshpampana-ai.github.io/datta-ai",
+    changelog: [
+      "Fixed Add to chat issue",
+      "New model selector",
+      "Better mobile UI",
+      "AI Lens feature",
+      "Bug fixes"
+    ]
   })
-  const btn = document.getElementById("lensMode-" + mode)
-  if (btn) {
-    btn.classList.add("active")
-    btn.style.background = "rgba(0,255,136,0.2)"
-    btn.style.borderColor = "#00ff88"
-    btn.style.color = "#00ff88"
-  }
-}
+})
 
-async function captureAndAnalyze() {
-  const video = document.getElementById("lensVideo")
-  const canvas = document.getElementById("lensCanvas")
-  const btn = document.getElementById("lensCaptureBtn")
+app.get("/", (req, res) => res.json({ status: "Datta AI Server running", version: "3.5" }))
 
-  // Capture and COMPRESS frame - resize to max 800px
-  const maxSize = 800
-  let w = video.videoWidth
-  let h = video.videoHeight
-  if (w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize }
-  if (h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize }
 
-  canvas.width = w
-  canvas.height = h
-  const ctx = canvas.getContext("2d")
-  ctx.drawImage(video, 0, 0, w, h)
-  // Quality 0.7 = good quality but smaller size
-  const imageData = canvas.toDataURL("image/jpeg", 0.7)
-  lensLastImage = imageData
 
-  // Show result panel with loading
-  const resultDiv = document.getElementById("lensResult")
-  const resultText = document.getElementById("lensResultText")
-  resultDiv.style.display = "block"
-  resultText.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;color:#555;font-size:13px;">
-      <div class="thinkOrb" style="--orb-color:#00ff88;--orb-glow:rgba(0,255,136,0.3);width:20px;height:20px;flex-shrink:0;">
-        <div class="thinkOrbCore" style="width:8px;height:8px;"></div>
-      </div>
-      <span>Analyzing image...</span>
-    </div>`
-
-  // Change capture btn to loading
-  const capBtn = document.getElementById("lensCaptureBtn")
-  if (capBtn) capBtn.style.opacity = "0.5"
-
+// KEEP ALIVE - ping self every 5 minutes to prevent Render sleep
+const SELF_URL = process.env.RAILWAY_PUBLIC_DOMAIN ? "https://" + process.env.RAILWAY_PUBLIC_DOMAIN : process.env.RENDER_EXTERNAL_URL || "https://datta-ai-server.onrender.com"
+setInterval(async () => {
   try {
-    const base64 = imageData.split(",")[1]
-    const prompt = lensModePrompts[lensMode]
-
-    const res = await fetch(SERVER + "/lens", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image: base64, prompt, token: getToken() })
-    })
-
-    const data = await res.json()
-    if (data.result) {
-      lensLastResult = data.result
-      // Render with markdown-like formatting
-      const formatted = data.result
-        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-        .replace(/\*(.*?)\*/g, "<em>$1</em>")
-        .replace(/^#{1,3} (.+)$/gm, "<div style='font-weight:700;color:white;margin:8px 0 4px;'>$1</div>")
-        .replace(/\n\n/g, "<br><br>")
-        .replace(/\n/g, "<br>")
-      resultText.innerHTML = formatted
-    } else {
-      resultText.innerHTML = '<div style="color:#ff6666;">Could not analyze. Try again.</div>'
-    }
-  } catch(e) {
-    resultText.innerHTML = '<div style="color:#ff6666;">Error: ' + e.message + '</div>'
-  }
-
-  if (capBtn) capBtn.style.opacity = "1"
-}
-
-function lensFromGallery(input) {
-  const file = input.files[0]
-  if (!file) return
-  const reader = new FileReader()
-  reader.onload = async (e) => {
-    lensLastImage = e.target.result
-    const btn = document.getElementById("lensCaptureBtn")
-    const resultDiv = document.getElementById("lensResult")
-    const resultText = document.getElementById("lensResultText")
-    resultDiv.style.display = "block"
-    resultText.innerHTML = '<div style="color:#555;font-size:13px;">🔍 Analyzing image...</div>'
-    btn.textContent = "⏳"
-    btn.disabled = true
-
-    try {
-      const base64 = e.target.result.split(",")[1]
-      const prompt = lensModePrompts[lensMode]
-      const res = await fetch(SERVER + "/lens", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: base64, prompt, token: getToken() })
-      })
-      const data = await res.json()
-      if (data.result) {
-        resultText.innerHTML = data.result.replace(/\n/g, "<br>").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      }
-    } catch(e) {
-      resultText.innerHTML = '<div style="color:#ff6666;">Error: ' + e.message + '</div>'
-    }
-    btn.textContent = "📸"
-    btn.disabled = false
-  }
-  reader.readAsDataURL(file)
-}
-
-function sendLensToChat() {
-  closeLens()
-  if (!lensLastImage) return
-  // Convert base64 to blob and set as file input
-  fetch(lensLastImage)
-    .then(r => r.blob())
-    .then(blob => {
-      const file = new File([blob], "lens-capture.jpg", { type: "image/jpeg" })
-      const dt = new DataTransfer()
-      dt.items.add(file)
-      const input = document.getElementById("imageInput")
-      if (input) {
-        input.files = dt.files
-        showFilePreview(file)
-      }
-      // Focus message input
-      const msg = document.getElementById("message")
-      if (msg) { msg.focus(); msg.placeholder = "Ask about this image..." }
-    })
-}
-
-function toggleLensFlash() {
-  if (!lensStream) return
-  const track = lensStream.getVideoTracks()[0]
-  if (!track) return
-  const btn = document.getElementById("flashBtn")
-  try {
-    const caps = track.getCapabilities()
-    if (caps.torch) {
-      const settings = track.getSettings()
-      track.applyConstraints({ advanced: [{ torch: !settings.torch }] })
-      btn.textContent = settings.torch ? "⚡" : "🔦"
-    }
+    await fetch(SELF_URL + "/ping")
+    console.log("Keep-alive ping sent")
   } catch(e) {}
-}
+}, 14 * 60 * 1000) // 14 minutes
 
-window.openLens = openLens
-window.closeLens = closeLens
-window.setLensMode = setLensMode
-window.captureAndAnalyze = captureAndAnalyze
-window.lensFromGallery = lensFromGallery
-window.sendLensToChat = sendLensToChat
-window.toggleLensFlash = toggleLensFlash
-// ════════════════════════════════════════
-// NOTES FEATURE — desktop/tablet only
-// ════════════════════════════════════════
-let notesOpen = false
-let notesSaveTimer = null
 
-function toggleNotes() {
-  // Block on phones
-  if (window.innerWidth < 768) return
 
-  notesOpen = !notesOpen
-  const panel = document.getElementById("notesPanel")
-  const btn = document.getElementById("notesToggleBtn")
-
-  if (notesOpen) {
-    panel.classList.add("open")
-    btn.classList.add("active")
-    document.body.classList.add("notes-open")
-    // Load saved notes
-    const saved = localStorage.getItem("datta_notes") || ""
-    const textarea = document.getElementById("notesTextarea")
-    if (textarea) {
-      textarea.value = saved
-      updateNotesCount()
-      setTimeout(() => textarea.focus(), 350)
-    }
-  } else {
-    panel.classList.remove("open")
-    btn.classList.remove("active")
-    document.body.classList.remove("notes-open")
-  }
-}
-
-function updateNotesCount() {
-  const textarea = document.getElementById("notesTextarea")
-  const counter = document.getElementById("notesCharCount")
-  if (!textarea || !counter) return
-  const len = textarea.value.length
-  counter.textContent = len + " character" + (len !== 1 ? "s" : "")
-}
-
-function autoSaveNotes() {
-  const textarea = document.getElementById("notesTextarea")
-  const status = document.getElementById("notesSavedStatus")
-  if (!textarea) return
-
-  localStorage.setItem("datta_notes", textarea.value)
-  updateNotesCount()
-
-  // Show saving... then Saved
-  if (status) {
-    status.textContent = "Saving..."
-    status.style.color = "rgba(200,200,100,0.6)"
-    clearTimeout(notesSaveTimer)
-    notesSaveTimer = setTimeout(() => {
-      status.textContent = "Saved"
-      status.style.color = "rgba(0,201,167,0.6)"
-    }, 600)
-  }
-}
-
-function copyNotes() {
-  const textarea = document.getElementById("notesTextarea")
-  if (!textarea || !textarea.value.trim()) { showToast("Nothing to copy"); return }
-  navigator.clipboard.writeText(textarea.value)
-  showToast("Notes copied!")
-}
-
-function clearNotes() {
-  const textarea = document.getElementById("notesTextarea")
-  if (!textarea || !textarea.value.trim()) return
-  if (!confirm("Clear all notes? This cannot be undone.")) return
-  textarea.value = ""
-  localStorage.removeItem("datta_notes")
-  updateNotesCount()
-  showToast("Notes cleared")
-}
-
-function downloadNotes() {
-  const textarea = document.getElementById("notesTextarea")
-  if (!textarea || !textarea.value.trim()) { showToast("Nothing to download"); return }
-  const blob = new Blob([textarea.value], { type: "text/plain" })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = "datta-notes-" + new Date().toLocaleDateString("en-IN").replace(/\//g,"-") + ".txt"
-  a.click()
-  URL.revokeObjectURL(url)
-  showToast("Notes downloaded!")
-}
-
-// Auto-save on typing
-window.addEventListener("DOMContentLoaded", function() {
-  const textarea = document.getElementById("notesTextarea")
-  if (textarea) {
-    textarea.addEventListener("input", autoSaveNotes)
-  }
-  // Close notes if window resizes to phone
-  window.addEventListener("resize", function() {
-    if (window.innerWidth < 768 && notesOpen) {
-      notesOpen = false
-      const panel = document.getElementById("notesPanel")
-      const btn = document.getElementById("notesToggleBtn")
-      if (panel) panel.classList.remove("open")
-      if (btn) btn.classList.remove("active")
-      document.body.classList.remove("notes-open")
-    }
-  })
-})
-
-window.toggleNotes = toggleNotes
-window.copyNotes = copyNotes
-window.clearNotes = clearNotes
-window.downloadNotes = downloadNotes
-
-// Inject context menu styles
-;(function(){
-  if (document.getElementById("ctxMenuStyle")) return
-  const s = document.createElement("style")
-  s.id = "ctxMenuStyle"
-  s.textContent = `
-    .ctx-item {
-      display:flex; align-items:center; gap:8px;
-      padding:8px 12px; border-radius:7px; cursor:pointer;
-      color:var(--text2); transition:background 0.12s;
-    }
-    .ctx-item:hover { background:var(--bg3); color:var(--text); }
-    .ctx-delete:hover { background:rgba(220,60,60,0.12); color:#e55; }
-    .chat-item-menu {
-      opacity:0; background:none; border:none;
-      color:var(--text3); cursor:pointer; padding:2px 4px;
-      border-radius:5px; display:flex; align-items:center;
-      flex-shrink:0; transition:opacity 0.12s, background 0.12s;
-    }
-    .chat-item:hover .chat-item-menu { opacity:1; }
-    .chat-item-menu:hover { background:var(--bg3); color:var(--text); }
-  `
-  document.head.appendChild(s)
-})()
+const PORT = process.env.PORT || 3000
+app.listen(PORT, "0.0.0.0", () => console.log("Datta AI Server running on port " + PORT))
