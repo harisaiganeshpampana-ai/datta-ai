@@ -998,8 +998,8 @@ async function send() {
     // Use fullText for saving (not displayed text)
     streamText = fullText
 
-    // ── INJECT "RUN APP" BUTTON if response has HTML+CSS or HTML+JS ──────────
-    injectRunAppButton(aiDiv, fullText)
+    // Inject Run App button AFTER DOM is fully rendered
+    setTimeout(() => injectRunAppButton(aiDiv, fullText), 100)
 
     // Add action buttons to user messages after generation
     chatBox.querySelectorAll(".user-bubble, .userBubble").forEach(bubble => {
@@ -2671,32 +2671,31 @@ function addCodePreview(container) {
 // ── RUN APP BUTTON ───────────────────────────────────────────────────────────
 // After AI response, check if it has multiple code blocks and inject ONE run button
 function injectRunAppButton(container, rawText) {
-  if (!container || !rawText) return
+  if (!container) return
 
   // Collect all code blocks in this response
   const blocks = container.querySelectorAll(".code-block-wrap[data-code]")
   if (blocks.length < 1) return
 
+  // Don't add if already has a run button
+  if (container.querySelector(".run-app-btn")) return
+
   // Gather all code by language
   let html = "", css = "", js = ""
   blocks.forEach(block => {
-    const lang  = (block.getAttribute("data-lang") || "").toLowerCase()
-    const code  = decodeURIComponent(block.getAttribute("data-code") || "")
+    const lang = (block.getAttribute("data-lang") || "").toLowerCase()
+    const code = decodeURIComponent(block.getAttribute("data-code") || "")
     if (lang === "html") html = code
-    else if (lang === "css")  css  += "\n" + code
+    else if (lang === "css") css += "\n" + code
     else if (lang === "js" || lang === "javascript") js += "\n" + code
+    // Single block with no lang but has HTML markers
+    else if (!lang && (code.includes("<html") || code.includes("<!DOCTYPE") || code.includes("<body"))) {
+      html = code
+    }
   })
 
-  // If there's an HTML block, inject CSS+JS into it
-  // If no HTML block but has JS/CSS, use first block as base
-  const hasHTML = html.trim().length > 0
-  const hasExtra = css.trim().length > 0 || js.trim().length > 0
-  const isSingleHTML = blocks.length === 1 && hasHTML
-
-  // Only add button if there's something worth running
-  if (!hasHTML && !js) return
-  // Don't add if already has a run button
-  if (container.querySelector(".run-app-btn")) return
+  // Only show button if there's runnable code
+  if (!html.trim() && !js.trim()) return
 
   // Build the combined app HTML
   function buildApp() {
@@ -3667,24 +3666,28 @@ let _ddOpen = false
 let _ddClickTime = 0
 
 function toggleModelDropdown() {
-  _ddClickTime = Date.now()
-  _ddOpen = !_ddOpen
   const dd = document.getElementById("modelDropdown")
   if (!dd) return
-  if (_ddOpen) {
-    dd.style.display = "block"
-    dd.style.position = "fixed"
-    // Position above input bar
+  const isOpen = dd.style.display === "block"
+  if (isOpen) {
+    dd.style.display = "none"
+    _ddOpen = false
+  } else {
+    // Position above input area
     const pill = document.getElementById("activeModelPill")
     if (pill) {
       const rect = pill.getBoundingClientRect()
       dd.style.bottom = (window.innerHeight - rect.top + 8) + "px"
-      dd.style.left = "12px"
-      dd.style.right = "12px"
-      dd.style.zIndex = "99999"
+    } else {
+      dd.style.bottom = "100px"
     }
-  } else {
-    dd.style.display = "none"
+    dd.style.display = "block"
+    dd.style.position = "fixed"
+    dd.style.left = "12px"
+    dd.style.right = "12px"
+    dd.style.zIndex = "100000"
+    _ddOpen = true
+    _ddClickTime = Date.now()
   }
 }
 
@@ -3694,9 +3697,10 @@ function closeModelDropdown() {
   if (dd) dd.style.display = "none"
 }
 
-// Close when clicking outside - with delay to prevent immediate close
+// Close when clicking outside
 document.addEventListener("click", function(e) {
-  if (Date.now() - _ddClickTime < 300) return
+  if (!_ddOpen) return
+  if (Date.now() - _ddClickTime < 400) return  // debounce
   if (!e.target.closest("#activeModelPill") && !e.target.closest("#modelDropdown")) {
     closeModelDropdown()
   }
