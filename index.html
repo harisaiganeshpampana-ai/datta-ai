@@ -627,13 +627,26 @@ body.sb-collapsed .input-area {
 }
 #message {
   flex: 1 !important; min-width: 0 !important;
-  height: 46px !important; border: none !important;
+  height: auto !important; min-height: 24px !important;
+  max-height: 180px !important;
+  border: none !important;
   outline: none !important; font-size: 15px !important;
-  padding: 0 4px !important;
+  padding: 4px 4px !important;
   background: transparent !important;
   color: var(--text) !important;
   font-family: inherit !important;
   caret-color: var(--accent) !important;
+  resize: none !important;
+  overflow-y: hidden !important;
+  line-height: 1.6 !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  word-break: break-word !important;
+  white-space: pre-wrap !important;
+  align-self: center !important;
+}
+#message.overflow {
+  overflow-y: auto !important;
 }
 #message::placeholder { color: var(--text3) !important; }
 
@@ -1784,11 +1797,13 @@ body.is-generating .input-wrap {
           </svg>
         </button>
 
-        <input id="message" type="text"
+        <textarea id="message"
           placeholder="Ask Datta anything..."
           autocomplete="off" autocorrect="off" autocapitalize="off"
           spellcheck="false"
-          readonly onfocus="this.removeAttribute('readonly')">
+          rows="1"
+          style="resize:none;overflow-y:hidden;"
+          readonly onfocus="this.removeAttribute('readonly')"></textarea>
 
         <div class="input-right">
           <button class="mic-btn" id="micBtn" onclick="startVoiceListener()" title="Voice">
@@ -2301,7 +2316,7 @@ document.addEventListener('DOMContentLoaded', function(){
 })
 </script>
 
-<script src="chat.js?v=55"></script>
+<script src="chat.js?v=57"></script>
 
 </body>
 </html>
