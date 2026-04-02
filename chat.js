@@ -2136,8 +2136,21 @@ async function processVoiceQuery(query) {
     formData.append("ainame",   "Datta AI")
     formData.append("voice",    "true")
 
+    const token = getToken()
+    if (!token) {
+      setVoiceAIText("Please log in first to use voice.")
+      setVA("idle")
+      return
+    }
+    formData.set("token", token)
+
     const res = await fetch(SERVER + "/chat", { method:"POST", body: formData })
-    if (!res.ok) throw new Error("Server error " + res.status)
+    if (!res.ok) {
+      let errBody = ""
+      try { errBody = await res.text() } catch(e) {}
+      console.error("Voice fetch error:", res.status, errBody.slice(0, 200))
+      throw new Error("Server error " + res.status + ": " + errBody.slice(0, 80))
+    }
 
     const chatIdHeader = res.headers.get("x-chat-id")
     if (!currentChatId && chatIdHeader) {
@@ -2209,10 +2222,19 @@ async function processVoiceQuery(query) {
     }
 
   } catch(err) {
-    console.error("Voice query error:", err)
-    setVoiceAIText("Something went wrong. Tap to try again.")
+    console.error("Voice query error:", err.message || err)
+    const errMsg = err.message || "Unknown error"
+    if (errMsg.includes("401") || errMsg.includes("token")) {
+      setVoiceAIText("Please log in to use voice assistant.")
+    } else if (errMsg.includes("500") || errMsg.includes("Server")) {
+      setVoiceAIText("Server busy. Tap to try again.")
+      if (!voiceMuted) speakText2("Server is busy, please try again.")
+    } else if (errMsg.includes("network") || errMsg.includes("fetch")) {
+      setVoiceAIText("No internet connection.")
+    } else {
+      setVoiceAIText("Error: " + errMsg.slice(0, 60))
+    }
     setVA("idle")
-    if (!voiceMuted) speakText2("Sorry, something went wrong.")
   }
 }
 
@@ -2284,7 +2306,7 @@ function speakText2(text) {
   stopSpeaking()
 
   isSpeaking = true
-  setVoiceStatus("Speaking...", "speaking")
+  setVA("speaking")
 
   const utterance = new SpeechSynthesisUtterance(text)
   const profileKey = getSelectedVoiceProfile()
@@ -2305,14 +2327,14 @@ function speakText2(text) {
     utterance.onend = () => {
       isSpeaking = false
       if (voiceActive) {
-        setVoiceStatus("Tap to speak", "idle")
+        setVA("idle")
         setTimeout(() => { if (voiceActive) startListening() }, 800)
       }
     }
     utterance.onerror = (e) => {
       console.log("Speech error:", e)
       isSpeaking = false
-      setVoiceStatus("Tap to speak", "idle")
+      setVA("idle")
     }
     voiceSynth.speak(utterance)
   }
