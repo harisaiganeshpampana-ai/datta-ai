@@ -1295,11 +1295,17 @@ async function startRename(chatId, currentTitle) {
 }
 
 function confirmDelete(e, id) {
-  e.stopPropagation()
-  e.preventDefault()
-  // Find the chat item and show inline confirm
-  const chatItem = e.target.closest(".chatItem")
-  if (!chatItem) return
+  if (e && e.stopPropagation) e.stopPropagation()
+  if (e && e.preventDefault) e.preventDefault()
+  // Find chat item - works from event target or from context menu (null event)
+  const chatItem = (e && e.target)
+    ? e.target.closest(".chat-item, .chatItem")
+    : document.querySelector(".chat-item[data-chat-id='" + id + "'], .chatItem[data-chat-id='" + id + "']")
+  if (!chatItem) {
+    // Called from context menu - delete directly
+    deleteChat(id, null)
+    return
+  }
 
   // Already confirming
   if (chatItem.querySelector(".deleteConfirm")) {
