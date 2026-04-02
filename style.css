@@ -64,8 +64,6 @@
   animation: splashFadeIn 0.8s ease 0.5s both;
 }
 
-
-
 /* GLOBAL */
 * {
   margin: 0;
@@ -85,41 +83,16 @@ body {
 
 /* SPLASH SCREEN */
 
-
-
-
-
-
-
-
-
-
 @keyframes spinRing {
   to { transform: rotate(360deg); }
 }
-
-
-
 
   70%  { transform: scale(1.08); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
 
-
-
-
-
-
   100% { opacity: 1; transform: translateY(0); }
 }
-
-
-
-
-
-
-
-
 
 @keyframes dotBounce {
   0%, 80%, 100% { background: #333; transform: scale(1); }
@@ -1248,67 +1221,15 @@ pre {
 }
 
 /* LIGHT THEME */
-body.light {
-  background: #f5f5f5;
-  color: #111;
-}
-
-body.light .topbar { background: #fff; border-bottom: 1px solid #e0e0e0; color: #111; }
-body.light .sidebar { background: #fafafa; border-right: 1px solid #e0e0e0; }
-body.light .sidebarBrand { color: #111; }
-body.light .navItem { color: #666; }
-body.light .navItem.active, body.light .navItem:hover { background: #efefef; color: #111; }
-body.light .chatItem:hover { background: #efefef; }
-body.light .chatTitle { color: #333; }
-body.light .main { background: #f5f5f5; }
-body.light .inputWrap { background: #fff; border: 1px solid #e0e0e0; }
-body.light .inputWrap input { color: #111; }
-body.light .aiBubble { background: #fff; color: #111; border: 1px solid #e0e0e0; }
-body.light .userBubble { background: #1a1a2e; color: #e8e8ff !important; border-color: #2a2a4a; }
-body.light .modalBox { background: #fff; border-color: #e0e0e0; }
-body.light .modalHeader { background: #fff; }
-body.light .sInput { background: #f5f5f5; border-color: #ddd; color: #111; }
-body.light .sSelect { background: #f5f5f5; border-color: #ddd; color: #111; }
-body.light .sidebarProfile { border-top-color: #e0e0e0; }
-body.light .profileName { color: #111; }
 
 /* Light theme - comprehensive fixes for all invisible text */
-body.light .topTitle { color: #111 !important; }
-body.light .chatBox { background: #f5f5f5; }
-body.light .messageRow { color: #111; }
 
 /* AI bubble */
-body.light .aiBubble { background: #f9f9f9; color: #111 !important; border: 1px solid #eaeaea; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-body.light .aiBubble p { color: #111 !important; }
-body.light .aiBubble li { color: #111 !important; }
-body.light .aiBubble h1, body.light .aiBubble h2, body.light .aiBubble h3 { color: #111 !important; }
-body.light .aiBubble strong { color: #000 !important; }
-body.light .aiBubble code { background: #f0f0f0; color: #d63031; }
-body.light .aiBubble pre { background: #f0f0f0; border: 1px solid #ddd; }
-body.light .aiBubble pre code { color: #2d3436; }
-body.light .stream { color: #111 !important; }
 
 /* User bubble */
-body.light .userBubble { background: #111; color: #fff !important; }
+
 
 /* Input area */
-body.light .inputWrap { background: #fff; border: 1px solid #ddd; }
-body.light #message { color: #111 !important; background: transparent; }
-body.light #message::placeholder { color: #aaa; }
-body.light .sendBtn {
-  width: 38px;
-  height: 38px;
-  border-radius: 13px;
-  background: linear-gradient(135deg, #00c9a7, #0077ff);
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  box-shadow: 0 2px 12px rgba(0,201,167,0.3);
-  flex-shrink: 0;
-}
 
 .searchIcon {
   font-size: 16px;
@@ -1971,13 +1892,6 @@ body.light .sendBtn {
 
 /* ADD TO CHAT BOTTOM SHEET */
 
-
-
-
-
-
-
-
 .sheetHandle {
   width: 36px;
   height: 4px;
@@ -2158,11 +2072,6 @@ body.light .sendBtn {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.1); }
 }
-
-
-
-
-
 
   50% { box-shadow: 0 0 0 6px rgba(255,68,68,0); }
 }
@@ -2766,33 +2675,6 @@ body.light .sendBtn {
 .topIconBtn:hover { background: #222; color: #aaa; border-color: #333; }
 
 /* ── LIGHT THEME ── */
-body.light-theme {
-  background: #f5f5f5 !important;
-  color: #111 !important;
-}
-
-body.light-theme .sidebar { background: #fff !important; border-color: #e0e0e0 !important; }
-body.light-theme .topBar { background: #fff !important; border-color: #e0e0e0 !important; }
-body.light-theme .inputWrap { background: #fff !important; border-color: #ddd !important; }
-body.light-theme .aiBubble { color: #111 !important; }
-body.light-theme .userBubble { background: #e8e8e8 !important; color: #111 !important; }
-body.light-theme .chatItem { background: transparent !important; color: #333 !important; }
-body.light-theme .chatItem:hover { background: #f0f0f0 !important; }
-body.light-theme .chip { background: #f0f0f0 !important; border-color: #ddd !important; color: #555 !important; }
-body.light-theme .chip:hover { background: #e8e8e8 !important; color: #111 !important; }
-body.light-theme .sidebarProfile { background: #f8f8f8 !important; border-color: #e0e0e0 !important; }
-body.light-theme .modelSelect { background: #f0f0f0 !important; border-color: #ddd !important; color: #555 !important; }
-body.light-theme .topIconBtn, body.light-theme .themeToggleBtn { background: #f0f0f0 !important; border-color: #ddd !important; }
-body.light-theme .welcomeTitle { color: #111 !important; }
-body.light-theme .welcomeSub { color: #888 !important; }
-body.light-theme .main { background: #f5f5f5 !important; }
-body.light-theme #message { color: #111 !important; }
-body.light-theme #message::placeholder { color: #aaa !important; }
-body.light-theme .sendBtn { background: #111 !important; }
-body.light-theme .sendBtn svg { stroke: white !important; }
-body.light-theme .codeBlockWrap { border-color: #ddd !important; }
-body.light-theme .codeBlockHeader { background: #f0f0f0 !important; border-color: #ddd !important; }
-body.light-theme pre { background: #f8f8f8 !important; }
 
 /* MODEL PICKER BUTTON */
 .modelPickerBtn {
@@ -3789,8 +3671,6 @@ body {
   }
 }
 
-
-
 /* DISABLE ZOOM on mobile */
 * { touch-action: pan-x pan-y; }
 input, textarea, select { touch-action: manipulation; }
@@ -3823,12 +3703,6 @@ input, textarea, select { touch-action: manipulation; }
     min-width: 40px !important;
   }
 }
-
-
-
-
-
-
 
 /* INPUT BAR - fixed at bottom, no transform tricks */
 @media (max-width: 768px) {
@@ -4570,14 +4444,6 @@ code, pre, .aiBubble code, .aiBubble pre {
   letter-spacing: 1px !important;
 }
 
-
-
-
-
-
-
-
-
   50% { box-shadow: 0 0 0 6px rgba(255,68,68,0); }
 }
 
@@ -4896,10 +4762,6 @@ code, pre, .aiBubble code, .aiBubble pre {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Light theme */
-body.light .thinkingBlock { background: #f9f9f9; border-color: #eee; }
-body.light .thinkingTitle { color: #aaa; }
-body.light .thinkStepText { color: #888; }
-
 
 /* ── PREMIUM UI POLISH ── */
 body { background: #0d0d0f; }
@@ -4994,25 +4856,6 @@ body { background: #0d0d0f; }
 }
 
 /* Light theme overrides */
-body.light .aiBubble {
-  background: rgba(0,0,0,0.03);
-  border-color: rgba(0,0,0,0.08);
-}
-body.light .userBubble {
-  background: linear-gradient(135deg,rgba(0,150,120,0.12),rgba(0,80,200,0.12));
-  border-color: rgba(0,150,120,0.2);
-  color: #0a3028;
-}
-body.light .chip {
-  background: rgba(0,0,0,0.03);
-  border-color: rgba(0,0,0,0.08);
-  color: #444;
-}
-body.light .chip:hover {
-  background: rgba(0,150,120,0.08);
-  border-color: rgba(0,150,120,0.25);
-  color: #0a3028;
-}
 
 /* ═══════════════════════════════════════════════
    PREMIUM DATTA UI - FINAL POLISH
@@ -5662,26 +5505,6 @@ body.notes-open .inputArea {
 }
 
 /* Light theme */
-body.light .notesPanel {
-  background: #f8f8fa;
-  border-left-color: rgba(0,0,0,0.08);
-}
-body.light .notesTextarea {
-  color: #222;
-}
-body.light .notesPanelHeader {
-  background: rgba(0,0,0,0.02);
-  border-bottom-color: rgba(0,0,0,0.07);
-}
-body.light .notesPanelBtn {
-  background: rgba(0,0,0,0.04);
-  border-color: rgba(0,0,0,0.08);
-  color: #666;
-}
-body.light .notesPanelTitle {
-  color: #111;
-}
-
 
 /* ════ NOTES PANEL FIX ════ */
 #notesPanel {
