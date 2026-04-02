@@ -404,11 +404,30 @@ window.startImgLoadingText = startImgLoadingText
 if (typeof marked !== 'undefined') {
   const renderer = new marked.Renderer()
 
-  // Helper: extract plain string from marked v4 (string) or v5+ (object)
+  // Helper: extract rendered HTML from marked token (handles v4 string and v5 object/array)
   function ms(v) {
     if (v === null || v === undefined) return ""
     if (typeof v === "string") return v
-    if (typeof v === "object") return v.text || v.raw || v.value || ""
+    if (Array.isArray(v)) {
+      // v5 passes tokens array for inline content — render each token recursively
+      return v.map(t => {
+        if (!t) return ""
+        if (typeof t === "string") return t
+        if (t.type === "text") return t.text || t.raw || ""
+        if (t.type === "strong") return "<strong style='color:var(--text,#fff);font-weight:700;'>" + ms(t.tokens || t.text) + "</strong>"
+        if (t.type === "em") return "<em style='color:var(--text2,#aaa);'>" + ms(t.tokens || t.text) + "</em>"
+        if (t.type === "codespan") return "<code style='background:#1a1a1a;border:1px solid #2a2a2a;border-radius:5px;padding:2px 7px;font-size:13px;color:#00ff88;font-family:Courier New,monospace;'>" + (t.text || "") + "</code>"
+        if (t.type === "link") return "<a href='" + (t.href||"") + "' target='_blank' style='color:#00ccff;text-decoration:none;'>" + ms(t.tokens || t.text) + "</a>"
+        if (t.type === "space") return " "
+        // fallback: use text or raw
+        return t.text || t.raw || ""
+      }).join("")
+    }
+    if (typeof v === "object") {
+      // v5 object token — try tokens array first, then text, then raw
+      if (v.tokens && Array.isArray(v.tokens)) return ms(v.tokens)
+      return v.text || v.raw || v.value || ""
+    }
     return String(v)
   }
 
