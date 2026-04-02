@@ -220,7 +220,10 @@ function handleMainBtn() {
 }
 
 function showStopBtn() { setGenerating(true) }
-function hideStopBtn() { setGenerating(false) }
+function hideStopBtn() {
+  setGenerating(false)
+  document.body.classList.remove("is-generating")
+}
 
 function stopGeneration() {
   // Guard: if already stopped, do nothing
@@ -647,6 +650,8 @@ function newChat() {
 async function send() {
   // Prevent double-send while AI is generating
   if (isGenerating) return
+  // Reset stop flag so new request isn't immediately killed
+  window._stopTyping = false
 
   const input = document.getElementById("message")
   const filePreview = document.getElementById("filePreview")
@@ -1094,7 +1099,7 @@ async function send() {
       }
 
       // Check abort BEFORE reading next chunk — instant stop
-      if (!controller || controller.signal.aborted) {
+      if (window._stopTyping || !controller || controller.signal.aborted) {
         typingActive = false
         break
       }
@@ -1103,7 +1108,7 @@ async function send() {
       if (done) break
 
       // Check abort again AFTER read returns (read can block)
-      if (!controller || controller.signal.aborted) {
+      if (window._stopTyping || !controller || controller.signal.aborted) {
         typingActive = false
         break
       }
