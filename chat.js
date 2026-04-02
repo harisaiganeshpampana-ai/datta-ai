@@ -21,19 +21,20 @@ window.addEventListener("DOMContentLoaded", function() {
 // SAFE CONTENT — prevents [object Object] anywhere in UI
 function safeContent(c) {
   if (c === null || c === undefined) return ""
-  if (typeof c === "string") return c
-  if (Array.isArray(c)) {
-    // Try extract text parts first (vision messages)
-    const textParts = c.filter(p => p && p.type === "text").map(p => p.text || "")
-    if (textParts.length) return textParts.join("")
-    // Otherwise format as bullet list
-    return c.map(item => {
-      if (typeof item === "string") return "• " + item
-      if (typeof item === "object") return "• " + (item.text || item.name || JSON.stringify(item))
-      return "• " + String(item)
-    }).join("\n")
+  if (typeof c === "string") {
+    return c.split("[object Object]").join("").split("[object object]").join("").split("[Object Object]").join("").trim()
   }
-  if (typeof c === "object") return c.text || c.content || c.message || JSON.stringify(c, null, 2)
+  if (typeof c === "number" || typeof c === "boolean") return String(c)
+  if (Array.isArray(c)) {
+    const textParts = c.filter(p => p && p.type === "text").map(p => safeContent(p.text))
+    if (textParts.length) return textParts.join("")
+    return c.map(item => safeContent(item)).filter(Boolean).join("\n")
+  }
+  if (typeof c === "object") {
+    const val = c.text || c.content || c.message || c.name || c.title || c.value
+    if (val) return safeContent(val)
+    try { return JSON.stringify(c, null, 2) } catch(e) { return "" }
+  }
   return String(c)
 }
 
@@ -53,21 +54,7 @@ function getAiContent(el) {
   return el.closest(".aiContent") || el.closest(".msg-row, .messageRow")
 }
 
-// Format any API response safely — used before rendering
-function formatResponse(response) {
-  if (typeof response === "string") return response
-  if (Array.isArray(response)) {
-    return response.map(item => {
-      if (typeof item === "string") return "• " + item
-      if (typeof item === "object") return "• " + (item.name || item.text || item.title || JSON.stringify(item))
-      return "• " + String(item)
-    }).join("\n")
-  }
-  if (typeof response === "object" && response !== null) {
-    return response.text || response.content || response.message || JSON.stringify(response, null, 2)
-  }
-  return String(response || "")
-}
+function formatResponse(r) { return safeContent(r) }
 
 // SHARE CHAT
 async function shareChatLink() {
@@ -888,7 +875,7 @@ async function send() {
           const step = lag > 80 ? 6 : lag > 30 ? 3 : 1
           displayedLen = Math.min(displayedLen + step, fullText.length)
 
-          const visible = fullText.slice(0, displayedLen)
+          const visible = safeContent(fullText.slice(0, displayedLen))
           span.innerHTML = marked.parse(visible) + '<span class="typingCursor">|</span>'
           scrollBottom()
 
@@ -914,12 +901,12 @@ async function send() {
 
       // Final clean render — remove cursor
       if (typingActive) {
-        span.innerHTML = marked.parse(fullText.slice(0, displayedLen))
+        span.innerHTML = marked.parse(safeContent(fullText.slice(0, displayedLen)))
       } else {
         // Stopped by user — show what was typed so far
         const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
         const name = user.username || "you"
-        span.innerHTML = marked.parse(fullText.slice(0, displayedLen)) +
+        span.innerHTML = marked.parse(safeContent(fullText.slice(0, displayedLen))) +
           '<div class="stoppedMsg">Response stopped by ' + name + '</div>'
       }
       lucide.createIcons()
@@ -942,10 +929,15 @@ async function send() {
 
       const chunk = decoder.decode(value)
 
+      // Debug: catch [object Object] coming from server
+      if (chunk.includes("[object Object]") || chunk.includes("[object object]")) {
+        console.warn("[CHUNK DEBUG] Server sent [object Object]:", chunk.slice(0, 300))
+      }
+
       if (chunk.includes("CHATID")) {
         const parts = chunk.split("CHATID")
-        fullText += parts[0]
-        currentChatId = parts[1].trim()
+        fullText += safeContent(parts[0])
+        currentChatId = (parts[1] || "").trim()
       } else {
         const cleanChunk = safeContent(chunk)
         if (cleanChunk.trim()) fullText += cleanChunk
@@ -2112,7 +2104,7 @@ async function processVoiceQuery(query) {
       const chunk = decoder.decode(value)
       if (chunk.includes("CHATID")) {
         const parts = chunk.split("CHATID")
-        fullText += parts[0]
+        fullText += safeContent(parts[0])
         currentChatId = (parts[1] || "").trim()
         localStorage.setItem("datta_last_chat", currentChatId)
       } else {
@@ -2147,7 +2139,7 @@ async function processVoiceQuery(query) {
       chatBox.innerHTML += `
         <div class="msg-row">
           <div class="aiContent">
-            <div class="ai-bubble">${marked.parse(fullText.split("CHATID")[0])}</div>
+            <div class="ai-bubble">${marked.parse(safeContent(fullText.split("CHATID")[0]))}</div>
           </div>
         </div>
       ` 
