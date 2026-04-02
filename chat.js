@@ -992,8 +992,9 @@ async function send() {
 
       const chunk = decoder.decode(value)
 
-      // Skip empty heartbeat chunks (server sends these to keep connection alive)
-      if (!chunk || !chunk.trim()) continue
+      // Skip only completely empty chunks (heartbeat = decoder gives "")
+      // DO NOT skip whitespace-only chunks — spaces/newlines are valid tokens
+      if (chunk === "") continue
 
       if (chunk.includes("[object Object]") || chunk.includes("[object object]")) {
         console.warn("[CHUNK DEBUG] [object Object] in chunk")
@@ -1001,8 +1002,10 @@ async function send() {
 
       if (chunk.includes("CHATID")) {
         const parts = chunk.split("CHATID")
-        fullText += safeContent(parts[0])
+        if (parts[0]) fullText += safeContent(parts[0])
         currentChatId = (parts[1] || "").trim()
+        // Stream is complete — signal typing loop
+        typingDone = true
       } else {
         const cleanChunk = safeContent(chunk)
         if (cleanChunk.trim()) fullText += cleanChunk
@@ -1010,10 +1013,8 @@ async function send() {
     }
 
     // Signal typing loop that server is done
-    // If we got partial text but stream died, still show what we have
-    if (!typingDone && fullText.length > 0) {
-      console.warn("[STREAM] Stream ended unexpectedly with", fullText.length, "chars")
-    }
+    // Note: typingDone=false here is normal — stream ends when CHATID chunk arrives
+    // which sets typingDone implicitly via the break below
     typingDone = true
 
     // Wait for typing to finish (or be stopped)
@@ -2208,8 +2209,10 @@ async function processVoiceQuery(query) {
       const chunk = decoder.decode(value)
       if (chunk.includes("CHATID")) {
         const parts = chunk.split("CHATID")
-        fullText += safeContent(parts[0])
+        if (parts[0]) fullText += safeContent(parts[0])
         currentChatId = (parts[1] || "").trim()
+        // Stream is complete — signal typing loop
+        typingDone = true
         localStorage.setItem("datta_last_chat", currentChatId)
       } else {
         fullText += chunk
@@ -2765,6 +2768,7 @@ function injectRunAppButton(container, rawText) {
   if (!html.trim() && !js.trim()) return
 
   // Build the combined app HTML
+  const hasHTML = html.trim().length > 0
   function buildApp() {
     if (hasHTML) {
       let combined = html
