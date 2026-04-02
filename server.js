@@ -2007,6 +2007,9 @@ function isAdmin(req) {
   return req.user && (ADMIN_EMAILS.includes(req.user.email) || req.user.isAdmin)
 }
 
+// Plan prices for revenue calculation
+const PLAN_PRICES = { free:0, plus:299, pro:799, mini:199, max:1999, ultramax:0, basic:499, enterprise:0 }
+
 app.get("/admin/stats", authMiddleware, async (req, res) => {
   if (!isAdmin(req)) return res.status(403).json({ error: "Not authorized" })
   try {
@@ -2033,6 +2036,101 @@ app.get("/admin/stats", authMiddleware, async (req, res) => {
       }
     })
   } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+// Full dashboard endpoint with all metrics
+app.get("/admin/dashboard", authMiddleware, async (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: "Not authorized" })
+  try {
+    const now    = new Date()
+    const today  = new Date(now); today.setHours(0,0,0,0)
+    const h24ago = new Date(now - 24*60*60*1000)
+    const d7ago  = new Date(now - 7*24*60*60*1000)
+    const d30ago = new Date(now - 30*24*60*60*1000)
+
+    const [
+      totalUsers,
+      activeUsers24h,
+      newUsersToday,
+      newUsers7d,
+      activeSubs,
+      planGroups,
+      totalMessages,
+      recentSubs
+    ] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ updatedAt: { $gte: h24ago } }),
+      User.countDocuments({ createdAt: { $gte: today } }),
+      User.countDocuments({ createdAt: { $gte: d7ago } }),
+      Subscription.countDocuments({ active: true }),
+      Subscription.aggregate([
+        { $match: { active: true } },
+        { $group: { _id: "$plan", count: { $sum: 1 } } }
+      ]),
+      Chat.aggregate([
+        { $project: { count: { $size: "$messages" } } },
+        { $group: { _id: null, total: { $sum: "$count" } } }
+      ]),
+      Subscription.find({ active: true })
+        .sort({ startDate: -1 })
+        .limit(10)
+        .populate("userId", "username email")
+        .catch(() => [])
+    ])
+
+    // Plan distribution
+    const planStats = { free: 0, plus: 0, pro: 0, mini: 0, max: 0, ultramax: 0 }
+    planGroups.forEach(p => { if (p._id) planStats[p._id] = p.count })
+    planStats.free = Math.max(0, totalUsers - activeSubs)
+
+    // MRR — monthly recurring revenue
+    let mrr = 0
+    Object.entries(planStats).forEach(([plan, count]) => {
+      if (plan !== "free") mrr += (PLAN_PRICES[plan] || 0) * count
+    })
+
+    // Conversion rate
+    const paidUsers = activeSubs
+    const conversionRate = totalUsers > 0 ? ((paidUsers / totalUsers) * 100).toFixed(1) : "0.0"
+
+    // Daily messages last 7 days
+    const dailyMessages = await Chat.aggregate([
+      { $match: { createdAt: { $gte: d7ago } } },
+      { $project: {
+        day: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+        count: { $size: "$messages" }
+      }},
+      { $group: { _id: "$day", messages: { $sum: "$count" } } },
+      { $sort: { _id: 1 } }
+    ])
+
+    // Recent subscriptions formatted
+    const recentSubsFormatted = recentSubs.map(s => ({
+      user: s.userId?.username || s.userId?.email || "Unknown",
+      plan: s.plan,
+      amount: PLAN_PRICES[s.plan] || 0,
+      startDate: s.startDate,
+      method: s.method || "web"
+    }))
+
+    res.json({
+      totalUsers,
+      activeUsers24h,
+      newUsersToday,
+      newUsers7d,
+      activeSubs,
+      mrr,
+      totalRevenue: mrr,  // simplified: MRR as proxy for monthly revenue
+      conversionRate: parseFloat(conversionRate),
+      planStats,
+      totalMessages: totalMessages[0]?.total || 0,
+      dailyMessages,
+      recentSubscriptions: recentSubsFormatted
+    })
+  } catch(err) {
+    console.error("Dashboard error:", err.message)
+    res.status(500).json({ error: sanitizeError(err).userMsg })
+  }
 })
 
 app.get("/admin/users", authMiddleware, async (req, res) => {
