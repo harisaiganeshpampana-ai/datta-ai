@@ -1534,7 +1534,7 @@ function openSettings() {
   // Reset to profile tab and scroll top
   setTimeout(function() {
     switchSettingsTab("profile")
-    const box = modal.querySelector(".modalBox")
+    const box = modal.querySelector(".settings-box") || modal.querySelector(".modalBox")
     if (box) box.scrollTop = 0
     loadSettingsUI()
   }, 10)
@@ -1547,23 +1547,32 @@ function closeSettings() {
 }
 
 function switchSettingsTab(tab) {
-  document.querySelectorAll(".sTab").forEach(t => t.classList.remove("active"))
-  document.querySelectorAll(".sTabContent").forEach(c => c.classList.remove("active"))
-  document.querySelector(".sTab[onclick=\"switchSettingsTab('" + tab + "')\"]").classList.add("active")
-  document.getElementById("tab-" + tab).classList.add("active")
+  // Support both old (.sTab/.sTabContent) and new (.s-tab/.s-tab-pane) class names
+  document.querySelectorAll(".sTab, .s-tab").forEach(t => t.classList.remove("active"))
+  document.querySelectorAll(".sTabContent, .s-tab-pane").forEach(c => c.classList.remove("active"))
+
+  // Activate the clicked tab button
+  const tabBtn = document.getElementById("stab-" + tab)
+  if (tabBtn) tabBtn.classList.add("active")
+
+  // Activate the tab content pane
+  const pane = document.getElementById("tab-" + tab)
+  if (pane) pane.classList.add("active")
+
   clearSettingsMsg()
 }
 
 function showSettingsMsg(text, type) {
   const el = document.getElementById("settingsMsg")
+  if (!el) return
   el.textContent = text
-  el.className = "settingsMsg " + type
-  setTimeout(() => { el.className = "settingsMsg"; el.textContent = "" }, 3000)
+  el.className = "s-msg " + (type === "success" ? "success" : "error")
+  setTimeout(() => { el.className = "s-msg"; el.textContent = "" }, 3000)
 }
 
 function clearSettingsMsg() {
   const el = document.getElementById("settingsMsg")
-  if (el) { el.className = "settingsMsg"; el.textContent = "" }
+  if (el) { el.className = "s-msg"; el.textContent = "" }
 }
 
 function loadSettingsUI() {
