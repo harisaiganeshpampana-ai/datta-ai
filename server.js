@@ -1179,19 +1179,20 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
             userContent = (message || "Please describe this PDF") + "\n\n[PDF: " + file.originalname + "]\n\nCould not extract text from this PDF. It may be scanned/image-based."
           } else {
             userContent = (message ? message + "\n\n" : "") +
-              "[PDF: " + file.originalname + "]\n\nPDF CONTENT:\n" + pdfText + searchContext
+              "[PDF: " + file.originalname + "]\n\nPDF CONTENT:\n" + pdfText
           }
         } else {
           // Text files - read as UTF-8
           const fileText = file.buffer.toString("utf-8").substring(0, 8000)
           userContent = (message ? message + "\n\n" : "") + 
-            "[File: " + file.originalname + "]\n\n" + fileText + searchContext
+            "[File: " + file.originalname + "]\n\n" + fileText
         }
       } catch(e) { 
-        userContent = (message ? message + "\n\n" : "") + "[File: " + file.originalname + " - could not read content]" + searchContext 
+        userContent = (message ? message + "\n\n" : "") + "[File: " + file.originalname + " - could not read content]"
       }
     } else {
-      userContent = message + searchContext
+      // searchContext goes in system (as context), not in user message
+      userContent = message
     }
 
     const selectedModel = req.body.model || "llama-3.1-8b-instant"
@@ -1398,28 +1399,14 @@ CRITICAL OUTPUT RULES:
 11. For "near me" queries without location: ask "Which city are you in?" in ONE line
 12. Expert in: HTML, CSS, JS, React, Python, Node.js, SQL, Java, C++, ALL languages
 13. Lists of items: format as bullet points with text, NEVER as raw JavaScript arrays
-` + (searchContext ? "\n\nWEB SEARCH RESULTS ARE PROVIDED. YOU MUST USE THEM TO ANSWER. Do not say you don't have information if it's in the search results above." : "") + langNote + styleNote
+` + (searchContext ? "\n\n---\nWEB SEARCH CONTEXT (use this to answer):\n" + searchContext + "\n---\nIMPORTANT: Answer using the above search results. Write plain text only. For IPL/cricket, state team names directly as you read them from the text above." : "") + langNote + styleNote
 
     // Combine user content with URL context — always string for text, array for vision
     // For queries with search results — add hard instruction to USE the results
-    let finalUserContent
-    if (searchContext && typeof userContent === "string") {
-      const isIPLQ = userContent.toLowerCase().includes("ipl") ||
-                     userContent.includes("ఐపీఎల్") ||
-                     userContent.includes("आईपीएल") ||
-                     userContent.toLowerCase().includes("cricket") ||
-                     userContent.includes("match")
-
-      const hardInstruction = isIPLQ
-        ? "\n\n[SYSTEM: You MUST answer using ONLY the web search results above. Extract team names, venue, time from the search results and state them clearly. Format: 'Team A vs Team B at Venue at HH:MM PM'. If search results have the match info, use it. Do NOT say information is unavailable if search results contain it.]"
-        : "\n\n[SYSTEM: Answer using the web search results provided above. Be specific and direct.]"
-
-      finalUserContent = userContent + safeStr(urlContext) + hardInstruction
-    } else {
-      finalUserContent = typeof userContent === "string"
-        ? userContent + safeStr(urlContext)
-        : userContent  // keep array for vision model
-    }
+    // finalUserContent: user message only (search context is in system prompt)
+    const finalUserContent = typeof userContent === "string"
+      ? userContent + safeStr(urlContext)
+      : userContent  // keep array for vision model
 
     const systemWithMemory = systemPrompt + memoryContext
 
@@ -1443,6 +1430,11 @@ CRITICAL OUTPUT RULES:
     let lastError = null
 
     // Groq only — reliable, fast, no token limits
+    // Debug: log what the AI receives
+    const userMsg = typeof finalUserContent === "string" ? finalUserContent.slice(0, 300) : "[array content]"
+    console.log("[AI INPUT] user message preview:", userMsg)
+    if (searchContext) console.log("[AI INPUT] search context length:", searchContext.length, "preview:", searchContext.slice(0, 200))
+
     const groqAttempts = [model, "llama-3.1-8b-instant"]
     for (let attempt = 0; attempt < groqAttempts.length; attempt++) {
       const tryModel = groqAttempts[attempt]
@@ -1455,11 +1447,14 @@ CRITICAL OUTPUT RULES:
           stream: true
         })
         for await (const part of stream) {
-          let token = part.choices?.[0]?.delta?.content
-          if (token && typeof token === "string") {
-            // Strip any [object Object] the model outputs
-            token = token.replace(/\[object Object\]/g, "").replace(/\[Object object\]/g, "")
-            if (token) { full += token; res.write(token) }
+          const token = part.choices?.[0]?.delta?.content
+          if (token !== null && token !== undefined) {
+            if (typeof token !== "string") {
+              console.log("[AI TOKEN BUG] non-string token:", typeof token, JSON.stringify(token))
+              continue
+            }
+            full += token
+            res.write(token)
           }
         }
         lastError = null
