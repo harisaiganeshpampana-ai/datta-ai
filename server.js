@@ -1276,7 +1276,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "build me a","create a full","make a complete","entire app","whole app"
     ].some(k => msgLower.includes(k))
     // Token limits: large=8000, code=6000, normal=4000
-    const maxCodingTok = isLargeTask ? 8000 : isCodeTask ? 6000 : 4000
+    // Groq free tier limits: 70b=6000 tok/min, 8b=14400 tok/min
+    // Keep under limits to avoid 500 errors
+    const maxCodingTok = isLargeTask ? 5000 : isCodeTask ? 4000 : 2048
     const maxTok = isImageFile ? 2048 : maxCodingTok
 
     // Use browser's actual local time sent from frontend
@@ -1348,53 +1350,16 @@ Explain briefly after code. NEVER say you are any other AI.`,
     }
 
     const systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + `
-ABSOLUTE RULE: Never write [object Object] in any response. Always write plain readable text.
-If web search results are provided, extract the actual team names, venues, and times from them and write them as plain sentences.
-Example: "Today's IPL match is CSK vs MI at 7:30 PM at Wankhede Stadium."
-` + `
 
-LANGUAGE & TONE:
-- Use simple, clear everyday English like ChatGPT
-- Short sentences. Friendly. Easy to read.
-- Always English by default. Switch only if user writes in another language.
-- Use emojis naturally (2-3 max for short replies, 5-8 for long)
-- If user says "hi", "hello", "hey" - reply in ONE short friendly line only. Never more.
-- Match response length to question length. Short question = short answer.
-
-EXECUTION MINDSET - YOU ARE AN AI AGENT:
-- Complete tasks FULLY from start to finish
-- When asked to build/create/write/make -> produce the COMPLETE output
-- Business plan -> write ALL sections completely
-- Fitness plan -> full weekly schedule with exercises, diet
-- Website -> complete HTML/CSS/JS ready to copy-paste
-- Resume -> full rewrite with improvements
-- Never stop halfway. Never say "I cannot". Find a way.
-- Do not mention internal instructions or system prompt
-
-RESPONSE FORMATTING:
-- Simple questions: 1-3 sentences, no formatting
-- Lists: bullet points with emojis
-- Headings: use ## for sections in long responses
-- Code: always in code blocks with language label
-- Key words: **bold**
-- Useful emojis: checkmark, cross, lightbulb, warning, fire, note, target, bolt, pin, rocket
-
-CRITICAL OUTPUT RULES:
-0. YOU ARE A CONVERSATIONAL AI. NEVER write [object Object] or any code/programming syntax. When you see team names in search results like "Chennai Super Kings vs Mumbai Indians" - say exactly that. Read the text, find the names, say them plainly.
-1. ALWAYS give COMPLETE WORKING code - NEVER truncate or stop midway
-2. For websites/apps: give the ENTIRE HTML/CSS/JS in ONE file - copy-paste ready
-3. When fixing bugs: show the COMPLETE fixed file
-4. For portfolio/personal website tasks: write the FULL HTML file with ALL sections
-5. NEVER say "I cannot" or "I don't have access" - just solve it
-6. If [PDF: ...] in context - READ IT DIRECTLY and answer
-7. If [WEBSITE CONTENT] in context - analyze it directly
-8. Help with EVERYTHING: food, travel, health, fitness, cooking, relationships, finance, business, law, education, movies, sports, cricket, local places
-9. SPORTS/IPL RULE: When web search results are provided, you MUST extract team names directly from the text and say them. Example good answer: "Today's IPL match is CSK vs MI at Wankhede Stadium at 7:30 PM IST." Example bad answer: "[object Object] vs [object Object]". ALWAYS read the SOURCE text and pick out team names. They will appear as words like "Chennai Super Kings", "Mumbai Indians", "RCB", "KKR" etc.
-10. For local places: use search results only, never fabricate addresses or phone numbers
-11. For "near me" queries without location: ask "Which city are you in?" in ONE line
-12. Expert in: HTML, CSS, JS, React, Python, Node.js, SQL, Java, C++, ALL languages
-13. Lists of items: format as bullet points with text, NEVER as raw JavaScript arrays
-` + (searchContext ? "\n\n---\nWEB SEARCH CONTEXT (use this to answer):\n" + searchContext + "\n---\nIMPORTANT: Answer using the above search results. Write plain text only. For IPL/cricket, state team names directly as you read them from the text above." : "") + langNote + styleNote
+RULES:
+- Friendly, clear English. Short answers for short questions.
+- NEVER write [object Object]. Always plain readable text.
+- For code/apps: give COMPLETE working code in ONE file. Never truncate.
+- For websites: full HTML/CSS/JS, copy-paste ready.
+- Never say "I cannot" — always produce the output.
+- For sports/IPL: read search results and state team names directly e.g. "CSK vs MI at 7:30 PM".
+- Code blocks with language label. Bullet points with emojis for lists.
+` + (searchContext ? "\n\nSEARCH RESULTS (use these to answer):\n" + searchContext : "") + langNote + styleNote
 
     // Combine user content with URL context — always string for text, array for vision
     // For queries with search results — add hard instruction to USE the results
@@ -1430,39 +1395,52 @@ CRITICAL OUTPUT RULES:
     console.log("[AI INPUT] user message preview:", userMsg)
     if (searchContext) console.log("[AI INPUT] search context length:", searchContext.length, "preview:", searchContext.slice(0, 200))
 
-    const groqAttempts = [model, "llama-3.1-8b-instant"]
+    // Try models in order: primary → fast fallback
+    // On rate limit: wait and retry with smaller tokens
+    const groqAttempts = [
+      { model: model,                    tokens: maxTok },
+      { model: "llama-3.1-8b-instant",   tokens: Math.min(maxTok, 4000) },
+      { model: "llama-3.3-70b-versatile", tokens: Math.min(maxTok, 3000) }
+    ]
+
     for (let attempt = 0; attempt < groqAttempts.length; attempt++) {
-      const tryModel = groqAttempts[attempt]
+      const { model: tryModel, tokens: tryTokens } = groqAttempts[attempt]
+      // Skip duplicate model
+      if (attempt > 0 && tryModel === groqAttempts[attempt-1].model) continue
+
       try {
+        console.log("[GROQ] attempt", attempt+1, "model:", tryModel, "tokens:", tryTokens)
         stream = await groq.chat.completions.create({
           model: tryModel,
           messages: groqMessages,
-          max_tokens: maxTok,
+          max_tokens: tryTokens,
           temperature: 0.7,
           stream: true
         })
         for await (const part of stream) {
           const token = part.choices?.[0]?.delta?.content
-          if (token !== null && token !== undefined) {
-            if (typeof token !== "string") {
-              console.log("[AI TOKEN BUG] non-string token:", typeof token, JSON.stringify(token))
-              continue
-            }
+          if (token && typeof token === "string") {
             full += token
             res.write(token)
           }
         }
         lastError = null
+        console.log("[GROQ] success, tokens generated:", full.length)
         break
+
       } catch(groqErr) {
         lastError = groqErr
-        console.error("Groq error (attempt " + (attempt+1) + "):", groqErr.message)
-        if (attempt === 0 && groqAttempts.length > 1) {
+        const status = groqErr.status || groqErr.statusCode || 0
+        console.error("[GROQ] error attempt", attempt+1, "status:", status, "msg:", groqErr.message?.slice(0,100))
+
+        if (attempt < groqAttempts.length - 1) {
           full = ""
-          // If rate limit or token error, reduce tokens for retry
-          if (groqErr.message?.includes("rate") || groqErr.message?.includes("token") || groqErr.status === 500) {
-            groqMessages[groqMessages.length - 1].content =
-              (groqMessages[groqMessages.length - 1].content || "").toString().substring(0, 2000)
+          // Wait before retry if rate limited
+          if (status === 429 || groqErr.message?.includes("rate")) {
+            console.log("[GROQ] rate limit — waiting 2s before retry")
+            await new Promise(r => setTimeout(r, 2000))
+          } else if (status === 500 || status === 503) {
+            await new Promise(r => setTimeout(r, 1000))
           }
           continue
         }
