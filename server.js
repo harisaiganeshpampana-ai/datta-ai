@@ -1185,7 +1185,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }
     const langNote = (language && language !== "English" && language !== "Auto") ? " Always respond in " + language + "." : " Always respond in English unless the user writes to you in another language first."
     const styleNote = styleNotes[style] || ""
-    const searchNote = searchContext ? " IMPORTANT: Use web search results to give the correct answer. Pick the answer that MOST sources agree on - that is the widely accepted correct answer. Give ONE clear direct answer. If Google, Wikipedia and most sources say X, then X is the answer - say it confidently. Do not list 5 different conflicting opinions. Be clear and direct like Google's featured snippet answer." : ""
+    const searchNote = searchContext ? " IMPORTANT: Web search results are provided above. Use them to answer. Write your response as PLAIN TEXT only — no JavaScript, no arrays, no [object Object], no brackets. For sports/IPL: write naturally like 'Today CSK plays against MI at 7:30 PM at Chepauk Stadium'. Extract all values as readable sentences." : ""
 
     // Detect if code/build task needs max tokens
     const msgLower = message.toLowerCase()
