@@ -1903,20 +1903,61 @@ window.dislikeMsg = dislikeMsg
 
 let voiceRecognition = null
 let voiceSynth = window.speechSynthesis
-let isListening = false
-let isSpeaking = false
-let voiceActive = false
+let isListening  = false
+let isSpeaking   = false
+let voiceActive  = false
+let voiceMuted   = false
 
+// ── STATE MACHINE ─────────────────────────────────────────────────────────────
+function setVA(state) {
+  // state: idle | listening | thinking | speaking
+  const overlay   = document.getElementById("voiceOverlay")
+  const statusEl  = document.getElementById("voiceStatus")
+  const orbEl     = document.getElementById("voiceOrb")
+
+  if (!overlay) return
+
+  // Remove all state classes
+  overlay.classList.remove("va-listening", "va-speaking", "va-thinking")
+
+  const labels = { idle:"Tap to speak", listening:"Listening...", thinking:"Thinking...", speaking:"Speaking..." }
+  if (statusEl) statusEl.textContent = labels[state] || ""
+
+  if (state === "listening") {
+    overlay.classList.add("va-listening")
+    if (orbEl) orbEl.style.background = "linear-gradient(135deg,#ef4444,#f97316)"
+  } else if (state === "speaking") {
+    overlay.classList.add("va-speaking")
+    if (orbEl) orbEl.style.background = "linear-gradient(135deg,#0077ff,#a855f7)"
+  } else if (state === "thinking") {
+    overlay.classList.add("va-thinking")
+    if (orbEl) orbEl.style.background = "linear-gradient(135deg,#a855f7,#ec4899)"
+  } else {
+    if (orbEl) orbEl.style.background = "linear-gradient(135deg,#10a37f,#0077ff)"
+  }
+}
+
+function setVoiceText(text) {
+  const el = document.getElementById("voiceText")
+  if (el) el.textContent = text
+}
+function setVoiceAIText(text) {
+  const el = document.getElementById("voiceAIText")
+  if (el) el.textContent = text
+}
+
+// ── OPEN / CLOSE ──────────────────────────────────────────────────────────────
 function openVoiceAssistant() {
   voiceActive = true
   const overlay = document.getElementById("voiceOverlay")
-  if (overlay) overlay.classList.add("show")
-  setVoiceStatus("Tap the mic to speak", "idle")
-
-  // Greet user
+  if (overlay) overlay.style.display = "flex"
+  setVA("idle")
+  setVoiceText("")
+  setVoiceAIText("")
+  // Greet after short delay
   setTimeout(() => {
-    speakText2("Hello! I am Datta AI. How can I help you today?")
-  }, 500)
+    if (voiceActive) speakText2("Hello! I am Datta AI. How can I help you?")
+  }, 400)
 }
 
 function closeVoiceAssistant() {
@@ -1924,101 +1965,99 @@ function closeVoiceAssistant() {
   stopListening()
   stopSpeaking()
   const overlay = document.getElementById("voiceOverlay")
-  if (overlay) overlay.classList.remove("show")
+  if (overlay) overlay.style.display = "none"
 }
 
-function setVoiceStatus(text, mode) {
-  const status = document.getElementById("voiceStatus")
-  const orb = document.getElementById("voiceOrb")
-  const micBtn = document.getElementById("voiceMicBtn")
-
-  if (status) status.textContent = text
-  if (orb) {
-    orb.classList.remove("listening", "speaking")
-    if (mode === "listening") orb.classList.add("listening")
-    if (mode === "speaking") orb.classList.add("speaking")
+// ── MUTE ──────────────────────────────────────────────────────────────────────
+function toggleVoiceMute() {
+  voiceMuted = !voiceMuted
+  const btn = document.getElementById("vaMuteBtn")
+  if (btn) {
+    btn.style.background  = voiceMuted ? "rgba(239,68,68,0.15)" : "var(--bg2)"
+    btn.style.borderColor = voiceMuted ? "rgba(239,68,68,0.4)"  : "var(--border)"
+    btn.style.color       = voiceMuted ? "#ef4444" : "var(--text2)"
+    btn.title = voiceMuted ? "Unmute" : "Mute"
   }
-  if (micBtn) {
-    if (mode === "listening") {
-      micBtn.textContent = "🔴 Listening... (tap to stop)"
-      micBtn.style.background = "linear-gradient(135deg,#ff4444,#ff8844)"
-    } else if (mode === "speaking") {
-      micBtn.textContent = "🔊 Speaking..."
-      micBtn.style.background = "linear-gradient(135deg,#aa44ff,#00ccff)"
-    } else {
-      micBtn.innerHTML = "🎤 Tap to Speak"
-      micBtn.style.background = "linear-gradient(135deg,#00cc6a,#00aaff)"
-    }
-  }
+  if (voiceMuted && isSpeaking) stopSpeaking()
 }
 
+// ── LANGUAGE ──────────────────────────────────────────────────────────────────
 function setVoiceLang(lang) {
-  window._voiceLang = lang
+  window._voiceLang = lang === "auto" ? null : lang
 }
 
-function setVoiceText(text) {
-  const el = document.getElementById("voiceText")
-  if (el) el.textContent = text
+function detectLangFromText(text) {
+  // Simple script detection
+  if (/[ऀ-ॿ]/.test(text)) return "hi-IN"  // Hindi Devanagari
+  if (/[ఀ-౿]/.test(text)) return "te-IN"  // Telugu
+  if (/[஀-௿]/.test(text)) return "ta-IN"  // Tamil
+  if (/[ಀ-೿]/.test(text)) return "kn-IN"  // Kannada
+  return "en-IN"
 }
 
+// ── LISTEN ────────────────────────────────────────────────────────────────────
 function toggleVoiceListening() {
-  if (isListening) {
-    stopListening()
-  } else {
-    startListening()
-  }
+  if (isListening) stopListening()
+  else             startListening()
 }
 
 function startListening() {
-  if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-    setVoiceText("Speech recognition not supported in this browser.")
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+  if (!SR) {
+    setVoiceAIText("Voice not supported in this browser. Please use Chrome.")
     return
   }
 
   stopSpeaking()
+  setVoiceText("")
+  setVoiceAIText("")
 
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-  voiceRecognition = new SpeechRecognition()
-  voiceRecognition.lang = window._voiceLang || "en-IN"
-  voiceRecognition.continuous = false
-  voiceRecognition.interimResults = true
+  const langSel = document.getElementById("voiceLangSelect")
+  const chosenLang = (langSel && langSel.value !== "auto") ? langSel.value : "en-IN"
+
+  voiceRecognition = new SR()
+  voiceRecognition.lang            = window._voiceLang || chosenLang
+  voiceRecognition.continuous      = false
+  voiceRecognition.interimResults  = true
+  voiceRecognition.maxAlternatives = 1
 
   voiceRecognition.onstart = () => {
     isListening = true
-    setVoiceStatus("Listening...", "listening")
-    setVoiceText("")
+    setVA("listening")
   }
 
   voiceRecognition.onresult = (e) => {
-    let interim = ""
-    let final = ""
+    let interim = "", final = ""
     for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) {
-        final += e.results[i][0].transcript
-      } else {
-        interim += e.results[i][0].transcript
-      }
+      if (e.results[i].isFinal) final += e.results[i][0].transcript
+      else interim += e.results[i][0].transcript
     }
     setVoiceText(final || interim)
-
-    if (final) {
+    if (final.trim()) {
       stopListening()
-      processVoiceQuery(final)
+      processVoiceQuery(final.trim())
     }
   }
 
   voiceRecognition.onerror = (e) => {
-    console.error("Voice error:", e.error)
     isListening = false
-    setVoiceStatus("Error: " + e.error + ". Try again.", "idle")
+    const msgs = {
+      "not-allowed":  "Microphone permission denied",
+      "no-speech":    "No speech detected. Tap to try again.",
+      "network":      "Network error. Check connection.",
+      "aborted":      ""
+    }
+    const msg = msgs[e.error] || ("Error: " + e.error)
+    if (msg) setVoiceAIText(msg)
+    setVA("idle")
   }
 
   voiceRecognition.onend = () => {
     isListening = false
-    if (voiceActive) setVoiceStatus("Tap to speak", "idle")
+    if (voiceActive && !isSpeaking) setVA("idle")
   }
 
-  voiceRecognition.start()
+  try { voiceRecognition.start() } catch(e) {}
 }
 
 function stopListening() {
@@ -2027,54 +2066,55 @@ function stopListening() {
     try { voiceRecognition.stop() } catch(e) {}
     voiceRecognition = null
   }
-  setVoiceStatus("Tap to speak", "idle")
+  if (voiceActive && !isSpeaking) setVA("idle")
 }
 
+// ── PROCESS QUERY ─────────────────────────────────────────────────────────────
 async function processVoiceQuery(query) {
   if (!query.trim()) return
 
-  setVoiceStatus("Thinking...", "speaking")
-  setVoiceText(query)
-  // Clear previous AI response
-  const aiTextEl = document.getElementById("voiceAIText")
-  if (aiTextEl) aiTextEl.textContent = ""
-
-  // Check for close commands
-  const closeCmds = ["close", "stop", "exit", "bye", "goodbye", "dismiss"]
+  // Close commands
+  const closeCmds = ["close", "stop", "exit", "bye", "goodbye", "dismiss", "band karo"]
   if (closeCmds.some(c => query.toLowerCase().includes(c))) {
     speakText2("Goodbye! Have a great day!")
-    setTimeout(closeVoiceAssistant, 2000)
+    setTimeout(closeVoiceAssistant, 1800)
     return
+  }
+
+  setVA("thinking")
+  setVoiceAIText("...")
+
+  // Auto-detect language from text if auto mode
+  const langSel = document.getElementById("voiceLangSelect")
+  if (!langSel || langSel.value === "auto") {
+    const detected = detectLangFromText(query)
+    if (detected !== "en-IN") window._voiceLang = detected
   }
 
   try {
     const formData = new FormData()
     formData.append("message", query)
-    formData.append("chatId", currentChatId || "")
-    formData.append("token", getToken())
+    formData.append("chatId",   currentChatId || "")
+    formData.append("token",    getToken())
     formData.append("language", localStorage.getItem("datta_language") || "English")
-    formData.append("model", localStorage.getItem("datta_model") || "llama-3.3-70b-versatile")
-    formData.append("style", localStorage.getItem("datta_ai_style") || "Balanced")
-    formData.append("ainame", localStorage.getItem("datta_ai_name") || "Datta AI")
-    formData.append("voice", "true")
+    formData.append("model",    localStorage.getItem("datta_model") || "llama-3.3-70b-versatile")
+    formData.append("modelKey", localStorage.getItem("datta_model_key") || "d42")
+    formData.append("style",    "Short")  // Voice = short responses
+    formData.append("ainame",   "Datta AI")
+    formData.append("voice",    "true")
 
-    const res = await fetch(SERVER + "/chat", {
-      method: "POST",
-      body: formData
-    })
+    const res = await fetch(SERVER + "/chat", { method:"POST", body: formData })
+    if (!res.ok) throw new Error("Server error " + res.status)
 
-    if (!res.ok) {
-      speakText2("Sorry, I encountered an error. Please try again.")
-      setVoiceStatus("Error. Tap to try again.", "idle")
-      return
+    const chatIdHeader = res.headers.get("x-chat-id")
+    if (!currentChatId && chatIdHeader) {
+      currentChatId = chatIdHeader
+      localStorage.setItem("datta_last_chat", currentChatId)
     }
 
-    const chatIdFromHeader = res.headers.get("x-chat-id")
-    if (!currentChatId && chatIdFromHeader) currentChatId = chatIdFromHeader
-
-    const reader = res.body.getReader()
+    const reader  = res.body.getReader()
     const decoder = new TextDecoder()
-    let fullText = ""
+    let fullText  = ""
 
     while (true) {
       const { done, value } = await reader.read()
@@ -2083,49 +2123,66 @@ async function processVoiceQuery(query) {
       if (chunk.includes("CHATID")) {
         const parts = chunk.split("CHATID")
         fullText += parts[0]
-        currentChatId = parts[1]
+        currentChatId = (parts[1] || "").trim()
+        localStorage.setItem("datta_last_chat", currentChatId)
       } else {
         fullText += chunk
       }
     }
 
-    // Clean text for speaking (remove markdown)
+    // Clean for speech (remove markdown)
     const cleanText = fullText
-      .replace(/!\[.*?\]\(.*?\)/g, "I generated an image for you.")
+      .replace(/CHATID.*/s, "")
+      .replace(/!\[.*?\]\(.*?\)/g, "Image generated.")
       .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-      .replace(/#{1,6}\s/g, "")
-      .replace(/\*\*/g, "")
-      .replace(/\*/g, "")
+      .replace(/#{1,6}\s+/g, "")
+      .replace(/\*\*/g, "").replace(/\*/g, "")
+      .replace(/`{3}[\s\S]*?`{3}/g, "Code block.")
       .replace(/`/g, "")
+      .replace(/\n{3,}/g, "\n")
       .trim()
 
-    setVoiceText(cleanText.substring(0, 100) + (cleanText.length > 100 ? "..." : ""))
+    // Show short preview
+    const preview = cleanText.substring(0, 120) + (cleanText.length > 120 ? "…" : "")
+    setVoiceAIText(preview)
 
     // Add to chat UI
-    chatBox.innerHTML += `
-      <div class="msg-row user-row">
-        <div class="user-bubble">🎤 ${query}</div>
-      </div>
-    `
-    chatBox.innerHTML += `
-      <div class="msg-row">
-        <div class="aiContent">
-          <div class="ai-bubble">${marked.parse(fullText.split("CHATID")[0])}</div>
+    if (chatBox) {
+      hideWelcome()
+      chatBox.innerHTML += `
+        <div class="msg-row user-row">
+          <div class="user-bubble">🎤 ${query}</div>
         </div>
-      </div>
-    `
-    chatBox.scrollTop = chatBox.scrollHeight
+      `
+      chatBox.innerHTML += `
+        <div class="msg-row">
+          <div class="aiContent">
+            <div class="ai-bubble">${marked.parse(fullText.split("CHATID")[0])}</div>
+          </div>
+        </div>
+      ` 
+      chatBox.scrollTop = chatBox.scrollHeight
+      lucide.createIcons()
+    }
+
     loadSidebar()
 
-    // Speak the response
-    speakText2(cleanText)
+    // Speak
+    if (!voiceMuted) {
+      setVA("speaking")
+      speakText2(cleanText)
+    } else {
+      setVA("idle")
+    }
 
-  } catch (err) {
+  } catch(err) {
     console.error("Voice query error:", err)
-    speakText2("Sorry, something went wrong.")
-    setVoiceStatus("Error. Tap to try again.", "idle")
+    setVoiceAIText("Something went wrong. Tap to try again.")
+    setVA("idle")
+    if (!voiceMuted) speakText2("Sorry, something went wrong.")
   }
 }
+
 
 // VOICE PROFILES
 const voiceProfiles = {
