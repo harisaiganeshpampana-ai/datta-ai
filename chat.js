@@ -37,6 +37,22 @@ function safeContent(c) {
   return String(c)
 }
 
+
+// ── DOM HELPERS — work with both old and new class names ──────────────────────
+function getAiBubble(el) {
+  return el.closest(".aiContent")?.querySelector(".ai-bubble, .aiBubble")
+    || el.closest(".msg-row, .messageRow")?.querySelector(".ai-bubble, .aiBubble")
+}
+function getUserBubble(el) {
+  return el.closest(".msg-row, .messageRow")?.querySelector(".user-bubble, .userBubble")
+}
+function getMsgRow(el) {
+  return el.closest(".msg-row, .messageRow")
+}
+function getAiContent(el) {
+  return el.closest(".aiContent") || el.closest(".msg-row, .messageRow")
+}
+
 // Format any API response safely — used before rendering
 function formatResponse(response) {
   if (typeof response === "string") return response
@@ -231,8 +247,8 @@ window.stopGeneration = stopGeneration
 
 // Edit user message and resend
 function editMessage(btn) {
-  const row = btn.closest(".messageRow")
-  const bubble = row.querySelector(".userBubble")
+  const row = getMsgRow(btn)
+  const bubble = row?.querySelector(".user-bubble, .userBubble")
   const originalText = bubble.textContent.trim()
   
   // Put text back in input
@@ -248,13 +264,13 @@ function editMessage(btn) {
 
 // Retry last user message
 function retryMessage(btn) {
-  const row = btn.closest(".messageRow")
-  const bubble = row.querySelector(".userBubble")
+  const row = getMsgRow(btn)
+  const bubble = row?.querySelector(".user-bubble, .userBubble")
   const text = bubble.textContent.trim()
   if (!text) return
   
   // Remove all messages from this point onwards
-  const allRows = Array.from(document.querySelectorAll(".messageRow"))
+  const allRows = Array.from(document.querySelectorAll(".msg-row, .messageRow"))
   const idx = allRows.indexOf(row)
   for (let i = idx; i < allRows.length; i++) {
     allRows[i].remove()
@@ -948,9 +964,9 @@ async function send() {
     streamText = fullText
 
     // Add action buttons to user messages after generation
-    chatBox.querySelectorAll(".userBubble").forEach(bubble => {
-      if (!bubble.closest(".messageRow").querySelector(".userActions")) {
-        const row = bubble.closest(".messageRow")
+    chatBox.querySelectorAll(".user-bubble, .userBubble").forEach(bubble => {
+      if (!bubble.closest(".msg-row, .messageRow")?.querySelector(".userActions, .user-actions")) {
+        const row = bubble.closest(".msg-row, .messageRow")
         const txt = bubble.textContent.trim()
         const actions = document.createElement("div")
         actions.className = "userActions"
@@ -1025,7 +1041,7 @@ async function send() {
           <div class="ai-bubble" style="background:#110a0a;border:1px solid #ff444422;">
             <div style="color:#ff8888;font-size:15px;font-weight:600;margin-bottom:8px;">Connection failed after 3 retries</div>
             <div style="color:#888;font-size:13px;margin-bottom:14px;">Please check your internet and try again.</div>
-            <button onclick="this.closest('.messageRow').remove();document.getElementById('message').value=window.lastUserMsg||'';document.getElementById('message').focus()"
+            <button onclick="this.closest('.msg-row, .messageRow')?.remove();document.getElementById('message').value=window.lastUserMsg||'';document.getElementById('message').focus()"
               style="padding:8px 18px;background:#00ff8822;border:1px solid #00ff8844;border-radius:10px;color:#00ff88;font-size:13px;cursor:pointer;">
               Try Again
             </button>
@@ -1283,14 +1299,18 @@ async function deleteChat(id, chatItem) {
 
 // ─── COPY TEXT ────────────────────────────────────────────────────────────────
 function copyText(btn) {
-  const text = btn.closest(".aiContent").querySelector(".aiBubble").innerText
-  navigator.clipboard.writeText(text)
+  const bubble = getAiBubble(btn)
+  if (!bubble) return
+  const text = bubble.innerText || bubble.textContent
+  navigator.clipboard.writeText(text).then(() => showToast("Copied!"))
 }
 
 
 // ─── SPEAK TEXT ───────────────────────────────────────────────────────────────
 function speakText(btn) {
-  const text = btn.closest(".aiContent").querySelector(".aiBubble").innerText
+  const bubble = getAiBubble(btn)
+  if (!bubble) return
+  const text = bubble.innerText || bubble.textContent
   const speech = new SpeechSynthesisUtterance(text)
   speech.lang = "en-US"
   speechSynthesis.speak(speech)
@@ -1305,12 +1325,12 @@ function stopVoice() {
 
 // ─── REGENERATE ───────────────────────────────────────────────────────────────
 async function regenerateFrom(btn) {
-  const row = btn.closest(".messageRow")
-  const prev = row.previousElementSibling
-  if (!prev) return
+  const row = getMsgRow(btn)
+  const prev = row?.previousElementSibling
+  if (!row || !prev) return
 
-  const text = prev.querySelector(".userBubble").innerText
-  const aiBubble = row.querySelector(".aiBubble")
+  const text = (prev.querySelector(".user-bubble, .userBubble") || {}).innerText || ""
+  const aiBubble = row.querySelector(".ai-bubble, .aiBubble")
   aiBubble.innerHTML = `<span class="stream"></span>`
   const span = aiBubble.querySelector(".stream")
 
@@ -1761,7 +1781,7 @@ function setFontSize(size) {
   event.target.classList.add("active")
   const sizes = { small: "13px", medium: "15px", large: "17px" }
   document.documentElement.style.setProperty("--chat-font-size", sizes[size])
-  document.querySelectorAll(".aiBubble, .userBubble").forEach(el => el.style.fontSize = sizes[size])
+  document.querySelectorAll(".ai-bubble, .aiBubble, .user-bubble, .userBubble").forEach(el => el.style.fontSize = sizes[size])
   localStorage.setItem("datta_fontsize", size)
   showSettingsMsg("Font size set to " + size, "success")
 }
@@ -1852,7 +1872,7 @@ window.deleteAccount = deleteAccount
 // LIKE / DISLIKE
 function likeMsg(btn) {
   const wasActive = btn.classList.contains("active")
-  const row = btn.closest(".aiActions")
+  const row = btn.closest(".aiActions, .ai-actions, .msg-row, .messageRow")
   row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => {
     b.classList.remove("active")
     b.style.color = ""
@@ -1865,7 +1885,7 @@ function likeMsg(btn) {
 
 function dislikeMsg(btn) {
   const wasActive = btn.classList.contains("active")
-  const row = btn.closest(".aiActions")
+  const row = btn.closest(".aiActions, .ai-actions, .msg-row, .messageRow")
   row.querySelectorAll(".likeBtn, .dislikeBtn").forEach(b => {
     b.classList.remove("active")
     b.style.color = ""
@@ -2480,7 +2500,7 @@ window.selectModel = selectModel
 // FEATURE 1: PDF EXPORT
 // ══════════════════════════════════════════════════════
 function downloadAsPDF(btn) {
-  const bubble = btn.closest(".aiContent").querySelector(".aiBubble")
+  const bubble = getAiBubble(btn)
   if (!bubble) return showToast("Nothing to export")
   const html = bubble.innerHTML
   const text = bubble.innerText
@@ -2657,7 +2677,7 @@ function autoDetectAndSaveMemory(text) {
 let savedFiles = JSON.parse(localStorage.getItem("datta_saved_files") || "[]")
 
 function saveToFileManager(btn) {
-  const bubble = btn.closest(".aiContent").querySelector(".aiBubble")
+  const bubble = getAiBubble(btn)
   if (!bubble) return
   
   const file = {
@@ -2745,7 +2765,7 @@ window.autoDetectAndSaveMemory = autoDetectAndSaveMemory
 // AUTO-CHAIN EXECUTION ENGINE
 // ══════════════════════════════════════════════════════
 function autoChainExecution(aiDiv, response, userMsg) {
-  const bubble = aiDiv.querySelector(".aiBubble")
+  const bubble = aiDiv.querySelector(".ai-bubble, .aiBubble")
   if (!bubble) return
   const msg = (userMsg || "").toLowerCase()
   const resp = (response || "").toLowerCase()
@@ -2808,7 +2828,7 @@ function autoChainExecution(aiDiv, response, userMsg) {
 }
 
 function downloadCodeDirect(btn) {
-  const code = btn.dataset.code || btn.closest(".aiBubble").querySelector("pre code")?.innerText || ""
+  const code = btn.dataset.code || btn.closest(".ai-bubble, .aiBubble").querySelector("pre code")?.innerText || ""
   const ext = btn.dataset.ext || "txt"
   const blob = new Blob([code], {type:"text/plain"})
   const url = URL.createObjectURL(blob)
@@ -2821,12 +2841,12 @@ function downloadCodeDirect(btn) {
 }
 
 function copyAllCode(btn) {
-  const code = btn.dataset.code || btn.closest(".aiBubble").querySelector("pre code")?.innerText || ""
+  const code = btn.dataset.code || btn.closest(".ai-bubble, .aiBubble").querySelector("pre code")?.innerText || ""
   navigator.clipboard.writeText(code).then(() => { showToast("Code copied!"); btn.textContent = "✓ Copied!" })
 }
 
 function downloadDocument(btn) {
-  const bubble = btn.closest(".aiBubble")
+  const bubble = btn.closest(".ai-bubble, .aiBubble")
   const html = bubble.innerHTML
   const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Datta AI Document</title>
 <style>body{font-family:system-ui;max-width:860px;margin:40px auto;padding:24px;line-height:1.8;color:#111}
