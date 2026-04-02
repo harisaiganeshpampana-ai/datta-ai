@@ -114,24 +114,27 @@ body {
    INPUT — ALWAYS fixed, ALWAYS centered
    NEVER moves regardless of state
    ════════════════════════════════════════ */
+/* Input area — always centered, never shifts */
 .inputArea {
   position: fixed !important;
-  bottom: 0 !important;
-  /* Left offset = sidebar width so centering is within content area */
-  left: 260px !important;
-  right: 0 !important;
+  bottom: 20px !important;
+  /* Center within content area (viewport minus sidebar) */
+  left: calc(260px + (100vw - 260px) / 2) !important;
+  transform: translateX(-50%) !important;
+  width: 90% !important;
+  max-width: 860px !important;
+  right: auto !important;
   z-index: 80;
   display: flex;
   flex-direction: column;
-  align-items: center;       /* centers inputWrap horizontally */
-  padding: 10px 20px 24px;
+  align-items: center;
+  padding: 0;
   pointer-events: none;
 }
 .inputArea > * { pointer-events: all; }
 
 .inputModelBar {
   width: 100%;
-  max-width: 800px;
   padding: 0 4px 8px;
   display: flex;
   align-items: center;
@@ -139,7 +142,6 @@ body {
 
 .inputWrap {
   width: 100%;
-  max-width: 800px;
   border-radius: 18px;
   padding: 6px 8px 6px 16px;
   display: flex;
@@ -243,7 +245,10 @@ body {
 }
 #notesPanel.open { right: 0; }
 
-body.notes-open .inputArea { right: 420px !important; }
+body.notes-open .inputArea {
+  left: calc(260px + (100vw - 260px - 420px) / 2) !important;
+  transform: translateX(-50%) !important;
+}
 
 /* ════════════════════════════════════════
    SIDEBAR OVERLAY
@@ -277,12 +282,19 @@ body.notes-open .inputArea { right: 420px !important; }
    ════════════════════════════════════════ */
 @media (min-width: 768px) and (max-width: 1024px) {
   .sidebar        { width: 220px; }
-  .inputArea      { left: 220px !important; }
-  .inputWrap,
-  .inputModelBar  { max-width: 680px; }
+  .inputArea {
+    left: calc(220px + (100vw - 220px) / 2) !important;
+    transform: translateX(-50%) !important;
+    width: 90% !important;
+    max-width: 720px !important;
+    right: auto !important;
+  }
   .messageRow     { max-width: 680px; }
   #notesPanel     { width: 320px; right: -340px; }
-  body.notes-open .inputArea { right: 320px !important; }
+  body.notes-open .inputArea {
+    left: calc(220px + (100vw - 220px - 320px) / 2) !important;
+    transform: translateX(-50%) !important;
+  }
 }
 
 /* ════════════════════════════════════════
@@ -306,14 +318,16 @@ body.notes-open .inputArea { right: 420px !important; }
     box-shadow: 4px 0 24px rgba(0,0,0,0.4);
   }
 
-  /* Input full width, no sidebar offset */
+  /* Mobile — center from full viewport */
   .inputArea {
-    left: 0 !important;
-    right: 0 !important;
-    padding: 8px 12px 20px;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 94% !important;
+    max-width: 100% !important;
+    right: auto !important;
+    bottom: 12px !important;
+    padding: 0 !important;
   }
-  .inputWrap,
-  .inputModelBar { max-width: 100%; }
 
   /* Messages full width */
   .messageRow {
@@ -336,7 +350,10 @@ body.notes-open .inputArea { right: 420px !important; }
   #notesPanel     { display: none !important; }
   #notesToggleBtn { display: none !important; }
 
-  body.notes-open .inputArea { right: 0 !important; }
+  body.notes-open .inputArea {
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
 }
 
 /* ════════════════════════════════════════
