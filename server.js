@@ -1104,11 +1104,11 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
                     message.includes("క్రికెట్") || message.includes("क्रिकेट")
       if (isIPL) {
         const now = new Date()
-        const dd  = now.getDate()
-        const mm  = now.toLocaleString("en-US", { month:"long" })
+        const dd   = now.getDate()
+        const mm   = now.toLocaleString("en-US", { month:"long" })
         const yyyy = now.getFullYear()
-        // Multiple search angles to find today's match
-        searchQuery = "IPL " + yyyy + " match today " + dd + " " + mm + " which teams are playing"
+        // Search for today AND upcoming - so AI can give next match if none today
+        searchQuery = "IPL " + yyyy + " schedule today " + dd + " " + mm + " upcoming matches next match"
         console.log("[IPL SEARCH] Query:", searchQuery)
       }
 
@@ -1357,7 +1357,7 @@ RULES:
 - For code/apps: give COMPLETE working code in ONE file. Never truncate.
 - For websites: full HTML/CSS/JS, copy-paste ready.
 - Never say "I cannot" — always produce the output.
-- For sports/IPL: read search results and state team names directly e.g. "CSK vs MI at 7:30 PM".
+- For sports/IPL: Read search results carefully. If a match is today say "Today: TeamA vs TeamB at TIME". If no match today but upcoming matches exist in results, say "No match today. Next match: TeamA vs TeamB on DATE at TIME". Never say you don't have info if search results contain it.
 - Code blocks with language label. Bullet points with emojis for lists.
 ` + (searchContext ? "\n\nSEARCH RESULTS (use these to answer):\n" + searchContext : "") + langNote + styleNote
 
