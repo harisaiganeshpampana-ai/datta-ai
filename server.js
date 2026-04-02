@@ -1340,10 +1340,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Each model has unique behavior
     // Persona based on CHOSEN model (before mapping), not resolved model
     var modelPersonas = {
-      "llama-3.1-8b-instant": `Your name is ${ainame}. You are Datta 2.1 - friendly chat assistant. 
-ONLY handle: casual chat, simple questions, general knowledge, fun conversations.
-If asked to write code or build apps: say "I am Datta 2.1, I am not for coding. Switching to Datta 5.4 for you..." - the system will handle the switch automatically.
-Talk simply and friendly. Short answers. NEVER say you are any other AI.`,
+      "llama-3.1-8b-instant": `Your name is ${ainame}. You are Datta 2.1 - a helpful AI assistant.
+Handle all questions including code. For code questions, give working code directly.
+Talk simply and friendly. NEVER say you are any other AI. NEVER say you cannot help.`,
 
       "llama-3.3-70b-versatile": `Your name is ${ainame}. You are a smart helpful assistant. Answer questions clearly and completely. Write full working code when asked. Never truncate. NEVER say you are any other AI.`,
       "meta-llama/llama-4-scout-17b-16e-instruct":     `Your name is ${ainame}. You are Datta Vision - image analysis expert. Analyze images in extreme detail. NEVER say you are any other AI.`,
@@ -1393,15 +1392,31 @@ Talk simply and friendly. Short answers. NEVER say you are any other AI.`,
 
     var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + (isCodeTask ? (isNodeTask ? `
 
-You are answering a Node.js / backend question.
-STRICT RULES:
-1. NEVER put Node.js code inside HTML <script> tags. Node.js runs on the server, not in a browser.
-2. Give code as proper standalone files: server.js, .env, package.json — NOT wrapped in HTML.
-3. Use ES modules (import/export) or CommonJS (require) correctly for Node.js.
-4. For API keys: always use process.env + dotenv. Never hardcode keys.
-5. Show .env file contents (without real values) and explain to add to .gitignore.
-6. First briefly explain what the code does (2 lines), then give complete correct code.
-7. Never truncate. Give full working code.
+You are answering a Node.js / backend question. Follow these rules with ZERO exceptions:
+
+FORBIDDEN — never do these:
+- NEVER wrap Node.js in HTML <script> tags
+- NEVER output <!DOCTYPE html> or <html> for a Node.js answer
+- NEVER hardcode API keys like: process.env.KEY = "abc123" or const key = "sk-..."
+- NEVER use .then()/.catch() — use async/await + try/catch only
+- NEVER use deprecated models like text-davinci-003
+
+REQUIRED — always do these:
+1. Give separate labeled code blocks: server.js, .env.example, .gitignore
+2. Load keys ONLY via dotenv: require("dotenv").config() at top of server.js
+3. .env.example shows: OPENAI_API_KEY=your_key_here (placeholder only)
+4. .gitignore must include: .env and node_modules/
+5. Use async/await for all async operations
+6. Explain in 2 lines what the code does before showing it
+7. Show complete runnable code — never truncate
+
+CORRECT PATTERN FOR API KEYS:
+\`\`\`js
+// server.js
+require("dotenv").config()
+const key = process.env.OPENAI_API_KEY  // loaded from .env file
+if (!key) throw new Error("OPENAI_API_KEY missing from .env")
+\`\`\`
 ` : isFrontendTask ? `
 
 When building frontend websites/apps:
