@@ -685,8 +685,9 @@ async function send() {
 
   chatBox.scrollTop = chatBox.scrollHeight
 
-  // Clear input + file
+  // Clear input + reset textarea height
   input.value = ""
+  if (window.taAutoResize) window.taAutoResize()
   ;["cameraInput","photoInput","imageInput"].forEach(id => {
     const el = document.getElementById(id)
     if (el) el.value = ""
@@ -1658,70 +1659,33 @@ document.querySelectorAll(".suggestBtn").forEach(btn => {
 })
 
 
-// ─── ENTER KEY ────────────────────────────────────────────────────────────────
+// ─── ENTER KEY + AUTO-RESIZE ─────────────────────────────────────────────────
 ;(function() {
   var ta = document.getElementById("message")
   if (!ta) return
 
-  // Auto-resize textarea as user types
   function autoResize() {
-    ta.style.overflowY = "hidden"
-    ta.style.height    = "auto"
+    // Must set height to auto first so scrollHeight recalculates correctly
+    ta.style.height = "auto"
     var maxH = 180
-    var newH = Math.min(ta.scrollHeight, maxH)
-    ta.style.height = newH + "px"
-    if (ta.scrollHeight > maxH) {
-      ta.style.overflowY = "auto"
+    if (ta.scrollHeight <= maxH) {
+      ta.style.height     = ta.scrollHeight + "px"
+      ta.style.overflowY  = "hidden"
     } else {
-      ta.style.overflowY = "hidden"
+      ta.style.height     = maxH + "px"
+      ta.style.overflowY  = "auto"
     }
   }
 
-  // Resize on every input
+  // Expose so send() can call it after clearing input
+  window.taAutoResize = autoResize
+
   ta.addEventListener("input", autoResize)
 
-  // Enter = send | Shift+Enter = newline
   ta.addEventListener("keydown", function(e) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
-      if (!isGenerating) {
-        send()
-        // Reset height after send
-        setTimeout(function() {
-          ta.style.height = "auto"
-          ta.style.overflowY = "hidden"
-        }, 10)
-      }
-    }
-  })
-
-  // Reset height when send() clears the input
-  // Patch the input clear so height resets too
-  var _origSend = window.send
-  window.send = async function() {
-    await _origSend.apply(this, arguments)
-  }
-
-  // Watch for input being cleared (after send)
-  var _observer = new MutationObserver(function() {
-    if (!ta.value) {
-      ta.style.height = "auto"
-      ta.style.overflowY = "hidden"
-    }
-  })
-
-  // Also reset on value cleared programmatically
-  Object.defineProperty(ta, "value", {
-    get: function() { return ta._val || "" },
-    set: function(v) {
-      ta._val = v
-      HTMLTextAreaElement.prototype.__lookupSetter__("value").call(ta, v)
-      if (!v) {
-        ta.style.height = "auto"
-        ta.style.overflowY = "hidden"
-      } else {
-        setTimeout(autoResize, 0)
-      }
+      if (!isGenerating) send()
     }
   })
 })()
