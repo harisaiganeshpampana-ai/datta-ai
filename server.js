@@ -421,7 +421,37 @@ function authMiddleware(req, res, next) {
 }
 
 // WEB SEARCH
+// Search cache — same query within 30s returns cached result (saves API calls)
+const _searchCache = new Map()
+
+// Monthly counter — stops search after 800 calls to prevent exhaustion
+let _searchCount = 0
+let _searchCountMonth = new Date().getMonth()
+
 async function webSearch(query) {
+  // Reset counter on new month
+  const currentMonth = new Date().getMonth()
+  if (currentMonth !== _searchCountMonth) {
+    _searchCount = 0
+    _searchCountMonth = currentMonth
+  }
+
+  // Monthly cap: skip search after 800 calls, fallback to LLM only
+  if (_searchCount >= 800) {
+    console.log("[SEARCH] Monthly cap reached (800). Skipping search.")
+    return null
+  }
+
+  // Cache: return cached result if same query within 30 seconds
+  const cacheKey = query.toLowerCase().trim()
+  const cached = _searchCache.get(cacheKey)
+  if (cached && (Date.now() - cached.ts) < 30000) {
+    console.log("[SEARCH] Cache hit:", cacheKey.slice(0, 60))
+    return cached.result
+  }
+
+  _searchCount++
+  console.log("SEARCH USED:", query, "| Monthly count:", _searchCount)
   try {
     const key = process.env.TAVILY_API_KEY
     if (!key) { console.log("TAVILY_API_KEY missing - add it in Render env vars"); return null }
@@ -501,6 +531,17 @@ async function webSearch(query) {
     const result = lines.join("\n").trim()
     console.log("[SEARCH] Context length:", result.length)
     if (result.length > 50) console.log("[SEARCH] Preview:", result.slice(0, 200))
+
+    // Store in cache
+    const _cacheKey = finalQuery.toLowerCase().trim()
+    _searchCache.set(_cacheKey, { result: result || null, ts: Date.now() })
+
+    // Clean old cache entries (keep max 100)
+    if (_searchCache.size > 100) {
+      const oldest = _searchCache.keys().next().value
+      _searchCache.delete(oldest)
+    }
+
     return result || null
 
   } catch(e) {
