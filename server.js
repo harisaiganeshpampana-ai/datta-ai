@@ -1336,64 +1336,32 @@ CRITICAL OUTPUT RULES:
     let full = ""
     let lastError = null
 
-    // ── MODEL ROUTING ─────────────────────────────────────────────────────
-    // Gemini 2.0 Flash = best quality, free (1500 req/day)
-    // Groq = fastest, fallback
-    // modelKey: d21=Datta2.1(groq fast), d42=Datta4.2(gemini), d54=Datta5.4(gemini)
-    const useGemini = process.env.GEMINI_API_KEY && !isImageFile &&
-      (modelKey === "d42" || modelKey === "d54" || modelKey === "d48")
-
-    if (useGemini) {
-      // Primary: Gemini 2.0 Flash
+    // Groq only — reliable, fast, no token limits
+    const groqAttempts = [model, "llama-3.1-8b-instant"]
+    for (let attempt = 0; attempt < groqAttempts.length; attempt++) {
+      const tryModel = groqAttempts[attempt]
       try {
-        console.log("Using Gemini 2.0 Flash for", modelKey)
-        full = await callGemini(
-          [...groqMessages.slice(1)], // skip system (sent separately)
-          groqMessages[0].content,    // system prompt
-          maxTok,
-          res
-        )
-        lastError = null
-      } catch(geminiErr) {
-        console.error("Gemini failed:", geminiErr.message, "- falling back to Groq")
-        lastError = geminiErr
-        full = ""
-        res.write("")  // keep connection alive
-      }
-    }
-
-    // Groq fallback (or primary for Datta 2.1 / vision / personas)
-    if (!useGemini || (lastError && full === "")) {
-      if (lastError) res.write("\n\n")  // separator after failed attempt
-      const groqAttempts = [model, "llama-3.1-8b-instant"]
-      for (let attempt = 0; attempt < groqAttempts.length; attempt++) {
-        const tryModel = groqAttempts[attempt]
-        try {
-          stream = await groq.chat.completions.create({
-            model: tryModel,
-            messages: groqMessages,
-            max_tokens: maxTok,
-            temperature: 0.7,
-            stream: true
-          })
-          for await (const part of stream) {
-            const token = part.choices?.[0]?.delta?.content
-            if (token) { full += token; res.write(token) }
-          }
-          lastError = null
-          break
-        } catch(groqErr) {
-          lastError = groqErr
-          console.error("Groq error (attempt " + (attempt+1) + "):", groqErr.message)
-          if (attempt === 0 && groqAttempts.length > 1) {
-            full = ""
-            continue
-          }
+        stream = await groq.chat.completions.create({
+          model: tryModel,
+          messages: groqMessages,
+          max_tokens: maxTok,
+          temperature: 0.7,
+          stream: true
+        })
+        for await (const part of stream) {
+          const token = part.choices?.[0]?.delta?.content
+          if (token && typeof token === "string") { full += token; res.write(token) }
         }
+        lastError = null
+        break
+      } catch(groqErr) {
+        lastError = groqErr
+        console.error("Groq error (attempt " + (attempt+1) + "):", groqErr.message)
+        if (attempt === 0 && groqAttempts.length > 1) { full = ""; continue }
       }
     }
 
-    // If ALL providers failed
+    // If all attempts failed
     if (lastError && full === "") {
       const errMsg = "I'm having trouble connecting right now. Please try again in a few seconds."
       res.write(errMsg)
