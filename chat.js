@@ -2348,12 +2348,13 @@ async function loadUserVersion() {
     const subtitle = document.getElementById("planBtnSub")
 
     const planInfo = {
-      free:     { emoji:"🌱", title:"Free Plan",      sub:"Upgrade for more power →" },
-      pro:      { emoji:"⚡", title:"Pro Plan",       sub:"100 msgs per 4hrs · Active" },
-      max:      { emoji:"🚀", title:"Max Plan",       sub:"200 msgs per 3hrs · Active" },
-      ultramax: { emoji:"👑", title:"Ultra Max Plan", sub:"Unlimited messages · Active" },
-      basic:    { emoji:"⚡", title:"Pro Plan",       sub:"Active subscription" },
-      enterprise:{ emoji:"👑", title:"Ultra Max Plan", sub:"Active subscription" }
+      free:      { emoji:"🌱", title:"Free Plan",      sub:"50 msgs · All models unlocked" },
+      mini:      { emoji:"⚡", title:"Mini Plan",      sub:"200 msgs · All models · Active" },
+      pro:       { emoji:"🔥", title:"Pro Plan",       sub:"500 msgs · All models · Active" },
+      max:       { emoji:"💎", title:"Max Plan",       sub:"2000 msgs · All models · Active" },
+      ultramax:  { emoji:"👑", title:"Ultra Max Plan", sub:"Unlimited · All models · Active" },
+      basic:     { emoji:"🔥", title:"Pro Plan",       sub:"500 msgs · Active" },
+      enterprise:{ emoji:"👑", title:"Ultra Max Plan", sub:"Unlimited · Active" }
     }
 
     const info = planInfo[plan] || planInfo.free
@@ -2384,11 +2385,12 @@ async function loadUserVersion() {
     // Show from localStorage as fallback
     const plan = localStorage.getItem("datta_plan") || "free"
     const info = {
-      free:     { emoji:"🌱", title:"Free Plan",      sub:"Upgrade for more power →" },
-      pro:      { emoji:"⚡", title:"Pro Plan",       sub:"Active" },
-      max:      { emoji:"🚀", title:"Max Plan",       sub:"Active" },
-      ultramax: { emoji:"👑", title:"Ultra Max Plan", sub:"Active" }
-    }[plan] || { emoji:"🌱", title:"Free Plan", sub:"Upgrade for more power →" }
+      free:      { emoji:"🌱", title:"Free Plan",      sub:"50 msgs · All models unlocked" },
+      mini:      { emoji:"⚡", title:"Mini Plan",      sub:"200 msgs · Active" },
+      pro:       { emoji:"🔥", title:"Pro Plan",       sub:"500 msgs · Active" },
+      max:       { emoji:"💎", title:"Max Plan",       sub:"2000 msgs · Active" },
+      ultramax:  { emoji:"👑", title:"Ultra Max Plan", sub:"Unlimited · Active" }
+    }[plan] || { emoji:"🌱", title:"Free Plan", sub:"50 msgs · All models" }
     const emoji = document.getElementById("planBtnEmoji")
     const title = document.getElementById("planBtnTitle")
     const sub = document.getElementById("planBtnSub")
@@ -3527,46 +3529,7 @@ window.selectInputModel = selectInputModel
 
 // Check if user can access premium models
 function checkModelAccess(key) {
-  const plan = localStorage.getItem("datta_plan") || "free"
-  const freePlans = ["free"]
-  const miniPlans = ["free", "mini"]
-  
-  if (key === "d54" && miniPlans.includes(plan)) {
-    closeModelDropdown()
-    // Show upgrade prompt
-    const modal = document.createElement("div")
-    modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;"
-    modal.innerHTML = `
-      <div style="background:#111;border:1px solid #aa66ff44;border-radius:20px;padding:28px;max-width:320px;text-align:center;">
-        <div style="font-size:36px;margin-bottom:12px;">🔒</div>
-        <div style="font-size:18px;font-weight:700;color:white;margin-bottom:8px;">Datta 5.4 is Pro+</div>
-        <div style="font-size:13px;color:#888;margin-bottom:20px;">Datta 5.4 coding model requires Pro plan or above.</div>
-        <a href="pricing.html" style="display:block;padding:12px;background:linear-gradient(135deg,#aa66ff,#00ccff);border-radius:12px;color:white;font-weight:700;text-decoration:none;margin-bottom:10px;">Upgrade to Pro — ₹999/mo</a>
-        <button onclick="this.closest('div').parentElement.remove()" style="background:none;border:none;color:#555;cursor:pointer;font-size:13px;">Maybe later</button>
-      </div>`
-    modal.onclick = e => { if(e.target===modal) modal.remove() }
-    document.body.appendChild(modal)
-    return
-  }
-  
-  if (key === "d48" && freePlans.includes(plan)) {
-    closeModelDropdown()
-    const modal = document.createElement("div")
-    modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;"
-    modal.innerHTML = `
-      <div style="background:#111;border:1px solid #ff880044;border-radius:20px;padding:28px;max-width:320px;text-align:center;">
-        <div style="font-size:36px;margin-bottom:12px;">🔒</div>
-        <div style="font-size:18px;font-weight:700;color:white;margin-bottom:8px;">Datta 4.8 is Mini+</div>
-        <div style="font-size:13px;color:#888;margin-bottom:20px;">Upgrade to Mini plan to unlock Datta 4.8.</div>
-        <a href="pricing.html" style="display:block;padding:12px;background:linear-gradient(135deg,#ff8800,#ffaa00);border-radius:12px;color:#000;font-weight:700;text-decoration:none;margin-bottom:10px;">Upgrade to Mini — ₹199/mo</a>
-        <button onclick="this.closest('div').parentElement.remove()" style="background:none;border:none;color:#555;cursor:pointer;font-size:13px;">Maybe later</button>
-      </div>`
-    modal.onclick = e => { if(e.target===modal) modal.remove() }
-    document.body.appendChild(modal)
-    return
-  }
-  
-  // Has access - select the model
+  // All models available on all plans
   const models = { d48: { id:"llama-3.3-70b-versatile", name:"Datta 4.8" }, d54: { id:"llama-3.3-70b-versatile", name:"Datta 5.4" } }
   const m = models[key]
   if (m) selectInputModel(m.id, key, m.name)
