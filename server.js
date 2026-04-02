@@ -1346,31 +1346,17 @@ Talk simply and friendly. Short answers. NEVER say you are any other AI.`,
       return
     }
 
-    const systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + `
+    const systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + (isCodeTask ? `
 
-RULES:
-- Friendly, clear English. Short answers for short questions.
-- NEVER write [object Object]. Always plain readable text.
-- Never say "I cannot" — always produce the output.
-- Bullet points with emojis for lists.
-
-FOR CODE/APP REQUESTS — STRICT FORMAT:
-When user asks to build/create/make anything with code, ALWAYS follow this exact structure:
-
-1. First: 2-4 lines explaining what you are building and what features it includes.
-   Example: "Here's a food delivery app with a product listing, cart, and checkout. Built with HTML, CSS, and JavaScript — fully responsive and ready to run."
-
-2. Then: the complete code block(s) with language labels.
-   - Give COMPLETE working code. Never truncate.
-   - HTML/CSS/JS all in ONE html file whenever possible.
-   - If separate files needed, give each in its own labeled code block.
-
-3. After code: 1-2 lines on how to use it or what to customize.
-   Example: "Open the HTML file in your browser to test. Change the product list in the JavaScript section to add your own items."
-
-- For sports/IPL: If match today say "Today: TeamA vs TeamB at TIME". If no match today say "No match today. Next: TeamA vs TeamB on DATE at TIME".
-- For search results: use them directly, state facts plainly.
-` + (searchContext ? "\n\nSEARCH RESULTS (use these to answer):\n" + searchContext : "") + langNote + styleNote
+When building apps/websites:
+1. First explain in 2 lines what you are building.
+2. Give COMPLETE working code in one HTML file (HTML+CSS+JS together).
+3. Never truncate. Always finish the full code.
+4. After code, give 1 line on how to use it.
+` : `
+Be friendly, concise, and helpful. Never write [object Object]. Use bullet points for lists.
+For sports/IPL: state match details directly from search results.
+`) + (searchContext ? "\n\nSEARCH RESULTS (use these to answer):\n" + searchContext : "") + langNote + styleNote
 
     // Combine user content with URL context — always string for text, array for vision
     // For queries with search results — add hard instruction to USE the results
@@ -1410,11 +1396,18 @@ When user asks to build/create/make anything with code, ALWAYS follow this exact
 
     // Try models in order: primary → fast fallback
     // On rate limit: wait and retry with smaller tokens
-    const groqAttempts = [
-      { model: model,                    tokens: maxTok },
-      { model: "llama-3.1-8b-instant",   tokens: Math.min(maxTok, 4000) },
-      { model: "llama-3.3-70b-versatile", tokens: Math.min(maxTok, 3000) }
-    ]
+    // Route by task type to avoid rate limits
+    // llama-3.1-8b: 14400 tok/min (safe for chat)
+    // llama-3.3-70b: 6000 tok/min (use only for code/complex)
+    const groqAttempts = isCodeTask || isLargeTask
+      ? [
+          { model: "llama-3.3-70b-versatile", tokens: maxTok },
+          { model: "llama-3.1-8b-instant",    tokens: Math.min(maxTok, 3000) }
+        ]
+      : [
+          { model: "llama-3.1-8b-instant",    tokens: maxTok },
+          { model: "llama-3.3-70b-versatile", tokens: Math.min(maxTok, 2000) }
+        ]
 
     for (let attempt = 0; attempt < groqAttempts.length; attempt++) {
       const { model: tryModel, tokens: tryTokens } = groqAttempts[attempt]
