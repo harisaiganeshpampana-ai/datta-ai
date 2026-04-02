@@ -121,22 +121,7 @@ body {
 }
 
 /* SIDEBAR */
-.sidebar {
-  position: fixed;
-  top: 0; left: 0; bottom: 0;
-  width: 260px;
-  background: #111117;
-  border-right: 1px solid rgba(255,255,255,0.06);
-  display: flex;
-  flex-direction: column;
-  z-index: 99;
-  padding-top: 52px;
-  overflow-y: auto;
-}
-
-.sidebar.show {
-  transform: translateX(0);
-}
+/* sidebar in layout.css */
 
 .logo {
   display: flex;
@@ -225,14 +210,7 @@ body {
 }
 
 /* MAIN AREA */
-.main {
-  margin-left: 260px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: #0d0d0f;
-  min-height: 100vh;
-}
+/* main in layout.css */
 
 /* WELCOME SCREEN */
 .welcomeScreen {
@@ -659,23 +637,7 @@ pre {
 }
 
 /* ── NEW SIDEBAR ── */
-.sidebar {
-  position: fixed;
-  top: 0; left: 0;
-  width: 270px;
-  height: 100%;
-  background: #111;
-  border-right: 1px solid #222;
-  display: flex;
-  flex-direction: column;
-  padding: 16px 12px;
-  transform: translateX(-100%);
-  transition: transform 0.3s ease;
-  z-index: 1000;
-  overflow: hidden;
-}
-
-.sidebar.show { transform: translateX(0); }
+/* sidebar styles moved to layout.css */
 
 .sidebarTop {
   margin-bottom: 20px;
@@ -1570,20 +1532,7 @@ pre {
 .assistant.active { color: #00ff88; }
 
 /* ── NEW INPUT BAR ── */
-.inputArea {
-  position: absolute !important;
-  bottom: 24px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  top: auto !important;
-  width: 100% !important;
-  max-width: 720px !important;
-  padding: 0 16px !important;
-  background: none !important;
-  border: none !important;
-  z-index: 100;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* inputArea in layout.css */
 
 .chat-started .inputArea {
   position: fixed !important;
