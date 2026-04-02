@@ -385,85 +385,97 @@ window.startImgLoadingText = startImgLoadingText
 if (typeof marked !== 'undefined') {
   const renderer = new marked.Renderer()
 
-  // Beautiful headings with emoji icons
-  renderer.heading = function(text, level) {
+  // Helper: extract plain string from marked v4 (string) or v5+ (object)
+  function ms(v) {
+    if (v === null || v === undefined) return ""
+    if (typeof v === "string") return v
+    if (typeof v === "object") return v.text || v.raw || v.value || ""
+    return String(v)
+  }
+
+  renderer.heading = function(token, level) {
+    const text = ms(token)
+    const lvl  = (token && token.depth) || level || 1
     const icons = { 1:"✨", 2:"📌", 3:"▶️" }
     const sizes = { 1:"22px", 2:"18px", 3:"16px" }
-    const icon = icons[level] || "•"
-    return `<div style="display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-weight:700;font-size:${sizes[level]};color:#fff;font-family:'Josefin Sans',sans-serif;letter-spacing:0.5px;">
-      <span>${icon}</span><span>${text}</span>
+    return `<div style="display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-weight:700;font-size:${sizes[lvl]||"15px"};color:var(--text,#fff);">
+      <span>${icons[lvl]||"•"}</span><span>${text}</span>
     </div>`
   }
 
-  // Beautiful list items with checkmark style
-  renderer.listitem = function(text) {
+  renderer.listitem = function(token) {
+    const text = ms(token)
     return `<li style="display:flex;gap:8px;align-items:flex-start;margin:6px 0;line-height:1.7;">
       <span style="color:#00ff88;flex-shrink:0;margin-top:2px;">›</span>
       <span>${text}</span>
     </li>`
   }
 
-  // Beautiful unordered list
-  renderer.list = function(body, ordered) {
-    const tag = ordered ? "ol" : "ul"
+  renderer.list = function(token, ordered) {
+    // v5: token is object {body, ordered}; v4: token is string body
+    const body = (token && typeof token === "object") ? (token.body || "") : ms(token)
+    const isOrdered = (token && typeof token === "object") ? token.ordered : ordered
+    const tag = isOrdered ? "ol" : "ul"
     return `<${tag} style="padding:0;margin:10px 0;list-style:none;">${body}</${tag}>`
   }
 
-  // Beautiful blockquote
-  renderer.blockquote = function(quote) {
-    return `<blockquote style="border-left:3px solid #00ff88;padding:10px 16px;margin:12px 0;background:#0a1a0a;border-radius:0 8px 8px 0;color:#aaa;font-style:italic;">${quote}</blockquote>`
+  renderer.blockquote = function(token) {
+    const text = ms(token)
+    return `<blockquote style="border-left:3px solid #00ff88;padding:10px 16px;margin:12px 0;background:rgba(0,255,136,0.05);border-radius:0 8px 8px 0;color:#aaa;font-style:italic;">${text}</blockquote>`
   }
 
-  // Code with syntax highlight style
-  // Handle both marked v4 API (code, lang) and v5+ API ({text, lang, escaped})
-  renderer.code = function(codeOrObj, lang) {
-    let codeStr, langStr
-    if (codeOrObj && typeof codeOrObj === "object") {
-      codeStr = codeOrObj.text || codeOrObj.raw || ""
-      langStr = codeOrObj.lang || lang || ""
-    } else {
-      codeStr = String(codeOrObj || "")
-      langStr = lang || ""
-    }
+  renderer.code = function(token, lang) {
+    // v5: token = {text, lang, escaped}  v4: token = string
+    const codeStr = (token && typeof token === "object") ? (token.text || token.raw || "") : String(token || "")
+    const langStr = (token && typeof token === "object") ? (token.lang || "") : (lang || "")
     const escaped = codeStr.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
     const langLabel = langStr ? `<span style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;">${langStr}</span>` : ""
     return `<div style="margin:12px 0;border-radius:10px;overflow:hidden;border:1px solid #1e1e1e;">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#0a0a0a;border-bottom:1px solid #1a1a1a;">
         ${langLabel}
         <button onclick="navigator.clipboard.writeText(this.closest('div').nextElementSibling.innerText);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)"
-          style="font-size:11px;color:#555;background:none;border:none;cursor:pointer;font-family:'Josefin Sans',sans-serif;letter-spacing:1px;">Copy</button>
+          style="font-size:11px;color:#555;background:none;border:none;cursor:pointer;letter-spacing:1px;">Copy</button>
       </div>
       <pre style="margin:0;padding:14px;background:#0d0d0d;overflow-x:auto;"><code style="font-family:'Courier New',monospace;font-size:13px;color:#e0e0e0;line-height:1.6;">${escaped}</code></pre>
     </div>`
   }
 
-  // Inline code
-  renderer.codespan = function(codeOrObj) {
-    const codeStr = (codeOrObj && typeof codeOrObj === "object") ? (codeOrObj.text || "") : String(codeOrObj || "")
-    return `<code style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:5px;padding:2px 7px;font-size:13px;color:#00ff88;font-family:'Courier New',monospace;">${codeStr}</code>`
+  renderer.codespan = function(token) {
+    const text = ms(token)
+    return `<code style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:5px;padding:2px 7px;font-size:13px;color:#00ff88;font-family:'Courier New',monospace;">${text}</code>`
   }
 
-  // Strong/bold
-  renderer.strong = function(text) {
-    return `<strong style="color:#fff;font-weight:700;">${text}</strong>`
+  renderer.strong = function(token) {
+    const text = ms(token)
+    return `<strong style="color:var(--text,#fff);font-weight:700;">${text}</strong>`
   }
 
-  // Horizontal rule as divider
+  renderer.em = function(token) {
+    const text = ms(token)
+    return `<em style="color:var(--text2,#aaa);">${text}</em>`
+  }
+
   renderer.hr = function() {
     return `<hr style="border:none;border-top:1px solid #1e1e1e;margin:16px 0;">`
   }
 
-  // Links
-  renderer.link = function(href, title, text) {
-    return `<a href="${href}" target="_blank" style="color:#00ccff;text-decoration:none;border-bottom:1px solid #00ccff44;">${text} ↗</a>`
+  renderer.link = function(token, title, text) {
+    // v5: token = {href, title, text}  v4: token = href string
+    const href = (token && typeof token === "object") ? (token.href || "") : (token || "")
+    const label = (token && typeof token === "object") ? ms(token.text || token.tokens) : (text || href)
+    return `<a href="${href}" target="_blank" rel="noopener" style="color:#00ccff;text-decoration:none;border-bottom:1px solid #00ccff44;">${label} ↗</a>`
   }
 
-  marked.setOptions({
+  renderer.paragraph = function(token) {
+    const text = ms(token)
+    return `<p style="margin:0 0 10px;line-height:1.75;">${text}</p>`
+  }
+
+  // v5 uses walkTokens for nested tokens - ensure text tokens render correctly
+  marked.use({
     renderer,
     breaks: true,
-    gfm: true,
-    headerIds: false,
-    mangle: false
+    gfm: true
   })
 }
 
