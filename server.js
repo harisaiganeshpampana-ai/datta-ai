@@ -1303,7 +1303,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
 
     // Detect if code/build task needs max tokens
     var msgLower = message.toLowerCase()
-    var isCodeTask = ["build","create","write","make","code","website","app","script","program","html","python","javascript","fix","debug","error","update","improve","full","complete","function","class","api","css","react","node","sql","java","c++","php","typescript","flutter","kotlin","swift","bash","linux","docker","git"].some(k => msgLower.includes(k))
+    // Detect if user is ASKING A QUESTION about tech vs ASKING TO BUILD/WRITE something
+    var isExplainQuestion = ["what is","what are","what does","what do","why is","why does","why do","how does","how do","explain","tell me about","define","describe","difference between","vs ","versus","when to use","should i use","pros and cons","advantages","disadvantages","history of","who created","who made"].some(k => msgLower.includes(k))
+    var isCodeTask = !isExplainQuestion && ["build","create","write","make","code","website","app","script","program","fix","debug","update","improve","implement","develop","generate","show me how to","give me code","example code","sample code","snippet"].some(k => msgLower.includes(k))
     
     // Auto-switch to Datta 5.4 for coding if user is on 2.1, 4.2, or 4.8
     var nonCodingModels = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
@@ -1387,10 +1389,18 @@ Talk simply and friendly. NEVER say you are any other AI. NEVER say you cannot h
     }
 
     // Detect what KIND of code task this is
-    var isNodeTask   = ["node","nodejs","node.js","express","npm","require(","server.js","backend","mongodb","mongoose","dotenv","process.env","package.json"].some(k => msgLower.includes(k))
+    var isNodeTask = !isExplainQuestion && ["node.js","nodejs","express","npm","require(","server.js","mongodb","mongoose","dotenv","process.env","package.json"].some(k => msgLower.includes(k))
     var isFrontendTask = ["html","css","website","webpage","landing page","portfolio","frontend"].some(k => msgLower.includes(k)) && !isNodeTask
 
-    var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + (isCodeTask ? (isNodeTask ? `
+    var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + (isExplainQuestion ? `
+
+You are answering an EXPLANATION question. The user wants to UNDERSTAND something, not get code.
+- Give a clear, friendly explanation in plain English
+- Use bullet points and examples where helpful
+- Do NOT give code unless the user explicitly asks for it
+- Do NOT add server.js, .env, or setup instructions unless asked
+- Keep it educational and easy to understand
+` : isCodeTask ? (isNodeTask ? `
 
 You are answering a Node.js / backend question. Follow these rules with ZERO exceptions.
 
