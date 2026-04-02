@@ -1327,6 +1327,38 @@ body.notes-open .input-area {
 .actionBtn svg, .actionBtn i { pointer-events: none !important; }
 .actionDivider { width:1px; height:14px; background:var(--border); margin:0 2px; flex-shrink:0; }
 
+
+/* ── SPLIT CODE PREVIEW ── */
+.code-block-wrap {
+  transition: all 0.2s ease;
+}
+.code-block-wrap #uid_split {
+  display: flex;
+  overflow: hidden;
+}
+.code-block-wrap pre {
+  transition: flex 0.3s ease, max-width 0.3s ease;
+  overflow-x: auto;
+}
+.code-block-wrap iframe {
+  transition: flex 0.3s ease;
+  min-height: 420px;
+}
+/* Mobile: stack vertically */
+@media (max-width: 767px) {
+  .code-block-wrap [id$="_split"] {
+    flex-direction: column !important;
+  }
+  .code-block-wrap pre {
+    max-width: 100% !important;
+    flex: 1 !important;
+    border-right: none !important;
+    border-bottom: 1px solid #1a1a2a !important;
+  }
+  .code-block-wrap iframe {
+    min-height: 300px !important;
+  }
+}
 </style>
 </head>
 
