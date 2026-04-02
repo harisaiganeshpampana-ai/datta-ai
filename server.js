@@ -20,7 +20,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 const app = express()
 
 // PING FIRST - Railway healthcheck must pass immediately
-app.get("/ping", (req, res) => res.json({ alive: true }))
+app.get("/ping", (req, res) => { res.setHeader("Access-Control-Allow-Origin","*"); res.json({ alive: true }) })
 app.get("/health", (req, res) => res.json({ status: "ok" }))
 
 // Hide server technology from response headers
@@ -130,7 +130,7 @@ function safeStr(val) {
   return String(val)
 }
 
-app.get("/ping", (req, res) => res.json({ alive: true, time: new Date().toISOString() }))
+app.get("/ping", (req, res) => { res.setHeader("Access-Control-Allow-Origin","*"); res.json({ alive: true, time: new Date().toISOString() }) })
 app.get("/health", (req, res) => res.json({ status: "ok", uptime: process.uptime() }))
 
 const otpStore = {}
@@ -1390,12 +1390,12 @@ For sports/IPL: state match details directly from search results.
       { role: "user", content: finalUserContent }
     ]
 
-    let full = ""
-    let lastError = null
+    var full = ""
+    var lastError = null
 
     // Heartbeat: send a zero-width space every 15s to prevent Render 30s idle timeout
     // This keeps the connection alive during long Groq responses
-    let _heartbeatActive = true
+    var _heartbeatActive = true
     var heartbeatTimer = setInterval(() => {
       if (_heartbeatActive && !res.writableEnded) {
         try { res.write("") } catch(e) {}  // empty write keeps TCP alive
