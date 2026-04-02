@@ -5,15 +5,11 @@ const SERVER = "https://datta-ai-server.onrender.com"
 // SINGLE INIT - runs everything on load
 // '''''''''''''''''''''''''''''''''''''''''''
 window.addEventListener("DOMContentLoaded", function() {
-  var s = document.getElementById("addToChatSheet")
-  var o = document.getElementById("addToChatOverlay")
-  if (s) {
-    s.style.setProperty("transform","translateY(120%)","important")
-    s.style.setProperty("bottom","0","important")
-  }
-  if (o) o.style.setProperty("display","none","important")
+  // Apply saved theme immediately
+  const savedTheme = localStorage.getItem("datta_theme") || "dark"
+  setTheme(savedTheme, true)
 
-  // If returning from settings with a last chat - hide welcome immediately
+  // Hide welcome if returning from settings
   const lastChat = localStorage.getItem("datta_last_chat")
   if (lastChat) {
     const welcome = document.getElementById("welcomeScreen")
@@ -276,7 +272,7 @@ function lensSendToChat() {
   if (!result) { showToast("Capture an image first"); return }
   closeLens()
   // Add to chat as AI response
-  const chatBox = document.getElementById("chatBox")
+  const chatBox = document.getElementById("chat")
   if (!chatBox) return
   hideWelcome()
   const aiDiv = document.createElement("div")
@@ -498,9 +494,9 @@ const datta_user = getUser()
 // Update sidebar profile with real user info
 window.addEventListener("DOMContentLoaded", function() {
   if (datta_user) {
-    const nameEl = document.getElementById("profileName")
-    const avatarEl = document.getElementById("profileAvatar")
-    const subEl = document.getElementById("profileSub")
+    const nameEl = document.getElementById("profileName") || document.querySelector(".sb-profile-name")
+    const avatarEl = document.getElementById("profileAvatar") || document.querySelector(".sb-avatar")
+    const subEl = document.getElementById("profileSub") || document.querySelector(".sb-profile-sub")
     if (nameEl) nameEl.textContent = datta_user.username || "User"
     if (avatarEl) avatarEl.textContent = (datta_user.username || "U")[0].toUpperCase()
     if (subEl) subEl.textContent = datta_user.isGuest ? "Guest" : (datta_user.email || "Free Plan")
@@ -1083,16 +1079,16 @@ async function loadSidebar() {
 
     chats.forEach(chat => {
       let div = document.createElement("div")
-      div.className = "chatItem"
+      div.className = "chat-item"
       div.setAttribute("data-chat-id", chat._id)
       div.innerHTML = `
-        <svg class="chatIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4">
+        <svg class="chat-item-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.5">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
         </svg>
-        <div class="chatTitle" title="${chat.title}">${chat.title}</div>
-        <button class="deleteBtn" onclick="confirmDelete(event,'${chat._id}')" title="Delete">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+        <div class="chat-item-title" title="${chat.title}">${chat.title}</div>
+        <button class="chat-item-del deleteBtn" onclick="confirmDelete(event,'${chat._id}')" title="Delete">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
           </svg>
         </button>
       `
@@ -1110,7 +1106,7 @@ async function loadSidebar() {
       if (exists) {
         openChat(lastChatId)
         setTimeout(() => {
-          document.querySelectorAll(".chatItem").forEach(d => d.classList.remove("active"))
+          document.querySelectorAll(".chat-item").forEach(d => d.classList.remove("active"))
           const activeDiv = history.querySelector("[data-chat-id='" + lastChatId + "']")
           if (activeDiv) activeDiv.classList.add("active")
         }, 200)
@@ -1408,13 +1404,16 @@ if (scrollBtn) {
 
 // ─── WELCOME HELPERS ──────────────────────────────────────────────────────────
 function hideWelcome() {
-  // Use class only — no inline styles that cause layout shift
   document.body.classList.add("chat-started")
+  const w = document.getElementById("welcomeScreen")
+  if (w) w.style.display = "none"
 }
 
 function showWelcome() {
   if (currentChatId) return
   document.body.classList.remove("chat-started")
+  const w = document.getElementById("welcomeScreen")
+  if (w) w.style.display = "flex"
   loadSmartSuggestions()
 }
 
@@ -1456,7 +1455,7 @@ function saveChatTitle(title) {
   const history = document.getElementById("history")
   if (!history) return
   const div = document.createElement("div")
-  div.className = "chatItem"
+  div.className = "chat-item"
   div.innerHTML = `<span class="chatTitle">${title}</span>`
   history.prepend(div)
 }
@@ -1482,10 +1481,10 @@ async function loadSmartSuggestions() {
   // Just use static chips - no API call needed
   // Dynamic chips from server were causing [object Object] error
   chips.innerHTML = `
-    <button class="suggCard" onclick="useChip(this)"><span class="suggIcon">🌐</span><span class="suggText">Build me a portfolio website</span></button>
-    <button class="suggCard" onclick="useChip(this)"><span class="suggIcon">🐍</span><span class="suggText">Write a Python web scraper</span></button>
-    <button class="suggCard" onclick="useChip(this)"><span class="suggIcon">🧠</span><span class="suggText">Explain machine learning</span></button>
-    <button class="suggCard" onclick="useChip(this)"><span class="suggIcon">💼</span><span class="suggText">Create a business plan</span></button>
+    <button class="sugg-card" onclick="useChip(this)"><span class="sugg-icon">🌐</span><span class="sugg-text">Build me a portfolio website</span></button>
+    <button class="sugg-card" onclick="useChip(this)"><span class="sugg-icon">🐍</span><span class="sugg-text">Write a Python web scraper</span></button>
+    <button class="sugg-card" onclick="useChip(this)"><span class="sugg-icon">🧠</span><span class="sugg-text">Explain machine learning</span></button>
+    <button class="sugg-card" onclick="useChip(this)"><span class="sugg-icon">💼</span><span class="sugg-text">Create a business plan</span></button>
   `
 }
 window.loadSmartSuggestions = loadSmartSuggestions
@@ -1616,8 +1615,8 @@ async function changeUsername() {
     localStorage.setItem("datta_user", JSON.stringify(user))
 
     // Update sidebar
-    const nameEl = document.getElementById("profileName")
-    const avatarEl = document.getElementById("profileAvatar")
+    const nameEl = document.getElementById("profileName") || document.querySelector(".sb-profile-name")
+    const avatarEl = document.getElementById("profileAvatar") || document.querySelector(".sb-avatar")
     if (nameEl) nameEl.textContent = newUsername
     if (avatarEl) avatarEl.textContent = newUsername[0].toUpperCase()
 
@@ -1658,27 +1657,24 @@ async function changePassword() {
 // SET THEME
 function setTheme(theme, silent) {
   if (!["dark","light","eye"].includes(theme)) theme = "dark"
-
   localStorage.setItem("datta_theme", theme)
 
-  // Apply to HTML root (clean approach)
+  // Apply to root — this triggers all CSS variables
   document.documentElement.setAttribute("data-theme", theme)
   document.body.setAttribute("data-theme", theme)
-  document.body.classList.remove("light","light-theme","midnight","forest","ocean","sunset")
 
-  // Update topbar theme buttons
+  // Topbar buttons: topThemeDark, topThemeLight, topThemeEye
   ;["Dark","Light","Eye"].forEach(t => {
     const btn = document.getElementById("topTheme" + t)
     if (btn) btn.classList.toggle("active", t.toLowerCase() === theme)
   })
-
-  // Update settings modal theme buttons
+  // Settings modal buttons: themeDark, themeLight, themeEye
   ;["Dark","Light","Eye"].forEach(t => {
-    const b1 = document.getElementById("theme" + t)
-    if (b1) b1.classList.toggle("active", t.toLowerCase() === theme)
+    const btn = document.getElementById("theme" + t)
+    if (btn) btn.classList.toggle("active", t.toLowerCase() === theme)
   })
 
-  if (!silent && typeof showSettingsMsg === "function") showSettingsMsg("Theme updated!", "success")
+  if (!silent && typeof showSettingsMsg === "function") showSettingsMsg("Theme applied!", "success")
 }
 
 // SET FONT SIZE
@@ -2206,7 +2202,7 @@ async function loadUserVersion() {
     if (tag) tag.textContent = "DATTA AI " + v.version + " · " + v.name.toUpperCase()
 
     // Update profile subtitle
-    const sub = document.getElementById("profileSub")
+    const sub = document.getElementById("profileSub") || document.querySelector(".sb-profile-sub")
     if (sub) sub.textContent = v.emoji + " " + v.name + " Plan"
 
     // Update plan button in sidebar
@@ -2274,8 +2270,7 @@ window.addEventListener("DOMContentLoaded", function() {
 function useChip(btn) {
   const input = document.getElementById("message")
   if (input) {
-    // Get text from suggText span or fallback to full text
-    const textEl = btn.querySelector(".suggText") || btn.querySelector(".chipText")
+    const textEl = btn.querySelector(".sugg-text") || btn.querySelector(".suggText") || btn.querySelector(".chipText")
     input.value = textEl ? textEl.textContent.trim() : btn.textContent.replace(/^[^\s]+\s/, "").trim()
     input.focus()
     send()
@@ -2315,29 +2310,27 @@ window.toggleTheme = toggleTheme
 
 // ── FEATURE 3: MOBILE UI - Auto collapse sidebar on mobile ──────────────────
 function toggleSidebar() {
+  const sidebar = document.querySelector(".sidebar")
+  if (!sidebar) return
+
   if (window.innerWidth < 768) {
-    // Mobile: slide sidebar in/out
-    const sidebar = document.querySelector(".sidebar")
-    if (!sidebar) return
+    // MOBILE: slide in/out with overlay
     const isOpen = sidebar.classList.contains("open")
     sidebar.classList.toggle("open", !isOpen)
     sidebar.classList.toggle("show", !isOpen)
-    // Create overlay if needed
-    let overlay = document.getElementById("sidebarOverlay")
-    if (!overlay) {
-      overlay = document.createElement("div")
-      overlay.id = "sidebarOverlay"
-      overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:998;display:none;"
-      overlay.onclick = () => {
-        document.querySelector(".sidebar").classList.remove("open","show")
-        overlay.style.display = "none"
-      }
-      document.body.appendChild(overlay)
-    }
-    overlay.style.display = !isOpen ? "block" : "none"
+    // Use the sb-overlay already in HTML
+    const overlay = document.getElementById("sb-overlay")
+    if (overlay) overlay.style.display = !isOpen ? "block" : "none"
   } else {
-    // Desktop: CSS handles width collapse
-    document.body.classList.toggle("sidebar-collapsed")
+    // DESKTOP: collapse sidebar width
+    const isCollapsed = sidebar.classList.toggle("sb-collapsed")
+    // Shift input center point
+    const inputArea = document.getElementById("inputArea")
+    if (inputArea) {
+      inputArea.style.left = isCollapsed
+        ? "50%"
+        : "calc(260px + (100vw - 260px) / 2)"
+    }
   }
 }
 
@@ -2881,7 +2874,7 @@ let allChats = []
 
 function searchChats(query = "") {
   const q = query.toLowerCase().trim()
-  const items = document.querySelectorAll(".chatItem")
+  const items = document.querySelectorAll(".chat-item")
   items.forEach(item => {
     const title = item.querySelector(".chatTitle")?.textContent?.toLowerCase() || ""
     item.classList.toggle("hidden", q.length > 0 && !title.includes(q))
