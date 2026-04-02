@@ -19,11 +19,39 @@ dotenv.config()
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } })
 const app = express()
 
-// PING FIRST - Railway healthcheck must pass immediately
-app.get("/ping", (req, res) => { res.setHeader("Access-Control-Allow-Origin","*"); res.json({ alive: true }) })
+// ── CORS — must be the VERY FIRST middleware, before ALL routes ───────────────
+// Allows datta-ai.com + localhost dev + any subdomain
+const ALLOWED_ORIGINS = [
+  "https://datta-ai.com",
+  "https://www.datta-ai.com",
+  "http://localhost:3000",
+  "http://localhost:5500",
+  "http://127.0.0.1:5500"
+]
+app.use((req, res, next) => {
+  const origin = req.headers.origin
+  // Allow the specific origin if in whitelist, otherwise allow all (for Render health checks)
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin)
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "*")
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,x-chat-id,Accept")
+  res.setHeader("Access-Control-Expose-Headers", "x-chat-id")
+  res.setHeader("Access-Control-Max-Age", "86400") // cache preflight 24h
+  // Handle OPTIONS preflight immediately — do not pass to routes
+  if (req.method === "OPTIONS") {
+    return res.status(204).end()
+  }
+  next()
+})
+
+// ── PING / HEALTH — after CORS so they get CORS headers ──────────────────────
+app.get("/ping", (req, res) => res.json({ alive: true }))
 app.get("/health", (req, res) => res.json({ status: "ok" }))
 
-// Hide server technology from response headers
+// ── SECURITY HEADERS ──────────────────────────────────────────────────────────
 app.use((req, res, next) => {
   res.removeHeader("X-Powered-By")
   res.setHeader("Server", "Datta-AI")
@@ -31,10 +59,8 @@ app.use((req, res, next) => {
   next()
 })
 
-app.use(cors({ origin: "*", methods: ["GET","POST","PUT","DELETE","OPTIONS"], allowedHeaders: ["Content-Type","Authorization","x-chat-id"] }))
 app.use(express.json({ limit: "20mb" }))
 app.use(express.urlencoded({ extended: true, limit: "20mb" }))
-app.use(express.urlencoded({ extended: true }))
 app.use(session({ 
   secret: process.env.JWT_SECRET || "datta-secret", 
   resave: false, 
