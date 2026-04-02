@@ -1392,31 +1392,53 @@ Talk simply and friendly. NEVER say you are any other AI. NEVER say you cannot h
 
     var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + (isCodeTask ? (isNodeTask ? `
 
-You are answering a Node.js / backend question. Follow these rules with ZERO exceptions:
+You are answering a Node.js / backend question. Follow these rules with ZERO exceptions.
 
-FORBIDDEN — never do these:
-- NEVER wrap Node.js in HTML <script> tags
-- NEVER output <!DOCTYPE html> or <html> for a Node.js answer
-- NEVER hardcode API keys like: process.env.KEY = "abc123" or const key = "sk-..."
-- NEVER use .then()/.catch() — use async/await + try/catch only
-- NEVER use deprecated models like text-davinci-003
+FORBIDDEN — never output these under any circumstances:
+- NEVER wrap Node.js inside HTML <script> tags or <!DOCTYPE html>
+- NEVER hardcode keys: const key = "sk-abc123" or process.env.KEY = "value"
+- NEVER use .then()/.catch() chains — async/await + try/catch only
+- NEVER use these outdated/non-existent packages:
+  * require("openai") with Configuration + OpenAIApi  ← v3 API, REMOVED
+  * text-davinci-003  ← SHUT DOWN by OpenAI
+  * require("grok")  ← DOES NOT EXIST as npm package
+  * require("@xai/grok")  ← NOT real
 
-REQUIRED — always do these:
-1. Give separate labeled code blocks: server.js, .env.example, .gitignore
-2. Load keys ONLY via dotenv: require("dotenv").config() at top of server.js
-3. .env.example shows: OPENAI_API_KEY=your_key_here (placeholder only)
-4. .gitignore must include: .env and node_modules/
-5. Use async/await for all async operations
-6. Explain in 2 lines what the code does before showing it
-7. Show complete runnable code — never truncate
+CORRECT PACKAGES TO USE (2024/2025):
+- OpenAI: npm install openai  →  import OpenAI from "openai"
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  const res = await openai.chat.completions.create({ model: "gpt-4o-mini", messages: [...] })
 
-CORRECT PATTERN FOR API KEYS:
-\`\`\`js
-// server.js
+- Groq (not "grok"): npm install groq-sdk  →  import Groq from "groq-sdk"
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+  const res = await groq.chat.completions.create({ model: "llama-3.1-8b-instant", messages: [...] })
+
+REQUIRED FORMAT — always give ALL of these:
+1. Two-line explanation of what the code does
+2. .env.example code block (placeholders only, no real values)
+3. .gitignore code block (must include .env and node_modules/)
+4. server.js code block — complete, runnable, never truncated
+5. One-line run instruction: node server.js or node --env-file=.env server.js
+
+CORRECT server.js SKELETON:
 require("dotenv").config()
-const key = process.env.OPENAI_API_KEY  // loaded from .env file
-if (!key) throw new Error("OPENAI_API_KEY missing from .env")
-\`\`\`
+const express = require("express")
+const OpenAI = require("openai")
+const app = express()
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+if (!process.env.OPENAI_API_KEY) { console.error("Missing OPENAI_API_KEY"); process.exit(1) }
+app.get("/api/chat", async (req, res) => {
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: "Hello" }]
+    })
+    res.json({ reply: completion.choices[0].message.content })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+app.listen(3000, () => console.log("Running on port 3000"))
 ` : isFrontendTask ? `
 
 When building frontend websites/apps:
