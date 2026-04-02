@@ -269,15 +269,49 @@ const MemorySchema = new mongoose.Schema({
 const Memory = mongoose.model("Memory", MemorySchema)
 
 const planLimits = {
-  free:      { messages: 50,     resetHours: 5,  models: ["all"] },
-  mini:      { messages: 200,    resetHours: 3,  models: ["all"] },
-  pro:       { messages: 500,    resetHours: 2,  models: ["all"] },
-  max:       { messages: 2000,   resetHours: 1,  models: ["all"] },
-  ultramax:  { messages: 999999, resetHours: 0,  models: ["all"] },
-  basic:     { messages: 500,    resetHours: 2,  models: ["all"] },
-  enterprise:{ messages: 999999, resetHours: 0,  models: ["all"] }
+  // ── NEW PLANS ──────────────────────────────────────────────
+  free:      { messages: 40,     resetHours: 24, models: ["d21"],       price: 0 },
+  plus:      { messages: 300,    resetHours: 24, models: ["d21","d54"], price: 299 },
+  pro:       { messages: 1000,   resetHours: 24, models: ["d21","d54"], price: 799 },
+  // ── LEGACY ALIASES (keep for existing subscribers) ─────────
+  mini:      { messages: 200,    resetHours: 24, models: ["d21","d54"], price: 199 },
+  max:       { messages: 2000,   resetHours: 24, models: ["d21","d54"], price: 1999 },
+  ultramax:  { messages: 999999, resetHours: 0,  models: ["all"],       price: 0 },
+  basic:     { messages: 500,    resetHours: 24, models: ["d21","d54"], price: 499 },
+  enterprise:{ messages: 999999, resetHours: 0,  models: ["all"],       price: 0 }
 }
 const rateLimitStore = {}
+
+// ── ABUSE PROTECTION ─────────────────────────────────────────────────────────
+
+// 1. One active request per user — prevents parallel duplicate streams
+const activeRequests = new Map()
+
+// 2. Per-minute spam prevention — 15 req/min max per user
+const minuteRateStore = {}
+function checkMinuteRate(userId) {
+  const now = Date.now()
+  const key = String(userId)
+  if (!minuteRateStore[key]) minuteRateStore[key] = { count: 0, start: now }
+  const s = minuteRateStore[key]
+  if (now - s.start > 60000) { s.count = 0; s.start = now }  // reset every 60s
+  s.count++
+  return s.count <= 15  // allow 15 per minute
+}
+
+// 3. Duplicate message prevention — same message within 2s
+const lastMessageStore = {}
+function isDuplicateMessage(userId, message) {
+  const key = String(userId)
+  const now = Date.now()
+  const last = lastMessageStore[key]
+  if (last && last.msg === message && now - last.time < 2000) return true
+  lastMessageStore[key] = { msg: message, time: now }
+  return false
+}
+
+// 4. Per-user stream controller store — for /stop endpoint
+const userStreamControllers = new Map()
 
 // MongoDB-based usage tracking - persists across refreshes and restarts
 async function checkAndUpdateLimitDB(userId, plan, type) {
@@ -961,6 +995,25 @@ app.get("/payment/subscription", authMiddleware, async (req, res) => {
   } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
+// Current day usage for logged-in user
+app.get("/payment/usage", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id
+    const sub    = await Subscription.findOne({ userId, active: true }).catch(() => null)
+    const plan   = sub ? sub.plan : "free"
+    const limits = planLimits[plan] || planLimits.free
+    const usage  = await Usage.findOne({ userId, type: "messages" }).catch(() => null)
+    const now    = Date.now()
+    const resetMs = limits.resetHours * 60 * 60 * 1000
+    let used = 0
+    if (usage) {
+      const expired = resetMs > 0 && (now - new Date(usage.windowStart).getTime()) > resetMs
+      used = expired ? 0 : (usage.count || 0)
+    }
+    res.json({ used, limit: limits.messages, plan })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
 app.post("/payment/activate", authMiddleware, async (req, res) => {
   try {
     const { plan, method, paymentId, period } = req.body
@@ -1056,6 +1109,42 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const userPlan = sub ? sub.plan : "free"
     const userIsAdmin = isAdmin(req)
 
+    // ── ABUSE CHECKS (run before any DB/AI work) ─────────────────────────────
+    if (!userIsAdmin) {
+
+      // 1. Input length limit — reject messages over 4000 chars
+      if (message && message.length > 4000) {
+        return res.status(400).json({ error: "INPUT_TOO_LONG", message: "Message too long. Max 4000 characters." })
+      }
+
+      // 2. Per-minute rate limit — anti-spam
+      if (!checkMinuteRate(userId)) {
+        return res.status(429).json({ error: "RATE_LIMIT", message: "Too many requests. Please slow down." })
+      }
+
+      // 3. Duplicate message guard — same text within 2 seconds
+      if (message && isDuplicateMessage(userId, message)) {
+        return res.status(429).json({ error: "DUPLICATE_REQUEST", message: "Duplicate message detected." })
+      }
+
+      // 4. One active request per user
+      if (activeRequests.has(userId)) {
+        return res.status(429).json({ error: "REQUEST_IN_PROGRESS", message: "Please wait for the current response to finish." })
+      }
+    }
+
+    // Mark user as active
+    activeRequests.set(userId, true)
+
+    // Cleanup function — always called when request ends
+    function cleanupRequest() {
+      activeRequests.delete(userId)
+      userStreamControllers.delete(userId)
+    }
+
+    // Cleanup on client disconnect
+    res.on("close", cleanupRequest)
+
     if (false) {
       // Image generation removed
     } else {
@@ -1072,6 +1161,21 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
             plan: userPlan, 
             waitMins: waitMins, 
             limit: msgCheck.limit 
+          })
+        }
+
+        // ── MODEL ACCESS CONTROL ────────────────────────────────────────────
+        const requestedModelKey = req.body.modelKey || "d21"
+        const planConfig = planLimits[userPlan] || planLimits.free
+        const allowedModels = planConfig.models
+        // Check if model is allowed (skip if plan allows "all")
+        if (!allowedModels.includes("all") && !allowedModels.includes(requestedModelKey)) {
+          const upgradeTo = requestedModelKey === "d54" ? "Plus" : "Pro"
+          return res.status(403).json({
+            error: "MODEL_LOCKED",
+            message: `Upgrade to ${upgradeTo} plan to use this model.`,
+            plan: userPlan,
+            requiredPlan: upgradeTo.toLowerCase()
           })
         }
       }
@@ -1554,15 +1658,27 @@ For sports/IPL: state match details directly from search results.
           temperature: 0.7,
           stream: true
         })
+        // Store controller so /stop endpoint can abort it
+        userStreamControllers.set(userId, stream)
+
         for await (const part of stream) {
+          // Stop if client disconnected
+          if (res.writableEnded) break
+
           var token = part.choices?.[0]?.delta?.content
           if (token && typeof token === "string") {
             full += token
-            res.write(token)
+            // Max response size: 8000 chars — prevent runaway streams
+            if (full.length > 8000) {
+              console.log("[STREAM] Max size reached, stopping")
+              try { stream.controller?.abort() } catch(e) {}
+              break
+            }
+            if (!res.writableEnded) res.write(token)
           }
         }
         lastError = null
-        console.log("[GROQ] success, tokens generated:", full.length)
+        console.log("[GROQ] success, chars generated:", full.length)
         break
 
       } catch(groqErr) {
@@ -1621,14 +1737,35 @@ For sports/IPL: state match details directly from search results.
     await chat.save()
     _heartbeatActive = false
     clearInterval(heartbeatTimer)
-    res.write("CHATID" + chat._id)
-    res.end()
+    cleanupRequest()
+    if (!res.writableEnded) {
+      res.write("CHATID" + chat._id)
+      res.end()
+    }
   } catch(err) {
     _heartbeatActive = false
     clearInterval(heartbeatTimer)
+    cleanupRequest()
     console.error("Chat error:", err.message)
     if (!res.headersSent) res.status(500).send("Server error: " + err.message)
     else res.end()
+  }
+})
+
+// ── STOP ENDPOINT — client calls this when Stop button clicked ───────────────
+app.post("/stop", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id
+    const ctrl = userStreamControllers.get(userId)
+    if (ctrl) {
+      try { ctrl.controller?.abort() } catch(e) {}
+      userStreamControllers.delete(userId)
+    }
+    activeRequests.delete(userId)
+    res.json({ success: true, message: "Stream stopped" })
+    console.log("[STOP] userId:", userId)
+  } catch(err) {
+    res.status(500).json({ error: "Stop failed" })
   }
 })
 
