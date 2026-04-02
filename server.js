@@ -2416,6 +2416,172 @@ app.get("/", (req, res) => res.json({ status: "Datta AI Server running", version
 
 
 
+// ── GOOGLE PLAY BILLING VERIFICATION ─────────────────────────────────────────
+// Verifies purchase token with Google Play Developer API
+// Requires: GOOGLE_PLAY_CLIENT_EMAIL + GOOGLE_PLAY_PRIVATE_KEY in Render env vars
+// Package name must match Play Console: com.datta.ai
+
+const PLAY_PACKAGE = "com.datta.ai"
+
+const PLAY_PRODUCT_MAP = {
+  "datta_plus_monthly": { plan: "plus",  days: 31, label: "Plus Plan" },
+  "datta_pro_monthly":  { plan: "pro",   days: 31, label: "Pro Plan"  }
+}
+
+// Get Google OAuth2 access token for Play Developer API
+async function getGoogleAccessToken() {
+  const clientEmail  = process.env.GOOGLE_PLAY_CLIENT_EMAIL
+  const privateKey   = (process.env.GOOGLE_PLAY_PRIVATE_KEY || "").replace(/\\n/g, "\n")
+  if (!clientEmail || !privateKey) throw new Error("GOOGLE_PLAY_CLIENT_EMAIL or GOOGLE_PLAY_PRIVATE_KEY missing")
+
+  const now   = Math.floor(Date.now() / 1000)
+  const claim = {
+    iss: clientEmail,
+    scope: "https://www.googleapis.com/auth/androidpublisher",
+    aud: "https://oauth2.googleapis.com/token",
+    exp: now + 3600,
+    iat: now
+  }
+
+  // Sign JWT — use jsonwebtoken (already imported)
+  const assertion = jwt.sign(claim, privateKey, { algorithm: "RS256" })
+
+  const resp = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion
+    })
+  })
+  if (!resp.ok) throw new Error("Google OAuth failed: " + resp.status)
+  const data = await resp.json()
+  return data.access_token
+}
+
+// Verify subscription with Google Play Developer API
+async function verifyPlaySubscription(productId, purchaseToken) {
+  const accessToken = await getGoogleAccessToken()
+  const url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${PLAY_PACKAGE}/purchases/subscriptions/${productId}/tokens/${purchaseToken}`
+
+  const resp = await fetch(url, {
+    headers: { "Authorization": "Bearer " + accessToken }
+  })
+  if (!resp.ok) {
+    const err = await resp.text()
+    throw new Error("Play API error " + resp.status + ": " + err.slice(0, 100))
+  }
+  return await resp.json()
+}
+
+// POST /verify-purchase — called from Android app after successful purchase
+app.post("/verify-purchase", authMiddleware, async (req, res) => {
+  try {
+    const { purchaseToken, productId } = req.body
+    const userId = req.user.id
+
+    // Validate inputs
+    if (!purchaseToken || !productId) {
+      return res.status(400).json({ error: "purchaseToken and productId required" })
+    }
+    if (!PLAY_PRODUCT_MAP[productId]) {
+      return res.status(400).json({ error: "Unknown productId: " + productId })
+    }
+
+    // Verify with Google — NEVER trust frontend
+    const playData = await verifyPlaySubscription(productId, purchaseToken)
+
+    // Check subscription is active
+    // paymentState: 1 = received, 2 = free trial
+    const isActive = playData.paymentState === 1 || playData.paymentState === 2
+    if (!isActive) {
+      return res.status(402).json({ error: "PAYMENT_PENDING", message: "Payment not confirmed yet." })
+    }
+
+    // Check not cancelled
+    if (playData.cancelReason !== undefined) {
+      return res.status(402).json({ error: "SUBSCRIPTION_CANCELLED", message: "Subscription was cancelled." })
+    }
+
+    const productConfig = PLAY_PRODUCT_MAP[productId]
+    const endDate = playData.expiryTimeMillis
+      ? new Date(parseInt(playData.expiryTimeMillis))
+      : new Date(Date.now() + productConfig.days * 24 * 60 * 60 * 1000)
+
+    // Update subscription in DB
+    await Subscription.findOneAndUpdate(
+      { userId },
+      {
+        userId,
+        plan: productConfig.plan,
+        period: "monthly",
+        paymentId: purchaseToken,
+        method: "google_play",
+        startDate: new Date(),
+        endDate,
+        active: true
+      },
+      { upsert: true, new: true }
+    )
+
+    console.log("[PLAY BILLING] Verified:", productId, "| plan:", productConfig.plan, "| user:", userId)
+    res.json({
+      success: true,
+      plan: productConfig.plan,
+      label: productConfig.label,
+      endDate: endDate.toISOString()
+    })
+
+  } catch(err) {
+    console.error("[PLAY BILLING] Error:", err.message)
+    res.status(500).json({ error: "Verification failed: " + sanitizeError(err).userMsg })
+  }
+})
+
+// POST /restore-purchases — called on app start to restore active subscription
+app.post("/restore-purchases", authMiddleware, async (req, res) => {
+  try {
+    const { purchaseToken, productId } = req.body
+    const userId = req.user.id
+
+    if (!purchaseToken || !productId) {
+      // No active purchase to restore — return current plan from DB
+      const sub  = await Subscription.findOne({ userId, active: true }).catch(() => null)
+      const plan = sub ? sub.plan : "free"
+      return res.json({ plan, restored: false })
+    }
+
+    // Verify the token is still valid
+    const playData = await verifyPlaySubscription(productId, purchaseToken)
+    const isActive = playData.paymentState === 1 || playData.paymentState === 2
+    const notExpired = playData.expiryTimeMillis
+      ? parseInt(playData.expiryTimeMillis) > Date.now()
+      : true
+
+    if (!isActive || !notExpired) {
+      // Subscription expired — downgrade to free
+      await Subscription.findOneAndUpdate({ userId }, { active: false })
+      return res.json({ plan: "free", restored: false, message: "Subscription expired" })
+    }
+
+    const productConfig = PLAY_PRODUCT_MAP[productId] || { plan: "plus", days: 31 }
+    const endDate = new Date(parseInt(playData.expiryTimeMillis))
+
+    await Subscription.findOneAndUpdate(
+      { userId },
+      { plan: productConfig.plan, endDate, active: true, method: "google_play", paymentId: purchaseToken },
+      { upsert: true }
+    )
+
+    console.log("[PLAY BILLING] Restored:", productId, "| user:", userId)
+    res.json({ plan: productConfig.plan, restored: true, endDate: endDate.toISOString() })
+
+  } catch(err) {
+    console.error("[PLAY BILLING] Restore error:", err.message)
+    res.status(500).json({ error: sanitizeError(err).userMsg })
+  }
+})
+
 // ── FEEDBACK SYSTEM ──────────────────────────────────────────────────────────
 const FeedbackSchema = new mongoose.Schema({
   messageId: { type: String, required: true, unique: true },
