@@ -402,22 +402,29 @@ function needsWebSearch(message) {
   if (noSearchPatterns.some(p => p.test(msg))) return false
 
   const triggers = [
-    // Current events - need fresh data
-    "latest news","breaking news","today's news",
-    "live score","current score","match score",
-    "stock price","crypto price","bitcoin price","gold price today","petrol price today",
+    // Current events
+    "latest news","breaking news","today's news","today news",
+    "live score","current score","match score","match today","today match",
+    "stock price","crypto price","bitcoin price","gold price","petrol price",
     "weather in","weather today","forecast",
     "who won","election result","election 2025","election 2026",
     "trending now","just happened","announced today",
-    "released today","launched today","new movie released","new song released",
-    "ipl 2025","ipl 2026","world cup 2025","world cup 2026",
-    // Factual questions - search to get correct answer
+    "released today","launched today","new movie","new song",
+    // Sports — catch ALL sports queries
+    "ipl","cricket match","cricket score","cricket today",
+    "world cup","t20","test match","odi match",
+    "football match","nfl","nba","fifa","champions league",
+    "today's match","today match","match schedule","match result",
+    "playing today","playing tonight","live match",
+    // Factual
     "father of","mother of","inventor of","founded by","discovered by","invented by",
     "who invented","who discovered","who founded","who created","who wrote","who is the",
-    "capital of","president of","prime minister of","population of","tallest","longest","largest","smallest","fastest","richest","poorest",
-    // Explicit search intent
+    "capital of","president of","prime minister of","population of",
+    "tallest","longest","largest","smallest","fastest","richest","poorest",
+    // Explicit search
     "search for","look up","find me","google this","news about",
-    // Local places
+    "what happened","current","latest","recent","update",
+    // Local
     "restaurant in","hotel in","hospital in","shops in","near me"
   ]
   return triggers.some(t => msg.includes(t))
@@ -1286,18 +1293,21 @@ RESPONSE FORMATTING:
 - Key words: **bold**
 - Useful emojis: checkmark, cross, lightbulb, warning, fire, note, target, bolt, pin, rocket
 
-QUALITY RULES:
+CRITICAL OUTPUT RULES:
+0. NEVER output raw arrays or objects like [object Object] — ALWAYS convert to readable text
 1. ALWAYS give COMPLETE WORKING code - NEVER truncate or stop midway
 2. For websites/apps: give the ENTIRE HTML/CSS/JS in ONE file - copy-paste ready
 3. When fixing bugs: show the COMPLETE fixed file
-4. For portfolio/personal website tasks: write the FULL HTML file with ALL sections - About, Skills, Projects, Contact. Do NOT ask questions, just generate it with example content.
-4. NEVER say "I cannot" or "I don't have access" - just solve it
-5. If [PDF: ...] in context - READ IT DIRECTLY and answer
-6. If [WEBSITE CONTENT] in context - analyze it directly
-7. Help with EVERYTHING: food, travel, health, fitness, cooking, relationships, finance, business, law, education, movies, sports, cricket, local places
-8. For local places: use search results only, never fabricate addresses or phone numbers
-9. For "near me" queries without location: ask "Which city are you in?" in ONE line
-10. Expert in: HTML, CSS, JS, React, Python, Node.js, SQL, Java, C++, ALL languages
+4. For portfolio/personal website tasks: write the FULL HTML file with ALL sections
+5. NEVER say "I cannot" or "I don't have access" - just solve it
+6. If [PDF: ...] in context - READ IT DIRECTLY and answer
+7. If [WEBSITE CONTENT] in context - analyze it directly
+8. Help with EVERYTHING: food, travel, health, fitness, cooking, relationships, finance, business, law, education, movies, sports, cricket, local places
+9. For sports/IPL/cricket: use ONLY the web search results provided. If search results have match data, show it clearly. NEVER say schedule not released if search results show matches.
+10. For local places: use search results only, never fabricate addresses or phone numbers
+11. For "near me" queries without location: ask "Which city are you in?" in ONE line
+12. Expert in: HTML, CSS, JS, React, Python, Node.js, SQL, Java, C++, ALL languages
+13. Lists of items: format as bullet points with text, NEVER as raw JavaScript arrays
 ` + langNote + styleNote + searchNote
 
     // Combine user content with URL context — always string for text, array for vision
