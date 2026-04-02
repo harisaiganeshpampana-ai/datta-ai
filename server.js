@@ -1325,7 +1325,13 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     ].some(k => msgLower.includes(k))
     // Token limits — stay well within Groq free tier (6000 tok/min for 70b)
     // Only use large tokens when clearly building something
-    var maxCodingTok = isLargeTask ? 4096 : isCodeTask ? 3000 : 1500
+    // Token budget per task type:
+    // - Large builds: 4096 (code is dense, fits more logic per token)
+    // - Code tasks: 3000
+    // - Explain/general: 2500 (prose needs more tokens to be complete)
+    // - Simple chat: 1500
+    var isSimpleChat = !isExplainQuestion && !isCodeTask && !isLargeTask
+    var maxCodingTok = isLargeTask ? 4096 : isCodeTask ? 3000 : isExplainQuestion ? 2500 : 1500
     var maxTok = isImageFile ? 2048 : maxCodingTok
 
     // Use browser's actual local time sent from frontend
@@ -1511,18 +1517,23 @@ For sports/IPL: state match details directly from search results.
     // Groq only — reliable, fast, no token limits
     // Debug: log what the AI receives
     var userMsg = typeof finalUserContent === "string" ? finalUserContent.slice(0, 300) : "[array content]"
-    console.log("[AI INPUT] user message preview:", userMsg)
-    if (searchContext) console.log("[AI INPUT] search context length:", searchContext.length, "preview:", searchContext.slice(0, 200))
+    console.log("[AI INPUT] preview:", userMsg)
+    console.log("[AI CONFIG] isExplain:", isExplainQuestion, "| isCode:", isCodeTask, "| isLarge:", isLargeTask, "| tokens:", maxTok)
+    if (searchContext) console.log("[AI SEARCH] context length:", searchContext.length)
 
     // Try models in order: primary → fast fallback
     // On rate limit: wait and retry with smaller tokens
     // Route by task type to avoid rate limits
     // llama-3.1-8b: 14400 tok/min (safe for chat)
     // llama-3.3-70b: 6000 tok/min (use only for code/complex)
-    var groqAttempts = isCodeTask || isLargeTask
+    // Model routing by task:
+    // Code/Large → 70b first (smarter), fallback 8b
+    // Explain → 70b (deeper answers), fallback 8b  
+    // Simple chat → 8b first (faster/cheaper), fallback 70b
+    var groqAttempts = (isCodeTask || isLargeTask || isExplainQuestion)
       ? [
           { model: "llama-3.3-70b-versatile", tokens: maxTok },
-          { model: "llama-3.1-8b-instant",    tokens: Math.min(maxTok, 3000) }
+          { model: "llama-3.1-8b-instant",    tokens: Math.min(maxTok, 2000) }
         ]
       : [
           { model: "llama-3.1-8b-instant",    tokens: maxTok },
