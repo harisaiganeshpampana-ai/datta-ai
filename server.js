@@ -1155,6 +1155,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
           const msg = waitMins > 0
             ? `You've reached your message limit. Resets in ${Math.ceil(waitMins)} minutes.`
             : "You've reached your message limit. Upgrade to continue."
+          cleanupRequest()  // release lock
           return res.status(429).json({ 
             error: "MESSAGE_LIMIT", 
             message: msg,
@@ -1171,6 +1172,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
         // Check if model is allowed (skip if plan allows "all")
         if (!allowedModels.includes("all") && !allowedModels.includes(requestedModelKey)) {
           const upgradeTo = requestedModelKey === "d54" ? "Plus" : "Pro"
+          cleanupRequest()  // release lock before returning
           return res.status(403).json({
             error: "MODEL_LOCKED",
             message: `Upgrade to ${upgradeTo} plan to use this model.`,
