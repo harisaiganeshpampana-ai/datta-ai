@@ -998,8 +998,8 @@ async function send() {
 
     // Signal typing loop that server is done
     // If we got partial text but stream died, still show what we have
-    if (!typingDone && full.length > 0) {
-      console.warn("[STREAM] Stream ended unexpectedly, showing partial response")
+    if (!typingDone && fullText.length > 0) {
+      console.warn("[STREAM] Stream ended unexpectedly with", fullText.length, "chars")
     }
     typingDone = true
 
@@ -4158,4 +4158,4 @@ window.downloadNotes = downloadNotes
     .chat-item-menu:hover { background:var(--bg3); color:var(--text); }
   `
   document.head.appendChild(s)
-})()
+})()b
