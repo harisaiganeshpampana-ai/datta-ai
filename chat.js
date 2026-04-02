@@ -1,5 +1,10 @@
 const SERVER = "https://datta-ai-server.onrender.com"
 
+// Global state — var so they're hoisted and available from HTML onclick
+var _ddOpen = false
+var _ddClickTime = 0
+var notesOpen = false
+
 
 // '''''''''''''''''''''''''''''''''''''''''''
 // SINGLE INIT - runs everything on load
@@ -3662,9 +3667,6 @@ function getPersonaModel() {
 }
 
 // ── MODEL DROPDOWN ──────────────────────────────────────────────────────────
-let _ddOpen = false
-let _ddClickTime = 0
-
 function toggleModelDropdown() {
   const dd = document.getElementById("modelDropdown")
   if (!dd) return
@@ -3975,13 +3977,10 @@ window.toggleLensFlash = toggleLensFlash
 // ════════════════════════════════════════
 // NOTES FEATURE — desktop/tablet only
 // ════════════════════════════════════════
-let notesOpen = false
 let notesSaveTimer = null
 
 function toggleNotes() {
-  // Block on phones
   if (window.innerWidth < 768) return
-
   notesOpen = !notesOpen
   const panel = document.getElementById("notesPanel")
   const btn = document.getElementById("notesToggleBtn")
