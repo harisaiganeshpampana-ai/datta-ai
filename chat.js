@@ -1082,18 +1082,20 @@ async function loadSidebar() {
       div.className = "chat-item"
       div.setAttribute("data-chat-id", chat._id)
       div.innerHTML = `
-        <svg class="chat-item-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.5">
+        <svg class="chat-item-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.4;flex-shrink:0;">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
         </svg>
         <div class="chat-item-title" title="${chat.title}">${chat.title}</div>
-        <button class="chat-item-del deleteBtn" onclick="confirmDelete(event,'${chat._id}')" title="Delete">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+        <button class="chat-item-menu" data-id="${chat._id}" data-title="${chat.title.replace(/"/g,'&quot;')}" onclick="openChatMenu(event,this)" title="More options">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="5" r="1" fill="currentColor"/>
+            <circle cx="12" cy="12" r="1" fill="currentColor"/>
+            <circle cx="12" cy="19" r="1" fill="currentColor"/>
           </svg>
         </button>
       `
       div.onclick = (e) => {
-        if (e.target.closest(".deleteBtn")) return
+        if (e.target.closest(".chat-item-menu")) return
         openChat(chat._id)
       }
       history.appendChild(div)
@@ -1166,6 +1168,73 @@ async function openChat(chatId) {
 
 
 // ─── DELETE CHAT ──────────────────────────────────────────────────────────────
+// ── CHAT ITEM CONTEXT MENU ────────────────────────────────────────────────────
+function openChatMenu(e, btn) {
+  e.stopPropagation()
+  // Remove any existing menu
+  const existing = document.getElementById("chatContextMenu")
+  if (existing) existing.remove()
+
+  const chatId    = btn.getAttribute("data-id")
+  const chatTitle = btn.getAttribute("data-title")
+
+  const menu = document.createElement("div")
+  menu.id = "chatContextMenu"
+  menu.style.cssText = `
+    position:fixed;
+    background:var(--bg2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:4px;
+    z-index:9999;
+    min-width:160px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4);
+    font-size:13px;
+  `
+
+  menu.innerHTML = `
+    <div class="ctx-item" onclick="startRename('${chatId}','${chatTitle.replace(/'/g,"\'")}');document.getElementById('chatContextMenu').remove()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Rename
+    </div>
+    <div class="ctx-item ctx-delete" onclick="confirmDelete(null,'${chatId}');document.getElementById('chatContextMenu').remove()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+      Delete
+    </div>
+  `
+
+  // Position near button
+  const rect = btn.getBoundingClientRect()
+  menu.style.top  = (rect.bottom + 4) + "px"
+  menu.style.left = Math.min(rect.left, window.innerWidth - 180) + "px"
+
+  document.body.appendChild(menu)
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener("click", function closeMenu() {
+      const m = document.getElementById("chatContextMenu")
+      if (m) m.remove()
+      document.removeEventListener("click", closeMenu)
+    })
+  }, 10)
+}
+
+async function startRename(chatId, currentTitle) {
+  const newTitle = prompt("Rename chat:", currentTitle)
+  if (!newTitle || newTitle.trim() === currentTitle) return
+  try {
+    await fetch(SERVER + "/chat/" + chatId + "/rename", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: newTitle.trim(), token: getToken() })
+    })
+    loadSidebar()
+  } catch(e) {
+    showToast("Rename failed")
+  }
+}
+
 function confirmDelete(e, id) {
   e.stopPropagation()
   e.preventDefault()
@@ -3772,3 +3841,28 @@ window.toggleNotes = toggleNotes
 window.copyNotes = copyNotes
 window.clearNotes = clearNotes
 window.downloadNotes = downloadNotes
+
+// Inject context menu styles
+;(function(){
+  if (document.getElementById("ctxMenuStyle")) return
+  const s = document.createElement("style")
+  s.id = "ctxMenuStyle"
+  s.textContent = `
+    .ctx-item {
+      display:flex; align-items:center; gap:8px;
+      padding:8px 12px; border-radius:7px; cursor:pointer;
+      color:var(--text2); transition:background 0.12s;
+    }
+    .ctx-item:hover { background:var(--bg3); color:var(--text); }
+    .ctx-delete:hover { background:rgba(220,60,60,0.12); color:#e55; }
+    .chat-item-menu {
+      opacity:0; background:none; border:none;
+      color:var(--text3); cursor:pointer; padding:2px 4px;
+      border-radius:5px; display:flex; align-items:center;
+      flex-shrink:0; transition:opacity 0.12s, background 0.12s;
+    }
+    .chat-item:hover .chat-item-menu { opacity:1; }
+    .chat-item-menu:hover { background:var(--bg3); color:var(--text); }
+  `
+  document.head.appendChild(s)
+})()
