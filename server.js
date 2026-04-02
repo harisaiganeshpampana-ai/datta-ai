@@ -2368,6 +2368,54 @@ app.get("/", (req, res) => res.json({ status: "Datta AI Server running", version
 
 
 
+// ── FEEDBACK SYSTEM ──────────────────────────────────────────────────────────
+const FeedbackSchema = new mongoose.Schema({
+  messageId: { type: String, required: true, unique: true },
+  userId:    { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  chatId:    { type: String },
+  feedback:  { type: String, enum: ["like","dislike"], required: true },
+  model:     { type: String, default: "" },
+  createdAt: { type: Date, default: Date.now }
+})
+const Feedback = mongoose.models.Feedback || mongoose.model("Feedback", FeedbackSchema)
+
+// POST /feedback — store like/dislike for a message
+app.post("/feedback", authMiddleware, async (req, res) => {
+  try {
+    const { messageId, feedback, chatId, model } = req.body
+    if (!messageId) return res.status(400).json({ error: "messageId required" })
+    if (!["like","dislike"].includes(feedback)) return res.status(400).json({ error: "Invalid feedback" })
+    const userId = req.user.id
+
+    // Upsert — allow changing mind (like → dislike), but one per message per user
+    await Feedback.findOneAndUpdate(
+      { messageId, userId },
+      { messageId, userId, chatId: chatId || "", feedback, model: model || "", createdAt: new Date() },
+      { upsert: true, new: true }
+    )
+    console.log("[FEEDBACK]", feedback, "| user:", userId, "| msg:", messageId, "| model:", model)
+    res.json({ success: true })
+  } catch(err) {
+    res.status(500).json({ error: sanitizeError(err).userMsg })
+  }
+})
+
+// GET /feedback/stats — admin analytics
+app.get("/feedback/stats", authMiddleware, async (req, res) => {
+  try {
+    if (!isAdmin(req)) return res.status(403).json({ error: "Admin only" })
+    const total = await Feedback.countDocuments()
+    const likes = await Feedback.countDocuments({ feedback: "like" })
+    const dislikes = await Feedback.countDocuments({ feedback: "dislike" })
+    const byModel = await Feedback.aggregate([
+      { $group: { _id: { model: "$model", feedback: "$feedback" }, count: { $sum: 1 } } }
+    ])
+    res.json({ total, likes, dislikes, byModel })
+  } catch(err) {
+    res.status(500).json({ error: sanitizeError(err).userMsg })
+  }
+})
+
 // KEEP ALIVE - ping self every 5 minutes to prevent Render sleep
 const SELF_URL = process.env.RAILWAY_PUBLIC_DOMAIN ? "https://" + process.env.RAILWAY_PUBLIC_DOMAIN : process.env.RENDER_EXTERNAL_URL || "https://datta-ai-server.onrender.com"
 setInterval(async () => {
