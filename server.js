@@ -1387,6 +1387,12 @@ CRITICAL OUTPUT RULES:
         lastMsg.content = "[Image: " + file.originalname + "] " + (message || "")
       }
     }
+    // Strip [object Object] from full response before saving or displaying
+    full = full.split("[object Object]").join("")
+    full = full.split("[Object object]").join("")
+    full = full.split("[object object]").join("")
+    full = full.trim()
+
     chat.messages.push({ role: "assistant", content: full })
 
     // Save memories from this conversation (non-blocking)
