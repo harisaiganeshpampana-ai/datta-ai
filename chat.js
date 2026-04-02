@@ -1614,19 +1614,9 @@ window.logout = logout
 // ── SETTINGS ─────────────────────────────────────────────────────────────────
 
 function openSettings() {
-  event.stopPropagation()
-  const modal = document.getElementById("settingsModal")
-  if (!modal) return
-
-  modal.classList.add("show")
-
-  // Reset to profile tab and scroll top
-  setTimeout(function() {
-    switchSettingsTab("profile")
-    const box = modal.querySelector(".settings-box") || modal.querySelector(".modalBox")
-    if (box) box.scrollTop = 0
-    loadSettingsUI()
-  }, 10)
+  if (typeof event !== "undefined" && event && event.stopPropagation) event.stopPropagation()
+  // Go to the new settings page
+  window.location.href = "settings.html"
 }
 
 function closeSettings() {
