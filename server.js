@@ -354,19 +354,18 @@ function authMiddleware(req, res, next) {
 async function webSearch(query) {
   try {
     const key = process.env.TAVILY_API_KEY
-    if (!key) { console.log("TAVILY_API_KEY missing"); return null }
+    if (!key) { console.log("TAVILY_API_KEY missing - add it in Render env vars"); return null }
 
-    const isFactual = ["father of","mother of","inventor of","founded by","who invented","who is the"].some(t => query.toLowerCase().includes(t))
-    const searchQuery = isFactual ? query + " Wikipedia" : query
-
-    console.log("Tavily search:", searchQuery)
+    const isFactual = ["father of","mother of","inventor of","founded by","who invented"].some(t => query.toLowerCase().includes(t))
+    const finalQuery = isFactual ? query + " Wikipedia" : query
+    console.log("[SEARCH] Query:", finalQuery)
 
     const response = await fetch("https://api.tavily.com/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         api_key: key,
-        query: searchQuery,
+        query: finalQuery,
         search_depth: "advanced",
         max_results: 5,
         include_answer: true,
@@ -375,46 +374,67 @@ async function webSearch(query) {
     })
 
     if (!response.ok) {
-      console.log("Tavily error:", response.status, await response.text())
+      console.log("[SEARCH] Tavily HTTP error:", response.status)
       return null
     }
 
     const data = await response.json()
-    console.log("Tavily got", data.results?.length || 0, "results, answer:", !!data.answer)
+    console.log("[SEARCH] Results:", data.results?.length, "Answer:", !!data.answer)
 
-    if (!data.results?.length && !data.answer) return null
-
-    // Safe string extractor — no objects ever
-    const safe = (v) => {
-      if (v === null || v === undefined) return ""
-      if (typeof v === "string") return v.replace(/\[object Object\]/gi, "").replace(/undefined/g, "").trim()
-      if (typeof v === "number") return String(v)
-      return ""
+    // NUCLEAR SAFE: convert ANY value to plain string — no objects ever
+    function toStr(val) {
+      if (val === null || val === undefined) return ""
+      if (typeof val === "string") return val
+      if (typeof val === "number" || typeof val === "boolean") return String(val)
+      if (Array.isArray(val)) return val.map(toStr).join(", ")
+      if (typeof val === "object") {
+        // Extract any string values from object
+        return Object.values(val).map(toStr).filter(Boolean).join(" ")
+      }
+      return String(val)
     }
 
-    // Build clean text context
-    let context = ""
-
-    // Direct answer first (highest priority)
-    if (data.answer && safe(data.answer)) {
-      context += "DIRECT ANSWER: " + safe(data.answer) + "\n\n"
+    // Clean a string — remove ALL JS artifacts
+    function clean(v) {
+      return toStr(v)
+        .replace(/\[object Object\]/gi, "")
+        .replace(/\[object object\]/gi, "")
+        .replace(/undefined/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
     }
 
-    // Source content
-    if (data.results?.length) {
-      context += "SEARCH RESULTS:\n"
+    let lines = []
+
+    // Direct answer (most important)
+    if (data.answer) {
+      const ans = clean(data.answer)
+      if (ans) lines.push("ANSWER: " + ans)
+    }
+
+    // Each result as plain sentences
+    if (Array.isArray(data.results)) {
       data.results.slice(0, 5).forEach((r, i) => {
-        const title   = safe(r.title).substring(0, 100)
-        const content = safe(r.content).substring(0, 600)
+        if (!r || typeof r !== "object") return
+        const title   = clean(r.title).slice(0, 120)
+        const content = clean(r.content).slice(0, 500)
+        const url     = clean(r.url).slice(0, 100)
         if (title || content) {
-          context += "\n[" + (i+1) + "] " + title + "\n" + content + "\n"
+          lines.push("SOURCE " + (i+1) + ": " + title)
+          if (content) lines.push(content)
+          if (url) lines.push("URL: " + url)
+          lines.push("")
         }
       })
     }
 
-    return context.trim() || null
+    const result = lines.join("\n").trim()
+    console.log("[SEARCH] Context length:", result.length)
+    if (result.length > 50) console.log("[SEARCH] Preview:", result.slice(0, 200))
+    return result || null
+
   } catch(e) {
-    console.log("Tavily exception:", e.message)
+    console.log("[SEARCH] Exception:", e.message)
     return null
   }
 }
@@ -1083,13 +1103,13 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
                     message.includes("आईपीएल") || msgLow.includes("cricket") ||
                     message.includes("క్రికెట్") || message.includes("क्रिकेट")
       if (isIPL) {
-        // Very specific search query to get today's actual match
         const now = new Date()
-        const dd = now.getDate()
-        const mm = now.toLocaleString("en-IN", { month:"long" })
+        const dd  = now.getDate()
+        const mm  = now.toLocaleString("en-US", { month:"long" })
         const yyyy = now.getFullYear()
-        searchQuery = "IPL 2026 " + dd + " " + mm + " " + yyyy + " today match which teams playing live score"
-        console.log("IPL search query:", searchQuery)
+        // Multiple search angles to find today's match
+        searchQuery = "IPL " + yyyy + " match today " + dd + " " + mm + " which teams are playing"
+        console.log("[IPL SEARCH] Query:", searchQuery)
       }
 
       // For local queries, add location
@@ -1364,7 +1384,7 @@ RESPONSE FORMATTING:
 - Useful emojis: checkmark, cross, lightbulb, warning, fire, note, target, bolt, pin, rocket
 
 CRITICAL OUTPUT RULES:
-0. NEVER EVER write [object Object], undefined, null, or any JavaScript syntax in your response. You are a conversational AI — always write plain human-readable text. If data comes as objects, extract the text values manually.
+0. YOU ARE A CONVERSATIONAL AI. NEVER write [object Object] or any code/programming syntax. When you see team names in search results like "Chennai Super Kings vs Mumbai Indians" - say exactly that. Read the text, find the names, say them plainly.
 1. ALWAYS give COMPLETE WORKING code - NEVER truncate or stop midway
 2. For websites/apps: give the ENTIRE HTML/CSS/JS in ONE file - copy-paste ready
 3. When fixing bugs: show the COMPLETE fixed file
@@ -1373,7 +1393,7 @@ CRITICAL OUTPUT RULES:
 6. If [PDF: ...] in context - READ IT DIRECTLY and answer
 7. If [WEBSITE CONTENT] in context - analyze it directly
 8. Help with EVERYTHING: food, travel, health, fitness, cooking, relationships, finance, business, law, education, movies, sports, cricket, local places
-9. For sports/IPL/cricket: use ONLY the web search results provided. Show match data as plain readable text like "CSK vs MI at Wankhede Stadium at 7:30 PM". NEVER use JavaScript syntax, arrays, objects, or brackets. NEVER say [object Object].
+9. SPORTS/IPL RULE: When web search results are provided, you MUST extract team names directly from the text and say them. Example good answer: "Today's IPL match is CSK vs MI at Wankhede Stadium at 7:30 PM IST." Example bad answer: "[object Object] vs [object Object]". ALWAYS read the SOURCE text and pick out team names. They will appear as words like "Chennai Super Kings", "Mumbai Indians", "RCB", "KKR" etc.
 10. For local places: use search results only, never fabricate addresses or phone numbers
 11. For "near me" queries without location: ask "Which city are you in?" in ONE line
 12. Expert in: HTML, CSS, JS, React, Python, Node.js, SQL, Java, C++, ALL languages
