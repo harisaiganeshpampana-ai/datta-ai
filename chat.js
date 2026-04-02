@@ -60,6 +60,7 @@ function getAiContent(el) {
 }
 
 function formatResponse(r) { return safeContent(r) }
+function retryLastMsg() { var i=document.getElementById("message"); if(i&&window.lastUserMsg){i.value=window.lastUserMsg;} send() }
 
 // SHARE CHAT
 async function shareChatLink() {
@@ -783,7 +784,8 @@ async function send() {
     for (let i = 0; i < maxTries; i++) {
       try {
         const ctrl = new AbortController()
-        const timer = setTimeout(() => ctrl.abort(), 50000)
+        // 120s timeout — long code responses can take 60-90s on Groq
+        const timer = setTimeout(() => ctrl.abort(), 120000)
         const r = await fetch(url, { ...options, signal: ctrl.signal })
         clearTimeout(timer)
         return r
@@ -977,9 +979,11 @@ async function send() {
 
       const chunk = decoder.decode(value)
 
-      // Debug: catch [object Object] coming from server
+      // Skip empty heartbeat chunks (server sends these to keep connection alive)
+      if (!chunk || !chunk.trim()) continue
+
       if (chunk.includes("[object Object]") || chunk.includes("[object object]")) {
-        console.warn("[CHUNK DEBUG] Server sent [object Object]:", chunk.slice(0, 300))
+        console.warn("[CHUNK DEBUG] [object Object] in chunk")
       }
 
       if (chunk.includes("CHATID")) {
@@ -993,6 +997,10 @@ async function send() {
     }
 
     // Signal typing loop that server is done
+    // If we got partial text but stream died, still show what we have
+    if (!typingDone && full.length > 0) {
+      console.warn("[STREAM] Stream ended unexpectedly, showing partial response")
+    }
     typingDone = true
 
     // Wait for typing to finish (or be stopped)
@@ -1079,18 +1087,31 @@ async function send() {
       const msgInput = document.getElementById("message")
       if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = "1" }
       if (msgInput) { msgInput.disabled = false }
-      aiDiv.innerHTML = `
-        <div class="aiContent">
-          <div class="ai-bubble" style="background:#110a0a;border:1px solid #ff444422;">
-            <div style="color:#ff8888;font-size:15px;font-weight:600;margin-bottom:8px;">Connection failed after 3 retries</div>
-            <div style="color:#888;font-size:13px;margin-bottom:14px;">Please check your internet and try again.</div>
-            <button onclick="this.closest('.msg-row, .messageRow')?.remove();document.getElementById('message').value=window.lastUserMsg||'';document.getElementById('message').focus()"
-              style="padding:8px 18px;background:#00ff8822;border:1px solid #00ff8844;border-radius:10px;color:#00ff88;font-size:13px;cursor:pointer;">
-              Try Again
-            </button>
+
+      // If partial text was received, show it instead of error
+      const streamSpan = aiDiv?.querySelector(".stream")
+      const partialText = streamSpan?.textContent?.trim() || ""
+      if (partialText.length > 80) {
+        // We have partial content — keep it, just add a retry note
+        const noteEl = document.createElement("div")
+        noteEl.className = "stoppedMsg"
+        noteEl.innerHTML = `⚠️ Response cut short. <button onclick="retryLastMsg()" style="background:none;border:none;color:var(--accent);cursor:pointer;text-decoration:underline;font-size:12px;">Retry for more</button>`
+        const aiBubble = aiDiv.querySelector(".ai-bubble, .aiContent")
+        if (aiBubble) aiBubble.appendChild(noteEl)
+      } else {
+        aiDiv.innerHTML = `
+          <div class="aiContent">
+            <div class="ai-bubble" style="background:#110a0a;border:1px solid #ff444422;">
+              <div style="color:#ff8888;font-size:15px;font-weight:600;margin-bottom:8px;">⚠️ Response failed</div>
+              <div style="color:#888;font-size:13px;margin-bottom:14px;">Server may be busy. Please try again.</div>
+              <button onclick="this.closest('.msg-row, .messageRow')?.remove();document.getElementById('message').value=window.lastUserMsg||'';send()"
+                style="padding:8px 18px;background:#00ff8822;border:1px solid #00ff8844;border-radius:10px;color:#00ff88;font-size:13px;cursor:pointer;font-family:inherit;">
+                🔄 Retry
+              </button>
+            </div>
           </div>
-        </div>
-      `
+        `
+      }
     }
   }
 }
