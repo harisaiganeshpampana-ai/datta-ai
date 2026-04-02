@@ -1620,7 +1620,14 @@ When writing code:
 `) : `
 Be friendly, concise, and helpful. Never write [object Object]. Use bullet points for lists.
 For sports/IPL: state match details directly from search results.
-`) + (searchContext ? "\n\nSEARCH RESULTS (use these to answer):\n" + searchContext : "") + langNote + styleNote
+`) + (searchContext ? `\n\nLIVE DATA (extracted from web — use this to answer directly):
+${searchContext}
+
+IMPORTANT: Answer like a human, NOT like a search engine.
+- Say "Today's match is SRH vs RCB at 7:30 PM" — NOT "According to search results..."
+- Say "The weather in Hyderabad is 34°C" — NOT "Based on the search results provided..."
+- Just state the facts directly and conversationally.
+- Never say "according to", "based on search", "search results show"` : "") + langNote + styleNote
 
     // Combine user content with URL context — always string for text, array for vision
     // For queries with search results — add hard instruction to USE the results
