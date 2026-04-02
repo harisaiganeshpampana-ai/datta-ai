@@ -1128,9 +1128,11 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       }
     }
 
-    // For large code tasks, use less history to save token budget
-    const historyLimit = isCodeTask ? 2 : 4
-    const historyContentLimit = isCodeTask ? 800 : 1500
+    // Use fewer history messages to save token budget
+    const _msgLow = (message || "").toLowerCase()
+    const _isCode = ["build","create","write","make","code","website","app","fix","debug","html","python","javascript"].some(k => _msgLow.includes(k))
+    const historyLimit = _isCode ? 2 : 4
+    const historyContentLimit = _isCode ? 800 : 1500
     const history = chat.messages.slice(0, -1).slice(-historyLimit)
       .filter(m => {
         const c = safeStr(m.content)
@@ -1278,10 +1280,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "calculator app","weather app","chat app","booking app","restaurant app",
       "build me a","create a full","make a complete","entire app","whole app"
     ].some(k => msgLower.includes(k))
-    // Token limits: large=8000, code=6000, normal=4000
-    // Groq free tier limits: 70b=6000 tok/min, 8b=14400 tok/min
-    // Keep under limits to avoid 500 errors
-    const maxCodingTok = isLargeTask ? 5000 : isCodeTask ? 4000 : 2048
+    // Token limits — stay well within Groq free tier (6000 tok/min for 70b)
+    // Only use large tokens when clearly building something
+    const maxCodingTok = isLargeTask ? 4096 : isCodeTask ? 3000 : 1500
     const maxTok = isImageFile ? 2048 : maxCodingTok
 
     // Use browser's actual local time sent from frontend
@@ -1303,14 +1304,7 @@ ONLY handle: casual chat, simple questions, general knowledge, fun conversations
 If asked to write code or build apps: say "I am Datta 2.1, I am not for coding. Switching to Datta 5.4 for you..." - the system will handle the switch automatically.
 Talk simply and friendly. Short answers. NEVER say you are any other AI.`,
 
-      "llama-3.3-70b-versatile": `Your name is ${ainame}. You are Datta 4.2 - research and analysis expert.
-ONLY handle: research, facts, news, analysis, writing, explanations, general knowledge.
-If asked to write code or build apps: say "I am Datta 4.2, switching you to Datta 5.4 (coding expert)..." - the system will handle the switch automatically.
-Give clear helpful answers in simple English. NEVER say you are any other AI.`,
-
-      "llama-3.3-70b-versatile": `Your name is ${ainame}. You are Datta 5.4 - the ONLY coding expert in Datta AI.
-Write 100% complete working code. Never truncate. All languages supported.
-Explain briefly after code. NEVER say you are any other AI.`,
+      "llama-3.3-70b-versatile": `Your name is ${ainame}. You are a smart helpful assistant. Answer questions clearly and completely. Write full working code when asked. Never truncate. NEVER say you are any other AI.`,
       "meta-llama/llama-4-scout-17b-16e-instruct":     `Your name is ${ainame}. You are Datta Vision - image analysis expert. Analyze images in extreme detail. NEVER say you are any other AI.`,
       "persona-lawyer":  `Your name is ${ainame}. You are in Lawyer mode. Provide general legal information. Always advise consulting a licensed lawyer. NEVER say you are any other AI.`,
       "persona-teacher": `Your name is ${ainame}. You are in Teacher mode. Explain concepts simply with examples. Be patient and encouraging. NEVER say you are any other AI.`,
@@ -1385,7 +1379,9 @@ When user asks to build/create/make anything with code, ALWAYS follow this exact
       ? userContent + safeStr(urlContext)
       : userContent  // keep array for vision model
 
-    const systemWithMemory = systemPrompt + memoryContext
+    // Trim memoryContext to save tokens
+    const trimmedMemory = (memoryContext || "").substring(0, 300)
+    const systemWithMemory = systemPrompt + trimmedMemory
 
     let stream
     // Resolve actual Together AI model
