@@ -1473,53 +1473,35 @@ function stopVoice() {
 
 // ─── REGENERATE ───────────────────────────────────────────────────────────────
 async function regenerateFrom(btn) {
+  // Guard: no double regenerate
+  if (isGenerating) return
+
   const row = getMsgRow(btn)
-  const prev = row?.previousElementSibling
-  if (!row || !prev) return
+  if (!row) return
 
-  const text = (prev.querySelector(".user-bubble, .userBubble") || {}).innerText || ""
-  const aiBubble = row.querySelector(".ai-bubble, .aiBubble")
-  aiBubble.innerHTML = `<span class="stream"></span>`
-  const span = aiBubble.querySelector(".stream")
-
-  controller = new AbortController()
-
-  const res = await fetch(SERVER + "/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    signal: controller.signal,
-    body: JSON.stringify({
-      message: text,
-      title: text.substring(0, 40),
-      chatId: currentChatId
-    })
-  })
-
-  const reader = res.body.getReader()
-  const decoder = new TextDecoder()
-  let streamText = ""
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-
-    const chunk = decoder.decode(value)
-
-    if (chunk.includes("CHATID")) {
-      const parts = chunk.split("CHATID")
-      streamText += parts[0]
-      currentChatId = parts[1]
-    } else {
-      streamText += chunk
-    }
-
-    span.innerHTML = marked.parse(streamText) + '<span class="cursor">▌</span>'
-    scrollBottom()
+  // Find the user message — walk backwards from this AI row
+  const allRows = Array.from(document.querySelectorAll(".msg-row, .messageRow"))
+  const rowIdx  = allRows.indexOf(row)
+  let userRow = null
+  for (let i = rowIdx - 1; i >= 0; i--) {
+    if (allRows[i].querySelector(".user-bubble, .userBubble")) { userRow = allRows[i]; break }
   }
+  if (!userRow) return
 
-  span.innerHTML = marked.parse(streamText)
-  lucide.createIcons()
+  const text = (userRow.querySelector(".user-bubble, .userBubble") || {}).innerText?.trim() || ""
+  if (!text) return
+
+  // Remove ONLY this AI row — keep user message
+  row.remove()
+
+  // Put text in input and send — reuses the full send() pipeline
+  // This gives typing animation, stop button, error handling, FormData — everything
+  window.lastUserMsg = text
+  const input = document.getElementById("message")
+  if (input) input.value = text
+  send()
 }
+window.regenerateFrom = regenerateFrom
 
 
 // ─── VOICE INPUT ──────────────────────────────────────────────────────────────
@@ -1677,12 +1659,72 @@ document.querySelectorAll(".suggestBtn").forEach(btn => {
 
 
 // ─── ENTER KEY ────────────────────────────────────────────────────────────────
-document.getElementById("message").addEventListener("keydown", function (e) {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault()
-    if (!isGenerating) send()
+;(function() {
+  var ta = document.getElementById("message")
+  if (!ta) return
+
+  // Auto-resize textarea as user types
+  function autoResize() {
+    ta.style.overflowY = "hidden"
+    ta.style.height    = "auto"
+    var maxH = 180
+    var newH = Math.min(ta.scrollHeight, maxH)
+    ta.style.height = newH + "px"
+    if (ta.scrollHeight > maxH) {
+      ta.style.overflowY = "auto"
+    } else {
+      ta.style.overflowY = "hidden"
+    }
   }
-})
+
+  // Resize on every input
+  ta.addEventListener("input", autoResize)
+
+  // Enter = send | Shift+Enter = newline
+  ta.addEventListener("keydown", function(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      if (!isGenerating) {
+        send()
+        // Reset height after send
+        setTimeout(function() {
+          ta.style.height = "auto"
+          ta.style.overflowY = "hidden"
+        }, 10)
+      }
+    }
+  })
+
+  // Reset height when send() clears the input
+  // Patch the input clear so height resets too
+  var _origSend = window.send
+  window.send = async function() {
+    await _origSend.apply(this, arguments)
+  }
+
+  // Watch for input being cleared (after send)
+  var _observer = new MutationObserver(function() {
+    if (!ta.value) {
+      ta.style.height = "auto"
+      ta.style.overflowY = "hidden"
+    }
+  })
+
+  // Also reset on value cleared programmatically
+  Object.defineProperty(ta, "value", {
+    get: function() { return ta._val || "" },
+    set: function(v) {
+      ta._val = v
+      HTMLTextAreaElement.prototype.__lookupSetter__("value").call(ta, v)
+      if (!v) {
+        ta.style.height = "auto"
+        ta.style.overflowY = "hidden"
+      } else {
+        setTimeout(autoResize, 0)
+      }
+    }
+  })
+})()
 
 
 // ─── SIDEBAR TOGGLE ───────────────────────────────────────────────────────────
