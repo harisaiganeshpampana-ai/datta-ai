@@ -22,13 +22,39 @@ window.addEventListener("DOMContentLoaded", function() {
 })
 
 
-// SAFE CONTENT EXTRACTOR — prevents [object Object]
+// SAFE CONTENT — prevents [object Object] anywhere in UI
 function safeContent(c) {
-  if (!c && c !== 0) return ""
+  if (c === null || c === undefined) return ""
   if (typeof c === "string") return c
-  if (Array.isArray(c)) return c.filter(p => p.type === "text").map(p => p.text || "").join("") || "[Image]"
-  if (typeof c === "object") return c.text || c.content || JSON.stringify(c)
+  if (Array.isArray(c)) {
+    // Try extract text parts first (vision messages)
+    const textParts = c.filter(p => p && p.type === "text").map(p => p.text || "")
+    if (textParts.length) return textParts.join("")
+    // Otherwise format as bullet list
+    return c.map(item => {
+      if (typeof item === "string") return "• " + item
+      if (typeof item === "object") return "• " + (item.text || item.name || JSON.stringify(item))
+      return "• " + String(item)
+    }).join("\n")
+  }
+  if (typeof c === "object") return c.text || c.content || c.message || JSON.stringify(c, null, 2)
   return String(c)
+}
+
+// Format any API response safely — used before rendering
+function formatResponse(response) {
+  if (typeof response === "string") return response
+  if (Array.isArray(response)) {
+    return response.map(item => {
+      if (typeof item === "string") return "• " + item
+      if (typeof item === "object") return "• " + (item.name || item.text || item.title || JSON.stringify(item))
+      return "• " + String(item)
+    }).join("\n")
+  }
+  if (typeof response === "object" && response !== null) {
+    return response.text || response.content || response.message || JSON.stringify(response, null, 2)
+  }
+  return String(response || "")
 }
 
 // SHARE CHAT
