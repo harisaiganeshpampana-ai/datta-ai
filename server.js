@@ -1357,8 +1357,12 @@ CRITICAL OUTPUT RULES:
           stream: true
         })
         for await (const part of stream) {
-          const token = part.choices?.[0]?.delta?.content
-          if (token && typeof token === "string") { full += token; res.write(token) }
+          let token = part.choices?.[0]?.delta?.content
+          if (token && typeof token === "string") {
+            // Strip any [object Object] the model outputs
+            token = token.replace(/\[object Object\]/g, "").replace(/\[Object object\]/g, "")
+            if (token) { full += token; res.write(token) }
+          }
         }
         lastError = null
         break
