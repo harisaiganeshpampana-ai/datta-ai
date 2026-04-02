@@ -2764,8 +2764,35 @@ function injectRunAppButton(container, rawText) {
     }
   })
 
-  // Only show button if there's runnable code
+  // Detect if this is a Node.js/backend response — never run in browser
+  const isBackendCode = js && (
+    js.includes("require(") ||
+    js.includes("process.env") ||
+    js.includes("express()") ||
+    js.includes("app.listen") ||
+    js.includes("mongoose") ||
+    js.includes("dotenv") ||
+    js.includes("fs.") ||
+    js.includes("path.") ||
+    js.includes("http.createServer") ||
+    js.includes("import express")
+  )
+  if (isBackendCode) return  // Node.js code cannot run in browser
+
+  // Only show button if there's actual frontend runnable code
   if (!html.trim() && !js.trim()) return
+
+  // For JS-only: must look like frontend code (uses DOM APIs)
+  if (!html.trim() && js.trim()) {
+    const isFrontendJS = js.includes("document.") ||
+      js.includes("window.") ||
+      js.includes("getElementById") ||
+      js.includes("querySelector") ||
+      js.includes("innerHTML") ||
+      js.includes("addEventListener") ||
+      js.includes("createElement")
+    if (!isFrontendJS) return  // pure logic/backend JS — don't run in browser
+  }
 
   // Build the combined app HTML
   const hasHTML = html.trim().length > 0
