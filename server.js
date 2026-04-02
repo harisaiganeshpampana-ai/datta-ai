@@ -373,13 +373,21 @@ async function webSearch(query) {
     const data = await response.json()
     if (!data.results?.length) return null
 
-    // Build rich context from results
-    const answer = data.answer ? "DIRECT ANSWER: " + data.answer + "\n\n" : ""
-    const sources = data.results.slice(0, 5).map((r, i) =>
-      "SOURCE " + (i+1) + ": " + r.title + "\n" +
-      "URL: " + r.url + "\n" +
-      "CONTENT: " + (r.content || "").substring(0, 800)
-    ).join("\n\n---\n\n")
+    // Build rich context — always plain text, no objects
+    const cleanStr = (s) => {
+      if (!s) return ""
+      if (typeof s !== "string") return String(s)
+      // Remove any [object Object] patterns
+      return s.replace(/\[object Object\]/g, "").replace(/undefined/g, "").trim()
+    }
+
+    const answer = data.answer ? "DIRECT ANSWER: " + cleanStr(data.answer) + "\n\n" : ""
+    const sources = data.results.slice(0, 5).map((r, i) => {
+      const title   = cleanStr(typeof r.title   === "string" ? r.title   : "")
+      const url     = cleanStr(typeof r.url     === "string" ? r.url     : "")
+      const content = cleanStr(typeof r.content === "string" ? r.content : "").substring(0, 800)
+      return "SOURCE " + (i+1) + ": " + title + "\nURL: " + url + "\nCONTENT: " + content
+    }).join("\n\n---\n\n")
 
     const result = answer + "SEARCH RESULTS:\n\n" + sources
     return typeof result === "string" ? result : null
@@ -1294,7 +1302,7 @@ RESPONSE FORMATTING:
 - Useful emojis: checkmark, cross, lightbulb, warning, fire, note, target, bolt, pin, rocket
 
 CRITICAL OUTPUT RULES:
-0. NEVER output raw arrays or objects like [object Object] — ALWAYS convert to readable text
+0. NEVER EVER write [object Object], undefined, null, or any JavaScript syntax in your response. You are a conversational AI — always write plain human-readable text. If data comes as objects, extract the text values manually.
 1. ALWAYS give COMPLETE WORKING code - NEVER truncate or stop midway
 2. For websites/apps: give the ENTIRE HTML/CSS/JS in ONE file - copy-paste ready
 3. When fixing bugs: show the COMPLETE fixed file
@@ -1303,7 +1311,7 @@ CRITICAL OUTPUT RULES:
 6. If [PDF: ...] in context - READ IT DIRECTLY and answer
 7. If [WEBSITE CONTENT] in context - analyze it directly
 8. Help with EVERYTHING: food, travel, health, fitness, cooking, relationships, finance, business, law, education, movies, sports, cricket, local places
-9. For sports/IPL/cricket: use ONLY the web search results provided. If search results have match data, show it clearly. NEVER say schedule not released if search results show matches.
+9. For sports/IPL/cricket: use ONLY the web search results provided. Show match data as plain readable text like "CSK vs MI at Wankhede Stadium at 7:30 PM". NEVER use JavaScript syntax, arrays, objects, or brackets. NEVER say [object Object].
 10. For local places: use search results only, never fabricate addresses or phone numbers
 11. For "near me" queries without location: ask "Which city are you in?" in ONE line
 12. Expert in: HTML, CSS, JS, React, Python, Node.js, SQL, Java, C++, ALL languages
