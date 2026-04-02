@@ -1,15 +1,15 @@
 /* ================================================
-   DATTA AI — LAYOUT SYSTEM
-   Two clean states: empty-state / chat-state
-   Input NEVER moves — always fixed bottom center
+   DATTA AI — LAYOUT SYSTEM — CLEAN REBUILD
    ================================================ */
 
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body {
-  height: 100%;
   margin: 0;
-  overflow: hidden;
+  padding: 0;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 body {
@@ -18,9 +18,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* ════════════════════════════════════════
-   TOPBAR — fixed, full width
-   ════════════════════════════════════════ */
+/* ── TOPBAR ── */
 .topbar {
   position: fixed !important;
   top: 0; left: 0; right: 0;
@@ -32,26 +30,17 @@ body {
   padding: 0 14px;
 }
 
-.menuBtn {
-  z-index: 1001;
-  cursor: pointer;
-  flex-shrink: 0;
-}
+.menuBtn { cursor: pointer; flex-shrink: 0; z-index: 1001; }
 
-/* ════════════════════════════════════════
-   APP BODY — flex row: sidebar + main
-   ════════════════════════════════════════ */
+/* ── APP BODY ── */
 .app-body {
   display: flex;
-  flex: 1;
-  height: calc(100vh - 56px);
   margin-top: 56px;
+  height: calc(100vh - 56px);
   overflow: hidden;
 }
 
-/* ════════════════════════════════════════
-   SIDEBAR
-   ════════════════════════════════════════ */
+/* ── SIDEBAR ── */
 .sidebar {
   width: 260px;
   flex-shrink: 0;
@@ -63,9 +52,7 @@ body {
   z-index: 90;
 }
 
-/* ════════════════════════════════════════
-   MAIN — contains chatWrapper
-   ════════════════════════════════════════ */
+/* ── MAIN ── */
 .main {
   flex: 1;
   min-width: 0;
@@ -75,9 +62,7 @@ body {
   position: relative;
 }
 
-/* ════════════════════════════════════════
-   CHAT WRAPPER — scrollable area
-   ════════════════════════════════════════ */
+/* ── CHAT WRAPPER ── */
 .chatWrapper {
   flex: 1;
   width: 100%;
@@ -87,6 +72,7 @@ body {
   position: relative;
 }
 
+/* ── CHAT SCROLL AREA ── */
 .chat {
   flex: 1;
   width: 100%;
@@ -95,39 +81,55 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* padding-bottom keeps last message above input bar */
-  padding: 24px 0 180px;
+  padding: 24px 0 180px;  /* 180px = input height + gap */
 }
 
-/* ════════════════════════════════════════
-   MESSAGE ROWS
-   ════════════════════════════════════════ */
+/* ── MESSAGE ROWS — centered, max-width ── */
 .messageRow {
   width: 100%;
   max-width: 800px;
   padding: 0 20px;
   margin: 0 auto 4px;
   display: flex;
+  box-sizing: border-box;
+}
+
+/* User bubble — right aligned */
+.userRow { justify-content: flex-end; }
+.userBubble {
+  max-width: 75%;
+  padding: 12px 16px;
+  border-radius: 18px 4px 18px 18px;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+/* AI bubble — left aligned */
+.aiBubble {
+  max-width: 85%;
+  padding: 12px 16px;
+  border-radius: 4px 18px 18px 18px;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 /* ════════════════════════════════════════
-   INPUT — ALWAYS fixed, ALWAYS centered
-   NEVER moves regardless of state
+   INPUT — fixed, always centered
+   Uses left:50% + translateX trick
+   Works regardless of sidebar
    ════════════════════════════════════════ */
-/* Input area — always centered, never shifts */
 .inputArea {
   position: fixed !important;
   bottom: 20px !important;
-  /* Center within content area (viewport minus sidebar) */
+  /* Center in remaining space after sidebar */
   left: calc(260px + (100vw - 260px) / 2) !important;
   transform: translateX(-50%) !important;
-  width: 90% !important;
-  max-width: 860px !important;
   right: auto !important;
+  width: min(90%, 860px) !important;
   z-index: 80;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   padding: 0;
   pointer-events: none;
 }
@@ -179,25 +181,19 @@ body {
   cursor: pointer;
 }
 
-/* ════════════════════════════════════════
-   EMPTY STATE — welcome screen
-   Visible when body does NOT have .chat-started
-   ════════════════════════════════════════ */
+/* ── WELCOME SCREEN ── */
 .welcomeScreen {
-  /* Takes full chatWrapper space */
   position: absolute;
   inset: 0;
-  /* Center content */
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Push content up so input doesn't overlap */
   padding: 0 24px 180px;
   z-index: 2;
-  /* Allow clicks through to chatWrapper but not body */
   pointer-events: none;
 }
 .welcomeScreen > * { pointer-events: all; }
+.chat-started .welcomeScreen { display: none !important; }
 
 .welcomeInner {
   display: flex;
@@ -208,14 +204,11 @@ body {
   max-width: 640px;
 }
 
-/* CHAT STATE — hide welcome, show messages */
-.chat-started .welcomeScreen {
-  display: none !important;
-}
+/* Hide suggestions in chat state */
+.chat-started .suggestionGrid,
+.chat-started #suggestionChips { display: none !important; }
 
-/* ════════════════════════════════════════
-   SUGGESTION GRID
-   ════════════════════════════════════════ */
+/* ── SUGGESTION GRID ── */
 .suggestionGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -223,19 +216,10 @@ body {
   width: 100%;
 }
 
-/* Hide chips in chat state */
-.chat-started .suggestionGrid,
-.chat-started #suggestionChips {
-  display: none !important;
-}
-
-/* ════════════════════════════════════════
-   NOTES PANEL
-   ════════════════════════════════════════ */
+/* ── NOTES PANEL ── */
 #notesPanel {
   position: fixed;
-  top: 56px;
-  right: -460px;
+  top: 56px; right: -460px;
   width: 420px;
   height: calc(100vh - 56px);
   z-index: 995;
@@ -247,23 +231,16 @@ body {
 
 body.notes-open .inputArea {
   left: calc(260px + (100vw - 260px - 420px) / 2) !important;
-  transform: translateX(-50%) !important;
 }
 
-/* ════════════════════════════════════════
-   SIDEBAR OVERLAY
-   ════════════════════════════════════════ */
+/* ── SIDEBAR OVERLAY ── */
 #sidebarOverlay {
-  position: fixed;
-  inset: 0;
+  position: fixed; inset: 0;
   background: rgba(0,0,0,0.5);
-  z-index: 998;
-  display: none;
+  z-index: 998; display: none;
 }
 
-/* ════════════════════════════════════════
-   SETTINGS
-   ════════════════════════════════════════ */
+/* ── SETTINGS ── */
 .settings-container, .container {
   max-width: 860px;
   margin: 0 auto;
@@ -271,29 +248,23 @@ body.notes-open .inputArea {
   width: 100%;
 }
 .settings-card {
-  width: 100%;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 16px;
+  width: 100%; border-radius: 12px;
+  padding: 20px; margin-bottom: 16px;
 }
 
 /* ════════════════════════════════════════
    TABLET  768px – 1024px
    ════════════════════════════════════════ */
 @media (min-width: 768px) and (max-width: 1024px) {
-  .sidebar        { width: 220px; }
+  .sidebar { width: 220px; }
   .inputArea {
     left: calc(220px + (100vw - 220px) / 2) !important;
-    transform: translateX(-50%) !important;
-    width: 90% !important;
-    max-width: 720px !important;
-    right: auto !important;
+    width: min(92%, 720px) !important;
   }
-  .messageRow     { max-width: 680px; }
-  #notesPanel     { width: 320px; right: -340px; }
+  .messageRow { max-width: 680px; }
+  #notesPanel { width: 320px; right: -340px; }
   body.notes-open .inputArea {
     left: calc(220px + (100vw - 220px - 320px) / 2) !important;
-    transform: translateX(-50%) !important;
   }
 }
 
@@ -301,66 +272,42 @@ body.notes-open .inputArea {
    MOBILE  < 768px
    ════════════════════════════════════════ */
 @media (max-width: 767px) {
-
-  /* Sidebar off-screen, slides in */
   .sidebar {
     position: fixed;
     top: 56px; left: 0;
     height: calc(100vh - 56px);
-    width: 280px;
-    z-index: 999;
+    width: 280px; z-index: 999;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
   }
-  .sidebar.open,
-  .sidebar.show {
+  .sidebar.open, .sidebar.show {
     transform: translateX(0);
     box-shadow: 4px 0 24px rgba(0,0,0,0.4);
   }
 
-  /* Mobile — center from full viewport */
+  /* Mobile: center from full viewport */
   .inputArea {
     left: 50% !important;
     transform: translateX(-50%) !important;
-    width: 94% !important;
-    max-width: 100% !important;
-    right: auto !important;
+    width: 95% !important;
     bottom: 12px !important;
-    padding: 0 !important;
   }
 
-  /* Messages full width */
-  .messageRow {
-    max-width: 100%;
-    padding: 0 12px;
-  }
-
-  /* Bottom padding for messages */
-  .chat { padding-bottom: 150px; }
-
-  /* Welcome centered with room for input */
-  .welcomeScreen { padding: 0 16px 160px; }
+  .messageRow { max-width: 100%; padding: 0 12px; }
+  .chat { padding-bottom: 160px; }
+  .welcomeScreen { padding: 0 16px 170px; }
   .welcomeInner  { max-width: 100%; }
-
-  /* Suggestion grid 2 columns on mobile */
   .suggestionGrid { gap: 10px; }
-
-  /* Hide desktop elements */
   .topThemeSwitch { display: none !important; }
   #notesPanel     { display: none !important; }
   #notesToggleBtn { display: none !important; }
-
-  body.notes-open .inputArea {
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-  }
+  body.notes-open .inputArea { left: 50% !important; }
 }
 
 /* ════════════════════════════════════════
-   LARGE DESKTOP  > 1400px
+   LARGE DESKTOP > 1400px
    ════════════════════════════════════════ */
 @media (min-width: 1400px) {
-  .inputWrap,
-  .inputModelBar { max-width: 900px; }
-  .messageRow    { max-width: 900px; }
+  .inputArea { width: min(88%, 900px) !important; }
+  .messageRow { max-width: 900px; }
 }
