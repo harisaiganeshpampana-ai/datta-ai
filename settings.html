@@ -1,1599 +1,853 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Settings – Datta AI</title>
+<link rel="icon" href="logo.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Nunito:wght@300;400;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Josefin+Sans:wght@300;400;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
-<title>Settings - Datta AI</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
 <style>
-* { margin:0; padding:0; box-sizing:border-box; font-family:system-ui,Arial,sans-serif; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
-  --bg: #0a0a0a;
-  --bg2: #111;
-  --bg3: #1a1a1a;
-  --border: #222;
-  --text: #ffffff;
-  --text2: #aaa;
-  --text3: #666;
-  --accent: #00ff88;
-  --accent2: #00ccff;
+[data-theme="dark"] {
+  --bg:     #212121;
+  --bg2:    #2f2f2f;
+  --bg3:    #383838;
+  --text:   #ececec;
+  --text2:  #a0a0a0;
+  --text3:  #666;
+  --border: rgba(255,255,255,0.1);
+  --card:   #2a2a2a;
+  --accent: #10a37f;
+  --shadow: rgba(0,0,0,0.3);
+}
+[data-theme="light"] {
+  --bg:     #f7f7f8;
+  --bg2:    #ffffff;
+  --bg3:    #f0f0f0;
+  --text:   #0d0d0d;
+  --text2:  #555;
+  --text3:  #999;
+  --border: #e5e5e5;
+  --card:   #ffffff;
+  --accent: #10a37f;
+  --shadow: rgba(0,0,0,0.08);
+}
+[data-theme="eye"] {
+  --bg:     #1a1f17;
+  --bg2:    #222b1d;
+  --bg3:    #2a3524;
+  --text:   #d4e6c3;
+  --text2:  #94b87a;
+  --text3:  #5a7a45;
+  --border: rgba(148,184,122,0.2);
+  --card:   #222b1d;
+  --accent: #10a37f;
+  --shadow: rgba(0,0,0,0.25);
 }
 
-body { background: var(--bg); color: var(--text); min-height: 100vh; transition: all 0.3s; }
+html, body {
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  transition: background 0.2s, color 0.2s;
+}
 
-/* HEADER */
-.header {
+/* ── TOPBAR ── */
+.topbar {
   position: sticky; top: 0;
-  background: var(--bg2);
+  background: var(--bg);
   border-bottom: 1px solid var(--border);
-  padding: 14px 20px;
-  display: flex; align-items: center; gap: 14px;
   z-index: 100;
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 16px;
+  height: 52px;
 }
-.backBtn {
-  background: var(--bg3); border: none; color: var(--text);
-  padding: 8px 14px; border-radius: 20px; cursor: pointer; font-size: 14px;
-  transition: all 0.2s;
+.back-btn {
+  width: 34px; height: 34px;
+  border-radius: 8px; border: none;
+  background: var(--bg3); color: var(--text2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; text-decoration: none;
+  transition: background 0.15s;
 }
-.backBtn:hover { background: #222; }
-.headerTitle { font-family:'Rajdhani',sans-serif; font-size:18px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
+.back-btn:hover { background: var(--border); }
+.topbar-title { font-size: 16px; font-weight: 600; color: var(--text); }
 
-/* CONTAINER */
-.container { max-width: 680px; margin: 0 auto; padding: 80px 16px 60px; }
+/* ── LAYOUT ── */
+.page { max-width: 640px; margin: 0 auto; padding: 20px 16px 80px; }
 
-/* Settings layout overrides */
-body { overflow-y: auto !important; overflow-x: hidden; min-height: 100vh; }
-.header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
-.container { padding-top: 76px; }
-
-/* Form inputs — consistent sizing */
-.formGroup { margin-bottom: 20px; }
-.formInput { 
-  width: 100%; 
-  max-width: 100%; 
-  height: 48px;
-  padding: 12px 16px;
-  font-size: 14px;
-}
-textarea.formInput { height: auto; min-height: 100px; }
-.formBtn { 
-  width: 100%; 
-  height: 48px; 
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-.formBtn:hover { opacity: 0.9; }
-.formLabel { 
-  font-size: 12px; 
-  font-weight: 700; 
-  letter-spacing: 0.5px;
-  margin-bottom: 8px; 
-  display: block; 
-}
-
-/* Section spacing */
-.card { margin-bottom: 16px; }
-.sectionDivider { 
-  height: 1px; 
-  background: var(--border); 
-  margin: 24px 0; 
-}
-
-/* Responsive */
-@media (max-width: 767px) {
-  .container { padding: 72px 16px 40px; }
-}
-
-/* Consistent section spacing */
-.section { margin-bottom: 32px; }
-.sectionTitle { font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-.formGroup { margin-bottom: 16px; }
-.formInput { width: 100%; max-width: 100%; }
-.formBtn { max-width: 100%; }
-.settingRow { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.04); gap: 16px; }
-.settingRow:last-child { border-bottom: none; }
-.settingLabel { font-size: 14px; color: var(--text2); }
-.settingDesc { font-size: 12px; color: var(--text3); margin-top: 2px; }
-
-/* USER CARD */
-.userCard {
-  background: var(--bg2); border: 1px solid var(--border);
-  border-radius: 20px; padding: 20px; margin-bottom: 24px;
+/* ── PROFILE CARD ── */
+.profile-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
   display: flex; align-items: center; gap: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px var(--shadow);
 }
-.userAvatarWrap { position: relative; cursor: pointer; }
-.userAvatar {
-  width: 64px; height: 64px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
+.avatar {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(135deg, #10a37f, #0077ff);
   display: flex; align-items: center; justify-content: center;
-  font-size: 26px; font-weight: 700; color: #000; overflow: hidden;
+  font-size: 22px; font-weight: 700; color: #fff;
+  flex-shrink: 0;
+  cursor: pointer; transition: filter 0.15s;
 }
-.userAvatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
-.editPhotoBtn {
-  position: absolute; bottom: -2px; right: -2px;
-  width: 22px; height: 22px; border-radius: 50%;
-  background: var(--accent); border: 2px solid var(--bg);
+.avatar:hover { filter: brightness(1.1); }
+.profile-info { flex: 1; min-width: 0; }
+.profile-name  { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.profile-email { font-size: 13px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.profile-plan  {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 6px;
+  background: rgba(16,163,127,0.12);
+  border: 1px solid rgba(16,163,127,0.25);
+  border-radius: 20px; padding: 2px 10px;
+  font-size: 11px; font-weight: 600; color: #10a37f;
+}
+.edit-btn {
+  width: 34px; height: 34px;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg3); color: var(--text3);
   display: flex; align-items: center; justify-content: center;
-  font-size: 10px; cursor: pointer;
+  cursor: pointer; transition: all 0.15s; flex-shrink: 0;
 }
-.userName { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
-.userEmail { font-size: 13px; color: var(--text3); }
-.userPlan {
-  margin-top: 6px; display: inline-block;
-  padding: 3px 10px; border-radius: 20px;
-  background: #0a2a1a; color: var(--accent);
-  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
-}
+.edit-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-/* SECTION */
-.sectionLabel {
-  font-size: 11px; color: var(--text3); font-weight: 700;
-  letter-spacing: 1.5px; text-transform: uppercase;
-  padding: 0 4px; margin-bottom: 8px; margin-top: 20px;
+/* ── SECTION GROUP ── */
+.section { margin-bottom: 20px; }
+.section-label {
+  font-size: 11px; font-weight: 600;
+  color: var(--text3); text-transform: uppercase; letter-spacing: 0.7px;
+  padding: 0 4px 8px;
 }
-.section {
-  background: var(--bg2); border: 1px solid var(--border);
-  border-radius: 16px; overflow: hidden; margin-bottom: 8px;
-}
-.settingRow {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 16px; border-bottom: 1px solid #141414;
-  cursor: pointer; transition: background 0.15s;
-}
-.settingRow:last-child { border-bottom: none; }
-.settingRow:hover { background: #141414; }
-.settingLeft { display: flex; align-items: center; gap: 12px; }
-.settingIcon {
-  width: 36px; height: 36px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;
-}
-.settingLabel { font-size: 15px; font-weight: 500; }
-.settingDesc { font-size: 12px; color: var(--text3); margin-top: 1px; }
-.settingArrow { color: var(--text3); font-size: 18px; }
-.settingValue { font-size: 12px; color: var(--text3); margin-right: 8px; }
-
-/* TOGGLE */
-.toggle { position:relative; width:44px; height:24px; }
-.toggle input { opacity:0; width:0; height:0; }
-.toggleSlider {
-  position:absolute; inset:0; background:#2a2a2a; border-radius:24px;
-  cursor:pointer; transition:0.3s;
-}
-.toggleSlider::before {
-  content:''; position:absolute; width:18px; height:18px;
-  left:3px; top:3px; background:white; border-radius:50%; transition:0.3s;
-}
-.toggle input:checked + .toggleSlider { background: var(--accent); }
-.toggle input:checked + .toggleSlider::before { transform:translateX(20px); }
-
-/* PANEL */
-.panel {
-  position:fixed; inset:0; background:rgba(0,0,0,0.7);
-  z-index:200; display:none; align-items:flex-end; justify-content:center;
-  backdrop-filter:blur(4px);
-}
-.panel.show { display:flex; }
-.panelBox {
-  background: var(--bg2); border:1px solid var(--border);
-  border-radius:20px 20px 0 0; width:100%; max-width:680px;
-  max-height:85vh; overflow-y:auto; padding:24px;
-  animation: slideUp 0.3s ease;
-}
-@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
-.panelHeader { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
-.panelTitle { font-family:'Rajdhani',sans-serif; font-size:18px; font-weight:700; letter-spacing:0.5px; }
-.panelClose {
-  display: none;
-}
-.panelBack {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: none;
-  color: #00ff88;
-  font-size: 14px;
-  font-family: 'Josefin Sans', sans-serif;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  padding: 6px 10px 6px 4px;
-  border-radius: 8px;
-  transition: all 0.15s;
-}
-.panelBack:hover {
-  background: rgba(0,255,136,0.08);
-  transform: translateX(-2px);
-}
-.panelBack::before {
-  content: "'";
-  font-size: 16px;
-}
-
-/* FORM */
-.formLabel { font-size:11px; color:var(--text3); font-weight:700; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:8px; display:block; }
-.formInput {
-  width:100%; padding:12px 14px; background:var(--bg3); border:1px solid var(--border);
-  border-radius:10px; color:var(--text); font-size:15px; outline:none; margin-bottom:16px;
-  transition: border-color 0.2s;
-}
-.formInput:focus { border-color: var(--accent); }
-.saveBtn {
-  width:100%; padding:13px; background:linear-gradient(135deg,var(--accent),var(--accent2));
-  border:none; border-radius:12px; color:#000; font-size:15px; font-weight:700; cursor:pointer;
-}
-.dangerBtn {
-  width:100%; padding:12px; background:#1a0808; border:1px solid #441010;
-  border-radius:12px; color:#ff6666; font-size:14px; font-weight:600; cursor:pointer; margin-top:8px;
-}
-.msg { padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:14px; }
-.msg.success { background:#0a2a1a; border:1px solid #104410; color:#44ff88; }
-.msg.error { background:#2a1010; border:1px solid #441010; color:#ff6666; }
-
-/* THEME GRID */
-.themeGrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
-.themeCard {
-  border-radius:14px; padding:14px; cursor:pointer; border:2px solid var(--border);
-  transition:all 0.2s; position:relative; overflow:hidden;
-}
-.themeCard.active { border-color: var(--accent); }
-.themePreview { height:60px; border-radius:8px; margin-bottom:10px; }
-.themeName { font-size:13px; font-weight:600; }
-.themeCheck {
-  position:absolute; top:8px; right:8px;
-  width:20px; height:20px; border-radius:50%;
-  background: var(--accent); color:#000; font-size:11px;
-  display:none; align-items:center; justify-content:center; font-weight:700;
-}
-.themeCard.active .themeCheck { display:flex; }
-
-/* WALLPAPER GRID */
-.wallpaperGrid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:16px; }
-.wallpaperCard {
-  height:80px; border-radius:10px; cursor:pointer; border:2px solid transparent;
-  transition:all 0.2s; position:relative;
-}
-.wallpaperCard.active { border-color: var(--accent); }
-
-/* STYLE PILLS */
-.stylePills { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
-.stylePill {
-  padding:8px 16px; background:var(--bg3); border:1px solid var(--border);
-  border-radius:20px; font-size:13px; cursor:pointer; transition:all 0.2s; color:var(--text2);
-}
-.stylePill.active { background:#0a2a1a; border-color:var(--accent); color:var(--accent); }
-
-/* LOGOUT */
-/* '' PERSONA CARDS '' */
-.personaCard {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  background: #0f0f0f;
-  border: 1.5px solid #1a1a1a;
-  border-radius: 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-  overflow: hidden;
-}
-.personaCard::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: transparent;
-  transition: background 0.2s;
-  border-radius: 3px 0 0 3px;
-}
-.personaCard:hover {
-  background: #141414;
-  border-color: #252525;
-  transform: translateX(3px);
-}
-.personaCard.active {
-  background: #0a180a;
-  border-color: #00ff8840;
-}
-.personaCard.active::before {
-  background: #00ff88;
-}
-
-/* '' FONT CARDS '' */
-.fontCard {
-  padding: 14px 16px;
-  background: #0f0f0f;
-  border: 1.5px solid #1a1a1a;
-  border-radius: 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-  overflow: hidden;
-}
-.fontCard::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: transparent;
-  transition: background 0.2s;
-  border-radius: 3px 0 0 3px;
-}
-.fontCard:hover {
-  background: #141414;
-  border-color: #252525;
-  transform: translateX(3px);
-}
-.fontCard.active {
-  background: #0a180a;
-  border-color: #00ff8840;
-}
-.fontCard.active::before {
-  background: #00ff88;
-}
-
-/* Font size buttons */
-.sizeBtn {
-  flex: 1;
-  padding: 12px;
-  background: #0f0f0f;
-  border: 1.5px solid #1a1a1a;
-  border-radius: 12px;
-  color: #777;
-  cursor: pointer;
-  transition: all 0.15s;
-  font-family: system-ui;
-  text-align: center;
-}
-.sizeBtn:hover { background: #141414; border-color: #252525; color: #ccc; }
-.sizeBtn.active { background: #0a180a; border-color: #00ff8840; color: #00ff88; }
-
-.voiceCard {
-  background: var(--bg3);
-  border: 2px solid var(--border);
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 14px 10px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s;
+  overflow: hidden;
+  box-shadow: 0 1px 4px var(--shadow);
 }
-.voiceCard:hover { background: #222; border-color: #333; }
-.voiceCard.active { border-color: #00ff8866; background: #0a2a1a; }
 
-.logoutBtn {
-  width:100%; padding:14px; background:#1a0808; border:1px solid #441010;
-  border-radius:14px; color:#ff6666; font-size:15px; font-weight:600;
-  cursor:pointer; margin-top:8px; transition:all 0.2s;
+/* ── SETTING ROW ── */
+.row {
+  display: flex; align-items: center;
+  padding: 14px 16px; gap: 14px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+  cursor: default;
+  min-height: 56px;
 }
-.logoutBtn:hover { background:#2a1010; }
+.row:last-child { border-bottom: none; }
+.row.clickable { cursor: pointer; }
+.row.clickable:hover { background: rgba(255,255,255,0.03); }
+.row.clickable:active { background: rgba(255,255,255,0.06); }
+
+.row-icon {
+  width: 34px; height: 34px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 17px;
+}
+.row-content { flex: 1; min-width: 0; }
+.row-label { font-size: 14px; font-weight: 500; color: var(--text); }
+.row-sub   { font-size: 12px; color: var(--text3); margin-top: 1px; }
+.row-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.row-value { font-size: 13px; color: var(--text3); }
+.row-arrow { color: var(--text3); font-size: 18px; line-height: 1; }
+
+/* ── TOGGLE SWITCH ── */
+.toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute; inset: 0;
+  background: var(--bg3); border-radius: 24px;
+  cursor: pointer; transition: background 0.2s;
+  border: 1px solid var(--border);
+}
+.toggle-track::before {
+  content: ''; position: absolute;
+  width: 18px; height: 18px;
+  top: 2px; left: 2px;
+  background: #fff; border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.toggle input:checked + .toggle-track { background: var(--accent); border-color: var(--accent); }
+.toggle input:checked + .toggle-track::before { transform: translateX(20px); }
+
+/* ── THEME PILLS ── */
+.theme-pills { display: flex; gap: 6px; }
+.theme-pill {
+  padding: 5px 12px; border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg3); color: var(--text2);
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+.theme-pill.active {
+  background: var(--accent); color: #fff;
+  border-color: var(--accent);
+}
+
+/* ── SEGMENT CONTROL ── */
+.segment {
+  display: flex; gap: 4px;
+  background: var(--bg3);
+  border-radius: 10px; padding: 3px;
+}
+.seg-btn {
+  flex: 1; padding: 5px 10px; border-radius: 7px;
+  border: none; background: transparent;
+  color: var(--text3); font-size: 12px; font-weight: 500;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.15s; white-space: nowrap;
+}
+.seg-btn.active { background: var(--bg2); color: var(--text); box-shadow: 0 1px 3px var(--shadow); }
+
+/* ── SELECT ── */
+.s-select {
+  background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text); border-radius: 8px;
+  padding: 5px 10px; font-size: 13px;
+  font-family: inherit; outline: none; cursor: pointer;
+}
+.s-select:focus { border-color: var(--accent); }
+
+/* ── EDIT MODAL ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 999;
+  align-items: center; justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px; width: 100%; max-width: 420px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+}
+.modal-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 16px; }
+.m-input {
+  width: 100%; padding: 10px 14px;
+  border-radius: 10px; border: 1px solid var(--border);
+  background: var(--bg3); color: var(--text);
+  font-size: 14px; font-family: inherit; outline: none;
+  margin-bottom: 10px;
+}
+.m-input:focus { border-color: var(--accent); }
+.m-btns { display: flex; gap: 8px; margin-top: 4px; }
+.m-btn {
+  flex: 1; padding: 10px; border-radius: 10px;
+  border: 1px solid var(--border); font-size: 14px;
+  font-weight: 500; cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+.m-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.m-btn.primary:hover { filter: brightness(1.1); }
+.m-btn.secondary { background: var(--bg3); color: var(--text2); }
+.m-btn.secondary:hover { background: var(--border); }
+.m-msg { font-size: 13px; min-height: 18px; padding: 4px 0; }
+.m-msg.ok  { color: var(--accent); }
+.m-msg.err { color: #e55; }
+
+/* ── LOGOUT BUTTON ── */
+.logout-btn {
+  width: 100%; padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(220,60,60,0.25);
+  background: rgba(220,60,60,0.06);
+  color: #e55; font-size: 15px; font-weight: 500;
+  cursor: pointer; font-family: inherit;
+  margin-top: 8px;
+  transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.logout-btn:hover { background: rgba(220,60,60,0.12); border-color: rgba(220,60,60,0.4); }
+
+/* ── DANGER ROW ── */
+.row.danger .row-label { color: #e55; }
+.row.danger .row-icon { background: rgba(220,60,60,0.1); }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 80px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg2); border: 1px solid var(--border);
+  color: var(--text); padding: 9px 18px;
+  border-radius: 20px; font-size: 13px;
+  z-index: 9999; opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none; white-space: nowrap;
+  box-shadow: 0 4px 16px var(--shadow);
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .profile-card { padding: 16px; gap: 12px; }
+  .avatar { width: 48px; height: 48px; font-size: 18px; }
+}
 </style>
-  <link rel="stylesheet" href="layout.css">
-  <link rel="stylesheet" href="theme.css">
-  <script>
-    (function(){
-      var t = localStorage.getItem("datta_theme") || "dark"
-      document.body.setAttribute("data-theme", ["dark","light","eye"].includes(t) ? t : "dark")
-    })()
-  </script>
 </head>
+
 <body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <a href="index.html" class="back-btn">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+  </a>
+  <div class="topbar-title">Settings</div>
+</div>
+
+<div class="page">
+
+  <!-- Profile -->
+  <div class="profile-card">
+    <div class="avatar" id="avatar" onclick="openEditName()">G</div>
+    <div class="profile-info">
+      <div class="profile-name" id="profileName">Loading...</div>
+      <div class="profile-email" id="profileEmail">–</div>
+      <div class="profile-plan" id="profilePlan">🌱 Free Plan</div>
+    </div>
+    <button class="edit-btn" onclick="openEditName()" title="Edit profile">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    </button>
+  </div>
+
+  <!-- Appearance -->
+  <div class="section">
+    <div class="section-label">Appearance</div>
+    <div class="card">
+      <div class="row">
+        <div class="row-icon" style="background:rgba(99,102,241,0.12);">🎨</div>
+        <div class="row-content">
+          <div class="row-label">Theme</div>
+        </div>
+        <div class="row-right">
+          <div class="theme-pills">
+            <button class="theme-pill" id="t-dark"  onclick="setTheme('dark')">Dark</button>
+            <button class="theme-pill" id="t-light" onclick="setTheme('light')">Light</button>
+            <button class="theme-pill" id="t-eye"   onclick="setTheme('eye')">Eye</button>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="row-icon" style="background:rgba(245,158,11,0.12);">🔤</div>
+        <div class="row-content">
+          <div class="row-label">Font Size</div>
+        </div>
+        <div class="row-right">
+          <div class="segment">
+            <button class="seg-btn" id="fs-small"  onclick="setFontSize('small')">S</button>
+            <button class="seg-btn active" id="fs-medium" onclick="setFontSize('medium')">M</button>
+            <button class="seg-btn" id="fs-large"  onclick="setFontSize('large')">L</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Personalization -->
+  <div class="section">
+    <div class="section-label">Personalization</div>
+    <div class="card">
+      <div class="row">
+        <div class="row-icon" style="background:rgba(16,163,127,0.12);">🌐</div>
+        <div class="row-content">
+          <div class="row-label">Language</div>
+          <div class="row-sub">AI response language</div>
+        </div>
+        <div class="row-right">
+          <select class="s-select" id="langSelect" onchange="saveLanguage(this.value)">
+            <option value="English">English</option>
+            <option value="Hindi">Hindi</option>
+            <option value="Telugu">Telugu</option>
+            <option value="Tamil">Tamil</option>
+            <option value="Spanish">Spanish</option>
+            <option value="French">French</option>
+            <option value="Arabic">Arabic</option>
+            <option value="Chinese">Chinese</option>
+            <option value="Japanese">Japanese</option>
+            <option value="German">German</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="row-icon" style="background:rgba(59,130,246,0.12);">⚡</div>
+        <div class="row-content">
+          <div class="row-label">Response Style</div>
+        </div>
+        <div class="row-right">
+          <div class="segment">
+            <button class="seg-btn" id="rs-short"    onclick="setStyle('Short')">Short</button>
+            <button class="seg-btn active" id="rs-balanced" onclick="setStyle('Balanced')">Balanced</button>
+            <button class="seg-btn" id="rs-detailed" onclick="setStyle('Detailed')">Detailed</button>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="row-icon" style="background:rgba(168,85,247,0.12);">🎙️</div>
+        <div class="row-content">
+          <div class="row-label">Voice</div>
+          <div class="row-sub">For voice responses</div>
+        </div>
+        <div class="row-right">
+          <select class="s-select" id="voiceSelect" onchange="saveVoice(this.value)">
+            <option value="aria">Aria (Female)</option>
+            <option value="ryan">Ryan (Male)</option>
+            <option value="sonia">Sonia (Neutral)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Mode -->
+  <div class="section">
+    <div class="section-label">AI Mode</div>
+    <div class="card">
+      <div class="row clickable" id="mode-normal" onclick="setAIMode('normal')">
+        <div class="row-icon" style="background:rgba(16,163,127,0.12);">💬</div>
+        <div class="row-content">
+          <div class="row-label">Normal</div>
+          <div class="row-sub">Everyday conversations</div>
+        </div>
+        <div class="row-right" id="mode-check-normal"><span style="color:var(--accent);font-size:18px;">✓</span></div>
+      </div>
+      <div class="row clickable" id="mode-expert" onclick="setAIMode('expert')">
+        <div class="row-icon" style="background:rgba(245,158,11,0.12);">🧠</div>
+        <div class="row-content">
+          <div class="row-label">Expert</div>
+          <div class="row-sub">Deep research & analysis</div>
+        </div>
+        <div class="row-right" id="mode-check-expert"></div>
+      </div>
+      <div class="row clickable" id="mode-coding" onclick="setAIMode('coding')">
+        <div class="row-icon" style="background:rgba(59,130,246,0.12);">💻</div>
+        <div class="row-content">
+          <div class="row-label">Coding</div>
+          <div class="row-sub">Code, debug, build</div>
+        </div>
+        <div class="row-right" id="mode-check-coding"></div>
+      </div>
+      <div class="row clickable" id="mode-creative" onclick="setAIMode('creative')">
+        <div class="row-icon" style="background:rgba(236,72,153,0.12);">✨</div>
+        <div class="row-content">
+          <div class="row-label">Creative</div>
+          <div class="row-sub">Writing, storytelling, ideas</div>
+        </div>
+        <div class="row-right" id="mode-check-creative"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notifications -->
+  <div class="section">
+    <div class="section-label">Notifications</div>
+    <div class="card">
+      <div class="row">
+        <div class="row-icon" style="background:rgba(251,146,60,0.12);">🔔</div>
+        <div class="row-content">
+          <div class="row-label">Browser Notifications</div>
+        </div>
+        <div class="row-right">
+          <label class="toggle">
+            <input type="checkbox" id="notifToggle" onchange="saveNotif()">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
+      <div class="row">
+        <div class="row-icon" style="background:rgba(251,146,60,0.12);">🔊</div>
+        <div class="row-content">
+          <div class="row-label">Sound Effects</div>
+        </div>
+        <div class="row-right">
+          <label class="toggle">
+            <input type="checkbox" id="soundToggle" onchange="saveNotif()">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
+      <div class="row">
+        <div class="row-icon" style="background:rgba(99,102,241,0.12);">📝</div>
+        <div class="row-content">
+          <div class="row-label">Streaming Text</div>
+          <div class="row-sub">Type-as-you-go effect</div>
+        </div>
+        <div class="row-right">
+          <label class="toggle">
+            <input type="checkbox" id="streamToggle" checked onchange="saveNotif()">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Security -->
+  <div class="section">
+    <div class="section-label">Security</div>
+    <div class="card">
+      <div class="row clickable" onclick="openChangePassword()">
+        <div class="row-icon" style="background:rgba(99,102,241,0.12);">🔑</div>
+        <div class="row-content">
+          <div class="row-label">Change Password</div>
+        </div>
+        <div class="row-right">
+          <span class="row-arrow">›</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data & Privacy -->
+  <div class="section">
+    <div class="section-label">Data & Privacy</div>
+    <div class="card">
+      <div class="row clickable danger" onclick="clearAllChats()">
+        <div class="row-icon">🗑️</div>
+        <div class="row-content">
+          <div class="row-label">Clear All Chats</div>
+          <div class="row-sub">Permanently deletes history</div>
+        </div>
+        <div class="row-right"><span class="row-arrow">›</span></div>
+      </div>
+      <div class="row clickable danger" onclick="confirmDeleteAccount()">
+        <div class="row-icon">❌</div>
+        <div class="row-content">
+          <div class="row-label">Delete Account</div>
+          <div class="row-sub">Cannot be undone</div>
+        </div>
+        <div class="row-right"><span class="row-arrow">›</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- About -->
+  <div class="section">
+    <div class="section-label">About</div>
+    <div class="card">
+      <div class="row">
+        <div class="row-icon" style="background:rgba(16,163,127,0.12);">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M9 2L15 6V12L9 16L3 12V6L9 2Z" fill="#10a37f"/>
+            <path d="M9 6L12 8V12L9 14L6 12V8L9 6Z" fill="rgba(0,0,0,0.4)"/>
+          </svg>
+        </div>
+        <div class="row-content">
+          <div class="row-label">Datta AI</div>
+          <div class="row-sub">Version 2.0 · Shakti</div>
+        </div>
+        <div class="row-right"><span class="row-value">v2.0</span></div>
+      </div>
+      <div class="row clickable" onclick="window.open('https://datta-ai.com','_blank')">
+        <div class="row-icon" style="background:rgba(59,130,246,0.12);">🌐</div>
+        <div class="row-content"><div class="row-label">Website</div></div>
+        <div class="row-right"><span class="row-arrow">›</span></div>
+      </div>
+      <div class="row clickable" onclick="window.location.href='pricing.html'">
+        <div class="row-icon" style="background:rgba(245,158,11,0.12);">⭐</div>
+        <div class="row-content">
+          <div class="row-label">Upgrade Plan</div>
+          <div class="row-sub">Mini · Pro · Max · Ultra Max</div>
+        </div>
+        <div class="row-right"><span class="row-arrow">›</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logout -->
+  <button class="logout-btn" onclick="logout()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    Log Out
+  </button>
+
+</div><!-- /.page -->
+
+<!-- ── EDIT NAME MODAL ── -->
+<div class="modal-overlay" id="editNameModal" onclick="if(event.target===this)closeModal('editNameModal')">
+  <div class="modal-box">
+    <div class="modal-title">Edit Profile</div>
+    <input type="text" class="m-input" id="newUsername" placeholder="Username">
+    <div id="editNameMsg" class="m-msg"></div>
+    <div class="m-btns">
+      <button class="m-btn secondary" onclick="closeModal('editNameModal')">Cancel</button>
+      <button class="m-btn primary" onclick="saveUsername()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CHANGE PASSWORD MODAL ── -->
+<div class="modal-overlay" id="pwModal" onclick="if(event.target===this)closeModal('pwModal')">
+  <div class="modal-box">
+    <div class="modal-title">Change Password</div>
+    <input type="password" class="m-input" id="curPw"  placeholder="Current password">
+    <input type="password" class="m-input" id="newPw"  placeholder="New password (min 6 chars)">
+    <input type="password" class="m-input" id="conPw"  placeholder="Confirm new password">
+    <div id="pwMsg" class="m-msg"></div>
+    <div class="m-btns">
+      <button class="m-btn secondary" onclick="closeModal('pwModal')">Cancel</button>
+      <button class="m-btn primary" onclick="changePassword()">Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DELETE ACCOUNT MODAL ── -->
+<div class="modal-overlay" id="delAccModal" onclick="if(event.target===this)closeModal('delAccModal')">
+  <div class="modal-box">
+    <div class="modal-title" style="color:#e55;">Delete Account</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px;">This will permanently delete your account and all data. This cannot be undone.</p>
+    <input type="password" class="m-input" id="delAccPw" placeholder="Enter password to confirm">
+    <div id="delAccMsg" class="m-msg"></div>
+    <div class="m-btns">
+      <button class="m-btn secondary" onclick="closeModal('delAccModal')">Cancel</button>
+      <button class="m-btn" style="background:rgba(220,60,60,0.15);color:#e55;border-color:rgba(220,60,60,0.3);" onclick="deleteAccount()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
 <script>
-// PANEL + CORE FUNCTIONS - must be first
-// ALL SETTINGS FUNCTIONS - defined early so all onclicks work
 const SERVER = "https://datta-ai-server.onrender.com"
 function getToken() { return localStorage.getItem("datta_token") || "" }
-function getUser() { try { return JSON.parse(localStorage.getItem("datta_user")||"{}") } catch(e) { return {} } }
+function getUser()  { try { return JSON.parse(localStorage.getItem("datta_user") || "{}") } catch(e) { return {} } }
 
-function setTheme(name) {
-  if (!["dark","light","eye"].includes(name)) name = "dark"
-  localStorage.setItem("datta_theme", name)
-  document.body.setAttribute("data-theme", name)
-  document.body.classList.remove("light","light-theme","midnight","forest","ocean","sunset")
-  document.querySelectorAll(".themeCard").forEach(c => c.classList.remove("active"))
-  const card = document.getElementById("theme-" + name)
-  if (card) card.classList.add("active")
-  const desc = document.getElementById("themeDesc")
-  if (desc) desc.textContent = name.charAt(0).toUpperCase() + name.slice(1)
-  showMsg("theme", "Theme applied!", "success")
-  setTimeout(() => closePanel("theme"), 600)
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.addEventListener("DOMContentLoaded", function() {
+  // Apply theme
+  const theme = localStorage.getItem("datta_theme") || "dark"
+  applyTheme(theme)
+
+  // Load user info
+  const user = getUser()
+  document.getElementById("avatar").textContent      = (user.username || user.email || "U")[0].toUpperCase()
+  document.getElementById("profileName").textContent = user.username || "User"
+  document.getElementById("profileEmail").textContent = user.email || "–"
+
+  // Load plan
+  const plan = user.plan || user.subscription || "free"
+  const planMap = { free:"🌱 Free", mini:"⚡ Mini", pro:"🔥 Pro", max:"💎 Max", ultramax:"👑 Ultra Max" }
+  document.getElementById("profilePlan").textContent = planMap[plan] || "🌱 Free Plan"
+
+  // Font size
+  const fs = localStorage.getItem("datta_font_size_label") || "medium"
+  document.querySelectorAll(".seg-btn[id^='fs-']").forEach(b => b.classList.remove("active"))
+  const fsBtn = document.getElementById("fs-" + fs)
+  if (fsBtn) fsBtn.classList.add("active")
+
+  // Response style
+  const style = localStorage.getItem("datta_ai_style") || "Balanced"
+  document.querySelectorAll(".seg-btn[id^='rs-']").forEach(b => b.classList.remove("active"))
+  const rsBtn = document.getElementById("rs-" + style.toLowerCase())
+  if (rsBtn) rsBtn.classList.add("active")
+
+  // Language
+  const lang = localStorage.getItem("datta_language") || "English"
+  document.getElementById("langSelect").value = lang
+
+  // Voice
+  const voice = localStorage.getItem("datta_voice") || "aria"
+  document.getElementById("voiceSelect").value = voice
+
+  // AI Mode
+  const mode = localStorage.getItem("datta_ai_mode") || "normal"
+  setAIModeUI(mode)
+
+  // Toggles
+  const notif  = localStorage.getItem("datta_notif_enabled") === "true"
+  const sound  = localStorage.getItem("datta_sound_enabled") === "true"
+  const stream = localStorage.getItem("datta_stream_enabled") !== "false"
+  document.getElementById("notifToggle").checked  = notif
+  document.getElementById("soundToggle").checked  = sound
+  document.getElementById("streamToggle").checked = stream
+})
+
+// ── THEME ─────────────────────────────────────────────────────────────────────
+function applyTheme(t) {
+  if (!["dark","light","eye"].includes(t)) t = "dark"
+  document.documentElement.setAttribute("data-theme", t)
+  document.body.setAttribute("data-theme", t)
+  document.querySelectorAll(".theme-pill").forEach(b => b.classList.remove("active"))
+  const btn = document.getElementById("t-" + t)
+  if (btn) btn.classList.add("active")
+}
+function setTheme(t) {
+  localStorage.setItem("datta_theme", t)
+  applyTheme(t)
+  toast("Theme updated")
 }
 
-function setWallpaper(name) {
-  localStorage.setItem("datta_wallpaper", name)
-  document.querySelectorAll(".wallpaperCard").forEach(c => c.classList.remove("active"))
-  const card = document.getElementById("wp-" + name)
-  if (card) card.classList.add("active")
-  const desc = document.getElementById("wallpaperDesc")
-  if (desc) desc.textContent = name === "none" ? "None" : name.charAt(0).toUpperCase() + name.slice(1)
-  setTimeout(() => closePanel("wallpaper"), 600)
+// ── FONT SIZE ─────────────────────────────────────────────────────────────────
+function setFontSize(size) {
+  localStorage.setItem("datta_font_size_label", size)
+  const sizes = { small: "14px", medium: "16px", large: "18px" }
+  localStorage.setItem("datta_font_size", sizes[size] || "16px")
+  document.querySelectorAll(".seg-btn[id^='fs-']").forEach(b => b.classList.remove("active"))
+  const btn = document.getElementById("fs-" + size)
+  if (btn) btn.classList.add("active")
+  toast("Font size: " + size)
 }
 
-function pickCustomWallpaper() {
-  const input = document.createElement("input")
-  input.type = "file"; input.accept = "image/*"
-  input.onchange = e => {
-    const file = e.target.files[0]; if (!file) return
-    const reader = new FileReader()
-    reader.onload = ev => {
-      localStorage.setItem("datta_wallpaper_custom", ev.target.result)
-      localStorage.setItem("datta_wallpaper", "custom")
-      const desc = document.getElementById("wallpaperDesc")
-      if (desc) desc.textContent = "Custom"
-      closePanel("wallpaper")
-    }
-    reader.readAsDataURL(file)
-  }
-  input.click()
-}
-
-function saveAIName() {
-  const inp = document.getElementById("ainameInput")
-  if (!inp) return
-  const name = inp.value.trim()
-  if (!name) return showMsg("ainame", "Enter a name", "error")
-  localStorage.setItem("datta_ai_name", name)
-  const desc = document.getElementById("ainameDesc")
-  if (desc) desc.textContent = name
-  showMsg("ainame", "AI name saved!", "success")
-  setTimeout(() => closePanel("ainame"), 1000)
-}
-
+// ── STYLE ─────────────────────────────────────────────────────────────────────
 function setStyle(style) {
   localStorage.setItem("datta_ai_style", style)
-  document.querySelectorAll(".stylePill").forEach(p => p.classList.remove("active"))
-  const desc = document.getElementById("aistyleDesc")
-  if (desc) desc.textContent = style
-  showMsg("aistyle", "Style saved!", "success")
-  setTimeout(() => closePanel("aistyle"), 600)
+  document.querySelectorAll(".seg-btn[id^='rs-']").forEach(b => b.classList.remove("active"))
+  const btn = document.getElementById("rs-" + style.toLowerCase())
+  if (btn) btn.classList.add("active")
+  toast("Style: " + style)
 }
 
-function setLanguage(lang) {
-  localStorage.setItem("datta_language", lang)
-  document.querySelectorAll("[id^='lang-']").forEach(el => el.classList.remove("active"))
-  const el = document.getElementById("lang-" + lang)
-  if (el) el.classList.add("active")
-  const desc = document.getElementById("langDesc")
-  if (desc) desc.textContent = lang
-  setTimeout(() => closePanel("language"), 600)
+// ── LANGUAGE ──────────────────────────────────────────────────────────────────
+function saveLanguage(val) {
+  localStorage.setItem("datta_language", val)
+  toast("Language saved")
 }
 
-function uploadPhoto() {
-  const input = document.createElement("input")
-  input.type = "file"; input.accept = "image/*"
-  input.onchange = e => {
-    const file = e.target.files[0]; if (!file) return
-    const reader = new FileReader()
-    reader.onload = ev => {
-      localStorage.setItem("datta_avatar", ev.target.result)
-      setAvatar(ev.target.result)
-    }
-    reader.readAsDataURL(file)
-  }
-  input.click()
+// ── VOICE ─────────────────────────────────────────────────────────────────────
+function saveVoice(val) {
+  localStorage.setItem("datta_voice", val)
+  toast("Voice updated")
 }
 
-function setAvatar(dataUrl) {
-  const img = document.getElementById("userAvatarImg")
-  const letter = document.getElementById("userAvatarLetter")
-  if (img) { img.src = dataUrl; img.style.display = "block" }
-  if (letter) letter.style.display = "none"
+// ── AI MODE ───────────────────────────────────────────────────────────────────
+function setAIMode(mode) {
+  localStorage.setItem("datta_ai_mode", mode)
+  setAIModeUI(mode)
+  toast("AI mode: " + mode)
+}
+function setAIModeUI(mode) {
+  ["normal","expert","coding","creative"].forEach(m => {
+    const el = document.getElementById("mode-check-" + m)
+    if (el) el.innerHTML = m === mode ? '<span style="color:var(--accent);font-size:18px;">✓</span>' : ""
+  })
 }
 
-async function changeUsername() {
-  const inp = document.getElementById("newUsername")
-  if (!inp) return
-  const val = inp.value.trim()
-  if (!val || val.length < 3) return showMsg("username", "Min 3 characters", "error")
+// ── NOTIFICATIONS ─────────────────────────────────────────────────────────────
+function saveNotif() {
+  localStorage.setItem("datta_notif_enabled",  document.getElementById("notifToggle").checked)
+  localStorage.setItem("datta_sound_enabled",  document.getElementById("soundToggle").checked)
+  localStorage.setItem("datta_stream_enabled", document.getElementById("streamToggle").checked)
+}
+
+// ── EDIT NAME ─────────────────────────────────────────────────────────────────
+function openEditName() {
+  const user = getUser()
+  document.getElementById("newUsername").value = user.username || ""
+  document.getElementById("editNameMsg").textContent = ""
+  document.getElementById("editNameModal").classList.add("show")
+}
+async function saveUsername() {
+  const val = document.getElementById("newUsername").value.trim()
+  const msg = document.getElementById("editNameMsg")
+  if (!val) { msg.textContent = "Enter a username"; msg.className = "m-msg err"; return }
   try {
     const res = await fetch(SERVER + "/auth/update-username", {
-      method: "POST", headers: {"Content-Type":"application/json"},
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: val, token: getToken() })
     })
     const data = await res.json()
-    if (!res.ok) return showMsg("username", data.error || "Failed", "error")
-    const user = getUser(); user.username = val
+    if (!res.ok) { msg.textContent = data.error || "Failed"; msg.className = "m-msg err"; return }
+    const user = getUser()
+    user.username = val
     localStorage.setItem("datta_user", JSON.stringify(user))
-    const nameEl = document.getElementById("userName")
-    const letterEl = document.getElementById("userAvatarLetter")
-    if (nameEl) nameEl.textContent = val
-    if (letterEl) letterEl.textContent = val[0].toUpperCase()
-    showMsg("username", "Username updated!", "success")
-    setTimeout(() => closePanel("username"), 1200)
-  } catch(e) { showMsg("username", "Server error", "error") }
+    document.getElementById("profileName").textContent = val
+    document.getElementById("avatar").textContent = val[0].toUpperCase()
+    msg.textContent = "Saved!"; msg.className = "m-msg ok"
+    setTimeout(() => closeModal("editNameModal"), 800)
+  } catch(e) { msg.textContent = "Network error"; msg.className = "m-msg err" }
 }
 
+// ── CHANGE PASSWORD ───────────────────────────────────────────────────────────
+function openChangePassword() {
+  ["curPw","newPw","conPw"].forEach(id => document.getElementById(id).value = "")
+  document.getElementById("pwMsg").textContent = ""
+  document.getElementById("pwModal").classList.add("show")
+}
 async function changePassword() {
-  const cur = document.getElementById("currentPassword")?.value
-  const nw = document.getElementById("newPassword")?.value
-  const cf = document.getElementById("confirmPassword")?.value
-  if (!cur || !nw || !cf) return showMsg("password", "Fill all fields", "error")
-  if (nw.length < 6) return showMsg("password", "Min 6 characters", "error")
-  if (nw !== cf) return showMsg("password", "Passwords dont match", "error")
+  const cur = document.getElementById("curPw").value
+  const nw  = document.getElementById("newPw").value
+  const con = document.getElementById("conPw").value
+  const msg = document.getElementById("pwMsg")
+  if (!cur || !nw) { msg.textContent = "Fill all fields"; msg.className = "m-msg err"; return }
+  if (nw !== con)  { msg.textContent = "Passwords don't match"; msg.className = "m-msg err"; return }
+  if (nw.length < 6) { msg.textContent = "Min 6 characters"; msg.className = "m-msg err"; return }
   try {
-    const res = await fetch(SERVER + "/auth/change-password", {
-      method: "POST", headers: {"Content-Type":"application/json"},
+    const res  = await fetch(SERVER + "/auth/change-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ currentPassword: cur, newPassword: nw, token: getToken() })
     })
     const data = await res.json()
-    if (!res.ok) return showMsg("password", data.error || "Failed", "error")
-    showMsg("password", "Password changed!", "success")
-    setTimeout(() => closePanel("password"), 1200)
-  } catch(e) { showMsg("password", "Server error", "error") }
+    if (!res.ok) { msg.textContent = data.error || "Failed"; msg.className = "m-msg err"; return }
+    msg.textContent = "Password updated!"; msg.className = "m-msg ok"
+    setTimeout(() => closeModal("pwModal"), 900)
+  } catch(e) { msg.textContent = "Network error"; msg.className = "m-msg err" }
 }
 
-async function deleteAllChats() {
+// ── CLEAR CHATS ───────────────────────────────────────────────────────────────
+async function clearAllChats() {
   if (!confirm("Delete all chats? This cannot be undone.")) return
   try {
     await fetch(SERVER + "/chats/all?token=" + getToken(), { method: "DELETE" })
-    showMsg("danger", "All chats deleted!", "success")
-  } catch(e) { showMsg("danger", "Failed to delete", "error") }
+    localStorage.removeItem("datta_last_chat")
+    toast("All chats deleted")
+  } catch(e) { toast("Failed to delete chats") }
 }
 
-// FONT FUNCTIONS
-const fontFamilies = {
-  elegant: "'Cormorant Garamond', serif",
-  modern:  "'Inter', sans-serif",
-  classic: "'Georgia', serif",
-  rounded: "'Nunito', sans-serif",
-  mono:    "'Courier New', monospace"
+// ── DELETE ACCOUNT ────────────────────────────────────────────────────────────
+function confirmDeleteAccount() {
+  document.getElementById("delAccPw").value = ""
+  document.getElementById("delAccMsg").textContent = ""
+  document.getElementById("delAccModal").classList.add("show")
 }
-
-function setPersonaSettings(key, label) {
-  localStorage.setItem("datta_persona", key)
-  localStorage.setItem("datta_persona_label", label)
-  // Update cards
-  document.querySelectorAll(".personaCard").forEach(c => c.classList.remove("active"))
-  document.querySelectorAll(".personaCheck").forEach(c => c.style.display = "none")
-  const card = document.getElementById("persona-" + key)
-  const check = document.getElementById("pcheck-" + key)
-  if (card) card.classList.add("active")
-  if (check) check.style.display = "block"
-  const desc = document.getElementById("personaDesc")
-  if (desc) desc.textContent = label
-  showMsg("persona", "' " + label + " mode active", "success")
-  setTimeout(() => closePanel("persona"), 800)
-}
-
-function loadSavedPersona() {
-  const key = localStorage.getItem("datta_persona") || "none"
-  const label = localStorage.getItem("datta_persona_label") || "Normal"
-  document.querySelectorAll(".personaCard").forEach(c => c.classList.remove("active"))
-  document.querySelectorAll(".personaCheck").forEach(c => c.style.display = "none")
-  const card = document.getElementById("persona-" + key)
-  const check = document.getElementById("pcheck-" + key)
-  if (card) card.classList.add("active")
-  if (check) check.style.display = "block"
-  const desc = document.getElementById("personaDesc")
-  if (desc) desc.textContent = label
-}
-
-function setFont(key, label) {
-  localStorage.setItem("datta_font", key)
-  localStorage.setItem("datta_font_label", label)
-  document.querySelectorAll(".fontCard").forEach(c => c.classList.remove("active"))
-  document.querySelectorAll(".fontCheck").forEach(c => c.style.display = "none")
-  const card = document.getElementById("font-" + key)
-  const check = document.getElementById("fcheck-" + key)
-  if (card) card.classList.add("active")
-  if (check) check.style.display = "inline"
-  applyFont(key)
-  const desc = document.getElementById("fontDesc")
-  if (desc) desc.textContent = label
-  showMsg("font", "' " + label + " font applied", "success")
-  setTimeout(() => closePanel("font"), 800)
-}
-
-function applyFont(key) {
-  const family = fontFamilies[key] || fontFamilies.elegant
-  const size = localStorage.getItem("datta_font_size") || "16"
-  // Update CSS variables - works everywhere
-  document.documentElement.style.setProperty("--ai-font", family)
-  document.documentElement.style.setProperty("--ai-font-size", size + "px")
-  // Update preview in settings
-  const preview = document.getElementById("fontPreviewText")
-  if (preview) { preview.style.fontFamily = family; preview.style.fontSize = size + "px" }
-}
-
-function previewFontSize(size) {
-  const preview = document.getElementById("fontPreviewText")
-  if (preview) preview.style.fontSize = size + "px"
-  const val = document.getElementById("fontSizeValue")
-  const labels = { 12:"Small", 13:"Small", 14:"Small", 15:"Medium", 16:"Medium", 17:"Medium", 18:"Large", 19:"Large", 20:"Large", 21:"Extra Large", 22:"Extra Large" }
-  if (val) val.textContent = (labels[size] || "Custom") + " (" + size + ")"
-}
-
-function saveFontSize(size) {
-  size = parseInt(size)
-  localStorage.setItem("datta_font_size", size)
-  // Update CSS variable
-  document.documentElement.style.setProperty("--ai-font-size", size + "px")
-  document.documentElement.style.setProperty("--user-font-size", size + "px")
-
-  const labels = { 12:"Small", 13:"Small", 14:"Small", 15:"Medium", 16:"Medium", 17:"Medium", 18:"Large", 19:"Large", 20:"Large", 21:"Extra Large", 22:"Extra Large" }
-  const desc = document.getElementById("fontsizeDesc")
-  if (desc) desc.textContent = labels[size] || "Custom"
-  const slider = document.getElementById("fontSizeSlider")
-  if (slider) slider.value = size
-  previewFontSize(size)
-
-  // Highlight active size button
-  document.querySelectorAll(".sizeBtn").forEach(b => b.classList.remove("active"))
-  const nearest = size <= 14 ? 13 : size <= 17 ? 16 : 19
-  const btn = document.getElementById("szbtn-" + nearest)
-  if (btn) btn.classList.add("active")
-
-  showMsg("fontsize", "' Font size saved!", "success")
-}
-
-function loadSavedFont() {
-  const savedFont = localStorage.getItem("datta_font") || "elegant"
-  const savedSize = parseInt(localStorage.getItem("datta_font_size") || "16")
-  applyFont(savedFont)
-  saveFontSize(savedSize)
-  document.querySelectorAll(".fontCard").forEach(c => c.classList.remove("active"))
-  document.querySelectorAll(".fontCheck").forEach(c => c.style.display = "none")
-  const card = document.getElementById("font-" + savedFont)
-  const check = document.getElementById("fcheck-" + savedFont)
-  if (card) card.classList.add("active")
-  if (check) check.style.display = "inline"
-  const desc = document.getElementById("fontDesc")
-  if (desc) desc.textContent = localStorage.getItem("datta_font_label") || "Elegant"
-}
-
-function copyEmail() {
-  navigator.clipboard.writeText("harisaiganeshpampana@gmail.com")
-    .then(() => alert("Email copied!"))
-    .catch(() => alert("harisaiganeshpampana@gmail.com"))
-}
-
-function logout() {
-  localStorage.removeItem("datta_token")
-  localStorage.removeItem("datta_user")
-  window.location.href = "login.html"
-}
-
-function openPanel(name) {
-  const el = document.getElementById("panel-" + name)
-  if (el) {
-    el.classList.add("show")
-    if (name === "memory" && typeof loadMemory === "function") loadMemory()
-  }
-}
-function closePanel(name) {
-  const el = document.getElementById("panel-" + name)
-  if (el) el.classList.remove("show")
-}
-function showMsg(id, text, type) {
-  const el = document.getElementById("msg-" + id)
-  if (!el) return
-  el.textContent = text; el.className = "msg " + type
-  setTimeout(() => { el.className = "msg"; el.textContent = "" }, 3000)
-}
-
-// VOICE FUNCTIONS
-function selectVoice(key) {
-  localStorage.setItem("datta_voice", key)
-  document.querySelectorAll(".voiceCard").forEach(c => c.classList.remove("active"))
-  const card = document.getElementById("vcrd-" + key)
-  if (card) card.classList.add("active")
-}
-
-function getBestVoice(key) {
-  const allVoices = window.speechSynthesis.getVoices()
-  if (!allVoices.length) return null
-
-  // Voice profiles - gender and language based matching
-  const profiles = {
-    aria:    { gender:"female", langs:["en-US","en_US"], keywords:["Samantha","Zira","Google US English Female","Microsoft Zira","en-US"] },
-    james:   { gender:"male",   langs:["en-US","en_US"], keywords:["David","Google US English Male","Microsoft David","Alex","en-US"] },
-    sofia:   { gender:"female", langs:["en-GB","en_GB"], keywords:["Google UK English Female","Microsoft Hazel","Karen","Moira","en-GB"] },
-    indian:  { gender:"female", langs:["en-IN","en_IN"], keywords:["Google ''''''","Lekha","Veena","Rishi","en-IN"] },
-    british: { gender:"male",   langs:["en-GB","en_GB"], keywords:["Google UK English Male","Microsoft George","Daniel","Oliver","en-GB"] }
-  }
-
-  const profile = profiles[key] || profiles.aria
-
-  // Try exact keyword match first
-  for (const kw of profile.keywords) {
-    const v = allVoices.find(v => v.name.includes(kw))
-    if (v) return v
-  }
-
-  // Try lang + gender match
-  const langVoices = allVoices.filter(v => profile.langs.some(l => v.lang.startsWith(l.split("_")[0])))
-  if (langVoices.length) {
-    // Try gender match by name heuristics
-    const maleNames = ["david","james","daniel","george","oliver","alex","ryan","tom","richard","male","man"]
-    const femaleNames = ["samantha","zira","karen","sofia","aria","female","woman","girl","victoria","lisa"]
-    const genderWords = profile.gender === "male" ? maleNames : femaleNames
-    const gendered = langVoices.find(v => genderWords.some(g => v.name.toLowerCase().includes(g)))
-    if (gendered) return gendered
-    return langVoices[0]
-  }
-
-  // Fallback: any english voice with gender hint
-  const engVoices = allVoices.filter(v => v.lang.startsWith("en"))
-  if (engVoices.length) {
-    const maleNames = ["david","james","daniel","george","oliver","alex","ryan","tom","male","man"]
-    const femaleNames = ["samantha","zira","karen","sofia","aria","victoria","female","woman"]
-    const genderWords = profile.gender === "male" ? maleNames : femaleNames
-    const gendered = engVoices.find(v => genderWords.some(g => v.name.toLowerCase().includes(g)))
-    if (gendered) return gendered
-    // Male voices are usually listed after female - pick based on index
-    return profile.gender === "male"
-      ? engVoices[Math.floor(engVoices.length / 2)]
-      : engVoices[0]
-  }
-
-  return null
-}
-
-function speakWithVoice(text, key, onDone) {
-  window.speechSynthesis.cancel()
-  const u = new SpeechSynthesisUtterance(text)
-
-  const settings = {
-    aria:    { rate:0.95, pitch:1.15, lang:"en-US" },
-    james:   { rate:0.88, pitch:0.75, lang:"en-US" },
-    sofia:   { rate:1.0,  pitch:1.1,  lang:"en-GB" },
-    indian:  { rate:0.92, pitch:1.05, lang:"en-IN" },
-    british: { rate:0.88, pitch:0.8,  lang:"en-GB" }
-  }
-
-  const s = settings[key] || settings.aria
-  u.rate = s.rate
-  u.pitch = s.pitch
-  u.lang = s.lang
-  if (onDone) u.onend = onDone
-
-  // Wait for voices to load if needed
-  function trySpeak() {
-    const voice = getBestVoice(key)
-    if (voice) u.voice = voice
-    window.speechSynthesis.speak(u)
-  }
-
-  if (window.speechSynthesis.getVoices().length === 0) {
-    window.speechSynthesis.onvoiceschanged = () => {
-      window.speechSynthesis.onvoiceschanged = null
-      trySpeak()
-    }
-  } else {
-    trySpeak()
-  }
-}
-
-function previewVoice() {
-  const key = localStorage.getItem("datta_voice") || "aria"
-  const names = { aria:"Aria", james:"James", sofia:"Sofia", indian:"Riya", british:"Oliver" }
-  const name = names[key] || "Aria"
-  speakWithVoice("Hi! I am " + name + ", your Datta AI voice assistant. How can I help you today?", key)
-}
-
-// Load user data IMMEDIATELY - runs before body renders
-(function() {
-  try {
-    var user = JSON.parse(localStorage.getItem("datta_user") || "{}")
-    var uname = user.username || user.name || ""
-    var uemail = user.email || ""
-    window._settingsUser = { uname: uname, uemail: uemail }
-  } catch(e) { window._settingsUser = { uname: "", uemail: "" } }
-})()
-</script>
-
-<div class="header">
-  <button class="backBtn" onclick="window.location.href='index.html'">' Back</button>
-  <div class="headerTitle">Settings</div>
-</div>
-
-<div class="container">
-
-  <!-- USER CARD -->
-  <div class="userCard">
-    <div class="userAvatarWrap" onclick="uploadPhoto()">
-      <div class="userAvatar" id="userAvatar">
-        <img id="userAvatarImg" style="display:none">
-        <span id="userAvatarLetter">G</span>
-      </div>
-      <div class="editPhotoBtn">'</div>
-    </div>
-    <div style="flex:1">
-      <div class="userName" id="userName" style="min-height:24px;"></div>
-      <div class="userEmail" id="userEmail"></div>
-      <div class="userPlan" id="userPlan">Free Plan</div>
-    </div>
-  </div>
-
-  <!-- APPEARANCE -->
-  <div class="sectionLabel">Appearance</div>
-  <div class="section">
-    <div class="settingRow" onclick="openPanel('theme')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a1a2a;">'</div>
-        <div><div class="settingLabel">Theme</div><div class="settingDesc" id="themeDesc">Dark</div></div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-    <div class="settingRow" onclick="openPanel('wallpaper')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#2a1a1a;">''</div>
-        <div><div class="settingLabel">Chat Wallpaper</div><div class="settingDesc" id="wallpaperDesc">None</div></div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-    <div class="settingRow" onclick="openPanel('font')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a2a1a;">Aa</div>
-        <div><div class="settingLabel">Font Style</div><div class="settingDesc" id="fontDesc">Elegant (Default)</div></div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-    <div class="settingRow" onclick="openPanel('fontsize')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#2a1a2a;">T</div>
-        <div><div class="settingLabel">Font Size</div><div class="settingDesc" id="fontsizeDesc">Medium</div></div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-  </div>
-
-  <!-- AI SETTINGS -->
-  <div class="sectionLabel">AI Behaviour</div>
-  <div class="section">
-    <div class="settingRow" onclick="openPanel('ainame')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#0a2a1a;">'</div>
-        <div><div class="settingLabel">AI Name</div><div class="settingDesc" id="ainameDesc">Datta AI</div></div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-    <div class="settingRow" onclick="openPanel('aistyle')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#2a2a0a;">''</div>
-        <div><div class="settingLabel">Response Style</div><div class="settingDesc" id="aistyleDesc">Balanced</div></div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-    <div class="settingRow" onclick="openPanel('persona')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a0a2a;">'</div>
-        <div><div class="settingLabel">AI Mode</div><div class="settingDesc" id="personaDesc">Normal</div></div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-    <div class="settingRow" onclick="openPanel('language')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#0a1a2a;">'</div>
-        <div><div class="settingLabel">AI Language</div><div class="settingDesc" id="langDesc">English</div></div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-  </div>
-
-  <!-- ACCOUNT -->
-  <div class="sectionLabel">Account</div>
-  <div class="section">
-    <div class="settingRow" onclick="openPanel('username')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a2a1a;">'</div>
-        <div><div class="settingLabel">Change Username</div><div class="settingDesc">Update display name</div></div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-    <div class="settingRow" onclick="openPanel('password')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a1a2a;">'</div>
-        <div><div class="settingLabel">Change Password</div><div class="settingDesc">Update your password</div></div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-    <div class="settingRow" onclick="window.location.href='pricing.html'">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#2a1a0a;">'</div>
-        <div><div class="settingLabel">Upgrade Plan</div><div class="settingDesc">Unlock more features</div></div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-  </div>
-
-  <!-- MEMORY -->
-  <!-- USAGE SECTION - links to dedicated usage page -->
-  <div class="sectionLabel">Your Usage</div>
-  <div class="section">
-    <div class="settingRow" onclick="window.location.href='usage.html'">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#0a1a2a;">'</div>
-        <div>
-          <div class="settingLabel">View Usage</div>
-          <div class="settingDesc" id="usageQuickDesc">Tap to view '</div>
-        </div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-  </div>
-
-  <!-- VOICE SECTION -->
-  <div class="sectionLabel">Voice Assistant</div>
-  <div class="section" style="padding:16px;">
-    <div style="font-size:12px;color:#666;margin-bottom:12px;">Choose voice for Datta AI</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      <div class="voiceCard active" id="vcrd-aria" onclick="selectVoice('aria')">
-        <div style="font-size:24px;margin-bottom:4px;">'</div>
-        <div style="font-size:13px;font-weight:600;">Aria</div>
-        <div style="font-size:11px;color:#666;">US Female</div>
-      </div>
-      <div class="voiceCard" id="vcrd-james" onclick="selectVoice('james')">
-        <div style="font-size:24px;margin-bottom:4px;">'</div>
-        <div style="font-size:13px;font-weight:600;">James</div>
-        <div style="font-size:11px;color:#666;">US Male</div>
-      </div>
-      <div class="voiceCard" id="vcrd-sofia" onclick="selectVoice('sofia')">
-        <div style="font-size:24px;margin-bottom:4px;">'''</div>
-        <div style="font-size:13px;font-weight:600;">Sofia</div>
-        <div style="font-size:11px;color:#666;">UK Female</div>
-      </div>
-      <div class="voiceCard" id="vcrd-indian" onclick="selectVoice('indian')">
-        <div style="font-size:24px;margin-bottom:4px;">''</div>
-        <div style="font-size:13px;font-weight:600;">Riya</div>
-        <div style="font-size:11px;color:#666;">Indian Female</div>
-      </div>
-      <div class="voiceCard" id="vcrd-british" onclick="selectVoice('british')">
-        <div style="font-size:24px;margin-bottom:4px;">'''</div>
-        <div style="font-size:13px;font-weight:600;">Oliver</div>
-        <div style="font-size:11px;color:#666;">UK Male</div>
-      </div>
-    </div>
-    <button onclick="previewVoice()" style="width:100%;margin-top:12px;padding:10px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;color:#aaa;font-size:13px;cursor:pointer;transition:all 0.2s;">' Preview Selected Voice</button>
-  </div>
-
-  <div class="sectionLabel">Memory</div>
-  <div class="section">
-    <div class="settingRow" onclick="openPanel('memory')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a0a2a;">'</div>
-        <div><div class="settingLabel">What AI Remembers</div><div class="settingDesc" id="memoryCount">Tap to view memories '</div></div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-  </div>
-
-  <!-- DANGER -->
-  <div class="sectionLabel">Data</div>
-  <div class="section">
-    <div class="settingRow" onclick="openPanel('deleteChats')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#2a1010;">''</div>
-        <div><div class="settingLabel" style="color:#ff6666;">Delete All Chats</div><div class="settingDesc">Clear chat history</div></div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-    <div class="settingRow" onclick="openPanel('deleteAccount')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#2a1010;">'</div>
-        <div><div class="settingLabel" style="color:#ff6666;">Delete Account</div><div class="settingDesc">Permanently remove account</div></div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-  </div>
-
-  <!-- LEGAL -->
-  <div class="sectionLabel">Legal</div>
-  <div class="section">
-    <div class="settingRow" onclick="window.open('privacy.html')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#0a0a2a;">'</div>
-        <div>
-          <div class="settingLabel">Privacy Policy</div>
-          <div class="settingDesc">How we handle your data</div>
-        </div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-    <div class="settingRow" onclick="window.open('terms.html')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#0a1a0a;">'</div>
-        <div>
-          <div class="settingLabel">Terms of Service</div>
-          <div class="settingDesc">Rules for using Datta AI</div>
-        </div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-    <div class="settingRow" onclick="window.open('https://datta-ai.com')">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#1a0a0a;">'</div>
-        <div>
-          <div class="settingLabel">Website</div>
-          <div class="settingDesc">datta-ai.com</div>
-        </div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-    <div class="settingRow" onclick="copyEmail()">
-      <div class="settingLeft">
-        <div class="settingIcon" style="background:#0a1a1a;">''</div>
-        <div>
-          <div class="settingLabel">Contact Support</div>
-          <div class="settingDesc"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a7cfc6d5ced4c6cec0c6c9c2d4cfd7c6cad7c6c9c6e7c0cac6cecb89c4c8ca">[email&#160;protected]</a></div>
-        </div>
-      </div>
-      <div class="settingArrow">'</div>
-    </div>
-  </div>
-
-  <!-- APP INFO -->
-  <div style="text-align:center;padding:16px 0 8px;">
-    <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;background:linear-gradient(135deg,#00ff88,#00ccff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">DATTA AI</div>
-    <div style="font-size:12px;color:#333;margin-top:4px;">Version 3.5 ' Made with '' in India</div>
-  </div>
-
-  <button class="logoutBtn" onclick="logout()">' Log Out</button>
-
-</div>
-
-<!-- ''' PANELS ''' -->
-
-<!-- THEME PANEL -->
-<div class="panel" id="panel-theme" onclick="closePanel('theme')">
-<div class="panelBox" onclick="event.stopPropagation()">
-  <div class="panelHeader">
-    <div class="panelTitle">Choose Theme</div>
-    <button class="panelBack" onclick="closePanel('theme')">Back</button>
-  </div>
-  <div class="themeGrid">
-    <div class="themeCard" id="theme-dark" onclick="setTheme('dark')">
-      <div class="themePreview" style="background:linear-gradient(135deg,#0d0d0f,#1a1a22);border:1px solid #333;"></div>
-      <div class="themeName">Dark</div>
-      <div class="themeCheck"></div>
-    </div>
-    <div class="themeCard" id="theme-light" onclick="setTheme('light')">
-      <div class="themePreview" style="background:linear-gradient(135deg,#f8fafc,#e8f0fe);border:1px solid #e5e7eb;"></div>
-      <div class="themeName">Light</div>
-      <div class="themeCheck"></div>
-    </div>
-    <div class="themeCard" id="theme-eye" onclick="setTheme('eye')">
-      <div class="themePreview" style="background:linear-gradient(135deg,#0f170a,#1a2a12);border:1px solid #2a4a1a;"></div>
-      <div class="themeName">Eye Comfort</div>
-      <div class="themeCheck"></div>
-    </div>
-  </div>
-</div>
-</div>
-
-<!-- WALLPAPER PANEL -->
-<div class="panel" id="panel-wallpaper" onclick="closePanel('wallpaper')">
-<div class="panelBox" onclick="event.stopPropagation()">
-  <div class="panelHeader">
-    <div class="panelTitle">Chat Wallpaper</div>
-    <button class="panelBack" onclick="closePanel('wallpaper')">Back</button>
-  </div>
-  <div class="wallpaperGrid">
-    <div class="wallpaperCard" id="wp-none" style="background:#111;border:1px solid #222;display:flex;align-items:center;justify-content:center;color:#555;font-size:12px;" onclick="setWallpaper('none')">None</div>
-    <div class="wallpaperCard" id="wp-dots" style="background:#0a0a0a;background-image:radial-gradient(circle,#222 1px,transparent 1px);background-size:20px 20px;" onclick="setWallpaper('dots')"></div>
-    <div class="wallpaperCard" id="wp-grid" style="background:#0a0a0a;background-image:linear-gradient(#1a1a1a 1px,transparent 1px),linear-gradient(90deg,#1a1a1a 1px,transparent 1px);background-size:20px 20px;" onclick="setWallpaper('grid')"></div>
-    <div class="wallpaperCard" id="wp-waves" style="background:linear-gradient(135deg,#001a2a,#002a3a,#001a2a);" onclick="setWallpaper('waves')"></div>
-    <div class="wallpaperCard" id="wp-gradient1" style="background:linear-gradient(135deg,#0a0a2a,#1a0a2a,#0a1a2a);" onclick="setWallpaper('gradient1')"></div>
-    <div class="wallpaperCard" id="wp-gradient2" style="background:linear-gradient(135deg,#0a1a0a,#1a2a0a,#0a1a1a);" onclick="setWallpaper('gradient2')"></div>
-    <div class="wallpaperCard" id="wp-stars" style="background:#000;background-image:radial-gradient(circle,#fff 1px,transparent 1px);background-size:30px 30px;" onclick="setWallpaper('stars')"></div>
-    <div class="wallpaperCard" id="wp-mesh" style="background:linear-gradient(135deg,#00ff8811,#00ccff11,#aa44ff11);" onclick="setWallpaper('mesh')"></div>
-    <div class="wallpaperCard" style="background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:11px;color:#666;" onclick="pickCustomWallpaper()">' Custom</div>
-  </div>
-</div>
-</div>
-
-<!-- AI NAME PANEL -->
-<div class="panel" id="panel-ainame" onclick="closePanel('ainame')">
-<div class="panelBox" onclick="event.stopPropagation()">
-  <div class="panelHeader">
-    <div class="panelTitle">Custom AI Name</div>
-    <button class="panelBack" onclick="closePanel('ainame')">Back</button>
-  </div>
-  <div class="msg" id="msg-ainame"></div>
-  <label class="formLabel">AI Name (shown in chat)</label>
-  <input type="text" id="ainameInput" class="formInput" placeholder="e.g. Datta AI, Jarvis, Friday...">
-  <button class="saveBtn" onclick="saveAIName()">Save Name</button>
-</div>
-</div>
-
-<!-- AI STYLE PANEL -->
-<div class="panel" id="panel-aistyle" onclick="closePanel('aistyle')">
-<div class="panelBox" onclick="event.stopPropagation()">
-  <div class="panelHeader">
-    <div class="panelTitle">Response Style</div>
-    <button class="panelBack" onclick="closePanel('aistyle')">Back</button>
-  </div>
-  <div class="stylePills" id="stylePills">
-    <div class="stylePill" onclick="setStyle('Balanced')">'' Balanced</div>
-    <div class="stylePill" onclick="setStyle('Short')">' Short & Quick</div>
-    <div class="stylePill" onclick="setStyle('Detailed')">' Detailed</div>
-    <div class="stylePill" onclick="setStyle('Formal')">' Formal</div>
-    <div class="stylePill" onclick="setStyle('Casual')">' Casual & Friendly</div>
-    <div class="stylePill" onclick="setStyle('Technical')">' Technical</div>
-    <div class="stylePill" onclick="setStyle('Creative')">' Creative</div>
-    <div class="stylePill" onclick="setStyle('Simple')">' Simple & Clear</div>
-  </div>
-</div>
-</div>
-
-<!-- LANGUAGE PANEL -->
-<div class="panel" id="panel-language" onclick="closePanel('language')">
-<div class="panelBox" onclick="event.stopPropagation()">
-  <div class="panelHeader">
-    <div class="panelTitle">AI Response Language</div>
-    <button class="panelBack" onclick="closePanel('language')">Back</button>
-  </div>
-  <div class="stylePills">
-    <div class="stylePill active" id="lang-English" onclick="setLanguage('English')">🇬🇧 English</div>
-    <div class="stylePill" id="lang-Hindi" onclick="setLanguage('Hindi')">🇮🇳 Hindi</div>
-    <div class="stylePill" id="lang-Telugu" onclick="setLanguage('Telugu')">🇮🇳 Telugu</div>
-    <div class="stylePill" id="lang-Tamil" onclick="setLanguage('Tamil')">🇮🇳 Tamil</div>
-    <div class="stylePill" id="lang-Kannada" onclick="setLanguage('Kannada')">🇮🇳 Kannada</div>
-    <div class="stylePill" id="lang-Malayalam" onclick="setLanguage('Malayalam')">🇮🇳 Malayalam</div>
-    <div class="stylePill" id="lang-Spanish" onclick="setLanguage('Spanish')">🇪🇸 Spanish</div>
-    <div class="stylePill" id="lang-French" onclick="setLanguage('French')">🇫🇷 French</div>
-    <div class="stylePill" onclick="setLanguage('Arabic')">'' Arabic</div>
-    <div class="stylePill" onclick="setLanguage('Chinese')">'' Chinese</div>
-  </div>
-</div>
-</div>
-
-<!-- USERNAME PANEL -->
-<div class="panel" id="panel-username" onclick="closePanel('username')">
-<div class="panelBox" onclick="event.stopPropagation()">
-  <div class="panelHeader">
-    <div class="panelTitle">Change Username</div>
-    <button class="panelBack" onclick="closePanel('username')">Back</button>
-  </div>
-  <div class="msg" id="msg-username"></div>
-  <label class="formLabel">New Username</label>
-  <input type="text" id="newUsername" class="formInput" placeholder="Enter new username">
-  <button class="saveBtn" onclick="changeUsername()">Save Username</button>
-</div>
-</div>
-
-<!-- PASSWORD PANEL -->
-<div class="panel" id="panel-password" onclick="closePanel('password')">
-<div class="panelBox" onclick="event.stopPropagation()">
-  <div class="panelHeader">
-    <div class="panelTitle">Change Password</div>
-    <button class="panelBack" onclick="closePanel('password')">Back</button>
-  </div>
-  <div class="msg" id="msg-password"></div>
-  <label class="formLabel">Current Password</label>
-  <input type="password" id="currentPassword" class="formInput" placeholder="Current password">
-  <label class="formLabel">New Password</label>
-  <input type="password" id="newPassword" class="formInput" placeholder="Min 6 characters">
-  <label class="formLabel">Confirm New Password</label>
-  <input type="password" id="confirmPassword" class="formInput" placeholder="Confirm new password">
-  <button class="saveBtn" onclick="changePassword()">Change Password</button>
-</div>
-</div>
-
-<!-- VOICE PANEL -->
-<div class="panel" id="panel-voice">
-  <div class="panelHeader">
-    <button class="panelBack" onclick="closePanel('voice')">Back</button>
-    <div class="panelTitle">Voice Assistant</div>
-  </div>
-  <div class="panelBody" onclick="event.stopPropagation()">
-    <div class="msg" id="msg-voice"></div>
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <div class="voiceCard" id="vc-female" onclick="selectVoice('female',this)">
-        <div class="vcName">Female (Default)</div>
-        <div class="vcDesc">Friendly and clear</div>
-        <button class="vcPreview" onclick="previewVoice('Hello, I am Datta AI','female',event)">Preview</button>
-      </div>
-      <div class="voiceCard" id="vc-male" onclick="selectVoice('male',this)">
-        <div class="vcName">Male</div>
-        <div class="vcDesc">Deep and professional</div>
-        <button class="vcPreview" onclick="previewVoice('Hello, I am Datta AI','male',event)">Preview</button>
-      </div>
-      <div class="voiceCard" id="vc-neutral" onclick="selectVoice('neutral',this)">
-        <div class="vcName">Neutral</div>
-        <div class="vcDesc">Balanced tone</div>
-        <button class="vcPreview" onclick="previewVoice('Hello, I am Datta AI','neutral',event)">Preview</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MEMORY PANEL -->
-<!-- AI MODE / PERSONA PANEL -->
-<div class="panel" id="panel-persona">
-  <div class="panelHeader">
-    <button class="panelBack" onclick="closePanel('persona')">Back</button>
-    <div class="panelTitle">AI Mode</div>
-  </div>
-  <div class="panelBody" onclick="event.stopPropagation()">
-    <p style="font-size:13px;color:#555;margin-bottom:16px;line-height:1.6;">Choose a special mode. The AI will behave like an expert in that field.</p>
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      <div class="personaCard active" id="persona-none" onclick="setPersonaSettings('none','Normal')">
-        <div style="font-size:22px;flex-shrink:0;">'</div>
-        <div style="flex:1;">
-          <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">Normal</div>
-          <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">Default Datta AI</div>
-        </div>
-        <div class="personaCheck" id="pcheck-none" style="color:#00ff88;font-size:18px;font-weight:700;">'</div>
-      </div>
-      <div class="personaCard" id="persona-lawyer" onclick="setPersonaSettings('lawyer','Lawyer')">
-        <div style="font-size:22px;flex-shrink:0;">''</div>
-        <div style="flex:1;">
-          <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">Lawyer</div>
-          <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">Legal information & guidance</div>
-        </div>
-        <div class="personaCheck" id="pcheck-lawyer" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">'</div>
-      </div>
-      <div class="personaCard" id="persona-teacher" onclick="setPersonaSettings('teacher','Teacher')">
-        <div style="font-size:22px;flex-shrink:0;">'</div>
-        <div style="flex:1;">
-          <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">Teacher</div>
-          <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">Explains concepts simply</div>
-        </div>
-        <div class="personaCheck" id="pcheck-teacher" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">'</div>
-      </div>
-      <div class="personaCard" id="persona-chef" onclick="setPersonaSettings('chef','Chef')">
-        <div style="font-size:22px;flex-shrink:0;">'''</div>
-        <div style="flex:1;">
-          <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">Chef</div>
-          <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">Recipes & cooking guidance</div>
-        </div>
-        <div class="personaCheck" id="pcheck-chef" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">'</div>
-      </div>
-      <div class="personaCard" id="persona-fitness" onclick="setPersonaSettings('fitness','Fitness Coach')">
-        <div style="font-size:22px;flex-shrink:0;">'</div>
-        <div style="flex:1;">
-          <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">Fitness Coach</div>
-          <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">Workouts & nutrition plans</div>
-        </div>
-        <div class="personaCheck" id="pcheck-fitness" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">'</div>
-      </div>
-      <div class="personaCard" id="persona-upsc" onclick="setPersonaSettings('upsc','UPSC Expert')">
-        <div style="font-size:22px;flex-shrink:0;">🏛️</div>
-        <div style="flex:1;">
-          <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">UPSC Expert</div>
-          <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">Civil services exam prep</div>
-        </div>
-        <div class="personaCheck" id="pcheck-upsc" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</div>
-      </div>
-      <div class="personaCard" id="persona-student" onclick="setPersonaSettings('student','Student Helper')">
-        <div style="font-size:22px;flex-shrink:0;">📖</div>
-        <div style="flex:1;">
-          <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">Student Helper</div>
-          <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">School & college studies</div>
-        </div>
-        <div class="personaCheck" id="pcheck-student" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</div>
-      </div>
-      <div class="personaCard" id="persona-interview" onclick="setPersonaSettings('interview','Interview Coach')">
-        <div style="font-size:22px;flex-shrink:0;">🎯</div>
-        <div style="flex:1;">
-          <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">Interview Coach</div>
-          <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">Job interview preparation</div>
-        </div>
-        <div class="personaCheck" id="pcheck-interview" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</div>
-      </div>
-      <div class="personaCard" id="persona-business" onclick="setPersonaSettings('business','Business Advisor')">
-        <div style="font-size:22px;flex-shrink:0;">💼</div>
-        <div style="flex:1;">
-          <div style="font-size:14px;font-weight:600;color:white;font-family:system-ui;">Business Advisor</div>
-          <div style="font-size:12px;color:#555;margin-top:2px;font-family:system-ui;">Startup & business guidance</div>
-        </div>
-        <div class="personaCheck" id="pcheck-business" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">✓</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- FONT STYLE PANEL -->
-<div class="panel" id="panel-font">
-  <div class="panelHeader">
-    <button class="panelBack" onclick="closePanel('font')">Back</button>
-    <div class="panelTitle">Font Style</div>
-  </div>
-  <div class="panelBody" onclick="event.stopPropagation()">
-    <div class="msg" id="msg-font"></div>
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <div class="fontCard active" id="font-elegant" onclick="setFont('elegant','Elegant')">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:white;">The quick brown fox</div>
-          <span class="fontCheck" id="fcheck-elegant" style="color:#00ff88;font-size:18px;font-weight:700;">'</span>
-        </div>
-        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Elegant ' Cormorant Garamond</div>
-      </div>
-      <div class="fontCard" id="font-modern" onclick="setFont('modern','Modern')">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div style="font-family:'Inter',sans-serif;font-size:17px;color:white;">The quick brown fox</div>
-          <span class="fontCheck" id="fcheck-modern" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">'</span>
-        </div>
-        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Modern ' Inter</div>
-      </div>
-      <div class="fontCard" id="font-classic" onclick="setFont('classic','Classic')">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div style="font-family:'Georgia',serif;font-size:18px;color:white;">The quick brown fox</div>
-          <span class="fontCheck" id="fcheck-classic" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">'</span>
-        </div>
-        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Classic ' Georgia</div>
-      </div>
-      <div class="fontCard" id="font-rounded" onclick="setFont('rounded','Rounded')">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div style="font-family:'Nunito',sans-serif;font-size:18px;color:white;">The quick brown fox</div>
-          <span class="fontCheck" id="fcheck-rounded" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">'</span>
-        </div>
-        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Rounded ' Nunito</div>
-      </div>
-      <div class="fontCard" id="font-mono" onclick="setFont('mono','Monospace')">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div style="font-family:'Courier New',monospace;font-size:15px;color:white;">The quick brown fox</div>
-          <span class="fontCheck" id="fcheck-mono" style="color:#00ff88;font-size:18px;font-weight:700;display:none;">'</span>
-        </div>
-        <div style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-top:4px;font-family:system-ui;">Mono ' Courier New</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- FONT SIZE PANEL -->
-<div class="panel" id="panel-fontsize">
-  <div class="panelHeader">
-    <button class="panelBack" onclick="closePanel('fontsize')">Back</button>
-    <div class="panelTitle">Font Size</div>
-  </div>
-  <div class="panelBody" onclick="event.stopPropagation()">
-    <div style="text-align:center;margin-bottom:24px;">
-      <div id="fontPreviewText" style="font-size:18px;color:white;font-family:'Cormorant Garamond',serif;margin-bottom:8px;">Preview ' The quick brown fox</div>
-      <div style="font-size:12px;color:#555;">Adjust size below</div>
-    </div>
-    <input type="range" min="12" max="22" value="16" id="fontSizeSlider"
-      oninput="previewFontSize(this.value)"
-      onchange="saveFontSize(this.value)"
-      style="width:100%;margin-bottom:12px;">
-    <div style="display:flex;justify-content:space-between;font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:20px;">
-      <span>Small</span>
-      <span id="fontSizeValue">Medium (16)</span>
-      <span>Large</span>
-    </div>
-    <div style="display:flex;gap:8px;">
-      <button class="sizeBtn" id="szbtn-13" onclick="saveFontSize(13)">Small</button>
-      <button class="sizeBtn active" id="szbtn-16" onclick="saveFontSize(16)">Medium</button>
-      <button class="sizeBtn" id="szbtn-19" onclick="saveFontSize(19)">Large</button>
-    </div>
-  </div>
-</div>
-
-<div class="panel" id="panel-memory" onclick="closePanel('memory')">
-<div class="panelBox" onclick="event.stopPropagation()">
-  <div class="panelHeader">
-    <div class="panelTitle">' AI Memory</div>
-    <button class="panelBack" onclick="closePanel('memory')">Back</button>
-  </div>
-  <div id="memoryList" style="margin-bottom:16px;max-height:300px;overflow-y:auto;"></div>
-  <button class="dangerBtn" onclick="clearAllMemory()">'' Clear All Memory</button>
-</div>
-</div>
-
-<!-- DELETE CHATS PANEL -->
-<div class="panel" id="panel-deleteChats" onclick="closePanel('deleteChats')">
-<div class="panelBox" onclick="event.stopPropagation()">
-  <div class="panelHeader">
-    <div class="panelTitle">Delete All Chats</div>
-    <button class="panelBack" onclick="closePanel('deleteChats')">Back</button>
-  </div>
-  <div class="msg" id="msg-deleteChats"></div>
-  <p style="color:#888;font-size:13px;margin-bottom:16px;">This will permanently delete all your chat history. Cannot be undone.</p>
-  <button class="dangerBtn" onclick="deleteAllChats()">Yes, Delete All Chats</button>
-</div>
-</div>
-
-<!-- DELETE ACCOUNT PANEL -->
-<div class="panel" id="panel-deleteAccount" onclick="closePanel('deleteAccount')">
-<div class="panelBox" onclick="event.stopPropagation()">
-  <div class="panelHeader">
-    <div class="panelTitle">Delete Account</div>
-    <button class="panelBack" onclick="closePanel('deleteAccount')">Back</button>
-  </div>
-  <div class="msg" id="msg-deleteAccount"></div>
-  <p style="color:#888;font-size:13px;margin-bottom:16px;">All data will be permanently deleted.</p>
-  <label class="formLabel">Enter Password to Confirm</label>
-  <input type="password" id="deletePassword" class="formInput" placeholder="Your password">
-  <button class="dangerBtn" onclick="deleteAccount()">Delete My Account Forever</button>
-</div>
-</div>
-
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-const SERVER = "https://datta-ai-server.onrender.com"
-// Theme system handled by theme.css and data-theme attribute
-
-// Apply theme to THIS page
-// Apply theme EVERYWHERE (saves and notifies)
-// VOICE FUNCTIONS
-// Load saved voice
-function loadSavedVoiceSetting() {
-  const saved = localStorage.getItem("datta_voice") || "aria"
-  document.querySelectorAll(".voiceCard").forEach(c => c.classList.remove("active"))
-  const card = document.getElementById("vcrd-" + saved)
-  if (card) card.classList.add("active")
-}
-
-async function loadUsage() {
-  try {
-    const res = await fetch("https://datta-ai-server.onrender.com/user/usage?token=" + getToken())
-    if (!res.ok) throw new Error("Failed")
-    const data = await res.json()
-
-    document.getElementById("usageLoading").style.display = "none"
-    document.getElementById("usageContent").style.display = "block"
-
-    const plan = data.plan || "free"
-    const limits = {
-      free:     { msgs: 25, imgs: 3 },
-      pro:      { msgs: 100, imgs: 20 },
-      max:      { msgs: 200, imgs: 30 },
-      ultramax: { msgs: 999999, imgs: 100 }
-    }
-    const limit = limits[plan] || limits.free
-
-    const msgUsed = data.messagesUsed || 0
-    const imgUsed = data.imagesUsed || 0
-
-    const msgPct = limit.msgs >= 999999 ? 0 : Math.min(100, Math.round(msgUsed / limit.msgs * 100))
-    const imgPct = Math.min(100, Math.round(imgUsed / (limit.imgs || 3) * 100))
-
-    document.getElementById("msgUsageText").textContent = msgUsed + " / " + (limit.msgs >= 999999 ? "Unlimited" : limit.msgs)
-    document.getElementById("imgUsageText").textContent = imgUsed + " / " + (limit.imgs >= 999999 ? "Unlimited" : limit.imgs)
-
-    setTimeout(() => {
-      document.getElementById("msgUsageBar").style.width = msgPct + "%"
-      document.getElementById("imgUsageBar").style.width = imgPct + "%"
-      if (msgPct > 80) document.getElementById("msgUsageBar").style.background = "linear-gradient(90deg,#ff4444,#ff8844)"
-      if (imgPct > 80) document.getElementById("imgUsageBar").style.background = "linear-gradient(90deg,#ff4444,#ff8844)"
-    }, 100)
-
-    const planNames = { free:"Free Plan", pro:"Pro Plan", max:"Max Plan", ultramax:"Ultra Max Plan" }
-    const planSubs  = { free:"25 msgs ' 3 images", pro:"100 msgs/4hrs ' 20 images", max:"200 msgs/3hrs ' 30 images", ultramax:"Unlimited everything" }
-    document.getElementById("planNameUsage").textContent = planNames[plan] || "Free Plan"
-    document.getElementById("planSubUsage").textContent = planSubs[plan] || ""
-
-    if (data.resetIn && data.resetIn > 0) {
-      const mins = Math.ceil(data.resetIn / 60000)
-      document.getElementById("msgResetText").textContent = "Resets in " + (mins > 60 ? Math.ceil(mins/60) + " hrs" : mins + " min")
-    }
-
-    if (plan === "ultramax") {
-      const btn = document.getElementById("upgradeUsageBtn")
-      if (btn) btn.style.display = "none"
-    }
-
-  } catch(e) {
-    document.getElementById("usageLoading").textContent = "Could not load usage"
-    console.error("Usage error:", e)
-  }
-}
-
-async function loadMemory() {
-  const countEl = document.getElementById("memoryCount")
-  // memory count will update when panel opens
-  try {
-    const res = await fetch(SERVER + "/memory?token=" + getToken(), {
-      signal: AbortSignal.timeout(8000)
-    })
-    const memories = await res.json()
-    const count = Array.isArray(memories) ? memories.length : 0
-    if (countEl) countEl.textContent = count + " things remembered"
-    const list = document.getElementById("memoryList")
-    if (!list) return
-    if (!count) { 
-      list.innerHTML = '<div style="color:#666;font-size:13px;padding:8px;">Nothing remembered yet. Start chatting!</div>'
-      return 
-    }
-    list.innerHTML = memories.map(m => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg3);border-radius:10px;margin-bottom:8px;">
-        <div>
-          <div style="font-size:13px;color:var(--text);font-weight:500;">${m.key.replace(/_/g," ")}</div>
-          <div style="font-size:12px;color:var(--text3);">${JSON.stringify(m.value)}</div>
-        </div>
-        <button onclick="deleteMemory('${m.key}')" style="background:none;border:none;color:#666;cursor:pointer;font-size:16px;">'</button>
-      </div>
-    `).join("")
-  } catch(e) {
-    if (countEl) countEl.textContent = "Could not load (server waking up)"
-  }
-}
-
-async function deleteMemory(key) {
-  await fetch(SERVER + "/memory/" + key + "?token=" + getToken(), { method: "DELETE" })
-  loadMemory()
-}
-
-async function clearAllMemory() {
-  if (!confirm("Clear all AI memory?")) return
-  await fetch(SERVER + "/memory?token=" + getToken(), { method: "DELETE" })
-  loadMemory()
-}
-
 async function deleteAccount() {
-  const pw = document.getElementById("deletePassword").value
-  if (!pw) return showMsg("deleteAccount", "Enter password", "error")
+  const pw  = document.getElementById("delAccPw").value
+  const msg = document.getElementById("delAccMsg")
+  if (!pw) { msg.textContent = "Enter your password"; msg.className = "m-msg err"; return }
   try {
-    const res = await fetch(SERVER + "/auth/delete-account", {
-      method: "DELETE", headers: {"Content-Type":"application/json"},
+    const res  = await fetch(SERVER + "/auth/delete-account", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password: pw, token: getToken() })
     })
     const data = await res.json()
-    if (!res.ok) return showMsg("deleteAccount", data.error || "Failed", "error")
-    localStorage.clear(); window.location.href = "login.html"
-  } catch(e) { showMsg("deleteAccount", "Server error", "error") }
-}
-function goBack() {
-  window.location.href = "index.html"
+    if (!res.ok) { msg.textContent = data.error || "Failed"; msg.className = "m-msg err"; return }
+    logout()
+  } catch(e) { msg.textContent = "Network error"; msg.className = "m-msg err" }
 }
 
-// LOAD ON START
-window.addEventListener("load", function() {
-  if (!getToken()) { window.location.href = "login.html"; return }
+// ── LOGOUT ────────────────────────────────────────────────────────────────────
+function logout() {
+  localStorage.removeItem("datta_token")
+  localStorage.removeItem("datta_user")
+  localStorage.removeItem("datta_last_chat")
+  window.location.href = "login.html"
+}
 
-  // Load user data immediately
-  const su = window._settingsUser || {}
-  const user = getUser()
-  const uname = su.uname || user.username || user.name || "User"
-  const uemail = su.uemail || user.email || ""
-  const nameEl = document.getElementById("userName")
-  const emailEl = document.getElementById("userEmail")
-  const letterEl = document.getElementById("userAvatarLetter")
-  if (nameEl) nameEl.textContent = uname
-  if (emailEl) emailEl.textContent = uemail
-  if (letterEl) letterEl.textContent = (uname[0] || "U").toUpperCase()
-
-  // Load saved avatar
-  const avatar = localStorage.getItem("datta_avatar")
-  if (avatar) setAvatar(avatar)
-
-  // Load plan from localStorage immediately
-  const planNames = { free:"Free Plan", pro:"Pro Plan", max:"Max Plan", ultramax:"Ultra Max Plan", basic:"Pro Plan", enterprise:"Ultra Max Plan" }
-  const cachedPlan = localStorage.getItem("datta_plan") || "free"
-  const planEl = document.getElementById("userPlan")
-  if (planEl) planEl.textContent = planNames[cachedPlan] || "Free Plan"
-  // Update from server in background
-  fetch(SERVER + "/payment/subscription?token=" + getToken())
-    .then(r => r.json())
-    .then(d => {
-      if (planEl) planEl.textContent = planNames[d.plan] || d.plan
-      localStorage.setItem("datta_plan", d.plan)
-    }).catch(() => {})
-
-  // Apply saved theme
-  const theme = localStorage.getItem("datta_theme") || "dark"
-  applyThemeToPage(theme)
-  const tc = document.getElementById("theme-" + theme)
-  if (tc) tc.classList.add("active")
-  document.getElementById("themeDesc").textContent = theme.charAt(0).toUpperCase() + theme.slice(1)
-
-  // Load wallpaper desc
-  const wp = localStorage.getItem("datta_wallpaper") || "none"
-  const wpEl = document.getElementById("wallpaperDesc")
-  if (wpEl) wpEl.textContent = wp.charAt(0).toUpperCase() + wp.slice(1)
-  const wpCard = document.getElementById("wp-" + wp)
-  if (wpCard) wpCard.classList.add("active")
-
-  // Load AI name
-  const aiName = localStorage.getItem("datta_ai_name") || "Datta AI"
-  document.getElementById("ainameDesc").textContent = aiName
-  document.getElementById("ainameInput").value = aiName
-
-  // Load style
-  const style = localStorage.getItem("datta_ai_style") || "Balanced"
-  document.getElementById("aistyleDesc").textContent = style
-  document.querySelectorAll(".stylePill").forEach(p => {
-    if (p.textContent.includes(style)) p.classList.add("active")
-  })
-
-  // Load language
-  const lang = localS
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove("show") }
+function toast(msg) {
+  const el = document.getElementById("toast")
+  el.textContent = msg; el.style.opacity = "1"
+  clearTimeout(el._t)
+  el._t = setTimeout(() => { el.style.opacity = "0" }, 2200)
+}
+</script>
+</body>
+</html>
