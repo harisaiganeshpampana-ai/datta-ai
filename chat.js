@@ -223,16 +223,27 @@ function showStopBtn() { setGenerating(true) }
 function hideStopBtn() { setGenerating(false) }
 
 function stopGeneration() {
-  // Abort network request
+  // Guard: if already stopped, do nothing
+  if (!isGenerating && !controller) return
+
+  // Abort the fetch — this signals both fetchWithRetry and the stream loop
   if (controller) {
     controller.abort()
     controller = null
   }
+
+  // Set global stop flag — runTyping() checks this
+  window._stopTyping = true
+
   setGenerating(false)
 
-  // Re-enable input
+  // Re-enable input immediately
   const msgInput = document.getElementById("message")
-  if (msgInput) { msgInput.disabled = false; msgInput.focus() }
+  if (msgInput) {
+    msgInput.disabled = false
+    msgInput.value = window.lastUserMsg || msgInput.value
+    msgInput.focus()
+  }
 
   // The typing loop handles the "stopped" message via typingActive = false
   // For streams that already finished network but are still typing,
@@ -813,22 +824,30 @@ async function send() {
 
   showStopBtn()
 
-  // Auto-retry fetch - silently retry up to 4 times
+  // Auto-retry fetch - uses GLOBAL controller so Stop button works
   async function fetchWithRetry(url, options, maxTries = 4) {
     for (let i = 0; i < maxTries; i++) {
       try {
-        const ctrl = new AbortController()
-        // 120s timeout — long code responses can take 60-90s on Groq
-        const timer = setTimeout(() => ctrl.abort(), 120000)
-        const r = await fetch(url, { ...options, signal: ctrl.signal })
-        clearTimeout(timer)
+        // If user already stopped before request starts — bail immediately
+        if (!controller || controller.signal.aborted) throw new DOMException("Aborted", "AbortError")
+
+        // Timeout: abort the GLOBAL controller after 120s
+        // This means Stop button AND timeout both cancel the same signal
+        const timeoutId = setTimeout(() => {
+          if (controller && !controller.signal.aborted) controller.abort()
+        }, 120000)
+
+        const r = await fetch(url, { ...options, signal: controller.signal })
+        clearTimeout(timeoutId)
         return r
       } catch(e) {
+        // If user hit Stop — propagate immediately, no retry
+        if (e.name === "AbortError") throw e
         if (i === maxTries - 1) throw e
-        // Update thinking message
+        // Network error — retry with fresh controller
         const title = document.querySelector(".thinkingTitle")
         if (title) title.textContent = "Connecting... (" + (i+2) + "/" + maxTries + ")"
-        await new Promise(r => setTimeout(r, 5000)) // wait 5 sec
+        await new Promise(r => setTimeout(r, 5000))
         controller = new AbortController()
       }
     }
@@ -952,7 +971,15 @@ async function send() {
 
     // ── TYPING ANIMATION ─────────────────────────────
     async function runTyping() {
+      // Reset global stop flag at start of each new response
+      window._stopTyping = false
+
       while (typingActive) {
+        // Check global stop flag — set by stopGeneration()
+        if (window._stopTyping) {
+          typingActive = false
+          break
+        }
         if (displayedLen < fullText.length) {
           // Type next chunk — grab multiple chars if behind
           const lag = fullText.length - displayedLen
@@ -1008,13 +1035,22 @@ async function send() {
         break
       }
 
+      // Check abort BEFORE reading next chunk — instant stop
+      if (!controller || controller.signal.aborted) {
+        typingActive = false
+        break
+      }
+
       const { done, value } = await reader.read()
       if (done) break
 
-      const chunk = decoder.decode(value)
+      // Check abort again AFTER read returns (read can block)
+      if (!controller || controller.signal.aborted) {
+        typingActive = false
+        break
+      }
 
-      // Skip only completely empty chunks (heartbeat = decoder gives "")
-      // DO NOT skip whitespace-only chunks — spaces/newlines are valid tokens
+      const chunk = decoder.decode(value)
       if (chunk === "") continue
 
       if (chunk.includes("[object Object]") || chunk.includes("[object object]")) {
