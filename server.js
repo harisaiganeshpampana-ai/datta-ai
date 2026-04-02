@@ -1054,7 +1054,12 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     chat.messages.push({ role: "user", content: message || "[File: " + (file?.originalname || "unknown") + "]" })
     await chat.save()
     res.setHeader("x-chat-id", chat._id.toString())
-    res.setHeader("Content-Type", "text/plain")
+    res.setHeader("Content-Type", "text/plain; charset=utf-8")
+    res.setHeader("Transfer-Encoding", "chunked")
+    res.setHeader("Cache-Control", "no-cache, no-transform")
+    res.setHeader("X-Accel-Buffering", "no")  // tells nginx/Render: do NOT buffer
+    res.setHeader("Connection", "keep-alive")
+    res.flushHeaders()  // send headers immediately, open the stream
 
 
 
@@ -1388,6 +1393,15 @@ For sports/IPL: state match details directly from search results.
     let full = ""
     let lastError = null
 
+    // Heartbeat: send a zero-width space every 15s to prevent Render 30s idle timeout
+    // This keeps the connection alive during long Groq responses
+    let _heartbeatActive = true
+    var heartbeatTimer = setInterval(() => {
+      if (_heartbeatActive && !res.writableEnded) {
+        try { res.write("") } catch(e) {}  // empty write keeps TCP alive
+      }
+    }, 15000)
+
     // Groq only — reliable, fast, no token limits
     // Debug: log what the AI receives
     var userMsg = typeof finalUserContent === "string" ? finalUserContent.slice(0, 300) : "[array content]"
@@ -1488,9 +1502,13 @@ For sports/IPL: state match details directly from search results.
       } catch(e) {}
     }
     await chat.save()
+    _heartbeatActive = false
+    clearInterval(heartbeatTimer)
     res.write("CHATID" + chat._id)
     res.end()
   } catch(err) {
+    _heartbeatActive = false
+    clearInterval(heartbeatTimer)
     console.error("Chat error:", err.message)
     if (!res.headersSent) res.status(500).send("Server error: " + err.message)
     else res.end()
