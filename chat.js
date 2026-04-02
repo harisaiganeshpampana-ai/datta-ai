@@ -624,6 +624,8 @@ function newChat() {
 
 // ─── SEND MESSAGE ─────────────────────────────────────────────────────────────
 async function send() {
+  // Prevent double-send while AI is generating
+  if (isGenerating) return
 
   const input = document.getElementById("message")
   const filePreview = document.getElementById("filePreview")
@@ -1070,6 +1072,13 @@ async function send() {
     })
 
     lucide.createIcons()
+
+    // Trim DOM — prevent memory leak on very long conversations
+    const _allRows = chatBox ? chatBox.querySelectorAll(".msg-row") : []
+    if (_allRows.length > 60) {
+      for (let _i = 0; _i < _allRows.length - 60; _i++) _allRows[_i].remove()
+    }
+
     hideStopBtn()
     loadSidebar()
 
@@ -1633,9 +1642,9 @@ document.querySelectorAll(".suggestBtn").forEach(btn => {
 
 // ─── ENTER KEY ────────────────────────────────────────────────────────────────
 document.getElementById("message").addEventListener("keydown", function (e) {
-  if (e.key === "Enter") {
+  if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault()
-    send()
+    if (!isGenerating) send()
   }
 })
 
