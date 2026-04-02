@@ -1268,9 +1268,15 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }
     // Now set final model AFTER any auto-switch
     let model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : resolvedModel
-    const isLargeTask = ["portfolio","full website","complete website","business plan","full app","complete app","all sections"].some(k => msgLower.includes(k))
-    // Keep tokens lower to avoid Render 30s timeout - Groq is fast so 4096 still gives good code
-    const maxCodingTok = isLargeTask ? 6000 : isCodeTask ? 4096 : 3000
+    const isLargeTask = [
+      "portfolio","full website","complete website","business plan",
+      "full app","complete app","all sections","food delivery","delivery app",
+      "ecommerce","e-commerce","shopping app","social media app","todo app",
+      "calculator app","weather app","chat app","booking app","restaurant app",
+      "build me a","create a full","make a complete","entire app","whole app"
+    ].some(k => msgLower.includes(k))
+    // Token limits: large=8000, code=6000, normal=4000
+    const maxCodingTok = isLargeTask ? 8000 : isCodeTask ? 6000 : 4000
     const maxTok = isImageFile ? 2048 : maxCodingTok
 
     // Use browser's actual local time sent from frontend
@@ -1451,7 +1457,15 @@ CRITICAL OUTPUT RULES:
       } catch(groqErr) {
         lastError = groqErr
         console.error("Groq error (attempt " + (attempt+1) + "):", groqErr.message)
-        if (attempt === 0 && groqAttempts.length > 1) { full = ""; continue }
+        if (attempt === 0 && groqAttempts.length > 1) {
+          full = ""
+          // If rate limit or token error, reduce tokens for retry
+          if (groqErr.message?.includes("rate") || groqErr.message?.includes("token") || groqErr.status === 500) {
+            groqMessages[groqMessages.length - 1].content =
+              (groqMessages[groqMessages.length - 1].content || "").toString().substring(0, 2000)
+          }
+          continue
+        }
       }
     }
 
