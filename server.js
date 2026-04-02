@@ -1128,15 +1128,18 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       }
     }
 
-    const history = chat.messages.slice(0, -1).slice(-6)
+    // For large code tasks, use less history to save token budget
+    const historyLimit = isCodeTask ? 2 : 4
+    const historyContentLimit = isCodeTask ? 800 : 1500
+    const history = chat.messages.slice(0, -1).slice(-historyLimit)
       .filter(m => {
         const c = safeStr(m.content)
-        if (c.includes("data:image")) return false  // skip base64 images
+        if (c.includes("data:image")) return false
         return true
       })
       .map(m => ({
         role: m.role === "assistant" ? "assistant" : "user",
-        content: safeStr(m.content).substring(0, 2000)  // always string
+        content: safeStr(m.content).substring(0, historyContentLimit)
       }))
     const isImageFile = file && file.mimetype?.startsWith("image/")
     let userContent
