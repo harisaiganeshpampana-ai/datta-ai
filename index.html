@@ -940,7 +940,7 @@ body.notes-open .input-area {
 .notes-saved { color: var(--accent); }
 
 /* Notes topbar button */
-.notes-top-btn { display: none !important; }
+.notes-top-btn { display: flex !important; }
 
 /* ── BOTTOM SHEET ── */
 .sheet-overlay {
@@ -1094,8 +1094,7 @@ body.notes-open .input-area {
   .welcome-screen { padding: 0 14px 150px; }
   .sugg-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .theme-switch { display: none !important; }
-  .notes-panel { display: none !important; }
-  .notes-top-btn { display: none !important; }
+  .notes-panel { display: none !important; }  /* still hidden on mobile - open via button */
   body.notes-open .input-area { left: 50% !important; }
   body.sb-collapsed .input-area { left: 50% !important; }
 }
@@ -2047,7 +2046,7 @@ document.addEventListener('DOMContentLoaded', function(){
 })
 </script>
 
-<script src="chat.js?v=42"></script>
+<script src="chat.js?v=43"></script>
 
 </body>
 </html>
