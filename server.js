@@ -143,7 +143,17 @@ async function callGemini(messages, systemPrompt, maxTokens, res) {
   return full
 }
 
-mongoose.connect(process.env.MONGO_URI).then(() => console.log("MongoDB connected")).catch(e => console.error("DB error:", e.message))
+;(async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI)
+    console.log("MongoDB connected")
+  } catch(e) {
+    // Async DB errors caught here — not possible to catch with sync try/catch
+    // because mongoose.connect() returns a Promise
+    console.error("DB connection error:", e.message)
+    process.exit(1)  // Exit if DB fails — app cannot function without it
+  }
+})()
 
 // Safe string extractor — prevents [object Object] in AI responses
 function safeStr(val) {
