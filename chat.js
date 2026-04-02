@@ -286,12 +286,12 @@ function lensSendToChat() {
   hideWelcome()
   const aiDiv = document.createElement("div")
   aiDiv.className = "msg-row"
+  const cleanResult = (result || "").replace(/\n/g, "<br>").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
   aiDiv.innerHTML = `
     <div class="aiContent">
-      <div class="ai-bubble" id="lensResultBubble"></div>
-/g, "<br>").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")}</div>
+      <div class="ai-bubble">${cleanResult}</div>
       <div class="aiActions">
-        <button class="actionBtn" title="Copy" onclick="navigator.clipboard.writeText(this.closest('.messageRow').querySelector('.aiBubble').innerText);showToast('Copied!')">
+        <button class="actionBtn" title="Copy" onclick="navigator.clipboard.writeText(this.closest('.msg-row').querySelector('.ai-bubble').innerText);showToast('Copied!')">
           <i data-lucide="copy"></i>
         </button>
       </div>
@@ -4158,4 +4158,4 @@ window.downloadNotes = downloadNotes
     .chat-item-menu:hover { background:var(--bg3); color:var(--text); }
   `
   document.head.appendChild(s)
-})()b
+})()
