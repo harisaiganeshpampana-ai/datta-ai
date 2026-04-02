@@ -998,6 +998,9 @@ async function send() {
     // Use fullText for saving (not displayed text)
     streamText = fullText
 
+    // ── INJECT "RUN APP" BUTTON if response has HTML+CSS or HTML+JS ──────────
+    injectRunAppButton(aiDiv, fullText)
+
     // Add action buttons to user messages after generation
     chatBox.querySelectorAll(".user-bubble, .userBubble").forEach(bubble => {
       if (!bubble.closest(".msg-row, .messageRow")?.querySelector(".userActions, .user-actions")) {
@@ -2664,6 +2667,131 @@ window.downloadAsPDF = downloadAsPDF
 function addCodePreview(container) {
   // No-op: split preview now handled automatically by renderer.code
 }
+
+// ── RUN APP BUTTON ───────────────────────────────────────────────────────────
+// After AI response, check if it has multiple code blocks and inject ONE run button
+function injectRunAppButton(container, rawText) {
+  if (!container || !rawText) return
+
+  // Collect all code blocks in this response
+  const blocks = container.querySelectorAll(".code-block-wrap[data-code]")
+  if (blocks.length < 1) return
+
+  // Gather all code by language
+  let html = "", css = "", js = ""
+  blocks.forEach(block => {
+    const lang  = (block.getAttribute("data-lang") || "").toLowerCase()
+    const code  = decodeURIComponent(block.getAttribute("data-code") || "")
+    if (lang === "html") html = code
+    else if (lang === "css")  css  += "\n" + code
+    else if (lang === "js" || lang === "javascript") js += "\n" + code
+  })
+
+  // If there's an HTML block, inject CSS+JS into it
+  // If no HTML block but has JS/CSS, use first block as base
+  const hasHTML = html.trim().length > 0
+  const hasExtra = css.trim().length > 0 || js.trim().length > 0
+  const isSingleHTML = blocks.length === 1 && hasHTML
+
+  // Only add button if there's something worth running
+  if (!hasHTML && !js) return
+  // Don't add if already has a run button
+  if (container.querySelector(".run-app-btn")) return
+
+  // Build the combined app HTML
+  function buildApp() {
+    if (hasHTML) {
+      let combined = html
+      // Inject CSS before </head> or at top
+      if (css.trim()) {
+        const styleTag = "<style>" + css + "</style>"
+        if (combined.includes("</head>")) {
+          combined = combined.replace("</head>", styleTag + "</head>")
+        } else {
+          combined = styleTag + combined
+        }
+      }
+      // Inject JS before </body> or at end
+      if (js.trim()) {
+        const scriptTag = "<script>" + js + "<\/script>"
+        if (combined.includes("</body>")) {
+          combined = combined.replace("</body>", scriptTag + "</body>")
+        } else {
+          combined = combined + scriptTag
+        }
+      }
+      return combined
+    } else {
+      // Only JS — wrap in basic HTML
+      return "<!DOCTYPE html><html><body style='margin:0;padding:16px;font-family:sans-serif;background:#fff'><div id='app'></div><script>" + js + "<\/script></body></html>"
+    }
+  }
+
+  // Create the Run App button
+  const btnWrap = document.createElement("div")
+  btnWrap.className = "run-app-btn"
+  btnWrap.style.cssText = "margin:12px 0 4px;"
+  btnWrap.innerHTML = `
+    <button onclick="launchApp(this)" 
+      style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:linear-gradient(135deg,#10a37f,#0077ff);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;width:100%;justify-content:center;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      ▶ Run App — Test Your Website
+    </button>
+  `
+
+  // Store the combined code on the button
+  const appCode = buildApp()
+  btnWrap.querySelector("button").setAttribute("data-app", encodeURIComponent(appCode))
+
+  // Insert after last code block
+  const lastBlock = blocks[blocks.length - 1]
+  lastBlock.parentNode.insertBefore(btnWrap, lastBlock.nextSibling)
+}
+
+// Launch the app in a full-screen overlay
+function launchApp(btn) {
+  const encoded = btn.getAttribute("data-app") || ""
+  const code    = encoded ? decodeURIComponent(encoded) : ""
+  if (!code.trim()) { showToast("No code to run"); return }
+
+  // Create full-screen overlay
+  const overlay = document.createElement("div")
+  overlay.id = "appPreviewOverlay"
+  overlay.style.cssText = "position:fixed;inset:0;z-index:99999;background:#000;display:flex;flex-direction:column;"
+
+  overlay.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#0a0a0f;border-bottom:1px solid #1a1a2a;flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="display:flex;gap:6px;">
+          <div style="width:12px;height:12px;border-radius:50%;background:#ff5f57;"></div>
+          <div style="width:12px;height:12px;border-radius:50%;background:#ffbd2e;"></div>
+          <div style="width:12px;height:12px;border-radius:50%;background:#28ca42;"></div>
+        </div>
+        <span style="font-size:12px;color:#555;letter-spacing:1px;">APP PREVIEW</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button id="appReloadBtn" style="padding:4px 12px;background:none;border:1px solid #2a2a3a;border-radius:6px;color:#666;font-size:12px;cursor:pointer;">↺ Reload</button>
+        <button onclick="document.getElementById('appPreviewOverlay').remove()" style="padding:4px 12px;background:#1a0a0a;border:1px solid #3a1a1a;border-radius:6px;color:#e55;font-size:12px;cursor:pointer;">✕ Close</button>
+      </div>
+    </div>
+    <iframe id="appPreviewFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups" style="flex:1;border:none;background:#fff;"></iframe>
+  `
+
+  document.body.appendChild(overlay)
+
+  // Write code to iframe
+  const iframe = document.getElementById("appPreviewFrame")
+  writeToIframe(iframe, code)
+
+  // Reload button
+  document.getElementById("appReloadBtn").onclick = function() {
+    writeToIframe(iframe, code)
+    showToast("Reloaded!")
+  }
+}
+
+window.injectRunAppButton = injectRunAppButton
+window.launchApp = launchApp
 
 // Toggle split view: code left, live preview right
 function toggleSplitPreview(uid) {
