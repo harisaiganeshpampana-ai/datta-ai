@@ -1267,7 +1267,7 @@ let sidebarFixDone = false
 
 async function loadSidebar() {
   try {
-    const res = await fetch(SERVER + "/chats?token=" + getToken())
+    const res = await fetch(SERVER + "/chats", { headers: { "Authorization": "Bearer " + getToken() } })
 
     // If 401 redirect to login
     if (res.status === 401) {
@@ -1289,7 +1289,7 @@ async function loadSidebar() {
       const badTitles = ["hi","hii","hiii","hello","hey","helo","hai","new conversation","new chat"]
       const hasBad = chats.some(c => badTitles.includes(c.title.toLowerCase().trim()))
       if (hasBad) {
-        fetch(SERVER + "/chats/fix-titles?token=" + getToken(), {
+        fetch(SERVER + "/chats/fix-titles", { headers: { "Authorization": "Bearer " + getToken() },
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token: getToken() })
@@ -1356,7 +1356,7 @@ async function openChat(chatId) {
   chatBox.innerHTML = ""
   hideWelcome()
 
-  const res = await fetch(SERVER + "/chat/" + chatId + "?token=" + getToken())
+  const res = await fetch(SERVER + "/chat/" + chatId, { headers: { "Authorization": "Bearer " + getToken() } })
   const messages = await res.json()
 
   messages.forEach(m => {
@@ -1496,7 +1496,7 @@ function confirmDelete(e, id) {
 async function deleteChat(id, chatItem) {
   try {
     if (chatItem) chatItem.style.opacity = "0.4"
-    await fetch(SERVER + "/chat/" + id + "?token=" + getToken(), {
+    await fetch(SERVER + "/chat/" + id, { headers: { "Authorization": "Bearer " + getToken() },
       method: "DELETE"
     })
     if (chatItem) chatItem.remove()
@@ -2018,7 +2018,7 @@ async function deleteAllChats() {
   if (!confirm("Are you sure? This will delete ALL your chats permanently!")) return
 
   try {
-    const res = await fetch(SERVER + "/chats/all?token=" + getToken(), {
+    const res = await fetch(SERVER + "/chats/all", { headers: { "Authorization": "Bearer " + getToken() },
       method: "DELETE"
     })
     if (!res.ok) return showSettingsMsg("Failed to delete chats", "error")
@@ -2643,7 +2643,7 @@ const planVersions = {
 
 async function loadUserVersion() {
   try {
-    const res = await fetch(SERVER + "/payment/subscription?token=" + getToken())
+    const res = await fetch(SERVER + "/payment/subscription", { headers: { "Authorization": "Bearer " + getToken() } })
     if (!res.ok) return
     const data = await res.json()
     const plan = data.plan || "free"
@@ -2679,7 +2679,7 @@ async function loadUserVersion() {
     // Update usage display if limits data available
     if (data.limits && data.limits.messages) {
       // Fetch current usage from server
-      fetch(SERVER + "/payment/usage?token=" + getToken())
+      fetch(SERVER + "/payment/usage", { headers: { "Authorization": "Bearer " + getToken() } })
         .then(r => r.json())
         .then(u => {
           if (typeof u.used === "number") {
@@ -3686,7 +3686,7 @@ window.addEventListener("DOMContentLoaded", async function() {
 
   // Check if already verified from server
   try {
-    const res = await fetch(SERVER + "/payment/subscription?token=" + getToken())
+    const res = await fetch(SERVER + "/payment/subscription", { headers: { "Authorization": "Bearer " + getToken() } })
     if (!res.ok) return
   } catch(e) { return }
 
