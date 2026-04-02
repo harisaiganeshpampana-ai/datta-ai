@@ -233,12 +233,12 @@ const MemorySchema = new mongoose.Schema({
 const Memory = mongoose.model("Memory", MemorySchema)
 
 const planLimits = {
-  free:      { messages: 50,     resetHours: 5,  models: ["llama-3.1-8b-instant","llama-3.3-70b-versatile","datta-1.1"] },
-  mini:      { messages: 100,    resetHours: 4,  models: ["llama-3.1-8b-instant","llama-3.3-70b-versatile","datta-1.1","llama-3.3-70b-versatile_48"] },
-  pro:       { messages: 150,    resetHours: 4,  models: ["all"] },
-  max:       { messages: 2000,   resetHours: 3,  models: ["all"] },
+  free:      { messages: 50,     resetHours: 5,  models: ["all"] },
+  mini:      { messages: 200,    resetHours: 3,  models: ["all"] },
+  pro:       { messages: 500,    resetHours: 2,  models: ["all"] },
+  max:       { messages: 2000,   resetHours: 1,  models: ["all"] },
   ultramax:  { messages: 999999, resetHours: 0,  models: ["all"] },
-  basic:     { messages: 150,    resetHours: 4,  models: ["all"] },
+  basic:     { messages: 500,    resetHours: 2,  models: ["all"] },
   enterprise:{ messages: 999999, resetHours: 0,  models: ["all"] }
 }
 const rateLimitStore = {}
@@ -1210,20 +1210,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     let chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.1-8b-instant"
     const modelKey = req.body.modelKey || "d21" // d21, d42, d48, d54
 
-    // Lock 4.8 and 5.4 for free users
-    // d48 = Datta 4.8, d54 = Datta 5.4
+    // All models available on all plans
     const is48 = modelKey === "d48"
     const is54 = modelKey === "d54"
-
-    if (userPlan === "free" && (is48 || is54)) {
-      res.setHeader("Content-Type","text/plain")
-      res.write("This model is locked on Free plan. Upgrade to Mini (Rs.199/mo) or Pro (Rs.999/mo) to unlock. Visit pricing.html to upgrade!")
-      chat.messages.push({ role:"assistant", content:"Model locked. Upgrade required." })
-      await chat.save()
-      res.write("CHATID" + chat._id)
-      res.end()
-      return
-    }
     // Map all models to valid Groq models
     // Datta 1.1 = llama-3.1-8b-instant used specifically for AI modes
     // All persona modes auto-use Datta 1.1 (fast, focused responses)
