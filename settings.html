@@ -641,7 +641,7 @@ window.addEventListener("DOMContentLoaded", function() {
 
   // Load plan
   const plan = user.plan || user.subscription || "free"
-  const planMap = { free:"🌱 Free", mini:"⚡ Mini", pro:"🔥 Pro", max:"💎 Max", ultramax:"👑 Ultra Max" }
+  const planMap = { free:"🌱 Free — 50 msgs", mini:"⚡ Mini — 200 msgs", pro:"🔥 Pro — 500 msgs", max:"💎 Max — 2000 msgs", ultramax:"👑 Ultra Max — Unlimited" }
   document.getElementById("profilePlan").textContent = planMap[plan] || "🌱 Free Plan"
 
   // Font size
