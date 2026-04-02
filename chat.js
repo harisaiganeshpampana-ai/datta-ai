@@ -3842,7 +3842,7 @@ window.deleteChat = deleteChat
 async function exportChat() {
   if (!currentChatId) return showToast("No chat to export")
   try {
-    const res = await fetch(SERVER + "/chat/" + currentChatId + "/export?token=" + getToken())
+    const res = await fetch(SERVER + "/chat/" + currentChatId + "/export", { headers: { "Authorization": "Bearer " + getToken() } })
     if (!res.ok) return showToast("Export failed")
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)
@@ -3859,7 +3859,7 @@ window.exportChat = exportChat
 // REFERRAL
 async function showReferral() {
   try {
-    const res = await fetch(SERVER + "/referral/code?token=" + getToken())
+    const res = await fetch(SERVER + "/referral/code", { headers: { "Authorization": "Bearer " + getToken() } })
     const data = await res.json()
     const msg = `Your referral code: ${data.code}
 
