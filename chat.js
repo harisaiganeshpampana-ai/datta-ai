@@ -2920,7 +2920,7 @@ window.downloadDocument = downloadDocument
 // ══════════════════════════════════════════════════════
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/datta-ai/sw.js")
+    navigator.serviceWorker.register("/sw.js")
       .then(() => console.log("SW registered"))
       .catch(e => console.log("SW error:", e))
   })
@@ -3216,7 +3216,7 @@ window.resendVerification = resendVerification
 
 // AUTO UPDATE - detect new version and reload
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/datta-ai/sw.js").then(reg => {
+  navigator.serviceWorker.register("/sw.js").then(reg => {
 
     // Check for updates every 30 seconds
     setInterval(() => reg.update(), 30000)
@@ -3298,7 +3298,7 @@ setTimeout(() => {
 
 // SW update detection
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/datta-ai/sw.js").then(reg => {
+  navigator.serviceWorker.register("/sw.js").then(reg => {
     reg.addEventListener("updatefound", () => {
       const nw = reg.installing
       nw.addEventListener("statechange", () => {
