@@ -1,7 +1,7 @@
 /* ================================================
    DATTA AI — LAYOUT SYSTEM
-   Pure flexbox, no hacks, no absolute positioning
-   for layout elements
+   Two clean states: empty-state / chat-state
+   Input NEVER moves — always fixed bottom center
    ================================================ */
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -23,258 +23,265 @@ body {
    ════════════════════════════════════════ */
 .topbar {
   position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  height: 56px !important;
-  z-index: 1000 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  padding: 0 14px !important;
-  flex-shrink: 0 !important;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
 }
 
 .menuBtn {
-  z-index: 1001 !important;
-  cursor: pointer !important;
-  flex-shrink: 0 !important;
+  z-index: 1001;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 /* ════════════════════════════════════════
    APP BODY — flex row: sidebar + main
    ════════════════════════════════════════ */
 .app-body {
-  display: flex !important;
-  flex: 1 !important;
-  height: calc(100vh - 56px) !important;
-  margin-top: 56px !important;
-  overflow: hidden !important;
+  display: flex;
+  flex: 1;
+  height: calc(100vh - 56px);
+  margin-top: 56px;
+  overflow: hidden;
 }
 
 /* ════════════════════════════════════════
    SIDEBAR
    ════════════════════════════════════════ */
 .sidebar {
-  width: 260px !important;
-  flex-shrink: 0 !important;
-  height: 100% !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
-  z-index: 90 !important;
+  width: 260px;
+  flex-shrink: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 90;
 }
 
 /* ════════════════════════════════════════
-   MAIN — flex column: chat + input
+   MAIN — contains chatWrapper
    ════════════════════════════════════════ */
 .main {
-  flex: 1 !important;
-  min-width: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;   /* centers children horizontally */
-  overflow: hidden !important;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
 }
 
 /* ════════════════════════════════════════
-   CHAT WRAPPER — fills remaining space
+   CHAT WRAPPER — scrollable area
    ════════════════════════════════════════ */
 .chatWrapper {
-  flex: 1 !important;
-  width: 100% !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-  position: relative !important;
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
 }
 
-/* ════════════════════════════════════════
-   CHAT SCROLL AREA
-   ════════════════════════════════════════ */
 .chat {
-  flex: 1 !important;
-  width: 100% !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  padding: 24px 0 180px !important;  /* bottom pad = input height + gap */
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* padding-bottom keeps last message above input bar */
+  padding: 24px 0 180px;
 }
 
 /* ════════════════════════════════════════
-   MESSAGE ROWS — centered, max width
+   MESSAGE ROWS
    ════════════════════════════════════════ */
 .messageRow {
-  width: 100% !important;
-  max-width: 800px !important;
-  padding: 0 20px !important;
-  margin: 0 auto 4px !important;
-  display: flex !important;
-  box-sizing: border-box !important;
+  width: 100%;
+  max-width: 800px;
+  padding: 0 20px;
+  margin: 0 auto 4px;
+  display: flex;
 }
 
 /* ════════════════════════════════════════
-   INPUT AREA — fixed bottom, centered
-   Key: left is offset by sidebar width
+   INPUT — ALWAYS fixed, ALWAYS centered
+   NEVER moves regardless of state
    ════════════════════════════════════════ */
 .inputArea {
   position: fixed !important;
   bottom: 0 !important;
-  left: 260px !important;   /* sidebar width */
+  /* Left offset = sidebar width so centering is within content area */
+  left: 260px !important;
   right: 0 !important;
-  z-index: 80 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;   /* centers inputWrap */
-  padding: 10px 20px 24px !important;
-  pointer-events: none !important;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: center;       /* centers inputWrap horizontally */
+  padding: 10px 20px 24px;
+  pointer-events: none;
 }
+.inputArea > * { pointer-events: all; }
 
-.inputArea > * {
-  pointer-events: all !important;
-}
-
-/* ════════════════════════════════════════
-   INPUT MODEL BAR
-   ════════════════════════════════════════ */
 .inputModelBar {
-  width: 100% !important;
-  max-width: 800px !important;
-  padding: 0 4px 8px !important;
-  display: flex !important;
-  align-items: center !important;
+  width: 100%;
+  max-width: 800px;
+  padding: 0 4px 8px;
+  display: flex;
+  align-items: center;
 }
 
-/* ════════════════════════════════════════
-   INPUT WRAP — centered, max width
-   ════════════════════════════════════════ */
 .inputWrap {
-  width: 100% !important;
-  max-width: 800px !important;
-  border-radius: 18px !important;
-  padding: 6px 8px 6px 16px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  transition: border-color 0.2s, box-shadow 0.2s !important;
+  width: 100%;
+  max-width: 800px;
+  border-radius: 18px;
+  padding: 6px 8px 6px 16px;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-/* ════════════════════════════════════════
-   INPUT ROW — mic + text + send
-   ════════════════════════════════════════ */
 .inputRow {
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-  width: 100% !important;
-  min-height: 46px !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 46px;
 }
 
 #message {
-  flex: 1 !important;
-  min-width: 0 !important;
-  height: 46px !important;
-  border: none !important;
-  outline: none !important;
-  font-size: 15px !important;
-  padding: 0 6px !important;
-  background: transparent !important;
+  flex: 1;
+  min-width: 0;
+  height: 46px;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  padding: 0 6px;
+  background: transparent;
 }
 
 .plusBtn, .micBtn, .actionMainBtn {
-  flex-shrink: 0 !important;
-  width: 38px !important;
-  height: 38px !important;
-  border-radius: 12px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  cursor: pointer !important;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
 /* ════════════════════════════════════════
-   WELCOME SCREEN — centered in chatWrapper
+   EMPTY STATE — welcome screen
+   Visible when body does NOT have .chat-started
    ════════════════════════════════════════ */
 .welcomeScreen {
-  position: absolute !important;
-  inset: 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 0 24px 180px !important;
-  z-index: 2 !important;
-  pointer-events: none !important;
+  /* Takes full chatWrapper space */
+  position: absolute;
+  inset: 0;
+  /* Center content */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Push content up so input doesn't overlap */
+  padding: 0 24px 180px;
+  z-index: 2;
+  /* Allow clicks through to chatWrapper but not body */
+  pointer-events: none;
 }
-.welcomeScreen > * { pointer-events: all !important; }
-
-.chat-started .welcomeScreen { display: none !important; }
+.welcomeScreen > * { pointer-events: all; }
 
 .welcomeInner {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  gap: 40px !important;
-  width: 100% !important;
-  max-width: 640px !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  width: 100%;
+  max-width: 640px;
+}
+
+/* CHAT STATE — hide welcome, show messages */
+.chat-started .welcomeScreen {
+  display: none !important;
+}
+
+/* ════════════════════════════════════════
+   SUGGESTION GRID
+   ════════════════════════════════════════ */
+.suggestionGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+/* Hide chips in chat state */
+.chat-started .suggestionGrid,
+.chat-started #suggestionChips {
+  display: none !important;
 }
 
 /* ════════════════════════════════════════
    NOTES PANEL
    ════════════════════════════════════════ */
 #notesPanel {
-  position: fixed !important;
-  top: 56px !important;
-  right: -460px !important;
-  width: 420px !important;
-  height: calc(100vh - 56px) !important;
-  z-index: 995 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  transition: right 0.3s cubic-bezier(0.4,0,0.2,1) !important;
+  position: fixed;
+  top: 56px;
+  right: -460px;
+  width: 420px;
+  height: calc(100vh - 56px);
+  z-index: 995;
+  display: flex;
+  flex-direction: column;
+  transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
 }
-#notesPanel.open { right: 0 !important; }
+#notesPanel.open { right: 0; }
 
-body.notes-open .inputArea  { right: 420px !important; }
+body.notes-open .inputArea { right: 420px !important; }
 
 /* ════════════════════════════════════════
    SIDEBAR OVERLAY
    ════════════════════════════════════════ */
 #sidebarOverlay {
-  position: fixed !important;
-  inset: 0 !important;
-  background: rgba(0,0,0,0.5) !important;
-  z-index: 998 !important;
-  display: none !important;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 998;
+  display: none;
 }
 
 /* ════════════════════════════════════════
-   SETTINGS PAGE
+   SETTINGS
    ════════════════════════════════════════ */
 .settings-container, .container {
-  max-width: 860px !important;
-  margin: 0 auto !important;
-  padding: 80px 20px 60px !important;
-  width: 100% !important;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 80px 20px 60px;
+  width: 100%;
 }
 .settings-card {
-  width: 100% !important;
-  border-radius: 12px !important;
-  padding: 20px !important;
-  margin-bottom: 16px !important;
+  width: 100%;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
 }
 
 /* ════════════════════════════════════════
    TABLET  768px – 1024px
    ════════════════════════════════════════ */
 @media (min-width: 768px) and (max-width: 1024px) {
-  .sidebar        { width: 220px !important; }
+  .sidebar        { width: 220px; }
   .inputArea      { left: 220px !important; }
   .inputWrap,
-  .inputModelBar  { max-width: 680px !important; }
-  .messageRow     { max-width: 680px !important; }
-  #notesPanel     { width: 320px !important; right: -340px !important; }
+  .inputModelBar  { max-width: 680px; }
+  .messageRow     { max-width: 680px; }
+  #notesPanel     { width: 320px; right: -340px; }
   body.notes-open .inputArea { right: 320px !important; }
 }
 
@@ -282,50 +289,54 @@ body.notes-open .inputArea  { right: 420px !important; }
    MOBILE  < 768px
    ════════════════════════════════════════ */
 @media (max-width: 767px) {
-  /* Sidebar hidden off-screen, slides in */
+
+  /* Sidebar off-screen, slides in */
   .sidebar {
-    position: fixed !important;
-    top: 56px !important;
-    left: 0 !important;
-    height: calc(100vh - 56px) !important;
-    z-index: 999 !important;
-    transform: translateX(-100%) !important;
-    transition: transform 0.3s ease !important;
+    position: fixed;
+    top: 56px; left: 0;
+    height: calc(100vh - 56px);
+    width: 280px;
+    z-index: 999;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
   }
   .sidebar.open,
   .sidebar.show {
-    transform: translateX(0) !important;
-    box-shadow: 4px 0 24px rgba(0,0,0,0.4) !important;
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.4);
   }
 
-  /* Input spans full width on mobile */
+  /* Input full width, no sidebar offset */
   .inputArea {
     left: 0 !important;
-    padding: 8px 12px 20px !important;
+    right: 0 !important;
+    padding: 8px 12px 20px;
   }
   .inputWrap,
-  .inputModelBar { max-width: 100% !important; }
+  .inputModelBar { max-width: 100%; }
 
-  /* Messages full width on mobile */
+  /* Messages full width */
   .messageRow {
-    max-width: 100% !important;
-    padding: 0 12px !important;
+    max-width: 100%;
+    padding: 0 12px;
   }
 
-  /* Extra bottom padding so input never covers last message */
-  .chat { padding-bottom: 150px !important; }
+  /* Bottom padding for messages */
+  .chat { padding-bottom: 150px; }
 
-  /* Welcome screen */
-  .welcomeScreen  { padding: 0 16px 160px !important; }
-  .welcomeInner   { max-width: 100% !important; }
+  /* Welcome centered with room for input */
+  .welcomeScreen { padding: 0 16px 160px; }
+  .welcomeInner  { max-width: 100%; }
 
-  /* Hide desktop-only elements */
+  /* Suggestion grid 2 columns on mobile */
+  .suggestionGrid { gap: 10px; }
+
+  /* Hide desktop elements */
   .topThemeSwitch { display: none !important; }
   #notesPanel     { display: none !important; }
   #notesToggleBtn { display: none !important; }
 
-  /* Notes disabled on mobile */
-  body.notes-open .inputArea  { right: 0 !important; }
+  body.notes-open .inputArea { right: 0 !important; }
 }
 
 /* ════════════════════════════════════════
@@ -333,6 +344,6 @@ body.notes-open .inputArea  { right: 420px !important; }
    ════════════════════════════════════════ */
 @media (min-width: 1400px) {
   .inputWrap,
-  .inputModelBar { max-width: 860px !important; }
-  .messageRow    { max-width: 860px !important; }
+  .inputModelBar { max-width: 900px; }
+  .messageRow    { max-width: 900px; }
 }
