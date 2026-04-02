@@ -2318,24 +2318,30 @@ function toggleSidebar() {
   const sidebar = document.querySelector(".sidebar")
   if (!sidebar) return
 
-  // Toggle both "open" and "show" for CSS compatibility
-  const isOpen = sidebar.classList.contains("open")
-  sidebar.classList.toggle("open", !isOpen)
-  sidebar.classList.toggle("show", !isOpen)
+  const isMobile = window.innerWidth < 768
 
-  // Overlay for mobile
-  let overlay = document.getElementById("sidebarOverlay")
-  if (!overlay) {
-    overlay = document.createElement("div")
-    overlay.id = "sidebarOverlay"
-    overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:998;display:none;"
-    overlay.onclick = () => {
-      sidebar.classList.remove("open","show")
-      overlay.style.display = "none"
+  if (isMobile) {
+    // Mobile: slide in/out with overlay
+    const isOpen = sidebar.classList.contains("open")
+    sidebar.classList.toggle("open", !isOpen)
+    sidebar.classList.toggle("show", !isOpen)
+
+    let overlay = document.getElementById("sidebarOverlay")
+    if (!overlay) {
+      overlay = document.createElement("div")
+      overlay.id = "sidebarOverlay"
+      overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:998;display:none;"
+      overlay.onclick = () => {
+        sidebar.classList.remove("open","show")
+        overlay.style.display = "none"
+      }
+      document.body.appendChild(overlay)
     }
-    document.body.appendChild(overlay)
+    overlay.style.display = !isOpen ? "block" : "none"
+  } else {
+    // Desktop: sidebar is always visible, nothing to toggle
+    // Menu button just animates — sidebar stays open
   }
-  overlay.style.display = !isOpen ? "block" : "none"
 }
 
 window.toggleSidebar = toggleSidebar
