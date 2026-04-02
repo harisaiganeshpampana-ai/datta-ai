@@ -1384,31 +1384,12 @@ if (scrollBtn) {
 
 // ─── WELCOME HELPERS ──────────────────────────────────────────────────────────
 function hideWelcome() {
-  const w = document.getElementById("welcomeScreen")
-  if (w) {
-    w.style.setProperty("display", "none", "important")
-    w.style.visibility = "hidden"
-    w.style.pointerEvents = "none"
-    w.style.position = "absolute"
-    w.style.opacity = "0"
-  }
+  // Use class only — no inline styles that cause layout shift
   document.body.classList.add("chat-started")
 }
 
 function showWelcome() {
-  // Only show if no active chat
   if (currentChatId) return
-  const w = document.getElementById("welcomeScreen")
-  if (w) {
-    w.style.setProperty("display", "flex", "important")
-    w.style.visibility = "visible"
-    w.style.pointerEvents = "all"
-    w.style.position = "relative"
-    w.style.opacity = "1"
-    w.style.flexDirection = "column"
-    w.style.alignItems = "center"
-    w.style.justifyContent = "center"
-  }
   document.body.classList.remove("chat-started")
   loadSmartSuggestions()
 }
