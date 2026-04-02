@@ -3468,44 +3468,16 @@ if ("serviceWorker" in navigator) {
   })
 }
 
-// PWA Install prompt
+// PWA Install prompt — disabled
 let deferredPrompt = null
 window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault()
-  deferredPrompt = e
-  showInstallBanner()
+  e.preventDefault()  // suppress browser install prompt
+  deferredPrompt = null
 })
 
-function showInstallBanner() {
-  if (localStorage.getItem("pwa_dismissed")) return
-  const banner = document.createElement("div")
-  banner.className = "installBanner"
-  banner.id = "installBanner"
-  banner.innerHTML = `
-    <img src="logo.png" alt="Datta AI">
-    <div class="installBannerText">
-      <div class="installBannerTitle">Install Datta AI</div>
-      <div class="installBannerSub">Add to home screen for best experience</div>
-    </div>
-    <button class="installBannerBtn" onclick="installPWA()">Install</button>
-    <button class="installBannerClose" onclick="dismissInstall()">✕</button>
-  `
-  document.body.appendChild(banner)
-}
-
-function installPWA() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt()
-    deferredPrompt.userChoice.then(r => {
-      if (r.outcome === "accepted") showToast("Datta AI installed!")
-      deferredPrompt = null
-    })
-  }
-  dismissInstall()
-}
-
+function showInstallBanner() {}
+function installPWA() {}
 function dismissInstall() {
-  localStorage.setItem("pwa_dismissed", "1")
   const b = document.getElementById("installBanner")
   if (b) b.remove()
 }
