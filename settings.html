@@ -870,7 +870,7 @@ async function changePassword() {
 async function clearAllChats() {
   if (!confirm("Delete all chats? This cannot be undone.")) return
   try {
-    await fetch(SERVER + "/chats/all?token=" + getToken(), { method: "DELETE" })
+    await fetch(SERVER + "/chats/all", { method: "DELETE", headers: { "Authorization": "Bearer " + getToken() } })
     localStorage.removeItem("datta_last_chat")
     toast("All chats deleted")
   } catch(e) { toast("Failed to delete chats") }
