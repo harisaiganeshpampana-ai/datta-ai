@@ -440,7 +440,7 @@ if (typeof marked !== 'undefined') {
         Preview
       </button>` : ""
 
-    return `<div class="code-block-wrap" id="${uid}_wrap" style="margin:12px 0;border-radius:12px;overflow:hidden;border:1px solid #1e1e2e;">
+    return `<div class="code-block-wrap" id="${uid}_wrap" data-code="${encoded}" data-lang="${langStr}" style="margin:12px 0;border-radius:12px;overflow:hidden;border:1px solid #1e1e2e;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:#0a0a0f;border-bottom:1px solid #1a1a2a;">
         <div style="display:flex;align-items:center;gap:8px;">
           ${langLabel}
@@ -454,14 +454,10 @@ if (typeof marked !== 'undefined') {
           </button>
         </div>
       </div>
-      <div id="${uid}_split" style="display:flex;">
-        <pre id="${uid}_pre" style="flex:1;margin:0;padding:16px;background:#0d0d12;overflow-x:auto;"><code style="font-family:'Courier New',monospace;font-size:13px;color:#e0e0e0;line-height:1.65;">${escaped}</code></pre>
+      <div id="${uid}_split" style="display:flex;overflow:hidden;">
+        <pre id="${uid}_pre" style="flex:1;min-width:0;margin:0;padding:16px;background:#0d0d12;overflow-x:auto;transition:flex 0.3s ease;"><code style="font-family:'Courier New',monospace;font-size:13px;color:#e0e0e0;line-height:1.65;">${escaped}</code></pre>
       </div>
-    </div>
-    <script>
-      if(typeof splitCodeData==="undefined") window.splitCodeData={}
-      window.splitCodeData["${uid}"] = ${JSON.stringify(codeStr)}
-    <\/script>`
+    </div>`
   }
 
   renderer.codespan = function(token) {
@@ -2673,21 +2669,24 @@ function addCodePreview(container) {
 function toggleSplitPreview(uid) {
   const splitDiv = document.getElementById(uid + "_split")
   const preEl    = document.getElementById(uid + "_pre")
-  if (!splitDiv) return
+  const wrap     = document.getElementById(uid + "_wrap")
+  if (!splitDiv || !wrap) return
 
   const existing = document.getElementById(uid + "_iframe")
   if (existing) {
     // Close preview — back to full-width code
-    existing.remove()
-    const closeBtn = document.getElementById(uid + "_closebtn")
-    if (closeBtn) closeBtn.remove()
+    const closeWrap = document.getElementById(uid + "_closebtn")
+    if (closeWrap) closeWrap.remove()
     preEl.style.flex = "1"
     preEl.style.borderRight = "none"
+    preEl.style.maxWidth = ""
     return
   }
 
-  // Get code from data store
-  const code = (window.splitCodeData && window.splitCodeData[uid]) || ""
+  // Get code from data-code attribute (safe — not stripped by innerHTML)
+  const encoded = wrap.getAttribute("data-code") || ""
+  const code = encoded ? decodeURIComponent(encoded) : ""
+  if (!code.trim()) { showToast("No code to preview"); return }
 
   // Shrink code panel to left half
   preEl.style.flex = "0 0 50%"
@@ -2738,12 +2737,16 @@ function writeToIframe(iframe, code) {
 
 function reloadSplitPreview(uid) {
   const iframe = document.getElementById(uid + "_iframe")
-  const code = (window.splitCodeData && window.splitCodeData[uid]) || ""
-  if (iframe) writeToIframe(iframe, code)
+  const wrap   = document.getElementById(uid + "_wrap")
+  if (!iframe || !wrap) return
+  const code = decodeURIComponent(wrap.getAttribute("data-code") || "")
+  writeToIframe(iframe, code)
+  showToast("Reloaded!")
 }
 
 function openFullPreview(uid) {
-  const code = (window.splitCodeData && window.splitCodeData[uid]) || ""
+  const wrap = document.getElementById(uid + "_wrap")
+  const code = wrap ? decodeURIComponent(wrap.getAttribute("data-code") || "") : ""
   const win = window.open("", "_blank")
   win.document.write(code)
   win.document.close()
