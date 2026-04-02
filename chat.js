@@ -176,21 +176,34 @@ let isGenerating = false
 
 function setGenerating(val) {
   isGenerating = val
-  const btn = document.getElementById("actionMainBtn")
+  const btn   = document.getElementById("actionMainBtn")
   const inner = document.getElementById("actionMainBtnInner")
+
+  // Toggle body class — used by CSS for TV/no-hover states
+  if (val) {
+    document.body.classList.add("is-generating")
+  } else {
+    document.body.classList.remove("is-generating")
+  }
+
   if (!btn || !inner) return
 
   if (val) {
-    // Switch to STOP state
     btn.classList.remove("send-state")
     btn.classList.add("stop-state")
-    inner.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="rgba(255,100,100,0.9)">
+    // Ensure always visible regardless of focus/hover
+    btn.style.opacity = "1"
+    btn.style.visibility = "visible"
+    btn.style.pointerEvents = "all"
+    inner.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="rgba(255,100,100,0.95)">
       <rect x="3" y="3" width="18" height="18" rx="3"/>
     </svg>`
   } else {
-    // Switch to SEND state
     btn.classList.remove("stop-state")
     btn.classList.add("send-state")
+    btn.style.opacity = ""
+    btn.style.visibility = ""
+    btn.style.pointerEvents = ""
     inner.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
       <line x1="12" y1="19" x2="12" y2="5"/>
       <polyline points="5 12 12 5 19 12"/>
