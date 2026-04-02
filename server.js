@@ -61,6 +61,14 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: "20mb" }))
 app.use(express.urlencoded({ extended: true, limit: "20mb" }))
+
+// Increase URL length limit — prevents 414 URI Too Long
+app.use((req, res, next) => {
+  if (req.url && req.url.length > 8192) {
+    return res.status(414).json({ error: "URI_TOO_LONG", message: "Request URL too long" })
+  }
+  next()
+})
 app.use(session({ 
   secret: process.env.JWT_SECRET || "datta-secret", 
   resave: false, 
