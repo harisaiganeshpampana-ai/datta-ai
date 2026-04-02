@@ -425,19 +425,43 @@ if (typeof marked !== 'undefined') {
   }
 
   renderer.code = function(token, lang) {
-    // v5: token = {text, lang, escaped}  v4: token = string
     const codeStr = (token && typeof token === "object") ? (token.text || token.raw || "") : String(token || "")
-    const langStr = (token && typeof token === "object") ? (token.lang || "") : (lang || "")
+    const langStr = ((token && typeof token === "object") ? (token.lang || "") : (lang || "")).toLowerCase()
     const escaped = codeStr.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-    const langLabel = langStr ? `<span style="font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;">${langStr}</span>` : ""
-    return `<div style="margin:12px 0;border-radius:10px;overflow:hidden;border:1px solid #1e1e1e;">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#0a0a0a;border-bottom:1px solid #1a1a1a;">
-        ${langLabel}
-        <button onclick="navigator.clipboard.writeText(this.closest('div').nextElementSibling.innerText);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)"
-          style="font-size:11px;color:#555;background:none;border:none;cursor:pointer;letter-spacing:1px;">Copy</button>
+    const isPreviewable = ["html","css","javascript","js"].includes(langStr) || codeStr.trim().startsWith("<!DOCTYPE") || codeStr.trim().startsWith("<html")
+    const uid = "code_" + Math.random().toString(36).slice(2,8)
+    const langLabel = langStr ? `<span style="font-size:11px;color:#555;letter-spacing:1.5px;text-transform:uppercase;font-family:'Courier New',monospace;">${langStr}</span>` : ""
+    const encoded = encodeURIComponent(codeStr)
+
+    const previewBtn = isPreviewable ? `
+      <button onclick="toggleSplitPreview('${uid}')" 
+        style="display:flex;align-items:center;gap:5px;padding:3px 10px;background:rgba(0,201,167,0.12);border:1px solid rgba(0,201,167,0.3);border-radius:6px;color:#00c9a7;font-size:11px;cursor:pointer;font-family:inherit;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Preview
+      </button>` : ""
+
+    return `<div class="code-block-wrap" id="${uid}_wrap" style="margin:12px 0;border-radius:12px;overflow:hidden;border:1px solid #1e1e2e;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:#0a0a0f;border-bottom:1px solid #1a1a2a;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${langLabel}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          ${previewBtn}
+          <button onclick="copyBlockCode(this)" data-code="${encoded}"
+            style="display:flex;align-items:center;gap:5px;padding:3px 10px;background:none;border:1px solid #2a2a3a;border-radius:6px;color:#555;font-size:11px;cursor:pointer;font-family:inherit;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy
+          </button>
+        </div>
       </div>
-      <pre style="margin:0;padding:14px;background:#0d0d0d;overflow-x:auto;"><code style="font-family:'Courier New',monospace;font-size:13px;color:#e0e0e0;line-height:1.6;">${escaped}</code></pre>
-    </div>`
+      <div id="${uid}_split" style="display:flex;">
+        <pre id="${uid}_pre" style="flex:1;margin:0;padding:16px;background:#0d0d12;overflow-x:auto;"><code style="font-family:'Courier New',monospace;font-size:13px;color:#e0e0e0;line-height:1.65;">${escaped}</code></pre>
+      </div>
+    </div>
+    <script>
+      if(typeof splitCodeData==="undefined") window.splitCodeData={}
+      window.splitCodeData["${uid}"] = ${JSON.stringify(codeStr)}
+    <\/script>`
   }
 
   renderer.codespan = function(token) {
@@ -2642,67 +2666,108 @@ window.downloadAsPDF = downloadAsPDF
 // FEATURE 2: CODE PREVIEW - Run HTML/CSS/JS in chat
 // ══════════════════════════════════════════════════════
 function addCodePreview(container) {
-  // Find all code blocks with html/css/js
-  container.querySelectorAll("pre code").forEach(block => {
-    const lang = block.className.replace("language-", "").toLowerCase()
-    if (!["html","css","javascript","js"].includes(lang)) return
-    if (block.closest(".codePreviewWrap")) return
+  // No-op: split preview now handled automatically by renderer.code
+}
 
-    const wrap = document.createElement("div")
-    wrap.className = "codePreviewWrap"
-    block.parentNode.parentNode.insertBefore(wrap, block.parentNode)
-    wrap.appendChild(block.parentNode)
+// Toggle split view: code left, live preview right
+function toggleSplitPreview(uid) {
+  const splitDiv = document.getElementById(uid + "_split")
+  const preEl    = document.getElementById(uid + "_pre")
+  if (!splitDiv) return
 
-    const code = block.innerText
-    const previewBtn = document.createElement("div")
-    previewBtn.style.cssText = "display:flex;gap:8px;margin-top:6px;"
-    previewBtn.innerHTML = `
-      <button onclick="runCodePreview(this)" data-code="${encodeURIComponent(code)}" data-lang="${lang}"
-        style="padding:6px 14px;background:#00ff8822;border:1px solid #00ff8844;border-radius:8px;color:#00ff88;font-size:12px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">
-        ▶ Run Preview
-      </button>
-      <button onclick="copyCodeBlock(this)" data-code="${encodeURIComponent(code)}"
-        style="padding:6px 14px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;color:#aaa;font-size:12px;cursor:pointer;font-family:'Josefin Sans',sans-serif;">
-        Copy Code
-      </button>`
-    wrap.appendChild(previewBtn)
+  const existing = document.getElementById(uid + "_iframe")
+  if (existing) {
+    // Close preview — back to full-width code
+    existing.remove()
+    const closeBtn = document.getElementById(uid + "_closebtn")
+    if (closeBtn) closeBtn.remove()
+    preEl.style.flex = "1"
+    preEl.style.borderRight = "none"
+    return
+  }
+
+  // Get code from data store
+  const code = (window.splitCodeData && window.splitCodeData[uid]) || ""
+
+  // Shrink code panel to left half
+  preEl.style.flex = "0 0 50%"
+  preEl.style.borderRight = "1px solid #1a1a2a"
+  preEl.style.maxWidth = "50%"
+
+  // Create preview iframe on right
+  const iframe = document.createElement("iframe")
+  iframe.id = uid + "_iframe"
+  iframe.style.cssText = "flex:1;border:none;background:#fff;min-height:350px;"
+  iframe.sandbox = "allow-scripts allow-same-origin allow-forms"
+
+  // Close button inside preview panel
+  const closeWrap = document.createElement("div")
+  closeWrap.id = uid + "_closebtn"
+  closeWrap.style.cssText = "position:relative;display:flex;flex-direction:column;flex:1;min-width:0;"
+
+  const toolbar = document.createElement("div")
+  toolbar.style.cssText = "display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:#0a0a0f;border-bottom:1px solid #1a1a2a;flex-shrink:0;"
+  toolbar.innerHTML = `
+    <span style="font-size:11px;color:#555;letter-spacing:1px;">PREVIEW</span>
+    <div style="display:flex;gap:6px;">
+      <button onclick="reloadSplitPreview('${uid}')" style="padding:2px 8px;background:none;border:1px solid #2a2a3a;border-radius:5px;color:#555;font-size:11px;cursor:pointer;">↺ Reload</button>
+      <button onclick="openFullPreview('${uid}')" style="padding:2px 8px;background:none;border:1px solid #2a2a3a;border-radius:5px;color:#555;font-size:11px;cursor:pointer;">⛶ Full</button>
+      <button onclick="toggleSplitPreview('${uid}')" style="padding:2px 8px;background:none;border:1px solid #2a2a3a;border-radius:5px;color:#555;font-size:11px;cursor:pointer;">✕</button>
+    </div>`
+
+  closeWrap.appendChild(toolbar)
+  closeWrap.appendChild(iframe)
+  splitDiv.appendChild(closeWrap)
+
+  // Write code to iframe
+  writeToIframe(iframe, code)
+  showToast("Preview ready!")
+}
+
+function writeToIframe(iframe, code) {
+  const doc = iframe.contentDocument || iframe.contentWindow.document
+  doc.open()
+  const isHTML = code.trim().toLowerCase().startsWith("<!doctype") || code.trim().toLowerCase().startsWith("<html") || code.includes("<body") || code.includes("<div")
+  if (isHTML) {
+    doc.write(code)
+  } else {
+    doc.write(`<!DOCTYPE html><html><body style="margin:0;padding:16px;font-family:sans-serif;"><script>try{${code.replace(/<\/script>/g,"<\/script>")}}catch(e){document.body.innerHTML='<pre style="color:red;padding:12px">'+e.message+'</pre>'}<\/script></body></html>`)
+  }
+  doc.close()
+}
+
+function reloadSplitPreview(uid) {
+  const iframe = document.getElementById(uid + "_iframe")
+  const code = (window.splitCodeData && window.splitCodeData[uid]) || ""
+  if (iframe) writeToIframe(iframe, code)
+}
+
+function openFullPreview(uid) {
+  const code = (window.splitCodeData && window.splitCodeData[uid]) || ""
+  const win = window.open("", "_blank")
+  win.document.write(code)
+  win.document.close()
+}
+
+function copyBlockCode(btn) {
+  const code = decodeURIComponent(btn.dataset.code)
+  navigator.clipboard.writeText(code).then(() => {
+    btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`
+    btn.style.color = "#00c9a7"
+    btn.style.borderColor = "rgba(0,201,167,0.4)"
+    setTimeout(() => {
+      btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`
+      btn.style.color = "#555"
+      btn.style.borderColor = "#2a2a3a"
+    }, 2000)
   })
 }
 
-function runCodePreview(btn) {
-  const code = decodeURIComponent(btn.dataset.code)
-  const lang = btn.dataset.lang
-  
-  // Remove existing preview
-  const existing = btn.closest(".codePreviewWrap").querySelector(".livePreview")
-  if (existing) { existing.remove(); btn.textContent = "▶ Run Preview"; return }
-
-  const iframe = document.createElement("iframe")
-  iframe.className = "livePreview"
-  iframe.style.cssText = "width:100%;height:400px;border:1px solid #2a2a2a;border-radius:10px;margin-top:8px;background:white;"
-  iframe.sandbox = "allow-scripts"
-  btn.closest(".codePreviewWrap").appendChild(iframe)
-
-  const doc = iframe.contentDocument || iframe.contentWindow.document
-  doc.open()
-  if (lang === "html") {
-    doc.write(code)
-  } else if (lang === "css") {
-    doc.write(`<html><head><style>${code}</style></head><body><p>CSS Preview</p></body></html>`)
-  } else {
-    doc.write(`<html><body><script>try{${code}}catch(e){document.body.innerHTML='<pre style=color:red>'+e+'</pre>'}<\/script></body></html>`)
-  }
-  doc.close()
-  btn.textContent = "✕ Close Preview"
-  showToast("Preview loaded!")
-}
-
-function copyCodeBlock(btn) {
-  const code = decodeURIComponent(btn.dataset.code)
-  navigator.clipboard.writeText(code).then(() => showToast("Code copied!"))
-}
-
-window.runCodePreview = runCodePreview
+window.toggleSplitPreview = toggleSplitPreview
+window.reloadSplitPreview = reloadSplitPreview
+window.openFullPreview    = openFullPreview
+window.copyBlockCode      = copyBlockCode
+window.addCodePreview     = addCodePreview
 window.copyCodeBlock = copyCodeBlock
 
 // ══════════════════════════════════════════════════════
