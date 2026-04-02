@@ -2931,7 +2931,7 @@ window.reloadSplitPreview = reloadSplitPreview
 window.openFullPreview    = openFullPreview
 window.copyBlockCode      = copyBlockCode
 window.addCodePreview     = addCodePreview
-window.copyCodeBlock = copyCodeBlock
+window.copyCodeBlock = copyBlockCode
 
 // ══════════════════════════════════════════════════════
 // FEATURE 3: DAILY MEMORY - Remember user across days
