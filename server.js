@@ -1594,7 +1594,10 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Detect if code/build task needs max tokens
     var msgLower = message.toLowerCase()
     // Detect if user is ASKING A QUESTION about tech vs ASKING TO BUILD/WRITE something
-    var isExplainQuestion = ["what is","what are","what does","what do","why is","why does","why do","how does","how do","explain","tell me about","define","describe","difference between","vs ","versus","when to use","should i use","pros and cons","advantages","disadvantages","history of","who created","who made"].some(k => msgLower.includes(k))
+    // Detect pure explanation queries (theory questions)
+    // BUT exclude problem-solving queries — "what should I do", "why is it failing", "how do I fix"
+    var isProblemSolving = ["what should","how do i fix","how to fix","not working","failed","error","issue","problem","can't","cannot","won't","doesn't work","payment failed","showing error","how do i","how can i","steps to","guide me","help me"].some(k => msgLower.includes(k))
+    var isExplainQuestion = !isProblemSolving && ["what is","what are","what does","what do","why is","why does","why do","how does","how do","explain","tell me about","define","describe","difference between","vs ","versus","when to use","should i use","pros and cons","advantages","disadvantages","history of","who created","who made"].some(k => msgLower.includes(k))
     var isCodeTask = !isExplainQuestion && ["build","create","write","make","code","website","app","script","program","fix","debug","update","improve","implement","develop","generate","show me how to","give me code","example code","sample code","snippet"].some(k => msgLower.includes(k))
     
     // Auto-switch to Datta 5.4 for coding if user is on 2.1, 4.2, or 4.8
@@ -1681,6 +1684,26 @@ TONE:
 - Get straight to the point
 - If the user is going in wrong direction, say so directly
 
+ANTI-HALLUCINATION RULES (CRITICAL):
+- Never fabricate facts, statistics, prices, or dates
+- If you are not sure about something — say "I'm not certain, but..." instead of guessing
+- If the question is flawed or impossible, say so directly: "This won't work because..."
+- Accuracy over confidence — a correct "I don't know" beats a wrong confident answer
+
+REASONING BEFORE ANSWERING:
+When solving problems:
+1. Understand — restate what the user actually needs
+2. Validate — check if the approach is correct before executing it
+3. Reason — think through options, eliminate wrong ones
+4. Answer — give the correct path, not just any path
+5. If no valid answer exists — say clearly: "No solution satisfies all conditions"
+
+ERROR DIAGNOSIS:
+When user faces an error:
+- Explain WHY it happens (real cause, not surface symptom)
+- Give ranked fixes: 1) Best fix 2) Alternative 3) Last resort
+- If current method won't work, say: "Stop using this — switch to X instead"
+
 NEVER say you are Claude, GPT, or any other AI. You are ${ainame}.`,
       "meta-llama/llama-4-scout-17b-16e-instruct":     `Your name is ${ainame}. You are Datta Vision - image analysis expert. Analyze images in extreme detail. NEVER say you are any other AI.`,
       "persona-lawyer":  `Your name is ${ainame}. You are in Lawyer mode. Provide general legal information. Always advise consulting a licensed lawyer. NEVER say you are any other AI.`,
@@ -1729,12 +1752,11 @@ NEVER say you are Claude, GPT, or any other AI. You are ${ainame}.`,
 
     var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + (isExplainQuestion ? `
 
-You are answering an EXPLANATION question. The user wants to UNDERSTAND something, not get code.
-- Give a clear, friendly explanation in plain English
-- Use bullet points and examples where helpful
-- Do NOT give code unless the user explicitly asks for it
-- Do NOT add server.js, .env, or setup instructions unless asked
-- Keep it educational and easy to understand
+You are answering a theory/explanation question. The user wants to UNDERSTAND a concept.
+- Give a clear explanation in plain English with examples
+- Do NOT give code unless explicitly asked
+- Do NOT give Python scripts for non-coding questions
+- Do NOT give setup instructions unless asked
 ` : isCodeTask ? (isNodeTask ? `
 
 You are answering a Node.js / backend question. Follow these rules with ZERO exceptions.
