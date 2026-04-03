@@ -436,13 +436,15 @@ const SERVER = "https://datta-ai-server.onrender.com"
 ;(function() {
   const params = new URLSearchParams(window.location.search)
   const token = params.get("token")
+  if (token && !params.get("user")) {
+    // Token-only redirect (Google OAuth) — let handleGoogleRedirect fetch user data
+    return
+  }
   if (token) {
     localStorage.setItem("datta_token", token)
     const userStr = params.get("user")
     if (userStr) {
-      try {
-        localStorage.setItem("datta_user", decodeURIComponent(userStr))
-      } catch(e) {}
+      try { localStorage.setItem("datta_user", decodeURIComponent(userStr)) } catch(e) {}
     }
     window.location.replace("index.html")
   }
@@ -658,31 +660,33 @@ function loginWithGoogle() {
   window.location.href = "https://datta-ai-server.onrender.com/auth/google"
 }
 
-// Handle Google redirect — URL has ?token=...&user=...
-function handleGoogleRedirect() {
+// Handle Google redirect — URL now has only ?token= (no user= to avoid 414)
+async function handleGoogleRedirect() {
   const params = new URLSearchParams(window.location.search)
-  const token = params.get("token")
-  const userStr = params.get("user")
-  const error = params.get("error")
+  const token  = params.get("token")
+  const error  = params.get("error")
 
   if (error) {
     showMsg("Google login failed. Please try again.", "error")
-    // Clean URL
     window.history.replaceState({}, "", window.location.pathname)
     return
   }
 
-  if (token && userStr) {
+  if (token) {
+    localStorage.setItem("datta_token", token)
+    // Fetch user data from backend using the token
     try {
-      const user = JSON.parse(decodeURIComponent(userStr))
-      localStorage.setItem("datta_token", token)
-      localStorage.setItem("datta_user", JSON.stringify(user))
-      localStorage.setItem("datta_plan", user.plan || "free")
-      // Redirect to chat
-      window.location.href = "index.html"
-    } catch(e) {
-      showMsg("Login error. Please try again.", "error")
-    }
+      const SERVER = "https://datta-ai-server.onrender.com"
+      const r = await fetch(SERVER + "/auth/me", {
+        headers: { "Authorization": "Bearer " + token }
+      })
+      if (r.ok) {
+        const user = await r.json()
+        localStorage.setItem("datta_user", JSON.stringify(user))
+        localStorage.setItem("datta_plan", user.plan || "free")
+      }
+    } catch(e) {}
+    window.location.href = "index.html"
   }
 }
 
