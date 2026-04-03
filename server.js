@@ -1407,10 +1407,38 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       // .lean() returns plain JS objects — no Mongoose DocumentArray issues
       // BUT lean() makes it read-only, so we need to save differently
       if (chat) {
-        // Re-fetch as full document for saving later
-        chat._leanMessages = chat.messages || []
+        // lean() gave us plain JS — extract clean string messages NOW
+        var leanMsgs = (chat.messages || []).map(function(m) {
+          var c = m.content
+          var str
+          if (typeof c === 'string') {
+            str = c
+          } else {
+            try {
+              var p = JSON.parse(JSON.stringify(c))
+              if (Array.isArray(p)) {
+                str = p.filter(function(x){return x&&x.type==='text'}).map(function(x){return x.text||''}).join(' ').trim()
+                // if still has image data, blank it
+                if (!str) str = '[image]'
+              } else if (p && typeof p === 'object') {
+                str = p.text || p.content || ''
+              } else {
+                str = String(p||'')
+              }
+            } catch(e) { str = '' }
+          }
+          // Hard block: never let base64 image data into history
+          if (str.indexOf('data:image') !== -1 || str.indexOf('data:application') !== -1 || str.length > 12000) {
+            str = '[image message]'
+          }
+          return { role: m.role, content: str }
+        })
+        // Re-fetch as full Mongoose document for saving
         var fullChat = await Chat.findOne({ _id: chatId, userId })
-        if (fullChat) { chat = fullChat; chat._leanMessages = fullChat.messages.map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : (Array.isArray(m.content) ? m.content.filter(p=>p&&p.type==='text').map(p=>p.text||'').join(' ') : String(m.content||'')) })) }
+        if (fullChat) {
+          chat = fullChat
+          chat._leanMessages = leanMsgs  // use the clean lean messages
+        }
       }
     }
     if (!chat) {
