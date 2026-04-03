@@ -7,21 +7,20 @@
 <link rel="icon" href="logo.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 [data-theme="dark"] {
-  --bg:     #212121;
-  --bg2:    #2f2f2f;
-  --bg3:    #383838;
+  --bg:     #0d0d0d;
+  --bg2:    #1a1a1a;
+  --bg3:    #242424;
   --text:   #ececec;
   --text2:  #a0a0a0;
-  --text3:  #666;
-  --border: rgba(255,255,255,0.1);
-  --card:   #2a2a2a;
+  --text3:  #555;
+  --border: rgba(255,255,255,0.08);
+  --card:   #1a1a1a;
   --accent: #10a37f;
-  --shadow: rgba(0,0,0,0.3);
+  --shadow: rgba(0,0,0,0.4);
 }
 [data-theme="light"] {
   --bg:     #f7f7f8;
@@ -55,7 +54,6 @@ html, body {
   font-family: 'Inter', -apple-system, sans-serif;
   font-size: 15px;
   line-height: 1.5;
-  transition: background 0.2s, color 0.2s;
 }
 
 /* ── TOPBAR ── */
@@ -75,71 +73,79 @@ html, body {
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; text-decoration: none;
   transition: background 0.15s;
+  flex-shrink: 0;
 }
 .back-btn:hover { background: var(--border); }
 .topbar-title { font-size: 16px; font-weight: 600; color: var(--text); }
 
 /* ── LAYOUT ── */
-.page { max-width: 640px; margin: 0 auto; padding: 20px 16px 80px; }
+.page { max-width: 640px; margin: 0 auto; padding: 16px 16px 100px; }
 
 /* ── PROFILE CARD ── */
 .profile-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 20px;
   padding: 20px;
   display: flex; align-items: center; gap: 16px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 8px var(--shadow);
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
 }
+.profile-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--accent), #0077ff);
+}
+.avatar-wrap { position: relative; flex-shrink: 0; cursor: pointer; }
 .avatar {
-  width: 56px; height: 56px; border-radius: 50%;
+  width: 64px; height: 64px; border-radius: 50%;
   background: linear-gradient(135deg, #10a37f, #0077ff);
   display: flex; align-items: center; justify-content: center;
-  font-size: 22px; font-weight: 700; color: #fff;
-  flex-shrink: 0;
-  cursor: pointer; transition: filter 0.15s;
+  font-size: 26px; font-weight: 700; color: #fff;
+  transition: filter 0.15s;
 }
-.avatar:hover { filter: brightness(1.1); }
+.avatar-wrap:hover .avatar { filter: brightness(1.1); }
+.avatar-edit {
+  position: absolute; bottom: 0; right: 0;
+  width: 20px; height: 20px;
+  background: var(--accent); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--card);
+}
 .profile-info { flex: 1; min-width: 0; }
 .profile-name  { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
-.profile-email { font-size: 13px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.profile-email {
+  font-size: 12px; color: var(--text3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-bottom: 8px;
+}
 .profile-plan  {
   display: inline-flex; align-items: center; gap: 4px;
-  margin-top: 6px;
   background: rgba(16,163,127,0.12);
   border: 1px solid rgba(16,163,127,0.25);
-  border-radius: 20px; padding: 2px 10px;
+  border-radius: 20px; padding: 3px 10px;
   font-size: 11px; font-weight: 600; color: #10a37f;
 }
-.edit-btn {
-  width: 34px; height: 34px;
-  border-radius: 8px; border: 1px solid var(--border);
-  background: var(--bg3); color: var(--text3);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: all 0.15s; flex-shrink: 0;
-}
-.edit-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 
 /* ── SECTION GROUP ── */
-.section { margin-bottom: 20px; }
+.section { margin-bottom: 8px; }
 .section-label {
   font-size: 11px; font-weight: 600;
   color: var(--text3); text-transform: uppercase; letter-spacing: 0.7px;
-  padding: 0 4px 8px;
+  padding: 14px 4px 8px;
 }
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 1px 4px var(--shadow);
 }
 
 /* ── SETTING ROW ── */
 .row {
   display: flex; align-items: center;
-  padding: 14px 16px; gap: 14px;
+  padding: 0 16px; gap: 14px;
   border-bottom: 1px solid var(--border);
   transition: background 0.12s;
   cursor: default;
@@ -147,43 +153,43 @@ html, body {
 }
 .row:last-child { border-bottom: none; }
 .row.clickable { cursor: pointer; }
-.row.clickable:hover { background: rgba(255,255,255,0.03); }
-.row.clickable:active { background: rgba(255,255,255,0.06); }
+.row.clickable:active { background: rgba(255,255,255,0.04); }
+@media(hover:hover){.row.clickable:hover{background:rgba(255,255,255,0.03)}}
 
 .row-icon {
-  width: 34px; height: 34px; border-radius: 9px;
+  width: 32px; height: 32px; border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; font-size: 17px;
+  flex-shrink: 0; font-size: 16px;
 }
-.row-content { flex: 1; min-width: 0; }
+.row-content { flex: 1; min-width: 0; padding: 14px 0; }
 .row-label { font-size: 14px; font-weight: 500; color: var(--text); }
 .row-sub   { font-size: 12px; color: var(--text3); margin-top: 1px; }
 .row-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .row-value { font-size: 13px; color: var(--text3); }
-.row-arrow { color: var(--text3); font-size: 18px; line-height: 1; }
+.row-arrow { color: var(--text3); font-size: 20px; line-height: 1; opacity: 0.5; }
 
 /* ── TOGGLE SWITCH ── */
-.toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
-.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle { position: relative; width: 48px; height: 28px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
 .toggle-track {
   position: absolute; inset: 0;
-  background: var(--bg3); border-radius: 24px;
+  background: var(--bg3); border-radius: 28px;
   cursor: pointer; transition: background 0.2s;
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
 }
 .toggle-track::before {
   content: ''; position: absolute;
-  width: 18px; height: 18px;
+  width: 20px; height: 20px;
   top: 2px; left: 2px;
   background: #fff; border-radius: 50%;
-  transition: transform 0.2s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transition: transform 0.22s cubic-bezier(.34,1.56,.64,1);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 .toggle input:checked + .toggle-track { background: var(--accent); border-color: var(--accent); }
 .toggle input:checked + .toggle-track::before { transform: translateX(20px); }
 
 /* ── THEME PILLS ── */
-.theme-pills { display: flex; gap: 6px; }
+.theme-pills { display: flex; gap: 5px; }
 .theme-pill {
   padding: 5px 12px; border-radius: 20px;
   border: 1px solid var(--border);
@@ -192,14 +198,11 @@ html, body {
   cursor: pointer; font-family: inherit;
   transition: all 0.15s;
 }
-.theme-pill.active {
-  background: var(--accent); color: #fff;
-  border-color: var(--accent);
-}
+.theme-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
 /* ── SEGMENT CONTROL ── */
 .segment {
-  display: flex; gap: 4px;
+  display: flex; gap: 3px;
   background: var(--bg3);
   border-radius: 10px; padding: 3px;
 }
@@ -216,40 +219,74 @@ html, body {
 .s-select {
   background: var(--bg3); border: 1px solid var(--border);
   color: var(--text); border-radius: 8px;
-  padding: 5px 10px; font-size: 13px;
+  padding: 6px 10px; font-size: 13px;
   font-family: inherit; outline: none; cursor: pointer;
 }
 .s-select:focus { border-color: var(--accent); }
 
-/* ── EDIT MODAL ── */
+/* ── PLAN CARD ── */
+.plan-card {
+  border-radius: 16px; padding: 16px;
+  margin-bottom: 8px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.plan-header { display: flex; align-items: center; justify-content: space-between; }
+.plan-name { font-size: 16px; font-weight: 700; }
+.plan-msgs { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.plan-features { display: flex; flex-direction: column; gap: 6px; }
+.plan-feat { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.plan-feat .y { color: #10a37f; }
+.plan-feat .n { color: var(--text3); }
+.plan-upgrade-btn {
+  display: block; text-align: center;
+  padding: 11px; border-radius: 10px;
+  font-size: 13px; font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+.plan-upgrade-btn:hover { opacity: 0.85; }
+
+/* ── ACCENT COLORS ── */
+.accent-dots { display: flex; gap: 8px; align-items: center; }
+.accent-dot {
+  width: 24px; height: 24px; border-radius: 50%;
+  cursor: pointer; border: 2px solid transparent;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.accent-dot:hover { transform: scale(1.15); }
+.accent-dot.active { border-color: #fff; transform: scale(1.15); }
+
+/* ── MODALS ── */
 .modal-overlay {
   display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.7);
   z-index: 999;
-  align-items: center; justify-content: center;
-  padding: 20px;
+  align-items: flex-end; justify-content: center;
   backdrop-filter: blur(4px);
 }
 .modal-overlay.show { display: flex; }
 .modal-box {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 24px; width: 100%; max-width: 420px;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+  border-radius: 20px 20px 0 0;
+  padding: 24px; width: 100%; max-width: 560px;
+  box-shadow: 0 -16px 48px rgba(0,0,0,0.5);
+  animation: slideUp 0.25s cubic-bezier(.34,1.2,.64,1);
 }
+@keyframes slideUp { from { transform: translateY(100%); opacity:0; } to { transform: translateY(0); opacity:1; } }
+.modal-handle { width: 36px; height: 4px; background: var(--bg3); border-radius: 4px; margin: 0 auto 20px; }
 .modal-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 16px; }
 .m-input {
-  width: 100%; padding: 10px 14px;
-  border-radius: 10px; border: 1px solid var(--border);
+  width: 100%; padding: 12px 14px;
+  border-radius: 12px; border: 1px solid var(--border);
   background: var(--bg3); color: var(--text);
   font-size: 14px; font-family: inherit; outline: none;
-  margin-bottom: 10px;
+  margin-bottom: 10px; transition: border-color 0.15s;
 }
 .m-input:focus { border-color: var(--accent); }
 .m-btns { display: flex; gap: 8px; margin-top: 4px; }
 .m-btn {
-  flex: 1; padding: 10px; border-radius: 10px;
+  flex: 1; padding: 12px; border-radius: 12px;
   border: 1px solid var(--border); font-size: 14px;
   font-weight: 500; cursor: pointer; font-family: inherit;
   transition: all 0.15s;
@@ -264,9 +301,9 @@ html, body {
 
 /* ── LOGOUT BUTTON ── */
 .logout-btn {
-  width: 100%; padding: 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(220,60,60,0.25);
+  width: 100%; padding: 15px;
+  border-radius: 16px;
+  border: 1px solid rgba(220,60,60,0.2);
   background: rgba(220,60,60,0.06);
   color: #e55; font-size: 15px; font-weight: 500;
   cursor: pointer; font-family: inherit;
@@ -274,33 +311,31 @@ html, body {
   transition: all 0.15s;
   display: flex; align-items: center; justify-content: center; gap: 8px;
 }
-.logout-btn:hover { background: rgba(220,60,60,0.12); border-color: rgba(220,60,60,0.4); }
+.logout-btn:hover { background: rgba(220,60,60,0.12); }
 
 /* ── DANGER ROW ── */
 .row.danger .row-label { color: #e55; }
-.row.danger .row-icon { background: rgba(220,60,60,0.1); }
+.row.danger .row-icon  { background: rgba(220,60,60,0.1); }
 
 /* ── TOAST ── */
 .toast {
-  position: fixed; bottom: 80px; left: 50%;
+  position: fixed; bottom: 90px; left: 50%;
   transform: translateX(-50%);
   background: var(--bg2); border: 1px solid var(--border);
-  color: var(--text); padding: 9px 18px;
+  color: var(--text); padding: 10px 20px;
   border-radius: 20px; font-size: 13px;
   z-index: 9999; opacity: 0;
   transition: opacity 0.3s;
   pointer-events: none; white-space: nowrap;
-  box-shadow: 0 4px 16px var(--shadow);
+  box-shadow: 0 4px 20px var(--shadow);
 }
 
-/* Mobile */
 @media (max-width: 480px) {
   .profile-card { padding: 16px; gap: 12px; }
-  .avatar { width: 48px; height: 48px; font-size: 18px; }
+  .avatar { width: 54px; height: 54px; font-size: 22px; }
 }
 </style>
 </head>
-
 <body>
 
 <!-- Topbar -->
@@ -314,27 +349,45 @@ html, body {
 <div class="page">
 
   <!-- Profile -->
-  <div class="profile-card">
-    <div class="avatar" id="avatar" onclick="openEditName()">G</div>
+  <div class="profile-card" onclick="openEditName()" style="cursor:pointer;">
+    <div class="avatar-wrap">
+      <div class="avatar" id="avatar">G</div>
+      <div class="avatar-edit">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </div>
+    </div>
     <div class="profile-info">
       <div class="profile-name" id="profileName">Loading...</div>
       <div class="profile-email" id="profileEmail">–</div>
       <div class="profile-plan" id="profilePlan">🌱 Free Plan</div>
     </div>
-    <button class="edit-btn" onclick="openEditName()" title="Edit profile">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-    </button>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
   </div>
 
   <!-- Plan Details Card -->
-  <div id="planDetailsCard" style="display:none;padding:0 16px 4px;"></div>
+  <div id="planDetailsCard" style="display:none;margin-bottom:8px;"></div>
+
+  <!-- Subscription -->
+  <div class="section">
+    <div class="section-label">Subscription</div>
+    <div class="card">
+      <div class="row clickable" onclick="window.location.href='pricing.html'">
+        <div class="row-icon" style="background:rgba(245,158,11,0.12);">⭐</div>
+        <div class="row-content">
+          <div class="row-label">Upgrade Plan</div>
+          <div class="row-sub">Starter ₹49 · Standard ₹149 · Plus ₹299 · Pro ₹799</div>
+        </div>
+        <div class="row-right"><span class="row-arrow">›</span></div>
+      </div>
+    </div>
+  </div>
 
   <!-- Appearance -->
   <div class="section">
     <div class="section-label">Appearance</div>
     <div class="card">
       <div class="row">
-        <div class="row-icon" style="background:rgba(99,102,241,0.12);">🎨</div>
+        <div class="row-icon" style="background:rgba(99,102,241,0.12);">🌗</div>
         <div class="row-content">
           <div class="row-label">Theme</div>
         </div>
@@ -356,6 +409,22 @@ html, body {
             <button class="seg-btn" id="fs-small"  onclick="setFontSize('small')">S</button>
             <button class="seg-btn active" id="fs-medium" onclick="setFontSize('medium')">M</button>
             <button class="seg-btn" id="fs-large"  onclick="setFontSize('large')">L</button>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="row-icon" style="background:rgba(16,163,127,0.12);">🎨</div>
+        <div class="row-content">
+          <div class="row-label">Accent Color</div>
+        </div>
+        <div class="row-right">
+          <div class="accent-dots" id="accentDots">
+            <div class="accent-dot active" data-color="#10a37f" style="background:#10a37f;" onclick="setAccent('#10a37f')"></div>
+            <div class="accent-dot" data-color="#0077ff" style="background:#0077ff;" onclick="setAccent('#0077ff')"></div>
+            <div class="accent-dot" data-color="#8b5cf6" style="background:#8b5cf6;" onclick="setAccent('#8b5cf6')"></div>
+            <div class="accent-dot" data-color="#f59e0b" style="background:#f59e0b;" onclick="setAccent('#f59e0b')"></div>
+            <div class="accent-dot" data-color="#ef4444" style="background:#ef4444;" onclick="setAccent('#ef4444')"></div>
+            <div class="accent-dot" data-color="#ec4899" style="background:#ec4899;" onclick="setAccent('#ec4899')"></div>
           </div>
         </div>
       </div>
@@ -433,7 +502,7 @@ html, body {
         <div class="row-icon" style="background:rgba(245,158,11,0.12);">🧠</div>
         <div class="row-content">
           <div class="row-label">Expert</div>
-          <div class="row-sub">Deep research & analysis</div>
+          <div class="row-sub">Deep research &amp; analysis</div>
         </div>
         <div class="row-right" id="mode-check-expert"></div>
       </div>
@@ -462,9 +531,7 @@ html, body {
     <div class="card">
       <div class="row">
         <div class="row-icon" style="background:rgba(251,146,60,0.12);">🔔</div>
-        <div class="row-content">
-          <div class="row-label">Browser Notifications</div>
-        </div>
+        <div class="row-content"><div class="row-label">Browser Notifications</div></div>
         <div class="row-right">
           <label class="toggle">
             <input type="checkbox" id="notifToggle" onchange="saveNotif()">
@@ -474,9 +541,7 @@ html, body {
       </div>
       <div class="row">
         <div class="row-icon" style="background:rgba(251,146,60,0.12);">🔊</div>
-        <div class="row-content">
-          <div class="row-label">Sound Effects</div>
-        </div>
+        <div class="row-content"><div class="row-label">Sound Effects</div></div>
         <div class="row-right">
           <label class="toggle">
             <input type="checkbox" id="soundToggle" onchange="saveNotif()">
@@ -506,19 +571,15 @@ html, body {
     <div class="card">
       <div class="row clickable" onclick="openChangePassword()">
         <div class="row-icon" style="background:rgba(99,102,241,0.12);">🔑</div>
-        <div class="row-content">
-          <div class="row-label">Change Password</div>
-        </div>
-        <div class="row-right">
-          <span class="row-arrow">›</span>
-        </div>
+        <div class="row-content"><div class="row-label">Change Password</div></div>
+        <div class="row-right"><span class="row-arrow">›</span></div>
       </div>
     </div>
   </div>
 
   <!-- Data & Privacy -->
   <div class="section">
-    <div class="section-label">Data & Privacy</div>
+    <div class="section-label">Data &amp; Privacy</div>
     <div class="card">
       <div class="row clickable danger" onclick="clearAllChats()">
         <div class="row-icon">🗑️</div>
@@ -552,7 +613,7 @@ html, body {
         </div>
         <div class="row-content">
           <div class="row-label">Datta AI</div>
-          <div class="row-sub">Version 2.0 · Shakti</div>
+          <div class="row-sub" id="versionTag">Version 2.0 · Shakti</div>
         </div>
         <div class="row-right"><span class="row-value">v2.0</span></div>
       </div>
@@ -561,12 +622,9 @@ html, body {
         <div class="row-content"><div class="row-label">Website</div></div>
         <div class="row-right"><span class="row-arrow">›</span></div>
       </div>
-      <div class="row clickable" onclick="window.location.href='pricing.html'">
-        <div class="row-icon" style="background:rgba(245,158,11,0.12);">⭐</div>
-        <div class="row-content">
-          <div class="row-label">Upgrade Plan</div>
-          <div class="row-sub">Starter ₹49 · Standard ₹149 · Plus ₹299 · Pro ₹799</div>
-        </div>
+      <div class="row clickable" onclick="window.open('privacy.html','_blank')">
+        <div class="row-icon" style="background:rgba(99,102,241,0.12);">🔒</div>
+        <div class="row-content"><div class="row-label">Privacy Policy</div></div>
         <div class="row-right"><span class="row-arrow">›</span></div>
       </div>
     </div>
@@ -580,9 +638,10 @@ html, body {
 
 </div><!-- /.page -->
 
-<!-- ── EDIT NAME MODAL ── -->
+<!-- Edit Name Modal -->
 <div class="modal-overlay" id="editNameModal" onclick="if(event.target===this)closeModal('editNameModal')">
   <div class="modal-box">
+    <div class="modal-handle"></div>
     <div class="modal-title">Edit Profile</div>
     <input type="text" class="m-input" id="newUsername" placeholder="Username">
     <div id="editNameMsg" class="m-msg"></div>
@@ -593,9 +652,10 @@ html, body {
   </div>
 </div>
 
-<!-- ── CHANGE PASSWORD MODAL ── -->
+<!-- Change Password Modal -->
 <div class="modal-overlay" id="pwModal" onclick="if(event.target===this)closeModal('pwModal')">
   <div class="modal-box">
+    <div class="modal-handle"></div>
     <div class="modal-title">Change Password</div>
     <input type="password" class="m-input" id="curPw"  placeholder="Current password">
     <input type="password" class="m-input" id="newPw"  placeholder="New password (min 6 chars)">
@@ -608,9 +668,10 @@ html, body {
   </div>
 </div>
 
-<!-- ── DELETE ACCOUNT MODAL ── -->
+<!-- Delete Account Modal -->
 <div class="modal-overlay" id="delAccModal" onclick="if(event.target===this)closeModal('delAccModal')">
   <div class="modal-box">
+    <div class="modal-handle"></div>
     <div class="modal-title" style="color:#e55;">Delete Account</div>
     <p style="font-size:13px;color:var(--text2);margin-bottom:14px;">This will permanently delete your account and all data. This cannot be undone.</p>
     <input type="password" class="m-input" id="delAccPw" placeholder="Enter password to confirm">
@@ -622,7 +683,6 @@ html, body {
   </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
@@ -630,102 +690,35 @@ const SERVER = "https://datta-ai-server.onrender.com"
 function getToken() { return localStorage.getItem("datta_token") || "" }
 function getUser()  { try { return JSON.parse(localStorage.getItem("datta_user") || "{}") } catch(e) { return {} } }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
 window.addEventListener("DOMContentLoaded", function() {
-  // Apply theme
+  // Theme
   const theme = localStorage.getItem("datta_theme") || "dark"
   applyTheme(theme)
 
-  // Load user info
+  // Accent color
+  const savedAccent = localStorage.getItem("datta_accent") || "#10a37f"
+  applyAccent(savedAccent)
+
+  // User info
   const user = getUser()
   document.getElementById("avatar").textContent      = (user.username || user.email || "U")[0].toUpperCase()
   document.getElementById("profileName").textContent = user.username || "User"
   document.getElementById("profileEmail").textContent = user.email || "–"
 
-  // Load plan
-  const plan = user.plan || user.subscription || "free"
-  const planMap = {
-    free:       "🌱 Free Plan",
-    starter:    "🚀 Starter Plan",
-    standard:   "⭐ Standard Plan",
-    plus:       "⚡ Plus Plan",
-    pro:        "🔥 Pro Plan",
-    mini:       "⚡ Plus Plan",
-    max:        "💎 Max Plan",
-    ultramax:   "👑 Ultra Max",
-    basic:      "🔥 Pro Plan",
-    enterprise: "👑 Enterprise"
-  }
-  document.getElementById("profilePlan").textContent = planMap[plan] || "🌱 Free Plan"
+  // Plan from localStorage + backend fetch
+  const plan = localStorage.getItem("datta_plan") || user.plan || user.subscription || "free"
+  renderPlanInfo(plan)
 
-  // Show plan details card
-  const planDetails = {
-    free: {
-      color: "#00ff88", bg: "rgba(0,255,136,0.08)", border: "rgba(0,255,136,0.2)",
-      msgs: "20 messages / day",
-      models: "Datta 2.1 only",
-      features: ["Basic chat", "Web search", "Voice input"],
-      locked: ["Datta 5.4", "PDF upload", "Priority responses"],
-      upgrade: "Upgrade to Starter — ₹49/mo"
-    },
-    starter: {
-      color: "#00cc6a", bg: "rgba(0,204,106,0.08)", border: "rgba(0,204,106,0.2)",
-      msgs: "50 messages / day",
-      models: "Datta 2.1",
-      features: ["50 msgs/day", "Web search", "Voice input", "Faster than Free"],
-      locked: ["Datta 5.4", "PDF upload"],
-      upgrade: "Upgrade to Standard — ₹149/mo"
-    },
-    standard: {
-      color: "#0099ff", bg: "rgba(0,153,255,0.08)", border: "rgba(0,153,255,0.2)",
-      msgs: "120 messages / day",
-      models: "Datta 2.1 + Datta 5.4 (limited)",
-      features: ["120 msgs/day", "Datta 5.4 limited", "PDF upload", "Web search"],
-      locked: ["Full Datta 5.4", "Priority responses"],
-      upgrade: "Upgrade to Plus — ₹299/mo"
-    },
-    plus: {
-      color: "#ff8800", bg: "rgba(255,136,0,0.08)", border: "rgba(255,136,0,0.2)",
-      msgs: "300 messages / day",
-      models: "Datta 2.1 + Full Datta 5.4",
-      features: ["300 msgs/day", "Full Datta 5.4", "PDF upload", "Priority responses"],
-      locked: [],
-      upgrade: null
-    },
-    pro: {
-      color: "#ff4444", bg: "rgba(255,68,68,0.08)", border: "rgba(255,68,68,0.2)",
-      msgs: "1000 messages / day",
-      models: "Datta 2.1 + Full Datta 5.4",
-      features: ["1000 msgs/day", "Full Datta 5.4", "Highest priority", "Longest responses"],
-      locked: [],
-      upgrade: null
-    }
-  }
-  const pd = planDetails[plan] || planDetails.plus || planDetails.free
-  const planCard = document.getElementById("planDetailsCard")
-  if (planCard) {
-    const lockedHtml = pd.locked.length
-      ? pd.locked.map(l => `<div style="display:flex;align-items:center;gap:6px;margin:3px 0;font-size:12px;color:#555;">🔒 ${l}</div>`).join("")
-      : ""
-    const featuresHtml = pd.features.map(f => `<div style="display:flex;align-items:center;gap:6px;margin:3px 0;font-size:12px;color:var(--text2);">✓ ${f}</div>`).join("")
-    planCard.innerHTML = `
-      <div style="background:${pd.bg};border:1px solid ${pd.border};border-radius:16px;padding:16px 18px;margin-bottom:2px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-          <div>
-            <div style="font-size:15px;font-weight:700;color:${pd.color};">${planMap[plan] || "Free Plan"}</div>
-            <div style="font-size:12px;color:var(--text3);margin-top:2px;">${pd.msgs}</div>
-          </div>
-          <div style="font-size:11px;color:var(--text3);text-align:right;">
-            Models:<br><span style="color:var(--text2);font-weight:600;">${pd.models}</span>
-          </div>
-        </div>
-        <div style="border-top:1px solid var(--border);padding-top:10px;">
-          ${featuresHtml}
-          ${lockedHtml}
-        </div>
-        ${pd.upgrade ? `<a href="pricing.html" style="display:block;text-align:center;margin-top:12px;padding:10px;background:${pd.bg};border:1px solid ${pd.border};border-radius:10px;color:${pd.color};font-weight:600;font-size:13px;text-decoration:none;">${pd.upgrade}</a>` : ""}
-      </div>`
-    planCard.style.display = "block"
+  // Fetch real plan from backend
+  if (getToken()) {
+    fetch(SERVER + "/payment/subscription", { headers: { "Authorization": "Bearer " + getToken() } })
+      .then(r => r.json())
+      .then(d => {
+        if (d.plan) {
+          localStorage.setItem("datta_plan", d.plan)
+          renderPlanInfo(d.plan)
+        }
+      }).catch(() => {})
   }
 
   // Font size
@@ -753,13 +746,61 @@ window.addEventListener("DOMContentLoaded", function() {
   setAIModeUI(mode)
 
   // Toggles
-  const notif  = localStorage.getItem("datta_notif_enabled") === "true"
-  const sound  = localStorage.getItem("datta_sound_enabled") === "true"
-  const stream = localStorage.getItem("datta_stream_enabled") !== "false"
-  document.getElementById("notifToggle").checked  = notif
-  document.getElementById("soundToggle").checked  = sound
-  document.getElementById("streamToggle").checked = stream
+  document.getElementById("notifToggle").checked  = localStorage.getItem("datta_notif_enabled") === "true"
+  document.getElementById("soundToggle").checked  = localStorage.getItem("datta_sound_enabled") === "true"
+  document.getElementById("streamToggle").checked = localStorage.getItem("datta_stream_enabled") !== "false"
 })
+
+// ── PLAN DISPLAY ──────────────────────────────────────────────────────────────
+function renderPlanInfo(plan) {
+  const planMap = {
+    free:"🌱 Free Plan", starter:"🚀 Starter Plan", standard:"⭐ Standard Plan",
+    plus:"⚡ Plus Plan", pro:"🔥 Pro Plan", mini:"⚡ Plus Plan",
+    max:"💎 Max Plan", ultramax:"👑 Ultra Max", basic:"🔥 Pro Plan", enterprise:"👑 Enterprise"
+  }
+  document.getElementById("profilePlan").textContent = planMap[plan] || "🌱 Free Plan"
+
+  const planDetails = {
+    free:     { color:"#10a37f", msgs:"20 msgs/day", models:"Datta 2.1 only",
+                features:["Web search","Voice input"], locked:["Datta 5.4","PDF upload","Priority"],
+                upgrade:"pricing.html", upgradeLabel:"Upgrade to Starter — ₹49/mo" },
+    starter:  { color:"#00cc6a", msgs:"50 msgs/day", models:"Datta 2.1",
+                features:["Web search","Voice input","Faster than Free"], locked:["Datta 5.4","PDF upload"],
+                upgrade:"pricing.html", upgradeLabel:"Upgrade to Standard — ₹149/mo" },
+    standard: { color:"#0099ff", msgs:"120 msgs/day", models:"Datta 2.1 + Datta 5.4 (limited)",
+                features:["Web search","PDF upload","Datta 5.4 limited"], locked:["Full Datta 5.4","Priority"],
+                upgrade:"pricing.html", upgradeLabel:"Upgrade to Plus — ₹299/mo" },
+    plus:     { color:"#ff8800", msgs:"300 msgs/day", models:"Datta 2.1 + Full Datta 5.4",
+                features:["Full Datta 5.4","PDF upload","Priority responses","Web search"], locked:[],
+                upgrade:null, upgradeLabel:null },
+    pro:      { color:"#ff4444", msgs:"1000 msgs/day", models:"Datta 2.1 + Full Datta 5.4",
+                features:["Full Datta 5.4","Highest priority","PDF upload","1000 msgs/day"], locked:[],
+                upgrade:null, upgradeLabel:null }
+  }
+
+  const pd = planDetails[plan] || planDetails.free
+  const card = document.getElementById("planDetailsCard")
+  if (!card) return
+
+  const feats = pd.features.map(f => `<div class="plan-feat"><span class="y">✓</span> ${f}</div>`).join("")
+  const locks = pd.locked.map(l => `<div class="plan-feat"><span class="n">✗</span> <span style="color:var(--text3);">${l}</span></div>`).join("")
+  const upgradeBtn = pd.upgrade
+    ? `<a href="${pd.upgrade}" class="plan-upgrade-btn" style="background:${pd.color}22;border:1px solid ${pd.color}44;color:${pd.color};">${pd.upgradeLabel}</a>`
+    : `<div style="text-align:center;font-size:12px;color:var(--text3);padding:4px;">✓ You're on the highest plan</div>`
+
+  card.innerHTML = `
+    <div class="plan-card" style="background:${pd.color}0d;border:1px solid ${pd.color}33;">
+      <div class="plan-header">
+        <div>
+          <div class="plan-name" style="color:${pd.color};">${planMap[plan] || "Free Plan"}</div>
+          <div class="plan-msgs">${pd.msgs} · ${pd.models}</div>
+        </div>
+      </div>
+      <div class="plan-features">${feats}${locks}</div>
+      ${upgradeBtn}
+    </div>`
+  card.style.display = "block"
+}
 
 // ── THEME ─────────────────────────────────────────────────────────────────────
 function applyTheme(t) {
@@ -773,18 +814,31 @@ function applyTheme(t) {
 function setTheme(t) {
   localStorage.setItem("datta_theme", t)
   applyTheme(t)
-  toast("Theme updated")
+  toast("Theme: " + t)
+}
+
+// ── ACCENT COLOR ──────────────────────────────────────────────────────────────
+function applyAccent(color) {
+  document.documentElement.style.setProperty("--accent", color)
+  document.querySelectorAll(".accent-dot").forEach(d => {
+    d.classList.toggle("active", d.dataset.color === color)
+  })
+}
+function setAccent(color) {
+  localStorage.setItem("datta_accent", color)
+  applyAccent(color)
+  toast("Accent color updated")
 }
 
 // ── FONT SIZE ─────────────────────────────────────────────────────────────────
 function setFontSize(size) {
   localStorage.setItem("datta_font_size_label", size)
-  const sizes = { small: "14px", medium: "16px", large: "18px" }
+  const sizes = { small:"14px", medium:"16px", large:"18px" }
   localStorage.setItem("datta_font_size", sizes[size] || "16px")
   document.querySelectorAll(".seg-btn[id^='fs-']").forEach(b => b.classList.remove("active"))
   const btn = document.getElementById("fs-" + size)
   if (btn) btn.classList.add("active")
-  toast("Font size: " + size)
+  toast("Font: " + size)
 }
 
 // ── STYLE ─────────────────────────────────────────────────────────────────────
@@ -797,22 +851,16 @@ function setStyle(style) {
 }
 
 // ── LANGUAGE ──────────────────────────────────────────────────────────────────
-function saveLanguage(val) {
-  localStorage.setItem("datta_language", val)
-  toast("Language saved")
-}
+function saveLanguage(val) { localStorage.setItem("datta_language", val); toast("Language saved") }
 
 // ── VOICE ─────────────────────────────────────────────────────────────────────
-function saveVoice(val) {
-  localStorage.setItem("datta_voice", val)
-  toast("Voice updated")
-}
+function saveVoice(val) { localStorage.setItem("datta_voice", val); toast("Voice updated") }
 
 // ── AI MODE ───────────────────────────────────────────────────────────────────
 function setAIMode(mode) {
   localStorage.setItem("datta_ai_mode", mode)
   setAIModeUI(mode)
-  toast("AI mode: " + mode)
+  toast("Mode: " + mode)
 }
 function setAIModeUI(mode) {
   ["normal","expert","coding","creative"].forEach(m => {
@@ -842,7 +890,7 @@ async function saveUsername() {
   try {
     const res = await fetch(SERVER + "/auth/update-username", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + getToken() },
       body: JSON.stringify({ username: val, token: getToken() })
     })
     const data = await res.json()
@@ -872,9 +920,9 @@ async function changePassword() {
   if (nw !== con)  { msg.textContent = "Passwords don't match"; msg.className = "m-msg err"; return }
   if (nw.length < 6) { msg.textContent = "Min 6 characters"; msg.className = "m-msg err"; return }
   try {
-    const res  = await fetch(SERVER + "/auth/change-password", {
+    const res = await fetch(SERVER + "/auth/change-password", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + getToken() },
       body: JSON.stringify({ currentPassword: cur, newPassword: nw, token: getToken() })
     })
     const data = await res.json()
@@ -905,9 +953,9 @@ async function deleteAccount() {
   const msg = document.getElementById("delAccMsg")
   if (!pw) { msg.textContent = "Enter your password"; msg.className = "m-msg err"; return }
   try {
-    const res  = await fetch(SERVER + "/auth/delete-account", {
+    const res = await fetch(SERVER + "/auth/delete-account", {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + getToken() },
       body: JSON.stringify({ password: pw, token: getToken() })
     })
     const data = await res.json()
