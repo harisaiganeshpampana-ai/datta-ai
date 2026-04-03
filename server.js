@@ -179,6 +179,21 @@ app.get("/health", (req, res) => res.json({ status: "ok", uptime: process.uptime
 
 const otpStore = {}
 
+// Email OTP store — separate from SMS OTP
+// { email: { hash, expires, attempts } }
+const emailOtpStore = {}
+
+// Email tracking schema
+const EmailTrackSchema = new mongoose.Schema({
+  trackId:    { type: String, required: true, unique: true },
+  email:      { type: String },
+  type:       { type: String }, // "welcome" | "otp" | "verify"
+  openedAt:   { type: Date, default: null },
+  clicks:     [{ url: String, clickedAt: Date }],
+  sentAt:     { type: Date, default: Date.now }
+})
+const EmailTrack = mongoose.models.EmailTrack || mongoose.model("EmailTrack", EmailTrackSchema)
+
 // Twilio client - supports both Verify Service and direct SMS
 let twilioClient = null
 if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
@@ -1921,6 +1936,181 @@ IMPORTANT: Answer like a human, NOT like a search engine.
     if (!res.headersSent) res.status(500).send("Server error: " + err.message)
     else res.end()
   }
+})
+
+// ── EMAIL OTP SYSTEM ─────────────────────────────────────────────────────────
+// POST /auth/send-email-otp — generates 6-digit OTP, sends via Zoho email
+app.post("/auth/send-email-otp", async (req, res) => {
+  try {
+    const { email } = req.body
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return res.status(400).json({ error: "Valid email required" })
+    }
+    const cleanEmail = email.trim().toLowerCase()
+
+    // Rate limit: 1 OTP per email per 60 seconds
+    const existing = emailOtpStore[cleanEmail]
+    if (existing && (Date.now() - existing.sentAt) < 60000) {
+      const waitSec = Math.ceil((60000 - (Date.now() - existing.sentAt)) / 1000)
+      return res.status(429).json({ error: `Wait ${waitSec}s before requesting another OTP` })
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+
+    // Hash OTP with crypto — never store plain
+    const crypto = await import("crypto")
+    const hash = crypto.createHash("sha256").update(otp + cleanEmail).digest("hex")
+
+    emailOtpStore[cleanEmail] = {
+      hash,
+      expires:  Date.now() + 5 * 60 * 1000, // 5 minutes
+      attempts: 0,
+      sentAt:   Date.now()
+    }
+
+    // Create tracking ID
+    const trackId = crypto.randomBytes(16).toString("hex")
+    await EmailTrack.create({ trackId, email: cleanEmail, type: "otp" }).catch(() => {})
+
+    // Build tracking pixel URL
+    const trackPixel = `https://datta-ai-server.onrender.com/track/open/${trackId}`
+    const trackLink  = `https://datta-ai-server.onrender.com/track/click/${trackId}?url=https://datta-ai.com`
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:32px 0;">
+<tr><td align="center">
+<table width="480" cellpadding="0" cellspacing="0" style="background:#0a0a0a;border-radius:16px;overflow:hidden;max-width:480px;">
+  <tr><td style="padding:28px 36px 20px;text-align:center;border-bottom:1px solid #1a1a1a;">
+    <h1 style="margin:0;font-size:24px;color:#00ff88;letter-spacing:3px;">DATTA AI</h1>
+    <p style="margin:6px 0 0;color:#444;font-size:11px;letter-spacing:1px;text-transform:uppercase;">Security Code</p>
+  </td></tr>
+  <tr><td style="padding:28px 36px;">
+    <p style="color:#ccc;font-size:15px;margin:0 0 20px;line-height:1.6;">Your one-time password to sign in to <strong style="color:#fff;">Datta AI</strong>:</p>
+    <div style="background:#111;border:1px solid #222;border-radius:12px;padding:20px;text-align:center;margin:0 0 20px;">
+      <span style="font-size:38px;font-weight:700;letter-spacing:10px;color:#00ff88;font-family:Courier,monospace;">${otp}</span>
+      <p style="color:#444;font-size:11px;margin:10px 0 0;">Expires in <strong style="color:#666;">5 minutes</strong></p>
+    </div>
+    <p style="color:#555;font-size:12px;margin:0;line-height:1.6;">If you did not request this code, you can safely ignore this email. Do not share this code with anyone.</p>
+  </td></tr>
+  <tr><td style="padding:16px 36px 24px;border-top:1px solid #111;text-align:center;">
+    <p style="color:#333;font-size:11px;margin:0;">© 2026 Datta AI &nbsp;·&nbsp; <a href="${trackLink}" style="color:#444;text-decoration:none;">datta-ai.com</a></p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+<img src="${trackPixel}" width="1" height="1" style="display:none;" alt="">
+</body></html>`
+
+    if (!process.env.ZOHO_USER || !process.env.ZOHO_PASS) {
+      console.log("[EMAIL OTP] Creds missing. OTP for", cleanEmail, ":", otp)
+      return res.json({ success: true, message: "OTP generated (email not configured)" })
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: "smtp.zoho.in", port: 465, secure: true,
+      auth: { user: process.env.ZOHO_USER, pass: process.env.ZOHO_PASS }
+    })
+    await transporter.sendMail({
+      from: '"Datta AI" <' + process.env.ZOHO_USER + '>',
+      to: cleanEmail,
+      subject: "Your Datta AI OTP: " + otp,
+      html,
+      text: "Your Datta AI OTP is: " + otp + "\nExpires in 5 minutes. Do not share."
+    })
+
+    console.log("[EMAIL OTP] Sent to:", cleanEmail)
+    res.json({ success: true, message: "OTP sent to " + cleanEmail })
+
+  } catch(err) {
+    console.error("[EMAIL OTP] Error:", err.message)
+    res.status(500).json({ error: "Failed to send OTP" })
+  }
+})
+
+// POST /auth/verify-email-otp — verify the 6-digit OTP
+app.post("/auth/verify-email-otp", async (req, res) => {
+  try {
+    const { email, otp } = req.body
+    if (!email || !otp) return res.status(400).json({ error: "Email and OTP required" })
+    const cleanEmail = email.trim().toLowerCase()
+    const stored = emailOtpStore[cleanEmail]
+
+    if (!stored) return res.status(400).json({ error: "No OTP found. Request a new one." })
+    if (Date.now() > stored.expires) {
+      delete emailOtpStore[cleanEmail]
+      return res.status(400).json({ error: "OTP expired. Request a new one." })
+    }
+
+    // Brute force protection: max 5 attempts
+    stored.attempts = (stored.attempts || 0) + 1
+    if (stored.attempts > 5) {
+      delete emailOtpStore[cleanEmail]
+      return res.status(429).json({ error: "Too many attempts. Request a new OTP." })
+    }
+
+    const crypto = await import("crypto")
+    const hash = crypto.createHash("sha256").update(otp + cleanEmail).digest("hex")
+
+    if (hash !== stored.hash) {
+      const left = 5 - stored.attempts
+      return res.status(400).json({ error: `Invalid OTP. ${left} attempt${left===1?"":"s"} left.` })
+    }
+
+    // Valid — clean up
+    delete emailOtpStore[cleanEmail]
+    console.log("[EMAIL OTP] Verified for:", cleanEmail)
+    res.json({ success: true, message: "OTP verified successfully" })
+
+  } catch(err) {
+    res.status(500).json({ error: sanitizeError(err).userMsg })
+  }
+})
+
+// ── EMAIL TRACKING ROUTES ─────────────────────────────────────────────────────
+
+// GET /track/open/:id — 1x1 tracking pixel, logs email open
+app.get("/track/open/:id", async (req, res) => {
+  try {
+    await EmailTrack.findOneAndUpdate(
+      { trackId: req.params.id, openedAt: null },
+      { openedAt: new Date() }
+    ).catch(() => {})
+  } catch(e) {}
+  // Return 1x1 transparent GIF
+  const gif = Buffer.from("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7","base64")
+  res.set({ "Content-Type":"image/gif", "Cache-Control":"no-store,no-cache,must-revalidate", "Pragma":"no-cache" })
+  res.send(gif)
+})
+
+// GET /track/click/:id — logs click then redirects to real URL
+app.get("/track/click/:id", async (req, res) => {
+  const url = req.query.url || "https://datta-ai.com"
+  try {
+    await EmailTrack.findOneAndUpdate(
+      { trackId: req.params.id },
+      { $push: { clicks: { url, clickedAt: new Date() } } }
+    ).catch(() => {})
+  } catch(e) {}
+  res.redirect(url)
+})
+
+// GET /admin/email-stats — admin only, see open/click rates
+app.get("/admin/email-stats", authMiddleware, async (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: "Admin only" })
+  try {
+    const total  = await EmailTrack.countDocuments()
+    const opened = await EmailTrack.countDocuments({ openedAt: { $ne: null } })
+    const recent = await EmailTrack.find().sort({ sentAt: -1 }).limit(20)
+    res.json({
+      total, opened,
+      openRate: total > 0 ? ((opened/total)*100).toFixed(1)+"%" : "0%",
+      recent
+    })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
 // ── STOP ENDPOINT — client calls this when Stop button clicked ───────────────
