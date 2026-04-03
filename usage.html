@@ -120,6 +120,14 @@ body { background:#0a0a0a; color:#fff; font-family:'Josefin Sans',sans-serif; mi
   font-family:'Josefin Sans',sans-serif; letter-spacing:1px;
 }
 </style>
+  <link rel="stylesheet" href="layout.css">
+  <link rel="stylesheet" href="theme.css">
+  <script>
+    (function(){
+      var t = localStorage.getItem("datta_theme") || "dark"
+      document.body.setAttribute("data-theme", ["dark","light","eye"].includes(t) ? t : "dark")
+    })()
+  </script>
 </head>
 <body>
 
@@ -263,7 +271,7 @@ async function loadUsage() {
   if (!token) { window.location.href = "login.html"; return }
 
   try {
-    const res = await fetch(SERVER + "/user/usage?token=" + token)
+    const res = await fetch(SERVER + "/user/usage", {headers: {"Authorization": "Bearer " + token}})
     const data = await res.json()
 
     const plan = data.plan || "free"
