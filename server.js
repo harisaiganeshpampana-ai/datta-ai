@@ -1131,7 +1131,9 @@ app.get("/auth/google/callback",
   (req, res) => {
     // Send login alert email — fire and forget
     sendLoginAlertEmail(req.user.user.email, req.user.user.username || "User").catch(() => {})
-    res.redirect(FRONTEND_URL + "/login.html?token=" + req.user.token + "&user=" + encodeURIComponent(JSON.stringify(req.user.user)))
+    // Only put token in URL — frontend fetches user data separately
+    // Putting full user JSON in URL causes 414 URI Too Long
+    res.redirect(FRONTEND_URL + "/login.html?token=" + req.user.token)
   }
 )
 
@@ -2390,6 +2392,22 @@ app.post("/referral/apply", authMiddleware, async (req, res) => {
 })
 
 // USER USAGE ROUTE - reads from MongoDB
+// GET /auth/me — returns current user info from token
+app.get("/auth/me", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password -verifyToken").lean()
+    if (!user) return res.status(404).json({ error: "User not found" })
+    const sub = await Subscription.findOne({ userId: user._id, active: true }).catch(() => null)
+    res.json({
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      emailVerified: user.emailVerified,
+      plan: sub ? sub.plan : "free"
+    })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
 app.get("/user/usage", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id
