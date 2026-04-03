@@ -100,6 +100,14 @@ body{background:#0a0a0a;color:#fff;font-family:'Josefin Sans',sans-serif;min-hei
 .payNote{font-size:10px;color:#333;text-align:center;margin-top:8px}
 .payCancelBtn{width:100%;padding:10px;background:transparent;border:1px solid #1e1e1e;border-radius:10px;color:#444;cursor:pointer;font-size:11px;margin-top:8px;font-family:'Josefin Sans',sans-serif;letter-spacing:1px}
 </style>
+  <link rel="stylesheet" href="layout.css">
+  <link rel="stylesheet" href="theme.css">
+  <script>
+    (function(){
+      var t = localStorage.getItem("datta_theme") || "dark"
+      document.body.setAttribute("data-theme", ["dark","light","eye"].includes(t) ? t : "dark")
+    })()
+  </script>
 </head>
 <body>
 
@@ -109,14 +117,9 @@ body{background:#0a0a0a;color:#fff;font-family:'Josefin Sans',sans-serif;min-hei
   <div class="curBadge" id="curBadge">Free Plan</div>
 </div>
 
-<div class="billRow">
-  <span class="billLbl on" id="lbl-m">Monthly</span>
-  <div class="track" id="billTrack" onclick="toggleBill()"><div class="knob"></div></div>
-  <span class="billLbl" id="lbl-y">Yearly</span>
-  <span class="savePill">Save 20%</span>
-</div>
+<div style="text-align:center;padding:20px 0 4px;font-size:12px;color:#555;letter-spacing:1px;">MONTHLY BILLING · CANCEL ANYTIME</div>
 
-<div class="plans">
+<div class="plans" style="grid-template-columns:repeat(3,1fr);max-width:760px;">
 
   <!-- FREE -->
   <div class="card" id="card-free">
@@ -130,138 +133,78 @@ body{background:#0a0a0a;color:#fff;font-family:'Josefin Sans',sans-serif;min-hei
       <div class="pricePer">Forever free</div>
     </div>
     <div class="keyStat">
-      <div class="keyStatNum">Base</div>
-      <div class="keyStatLabel">Standard usage · 50 msgs per session</div>
+      <div class="keyStatNum">40</div>
+      <div class="keyStatLabel">messages per day</div>
     </div>
     <ul class="features">
-      <li><span class="y">✓</span><span>Datta 2.1 &amp; 4.2 models</span></li>
+      <li><span class="y">✓</span><span>Datta 2.1 model</span></li>
+      <li><span class="y">✓</span><span>40 messages / day</span></li>
       <li><span class="y">✓</span><span>Web search</span></li>
       <li><span class="y">✓</span><span>File &amp; PDF upload</span></li>
       <li><span class="y">✓</span><span>Voice assistant</span></li>
-      <li><span class="n">🔒</span><span>Datta 4.8 &amp; 5.4 (locked)</span></li>
-      <li><span class="n">🔒</span><span>Code generation (locked)</span></li>
+      <li><span class="n">🔒</span><span>Datta 5.4 model</span></li>
       <li><span class="n">✗</span><span>Priority responses</span></li>
     </ul>
     <button class="planBtn btn-free" id="btn-free" disabled>Current Plan</button>
-    <div class="limitLink" onclick="showLimit('free')">See usage limits ↗</div>
   </div>
 
-  <!-- MINI -->
-  <div class="card" id="card-mini" style="border:1px solid #ff880033;">
+  <!-- PLUS -->
+  <div class="card pop" id="card-plus" style="border-color:#ff880044;">
+    <div class="popBadge">Most Popular</div>
     <div class="cardTop">
-      <div class="cardIcon">⭐</div>
-      <div class="cardName">Mini</div>
-      <div class="cardDesc">Best starter plan for daily use</div>
+      <div class="cardIcon">⚡</div>
+      <div class="cardName">Plus</div>
+      <div class="cardDesc">Best for daily power users</div>
     </div>
     <div class="priceArea">
-      <div class="priceMain"><sup>₹</sup><span>199</span></div>
+      <div class="priceMain"><sup>₹</sup><span>299</span></div>
       <div class="pricePer">/month</div>
     </div>
     <div class="keyStat">
-      <div class="keyStatNum" style="color:#ff8800;">2×</div>
-      <div class="keyStatLabel">More than Free · 100 msgs per 4hrs</div>
+      <div class="keyStatNum" style="color:#ff8800;">300</div>
+      <div class="keyStatLabel">messages per day</div>
     </div>
     <ul class="features">
-      <li><span class="y">✓</span><span>Datta 2.1 &amp; 4.2 models</span></li>
-      <li><span class="y">✓</span><span>100 messages per 4 hours</span></li>
+      <li><span class="y">✓</span><span>Datta 2.1 model</span></li>
+      <li><span class="y">✓</span><span><b>Datta 5.4 model</b> unlocked</span></li>
+      <li><span class="y">✓</span><span><b>300 messages / day</b></span></li>
       <li><span class="y">✓</span><span>Web search &amp; PDF upload</span></li>
       <li><span class="y">✓</span><span>Voice assistant</span></li>
-      <li><span class="y">✓</span><span>All 9 AI modes</span></li>
-      <li><span class="n">🔒</span><span>Datta 4.8 &amp; 5.4 (Pro only)</span></li>
+      <li><span class="y">✓</span><span>Priority responses</span></li>
     </ul>
-    <button class="planBtn" id="btn-mini" onclick="selectPlan('mini','monthly',199)"
+    <button class="planBtn" id="btn-plus" onclick="selectPlan('plus','monthly',299)"
       style="background:linear-gradient(135deg,#ff8800,#ffaa00);color:#000;font-weight:700;">
-      Get Mini — ₹199/mo
+      Get Plus — ₹299/mo
     </button>
-    <div class="limitLink" onclick="showLimit('mini')">See usage limits ↗</div>
   </div>
 
   <!-- PRO -->
-  <div class="card" id="card-pro">
+  <div class="card" id="card-pro" style="border-color:#ff444433;">
     <div class="cardTop">
-      <div class="cardIcon">⚡</div>
+      <div class="cardIcon">🔥</div>
       <div class="cardName">Pro</div>
-      <div class="cardDesc">For power users who need more</div>
+      <div class="cardDesc">For professionals who need maximum</div>
     </div>
     <div class="priceArea">
-      <div class="priceMain"><sup>₹</sup><span id="pro-p">999</span></div>
-      <div class="pricePer" id="pro-per">/month</div>
-      <div class="priceOld" id="pro-old"></div>
+      <div class="priceMain"><sup>₹</sup><span>799</span></div>
+      <div class="pricePer">/month</div>
     </div>
     <div class="keyStat">
-      <div class="keyStatNum">3×</div>
-      <div class="keyStatLabel">More usage than Free</div>
+      <div class="keyStatNum" style="color:#ff4444;">1000</div>
+      <div class="keyStatLabel">messages per day</div>
     </div>
     <ul class="features">
-      <li><span class="y">✓</span><span><b>All 4</b> Datta AI models</span></li>
-      <li><span class="y">✓</span><span>Web search</span></li>
-      <li><span class="y">✓</span><span>File &amp; PDF upload</span></li>
+      <li><span class="y">✓</span><span>Datta 2.1 model</span></li>
+      <li><span class="y">✓</span><span><b>Datta 5.4 model</b> unlocked</span></li>
+      <li><span class="y">✓</span><span><b>1000 messages / day</b></span></li>
+      <li><span class="y">✓</span><span>Web search &amp; PDF upload</span></li>
       <li><span class="y">✓</span><span>Voice assistant</span></li>
-      <li><span class="y">✓</span><span><b>Priority</b> faster responses</span></li>
-      <li><span class="y">✓</span><span>Chat history sync</span></li>
-      <li><span class="n">✗</span><span>Custom AI name</span></li>
+      <li><span class="y">✓</span><span><b>Highest priority</b> responses</span></li>
     </ul>
-    <button class="planBtn btn-pro" id="btn-pro" onclick="openPay('pro')">Get Pro</button>
-    <div class="limitLink" onclick="showLimit('pro')">See usage limits ↗</div>
-  </div>
-
-  <!-- MAX -->
-  <div class="card pop" id="card-max">
-    <div class="popBadge">Most Popular</div>
-    <div class="cardTop">
-      <div class="cardIcon">🚀</div>
-      <div class="cardName">Max</div>
-      <div class="cardDesc">For professionals &amp; teams</div>
-    </div>
-    <div class="priceArea">
-      <div class="priceMain"><sup>₹</sup><span id="max-p">2499</span></div>
-      <div class="pricePer" id="max-per">/month</div>
-      <div class="priceOld" id="max-old"></div>
-    </div>
-    <div class="keyStat" style="border-left-color:#00aaff">
-      <div class="keyStatNum" style="color:#00aaff">15×</div>
-      <div class="keyStatLabel">More usage than Pro</div>
-    </div>
-    <ul class="features">
-      <li><span class="y">✓</span><span><b>All 4</b> Datta AI models</span></li>
-      <li><span class="y">✓</span><span>Web search + deep research</span></li>
-      <li><span class="y">✓</span><span>File &amp; PDF upload</span></li>
-      <li><span class="y">✓</span><span>Voice assistant</span></li>
-      <li><span class="y">✓</span><span><b>Custom AI name</b></span></li>
-      <li><span class="y">✓</span><span>Priority support</span></li>
-      <li><span class="y">✓</span><span>Advanced memory</span></li>
-    </ul>
-    <button class="planBtn btn-max" id="btn-max" onclick="openPay('max')">Get Max</button>
-    <div class="limitLink" onclick="showLimit('max')">See usage limits ↗</div>
-  </div>
-
-  <!-- ULTRA MAX -->
-  <div class="card" id="card-ultramax">
-    <div class="cardTop">
-      <div class="cardIcon">👑</div>
-      <div class="cardName">Ultra Max</div>
-      <div class="cardDesc">No limits, no restrictions</div>
-    </div>
-    <div class="priceArea">
-      <div class="priceMain"><sup>₹</sup><span id="ultra-p">4999</span></div>
-      <div class="pricePer" id="ultra-per">/month</div>
-      <div class="priceOld" id="ultra-old"></div>
-    </div>
-    <div class="keyStat" style="border-left-color:#a855f7">
-      <div class="keyStatNum" style="color:#a855f7">∞</div>
-      <div class="keyStatLabel">Unlimited · No restrictions</div>
-    </div>
-    <ul class="features">
-      <li><span class="y">✓</span><span><b>All 4</b> Datta AI models</span></li>
-      <li><span class="y">✓</span><span>Web search + deep research</span></li>
-      <li><span class="y">✓</span><span>File &amp; PDF upload</span></li>
-      <li><span class="y">✓</span><span>Voice assistant</span></li>
-      <li><span class="y">✓</span><span><b>Custom AI name</b></span></li>
-      <li><span class="y">✓</span><span><b>API access</b></span></li>
-      <li><span class="y">✓</span><span>Priority support + SLA</span></li>
-    </ul>
-    <button class="planBtn btn-ultra" id="btn-ultramax" onclick="openPay('ultramax')">Get Ultra Max</button>
-    <div class="limitLink" onclick="showLimit('ultramax')">See usage limits ↗</div>
+    <button class="planBtn btn-pro" id="btn-pro" onclick="selectPlan('pro','monthly',799)"
+      style="background:linear-gradient(135deg,#ff4444,#ff8800);color:#fff;font-weight:700;">
+      Get Pro — ₹799/mo
+    </button>
   </div>
 
 </div>
@@ -295,14 +238,14 @@ body{background:#0a0a0a;color:#fff;font-family:'Josefin Sans',sans-serif;min-hei
 <script>
 const SERVER = "https://datta-ai-server.onrender.com"
 let isYearly = false, selectedPlan = null
-const M = { mini:199, pro:999, max:2499, ultramax:4999 }
+const M = { free:0, plus:299, pro:799 }  // 3 plans only
 const Y = { 
   mini:   1910,
   pro:    9590,
   max:    23990,
   ultramax: 47990
 }
-const names = { free:"Free", mini:"Mini", pro:"Pro", max:"Max", ultramax:"Ultra Max" }
+const names = { free:"Free", plus:"Plus", pro:"Pro" }
 
 const limits = {
   mini: {
@@ -453,7 +396,7 @@ function closeLimitModal(){
 function openPay(plan){
   selectedPlan = plan
   window._selectedPlanAmount = null // reset so payRazorpay uses M/Y
-  const amount = isYearly ? Y[plan] : M[plan]
+  const amount = M[plan]  // monthly only
   const label = isYearly ? names[plan]+" Plan (Yearly)" : names[plan]+" Plan (Monthly)"
   document.getElementById("payPlanName").textContent = label
   document.getElementById("payPlanPrice").textContent = "₹" + amount.toLocaleString("en-IN")
