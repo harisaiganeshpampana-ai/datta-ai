@@ -62,10 +62,13 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: "20mb" }))
 app.use(express.urlencoded({ extended: true, limit: "20mb" }))
 
-// Increase URL length limit — prevents 414 URI Too Long
+// Catch oversized URLs before they hit nginx
 app.use((req, res, next) => {
-  if (req.url && req.url.length > 8192) {
-    return res.status(414).json({ error: "URI_TOO_LONG", message: "Request URL too long" })
+  const urlLen = (req.url || "").length
+  const hdrs = JSON.stringify(req.headers || {}).length
+  if (urlLen > 4096 || hdrs > 8192) {
+    console.error("[414] URL len:", urlLen, "headers len:", hdrs, "path:", req.url.slice(0, 200))
+    return res.status(414).json({ error: "URI_TOO_LONG", message: "Request too large" })
   }
   next()
 })
