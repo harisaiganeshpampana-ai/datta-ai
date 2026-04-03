@@ -565,7 +565,7 @@ html, body {
         <div class="row-icon" style="background:rgba(245,158,11,0.12);">⭐</div>
         <div class="row-content">
           <div class="row-label">Upgrade Plan</div>
-          <div class="row-sub">Plus ₹299 · Pro ₹799 · Unlock Datta 5.4</div>
+          <div class="row-sub">Starter ₹49 · Standard ₹149 · Plus ₹299 · Pro ₹799</div>
         </div>
         <div class="row-right"><span class="row-arrow">›</span></div>
       </div>
@@ -646,6 +646,8 @@ window.addEventListener("DOMContentLoaded", function() {
   const plan = user.plan || user.subscription || "free"
   const planMap = {
     free:       "🌱 Free Plan",
+    starter:    "🚀 Starter Plan",
+    standard:   "⭐ Standard Plan",
     plus:       "⚡ Plus Plan",
     pro:        "🔥 Pro Plan",
     mini:       "⚡ Plus Plan",
@@ -660,30 +662,46 @@ window.addEventListener("DOMContentLoaded", function() {
   const planDetails = {
     free: {
       color: "#00ff88", bg: "rgba(0,255,136,0.08)", border: "rgba(0,255,136,0.2)",
-      msgs: "40 messages / day",
+      msgs: "20 messages / day",
       models: "Datta 2.1 only",
       features: ["Basic chat", "Web search", "Voice input"],
-      locked: ["Datta 5.4 (coding model)", "Priority responses"],
+      locked: ["Datta 5.4", "PDF upload", "Priority responses"],
+      upgrade: "Upgrade to Starter — ₹49/mo"
+    },
+    starter: {
+      color: "#00cc6a", bg: "rgba(0,204,106,0.08)", border: "rgba(0,204,106,0.2)",
+      msgs: "50 messages / day",
+      models: "Datta 2.1",
+      features: ["50 msgs/day", "Web search", "Voice input", "Faster than Free"],
+      locked: ["Datta 5.4", "PDF upload"],
+      upgrade: "Upgrade to Standard — ₹149/mo"
+    },
+    standard: {
+      color: "#0099ff", bg: "rgba(0,153,255,0.08)", border: "rgba(0,153,255,0.2)",
+      msgs: "120 messages / day",
+      models: "Datta 2.1 + Datta 5.4 (limited)",
+      features: ["120 msgs/day", "Datta 5.4 limited", "PDF upload", "Web search"],
+      locked: ["Full Datta 5.4", "Priority responses"],
       upgrade: "Upgrade to Plus — ₹299/mo"
     },
     plus: {
       color: "#ff8800", bg: "rgba(255,136,0,0.08)", border: "rgba(255,136,0,0.2)",
       msgs: "300 messages / day",
-      models: "Datta 2.1 + Datta 5.4",
-      features: ["Everything in Free", "Datta 5.4 coding model", "300 msgs/day", "Priority responses"],
+      models: "Datta 2.1 + Full Datta 5.4",
+      features: ["300 msgs/day", "Full Datta 5.4", "PDF upload", "Priority responses"],
       locked: [],
       upgrade: null
     },
     pro: {
       color: "#ff4444", bg: "rgba(255,68,68,0.08)", border: "rgba(255,68,68,0.2)",
       msgs: "1000 messages / day",
-      models: "Datta 2.1 + Datta 5.4",
-      features: ["Everything in Plus", "1000 msgs/day", "Longest responses", "Highest priority"],
+      models: "Datta 2.1 + Full Datta 5.4",
+      features: ["1000 msgs/day", "Full Datta 5.4", "Highest priority", "Longest responses"],
       locked: [],
       upgrade: null
     }
   }
-  const pd = planDetails[plan] || planDetails["plus"] || planDetails.free
+  const pd = planDetails[plan] || planDetails.plus || planDetails.free
   const planCard = document.getElementById("planDetailsCard")
   if (planCard) {
     const lockedHtml = pd.locked.length
