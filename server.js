@@ -1948,8 +1948,13 @@ IMPORTANT: Answer like a human, NOT like a search engine.
 // ── LOGIN ALERT EMAIL ────────────────────────────────────────────────────────
 async function sendLoginAlertEmail(email, username) {
   try {
+    // Debug — visible in Render logs
+    console.log("[LOGIN EMAIL] Attempting for:", email,
+      "| ZOHO_USER set:", !!process.env.ZOHO_USER,
+      "| ZOHO_PASS set:", !!process.env.ZOHO_PASS)
+
     if (!process.env.ZOHO_USER || !process.env.ZOHO_PASS) {
-      console.log("[LOGIN EMAIL] Zoho creds missing — skipping")
+      console.log("[LOGIN EMAIL] BLOCKED — add ZOHO_USER and ZOHO_PASS in Render env vars")
       return false
     }
 
@@ -2026,7 +2031,7 @@ async function sendLoginAlertEmail(email, username) {
     console.log("[LOGIN EMAIL] Alert sent to:", email)
     return true
   } catch(e) {
-    console.error("[LOGIN EMAIL] Error:", e.message)
+    console.error("[LOGIN EMAIL] FAILED:", e.message, "| code:", e.code, "| response:", e.response)
     return false
   }
 }
