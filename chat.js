@@ -651,8 +651,9 @@ function newChat() {
 async function send() {
   // Prevent double-send while AI is generating
   if (isGenerating) return
-  // Reset stop flag so new request isn't immediately killed
+  // Reset stop flag and retry counter for fresh request
   window._stopTyping = false
+  window._retryCount = 0
 
   const input = document.getElementById("message")
   const filePreview = document.getElementById("filePreview")
@@ -979,9 +980,16 @@ async function send() {
       localStorage.setItem("datta_last_chat", currentChatId)
     }
 
-    // Upgrade Render message for long tasks
-    if (!res.ok && res.status === 504) {
-      aiDiv.innerHTML = `<div class="aiContent"><div class="ai-bubble" style="background:#110a0a;border:1px solid #ff444422;"><div style="color:#ff8888;font-weight:600;margin-bottom:8px;">⏱️ Server timeout</div><div style="color:#888;font-size:13px;margin-bottom:12px;">This task was too large for the free server. Try breaking it into smaller parts, or upgrade Render to paid plan.</div></div></div>`
+    // Handle non-OK status BEFORE rendering any bubble — prevents conflict
+    if (!res.ok) {
+      let errBody = {}
+      try { errBody = await res.json() } catch(e) {}
+      if (res.status === 504) {
+        aiDiv.innerHTML = `<div class="aiContent"><div class="ai-bubble" style="background:#110a0a;border:1px solid #ff444422;"><div style="color:#ff8888;font-weight:600;margin-bottom:8px;">⏱️ Server timeout</div><div style="color:#888;font-size:13px;margin-bottom:12px;">This task was too large. Try breaking it into smaller parts.</div></div></div>`
+      } else {
+        const errMsg = errBody.message || errBody.error || "Request failed (" + res.status + ")"
+        aiDiv.innerHTML = `<div class="aiContent"><div class="ai-bubble" style="color:#ff8844;">⚠️ ${errMsg}. Please try again.</div></div>`
+      }
       hideStopBtn()
       return
     }
