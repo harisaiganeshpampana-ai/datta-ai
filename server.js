@@ -1911,6 +1911,23 @@ IMPORTANT: Answer like a human, NOT like a search engine.
           : safeStr(finalUserContent) || "Hello" }
     ]
 
+    // HARD FIX: force every message content to string — no exceptions
+    groqMessages = groqMessages.map((m, i) => {
+      if (i === groqMessages.length - 1 && isVisionModel && Array.isArray(m.content)) {
+        return m // keep last user message as array for vision model only
+      }
+      return {
+        role: m.role,
+        content: typeof m.content === "string"
+          ? m.content
+          : Array.isArray(m.content)
+            ? m.content.filter(p => p && p.type === "text").map(p => p.text || "").join("") || "[image]"
+            : (m.content && typeof m.content === "object")
+              ? (m.content.text || m.content.content || JSON.stringify(m.content))
+              : String(m.content || "")
+      }
+    })
+
     var full = ""
     var lastError = null
 
@@ -1929,6 +1946,16 @@ IMPORTANT: Answer like a human, NOT like a search engine.
     console.log("[AI INPUT] preview:", userMsg)
     console.log("[AI CONFIG] isExplain:", isExplainQuestion, "| isCode:", isCodeTask, "| isLarge:", isLargeTask, "| tokens:", maxTok)
     if (searchContext) console.log("[AI SEARCH] context length:", searchContext.length)
+
+    // DEBUG: log type of every message content before sending to Groq
+    groqMessages.forEach((m, i) => {
+      var t = typeof m.content
+      var isArr = Array.isArray(m.content)
+      if (t !== "string") {
+        console.error("[GROQ MSG BUG] messages[" + i + "].content is", t, "array:", isArr,
+          "val:", JSON.stringify(m.content).slice(0, 100))
+      }
+    })
 
     // Try models in order: primary → fast fallback
     // On rate limit: wait and retry with smaller tokens
