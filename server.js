@@ -2022,38 +2022,39 @@ IMPORTANT: Answer like a human, NOT like a search engine.
       try {
         console.log("[GROQ] attempt", attempt+1, "model:", tryModel, "tokens:", tryTokens)
 
-        // FINAL SAFETY: stringify entire groqMessages, re-parse, rebuild
-        // This is the nuclear option — guarantees plain JS with no Mongoose types
-        var safeMessages = JSON.parse(JSON.stringify(groqMessages, function(key, val) {
-          if (val === null || val === undefined) return ""
-          if (typeof val === "string") return val
-          if (typeof val === "number" || typeof val === "boolean") return val
-          if (Array.isArray(val)) return val
-          if (typeof val === "object") return val
-          return String(val)
-        }))
+        // Build clean messages — convert every content to string, no exceptions
+        var safeMessages = groqMessages.map(function(m, idx) {
+          var isLastVision = (idx === groqMessages.length - 1) && isVisionModel && Array.isArray(m.content)
+          if (isLastVision) return { role: m.role, content: m.content }
 
-        // Force every content to string one final time
-        safeMessages = safeMessages.map(function(m, idx) {
           var c = m.content
-          if (typeof c === "string") return m
-          if (Array.isArray(c)) {
-            // Vision last message — keep as-is
-            if (idx === safeMessages.length - 1 && isVisionModel) return m
-            var txt = c.filter(function(p){ return p && p.type === "text" }).map(function(p){ return p.text || "" }).join(" ").trim()
-            console.log("[FORCE STRING] messages["+idx+"] array→string:", txt.slice(0,80))
-            return { role: m.role, content: txt || "[image]" }
+
+          // Already a string — done
+          if (typeof c === "string") return { role: m.role, content: c }
+
+          // Convert array to string (extract text items only)
+          if (c && typeof c === "object") {
+            var arr = []
+            try { arr = JSON.parse(JSON.stringify(c)) } catch(e) { arr = [] }
+            if (!Array.isArray(arr)) arr = [arr]
+            var txt = arr
+              .filter(function(p) { return p && (p.type === "text" || typeof p === "string") })
+              .map(function(p) { return typeof p === "string" ? p : (p.text || "") })
+              .join(" ").trim()
+            console.log("[SAFE MSG] messages["+idx+"] converted array to:", JSON.stringify(txt).slice(0,80))
+            return { role: m.role, content: txt || "[image message]" }
           }
-          var str = c ? String(c) : ""
-          console.log("[FORCE STRING] messages["+idx+"] "+typeof c+"→string:", str.slice(0,80))
-          return { role: m.role, content: str }
+
+          return { role: m.role, content: String(c || "") }
         })
 
-        // Verify — log any remaining non-strings
-        safeMessages.forEach(function(m, idx) {
-          if (typeof m.content !== "string") {
-            console.error("[BUG STILL] messages["+idx+"].content is", typeof m.content, JSON.stringify(m.content).slice(0,100))
-          }
+        // Log EXACT payload — will appear in Render logs
+        console.log("[GROQ PAYLOAD] count:", safeMessages.length)
+        safeMessages.forEach(function(m, i) {
+          var t = typeof m.content
+          var preview = t === "string" ? m.content.slice(0, 60) : JSON.stringify(m.content).slice(0, 60)
+          console.log("[MSG "+i+"] role:", m.role, "type:", t, "preview:", preview)
+          if (t !== "string") console.error("[FATAL] messages["+i+"].content is NOT a string! value:", JSON.stringify(m.content))
         })
 
         stream = await groq.chat.completions.create({
