@@ -461,7 +461,9 @@ window.addEventListener("load", function() {
     const raw = localStorage.getItem("datta_user")
     if (raw && raw !== "null") user = JSON.parse(raw)
   } catch(e) {}
-  if (token && user) {
+  if (token) {
+    // Redirect if token exists even if user object not cached yet
+    // index.html will fetch user data from server
     window.location.href = "index.html"
   }
 
