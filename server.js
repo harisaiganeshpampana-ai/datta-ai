@@ -1001,7 +1001,10 @@ app.post("/auth/login", async (req, res) => {
     
     const match = await bcrypt.compare(password, user.password)
     if (!match) return res.status(400).json({ error: "Wrong password. Please check and try again." })
-    
+
+    // Send login alert email — fire and forget, never block login
+    sendLoginAlertEmail(user.email, user.username || "User").catch(() => {})
+
     res.json({ 
       token: generateToken(user), 
       user: { id: user._id, username: user.username, email: user.email, emailVerified: user.emailVerified }
@@ -1937,6 +1940,92 @@ IMPORTANT: Answer like a human, NOT like a search engine.
     else res.end()
   }
 })
+
+// ── LOGIN ALERT EMAIL ────────────────────────────────────────────────────────
+async function sendLoginAlertEmail(email, username) {
+  try {
+    if (!process.env.ZOHO_USER || !process.env.ZOHO_PASS) {
+      console.log("[LOGIN EMAIL] Zoho creds missing — skipping")
+      return false
+    }
+
+    const now = new Date().toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      dateStyle: "medium",
+      timeStyle: "short"
+    })
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:32px 0;">
+<tr><td align="center">
+<table width="480" cellpadding="0" cellspacing="0" style="background:#0a0a0a;border-radius:16px;overflow:hidden;max-width:480px;">
+  <!-- Header -->
+  <tr><td style="padding:26px 36px 20px;text-align:center;border-bottom:1px solid #1a1a1a;">
+    <h1 style="margin:0;font-size:22px;color:#00ff88;letter-spacing:3px;">DATTA AI</h1>
+    <p style="margin:5px 0 0;color:#444;font-size:11px;letter-spacing:1px;text-transform:uppercase;">Login Alert</p>
+  </td></tr>
+  <!-- Body -->
+  <tr><td style="padding:28px 36px;">
+    <p style="color:#ccc;font-size:15px;margin:0 0 16px;">Hi <strong style="color:#fff;">${username}</strong>,</p>
+    <p style="color:#aaa;font-size:14px;line-height:1.7;margin:0 0 20px;">
+      You have successfully logged into <strong style="color:#fff;">Datta AI</strong>.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#111;border:1px solid #1e1e1e;border-radius:10px;margin:0 0 20px;">
+      <tr>
+        <td style="padding:12px 16px;border-bottom:1px solid #1a1a1a;">
+          <span style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Time</span><br>
+          <span style="color:#ccc;font-size:13px;margin-top:3px;display:block;">${now} IST</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:12px 16px;">
+          <span style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Account</span><br>
+          <span style="color:#ccc;font-size:13px;margin-top:3px;display:block;">${email}</span>
+        </td>
+      </tr>
+    </table>
+    <p style="color:#555;font-size:12px;margin:0 0 20px;line-height:1.6;">
+      If this wasn't you, please secure your account immediately by changing your password.
+    </p>
+    <a href="https://datta-ai.com" style="display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#00cc6a,#00aaff);border-radius:10px;color:#fff;font-weight:700;font-size:13px;text-decoration:none;letter-spacing:0.5px;">
+      Open Datta AI →
+    </a>
+  </td></tr>
+  <!-- Footer -->
+  <tr><td style="padding:16px 36px;border-top:1px solid #111;text-align:center;">
+    <p style="color:#333;font-size:11px;margin:0;">© 2026 Datta AI &nbsp;·&nbsp; <a href="https://datta-ai.com" style="color:#333;text-decoration:none;">datta-ai.com</a></p>
+    <p style="color:#222;font-size:11px;margin:5px 0 0;">— Datta AI Team</p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>`
+
+    const transporter = nodemailer.createTransport({
+      host: "smtp.zoho.in",
+      port: 465,
+      secure: true,
+      auth: { user: process.env.ZOHO_USER, pass: process.env.ZOHO_PASS }
+    })
+
+    await transporter.sendMail({
+      from: '"Datta AI" <' + process.env.ZOHO_USER + '>',
+      to: email,
+      subject: "Login Alert — Datta AI",
+      html,
+      text: `Hi ${username},\n\nYou have successfully logged into Datta AI at ${now} IST.\n\nIf this wasn't you, secure your account immediately.\n\n— Datta AI Team`
+    })
+
+    console.log("[LOGIN EMAIL] Alert sent to:", email)
+    return true
+  } catch(e) {
+    console.error("[LOGIN EMAIL] Error:", e.message)
+    return false
+  }
+}
 
 // ── EMAIL OTP SYSTEM ─────────────────────────────────────────────────────────
 // POST /auth/send-email-otp — generates 6-digit OTP, sends via Zoho email
