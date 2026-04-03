@@ -62,13 +62,17 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: "20mb" }))
 app.use(express.urlencoded({ extended: true, limit: "20mb" }))
 
-// Catch oversized URLs before they hit nginx
+// Catch oversized URLs — only block genuinely huge requests
 app.use((req, res, next) => {
   const urlLen = (req.url || "").length
-  const hdrs = JSON.stringify(req.headers || {}).length
-  if (urlLen > 4096 || hdrs > 8192) {
-    console.error("[414] URL len:", urlLen, "headers len:", hdrs, "path:", req.url.slice(0, 200))
-    return res.status(414).json({ error: "URI_TOO_LONG", message: "Request too large" })
+  // Log all requests over 2KB URL for debugging
+  if (urlLen > 2048) {
+    console.warn("[LARGE URL]", urlLen, "chars:", req.url.slice(0, 300))
+  }
+  // Only hard-block truly excessive URLs (nginx limit is ~8KB)
+  if (urlLen > 7000) {
+    console.error("[414 BLOCKED] URL len:", urlLen, "path:", req.url.slice(0, 300))
+    return res.status(414).json({ error: "URI_TOO_LONG", message: "Request URL too long" })
   }
   next()
 })
