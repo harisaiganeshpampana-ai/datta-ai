@@ -181,6 +181,25 @@ function safeStr(val) {
   return String(val)
 }
 
+// normalizeMsg — strips Mongoose types, guarantees content is plain string
+// Handles Mongoose DocumentArray, plain array, object, string
+function normalizeMsg(m) {
+  // Serialize through JSON to strip all Mongoose magic (DocumentArray etc)
+  var raw
+  try { raw = JSON.parse(JSON.stringify(m)) } catch(e) { raw = m }
+  var c = raw.content
+  if (typeof c === "string") return { role: raw.role, content: c }
+  if (Array.isArray(c)) {
+    // Extract only text items
+    var text = c.filter(p => p && p.type === "text").map(p => String(p.text || "")).join(" ").trim()
+    return { role: raw.role, content: text || "[image message]" }
+  }
+  if (c && typeof c === "object") {
+    return { role: raw.role, content: c.text || c.content || JSON.stringify(c) }
+  }
+  return { role: raw.role, content: String(c || "") }
+}
+
 app.get("/ping", (req, res) => { res.setHeader("Access-Control-Allow-Origin","*"); res.json({ alive: true, time: new Date().toISOString() }) })
 app.get("/health", (req, res) => res.json({ status: "ok", uptime: process.uptime() }))
 
@@ -1912,34 +1931,27 @@ IMPORTANT: Answer like a human, NOT like a search engine.
     // Write auto-switch notification before streaming
     if (autoSwitchMsg) res.write(autoSwitchMsg)
 
-    // Build messages array
-    // Final safety check — every content field must be a string (except vision arrays)
+    // Build groqMessages — every content MUST be plain string (except vision)
+    // Use normalizeMsg() which JSON-serializes to strip all Mongoose magic types
+    var userMsg_final = (isVisionModel && Array.isArray(finalUserContent))
+      ? finalUserContent   // vision model: keep array
+      : safeStr(finalUserContent) || "Hello"
+
     var groqMessages = [
       { role: "system", content: safeStr(systemWithMemory) },
-      ...history.map(h => ({
-        role: h.role,
-        content: typeof h.content === "string" ? h.content : safeStr(h.content)
-      })),
-      { role: "user", content: (isVisionModel && Array.isArray(finalUserContent))
-          ? finalUserContent
-          : safeStr(finalUserContent) || "Hello" }
+      ...history.map(h => normalizeMsg(h)),
+      { role: "user", content: userMsg_final }
     ]
 
-    // HARD FIX: force every message content to string — no exceptions
-    groqMessages = groqMessages.map((m, i) => {
-      if (i === groqMessages.length - 1 && isVisionModel && Array.isArray(m.content)) {
-        return m // keep last user message as array for vision model only
-      }
-      return {
-        role: m.role,
-        content: typeof m.content === "string"
-          ? m.content
-          : Array.isArray(m.content)
-            ? m.content.filter(p => p && p.type === "text").map(p => p.text || "").join("") || "[image]"
-            : (m.content && typeof m.content === "object")
-              ? (m.content.text || m.content.content || JSON.stringify(m.content))
-              : String(m.content || "")
-      }
+    // Final pass: guarantee every content is string (catches any edge case)
+    groqMessages = groqMessages.map((m, idx) => {
+      var isLastAndVision = idx === groqMessages.length - 1 && isVisionModel && Array.isArray(m.content)
+      if (isLastAndVision) return m
+      if (typeof m.content === "string") return m
+      // Not a string — normalize
+      var fixed = normalizeMsg(m)
+      console.warn("[GROQ NORMALIZE] messages[" + idx + "] was not string, fixed to:", JSON.stringify(fixed.content).slice(0,80))
+      return fixed
     })
 
     var full = ""
