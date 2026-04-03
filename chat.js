@@ -1731,29 +1731,36 @@ document.querySelectorAll(".suggestBtn").forEach(btn => {
   if (!ta) return
 
   function autoResize() {
-    // Must set height to auto first so scrollHeight recalculates correctly
-    ta.style.height = "auto"
-    var maxH = 180
-    if (ta.scrollHeight <= maxH) {
-      ta.style.height     = ta.scrollHeight + "px"
-      ta.style.overflowY  = "hidden"
+    ta.style.height = "auto"           // collapse first so scrollHeight is accurate
+    var sh = ta.scrollHeight
+    var maxH = 200
+    if (sh <= maxH) {
+      ta.style.height    = sh + "px"
+      ta.style.overflowY = "hidden"
     } else {
-      ta.style.height     = maxH + "px"
-      ta.style.overflowY  = "auto"
+      ta.style.height    = maxH + "px"
+      ta.style.overflowY = "auto"
     }
   }
 
-  // Expose so send() can call it after clearing input
+  // Expose so send() can reset height after clearing input
   window.taAutoResize = autoResize
 
-  ta.addEventListener("input", autoResize)
+  // Fire on every keystroke, paste, cut
+  ta.addEventListener("input",   autoResize)
+  ta.addEventListener("paste",   function() { setTimeout(autoResize, 0) })
+  ta.addEventListener("cut",     function() { setTimeout(autoResize, 0) })
 
+  // Enter = send | Shift+Enter = newline
   ta.addEventListener("keydown", function(e) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
       if (!isGenerating) send()
     }
   })
+
+  // Set correct initial height on load
+  autoResize()
 })()
 
 
