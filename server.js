@@ -221,7 +221,7 @@ const UserSchema = new mongoose.Schema({
 })
 const User = mongoose.model("User", UserSchema)
 
-const MessageSchema = new mongoose.Schema({ role: String, content: String })
+const MessageSchema = new mongoose.Schema({ role: String, content: mongoose.Schema.Types.Mixed })
 const ChatSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   title: { type: String, default: "New chat" },
@@ -1484,14 +1484,28 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var historyContentLimit = _isCode ? 800 : msgLen > 2000 ? 400 : msgLen > 1000 ? 800 : 1500
     var history = chat.messages.slice(0, -1).slice(-historyLimit)
       .filter(m => {
-        var c = safeStr(m.content)
+        // Convert any array/object content to string for filtering
+        var raw = m.content
+        var c = typeof raw === "string" ? raw
+              : Array.isArray(raw) ? raw.map(p => p && p.type === "text" ? (p.text||"") : "").join("")
+              : (raw && typeof raw === "object") ? (raw.text || raw.content || "") : String(raw||"")
         if (c.includes("data:image")) return false
+        if (c.includes("data:application")) return false
         return true
       })
-      .map(m => ({
-        role: m.role === "assistant" ? "assistant" : "user",
-        content: safeStr(m.content).substring(0, historyContentLimit)
-      }))
+      .map(m => {
+        var raw = m.content
+        // Force content to plain string — no arrays allowed in Groq text models
+        var str = typeof raw === "string" ? raw
+                : Array.isArray(raw)
+                  ? raw.filter(p => p && p.type === "text").map(p => p.text || "").join(" ").trim() || "[image]"
+                : (raw && typeof raw === "object") ? (raw.text || raw.content || JSON.stringify(raw))
+                : String(raw || "")
+        return {
+          role: m.role === "assistant" ? "assistant" : "user",
+          content: str.substring(0, historyContentLimit)
+        }
+      })
     var isImageFile = file && file.mimetype?.startsWith("image/")
     let userContent
     if (isImageFile) {
