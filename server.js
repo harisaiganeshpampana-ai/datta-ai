@@ -773,6 +773,119 @@ async function sendVerificationEmail(email, token, username) {
   }
 }
 
+// ── ZOHO MAIL — welcome email endpoint ───────────────────────────────────────
+// Env vars needed in Render: ZOHO_USER=admin@datta-ai.com  ZOHO_PASS=yourpassword
+
+// Simple in-memory rate limit: 1 email per IP per 60s
+const _emailRateStore = new Map()
+function _checkEmailRate(ip) {
+  const now = Date.now()
+  const last = _emailRateStore.get(ip) || 0
+  if (now - last < 60000) return false   // blocked
+  _emailRateStore.set(ip, now)
+  return true
+}
+
+function createZohoTransporter() {
+  return nodemailer.createTransport({
+    host: "smtp.zoho.in",
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.ZOHO_USER,
+      pass: process.env.ZOHO_PASS
+    }
+  })
+}
+
+// POST /send — send welcome email to a user
+app.post("/send", async (req, res) => {
+  try {
+    const { name, email } = req.body
+
+    // Input validation
+    if (!name || typeof name !== "string" || name.trim().length < 1) {
+      return res.status(400).json({ error: "Name is required" })
+    }
+    if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return res.status(400).json({ error: "Valid email is required" })
+    }
+
+    const cleanName  = name.trim().slice(0, 100)
+    const cleanEmail = email.trim().toLowerCase()
+
+    // Rate limit by IP
+    const ip = req.ip || req.connection?.remoteAddress || "unknown"
+    if (!_checkEmailRate(ip)) {
+      return res.status(429).json({ error: "Please wait before sending another request" })
+    }
+
+    // Check Zoho credentials
+    if (!process.env.ZOHO_USER || !process.env.ZOHO_PASS) {
+      console.log("[EMAIL] ZOHO_USER or ZOHO_PASS not set in env vars")
+      return res.status(500).json({ error: "Email service not configured" })
+    }
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:40px 0;">
+    <tr><td align="center">
+      <table width="520" cellpadding="0" cellspacing="0" style="background:#0a0a0a;border-radius:16px;overflow:hidden;">
+        <!-- Header -->
+        <tr>
+          <td style="padding:32px 40px 24px;text-align:center;border-bottom:1px solid #1a1a1a;">
+            <h1 style="margin:0;font-size:26px;background:linear-gradient(135deg,#00ff88,#00ccff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px;">DATTA AI</h1>
+            <p style="margin:8px 0 0;color:#555;font-size:12px;letter-spacing:1px;">YOUR INTELLIGENT ASSISTANT</p>
+          </td>
+        </tr>
+        <!-- Body -->
+        <tr>
+          <td style="padding:32px 40px;">
+            <p style="color:#fff;font-size:18px;margin:0 0 16px;">Hi <strong style="color:#00ff88;">${cleanName}</strong>,</p>
+            <p style="color:#aaa;font-size:14px;line-height:1.7;margin:0 0 16px;">
+              Thank you for contacting <strong style="color:#fff;">Datta AI</strong>.<br>
+              We have received your message and will get back to you shortly.
+            </p>
+            <p style="color:#aaa;font-size:14px;line-height:1.7;margin:0 0 24px;">
+              In the meantime, feel free to explore Datta AI and start chatting with our AI assistant.
+            </p>
+            <a href="https://datta-ai.com" style="display:inline-block;padding:13px 28px;background:linear-gradient(135deg,#00cc6a,#00aaff);border-radius:10px;color:#fff;font-weight:700;font-size:14px;text-decoration:none;letter-spacing:0.5px;">
+              Visit Datta AI →
+            </a>
+          </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+          <td style="padding:20px 40px;border-top:1px solid #1a1a1a;text-align:center;">
+            <p style="color:#333;font-size:11px;margin:0;">© 2026 Datta AI · <a href="https://datta-ai.com" style="color:#555;text-decoration:none;">datta-ai.com</a></p>
+            <p style="color:#222;font-size:11px;margin:6px 0 0;">Best regards, <strong style="color:#444;">Datta AI Team</strong></p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+
+    const transporter = createZohoTransporter()
+    await transporter.sendMail({
+      from: '"Datta AI" <' + process.env.ZOHO_USER + '>',
+      to: cleanEmail,
+      subject: "Welcome to Datta AI",
+      html
+    })
+
+    console.log("[EMAIL] Welcome email sent to:", cleanEmail, "name:", cleanName)
+    res.json({ success: true, message: "Email sent successfully" })
+
+  } catch(err) {
+    console.error("[EMAIL] Send error:", err.message)
+    res.status(500).json({ error: "Failed to send email. Please try again." })
+  }
+})
+
 // GOOGLE OAUTH
 if (GoogleStrategy && process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
