@@ -8,97 +8,133 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#0a0a0a;color:#fff;font-family:'Josefin Sans',sans-serif;min-height:100vh}
+body{background:#070810;color:#fff;font-family:'Josefin Sans',sans-serif;min-height:100vh;
+  background-image:radial-gradient(ellipse at 20% 20%,rgba(0,255,136,0.04) 0%,transparent 60%),
+                   radial-gradient(ellipse at 80% 80%,rgba(79,110,247,0.04) 0%,transparent 60%)}
 
-.topBar{display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid #111;position:sticky;top:0;background:#0a0a0a;z-index:100}
-.backBtn{width:34px;height:34px;border-radius:50%;background:#111;border:1px solid #1e1e1e;color:#aaa;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none}
-.pageTitle{font-size:15px;font-weight:600;letter-spacing:2px}
-.curBadge{margin-left:auto;padding:4px 12px;background:#0a1a0a;border:1px solid #00ff8833;border-radius:20px;color:#00ff88;font-size:11px;letter-spacing:1px}
+/* TOPBAR */
+.topBar{display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid #1a1a2e;position:sticky;top:0;background:rgba(7,8,16,0.95);backdrop-filter:blur(12px);z-index:100}
+.backBtn{width:34px;height:34px;border-radius:50%;background:#111;border:1px solid #1e2236;color:#aaa;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;transition:all .2s}
+.backBtn:hover{border-color:#00ff88;color:#00ff88}
+.pageTitle{font-size:15px;font-weight:600;letter-spacing:2px;color:#fff}
+.curBadge{margin-left:auto;padding:5px 14px;background:rgba(0,255,136,0.08);border:1px solid #00ff8840;border-radius:20px;color:#00ff88;font-size:11px;letter-spacing:1px}
 
-/* BILLING TOGGLE */
-.billRow{display:flex;align-items:center;justify-content:center;gap:12px;padding:28px 0 8px}
-.billLbl{font-size:12px;color:#555;cursor:pointer;letter-spacing:1px;text-transform:uppercase}
-.billLbl.on{color:#fff;font-weight:600}
-.track{width:42px;height:22px;background:#1e1e1e;border-radius:22px;position:relative;cursor:pointer;border:1px solid #2a2a2a;transition:background .3s}
-.track.on{background:#00cc6a;border-color:#00cc6a}
-.knob{width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:left .3s}
-.track.on .knob{left:22px}
-.savePill{background:#00ff8818;color:#00ff88;border:1px solid #00ff8833;font-size:10px;padding:3px 8px;border-radius:20px;font-weight:700;letter-spacing:1px}
+/* HERO */
+.hero{text-align:center;padding:48px 20px 24px}
+.hero h1{font-size:clamp(24px,5vw,40px);font-weight:700;letter-spacing:1px;margin-bottom:12px;
+  background:linear-gradient(135deg,#fff 40%,#8892b0);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{font-size:14px;color:#556;line-height:1.6;max-width:500px;margin:0 auto 8px}
+.hero-badge{display:inline-block;padding:4px 14px;background:rgba(0,255,136,0.08);border:1px solid #00ff8830;border-radius:20px;color:#00ff88;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-top:8px}
 
 /* PLANS GRID */
-.plans{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#1a1a1a;max-width:960px;margin:24px auto;border:1px solid #1a1a1a;border-radius:16px;overflow:hidden}
-@media(max-width:1050px){.plans{grid-template-columns:1fr 1fr 1fr;border-radius:12px}} @media(max-width:680px){.plans{grid-template-columns:1fr 1fr}} @media(max-width:420px){.plans{grid-template-columns:1fr}}
-@media(max-width:480px){.plans{grid-template-columns:1fr}}
+.plans{display:grid;gap:16px;max-width:1100px;margin:0 auto;padding:24px 16px 60px;
+  grid-template-columns:repeat(5,1fr)}
+@media(max-width:1050px){.plans{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:680px){.plans{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:440px){.plans{grid-template-columns:1fr;padding:16px}}
 
-.card{background:#0f0f0f;padding:28px 20px;display:flex;flex-direction:column;position:relative}
-.card.pop{background:#0a130a}
+/* CARD */
+.card{
+  background:rgba(13,15,28,0.8);
+  border:1px solid #1e2236;
+  border-radius:20px;
+  padding:24px 20px;
+  display:flex;flex-direction:column;
+  position:relative;overflow:hidden;
+  transition:transform .25s,border-color .25s,box-shadow .25s;
+  backdrop-filter:blur(8px)
+}
+.card::before{
+  content:'';position:absolute;inset:0;border-radius:20px;
+  background:linear-gradient(135deg,rgba(255,255,255,.02) 0%,transparent 60%);
+  pointer-events:none
+}
+.card:hover{transform:translateY(-4px);border-color:#2e3456;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.card.pop{background:rgba(10,18,15,0.9);border-color:#00ff8840}
+.card.pop:hover{border-color:#00ff88;box-shadow:0 20px 60px rgba(0,255,136,.12)}
 
-.popBadge{display:inline-block;background:#00ff88;color:#000;font-size:9px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:1px;margin-bottom:12px;align-self:flex-start}
+/* POPULAR BADGE */
+.popBadge{
+  display:inline-flex;align-items:center;gap:4px;
+  background:linear-gradient(135deg,#00cc6a,#00ff88);
+  color:#000;font-size:9px;font-weight:800;padding:4px 10px;
+  border-radius:20px;letter-spacing:1.5px;text-transform:uppercase;
+  margin-bottom:14px;align-self:flex-start
+}
 
-.cardTop{margin-bottom:20px}
-.cardIcon{font-size:22px;margin-bottom:8px}
-.cardName{font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#fff;margin-bottom:4px}
-.cardDesc{font-size:11px;color:#444;line-height:1.5}
+/* CARD CONTENT */
+.cardIcon{font-size:28px;margin-bottom:10px;display:block}
+.cardName{font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#fff;margin-bottom:4px}
+.cardDesc{font-size:11px;color:#445;line-height:1.5;margin-bottom:16px}
 
-.priceArea{margin-bottom:6px}
-.priceMain{font-size:36px;font-weight:700;line-height:1;color:#fff}
-.priceMain sup{font-size:16px;vertical-align:top;padding-top:6px;color:#888;font-weight:400}
-.priceMain .free-tag{font-size:22px;color:#fff}
-.pricePer{font-size:11px;color:#444;margin-top:4px;letter-spacing:0.5px}
-.priceOld{font-size:11px;color:#333;text-decoration:line-through;margin-top:2px}
+/* PRICE */
+.priceArea{margin-bottom:14px}
+.priceMain{font-size:40px;font-weight:800;line-height:1;color:#fff;display:flex;align-items:flex-start;gap:2px}
+.priceMain sup{font-size:16px;padding-top:8px;color:#556;font-weight:400}
+.priceMain .free-tag{font-size:28px;color:#fff}
+.pricePer{font-size:11px;color:#445;margin-top:5px}
 
-/* KEY STAT - the 3x / 15x / unlimited */
-.keyStat{margin:16px 0;padding:12px 14px;background:#111;border-radius:10px;border-left:3px solid #00ff88}
-.keyStatNum{font-size:22px;font-weight:700;color:#00ff88;line-height:1}
-.keyStatLabel{font-size:11px;color:#555;margin-top:2px;letter-spacing:0.5px}
+/* MSG STAT */
+.keyStat{
+  margin:0 0 16px;padding:10px 12px;
+  background:rgba(255,255,255,.03);
+  border:1px solid #1e2236;border-radius:12px;
+  display:flex;align-items:center;gap:10px
+}
+.keyStatNum{font-size:20px;font-weight:800;line-height:1;min-width:40px}
+.keyStatLabel{font-size:11px;color:#445;line-height:1.3}
 
-.features{list-style:none;display:flex;flex-direction:column;gap:7px;margin-bottom:20px;flex:1}
-.features li{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:#666;line-height:1.4}
-.features li .y{color:#00ff88;flex-shrink:0;font-size:13px}
-.features li .n{color:#2a2a2a;flex-shrink:0;font-size:13px}
-.features li b{color:#aaa;font-weight:500}
+/* FEATURES */
+.features{list-style:none;display:flex;flex-direction:column;gap:8px;margin-bottom:20px;flex:1}
+.features li{display:flex;align-items:flex-start;gap:8px;font-size:11.5px;color:#556;line-height:1.4}
+.features li .y{color:#00ff88;flex-shrink:0;font-size:12px;margin-top:1px}
+.features li .n{color:#2a2a3e;flex-shrink:0;font-size:12px;margin-top:1px}
+.features li b{color:#aab;font-weight:600}
+.features li span:last-child{color:#778}
 
-.planBtn{width:100%;padding:11px;border-radius:10px;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;border:none;font-family:'Josefin Sans',sans-serif;transition:all .2s;text-transform:uppercase;margin-bottom:10px}
-.btn-free{background:#1a1a1a;color:#444;cursor:default}
-.btn-pro{background:#fff;color:#000}
-.btn-pro:hover{background:#eee}
-.btn-max{background:linear-gradient(135deg,#00ff88,#00aaff);color:#000}
-.btn-max:hover{opacity:.9}
-.btn-ultra{background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff}
-.btn-ultra:hover{opacity:.9}
-.btn-current{background:#0a1a0a;border:1px solid #00ff8844;color:#00ff88;cursor:default}
+/* BUTTONS */
+.planBtn{
+  width:100%;padding:12px 16px;border-radius:12px;
+  font-size:12px;font-weight:700;letter-spacing:.5px;
+  cursor:pointer;border:none;font-family:'Josefin Sans',sans-serif;
+  transition:all .2s;margin-top:auto
+}
+.planBtn:not(:disabled):hover{opacity:.88;transform:scale(1.01)}
+.planBtn:not(:disabled):active{transform:scale(.98)}
+.btn-free{background:#111820;color:#445;cursor:default;border:1px solid #1e2236}
+.btn-current{background:rgba(0,255,136,.08);border:1px solid #00ff8840;color:#00ff88;cursor:default}
 
-/* LIMIT INFO LINK */
-.limitLink{font-size:10px;color:#333;text-align:center;cursor:pointer;letter-spacing:0.5px;padding:4px;transition:color .2s}
-.limitLink:hover{color:#00ff88}
+/* DIVIDER LABEL */
+.bill-label{text-align:center;padding:16px 0 4px;font-size:10px;color:#334;letter-spacing:2px;text-transform:uppercase}
 
 /* LIMIT MODAL */
 .limitOverlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:flex-end;justify-content:center;z-index:200;padding:0}
 .limitOverlay.show{display:flex}
-.limitBox{background:#111;border:1px solid #1e1e1e;border-radius:20px 20px 0 0;padding:28px 24px 40px;max-width:480px;width:100%;max-height:85vh;overflow-y:auto}
-.limitClose{float:right;background:none;border:none;color:#555;font-size:20px;cursor:pointer;margin-top:-4px}
+.limitBox{background:#0d0f1c;border:1px solid #1e2236;border-radius:20px 20px 0 0;padding:28px 24px 40px;max-width:480px;width:100%;max-height:85vh;overflow-y:auto}
+.limitClose{float:right;background:none;border:none;color:#445;font-size:20px;cursor:pointer;margin-top:-4px}
 .limitTitle{font-size:16px;font-weight:700;letter-spacing:2px;margin-bottom:4px}
 .limitPlan{font-size:11px;color:#00ff88;letter-spacing:2px;text-transform:uppercase;margin-bottom:20px}
 .limitRow{display:flex;justify-content:space-between;align-items:flex-start;padding:12px 0;border-bottom:1px solid #111}
 .limitRow:last-child{border-bottom:none}
-.limitKey{font-size:12px;color:#555}
+.limitKey{font-size:12px;color:#445}
 .limitVal{font-size:12px;color:#ddd;font-weight:600;text-align:right;max-width:60%}
-.limitSection{font-size:10px;color:#333;letter-spacing:2px;text-transform:uppercase;padding:16px 0 6px;font-weight:700}
 
 /* PAY MODAL */
 .payOverlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:300;padding:20px}
 .payOverlay.show{display:flex}
-.payBox{background:#111;border:1px solid #1e1e1e;border-radius:20px;padding:28px;max-width:340px;width:100%}
+.payBox{background:#0d0f1c;border:1px solid #1e2236;border-radius:20px;padding:28px;max-width:340px;width:100%}
 .payTitle{font-size:15px;font-weight:700;letter-spacing:2px;margin-bottom:16px}
 #payMsg{font-size:12px;color:#00ff88;min-height:18px;margin-bottom:12px}
-.payPlanRow{display:flex;justify-content:space-between;align-items:center;padding:14px;background:#0f0f0f;border:1px solid #1a1a1a;border-radius:12px;margin-bottom:16px}
+.payPlanRow{display:flex;justify-content:space-between;align-items:center;padding:14px;background:#070810;border:1px solid #1e2236;border-radius:12px;margin-bottom:16px}
 .payPlanName{font-size:13px;font-weight:700}
 .payPrice{font-size:20px;font-weight:700;color:#00ff88}
-.payBtn{width:100%;padding:13px;border-radius:10px;border:none;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;font-family:'Josefin Sans',sans-serif;letter-spacing:1px;text-transform:uppercase}
+.payBtn{width:100%;padding:13px;border-radius:10px;border:none;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;font-family:'Josefin Sans',sans-serif;letter-spacing:1px;text-transform:uppercase;transition:opacity .2s}
+.payBtn:hover{opacity:.88}
 .payBtn.rzp{background:#fff;color:#000}
 .payBtn.stripe{background:#635bff;color:#fff}
-.payNote{font-size:10px;color:#333;text-align:center;margin-top:8px}
-.payCancelBtn{width:100%;padding:10px;background:transparent;border:1px solid #1e1e1e;border-radius:10px;color:#444;cursor:pointer;font-size:11px;margin-top:8px;font-family:'Josefin Sans',sans-serif;letter-spacing:1px}
+.payNote{font-size:10px;color:#334;text-align:center;margin-top:8px}
+.payCancelBtn{width:100%;padding:10px;background:transparent;border:1px solid #1e2236;border-radius:10px;color:#445;cursor:pointer;font-size:11px;margin-top:8px;font-family:'Josefin Sans',sans-serif;letter-spacing:1px;transition:border-color .2s}
+.payCancelBtn:hover{border-color:#445}
 </style>
   <link rel="stylesheet" href="layout.css">
   <link rel="stylesheet" href="theme.css">
@@ -117,9 +153,13 @@ body{background:#0a0a0a;color:#fff;font-family:'Josefin Sans',sans-serif;min-hei
   <div class="curBadge" id="curBadge">Free Plan</div>
 </div>
 
-<div style="text-align:center;padding:20px 0 4px;font-size:12px;color:#555;letter-spacing:1px;">MONTHLY BILLING · CANCEL ANYTIME · NO HIDDEN FEES</div>
+<div class="hero">
+  <h1>Simple, honest pricing</h1>
+  <p>Start free. Upgrade when you need more power. Cancel anytime.</p>
+  <div class="hero-badge">Monthly billing · No hidden fees</div>
+</div>
 
-<div class="plans" style="grid-template-columns:repeat(5,1fr);max-width:1100px;">
+<div class="plans">
 
   <!-- FREE -->
   <div class="card" id="card-free">
@@ -133,7 +173,7 @@ body{background:#0a0a0a;color:#fff;font-family:'Josefin Sans',sans-serif;min-hei
       <div class="pricePer">Forever free</div>
     </div>
     <div class="keyStat">
-      <div class="keyStatNum">20</div>
+      <div class="keyStatNum" style="color:#aab;">20</div>
       <div class="keyStatLabel">messages / day</div>
     </div>
     <ul class="features">
