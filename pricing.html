@@ -479,7 +479,7 @@ async function loadPlan(){
   const token = getToken()
   if(!token) return
   try{
-    const res = await fetch(SERVER+"/user/plan?token="+token)
+    const res = await fetch(SERVER+"/user/plan", {headers:{"Authorization":"Bearer "+token}})
     const data = await res.json()
     const plan = data.plan||"free"
     document.getElementById("curBadge").textContent = (names[plan]||plan)+" Plan"
