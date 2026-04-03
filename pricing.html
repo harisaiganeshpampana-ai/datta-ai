@@ -27,7 +27,7 @@ body{background:#0a0a0a;color:#fff;font-family:'Josefin Sans',sans-serif;min-hei
 
 /* PLANS GRID */
 .plans{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#1a1a1a;max-width:960px;margin:24px auto;border:1px solid #1a1a1a;border-radius:16px;overflow:hidden}
-@media(max-width:860px){.plans{grid-template-columns:1fr 1fr;border-radius:12px}}
+@media(max-width:1050px){.plans{grid-template-columns:1fr 1fr 1fr;border-radius:12px}} @media(max-width:680px){.plans{grid-template-columns:1fr 1fr}} @media(max-width:420px){.plans{grid-template-columns:1fr}}
 @media(max-width:480px){.plans{grid-template-columns:1fr}}
 
 .card{background:#0f0f0f;padding:28px 20px;display:flex;flex-direction:column;position:relative}
@@ -117,35 +117,95 @@ body{background:#0a0a0a;color:#fff;font-family:'Josefin Sans',sans-serif;min-hei
   <div class="curBadge" id="curBadge">Free Plan</div>
 </div>
 
-<div style="text-align:center;padding:20px 0 4px;font-size:12px;color:#555;letter-spacing:1px;">MONTHLY BILLING · CANCEL ANYTIME</div>
+<div style="text-align:center;padding:20px 0 4px;font-size:12px;color:#555;letter-spacing:1px;">MONTHLY BILLING · CANCEL ANYTIME · NO HIDDEN FEES</div>
 
-<div class="plans" style="grid-template-columns:repeat(3,1fr);max-width:760px;">
+<div class="plans" style="grid-template-columns:repeat(5,1fr);max-width:1100px;">
 
   <!-- FREE -->
   <div class="card" id="card-free">
     <div class="cardTop">
       <div class="cardIcon">🌱</div>
       <div class="cardName">Free</div>
-      <div class="cardDesc">Start for free, no card needed</div>
+      <div class="cardDesc">Try Datta AI, no card needed</div>
     </div>
     <div class="priceArea">
       <div class="priceMain"><sup>₹</sup><span class="free-tag">0</span></div>
       <div class="pricePer">Forever free</div>
     </div>
     <div class="keyStat">
-      <div class="keyStatNum">40</div>
-      <div class="keyStatLabel">messages per day</div>
+      <div class="keyStatNum">20</div>
+      <div class="keyStatLabel">messages / day</div>
     </div>
     <ul class="features">
       <li><span class="y">✓</span><span>Datta 2.1 model</span></li>
-      <li><span class="y">✓</span><span>40 messages / day</span></li>
+      <li><span class="y">✓</span><span>20 messages / day</span></li>
       <li><span class="y">✓</span><span>Web search</span></li>
-      <li><span class="y">✓</span><span>File &amp; PDF upload</span></li>
       <li><span class="y">✓</span><span>Voice assistant</span></li>
-      <li><span class="n">🔒</span><span>Datta 5.4 model</span></li>
+      <li><span class="n">🔒</span><span>Datta 5.4</span></li>
       <li><span class="n">✗</span><span>Priority responses</span></li>
+      <li><span class="n">✗</span><span>PDF upload</span></li>
     </ul>
     <button class="planBtn btn-free" id="btn-free" disabled>Current Plan</button>
+  </div>
+
+  <!-- STARTER -->
+  <div class="card" id="card-starter" style="border-color:#00ff8833;">
+    <div class="cardTop">
+      <div class="cardIcon">🚀</div>
+      <div class="cardName">Starter</div>
+      <div class="cardDesc">More messages, same simplicity</div>
+    </div>
+    <div class="priceArea">
+      <div class="priceMain"><sup>₹</sup><span>49</span></div>
+      <div class="pricePer">/month</div>
+    </div>
+    <div class="keyStat">
+      <div class="keyStatNum" style="color:#00ff88;">50</div>
+      <div class="keyStatLabel">messages / day</div>
+    </div>
+    <ul class="features">
+      <li><span class="y">✓</span><span>Datta 2.1 model</span></li>
+      <li><span class="y">✓</span><span><b>50 messages / day</b></span></li>
+      <li><span class="y">✓</span><span>Web search</span></li>
+      <li><span class="y">✓</span><span>Voice assistant</span></li>
+      <li><span class="y">✓</span><span>Faster than Free</span></li>
+      <li><span class="n">🔒</span><span>Datta 5.4</span></li>
+      <li><span class="n">✗</span><span>PDF upload</span></li>
+    </ul>
+    <button class="planBtn" id="btn-starter" onclick="selectPlan('starter','monthly',49)"
+      style="background:linear-gradient(135deg,#00cc6a,#00ff88);color:#000;font-weight:700;">
+      Get Starter — ₹49/mo
+    </button>
+  </div>
+
+  <!-- STANDARD -->
+  <div class="card" id="card-standard" style="border-color:#0077ff44;">
+    <div class="cardTop">
+      <div class="cardIcon">⭐</div>
+      <div class="cardName">Standard</div>
+      <div class="cardDesc">Unlock advanced AI + PDF</div>
+    </div>
+    <div class="priceArea">
+      <div class="priceMain"><sup>₹</sup><span>149</span></div>
+      <div class="pricePer">/month</div>
+    </div>
+    <div class="keyStat">
+      <div class="keyStatNum" style="color:#0077ff;">120</div>
+      <div class="keyStatLabel">messages / day</div>
+    </div>
+    <ul class="features">
+      <li><span class="y">✓</span><span>Datta 2.1 model</span></li>
+      <li><span class="y">✓</span><span><b>Datta 5.4</b> (limited)</span></li>
+      <li><span class="y">✓</span><span><b>120 messages / day</b></span></li>
+      <li><span class="y">✓</span><span>Web search</span></li>
+      <li><span class="y">✓</span><span><b>PDF upload</b></span></li>
+      <li><span class="y">✓</span><span>Voice assistant</span></li>
+      <li><span class="n">✗</span><span>Priority responses</span></li>
+    </ul>
+    <button class="planBtn" id="btn-standard" onclick="selectPlan('standard','monthly',149)"
+      style="background:linear-gradient(135deg,#0055ff,#0099ff);color:#fff;font-weight:700;">
+      Get Standard — ₹149/mo
+    </button>
   </div>
 
   <!-- PLUS -->
@@ -154,7 +214,7 @@ body{background:#0a0a0a;color:#fff;font-family:'Josefin Sans',sans-serif;min-hei
     <div class="cardTop">
       <div class="cardIcon">⚡</div>
       <div class="cardName">Plus</div>
-      <div class="cardDesc">Best for daily power users</div>
+      <div class="cardDesc">Full power for daily users</div>
     </div>
     <div class="priceArea">
       <div class="priceMain"><sup>₹</sup><span>299</span></div>
@@ -162,15 +222,15 @@ body{background:#0a0a0a;color:#fff;font-family:'Josefin Sans',sans-serif;min-hei
     </div>
     <div class="keyStat">
       <div class="keyStatNum" style="color:#ff8800;">300</div>
-      <div class="keyStatLabel">messages per day</div>
+      <div class="keyStatLabel">messages / day</div>
     </div>
     <ul class="features">
       <li><span class="y">✓</span><span>Datta 2.1 model</span></li>
-      <li><span class="y">✓</span><span><b>Datta 5.4 model</b> unlocked</span></li>
+      <li><span class="y">✓</span><span><b>Full Datta 5.4</b> access</span></li>
       <li><span class="y">✓</span><span><b>300 messages / day</b></span></li>
-      <li><span class="y">✓</span><span>Web search &amp; PDF upload</span></li>
+      <li><span class="y">✓</span><span>Web search + PDF</span></li>
       <li><span class="y">✓</span><span>Voice assistant</span></li>
-      <li><span class="y">✓</span><span>Priority responses</span></li>
+      <li><span class="y">✓</span><span><b>Priority responses</b></span></li>
     </ul>
     <button class="planBtn" id="btn-plus" onclick="selectPlan('plus','monthly',299)"
       style="background:linear-gradient(135deg,#ff8800,#ffaa00);color:#000;font-weight:700;">
@@ -183,7 +243,7 @@ body{background:#0a0a0a;color:#fff;font-family:'Josefin Sans',sans-serif;min-hei
     <div class="cardTop">
       <div class="cardIcon">🔥</div>
       <div class="cardName">Pro</div>
-      <div class="cardDesc">For professionals who need maximum</div>
+      <div class="cardDesc">Maximum power, highest priority</div>
     </div>
     <div class="priceArea">
       <div class="priceMain"><sup>₹</sup><span>799</span></div>
@@ -191,15 +251,15 @@ body{background:#0a0a0a;color:#fff;font-family:'Josefin Sans',sans-serif;min-hei
     </div>
     <div class="keyStat">
       <div class="keyStatNum" style="color:#ff4444;">1000</div>
-      <div class="keyStatLabel">messages per day</div>
+      <div class="keyStatLabel">messages / day</div>
     </div>
     <ul class="features">
       <li><span class="y">✓</span><span>Datta 2.1 model</span></li>
-      <li><span class="y">✓</span><span><b>Datta 5.4 model</b> unlocked</span></li>
+      <li><span class="y">✓</span><span><b>Full Datta 5.4</b> access</span></li>
       <li><span class="y">✓</span><span><b>1000 messages / day</b></span></li>
-      <li><span class="y">✓</span><span>Web search &amp; PDF upload</span></li>
+      <li><span class="y">✓</span><span>Web search + PDF</span></li>
       <li><span class="y">✓</span><span>Voice assistant</span></li>
-      <li><span class="y">✓</span><span><b>Highest priority</b> responses</span></li>
+      <li><span class="y">✓</span><span><b>Highest priority</b></span></li>
     </ul>
     <button class="planBtn btn-pro" id="btn-pro" onclick="selectPlan('pro','monthly',799)"
       style="background:linear-gradient(135deg,#ff4444,#ff8800);color:#fff;font-weight:700;">
@@ -238,14 +298,14 @@ body{background:#0a0a0a;color:#fff;font-family:'Josefin Sans',sans-serif;min-hei
 <script>
 const SERVER = "https://datta-ai-server.onrender.com"
 let isYearly = false, selectedPlan = null
-const M = { free:0, plus:299, pro:799 }  // 3 plans only
+const M = { free:0, starter:49, standard:149, plus:299, pro:799 }
 const Y = { 
   mini:   1910,
   pro:    9590,
   max:    23990,
   ultramax: 47990
 }
-const names = { free:"Free", plus:"Plus", pro:"Pro" }
+const names = { free:"Free", starter:"Starter", standard:"Standard", plus:"Plus", pro:"Pro" }
 
 const limits = {
   mini: {
