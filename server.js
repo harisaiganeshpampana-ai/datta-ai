@@ -1403,7 +1403,15 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
 
     let chat = null
     if (chatId && chatId !== "" && chatId !== "null" && chatId !== "undefined") {
-      try { chat = await Chat.findOne({ _id: chatId, userId }) } catch(e) { chat = null }
+      try { chat = await Chat.findOne({ _id: chatId, userId }).lean() } catch(e) { chat = null }
+      // .lean() returns plain JS objects — no Mongoose DocumentArray issues
+      // BUT lean() makes it read-only, so we need to save differently
+      if (chat) {
+        // Re-fetch as full document for saving later
+        chat._leanMessages = chat.messages || []
+        var fullChat = await Chat.findOne({ _id: chatId, userId })
+        if (fullChat) { chat = fullChat; chat._leanMessages = fullChat.messages.map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : (Array.isArray(m.content) ? m.content.filter(p=>p&&p.type==='text').map(p=>p.text||'').join(' ') : String(m.content||'')) })) }
+      }
     }
     if (!chat) {
       const greetings = ["hi","hii","hello","hey","helo","hai","sup","yo"]
@@ -1501,30 +1509,34 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Reduce history when message itself is long
     var msgLen = (message || "").length
     var historyContentLimit = _isCode ? 800 : msgLen > 2000 ? 400 : msgLen > 1000 ? 800 : 1500
-    var history = chat.messages.slice(0, -1).slice(-historyLimit)
-      .filter(m => {
-        // Convert any array/object content to string for filtering
-        var raw = m.content
-        var c = typeof raw === "string" ? raw
-              : Array.isArray(raw) ? raw.map(p => p && p.type === "text" ? (p.text||"") : "").join("")
-              : (raw && typeof raw === "object") ? (raw.text || raw.content || "") : String(raw||"")
-        if (c.includes("data:image")) return false
-        if (c.includes("data:application")) return false
-        return true
-      })
+    // Use plain JS messages (stripped of Mongoose types)
+    var rawMessages = (chat._leanMessages || chat.messages || [])
+    var history = rawMessages.slice(0, -1).slice(-historyLimit)
       .map(m => {
+        // Convert content to plain string no matter what type it is
         var raw = m.content
-        // Force content to plain string — no arrays allowed in Groq text models
-        var str = typeof raw === "string" ? raw
-                : Array.isArray(raw)
-                  ? raw.filter(p => p && p.type === "text").map(p => p.text || "").join(" ").trim() || "[image]"
-                : (raw && typeof raw === "object") ? (raw.text || raw.content || JSON.stringify(raw))
-                : String(raw || "")
+        var str
+        if (typeof raw === "string") {
+          str = raw
+        } else {
+          // Serialize to kill all Mongoose types, then extract text
+          try {
+            var plain = JSON.parse(JSON.stringify(raw))
+            if (Array.isArray(plain)) {
+              str = plain.filter(p => p && p.type === "text").map(p => String(p.text||"")).join(" ").trim() || "[image]"
+            } else if (plain && typeof plain === "object") {
+              str = plain.text || plain.content || JSON.stringify(plain)
+            } else {
+              str = String(plain || "")
+            }
+          } catch(e) { str = "[message]" }
+        }
         return {
           role: m.role === "assistant" ? "assistant" : "user",
           content: str.substring(0, historyContentLimit)
         }
       })
+      .filter(m => !m.content.includes("data:image") && !m.content.includes("data:application"))
     var isImageFile = file && file.mimetype?.startsWith("image/")
     let userContent
     if (isImageFile) {
