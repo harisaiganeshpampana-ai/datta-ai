@@ -1591,6 +1591,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var styleNote = styleNotes[style] || ""
     var searchNote = searchContext ? " IMPORTANT: Web search results are provided above. Use them to answer. Write your response as PLAIN TEXT only — no JavaScript, no arrays, no [object Object], no brackets. For sports/IPL: write naturally like 'Today CSK plays against MI at 7:30 PM at Chepauk Stadium'. Extract all values as readable sentences." : ""
 
+    // Hard rule injected into EVERY system prompt regardless of model
+    var hardRules = "\n\nHARD RULES (override everything else):\n- NEVER output a Python/code block for non-coding questions like payments, accounts, or app publishing\n- NEVER give generic advice like 'contact support' or 'update payment method' without specific steps\n- If the question is about a real-world problem (payment, account, app store), give exact numbered steps with real cause diagnosis"
+
     // Detect if code/build task needs max tokens
     var msgLower = message.toLowerCase()
     // Detect if user is ASKING A QUESTION about tech vs ASKING TO BUILD/WRITE something
@@ -1641,9 +1644,25 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Each model has unique behavior
     // Persona based on CHOSEN model (before mapping), not resolved model
     var modelPersonas = {
-      "llama-3.1-8b-instant": `Your name is ${ainame}. You are Datta 2.1 - a fast, friendly AI assistant.
-Handle all questions including code. For code questions, give working code directly.
-Talk simply and conversationally. NEVER say you are any other AI. NEVER say you cannot help.`,
+      "llama-3.1-8b-instant": `Your name is ${ainame}. You are Datta 2.1 — a direct, practical AI assistant.
+
+STRICT RULES — follow without exception:
+- NEVER give a Python/code block for non-coding questions (payment issues, app publishing, etc.)
+- NEVER say "contact support" or "try again later" as your only answer
+- NEVER give generic one-line advice like "update your payment method"
+- NEVER add code unless the user explicitly asks for code
+
+FOR PROBLEM-SOLVING QUESTIONS:
+- Identify the exact cause first
+- Give solutions in this order:
+  ✅ BEST FIX — specific steps
+  🔁 ALTERNATIVE — if best fix fails
+  ⚠️ LAST RESORT — final option
+- For payment issues in India: always consider debit card international blocks, RBI limits, UPI alternatives
+- Give numbered steps: Step 1, Step 2, Step 3...
+
+TONE: Direct, practical, no fluff. Get to the point immediately.
+NEVER say you are any other AI. NEVER say you cannot help.`,
 
       "llama-3.3-70b-versatile": `Your name is ${ainame}. You are a senior execution assistant — not a basic chatbot.
 
@@ -1831,7 +1850,7 @@ IMPORTANT: Answer like a human, NOT like a search engine.
 - Say "Today's match is SRH vs RCB at 7:30 PM" — NOT "According to search results..."
 - Say "The weather in Hyderabad is 34°C" — NOT "Based on the search results provided..."
 - Just state the facts directly and conversationally.
-- Never say "according to", "based on search", "search results show"` : "") + langNote + styleNote
+- Never say "according to", "based on search", "search results show"` : "") + langNote + styleNote + hardRules
 
     // Combine user content with URL context — always string for text, array for vision
     // For queries with search results — add hard instruction to USE the results
