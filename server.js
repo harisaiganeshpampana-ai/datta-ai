@@ -1478,7 +1478,10 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var _msgLow = (message || "").toLowerCase()
     var _isCode = ["build","create","write","make","code","website","app","fix","debug","html","python","javascript"].some(k => _msgLow.includes(k))
     var historyLimit = _isCode ? 2 : 4
-    var historyContentLimit = _isCode ? 800 : 1500
+    // Context limit — large page pastes cause 413/context_length errors
+    // Reduce history when message itself is long
+    var msgLen = (message || "").length
+    var historyContentLimit = _isCode ? 800 : msgLen > 2000 ? 400 : msgLen > 1000 ? 800 : 1500
     var history = chat.messages.slice(0, -1).slice(-historyLimit)
       .filter(m => {
         var c = safeStr(m.content)
@@ -1642,7 +1645,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // - Explain/general: 2500 (prose needs more tokens to be complete)
     // - Simple chat: 1500
     var isSimpleChat = !isExplainQuestion && !isCodeTask && !isLargeTask
-    var maxCodingTok = isLargeTask ? 4096 : isCodeTask ? 3000 : isExplainQuestion ? 2500 : 1500
+    // Reduce output tokens when input is very large to avoid context overflow
+    var inputIsLarge = (message || "").length > 3000
+    var maxCodingTok = isLargeTask ? 4096 : isCodeTask ? 3000 : isExplainQuestion ? (inputIsLarge ? 1500 : 2500) : 1500
     var maxTok = isImageFile ? 2048 : maxCodingTok
 
     // Use browser's actual local time sent from frontend
@@ -1988,10 +1993,24 @@ IMPORTANT: Answer like a human, NOT like a search engine.
       }
     }
 
-    // If all attempts failed
+    // If all attempts failed — write specific error to help debugging
     if (lastError && full === "") {
-      var errMsg = "I'm having trouble connecting right now. Please try again in a few seconds."
-      res.write(errMsg)
+      var groqStatus = lastError.status || lastError.statusCode || 0
+      var errMsg = ""
+      if (groqStatus === 429) {
+        errMsg = "⚠️ Datta AI is getting too many requests right now. Please wait 10 seconds and try again."
+      } else if (groqStatus === 413 || (lastError.message || "").includes("too large")) {
+        errMsg = "⚠️ Your message or context is too large. Try starting a new chat or send a shorter message."
+      } else if (groqStatus === 401 || groqStatus === 403) {
+        errMsg = "⚠️ AI service configuration error. Please contact support."
+        console.error("[GROQ] Auth error — check GROQ_API_KEY in Render env vars")
+      } else if (groqStatus === 503 || groqStatus === 500) {
+        errMsg = "⚠️ AI service is temporarily unavailable. Please try again in a moment."
+      } else {
+        errMsg = "⚠️ Could not get a response. Please try again."
+        console.error("[GROQ] Final error:", groqStatus, lastError.message?.slice(0,200))
+      }
+      if (!res.writableEnded) res.write(errMsg)
       full = errMsg
     }
 
