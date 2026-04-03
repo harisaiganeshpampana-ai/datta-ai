@@ -1128,7 +1128,11 @@ app.post("/auth/verify-otp", async (req, res) => {
 app.get("/auth/google", passport.authenticate("google", { scope: ["profile","email"] }))
 app.get("/auth/google/callback",
   passport.authenticate("google", { session: false, failureRedirect: FRONTEND_URL + "/login.html?error=google_failed" }),
-  (req, res) => { res.redirect(FRONTEND_URL + "/login.html?token=" + req.user.token + "&user=" + encodeURIComponent(JSON.stringify(req.user.user))) }
+  (req, res) => {
+    // Send login alert email — fire and forget
+    sendLoginAlertEmail(req.user.user.email, req.user.user.username || "User").catch(() => {})
+    res.redirect(FRONTEND_URL + "/login.html?token=" + req.user.token + "&user=" + encodeURIComponent(JSON.stringify(req.user.user)))
+  }
 )
 
 app.post("/auth/update-username", authMiddleware, async (req, res) => {
