@@ -2009,9 +2009,44 @@ IMPORTANT: Answer like a human, NOT like a search engine.
 
       try {
         console.log("[GROQ] attempt", attempt+1, "model:", tryModel, "tokens:", tryTokens)
+
+        // FINAL SAFETY: stringify entire groqMessages, re-parse, rebuild
+        // This is the nuclear option — guarantees plain JS with no Mongoose types
+        var safeMessages = JSON.parse(JSON.stringify(groqMessages, function(key, val) {
+          if (val === null || val === undefined) return ""
+          if (typeof val === "string") return val
+          if (typeof val === "number" || typeof val === "boolean") return val
+          if (Array.isArray(val)) return val
+          if (typeof val === "object") return val
+          return String(val)
+        }))
+
+        // Force every content to string one final time
+        safeMessages = safeMessages.map(function(m, idx) {
+          var c = m.content
+          if (typeof c === "string") return m
+          if (Array.isArray(c)) {
+            // Vision last message — keep as-is
+            if (idx === safeMessages.length - 1 && isVisionModel) return m
+            var txt = c.filter(function(p){ return p && p.type === "text" }).map(function(p){ return p.text || "" }).join(" ").trim()
+            console.log("[FORCE STRING] messages["+idx+"] array→string:", txt.slice(0,80))
+            return { role: m.role, content: txt || "[image]" }
+          }
+          var str = c ? String(c) : ""
+          console.log("[FORCE STRING] messages["+idx+"] "+typeof c+"→string:", str.slice(0,80))
+          return { role: m.role, content: str }
+        })
+
+        // Verify — log any remaining non-strings
+        safeMessages.forEach(function(m, idx) {
+          if (typeof m.content !== "string") {
+            console.error("[BUG STILL] messages["+idx+"].content is", typeof m.content, JSON.stringify(m.content).slice(0,100))
+          }
+        })
+
         stream = await groq.chat.completions.create({
           model: tryModel,
-          messages: groqMessages,
+          messages: safeMessages,
           max_tokens: tryTokens,
           temperature: 0.7,
           stream: true
