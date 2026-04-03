@@ -299,16 +299,18 @@ const MemorySchema = new mongoose.Schema({
 const Memory = mongoose.model("Memory", MemorySchema)
 
 const planLimits = {
-  // ── NEW PLANS ──────────────────────────────────────────────
-  free:      { messages: 40,     resetHours: 24, models: ["d21"],       price: 0 },
-  plus:      { messages: 300,    resetHours: 24, models: ["d21","d54"], price: 299 },
-  pro:       { messages: 1000,   resetHours: 24, models: ["d21","d54"], price: 799 },
-  // ── LEGACY ALIASES (keep for existing subscribers) ─────────
-  mini:      { messages: 200,    resetHours: 24, models: ["d21","d54"], price: 199 },
-  max:       { messages: 2000,   resetHours: 24, models: ["d21","d54"], price: 1999 },
-  ultramax:  { messages: 999999, resetHours: 0,  models: ["all"],       price: 0 },
-  basic:     { messages: 500,    resetHours: 24, models: ["d21","d54"], price: 499 },
-  enterprise:{ messages: 999999, resetHours: 0,  models: ["all"],       price: 0 }
+  // ── ACTIVE PLANS (5-tier ladder) ───────────────────────────
+  free:     { messages: 20,     resetHours: 24, models: ["d21"],        price: 0,   priority: 0 },
+  starter:  { messages: 50,     resetHours: 24, models: ["d21"],        price: 49,  priority: 1 },
+  standard: { messages: 120,    resetHours: 24, models: ["d21","d54"],  price: 149, priority: 2 },
+  plus:     { messages: 300,    resetHours: 24, models: ["d21","d54"],  price: 299, priority: 3 },
+  pro:      { messages: 1000,   resetHours: 24, models: ["d21","d54"],  price: 799, priority: 4 },
+  // ── LEGACY (keep for existing subscribers) ─────────────────
+  mini:     { messages: 200,    resetHours: 24, models: ["d21","d54"],  price: 199, priority: 2 },
+  max:      { messages: 2000,   resetHours: 24, models: ["d21","d54"],  price: 1999,priority: 4 },
+  ultramax: { messages: 999999, resetHours: 0,  models: ["all"],        price: 0,   priority: 5 },
+  basic:    { messages: 500,    resetHours: 24, models: ["d21","d54"],  price: 499, priority: 3 },
+  enterprise:{messages: 999999, resetHours: 0,  models: ["all"],        price: 0,   priority: 5 }
 }
 const rateLimitStore = {}
 
@@ -1364,8 +1366,12 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
         const allowedModels = planConfig.models
         // Check if model is allowed (skip if plan allows "all")
         if (!allowedModels.includes("all") && !allowedModels.includes(requestedModelKey)) {
-          const upgradeTo = requestedModelKey === "d54" ? "Plus" : "Pro"
-          cleanupRequest()  // release lock before returning
+          // Determine minimum plan needed
+          let upgradeTo = "Plus"
+          if (requestedModelKey === "d54") {
+            upgradeTo = userPlan === "free" || userPlan === "starter" ? "Standard" : "Plus"
+          }
+          cleanupRequest()
           return res.status(403).json({
             error: "MODEL_LOCKED",
             message: `Upgrade to ${upgradeTo} plan to use this model.`,
@@ -2522,7 +2528,7 @@ function isAdmin(req) {
 }
 
 // Plan prices for revenue calculation
-const PLAN_PRICES = { free:0, plus:299, pro:799, mini:199, max:1999, ultramax:0, basic:499, enterprise:0 }
+const PLAN_PRICES = { free:0, starter:49, standard:149, plus:299, pro:799, mini:199, max:1999, ultramax:0, basic:499, enterprise:0 }
 
 app.get("/admin/stats", authMiddleware, async (req, res) => {
   if (!isAdmin(req)) return res.status(403).json({ error: "Not authorized" })
