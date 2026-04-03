@@ -181,23 +181,36 @@ function safeStr(val) {
   return String(val)
 }
 
-// normalizeMsg — strips Mongoose types, guarantees content is plain string
-// Handles Mongoose DocumentArray, plain array, object, string
+// FIXED normalizeMsg — strips Mongoose types, guarantees content is plain string
 function normalizeMsg(m) {
-  // Serialize through JSON to strip all Mongoose magic (DocumentArray etc)
-  var raw
-  try { raw = JSON.parse(JSON.stringify(m)) } catch(e) { raw = m }
-  var c = raw.content
-  if (typeof c === "string") return { role: raw.role, content: c }
+  if (!m) return { role: "user", content: "" };
+  
+  let raw;
+  try {
+    raw = JSON.parse(JSON.stringify(m));
+  } catch(e) {
+    raw = { role: m.role, content: "" };
+  }
+  
+  let c = raw.content;
+  
+  if (typeof c === "string") return { role: raw.role, content: c };
+  
   if (Array.isArray(c)) {
-    // Extract only text items
-    var text = c.filter(p => p && p.type === "text").map(p => String(p.text || "")).join(" ").trim()
-    return { role: raw.role, content: text || "[image message]" }
+    const textParts = c
+      .filter(p => p && (p.type === "text" || typeof p === "string"))
+      .map(p => typeof p === "string" ? p : (p.text || ""))
+      .join(" ")
+      .trim();
+    return { role: raw.role, content: textParts || "[message]" };
   }
+  
   if (c && typeof c === "object") {
-    return { role: raw.role, content: c.text || c.content || JSON.stringify(c) }
+    const text = c.text || c.content || "";
+    return { role: raw.role, content: String(text) };
   }
-  return { role: raw.role, content: String(c || "") }
+  
+  return { role: raw.role, content: String(c || "") };
 }
 
 app.get("/ping", (req, res) => { res.setHeader("Access-Control-Allow-Origin","*"); res.json({ alive: true, time: new Date().toISOString() }) })
@@ -881,8 +894,8 @@ app.post("/send", async (req, res) => {
           <td style="padding:32px 40px 24px;text-align:center;border-bottom:1px solid #1a1a1a;">
             <h1 style="margin:0;font-size:26px;background:linear-gradient(135deg,#00ff88,#00ccff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px;">DATTA AI</h1>
             <p style="margin:8px 0 0;color:#555;font-size:12px;letter-spacing:1px;">YOUR INTELLIGENT ASSISTANT</p>
-          </td>
-        </tr>
+           </td>
+         </tr>
         <!-- Body -->
         <tr>
           <td style="padding:32px 40px;">
@@ -897,17 +910,18 @@ app.post("/send", async (req, res) => {
             <a href="https://datta-ai.com" style="display:inline-block;padding:13px 28px;background:linear-gradient(135deg,#00cc6a,#00aaff);border-radius:10px;color:#fff;font-weight:700;font-size:14px;text-decoration:none;letter-spacing:0.5px;">
               Visit Datta AI →
             </a>
-          </td>
-        </tr>
+           </td>
+         </tr>
         <!-- Footer -->
         <tr>
           <td style="padding:20px 40px;border-top:1px solid #1a1a1a;text-align:center;">
             <p style="color:#333;font-size:11px;margin:0;">© 2026 Datta AI · <a href="https://datta-ai.com" style="color:#555;text-decoration:none;">datta-ai.com</a></p>
             <p style="color:#222;font-size:11px;margin:6px 0 0;">Best regards, <strong style="color:#444;">Datta AI Team</strong></p>
-          </td>
-        </tr>
+           </td>
+         </tr>
       </table>
-    </td></tr>
+     </td>
+    </tr>
   </table>
 </body>
 </html>`
@@ -1971,28 +1985,52 @@ IMPORTANT: Answer like a human, NOT like a search engine.
     // Write auto-switch notification before streaming
     if (autoSwitchMsg) res.write(autoSwitchMsg)
 
-    // Build groqMessages — every content MUST be plain string (except vision)
-    // Use normalizeMsg() which JSON-serializes to strip all Mongoose magic types
+    // Build groqMessages — EVERY content MUST be plain string for non-vision models
     var userMsg_final = (isVisionModel && Array.isArray(finalUserContent))
-      ? finalUserContent   // vision model: keep array
-      : safeStr(finalUserContent) || "Hello"
+      ? finalUserContent
+      : safeStr(finalUserContent)
 
     var groqMessages = [
       { role: "system", content: safeStr(systemWithMemory) },
       ...history.map(h => normalizeMsg(h)),
-      { role: "user", content: userMsg_final }
+      { role: "user", content: (() => {
+        // FORCE to string for all non-vision models
+        if (!isVisionModel) {
+          if (typeof userMsg_final === "string") return userMsg_final;
+          if (Array.isArray(userMsg_final)) {
+            // Extract text parts only
+            const textParts = userMsg_final
+              .filter(p => p && p.type === "text")
+              .map(p => p.text || "")
+              .join(" ");
+            return textParts.trim() || "[image message]";
+          }
+          return String(userMsg_final || "");
+        }
+        // Vision model — keep array as-is
+        return userMsg_final;
+      })() }
     ]
 
-    // Final pass: guarantee every content is string (catches any edge case)
-    groqMessages = groqMessages.map((m, idx) => {
-      var isLastAndVision = idx === groqMessages.length - 1 && isVisionModel && Array.isArray(m.content)
-      if (isLastAndVision) return m
-      if (typeof m.content === "string") return m
-      // Not a string — normalize
-      var fixed = normalizeMsg(m)
-      console.warn("[GROQ NORMALIZE] messages[" + idx + "] was not string, fixed to:", JSON.stringify(fixed.content).slice(0,80))
-      return fixed
-    })
+    // FINAL SAFETY PASS: convert any non-string content in non-vision messages
+    if (!isVisionModel) {
+      groqMessages = groqMessages.map((m, idx) => {
+        if (typeof m.content === "string") return m;
+        console.warn(`[FIX] messages[${idx}].content was ${typeof m.content}, converting to string`);
+        let fixedContent = "";
+        if (Array.isArray(m.content)) {
+          fixedContent = m.content
+            .filter(p => p && p.type === "text")
+            .map(p => p.text || "")
+            .join(" ")
+            .trim();
+          if (!fixedContent) fixedContent = "[image message]";
+        } else {
+          fixedContent = String(m.content || "");
+        }
+        return { role: m.role, content: fixedContent };
+      });
+    }
 
     var full = ""
     var lastError = null
@@ -2084,6 +2122,15 @@ IMPORTANT: Answer like a human, NOT like a search engine.
           console.log("[MSG "+i+"] role:", m.role, "type:", t, "preview:", preview)
           if (t !== "string") console.error("[FATAL] messages["+i+"].content is NOT a string! value:", JSON.stringify(m.content))
         })
+
+        // FINAL VALIDATION before sending to Groq - CRITICAL FIX
+        safeMessages.forEach((msg, i) => {
+          if (typeof msg.content !== "string") {
+            console.error(`[FATAL] messages[${i}].content is ${typeof msg.content}`, JSON.stringify(msg.content).slice(0, 200));
+            // Emergency fix - convert to string
+            msg.content = String(msg.content || "");
+          }
+        });
 
         stream = await groq.chat.completions.create({
           model: tryModel,
@@ -2230,7 +2277,7 @@ async function sendLoginAlertEmail(email, username) {
   <tr><td style="padding:26px 36px 20px;text-align:center;border-bottom:1px solid #1a1a1a;">
     <h1 style="margin:0;font-size:22px;color:#00ff88;letter-spacing:3px;">DATTA AI</h1>
     <p style="margin:5px 0 0;color:#444;font-size:11px;letter-spacing:1px;text-transform:uppercase;">Login Alert</p>
-  </td></tr>
+   </tr>
   <!-- Body -->
   <tr><td style="padding:28px 36px;">
     <p style="color:#ccc;font-size:15px;margin:0 0 16px;">Hi <strong style="color:#fff;">${username}</strong>,</p>
@@ -2242,27 +2289,25 @@ async function sendLoginAlertEmail(email, username) {
         <td style="padding:12px 16px;border-bottom:1px solid #1a1a1a;">
           <span style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Time</span><br>
           <span style="color:#ccc;font-size:13px;margin-top:3px;display:block;">${now} IST</span>
-        </td>
-      </tr>
+         </tr>
       <tr>
         <td style="padding:12px 16px;">
           <span style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Account</span><br>
           <span style="color:#ccc;font-size:13px;margin-top:3px;display:block;">${email}</span>
-        </td>
-      </tr>
-    </table>
+         </tr>
+     </table>
     <p style="color:#555;font-size:12px;margin:0 0 20px;line-height:1.6;">
       If this wasn't you, please secure your account immediately by changing your password.
     </p>
     <a href="https://datta-ai.com" style="display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#00cc6a,#00aaff);border-radius:10px;color:#fff;font-weight:700;font-size:13px;text-decoration:none;letter-spacing:0.5px;">
       Open Datta AI →
     </a>
-  </td></tr>
+   </tr>
   <!-- Footer -->
   <tr><td style="padding:16px 36px;border-top:1px solid #111;text-align:center;">
     <p style="color:#333;font-size:11px;margin:0;">© 2026 Datta AI &nbsp;·&nbsp; <a href="https://datta-ai.com" style="color:#333;text-decoration:none;">datta-ai.com</a></p>
     <p style="color:#222;font-size:11px;margin:5px 0 0;">— Datta AI Team</p>
-  </td></tr>
+   </tr>
 </table>
 </td></tr>
 </table>
@@ -2312,8 +2357,8 @@ app.post("/auth/send-email-otp", async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
 
     // Hash OTP with crypto — never store plain
-    const crypto = await import("crypto")
-    const hash = crypto.createHash("sha256").update(otp + cleanEmail).digest("hex")
+    const cryptoModule = await import("crypto")
+    const hash = cryptoModule.createHash("sha256").update(otp + cleanEmail).digest("hex")
 
     emailOtpStore[cleanEmail] = {
       hash,
@@ -2340,7 +2385,7 @@ app.post("/auth/send-email-otp", async (req, res) => {
   <tr><td style="padding:28px 36px 20px;text-align:center;border-bottom:1px solid #1a1a1a;">
     <h1 style="margin:0;font-size:24px;color:#00ff88;letter-spacing:3px;">DATTA AI</h1>
     <p style="margin:6px 0 0;color:#444;font-size:11px;letter-spacing:1px;text-transform:uppercase;">Security Code</p>
-  </td></tr>
+   </tr>
   <tr><td style="padding:28px 36px;">
     <p style="color:#ccc;font-size:15px;margin:0 0 20px;line-height:1.6;">Your one-time password to sign in to <strong style="color:#fff;">Datta AI</strong>:</p>
     <div style="background:#111;border:1px solid #222;border-radius:12px;padding:20px;text-align:center;margin:0 0 20px;">
@@ -2348,10 +2393,10 @@ app.post("/auth/send-email-otp", async (req, res) => {
       <p style="color:#444;font-size:11px;margin:10px 0 0;">Expires in <strong style="color:#666;">5 minutes</strong></p>
     </div>
     <p style="color:#555;font-size:12px;margin:0;line-height:1.6;">If you did not request this code, you can safely ignore this email. Do not share this code with anyone.</p>
-  </td></tr>
+   </tr>
   <tr><td style="padding:16px 36px 24px;border-top:1px solid #111;text-align:center;">
     <p style="color:#333;font-size:11px;margin:0;">© 2026 Datta AI &nbsp;·&nbsp; <a href="${trackLink}" style="color:#444;text-decoration:none;">datta-ai.com</a></p>
-  </td></tr>
+   </tr>
 </table>
 </td></tr>
 </table>
@@ -2405,8 +2450,8 @@ app.post("/auth/verify-email-otp", async (req, res) => {
       return res.status(429).json({ error: "Too many attempts. Request a new OTP." })
     }
 
-    const crypto = await import("crypto")
-    const hash = crypto.createHash("sha256").update(otp + cleanEmail).digest("hex")
+    const cryptoModule = await import("crypto")
+    const hash = cryptoModule.createHash("sha256").update(otp + cleanEmail).digest("hex")
 
     if (hash !== stored.hash) {
       const left = 5 - stored.attempts
