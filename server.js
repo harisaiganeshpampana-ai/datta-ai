@@ -1872,12 +1872,18 @@ IMPORTANT: Answer like a human, NOT like a search engine.
 - Just state the facts directly and conversationally.
 - Never say "according to", "based on search", "search results show"` : "") + langNote + styleNote + hardRules
 
-    // Combine user content with URL context — always string for text, array for vision
-    // For queries with search results — add hard instruction to USE the results
-    // finalUserContent: user message only (search context is in system prompt)
-    var finalUserContent = typeof userContent === "string"
-      ? userContent + safeStr(urlContext)
-      : userContent  // keep array for vision model
+    // Build final user content — MUST be string for text models, array only for vision
+    var isVisionModel = (model === "meta-llama/llama-4-scout-17b-16e-instruct")
+    var finalUserContent
+    if (isVisionModel && Array.isArray(userContent)) {
+      // Vision model — keep array format
+      finalUserContent = userContent
+    } else {
+      // Text model — ALWAYS convert to string, never send array
+      var textContent = safeStr(userContent)  // safeStr handles arrays → string
+      var urlStr = safeStr(urlContext)
+      finalUserContent = (textContent + urlStr).trim() || "Hello"
+    }
 
     // Trim memoryContext to save tokens
     var trimmedMemory = (memoryContext || "").substring(0, 300)
@@ -1893,10 +1899,16 @@ IMPORTANT: Answer like a human, NOT like a search engine.
     if (autoSwitchMsg) res.write(autoSwitchMsg)
 
     // Build messages array
+    // Final safety check — every content field must be a string (except vision arrays)
     var groqMessages = [
-      { role: "system", content: systemWithMemory },
-      ...history,
-      { role: "user", content: finalUserContent }
+      { role: "system", content: safeStr(systemWithMemory) },
+      ...history.map(h => ({
+        role: h.role,
+        content: typeof h.content === "string" ? h.content : safeStr(h.content)
+      })),
+      { role: "user", content: (isVisionModel && Array.isArray(finalUserContent))
+          ? finalUserContent
+          : safeStr(finalUserContent) || "Hello" }
     ]
 
     var full = ""
