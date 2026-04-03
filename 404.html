@@ -15,16 +15,17 @@ body { background:#0a0a0a; color:white; font-family:system-ui,sans-serif; min-he
 .btn2 { display:inline-block; padding:12px 28px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:20px; color:#aaa; font-size:15px; text-decoration:none; margin:6px; }
 </style>
 <script>
-// Only redirect if not a real page
-var path = window.location.pathname
-if (path === "/datta-ai/404.html" || path === "/404.html") {
+// Redirect to home — NO query params to prevent 414 loop
+// Guard: if already redirecting (has ?redirect= in URL) do nothing
+var search = window.location.search
+if (search.includes("redirect=")) {
+  // Already in a redirect loop — stop immediately, just show 404 page
+  console.warn("Redirect loop detected — stopping")
+} else {
+  // Simple redirect to home, no URL appending
   setTimeout(function() {
     window.location.href = "/datta-ai/"
-  }, 3000)
-} else {
-  // GitHub Pages SPA fix - redirect to index with hash
-  var redirect = window.location.href
-  window.location.href = "/datta-ai/?redirect=" + encodeURIComponent(redirect)
+  }, 2000)
 }
 </script>
 </head>
