@@ -591,7 +591,8 @@ function getUser() {
   return null
 }
 
-// AUTH CHECK
+// AUTH CHECK — only redirect if no token at all
+// If token exists but user object missing, stay on page (user data loads async)
 if (!getToken()) {
   window.location.href = "login.html"
 }
@@ -4053,25 +4054,37 @@ window.selectInputModel = selectInputModel
 // Check if user can access premium models
 function checkModelAccess(key) {
   const plan = localStorage.getItem("datta_plan") || "free"
-  const freeOnlyPlans = ["free"]
 
-  if (key === "d54" && freeOnlyPlans.includes(plan)) {
-    // Show upgrade popup
+  // Plans that cannot use Datta 5.4 at all
+  const noD54Plans = ["free", "starter"]
+  // Plans with limited Datta 5.4 (standard) — allowed but show note
+  const limitedD54Plans = ["standard"]
+
+  if (key === "d54" && noD54Plans.includes(plan)) {
     closeModelDropdown()
     const overlay = document.createElement("div")
     overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;"
     overlay.innerHTML = `
-      <div style="background:var(--bg2);border:1px solid rgba(255,136,0,0.3);border-radius:20px;padding:28px 24px;max-width:320px;width:100%;text-align:center;">
+      <div style="background:var(--bg2);border:1px solid rgba(255,136,0,0.3);border-radius:20px;padding:28px 24px;max-width:340px;width:100%;text-align:center;">
         <div style="font-size:36px;margin-bottom:12px;">🔒</div>
-        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">Datta 5.4 requires Plus</div>
-        <div style="font-size:13px;color:var(--text3);margin-bottom:6px;">You're on the <strong>Free plan</strong> (40 msgs/day).</div>
-        <div style="font-size:13px;color:var(--text2);margin-bottom:20px;">Upgrade to <strong>Plus ₹299/mo</strong> for Datta 5.4, 300 msgs/day and priority responses.</div>
-        <a href="pricing.html" style="display:block;padding:12px;background:linear-gradient(135deg,#ff8800,#ffaa00);border-radius:12px;color:#000;font-weight:700;text-decoration:none;margin-bottom:10px;font-size:14px;">Upgrade to Plus — ₹299/mo</a>
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">Datta 5.4 Locked</div>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:14px;">Your current plan doesn't include Datta 5.4.</div>
+        <div style="background:var(--bg3);border-radius:12px;padding:14px;margin-bottom:16px;text-align:left;">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:8px;">UPGRADE OPTIONS</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:6px;">⭐ <strong>Standard ₹149/mo</strong> — Datta 5.4 limited</div>
+          <div style="font-size:13px;color:var(--text2);">⚡ <strong>Plus ₹299/mo</strong> — Full Datta 5.4 + Priority</div>
+        </div>
+        <a href="pricing.html" style="display:block;padding:12px;background:linear-gradient(135deg,#ff8800,#ffaa00);border-radius:12px;color:#000;font-weight:700;text-decoration:none;margin-bottom:10px;font-size:14px;">View Plans →</a>
         <button onclick="this.closest('div').parentElement.remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;font-family:inherit;">Maybe later</button>
       </div>`
     overlay.onclick = e => { if (e.target === overlay) overlay.remove() }
     document.body.appendChild(overlay)
     return
+  }
+
+  if (key === "d54" && limitedD54Plans.includes(plan)) {
+    // Standard plan — allow but show limited notice as toast
+    showToast("Datta 5.4 (limited) — upgrade to Plus for full access")
   }
 
   // Has access — select the model
