@@ -162,6 +162,25 @@ async function callGemini(messages, systemPrompt, maxTokens, res) {
   try {
     await mongoose.connect(process.env.MONGO_URI)
     console.log("MongoDB connected")
+    // Startup migration: fix all stored array content -> plain strings
+    try {
+      const badChats = await Chat.find({ 'messages.content': { $type: 4 } }).limit(1000).lean()
+      let fixCount = 0
+      for (const chat of badChats) {
+        const newMsgs = chat.messages.map(function(m) {
+          if (!Array.isArray(m.content)) return m
+          var txt = m.content
+            .filter(function(p) { return p && p.type === 'text' && p.text })
+            .map(function(p) { return String(p.text) })
+            .join(' ').trim()
+          return { role: m.role, content: txt || '[image]' }
+        })
+        await Chat.updateOne({ _id: chat._id }, { $set: { messages: newMsgs } })
+        fixCount++
+      }
+      if (fixCount > 0) console.log('[MIGRATION] Cleaned', fixCount, 'chats with array message content')
+      else console.log('[MIGRATION] No array content found - all clean')
+    } catch(migErr) { console.log('[MIGRATION] Error:', migErr.message) }
   } catch(e) {
     // Async DB errors caught here — not possible to catch with sync try/catch
     // because mongoose.connect() returns a Promise
