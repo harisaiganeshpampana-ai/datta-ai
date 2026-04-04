@@ -695,6 +695,22 @@ body.sb-collapsed .input-area {
   padding: 6px 0 0;
 }
 
+/* Fixed disclaimer bar above input — desktop */
+#aiDisclaimer {
+  bottom: 2px;
+}
+@media (max-width: 767px) {
+  /* On mobile input is at bottom:10px, height ~70px → disclaimer sits at ~84px */
+  #aiDisclaimer {
+    bottom: 82px !important;
+    font-size: 9px;
+    white-space: normal;
+    max-width: 85%;
+    text-align: center;
+    line-height: 1.4;
+  }
+}
+
 /* Scroll down button */
 #scrollDownBtn {
   position: absolute; bottom: 180px; right: 20px;
@@ -1826,12 +1842,23 @@ body.is-generating .input-wrap {
     </div>
 
   </div><!-- /.input-area -->
-  <div style="position:fixed;bottom:4px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--text3);text-align:center;pointer-events:none;z-index:499;white-space:nowrap;">
+  <div id="aiDisclaimer" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);font-size:10px;color:var(--text3);text-align:center;pointer-events:none;z-index:499;white-space:nowrap;padding-bottom:env(safe-area-inset-bottom,0px);">
     Datta AI can make mistakes. Verify important info. &nbsp;·&nbsp; <a href="privacy.html" style="color:var(--text3);text-decoration:none;pointer-events:all;">Privacy Policy</a>
   </div>
 
 </div><!-- /.main -->
 </div><!-- /.app-body -->
+
+<script>
+// Register service worker for PWA / Play Store
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(r => console.log('[SW] registered:', r.scope))
+      .catch(e => console.log('[SW] failed:', e))
+  })
+}
+</script>
 
 <!-- ── SIDEBAR OVERLAY (mobile) ── -->
 <div id="sb-overlay" onclick="toggleSidebar()"></div>
