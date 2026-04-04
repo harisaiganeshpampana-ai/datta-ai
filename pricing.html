@@ -371,6 +371,36 @@ body {
       </div>
     </div>
 
+    <!-- ULTRA MINI — one-time top-up -->
+    <div class="plan-card" id="card-ultra-mini" style="border-color:rgba(245,158,11,0.35);background:linear-gradient(180deg,rgba(245,158,11,0.06) 0%,var(--bg2) 60%);">
+      <div class="pop-badge" style="background:rgba(245,158,11,0.15);color:#f59e0b;border-color:rgba(245,158,11,0.3);">⚡ Instant Top-up</div>
+      <div class="plan-left">
+        <span class="plan-icon">⚡</span>
+        <div class="plan-name">Ultra Mini</div>
+      </div>
+      <div class="plan-center">
+        <div class="plan-desc">+15 extra messages, valid 24 hours</div>
+        <div class="plan-stat">
+          <span class="plan-stat-num" style="color:#f59e0b;">+15</span>
+          <span class="plan-stat-label">msgs today</span>
+        </div>
+        <ul class="plan-features">
+          <li><span class="y">✓</span><span>15 bonus messages</span></li>
+          <li><span class="y">✓</span><span>Valid for 24 hours</span></li>
+          <li><span class="y">✓</span><span>One-time purchase</span></li>
+          <li><span class="y">✓</span><span>No subscription</span></li>
+        </ul>
+        <div id="ultraMiniTimer" style="font-size:11px;color:#f59e0b;margin-top:4px;display:none;"></div>
+      </div>
+      <div class="plan-right">
+        <div class="plan-price"><span class="sym">₹</span><span class="amt" style="color:#f59e0b;">10</span></div>
+        <div class="plan-period">one-time</div>
+        <button class="plan-btn" id="btn-ultra-mini"
+          style="background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#000;font-weight:700;"
+          onclick="buyUltraMini()">Get +15 Msgs</button>
+      </div>
+    </div>
+
     <!-- STARTER -->
     <div class="plan-card" id="card-starter">
       <div class="plan-left">
@@ -516,11 +546,23 @@ body {
 <script>
 const SERVER = "https://datta-ai-server.onrender.com"
 let isYearly = false, selectedPlan = null
-const M = { free:0, starter:49, standard:149, plus:299, pro:799 }
+const M = { free:0, "ultra-mini":10, starter:49, standard:149, plus:299, pro:799 }
 const Y = { mini:1910, pro:9590, max:23990, ultramax:47990 }
-const names = { free:"Free", starter:"Starter", standard:"Standard", plus:"Plus", pro:"Pro" }
+const names = { free:"Free", "ultra-mini":"Ultra Mini", starter:"Starter", standard:"Standard", plus:"Plus", pro:"Pro" }
 
 const limits = {
+  "ultra-mini": {
+    name: "Ultra Mini",
+    rows: [
+      { k:"Bonus messages", v:"+15 messages" },
+      { k:"Valid for", v:"24 hours" },
+      { k:"Type", v:"One-time purchase" },
+      { k:"Price", v:"₹10 only" },
+      { k:"Models", v:"Datta 2.1" },
+      { k:"Web search", v:"✓ Included" },
+    ],
+    note: "Instantly adds 15 messages to your daily limit. Reverts to your base plan after 24 hours."
+  },
   free: {
     name: "Free Plan",
     rows: [
@@ -629,6 +671,72 @@ function selectPlan(plan, period, amount) {
   document.getElementById("payOverlay").classList.add("show")
 }
 
+// ── ULTRA MINI PURCHASE ──
+async function buyUltraMini() {
+  const token = getToken()
+  if (!token) { window.location.href = "login.html"; return }
+  const btn = document.getElementById("btn-ultra-mini")
+  if (btn) { btn.textContent = "Processing..."; btn.disabled = true }
+  try {
+    const res = await fetch(SERVER + "/payment/ultra-mini-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }
+    })
+    const data = await res.json()
+    if (!data.orderId) {
+      alert(data.error || "Could not create order. Please try again.")
+      if (btn) { btn.textContent = "Get +15 Msgs"; btn.disabled = false }
+      return
+    }
+    const rzp = new Razorpay({
+      key: data.keyId,
+      amount: 1000,
+      currency: "INR",
+      name: "Datta AI",
+      description: "Ultra Mini — +15 Messages (24h)",
+      order_id: data.orderId,
+      prefill: { name: getUser().name || "", email: getUser().email || "" },
+      theme: { color: "#f59e0b" },
+      handler: async function(response) {
+        if (btn) btn.textContent = "Verifying..."
+        const vRes = await fetch(SERVER + "/payment/ultra-mini-verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+          body: JSON.stringify(response)
+        })
+        const vData = await vRes.json()
+        if (vData.success) {
+          localStorage.setItem("datta_plan", "ultra-mini")
+          if (btn) { btn.textContent = "✓ Activated!"; btn.style.background = "linear-gradient(135deg,#10a37f,#00cc6a)" }
+          // Show success toast
+          showUltraMiniSuccess(vData.expiresAt)
+          loadPlan()
+        } else {
+          alert(vData.error || "Verification failed. Contact support.")
+          if (btn) { btn.textContent = "Get +15 Msgs"; btn.disabled = false }
+        }
+      },
+      modal: { ondismiss: function() {
+        if (btn) { btn.textContent = "Get +15 Msgs"; btn.disabled = false }
+      }}
+    })
+    rzp.open()
+  } catch(e) {
+    alert("Something went wrong. Please try again.")
+    if (btn) { btn.textContent = "Get +15 Msgs"; btn.disabled = false }
+  }
+}
+
+function showUltraMiniSuccess(expiresAt) {
+  const div = document.createElement("div")
+  div.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#10a37f;color:#fff;padding:14px 24px;border-radius:14px;font-size:14px;font-weight:600;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.4);text-align:center;max-width:90%;"
+  const expiry = expiresAt ? new Date(expiresAt).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"}) : "24h"
+  div.textContent = "✓ You now have +15 extra messages! Valid until " + expiry
+  document.body.appendChild(div)
+  setTimeout(() => div.remove(), 5000)
+}
+
+// ── STANDARD RAZORPAY PAYMENT ──
 async function payRazorpay(){
   if(!selectedPlan) return
   const token = getToken()
@@ -641,19 +749,17 @@ async function payRazorpay(){
     const period = window._selectedPlanPeriod || "monthly"
     const res = await fetch(SERVER+"/payment/razorpay-order",{
       method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({plan:selectedPlan,amount,period,token})
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+      body:JSON.stringify({plan:selectedPlan,amount,period})
     })
     const data = await res.json()
     if(!data.orderId){ msg.textContent = data.error||"Failed"; msg.style.color="#ef4444"; return }
-    const keyRes = await fetch(SERVER+"/payment/razorpay-key")
-    const keyData = await keyRes.json()
     const rzp = new Razorpay({
-      key: keyData.key,
+      key: data.keyId,
       amount: amount*100,
       currency: "INR",
       name: "Datta AI",
-      description: names[selectedPlan]+" Plan",
+      description: (names[selectedPlan]||selectedPlan)+" Plan",
       order_id: data.orderId,
       prefill:{ name:getUser().name||"", email:getUser().email||"" },
       theme:{ color:"#10a37f" },
@@ -661,24 +767,25 @@ async function payRazorpay(){
         msg.textContent = "Verifying..."
         const vRes = await fetch(SERVER+"/payment/razorpay-verify",{
           method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({...response,plan:selectedPlan,token})
+          headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+          body:JSON.stringify({...response,plan:selectedPlan,period})
         })
         const vData = await vRes.json()
         if(vData.success){
-          msg.textContent = "✓ Plan activated!"
+          msg.textContent = "✓ "+names[selectedPlan]+" plan activated!"
           msg.style.color="#10a37f"
           localStorage.setItem("datta_plan", selectedPlan)
-          setTimeout(()=>{ closePay(); loadPlan() },1500)
+          setTimeout(()=>{ closePay(); loadPlan() },1800)
         } else {
-          msg.textContent = "Verification failed"
+          msg.textContent = vData.error || "Verification failed"
           msg.style.color="#ef4444"
         }
-      }
+      },
+      modal: { ondismiss: function(){ msg.textContent="" } }
     })
     rzp.open()
     msg.textContent = ""
-  }catch(e){ msg.textContent = e.message; msg.style.color="#ef4444" }
+  }catch(e){ msg.textContent = "Error: "+e.message; msg.style.color="#ef4444" }
 }
 
 function payStripe(){
@@ -688,15 +795,15 @@ function payStripe(){
 
 async function loadPlan(){
   const token = getToken()
-  // Try backend first, fall back to localStorage
   let plan = localStorage.getItem("datta_plan") || "free"
+  let subData = null
 
   if(token){
     try{
       const res = await fetch(SERVER+"/payment/subscription", {headers:{"Authorization":"Bearer "+token}})
-      const data = await res.json()
-      if(data.plan){
-        plan = data.plan
+      subData = await res.json()
+      if(subData.plan){
+        plan = subData.plan
         localStorage.setItem("datta_plan", plan)
       }
     }catch(e){}
@@ -705,45 +812,64 @@ async function loadPlan(){
   // Update badge
   document.getElementById("curBadge").textContent = (names[plan]||plan) + " Plan"
 
+  // Ultra-mini expiry timer
+  const timerEl = document.getElementById("ultraMiniTimer")
+  if(plan === "ultra-mini" && subData && subData.ultraMiniExpiry) {
+    const expiry = new Date(subData.ultraMiniExpiry)
+    function updateTimer() {
+      const now = new Date()
+      const diff = expiry - now
+      if(diff <= 0) { if(timerEl) timerEl.style.display="none"; return }
+      const h = Math.floor(diff/3600000)
+      const m = Math.floor((diff%3600000)/60000)
+      if(timerEl) {
+        timerEl.textContent = "⏱ Expires in " + h + "h " + m + "m"
+        timerEl.style.display = "block"
+      }
+    }
+    updateTimer()
+    setInterval(updateTimer, 60000)
+  }
+
   // Update all cards
-  const allPlans = ["free","starter","standard","plus","pro"]
+  const allPlans = ["free","ultra-mini","starter","standard","plus","pro"]
   allPlans.forEach(p => {
     const card = document.getElementById("card-"+p)
     const btn  = document.getElementById("btn-"+p)
     if(!card || !btn) return
 
-    // Remove any existing badge
-    const existingBadges = card.querySelectorAll(".current-badge, .pop-badge")
-    if(p !== "plus") existingBadges.forEach(b => b.remove())
+    // Remove existing current badge (preserve pop-badge on plus/ultra-mini)
+    card.querySelectorAll(".current-badge").forEach(b => b.remove())
 
     if(p === plan){
       card.classList.add("current-plan")
-      // Add current badge at top
-      if(!card.querySelector(".current-badge")){
-        const badge = document.createElement("div")
-        badge.className = "current-badge"
-        badge.textContent = "✓ Your plan"
-        card.insertBefore(badge, card.firstChild)
-      }
-      btn.textContent = "Your current plan"
+      const badge = document.createElement("div")
+      badge.className = "current-badge"
+      badge.style.cssText = "font-size:10px;font-weight:700;color:#10a37f;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;"
+      badge.textContent = "✓ Your plan"
+      card.insertBefore(badge, card.firstChild)
+      btn.textContent = "Current plan"
+      btn.style.cssText = ""
       btn.className = "plan-btn btn-current"
       btn.disabled = true
       btn.onclick = null
     } else {
       card.classList.remove("current-plan")
       const btnMap = {
-        free:"Free Plan", starter:"Get Starter",
-        standard:"Get Standard", plus:"Get Plus", pro:"Get Pro"
+        free:"Free Plan", "ultra-mini":"Get +15 Msgs",
+        starter:"Get Starter", standard:"Get Standard", plus:"Get Plus", pro:"Get Pro"
       }
       const clsMap = {
-        free:"btn-free", starter:"btn-starter",
-        standard:"btn-standard", plus:"btn-plus", pro:"btn-pro"
+        free:"btn-free", "ultra-mini":"",
+        starter:"btn-starter", standard:"btn-standard", plus:"btn-plus", pro:"btn-pro"
       }
-      btn.textContent = btnMap[p]
+      btn.textContent = btnMap[p] || ("Get "+p)
       btn.className = "plan-btn " + clsMap[p]
       btn.disabled = p === "free"
+      btn.style.cssText = p === "ultra-mini" ? "background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#000;font-weight:700;" : ""
       if(p !== "free"){
-        btn.onclick = () => selectPlan(p, "monthly", M[p])
+        if(p === "ultra-mini") btn.onclick = buyUltraMini
+        else btn.onclick = () => selectPlan(p, "monthly", M[p])
       }
     }
   })
