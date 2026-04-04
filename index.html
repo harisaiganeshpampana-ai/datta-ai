@@ -10,14 +10,14 @@
 <meta property="og:title" content="Datta AI – Free ChatGPT Alternative">
 <meta property="og:description" content="Free AI chatbot for coding, research & chat.">
 <meta property="og:url" content="https://datta-ai.com/">
-<meta property="og:image" content="https://datta-ai.com/logo.png">
-<link rel="icon" href="logo.png" type="image/png">
+<meta property="og:image" content="https://datta-ai.com/logo.jpeg">
+<link rel="icon" href="logo.jpeg" type="image/jpeg">
 <link rel="manifest" href="manifest.json">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Datta AI">
 <meta name="theme-color" content="#0d0d0f">
-<link rel="apple-touch-icon" href="logo.png">
+<link rel="apple-touch-icon" href="logo.jpeg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -351,7 +351,7 @@ body.sb-collapsed .input-area {
   overflow-y: auto; overflow-x: hidden;
   display: flex; flex-direction: column;
   align-items: center;
-  padding: 24px 0 160px;
+  padding: 24px 0 180px;
 }
 .chat-scroll::-webkit-scrollbar { width: 5px; }
 .chat-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
@@ -1104,8 +1104,8 @@ body.notes-open .input-area {
     bottom: 10px !important;
   }
   .msg-row { max-width: 100%; padding: 4px 10px; }
-  .chat-scroll { padding-bottom: 140px; }
-  .welcome-screen { padding: 0 14px 150px; }
+  .chat-scroll { padding-bottom: 180px; }
+  .welcome-screen { padding: 0 14px 190px; }
   .sugg-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .theme-switch { display: none !important; }
   .notes-panel { display: none !important; }  /* still hidden on mobile - open via button */
@@ -1641,10 +1641,9 @@ body.is-generating .input-wrap {
     </button>
     <div class="tb-logo">
       <div class="tb-logo-icon">
-        <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
-          <path d="M9 2L15 6V12L9 16L3 12V6L9 2Z" fill="rgba(255,255,255,0.95)"/>
-          <path d="M9 6L12 8V12L9 14L6 12V8L9 6Z" fill="rgba(13,13,15,0.65)"/>
-        </svg>
+        <img src="./logo.jpeg" alt="Datta AI"
+          style="width:100%;height:100%;object-fit:cover;border-radius:8px;"
+          onerror="this.style.display='none';this.parentElement.innerHTML='<svg width=\'14\' height=\'14\' viewBox=\'0 0 18 18\' fill=\'none\'><path d=\'M9 2L15 6V12L9 16L3 12V6L9 2Z\' fill=\'rgba(255,255,255,0.95)\'/><path d=\'M9 6L12 8V12L9 14L6 12V8L9 6Z\' fill=\'rgba(13,13,15,0.65)\'/></svg>'">
       </div>
       Datta AI
     </div>
