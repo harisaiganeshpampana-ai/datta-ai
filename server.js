@@ -1699,7 +1699,21 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       Simple: " Use very simple language, avoid jargon, explain everything clearly.",
       Balanced: ""
     }
-    var langNote = (language && language !== "English" && language !== "Auto") ? " Always respond in " + language + "." : " Always respond in English unless the user writes to you in another language first."
+    // Auto-detect language from user's actual message Unicode script
+    function detectInputLanguage(text) {
+      if (/[ఀ-౿]/.test(text)) return "Telugu"   // Telugu script
+      if (/[ऀ-ॿ]/.test(text)) return "Hindi"    // Devanagari / Hindi
+      if (/[஀-௿]/.test(text)) return "Tamil"    // Tamil script
+      if (/[ಀ-೿]/.test(text)) return "Kannada"  // Kannada script
+      if (/[਀-੿]/.test(text)) return "Punjabi"  // Gurmukhi / Punjabi
+      if (/[ঀ-৿]/.test(text)) return "Bengali"  // Bengali script
+      return null  // no Indian script detected
+    }
+    var autoDetectedLang = detectInputLanguage(message)
+    var effectiveLang = autoDetectedLang || language
+    var langNote = (effectiveLang && effectiveLang !== "English" && effectiveLang !== "Auto")
+      ? " IMPORTANT: The user is writing in " + effectiveLang + ". You MUST respond entirely in " + effectiveLang + ". Do not switch to English."
+      : " Always respond in English unless the user writes to you in another language first — if they do, match their language exactly."
     var styleNote = styleNotes[style] || ""
     var searchNote = searchContext ? " IMPORTANT: Web search results are provided above. Use them to answer. Write your response as PLAIN TEXT only — no JavaScript, no arrays, no [object Object], no brackets. For sports/IPL: write naturally like 'Today CSK plays against MI at 7:30 PM at Chepauk Stadium'. Extract all values as readable sentences." : ""
 
@@ -1712,7 +1726,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Detect pure explanation queries (theory questions)
     // BUT exclude problem-solving queries — "what should I do", "why is it failing", "how do I fix"
     var isProblemSolving = ["what should","how do i fix","how to fix","not working","failed","error","issue","problem","can't","cannot","won't","doesn't work","payment failed","showing error","how do i","how can i","steps to","guide me","help me"].some(k => msgLower.includes(k))
-    var isExplainQuestion = !isProblemSolving && ["what is","what are","what does","what do","why is","why does","why do","how does","how do","explain","tell me about","define","describe","difference between","vs ","versus","when to use","should i use","pros and cons","advantages","disadvantages","history of","who created","who made"].some(k => msgLower.includes(k))
+    var isNarrativeRequest = ["chapter","story","charitra","katha","purana","granth","scripture","mahabharata","ramayana","gita","quran","bible","guru","stotra","shloka","narrate","tell me the story","explain the story","summarize chapter","write a story","once upon"].some(k => msgLower.includes(k))
+    var isExplainQuestion = !isProblemSolving && (isNarrativeRequest || ["what is","what are","what does","what do","why is","why does","why do","how does","how do","explain","tell me about","define","describe","difference between","vs ","versus","when to use","should i use","pros and cons","advantages","disadvantages","history of","who created","who made"].some(k => msgLower.includes(k)))
     var isCodeTask = !isExplainQuestion && ["build","create","write","make","code","website","app","script","program","fix","debug","update","improve","implement","develop","generate","show me how to","give me code","example code","sample code","snippet"].some(k => msgLower.includes(k))
     
     // Auto-switch to Datta 5.4 for coding if user is on 2.1, 4.2, or 4.8
@@ -1885,11 +1900,14 @@ NEVER say you are Claude, GPT, or any other AI. You are ${ainame}.`,
 
     var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + (isExplainQuestion ? `
 
-You are answering a theory/explanation question. The user wants to UNDERSTAND a concept.
-- Give a clear explanation in plain English with examples
+You are answering an explanation, story, or narrative request. Rules:
+- Give a FULL, DETAILED response — never cut short
+- Narrate stories, chapters, and religious texts completely and respectfully
+- Explain concepts step by step with examples
+- For scriptures (Guru Charitra, Gita, Ramayana, etc.) — narrate fully in the requested language
 - Do NOT give code unless explicitly asked
-- Do NOT give Python scripts for non-coding questions
 - Do NOT give setup instructions unless asked
+- If it is a story or chapter, narrate it as a proper story — not bullet points
 ` : isCodeTask ? (isNodeTask ? `
 
 You are answering a Node.js / backend question. Follow these rules with ZERO exceptions.
@@ -1955,8 +1973,13 @@ When writing code:
 4. Never truncate. Finish all code completely.
 5. After code, give 1 line explaining how to run it.
 `) : `
-Be friendly, concise, and helpful. Never write [object Object]. Use bullet points for lists.
-For sports/IPL: state match details directly from search results.
+Be friendly, helpful, and human-like. Never write [object Object].
+- Give full, complete answers — not just bullet points
+- If user asks a simple question, give a clear direct answer with a brief explanation
+- For sports/IPL: state match details directly and conversationally
+- Accept imperfect spelling — always understand and respond helpfully
+- If user is frustrated or upset, respond calmly and offer solutions
+- If user asks about religious texts, stories, or chapters, narrate them fully and respectfully
 `) + (searchContext ? `\n\nLIVE DATA (extracted from web — use this to answer directly):
 ${searchContext}
 
