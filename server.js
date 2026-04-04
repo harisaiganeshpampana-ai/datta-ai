@@ -271,11 +271,15 @@ const Chat = mongoose.model("Chat", ChatSchema)
 const SubscriptionSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   plan: { type: String, default: "free" },
+  previousPlan: { type: String, default: "free" },   // for ultra-mini revert
   period: { type: String, default: "monthly" },
   paymentId: String,
+  orderId: String,
   method: String,
   startDate: { type: Date, default: Date.now },
   endDate: Date,
+  ultraMiniExpiry: Date,                              // ultra-mini 24h expiry
+  extraMessages: { type: Number, default: 0 },        // bonus messages from ultra-mini
   active: { type: Boolean, default: true }
 })
 const Subscription = mongoose.model("Subscription", SubscriptionSchema)
@@ -337,18 +341,19 @@ const MemorySchema = new mongoose.Schema({
 const Memory = mongoose.model("Memory", MemorySchema)
 
 const planLimits = {
-  // ── ACTIVE PLANS (5-tier ladder) ───────────────────────────
-  free:     { messages: 20,     resetHours: 24, models: ["d21"],        price: 0,   priority: 0 },
-  starter:  { messages: 50,     resetHours: 24, models: ["d21"],        price: 49,  priority: 1 },
-  standard: { messages: 120,    resetHours: 24, models: ["d21","d54"],  price: 149, priority: 2 },
-  plus:     { messages: 300,    resetHours: 24, models: ["d21","d54"],  price: 299, priority: 3 },
-  pro:      { messages: 1000,   resetHours: 24, models: ["d21","d54"],  price: 799, priority: 4 },
-  // ── LEGACY (keep for existing subscribers) ─────────────────
-  mini:     { messages: 200,    resetHours: 24, models: ["d21","d54"],  price: 199, priority: 2 },
-  max:      { messages: 2000,   resetHours: 24, models: ["d21","d54"],  price: 1999,priority: 4 },
-  ultramax: { messages: 999999, resetHours: 0,  models: ["all"],        price: 0,   priority: 5 },
-  basic:    { messages: 500,    resetHours: 24, models: ["d21","d54"],  price: 499, priority: 3 },
-  enterprise:{messages: 999999, resetHours: 0,  models: ["all"],        price: 0,   priority: 5 }
+  // ── ACTIVE PLANS ────────────────────────────────────────────
+  free:        { messages: 20,     resetHours: 24, models: ["d21"],       price: 0,   priority: 0 },
+  "ultra-mini":{ messages: 20,     resetHours: 24, models: ["d21"],       price: 10,  priority: 1, extraMessages: 15, expiresHours: 24 },
+  starter:     { messages: 50,     resetHours: 24, models: ["d21"],       price: 49,  priority: 2 },
+  standard:    { messages: 120,    resetHours: 24, models: ["d21","d54"], price: 149, priority: 3 },
+  plus:        { messages: 300,    resetHours: 24, models: ["d21","d54"], price: 299, priority: 4 },
+  pro:         { messages: 1000,   resetHours: 24, models: ["d21","d54"], price: 799, priority: 5 },
+  // ── LEGACY (keep for existing subscribers) ──────────────────
+  mini:        { messages: 200,    resetHours: 24, models: ["d21","d54"], price: 199, priority: 3 },
+  max:         { messages: 2000,   resetHours: 24, models: ["d21","d54"], price: 1999,priority: 5 },
+  ultramax:    { messages: 999999, resetHours: 0,  models: ["all"],       price: 0,   priority: 6 },
+  basic:       { messages: 500,    resetHours: 24, models: ["d21","d54"], price: 499, priority: 4 },
+  enterprise:  { messages: 999999, resetHours: 0,  models: ["all"],       price: 0,   priority: 6 }
 }
 const rateLimitStore = {}
 
@@ -385,10 +390,23 @@ const userStreamControllers = new Map()
 
 // MongoDB-based usage tracking - persists across refreshes and restarts
 async function checkAndUpdateLimitDB(userId, plan, type) {
-  const limits = planLimits[plan] || planLimits.free
-  if (limits[type] === 999999) return { allowed: true }
-
   const now = new Date()
+
+  // Check if ultra-mini has expired — revert to previous plan
+  if (plan === "ultra-mini") {
+    const sub = await Subscription.findOne({ userId }).catch(() => null)
+    if (sub && sub.ultraMiniExpiry && now > new Date(sub.ultraMiniExpiry)) {
+      // Ultra-mini expired — revert to previous plan
+      const revertPlan = sub.previousPlan || "free"
+      await Subscription.findOneAndUpdate({ userId }, { plan: revertPlan, extraMessages: 0 })
+      plan = revertPlan
+      console.log("[ULTRA-MINI] Expired, reverted to:", revertPlan)
+    }
+  }
+
+  const limits = planLimits[plan] || planLimits.free
+  if (limits[type] === 999999) return { allowed: true, used: 0, limit: 999999 }
+
   const resetMs = limits.resetHours * 60 * 60 * 1000
 
   let usage = await Usage.findOne({ userId })
@@ -396,45 +414,44 @@ async function checkAndUpdateLimitDB(userId, plan, type) {
     usage = await Usage.create({ userId, windowStart: now, imageWindowStart: now })
   }
 
-  // Reset window if time passed
-  if (type === "messages" && resetMs > 0 && resetMs < 999999 * 3600 * 1000) {
-    if (now - usage.windowStart > resetMs) {
+  // Reset window if 24h passed
+  if (type === "messages" && resetMs > 0) {
+    if (now - new Date(usage.windowStart) > resetMs) {
       usage.messagesUsed = 0
       usage.windowStart = now
     }
   }
-  if (type === "images" && resetMs > 0 && resetMs < 999999 * 3600 * 1000) {
-    if (now - usage.imageWindowStart > resetMs) {
+  if (type === "images" && resetMs > 0) {
+    if (now - new Date(usage.imageWindowStart) > resetMs) {
       usage.imagesUsed = 0
       usage.imageWindowStart = now
     }
   }
 
-  // Free plan: first 50 messages ever, then 20/day
-  let limit = limits[type]
-  if (plan === "free" && type === "messages") {
-    if (usage.totalMessages >= 50) {
-      limit = 20  // 20 per day after first 50
-    }
+  // Determine limit — ultra-mini adds 15 to base plan limit
+  let limit = limits.messages || 20
+  if (plan === "ultra-mini") {
+    const sub = await Subscription.findOne({ userId }).catch(() => null)
+    const base = planLimits[sub?.previousPlan || "free"]?.messages || 20
+    limit = base + 15
   }
 
-  const current = type === "messages" ? usage.messagesUsed : usage.imagesUsed
+  const current = type === "messages" ? (usage.messagesUsed || 0) : (usage.imagesUsed || 0)
 
   if (current >= limit) {
     const windowStart = type === "messages" ? usage.windowStart : usage.imageWindowStart
-    const waitMs = resetMs > 0 && resetMs < 999999 * 3600 * 1000
-      ? resetMs - (now - windowStart) : 0
+    const waitMs = resetMs > 0 ? Math.max(0, resetMs - (now - new Date(windowStart))) : 0
     const waitMins = waitMs > 0 ? Math.ceil(waitMs / 60000) : 0
     return { allowed: false, type, plan, waitMins, limit }
   }
 
   // Increment
   if (type === "messages") {
-    usage.messagesUsed++
-    usage.totalMessages++
+    usage.messagesUsed = (usage.messagesUsed || 0) + 1
+    usage.totalMessages = (usage.totalMessages || 0) + 1
   } else {
-    usage.imagesUsed++
-    usage.totalImages++
+    usage.imagesUsed = (usage.imagesUsed || 0) + 1
+    usage.totalImages = (usage.totalImages || 0) + 1
   }
   usage.updatedAt = now
   await usage.save()
@@ -626,30 +643,37 @@ function needsWebSearch(message) {
 
   // Never search for these - AI knows them directly
   const noSearchPatterns = [
-    /^what (is|are) (the )?(time|date|day|year)/,
-    /^(what|tell me) (time|date|day)/,
-    /^(current |today.?s )?(time|date|day)/,
-    /^(hi|hello|hey|how are you|what can you do)/,
-    /^(explain|define|describe|summarize|write|create|build|code|help)/,
-    /^(what is|what are) [a-z ]{1,30}$/,  // short factual - AI knows
+    /^what (is|are) (the )?(time|date|day|year)(\?|$)/,
+    /^(what|tell me) (time|date|day)(\?|$)/,
+    /^(current |today.?s )?(time|date)(\?|$)/,
+    /^(hi|hello|hey|how are you|what can you do)(\?|$)/,
+    /^(explain|define|describe|summarize|write|create|build|code|help me write)/,
   ]
   if (noSearchPatterns.some(p => p.test(msg))) return false
 
   const triggers = [
     // Current events
-    "latest news","breaking news","today's news","today news",
+    "latest news","breaking news","today's news","today news","current news",
     "live score","current score","match score","match today","today match",
-    "stock price","crypto price","bitcoin price","gold price","petrol price",
-    "weather in","weather today","forecast",
+    "stock price","crypto price","bitcoin price","gold price","petrol price","share price",
+    "weather in","weather today","forecast","temperature in",
     "who won","election result","election 2025","election 2026",
     "trending now","just happened","announced today",
-    "released today","launched today","new movie","new song",
+    "released today","launched today","new movie","new song","box office",
+    // War / conflict / geopolitics — LIVE search needed
+    "war","attack","missile","strike","bomb","invasion","troops","soldier",
+    "russia ukraine","israel","palestine","gaza","iran","nato","military",
+    "conflict","ceasefire","airstrike","drone attack","nuclear","sanction",
+    "pak","pakistan","border","loc","line of control","army operation",
+    "india pakistan","india china","china taiwan","north korea",
+    "terror attack","blast","explosion","hostage","coup",
     // Sports — catch ALL sports queries
     "ipl","cricket match","cricket score","cricket today",
     "world cup","t20","test match","odi match",
-    "football match","nfl","nba","fifa","champions league",
+    "football match","nfl","nba","fifa","champions league","la liga",
     "today's match","today match","match schedule","match result",
-    "playing today","playing tonight","live match",
+    "playing today","playing tonight","live match","cricket news",
+    "points table","standings","qualifier","playoff","final",
     // Factual
     "father of","mother of","inventor of","founded by","discovered by","invented by",
     "who invented","who discovered","who founded","who created","who wrote","who is the",
@@ -657,12 +681,13 @@ function needsWebSearch(message) {
     "tallest","longest","largest","smallest","fastest","richest","poorest",
     // Explicit search
     "search for","look up","find me","google this","news about",
-    "what happened","current","latest","recent","update",
+    "what happened","what is happening","current","latest","recent","update","today",
     // Local
     "restaurant in","hotel in","hospital in","shops in","near me",
-    // Telugu/Hindi transliterations for sports
+    // Telugu/Hindi transliterations for sports + war
     "ipl match","ఐపీఎల్","आईपीएल","క్రికెట్","cricket","మ్యాచ్","match",
-    "ఇవాళ","today's ipl","today ipl","aaj ka match","aaj ipl"
+    "ఇవాళ","today's ipl","today ipl","aaj ka match","aaj ipl",
+    "యుద్ధం","war news","युद्ध","attack news","సమాచారం"
   ]
   if (triggers.some(t => msg.includes(t))) return true
 
@@ -1255,10 +1280,12 @@ app.get("/payment/usage", authMiddleware, async (req, res) => {
 app.post("/payment/activate", authMiddleware, async (req, res) => {
   try {
     const { plan, method, paymentId, period } = req.body
-    if (!["free","mini","pro","max","ultramax","basic","enterprise"].includes(plan)) return res.status(400).json({ error: "Invalid plan" })
-    const endDate = new Date()
+    const validPlans = ["free","ultra-mini","starter","standard","plus","pro","mini","max","ultramax","basic","enterprise"]
+    if (!validPlans.includes(plan)) return res.status(400).json({ error: "Invalid plan" })
+    const now = new Date()
+    const endDate = new Date(now)
     endDate.setMonth(endDate.getMonth() + (period === "yearly" ? 12 : 1))
-    await Subscription.findOneAndUpdate({ userId: req.user.id }, { plan, period, paymentId, method, startDate: new Date(), endDate, active: true }, { upsert: true, new: true })
+    await Subscription.findOneAndUpdate({ userId: req.user.id }, { plan, period, paymentId, method, startDate: now, endDate, active: true }, { upsert: true, new: true })
     res.json({ success: true, plan, endDate })
   } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
@@ -1298,8 +1325,78 @@ app.post("/payment/razorpay-verify", authMiddleware, async (req, res) => {
     if (expectedSig !== razorpay_signature) return res.status(400).json({ error: "Payment verification failed" })
     const endDate = new Date()
     endDate.setMonth(endDate.getMonth() + (period === "yearly" ? 12 : 1))
-    await Subscription.findOneAndUpdate({ userId: req.user.id }, { plan, period, paymentId: razorpay_payment_id, method: "razorpay", startDate: new Date(), endDate, active: true }, { upsert: true, new: true })
+    const existingSub = await Subscription.findOne({ userId: req.user.id }).catch(() => null)
+    const prevPlan = existingSub?.plan || "free"
+    await Subscription.findOneAndUpdate(
+      { userId: req.user.id },
+      { plan, previousPlan: prevPlan, period, paymentId: razorpay_payment_id, orderId: razorpay_order_id, method: "razorpay", startDate: new Date(), endDate, active: true },
+      { upsert: true, new: true }
+    )
+    // Reset daily usage on new plan activation
+    await Usage.findOneAndUpdate({ userId: req.user.id }, { messagesUsed: 0, windowStart: new Date() }).catch(() => {})
     res.json({ success: true, plan, endDate })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+// ULTRA-MINI ORDER — ₹10, adds 15 messages valid 24h
+app.post("/payment/ultra-mini-order", authMiddleware, async (req, res) => {
+  try {
+    const key_id = process.env.RAZORPAY_KEY_ID
+    const key_secret = process.env.RAZORPAY_KEY_SECRET
+    if (!key_id || !key_secret) return res.status(400).json({ error: "Razorpay not configured" })
+    const response = await fetch("https://api.razorpay.com/v1/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Basic " + Buffer.from(key_id + ":" + key_secret).toString("base64") },
+      body: JSON.stringify({ amount: 1000, currency: "INR", receipt: "ultra_mini_" + Date.now() })
+    })
+    const order = await response.json()
+    if (!response.ok) return res.status(400).json({ error: order.error?.description || "Order creation failed" })
+    res.json({ orderId: order.id, keyId: key_id, amount: 10, plan: "ultra-mini" })
+  } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
+})
+
+// ULTRA-MINI VERIFY — verify payment + activate 15 extra messages for 24h
+app.post("/payment/ultra-mini-verify", authMiddleware, async (req, res) => {
+  try {
+    const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body
+    const key_secret = process.env.RAZORPAY_KEY_SECRET
+    if (!key_secret) return res.status(400).json({ error: "Razorpay not configured" })
+    const expectedSig = crypto.createHmac("sha256", key_secret).update(razorpay_order_id + "|" + razorpay_payment_id).digest("hex")
+    if (expectedSig !== razorpay_signature) return res.status(400).json({ error: "Payment verification failed" })
+
+    const userId = req.user.id
+    // Get current plan to save as previousPlan
+    const existing = await Subscription.findOne({ userId }).catch(() => null)
+    const previousPlan = existing?.plan || "free"
+
+    const now = new Date()
+    const ultraMiniExpiry = new Date(now.getTime() + 24 * 60 * 60 * 1000)  // 24 hours
+
+    await Subscription.findOneAndUpdate(
+      { userId },
+      {
+        plan: "ultra-mini",
+        previousPlan,
+        paymentId: razorpay_payment_id,
+        orderId: razorpay_order_id,
+        method: "razorpay",
+        startDate: now,
+        ultraMiniExpiry,
+        extraMessages: 15,
+        active: true
+        // endDate stays as-is (existing plan expiry preserved)
+      },
+      { upsert: true, new: true }
+    )
+
+    // Add 15 to their today's limit in Usage
+    await Usage.findOneAndUpdate(
+      { userId },
+      { $inc: { /* add to limit tracking */ } },
+      { upsert: true }
+    ).catch(() => {})
+
+    res.json({ success: true, plan: "ultra-mini", extraMessages: 15, expiresAt: ultraMiniExpiry })
   } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
