@@ -2062,32 +2062,30 @@ IMPORTANT: Answer like a human, NOT like a search engine.
         ]
 
     // ===== FINAL CONTENT SANITIZER =====
-    // Runs ONCE before retry loop. Converts entire groqMessages to plain strings.
-    // Uses JSON stringify/parse to kill all Mongoose types, then extracts text.
+    // Convert ALL non-string content to string. No exceptions for text models.
+    // Vision array is only valid for the actual vision model endpoint, not text models.
     ;(function sanitizeGroqMessages() {
       for (var _i = 0; _i < groqMessages.length; _i++) {
         var _m = groqMessages[_i]
-        var _isLastVision = (_i === groqMessages.length - 1) && isVisionModel
-        if (_isLastVision) continue  // keep array for vision model last message
         if (typeof _m.content === 'string') continue  // already string, skip
 
-        // Force through JSON round-trip to kill Mongoose types
+        // Force through JSON round-trip to kill all Mongoose types
         var _raw
         try { _raw = JSON.parse(JSON.stringify(_m.content)) } catch(e) { _raw = null }
         
         if (Array.isArray(_raw)) {
-          // Extract only text parts
+          // Extract text parts only — images cannot go to text models
           var _txt = _raw
             .filter(function(p) { return p && p.type === 'text' && p.text })
             .map(function(p) { return String(p.text) })
             .join(' ').trim()
-          groqMessages[_i] = { role: _m.role, content: _txt || '[image]' }
+          groqMessages[_i] = { role: _m.role, content: _txt || '[image message]' }
         } else if (_raw && typeof _raw === 'object') {
-          groqMessages[_i] = { role: _m.role, content: String(_raw.text || _raw.content || '') }
+          groqMessages[_i] = { role: _m.role, content: String(_raw.text || _raw.content || '[message]') }
         } else {
-          groqMessages[_i] = { role: _m.role, content: String(_raw || '') }
+          groqMessages[_i] = { role: _m.role, content: String(_raw || '[message]') }
         }
-        console.log('[SANITIZED] messages['+_i+'] content is now:', typeof groqMessages[_i].content, JSON.stringify(groqMessages[_i].content).slice(0,60))
+        console.log('[SANITIZED] messages['+_i+'] fixed to:', JSON.stringify(groqMessages[_i].content).slice(0,80))
       }
     })()
     // ===== END SANITIZER =====
@@ -2100,30 +2098,26 @@ IMPORTANT: Answer like a human, NOT like a search engine.
       try {
         console.log("[GROQ] attempt", attempt+1, "model:", tryModel, "tokens:", tryTokens)
 
-        // Build clean messages — convert every content to string, no exceptions
+        // Build clean messages — EVERY content must be string, no exceptions
+        // Vision arrays cannot go to text models (llama-3.3-70b, llama-3.1-8b)
         var safeMessages = groqMessages.map(function(m, idx) {
-          var isLastVision = (idx === groqMessages.length - 1) && isVisionModel && Array.isArray(m.content)
-          if (isLastVision) return { role: m.role, content: m.content }
-
           var c = m.content
-
-          // Already a string — done
           if (typeof c === "string") return { role: m.role, content: c }
 
-          // Convert array to string (extract text items only)
-          if (c && typeof c === "object") {
-            var arr = []
-            try { arr = JSON.parse(JSON.stringify(c)) } catch(e) { arr = [] }
-            if (!Array.isArray(arr)) arr = [arr]
+          // Not a string — convert
+          var arr
+          try { arr = JSON.parse(JSON.stringify(c)) } catch(e) { arr = null }
+          if (Array.isArray(arr)) {
             var txt = arr
-              .filter(function(p) { return p && (p.type === "text" || typeof p === "string") })
-              .map(function(p) { return typeof p === "string" ? p : (p.text || "") })
+              .filter(function(p) { return p && p.type === "text" && p.text })
+              .map(function(p) { return String(p.text) })
               .join(" ").trim()
-            console.log("[SAFE MSG] messages["+idx+"] converted array to:", JSON.stringify(txt).slice(0,80))
             return { role: m.role, content: txt || "[image message]" }
           }
-
-          return { role: m.role, content: String(c || "") }
+          if (arr && typeof arr === "object") {
+            return { role: m.role, content: String(arr.text || arr.content || "[message]") }
+          }
+          return { role: m.role, content: String(c || "[message]") }
         })
 
         // Log EXACT payload — will appear in Render logs
