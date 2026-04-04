@@ -26,8 +26,8 @@
 }
 
 html, body {
-  min-height: 100vh;
-  overflow-y: auto;        /* FIX: allow page to scroll */
+  height: auto;
+  overflow-y: auto;
   margin: 0;
   background: var(--bg);
   color: var(--text);
@@ -94,27 +94,64 @@ html, body {
 /* ── GRID ── */
 .plans-wrap { padding: 0 16px 80px; }
 .plans-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
-  max-width: 1140px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 560px;
   margin: 0 auto;
 }
-@media (max-width: 1100px) { .plans-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 720px)  { .plans-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 480px)  { .plans-grid { grid-template-columns: 1fr; } }
 
 /* ── PLAN CARD ── */
 .plan-card {
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 24px 20px;
-  display: flex; flex-direction: column;
-  position: relative; overflow: hidden;
-  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   cursor: default;
 }
+/* Left section: icon + name + desc */
+.plan-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 60px;
+}
+.plan-icon { font-size: 26px; line-height: 1; }
+.plan-name { font-size: 13px; font-weight: 700; color: var(--text); text-align: center; }
+/* Center section: features */
+.plan-center {
+  flex: 1;
+  min-width: 0;
+}
+.plan-desc { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+.plan-stat { display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px; }
+.plan-stat-num { font-size: 18px; font-weight: 800; }
+.plan-stat-label { font-size: 11px; color: var(--text2); }
+.plan-features { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.plan-features li { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text2); }
+.plan-features .y { color: var(--green); font-size: 11px; }
+.plan-features .n { color: #555; font-size: 11px; }
+/* Right section: price + button */
+.plan-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 90px;
+}
+.plan-price { display: flex; align-items: baseline; gap: 1px; }
+.plan-price .sym { font-size: 13px; color: var(--text2); }
+.plan-price .amt { font-size: 22px; font-weight: 800; color: var(--text); }
+.plan-period { font-size: 10px; color: var(--text2); text-align: right; }
 .plan-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 20px 48px rgba(0,0,0,0.5);
@@ -305,113 +342,134 @@ html, body {
 
     <!-- FREE -->
     <div class="plan-card" id="card-free">
-      <span class="plan-icon">🌱</span>
-      <div class="plan-name">Free</div>
-      <div class="plan-desc">Try Datta AI with no commitment</div>
-      <div class="plan-price"><span class="sym">₹</span><span class="amt free-amt">0</span></div>
-      <div class="plan-period">Forever free</div>
-      <div class="plan-stat">
-        <span class="plan-stat-num" style="color:#888;">20</span>
-        <span class="plan-stat-label">messages / day</span>
+      <div class="plan-left">
+        <span class="plan-icon">🌱</span>
+        <div class="plan-name">Free</div>
       </div>
-      <ul class="plan-features">
-        <li><span class="y">✓</span><span>Datta 2.1 model</span></li>
-        <li><span class="y">✓</span><span>Web search</span></li>
-        <li><span class="y">✓</span><span>Voice assistant</span></li>
-        <li><span class="n">✗</span><span>Datta 5.4 model</span></li>
-        <li><span class="n">✗</span><span>PDF upload</span></li>
-        <li><span class="n">✗</span><span>Priority responses</span></li>
-      </ul>
-      <button class="plan-btn btn-free" id="btn-free" disabled>Free Plan</button>
+      <div class="plan-center">
+        <div class="plan-desc">Try Datta AI with no commitment</div>
+        <div class="plan-stat">
+          <span class="plan-stat-num" style="color:#888;">20</span>
+          <span class="plan-stat-label">msgs/day</span>
+        </div>
+        <ul class="plan-features">
+          <li><span class="y">✓</span><span>Datta 2.1</span></li>
+          <li><span class="y">✓</span><span>Web search</span></li>
+          <li><span class="y">✓</span><span>Voice</span></li>
+          <li><span class="n">✗</span><span>Datta 5.4</span></li>
+          <li><span class="n">✗</span><span>PDF upload</span></li>
+        </ul>
+      </div>
+      <div class="plan-right">
+        <div class="plan-price"><span class="sym">₹</span><span class="amt free-amt">0</span></div>
+        <div class="plan-period">Forever free</div>
+        <button class="plan-btn btn-free" id="btn-free" disabled>Current</button>
+      </div>
     </div>
 
     <!-- STARTER -->
     <div class="plan-card" id="card-starter">
-      <span class="plan-icon">🚀</span>
-      <div class="plan-name">Starter</div>
-      <div class="plan-desc">More messages, same simplicity</div>
-      <div class="plan-price"><span class="sym">₹</span><span class="amt">49</span></div>
-      <div class="plan-period">/month · billed monthly</div>
-      <div class="plan-stat">
-        <span class="plan-stat-num" style="color:#00cc6a;">50</span>
-        <span class="plan-stat-label">messages / day</span>
+      <div class="plan-left">
+        <span class="plan-icon">🚀</span>
+        <div class="plan-name">Starter</div>
       </div>
-      <ul class="plan-features">
-        <li><span class="y">✓</span><span>Datta 2.1 model</span></li>
-        <li><span class="y">✓</span><span><strong>50 msgs/day</strong></span></li>
-        <li><span class="y">✓</span><span>Web search</span></li>
-        <li><span class="y">✓</span><span>Voice assistant</span></li>
-        <li><span class="y">✓</span><span>Faster than Free</span></li>
-        <li><span class="n">✗</span><span>Datta 5.4 model</span></li>
-      </ul>
-      <button class="plan-btn btn-starter" id="btn-starter" onclick="selectPlan('starter','monthly',49)">Get Starter</button>
+      <div class="plan-center">
+        <div class="plan-desc">More messages, same simplicity</div>
+        <div class="plan-stat">
+          <span class="plan-stat-num" style="color:#00cc6a;">50</span>
+          <span class="plan-stat-label">msgs/day</span>
+        </div>
+        <ul class="plan-features">
+          <li><span class="y">✓</span><span>Datta 2.1</span></li>
+          <li><span class="y">✓</span><span>Web search</span></li>
+          <li><span class="y">✓</span><span>Voice</span></li>
+          <li><span class="n">✗</span><span>Datta 5.4</span></li>
+        </ul>
+      </div>
+      <div class="plan-right">
+        <div class="plan-price"><span class="sym">₹</span><span class="amt">49</span></div>
+        <div class="plan-period">/month</div>
+        <button class="plan-btn btn-starter" id="btn-starter" onclick="selectPlan('starter','monthly',49)">Get Starter</button>
+      </div>
     </div>
 
     <!-- STANDARD -->
     <div class="plan-card" id="card-standard">
-      <span class="plan-icon">⭐</span>
-      <div class="plan-name">Standard</div>
-      <div class="plan-desc">Unlock Datta 5.4 + PDF upload</div>
-      <div class="plan-price"><span class="sym">₹</span><span class="amt">149</span></div>
-      <div class="plan-period">/month · billed monthly</div>
-      <div class="plan-stat">
-        <span class="plan-stat-num" style="color:#0099ff;">120</span>
-        <span class="plan-stat-label">messages / day</span>
+      <div class="plan-left">
+        <span class="plan-icon">⭐</span>
+        <div class="plan-name">Standard</div>
       </div>
-      <ul class="plan-features">
-        <li><span class="y">✓</span><span>Datta 2.1 model</span></li>
-        <li><span class="y">✓</span><span><strong>Datta 5.4</strong> (limited)</span></li>
-        <li><span class="y">✓</span><span><strong>120 msgs/day</strong></span></li>
-        <li><span class="y">✓</span><span>PDF upload</span></li>
-        <li><span class="y">✓</span><span>Web search</span></li>
-        <li><span class="n">✗</span><span>Priority responses</span></li>
-      </ul>
-      <button class="plan-btn btn-standard" id="btn-standard" onclick="selectPlan('standard','monthly',149)">Get Standard</button>
+      <div class="plan-center">
+        <div class="plan-desc">Datta 5.4 + PDF upload</div>
+        <div class="plan-stat">
+          <span class="plan-stat-num" style="color:#0099ff;">120</span>
+          <span class="plan-stat-label">msgs/day</span>
+        </div>
+        <ul class="plan-features">
+          <li><span class="y">✓</span><span>Datta 2.1 + 5.4</span></li>
+          <li><span class="y">✓</span><span>PDF upload</span></li>
+          <li><span class="y">✓</span><span>Web search</span></li>
+          <li><span class="n">✗</span><span>Priority</span></li>
+        </ul>
+      </div>
+      <div class="plan-right">
+        <div class="plan-price"><span class="sym">₹</span><span class="amt">149</span></div>
+        <div class="plan-period">/month</div>
+        <button class="plan-btn btn-standard" id="btn-standard" onclick="selectPlan('standard','monthly',149)">Get Standard</button>
+      </div>
     </div>
 
     <!-- PLUS (most popular) -->
     <div class="plan-card popular" id="card-plus">
       <div class="pop-badge">⭐ Most Popular</div>
-      <span class="plan-icon">⚡</span>
-      <div class="plan-name">Plus</div>
-      <div class="plan-desc">Full Datta 5.4 + priority access</div>
-      <div class="plan-price"><span class="sym">₹</span><span class="amt">299</span></div>
-      <div class="plan-period">/month · billed monthly</div>
-      <div class="plan-stat">
-        <span class="plan-stat-num" style="color:#f59e0b;">300</span>
-        <span class="plan-stat-label">messages / day</span>
+      <div class="plan-left">
+        <span class="plan-icon">⚡</span>
+        <div class="plan-name">Plus</div>
       </div>
-      <ul class="plan-features">
-        <li><span class="y">✓</span><span>Datta 2.1 model</span></li>
-        <li><span class="y">✓</span><span><strong>Full Datta 5.4</strong></span></li>
-        <li><span class="y">✓</span><span><strong>300 msgs/day</strong></span></li>
-        <li><span class="y">✓</span><span>PDF upload</span></li>
-        <li><span class="y">✓</span><span>Web search</span></li>
-        <li><span class="y">✓</span><span><strong>Priority responses</strong></span></li>
-      </ul>
-      <button class="plan-btn btn-plus" id="btn-plus" onclick="selectPlan('plus','monthly',299)">Get Plus</button>
+      <div class="plan-center">
+        <div class="plan-desc">Full Datta 5.4 + priority</div>
+        <div class="plan-stat">
+          <span class="plan-stat-num" style="color:#f59e0b;">300</span>
+          <span class="plan-stat-label">msgs/day</span>
+        </div>
+        <ul class="plan-features">
+          <li><span class="y">✓</span><span>Full Datta 5.4</span></li>
+          <li><span class="y">✓</span><span>PDF upload</span></li>
+          <li><span class="y">✓</span><span>Priority responses</span></li>
+          <li><span class="y">✓</span><span>Web search</span></li>
+        </ul>
+      </div>
+      <div class="plan-right">
+        <div class="plan-price"><span class="sym">₹</span><span class="amt">299</span></div>
+        <div class="plan-period">/month</div>
+        <button class="plan-btn btn-plus" id="btn-plus" onclick="selectPlan('plus','monthly',299)">Get Plus</button>
+      </div>
     </div>
 
     <!-- PRO -->
     <div class="plan-card" id="card-pro">
-      <span class="plan-icon">🔥</span>
-      <div class="plan-name">Pro</div>
-      <div class="plan-desc">Maximum power, highest priority</div>
-      <div class="plan-price"><span class="sym">₹</span><span class="amt">799</span></div>
-      <div class="plan-period">/month · billed monthly</div>
-      <div class="plan-stat">
-        <span class="plan-stat-num" style="color:#ef4444;">1000</span>
-        <span class="plan-stat-label">messages / day</span>
+      <div class="plan-left">
+        <span class="plan-icon">🔥</span>
+        <div class="plan-name">Pro</div>
       </div>
-      <ul class="plan-features">
-        <li><span class="y">✓</span><span>Datta 2.1 model</span></li>
-        <li><span class="y">✓</span><span><strong>Full Datta 5.4</strong></span></li>
-        <li><span class="y">✓</span><span><strong>1000 msgs/day</strong></span></li>
-        <li><span class="y">✓</span><span>PDF upload</span></li>
-        <li><span class="y">✓</span><span>Web search</span></li>
-        <li><span class="y">✓</span><span><strong>Highest priority</strong></span></li>
-      </ul>
-      <button class="plan-btn btn-pro" id="btn-pro" onclick="selectPlan('pro','monthly',799)">Get Pro</button>
+      <div class="plan-center">
+        <div class="plan-desc">Maximum power, highest priority</div>
+        <div class="plan-stat">
+          <span class="plan-stat-num" style="color:#ef4444;">1000</span>
+          <span class="plan-stat-label">msgs/day</span>
+        </div>
+        <ul class="plan-features">
+          <li><span class="y">✓</span><span>Full Datta 5.4</span></li>
+          <li><span class="y">✓</span><span>PDF upload</span></li>
+          <li><span class="y">✓</span><span>Highest priority</span></li>
+          <li><span class="y">✓</span><span>Web search</span></li>
+        </ul>
+      </div>
+      <div class="plan-right">
+        <div class="plan-price"><span class="sym">₹</span><span class="amt">799</span></div>
+        <div class="plan-period">/month</div>
+        <button class="plan-btn btn-pro" id="btn-pro" onclick="selectPlan('pro','monthly',799)">Get Pro</button>
+      </div>
     </div>
 
   </div>
