@@ -2395,31 +2395,53 @@ async function processVoiceQuery(query) {
   }
 
   try {
-    const formData = new FormData()
-    formData.append("message", query)
-    formData.append("chatId",   currentChatId || "")
-    formData.append("token",    getToken())
-    formData.append("language", localStorage.getItem("datta_language") || "English")
-    formData.append("model",    localStorage.getItem("datta_model") || "llama-3.3-70b-versatile")
-    formData.append("modelKey", localStorage.getItem("datta_model_key") || "d42")
-    formData.append("style",    "Short")  // Voice = short responses
-    formData.append("ainame",   "Datta AI")
-    formData.append("voice",    "true")
-
     const token = getToken()
     if (!token) {
       setVoiceAIText("Please log in first to use voice.")
       setVA("idle")
       return
     }
-    formData.set("token", token)
 
-    const res = await fetch(SERVER + "/chat", { method:"POST", body: formData })
-    if (!res.ok) {
+    const buildVoiceForm = () => {
+      const formData = new FormData()
+      formData.append("message", query)
+      formData.append("chatId",   currentChatId || "")
+      formData.append("token",    token)
+      formData.append("language", localStorage.getItem("datta_language") || "English")
+      formData.append("model",    localStorage.getItem("datta_model") || "llama-3.3-70b-versatile")
+      formData.append("modelKey", localStorage.getItem("datta_model_key") || "d42")
+      formData.append("style",    "Short")
+      formData.append("ainame",   "Datta AI")
+      formData.append("voice",    "true")
+      return formData
+    }
+
+    // Retry up to 3 times on server errors
+    let res = null
+    for (let _attempt = 1; _attempt <= 3; _attempt++) {
+      try {
+        if (_attempt > 1) {
+          setVoiceAIText("Retrying... (attempt " + _attempt + "/3)")
+          await new Promise(r => setTimeout(r, 1200 * _attempt))
+        }
+        res = await fetch(SERVER + "/chat", { method: "POST", body: buildVoiceForm() })
+        if (res.ok) break
+        if (res.status === 401 || res.status === 403) break  // auth errors — no retry
+        if (_attempt === 3) {
+          let errBody = ""
+          try { errBody = await res.text() } catch(e) {}
+          throw new Error("Server error " + res.status + ": " + errBody.slice(0, 80))
+        }
+      } catch(fetchErr) {
+        if (_attempt === 3) throw fetchErr
+        console.warn("[Voice] attempt", _attempt, "failed:", fetchErr.message)
+      }
+    }
+    if (!res || !res.ok) {
       let errBody = ""
       try { errBody = await res.text() } catch(e) {}
-      console.error("Voice fetch error:", res.status, errBody.slice(0, 200))
-      throw new Error("Server error " + res.status + ": " + errBody.slice(0, 80))
+      console.error("Voice fetch error:", res?.status, errBody.slice(0, 200))
+      throw new Error("Server error " + (res?.status || "unknown") + ": " + errBody.slice(0, 80))
     }
 
     const chatIdHeader = res.headers.get("x-chat-id")
