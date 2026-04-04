@@ -2051,15 +2051,20 @@ IMPORTANT: Answer like a human, NOT like a search engine.
     // Code/Large → 70b first (smarter), fallback 8b
     // Explain → 70b (deeper answers), fallback 8b  
     // Simple chat → 8b first (faster/cheaper), fallback 70b
-    var groqAttempts = (isCodeTask || isLargeTask || isExplainQuestion)
+    // Vision model gets its own dedicated attempt — no text-model fallback
+    var groqAttempts = isImageFile
       ? [
-          { model: "llama-3.3-70b-versatile", tokens: maxTok },
-          { model: "llama-3.1-8b-instant",    tokens: Math.min(maxTok, 2000) }
+          { model: "meta-llama/llama-4-scout-17b-16e-instruct", tokens: maxTok }
         ]
-      : [
-          { model: "llama-3.1-8b-instant",    tokens: maxTok },
-          { model: "llama-3.3-70b-versatile", tokens: Math.min(maxTok, 2000) }
-        ]
+      : (isCodeTask || isLargeTask || isExplainQuestion)
+        ? [
+            { model: "llama-3.3-70b-versatile", tokens: maxTok },
+            { model: "llama-3.1-8b-instant",    tokens: Math.min(maxTok, 2000) }
+          ]
+        : [
+            { model: "llama-3.1-8b-instant",    tokens: maxTok },
+            { model: "llama-3.3-70b-versatile", tokens: Math.min(maxTok, 2000) }
+          ]
 
     // ===== FINAL CONTENT SANITIZER =====
     // Convert non-string content to string.
