@@ -14,6 +14,22 @@ window.addEventListener("DOMContentLoaded", function() {
   const savedTheme = localStorage.getItem("datta_theme") || "dark"
   setTheme(savedTheme, true)
 
+  // Apply saved accent color
+  const savedAccent = localStorage.getItem("datta_accent")
+  if (savedAccent) {
+    document.documentElement.style.setProperty("--accent", savedAccent)
+  }
+
+  // Apply saved font size
+  const savedFontLabel = localStorage.getItem("datta_font_size_label")
+  const savedFontPx    = localStorage.getItem("datta_font_size")
+  if (savedFontPx) {
+    document.documentElement.style.setProperty("--chat-font-size", savedFontPx)
+    document.querySelectorAll(".ai-bubble,.aiBubble,.user-bubble,.userBubble").forEach(
+      el => el.style.fontSize = savedFontPx
+    )
+  }
+
   // Hide welcome if returning from settings
   const lastChat = localStorage.getItem("datta_last_chat")
   if (lastChat) {
@@ -1194,16 +1210,7 @@ async function send() {
     hideStopBtn()
     loadSidebar()
 
-    // Refresh usage counter after every successful response
-    try {
-      const _tok = typeof getToken === "function" ? getToken() : localStorage.getItem("datta_token")
-      if (_tok) {
-        fetch(SERVER + "/payment/usage", { headers: { "Authorization": "Bearer " + _tok } })
-          .then(r => r.ok ? r.json() : null)
-          .then(u => { if (u && typeof u.used === "number") updateUsageDisplay(u.used, u.limit) })
-          .catch(() => {})
-      }
-    } catch(_e) {}
+    refreshUsageCounter()  // update X/20 counter after each successful response
 
   } catch (err) {
     if (err.name === "AbortError") {
@@ -2416,7 +2423,7 @@ async function processVoiceQuery(query) {
       formData.append("language", _apiLang)   // pass detected language to server
       formData.append("model",    localStorage.getItem("datta_model") || "llama-3.3-70b-versatile")
       formData.append("modelKey", localStorage.getItem("datta_model_key") || "d42")
-      formData.append("style",    "Balanced")   // Balanced = proper full answers (not Short)
+      formData.append("style",    localStorage.getItem("datta_ai_style") || "Balanced")  // user-chosen style
       formData.append("ainame",   "Datta AI")
       formData.append("voice",    "true")
       return formData
@@ -2815,9 +2822,10 @@ async function loadUserVersion() {
   }
 }
 
-// Load version on startup
+// Load version + usage on startup
 window.addEventListener("DOMContentLoaded", function() {
   setTimeout(loadUserVersion, 1000)
+  setTimeout(refreshUsageCounter, 1500)  // show real count immediately on load
 })
 
 // SUGGESTION CHIPS
@@ -4159,17 +4167,35 @@ function checkModelAccess(key) {
 }
 window.checkModelAccess = checkModelAccess
 
-// Update usage display in model dropdown
+// Update usage display in model dropdown + anywhere else showing usage
 function updateUsageDisplay(used, limit) {
   const el  = document.getElementById("usageDisplay")
   const bar = document.getElementById("usageBar")
-  if (!el || !bar) return
-  const pct = Math.min(100, Math.round((used / limit) * 100))
-  el.textContent = used + " / " + limit + " messages used today"
-  bar.style.width = pct + "%"
-  bar.style.background = pct >= 90 ? "#ef4444" : pct >= 70 ? "#f97316" : "var(--accent)"
+  if (el) {
+    el.textContent = used + " / " + limit + " messages used today"
+  }
+  if (bar) {
+    const pct = Math.min(100, Math.round((used / (limit || 20)) * 100))
+    bar.style.width = pct + "%"
+    bar.style.background = pct >= 90 ? "#ef4444" : pct >= 70 ? "#f97316" : "var(--accent)"
+  }
+  // Also update any inline usage text elements
+  document.querySelectorAll(".usage-count").forEach(el => {
+    el.textContent = used + " / " + limit
+  })
 }
 window.updateUsageDisplay = updateUsageDisplay
+
+// Standalone fetch — call any time to refresh counter
+function refreshUsageCounter() {
+  const tok = typeof getToken === "function" ? getToken() : localStorage.getItem("datta_token")
+  if (!tok) return
+  fetch(SERVER + "/payment/usage", { headers: { "Authorization": "Bearer " + tok } })
+    .then(r => r.ok ? r.json() : null)
+    .then(u => { if (u && typeof u.used === "number") updateUsageDisplay(u.used, u.limit || 20) })
+    .catch(() => {})
+}
+window.refreshUsageCounter = refreshUsageCounter
 
 
 // ══════════════════════════════════════════════════════
