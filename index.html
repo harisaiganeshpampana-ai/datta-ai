@@ -2037,96 +2037,172 @@ body.is-generating .input-wrap {
 </div>
 
 <!-- ── VOICE ASSISTANT OVERLAY ── -->
-<div id="voiceOverlay" style="display:none;position:fixed;inset:0;z-index:99998;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;">
+<div id="voiceOverlay" style="display:none;position:fixed;inset:0;z-index:99998;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;gap:0;">
 
   <style>
-    /* Waveform bars */
-    .va-bars { display:flex; align-items:center; gap:4px; height:48px; }
+    /* ── VOICE OVERLAY LAYOUT ── */
+    #voiceOverlay { padding: 20px; box-sizing: border-box; }
+
+    /* ── WAVEFORM BARS ── */
+    .va-bars {
+      display: flex; align-items: center; gap: 5px;
+      height: 56px; margin-bottom: 8px;
+    }
     .va-bar {
-      width:4px; border-radius:4px;
+      width: 4px; border-radius: 4px;
       background: var(--accent);
-      animation: barIdle 1.4s ease-in-out infinite;
+      animation: barIdle 1.6s ease-in-out infinite;
       transform-origin: center;
     }
-    .va-bar:nth-child(1){height:12px;animation-delay:0s}
-    .va-bar:nth-child(2){height:20px;animation-delay:0.1s}
-    .va-bar:nth-child(3){height:32px;animation-delay:0.2s}
-    .va-bar:nth-child(4){height:20px;animation-delay:0.3s}
-    .va-bar:nth-child(5){height:12px;animation-delay:0.4s}
-    .va-bar:nth-child(6){height:28px;animation-delay:0.5s}
-    .va-bar:nth-child(7){height:16px;animation-delay:0.6s}
-    .va-bar:nth-child(8){height:36px;animation-delay:0.15s}
-    .va-bar:nth-child(9){height:20px;animation-delay:0.35s}
+    .va-bar:nth-child(1){height:10px;animation-delay:0s}
+    .va-bar:nth-child(2){height:18px;animation-delay:0.1s}
+    .va-bar:nth-child(3){height:30px;animation-delay:0.2s}
+    .va-bar:nth-child(4){height:18px;animation-delay:0.3s}
+    .va-bar:nth-child(5){height:10px;animation-delay:0.4s}
+    .va-bar:nth-child(6){height:26px;animation-delay:0.5s}
+    .va-bar:nth-child(7){height:14px;animation-delay:0.6s}
+    .va-bar:nth-child(8){height:34px;animation-delay:0.15s}
+    .va-bar:nth-child(9){height:18px;animation-delay:0.35s}
     .va-bar:nth-child(10){height:10px;animation-delay:0.25s}
-
     @keyframes barIdle {
-      0%,100%{transform:scaleY(0.4);opacity:0.4}
-      50%{transform:scaleY(1);opacity:1}
+      0%,100%{transform:scaleY(0.35);opacity:0.3}
+      50%{transform:scaleY(1);opacity:0.7}
     }
-    #voiceOverlay.va-listening .va-bar { animation-name:barListen; }
+    /* Listening — fast red bars */
+    #voiceOverlay.va-listening .va-bar {
+      animation-name: barListen;
+      animation-duration: 0.7s;
+      background: #ef4444;
+    }
     @keyframes barListen {
-      0%,100%{transform:scaleY(0.3)}
-      50%{transform:scaleY(1.2)}
+      0%,100%{transform:scaleY(0.2)}
+      50%{transform:scaleY(1.4)}
     }
+    /* Speaking — blue bars */
     #voiceOverlay.va-speaking .va-bar {
-      animation-name:barSpeak;
+      animation-name: barSpeak;
+      animation-duration: 0.9s;
       background: #0077ff;
     }
     @keyframes barSpeak {
-      0%,100%{transform:scaleY(0.5)}
-      50%{transform:scaleY(1)}
+      0%,100%{transform:scaleY(0.4)}
+      50%{transform:scaleY(1.1)}
     }
+    /* Thinking — purple slow bars */
     #voiceOverlay.va-thinking .va-bar {
-      animation-name:barThink;
+      animation-name: barThink;
+      animation-duration: 1.2s;
       background: #a855f7;
     }
     @keyframes barThink {
-      0%,100%{transform:scaleY(0.2);opacity:0.3}
-      50%{transform:scaleY(0.8);opacity:0.8}
+      0%,100%{transform:scaleY(0.15);opacity:0.25}
+      50%{transform:scaleY(0.9);opacity:0.9}
     }
 
-    /* Mic orb */
+    /* ── THINKING SPINNER (shows inside orb when processing) ── */
+    .va-spinner {
+      display: none;
+      width: 36px; height: 36px;
+      border: 3px solid rgba(255,255,255,0.2);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: vaSpin 0.75s linear infinite;
+    }
+    @keyframes vaSpin { to { transform: rotate(360deg); } }
+    #voiceOverlay.va-thinking .va-spinner { display: block; }
+    #voiceOverlay.va-thinking .va-mic-icon { display: none; }
+    #voiceOverlay.va-speaking .va-mic-icon { display: none; }
+    #voiceOverlay.va-speaking .va-speak-icon { display: block !important; }
+
+    /* ── MIC ORB ── */
     .va-orb {
-      width:80px; height:80px; border-radius:50%;
-      background: linear-gradient(135deg, var(--accent), #0077ff);
-      display:flex; align-items:center; justify-content:center;
-      cursor:pointer; border:none;
-      box-shadow: 0 0 0 0 rgba(16,163,127,0.4);
-      transition: transform 0.15s, box-shadow 0.15s;
+      width: 96px; height: 96px; border-radius: 50%;
+      background: linear-gradient(135deg, #10a37f, #0077ff);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; border: none;
+      box-shadow: 0 0 0 0 rgba(16,163,127,0.35),
+                  0 8px 32px rgba(0,0,0,0.4);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      position: relative;
     }
-    .va-orb:hover { transform:scale(1.06); }
-    .va-orb:active { transform:scale(0.96); }
+    .va-orb:hover { transform: scale(1.06); }
+    .va-orb:active { transform: scale(0.94); }
+
+    /* Idle — soft green glow pulse */
+    #voiceOverlay:not(.va-listening):not(.va-speaking):not(.va-thinking) .va-orb {
+      animation: orbIdle 2.5s ease-in-out infinite;
+    }
+    @keyframes orbIdle {
+      0%,100%{box-shadow:0 0 0 0 rgba(16,163,127,0.3),0 8px 32px rgba(0,0,0,0.4)}
+      50%{box-shadow:0 0 0 14px rgba(16,163,127,0),0 8px 32px rgba(0,0,0,0.4)}
+    }
+    /* Listening — red pulse ring */
     #voiceOverlay.va-listening .va-orb {
-      animation: orbPulse 1.2s ease-out infinite;
-      background: linear-gradient(135deg,#ef4444,#f97316);
+      animation: orbListen 1s ease-out infinite;
+      background: linear-gradient(135deg, #ef4444, #f97316);
+      box-shadow: 0 0 0 0 rgba(239,68,68,0.5), 0 8px 32px rgba(0,0,0,0.4);
     }
-    @keyframes orbPulse {
-      0%{box-shadow:0 0 0 0 rgba(239,68,68,0.5)}
-      70%{box-shadow:0 0 0 18px rgba(239,68,68,0)}
-      100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}
+    @keyframes orbListen {
+      0%  { box-shadow: 0 0 0 0  rgba(239,68,68,0.6), 0 8px 32px rgba(0,0,0,0.4); }
+      60% { box-shadow: 0 0 0 22px rgba(239,68,68,0),  0 8px 32px rgba(0,0,0,0.4); }
+      100%{ box-shadow: 0 0 0 0  rgba(239,68,68,0),   0 8px 32px rgba(0,0,0,0.4); }
     }
+    /* Thinking — purple spin glow */
+    #voiceOverlay.va-thinking .va-orb {
+      background: linear-gradient(135deg, #a855f7, #ec4899);
+      box-shadow: 0 0 24px rgba(168,85,247,0.5), 0 8px 32px rgba(0,0,0,0.4);
+    }
+    /* Speaking — blue pulse ring */
     #voiceOverlay.va-speaking .va-orb {
-      background: linear-gradient(135deg,#0077ff,#a855f7);
-      animation: orbPulse2 1.5s ease-out infinite;
+      animation: orbSpeak 1.4s ease-out infinite;
+      background: linear-gradient(135deg, #0077ff, #a855f7);
     }
-    @keyframes orbPulse2 {
-      0%{box-shadow:0 0 0 0 rgba(0,119,255,0.4)}
-      70%{box-shadow:0 0 0 16px rgba(0,119,255,0)}
-      100%{box-shadow:0 0 0 0 rgba(0,119,255,0)}
+    @keyframes orbSpeak {
+      0%  { box-shadow: 0 0 0 0  rgba(0,119,255,0.5), 0 8px 32px rgba(0,0,0,0.4); }
+      65% { box-shadow: 0 0 0 20px rgba(0,119,255,0),  0 8px 32px rgba(0,0,0,0.4); }
+      100%{ box-shadow: 0 0 0 0  rgba(0,119,255,0),   0 8px 32px rgba(0,0,0,0.4); }
+    }
+
+    /* ── LANGUAGE BADGE (detected lang shown under status) ── */
+    #vaLangBadge {
+      font-size: 11px; color: var(--accent);
+      letter-spacing: 0.5px; margin-top: -4px; margin-bottom: 6px;
+      min-height: 16px; text-transform: uppercase; font-weight: 600;
+    }
+
+    /* ── CONTROLS ── */
+    .va-controls {
+      display: flex; align-items: center; gap: 24px;
+      margin-top: 8px;
+    }
+    .va-ctrl-btn {
+      width: 48px; height: 48px; border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--bg2); color: var(--text2);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .va-ctrl-btn:hover { background: var(--bg3); border-color: var(--accent); }
+
+    /* ── MOBILE ── */
+    @media (max-width: 480px) {
+      .va-orb { width: 88px; height: 88px; }
+      #voiceText { font-size: 15px !important; }
+      #voiceAIText { font-size: 12px !important; }
     }
   </style>
 
-  <!-- Close -->
-  <button onclick="closeVoiceAssistant()"
-    style="position:absolute;top:16px;right:16px;width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+  <!-- Close button -->
+  <button onclick="closeVoiceAssistant()" style="position:absolute;top:16px;right:16px;width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;">✕</button>
 
   <!-- Language selector -->
-  <div style="position:absolute;top:16px;left:16px;">
+  <div style="position:absolute;top:16px;left:16px;z-index:2;">
     <select id="voiceLangSelect" onchange="setVoiceLang(this.value)"
       style="background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:6px 10px;border-radius:10px;font-size:12px;outline:none;font-family:inherit;cursor:pointer;">
-      <option value="auto">Auto detect</option>
-      <option value="en-IN">English IN</option>
-      <option value="en-US">English US</option>
+      <option value="auto">🌐 Auto detect</option>
+      <option value="en-IN">English (IN)</option>
+      <option value="en-US">English (US)</option>
       <option value="hi-IN">हिंदी</option>
       <option value="te-IN">తెలుగు</option>
       <option value="ta-IN">தமிழ்</option>
@@ -2134,7 +2210,7 @@ body.is-generating .input-wrap {
     </select>
   </div>
 
-  <!-- Waveform -->
+  <!-- Waveform bars -->
   <div class="va-bars" id="vaBars">
     <div class="va-bar"></div><div class="va-bar"></div>
     <div class="va-bar"></div><div class="va-bar"></div>
@@ -2143,24 +2219,23 @@ body.is-generating .input-wrap {
     <div class="va-bar"></div><div class="va-bar"></div>
   </div>
 
-  <!-- Status -->
-  <div id="voiceStatus" style="margin:20px 0 8px;font-size:13px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;font-weight:500;">Tap to speak</div>
+  <!-- Status label -->
+  <div id="voiceStatus" style="margin:14px 0 4px;font-size:12px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;font-weight:600;">Tap to speak</div>
 
-  <!-- User text (what was heard) -->
-  <div id="voiceText"
-    style="min-height:48px;max-width:340px;text-align:center;font-size:17px;color:var(--text);line-height:1.55;padding:0 24px;margin-bottom:8px;"></div>
+  <!-- Detected language badge -->
+  <div id="vaLangBadge"></div>
 
-  <!-- AI response text -->
-  <div id="voiceAIText"
-    style="min-height:36px;max-width:340px;text-align:center;font-size:13px;color:var(--text2);line-height:1.6;padding:0 24px;margin-bottom:32px;font-style:italic;"></div>
+  <!-- What the user said -->
+  <div id="voiceText" style="min-height:52px;max-width:360px;width:100%;text-align:center;font-size:17px;color:var(--text);line-height:1.6;padding:0 20px;margin-bottom:6px;"></div>
 
-  <!-- Controls row -->
-  <div style="display:flex;align-items:center;gap:20px;">
+  <!-- AI reply preview -->
+  <div id="voiceAIText" style="min-height:40px;max-width:360px;width:100%;text-align:center;font-size:13px;color:var(--text2);line-height:1.65;padding:0 20px;margin-bottom:28px;font-style:italic;"></div>
 
-    <!-- Mute toggle -->
-    <button id="vaMuteBtn" onclick="toggleVoiceMute()"
-      style="width:44px;height:44px;border-radius:50%;border:1px solid var(--border);background:var(--bg2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;"
-      title="Mute / Unmute">
+  <!-- Controls: mute | orb | stop -->
+  <div class="va-controls">
+
+    <!-- Mute -->
+    <button id="vaMuteBtn" onclick="toggleVoiceMute()" class="va-ctrl-btn" title="Mute / Unmute">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
         <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
@@ -2170,25 +2245,34 @@ body.is-generating .input-wrap {
 
     <!-- Main mic orb -->
     <button class="va-orb" id="voiceOrb" onclick="toggleVoiceListening()">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+      <!-- Mic icon (idle/listening) -->
+      <svg class="va-mic-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
         <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
         <line x1="12" y1="19" x2="12" y2="23"/>
         <line x1="8" y1="23" x2="16" y2="23"/>
       </svg>
+      <!-- Spinner (thinking) -->
+      <div class="va-spinner"></div>
+      <!-- Speaker icon (speaking) -->
+      <svg class="va-speak-icon" style="display:none;" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+      </svg>
     </button>
 
     <!-- Stop speaking -->
-    <button id="vaStopBtn" onclick="stopSpeaking()"
-      style="width:44px;height:44px;border-radius:50%;border:1px solid var(--border);background:var(--bg2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;"
-      title="Stop speaking">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+    <button id="vaStopBtn" onclick="stopSpeaking()" class="va-ctrl-btn" title="Stop speaking">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <rect x="4" y="4" width="16" height="16" rx="3"/>
+      </svg>
     </button>
 
   </div>
 
   <!-- Hint -->
-  <div style="margin-top:24px;font-size:11px;color:var(--text3);text-align:center;">
+  <div style="margin-top:20px;font-size:11px;color:var(--text3);text-align:center;opacity:0.6;">
     Say "close" or "bye" to exit
   </div>
 
