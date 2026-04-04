@@ -2214,13 +2214,13 @@ let voiceMuted   = false
 // ── STATE MACHINE ─────────────────────────────────────────────────────────────
 function setVA(state) {
   // state: idle | listening | thinking | speaking
-  const overlay   = document.getElementById("voiceOverlay")
-  const statusEl  = document.getElementById("voiceStatus")
-  const orbEl     = document.getElementById("voiceOrb")
+  const overlay  = document.getElementById("voiceOverlay")
+  const statusEl = document.getElementById("voiceStatus")
+  const badgeEl  = document.getElementById("vaLangBadge")
 
   if (!overlay) return
 
-  // Remove all state classes
+  // Remove all state classes — CSS handles orb color + animations
   overlay.classList.remove("va-listening", "va-speaking", "va-thinking")
 
   const labels = { idle:"Tap to speak", listening:"Listening...", thinking:"Thinking...", speaking:"Speaking..." }
@@ -2228,15 +2228,17 @@ function setVA(state) {
 
   if (state === "listening") {
     overlay.classList.add("va-listening")
-    if (orbEl) orbEl.style.background = "linear-gradient(135deg,#ef4444,#f97316)"
   } else if (state === "speaking") {
     overlay.classList.add("va-speaking")
-    if (orbEl) orbEl.style.background = "linear-gradient(135deg,#0077ff,#a855f7)"
   } else if (state === "thinking") {
     overlay.classList.add("va-thinking")
-    if (orbEl) orbEl.style.background = "linear-gradient(135deg,#a855f7,#ec4899)"
-  } else {
-    if (orbEl) orbEl.style.background = "linear-gradient(135deg,#10a37f,#0077ff)"
+  }
+
+  // Show detected language in badge
+  if (badgeEl) {
+    const langMap = { "te-IN":"తెలుగు", "hi-IN":"हिंदी", "ta-IN":"தமிழ்", "kn-IN":"ಕನ್ನಡ", "en-IN":"English", "en-US":"English" }
+    const activeLang = window._voiceLang
+    badgeEl.textContent = activeLang && activeLang !== "en-IN" ? (langMap[activeLang] || activeLang) : ""
   }
 }
 
@@ -2290,12 +2292,14 @@ function setVoiceLang(lang) {
 }
 
 function detectLangFromText(text) {
-  // Simple script detection
-  if (/[ऀ-ॿ]/.test(text)) return "hi-IN"  // Hindi Devanagari
-  if (/[ఀ-౿]/.test(text)) return "te-IN"  // Telugu
-  if (/[஀-௿]/.test(text)) return "ta-IN"  // Tamil
-  if (/[ಀ-೿]/.test(text)) return "kn-IN"  // Kannada
-  return "en-IN"
+  // Unicode script detection — returns {tts, api} pair
+  if (/[ఀ-౿]/.test(text)) return { tts: "te-IN", api: "Telugu" }   // Telugu
+  if (/[ऀ-ॿ]/.test(text)) return { tts: "hi-IN", api: "Hindi" }    // Hindi / Devanagari
+  if (/[஀-௿]/.test(text)) return { tts: "ta-IN", api: "Tamil" }    // Tamil
+  if (/[ಀ-೿]/.test(text)) return { tts: "kn-IN", api: "Kannada" }  // Kannada
+  if (/[਀-੿]/.test(text)) return { tts: "pa-IN", api: "Punjabi" }  // Punjabi
+  if (/[ঀ-৿]/.test(text)) return { tts: "bn-IN", api: "Bengali" }  // Bengali
+  return { tts: "en-IN", api: "English" }
 }
 
 // ── LISTEN ────────────────────────────────────────────────────────────────────
@@ -2387,12 +2391,14 @@ async function processVoiceQuery(query) {
   setVA("thinking")
   setVoiceAIText("...")
 
-  // Auto-detect language from text if auto mode
+  // Auto-detect language from the spoken text
   const langSel = document.getElementById("voiceLangSelect")
-  if (!langSel || langSel.value === "auto") {
-    const detected = detectLangFromText(query)
-    if (detected !== "en-IN") window._voiceLang = detected
-  }
+  const _manualLang = langSel && langSel.value !== "auto" ? langSel.value : null
+  const _detected = detectLangFromText(query)
+  // If manual lang selected, use it for TTS; otherwise use detected
+  const _ttsLang = _manualLang || _detected.tts
+  const _apiLang = _detected.api  // always auto-detect for API (server also detects Unicode)
+  window._voiceLang = _ttsLang   // update TTS language
 
   try {
     const token = getToken()
@@ -2407,10 +2413,10 @@ async function processVoiceQuery(query) {
       formData.append("message", query)
       formData.append("chatId",   currentChatId || "")
       formData.append("token",    token)
-      formData.append("language", localStorage.getItem("datta_language") || "English")
+      formData.append("language", _apiLang)   // pass detected language to server
       formData.append("model",    localStorage.getItem("datta_model") || "llama-3.3-70b-versatile")
       formData.append("modelKey", localStorage.getItem("datta_model_key") || "d42")
-      formData.append("style",    "Short")
+      formData.append("style",    "Balanced")   // Balanced = proper full answers (not Short)
       formData.append("ainame",   "Datta AI")
       formData.append("voice",    "true")
       return formData
@@ -2520,13 +2526,16 @@ async function processVoiceQuery(query) {
     const errMsg = err.message || "Unknown error"
     if (errMsg.includes("401") || errMsg.includes("token")) {
       setVoiceAIText("Please log in to use voice assistant.")
+    } else if (errMsg.includes("429")) {
+      setVoiceAIText("Too many requests. Please wait a moment and try again.")
+      if (!voiceMuted) speakText2("Please wait a moment and try again.")
     } else if (errMsg.includes("500") || errMsg.includes("Server")) {
-      setVoiceAIText("Server busy. Tap to try again.")
-      if (!voiceMuted) speakText2("Server is busy, please try again.")
-    } else if (errMsg.includes("network") || errMsg.includes("fetch")) {
-      setVoiceAIText("No internet connection.")
+      setVoiceAIText("Could not get a response. Please try again.")
+      if (!voiceMuted) speakText2("Please try again.")
+    } else if (errMsg.includes("network") || errMsg.includes("fetch") || errMsg.includes("Failed to fetch")) {
+      setVoiceAIText("No internet connection. Check your network.")
     } else {
-      setVoiceAIText("Error: " + errMsg.slice(0, 60))
+      setVoiceAIText("Something went wrong. Please tap to try again.")
     }
     setVA("idle")
   }
@@ -2555,6 +2564,18 @@ function pickVoice(profile) {
   if (!window._voicesLogged) {
     window._voicesLogged = true
     console.log("Available voices:", voices.map(v => v.name + " (" + v.lang + ")").join(", "))
+  }
+
+  // If a specific language is set (e.g. te-IN, hi-IN), match that first
+  const activeLang = window._voiceLang
+  if (activeLang && activeLang !== "en-IN") {
+    const langCode = activeLang.split("-")[0]  // "te", "hi", "ta", "kn"
+    const nativeLangVoice = voices.find(v => v.lang === activeLang || v.lang.startsWith(langCode))
+    if (nativeLangVoice) {
+      console.log("Voice matched by native lang:", nativeLangVoice.name, nativeLangVoice.lang)
+      return nativeLangVoice
+    }
+    // No native voice available — fall through to English with correct lang tag
   }
 
   // Try exact keyword match
@@ -2606,7 +2627,8 @@ function speakText2(text) {
   const profileKey = getSelectedVoiceProfile()
   const profile = voiceProfiles[profileKey] || voiceProfiles.aria
 
-  utterance.lang = profile.lang
+  // Use detected/selected voice language — overrides profile default
+  utterance.lang = window._voiceLang || profile.lang
   utterance.rate = profile.rate
   utterance.pitch = profile.pitch
   utterance.volume = 1.0
