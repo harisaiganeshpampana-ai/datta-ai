@@ -1194,6 +1194,17 @@ async function send() {
     hideStopBtn()
     loadSidebar()
 
+    // Refresh usage counter after every successful response
+    try {
+      const _tok = typeof getToken === "function" ? getToken() : localStorage.getItem("datta_token")
+      if (_tok) {
+        fetch(SERVER + "/payment/usage", { headers: { "Authorization": "Bearer " + _tok } })
+          .then(r => r.ok ? r.json() : null)
+          .then(u => { if (u && typeof u.used === "number") updateUsageDisplay(u.used, u.limit) })
+          .catch(() => {})
+      }
+    } catch(_e) {}
+
   } catch (err) {
     if (err.name === "AbortError") {
       hideStopBtn()
@@ -2682,14 +2693,16 @@ async function loadUserVersion() {
     const subtitle = document.getElementById("planBtnSub")
 
     const planInfo = {
-      free:      { emoji:"🌱", title:"Free Plan",  sub:"40 msgs/day · Datta 2.1 only" },
-      plus:      { emoji:"⚡", title:"Plus Plan",  sub:"300 msgs/day · All models · Active" },
-      pro:       { emoji:"🔥", title:"Pro Plan",   sub:"1000 msgs/day · All models · Active" },
-      mini:      { emoji:"⚡", title:"Mini Plan",  sub:"200 msgs/day · Active" },
-      max:       { emoji:"💎", title:"Max Plan",   sub:"2000 msgs/day · Active" },
-      ultramax:  { emoji:"👑", title:"Ultra Max",  sub:"Unlimited · Active" },
-      basic:     { emoji:"🔥", title:"Pro Plan",   sub:"500 msgs/day · Active" },
-      enterprise:{ emoji:"👑", title:"Enterprise", sub:"Unlimited · Active" }
+      free:      { emoji:"🌱", title:"Free Plan",     sub:"20 msgs/day · Datta 2.1 only" },
+      starter:   { emoji:"🚀", title:"Starter Plan",  sub:"50 msgs/day · Datta 2.1 · Active" },
+      standard:  { emoji:"⭐", title:"Standard Plan", sub:"120 msgs/day · All models · Active" },
+      plus:      { emoji:"⚡", title:"Plus Plan",     sub:"300 msgs/day · All models · Active" },
+      pro:       { emoji:"🔥", title:"Pro Plan",      sub:"1000 msgs/day · All models · Active" },
+      mini:      { emoji:"⚡", title:"Mini Plan",     sub:"200 msgs/day · Active" },
+      max:       { emoji:"💎", title:"Max Plan",      sub:"2000 msgs/day · Active" },
+      ultramax:  { emoji:"👑", title:"Ultra Max",     sub:"Unlimited · Active" },
+      basic:     { emoji:"🔥", title:"Basic Plan",    sub:"500 msgs/day · Active" },
+      enterprise:{ emoji:"👑", title:"Enterprise",    sub:"Unlimited · Active" }
     }
 
     // Update usage display if limits data available
