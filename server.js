@@ -1235,13 +1235,13 @@ app.get("/payment/usage", authMiddleware, async (req, res) => {
     const sub    = await Subscription.findOne({ userId, active: true }).catch(() => null)
     const plan   = sub ? sub.plan : "free"
     const limits = planLimits[plan] || planLimits.free
-    const usage  = await Usage.findOne({ userId, type: "messages" }).catch(() => null)
+    const usage  = await Usage.findOne({ userId }).catch(() => null)   // FIX: no type filter
     const now    = Date.now()
     const resetMs = limits.resetHours * 60 * 60 * 1000
     let used = 0
     if (usage) {
       const expired = resetMs > 0 && (now - new Date(usage.windowStart).getTime()) > resetMs
-      used = expired ? 0 : (usage.count || 0)
+      used = expired ? 0 : (usage.messagesUsed || 0)   // FIX: correct field name
     }
     res.json({ used, limit: limits.messages, plan })
   } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
