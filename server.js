@@ -1585,9 +1585,11 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       })
       .filter(m => !m.content.includes("data:image") && !m.content.includes("data:application"))
     var isImageFile = file && file.mimetype?.startsWith("image/")
+    console.log("[IMAGE DEBUG] file:", !!file, "mimetype:", file?.mimetype, "isImageFile:", isImageFile, "message:", (message||"").slice(0,40))
     let userContent
     if (isImageFile) {
       userContent = [{ type: "text", text: (message || "Analyze this image.") + searchContext }, { type: "image_url", image_url: { url: "data:" + file.mimetype + ";base64," + file.buffer.toString("base64") } }]
+      console.log("[IMAGE DEBUG] userContent built as array, parts:", userContent.length)
     } else if (file) {
       try {
         var isPDF = file.mimetype === "application/pdf" || file.originalname?.toLowerCase().endsWith(".pdf")
@@ -2051,6 +2053,7 @@ IMPORTANT: Answer like a human, NOT like a search engine.
     // Code/Large → 70b first (smarter), fallback 8b
     // Explain → 70b (deeper answers), fallback 8b  
     // Simple chat → 8b first (faster/cheaper), fallback 70b
+    console.log("[IMAGE DEBUG] model:", model, "isVisionModel:", isVisionModel, "isImageFile:", isImageFile, "finalUserContent type:", typeof finalUserContent, Array.isArray(finalUserContent) ? "ARRAY len="+finalUserContent.length : "")
     // Vision model gets its own dedicated attempt — no text-model fallback
     var groqAttempts = isImageFile
       ? [
@@ -2137,12 +2140,14 @@ IMPORTANT: Answer like a human, NOT like a search engine.
         })
 
         // Log EXACT payload — will appear in Render logs
-        console.log("[GROQ PAYLOAD] count:", safeMessages.length)
+        console.log("[GROQ PAYLOAD] count:", safeMessages.length, "isImageFile:", isImageFile, "isVisionModel:", isVisionModel, "tryModel:", tryModel)
         safeMessages.forEach(function(m, i) {
           var t = typeof m.content
+          var isArr = Array.isArray(m.content)
           var preview = t === "string" ? m.content.slice(0, 60) : JSON.stringify(m.content).slice(0, 60)
-          console.log("[MSG "+i+"] role:", m.role, "type:", t, "preview:", preview)
-          if (t !== "string") console.error("[FATAL] messages["+i+"].content is NOT a string! value:", JSON.stringify(m.content))
+          console.log("[MSG "+i+"] role:", m.role, "type:", t, "isArray:", isArr, "preview:", preview.slice(0,80))
+          if (t !== "string" && !isArr) console.error("[FATAL] messages["+i+"].content is NOT a string! value:", JSON.stringify(m.content))
+          if (isArr) console.log("[ARRAY MSG "+i+"] has", m.content.length, "parts:", m.content.map(function(p){return p.type}).join(","))
         })
 
         stream = await groq.chat.completions.create({
