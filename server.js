@@ -2062,19 +2062,24 @@ IMPORTANT: Answer like a human, NOT like a search engine.
         ]
 
     // ===== FINAL CONTENT SANITIZER =====
-    // Convert ALL non-string content to string. No exceptions for text models.
-    // Vision array is only valid for the actual vision model endpoint, not text models.
+    // Convert non-string content to string.
+    // EXCEPTION: last user message keeps array format ONLY when using vision model.
+    // History messages (from old image chats) ALWAYS get converted to string.
     ;(function sanitizeGroqMessages() {
+      var lastIdx = groqMessages.length - 1
       for (var _i = 0; _i < groqMessages.length; _i++) {
         var _m = groqMessages[_i]
         if (typeof _m.content === 'string') continue  // already string, skip
 
-        // Force through JSON round-trip to kill all Mongoose types
+        // Last user message + vision model = keep array (needed for image analysis)
+        if (_i === lastIdx && isVisionModel && Array.isArray(_m.content)) continue
+
+        // Everything else: force to string
         var _raw
         try { _raw = JSON.parse(JSON.stringify(_m.content)) } catch(e) { _raw = null }
         
         if (Array.isArray(_raw)) {
-          // Extract text parts only — images cannot go to text models
+          // Extract text parts only — strip image_url parts
           var _txt = _raw
             .filter(function(p) { return p && p.type === 'text' && p.text })
             .map(function(p) { return String(p.text) })
@@ -2098,13 +2103,19 @@ IMPORTANT: Answer like a human, NOT like a search engine.
       try {
         console.log("[GROQ] attempt", attempt+1, "model:", tryModel, "tokens:", tryTokens)
 
-        // Build clean messages — EVERY content must be string, no exceptions
-        // Vision arrays cannot go to text models (llama-3.3-70b, llama-3.1-8b)
+        // Build clean messages for Groq
+        // Last message keeps array ONLY for vision model (image analysis)
+        // All history messages always converted to string (strips old image arrays)
         var safeMessages = groqMessages.map(function(m, idx) {
           var c = m.content
           if (typeof c === "string") return { role: m.role, content: c }
 
-          // Not a string — convert
+          // Keep array for last message when using vision model
+          if (idx === groqMessages.length - 1 && isVisionModel && Array.isArray(c)) {
+            return { role: m.role, content: c }
+          }
+
+          // Everything else: force to string, strip image data
           var arr
           try { arr = JSON.parse(JSON.stringify(c)) } catch(e) { arr = null }
           if (Array.isArray(arr)) {
