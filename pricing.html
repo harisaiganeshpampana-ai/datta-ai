@@ -25,8 +25,12 @@
   --purple:  #8b5cf6;
 }
 
-html, body {
-  height: auto;
+html {
+  scroll-behavior: smooth;
+  overflow-y: auto;
+}
+body {
+  min-height: 100vh;
   overflow-y: auto;
   margin: 0;
   background: var(--bg);
@@ -314,8 +318,8 @@ html, body {
 }
 .pay-cancel:hover { border-color: var(--text2); }
 </style>
-<link rel="stylesheet" href="layout.css">
-<link rel="stylesheet" href="theme.css">
+<!-- layout.css and theme.css intentionally excluded from pricing page
+     layout.css sets overflow:hidden on body which blocks all scrolling -->
 <script>(function(){ var t=localStorage.getItem("datta_theme")||"dark"; document.body&&document.body.setAttribute("data-theme",t) })()</script>
 </head>
 <body>
