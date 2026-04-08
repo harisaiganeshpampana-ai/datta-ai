@@ -2711,12 +2711,16 @@ window.toggleVoiceListening = toggleVoiceListening
 
 // VERSION NAMES based on plan
 const planVersions = {
-  free:      { name: "Free",      version: "Datta 2.1", emoji: "🌱" },
-  pro:       { name: "Pro",       version: "Datta 4.2", emoji: "⚡" },
-  max:       { name: "Max",       version: "Datta 4.8", emoji: "🚀" },
-  ultramax:  { name: "Ultra Max", version: "Datta 5.4", emoji: "👑" },
-  basic:     { name: "Pro",       version: "Datta 4.2", emoji: "⚡" },
-  enterprise:{ name: "Ultra Max", version: "Datta 5.4", emoji: "👑" }
+  free:         { name: "Free",       version: "Datta 2.1", emoji: "🌱" },
+  "ultra-mini": { name: "Ultra Mini", version: "Datta 2.1", emoji: "⚡" },
+  starter:      { name: "Starter",    version: "Datta 2.1", emoji: "🚀" },
+  standard:     { name: "Standard",   version: "Datta 5.4", emoji: "⭐" },
+  plus:         { name: "Plus",       version: "Datta 5.4", emoji: "⚡" },
+  pro:          { name: "Pro",        version: "Datta 5.4", emoji: "🔥" },
+  max:          { name: "Max",        version: "Datta 5.4", emoji: "💎" },
+  ultramax:     { name: "Ultra Max",  version: "Datta 5.4", emoji: "👑" },
+  basic:        { name: "Basic",      version: "Datta 4.2", emoji: "⚡" },
+  enterprise:   { name: "Enterprise", version: "Datta 5.4", emoji: "👑" }
 }
 
 async function loadUserVersion() {
@@ -2743,31 +2747,36 @@ async function loadUserVersion() {
     const title = document.getElementById("planBtnTitle")
     const subtitle = document.getElementById("planBtnSub")
 
+    // Build sub text dynamically using limit from server if available
+    const limitNum = (data.limits && data.limits.messages) ? data.limits.messages : null
     const planInfo = {
-      free:      { emoji:"🌱", title:"Free Plan",     sub:"20 msgs/day · Datta 2.1 only" },
-      starter:   { emoji:"🚀", title:"Starter Plan",  sub:"50 msgs/day · Datta 2.1 · Active" },
-      standard:  { emoji:"⭐", title:"Standard Plan", sub:"120 msgs/day · All models · Active" },
-      plus:      { emoji:"⚡", title:"Plus Plan",     sub:"300 msgs/day · All models · Active" },
-      pro:       { emoji:"🔥", title:"Pro Plan",      sub:"1000 msgs/day · All models · Active" },
-      mini:      { emoji:"⚡", title:"Mini Plan",     sub:"200 msgs/day · Active" },
-      max:       { emoji:"💎", title:"Max Plan",      sub:"2000 msgs/day · Active" },
-      ultramax:  { emoji:"👑", title:"Ultra Max",     sub:"Unlimited · Active" },
-      basic:     { emoji:"🔥", title:"Basic Plan",    sub:"500 msgs/day · Active" },
-      enterprise:{ emoji:"👑", title:"Enterprise",    sub:"Unlimited · Active" }
+      free:         { emoji:"🌱", title:"Free Plan",       sub: (limitNum||20) + " msgs/day · Datta 2.1" },
+      "ultra-mini": { emoji:"⚡", title:"Ultra Mini",      sub:"+" + (limitNum ? limitNum - 20 : 15) + " bonus msgs · 24h · Active" },
+      starter:      { emoji:"🚀", title:"Starter Plan",    sub: (limitNum||50) + " msgs/day · Active" },
+      standard:     { emoji:"⭐", title:"Standard Plan",   sub: (limitNum||120) + " msgs/day · Datta 5.4 · Active" },
+      plus:         { emoji:"⚡", title:"Plus Plan",       sub: (limitNum||300) + " msgs/day · All models · Active" },
+      pro:          { emoji:"🔥", title:"Pro Plan",        sub: (limitNum||1000) + " msgs/day · All models · Active" },
+      mini:         { emoji:"⚡", title:"Mini Plan",       sub: (limitNum||200) + " msgs/day · Active" },
+      max:          { emoji:"💎", title:"Max Plan",        sub: (limitNum||2000) + " msgs/day · Active" },
+      ultramax:     { emoji:"👑", title:"Ultra Max",       sub:"Unlimited · Active" },
+      basic:        { emoji:"🔥", title:"Basic Plan",      sub: (limitNum||500) + " msgs/day · Active" },
+      enterprise:   { emoji:"👑", title:"Enterprise",      sub:"Unlimited · Active" }
     }
 
-    // Update usage display if limits data available
-    if (data.limits && data.limits.messages) {
-      // Fetch current usage from server
-      fetch(SERVER + "/payment/usage", { headers: { "Authorization": "Bearer " + getToken() } })
-        .then(r => r.json())
-        .then(u => {
-          if (typeof u.used === "number") {
-            updateUsageDisplay(u.used, data.limits.messages)
-          }
-        })
-        .catch(() => {})
-    }
+    // Update usage display with correct limit for current plan
+    const planLimit = (data.limits && data.limits.messages) ? data.limits.messages : 20
+    fetch(SERVER + "/payment/usage", { headers: { "Authorization": "Bearer " + getToken() } })
+      .then(r => r.ok ? r.json() : null)
+      .then(u => {
+        if (u && typeof u.used === "number") {
+          // Use the limit from usage endpoint (most accurate) or fall back to plan limit
+          updateUsageDisplay(u.used, u.limit || planLimit)
+        } else {
+          // At least update the bar max even if used count unavailable
+          updateUsageDisplay(0, planLimit)
+        }
+      })
+      .catch(() => {})
 
     // Show/hide Plus badge on Datta 5.4 based on plan
     const badge = document.getElementById("d54PlanBadge")
@@ -2784,22 +2793,25 @@ async function loadUserVersion() {
     if (title) title.textContent = info.title
     if (subtitle) subtitle.textContent = info.sub
 
-    // Change button color for paid plans
+    // Change button color for all plans
     const btn = document.getElementById("planBtn")
     if (btn) {
-      if (plan === "free") {
-        btn.style.background = "linear-gradient(135deg, #0a2a1a, #0a1a2a)"
-        btn.style.borderColor = "#00ff8833"
-      } else if (plan === "pro") {
-        btn.style.background = "linear-gradient(135deg, #1a1a0a, #2a1a00)"
-        btn.style.borderColor = "#ffaa0033"
-      } else if (plan === "max") {
-        btn.style.background = "linear-gradient(135deg, #0a0a2a, #1a0a2a)"
-        btn.style.borderColor = "#8844ff33"
-      } else if (plan === "ultramax") {
-        btn.style.background = "linear-gradient(135deg, #2a0a1a, #1a0a2a)"
-        btn.style.borderColor = "#ff44aa33"
+      const btnStyles = {
+        free:         { bg: "linear-gradient(135deg,#0a2a1a,#0a1a2a)", border: "#00ff8833" },
+        "ultra-mini": { bg: "linear-gradient(135deg,#2a1a00,#1a1000)", border: "#f59e0b44" },
+        starter:      { bg: "linear-gradient(135deg,#001a0a,#001a10)", border: "#00cc6a44" },
+        standard:     { bg: "linear-gradient(135deg,#001020,#001830)", border: "#0099ff44" },
+        plus:         { bg: "linear-gradient(135deg,#1a1000,#2a1800)", border: "#f59e0b44" },
+        pro:          { bg: "linear-gradient(135deg,#1a0500,#200800)", border: "#ef444444" },
+        mini:         { bg: "linear-gradient(135deg,#1a1a0a,#2a1a00)", border: "#ffaa0033" },
+        max:          { bg: "linear-gradient(135deg,#0a0a2a,#1a0a2a)", border: "#8844ff33" },
+        ultramax:     { bg: "linear-gradient(135deg,#2a0a1a,#1a0a2a)", border: "#ff44aa33" },
+        basic:        { bg: "linear-gradient(135deg,#1a0a00,#200a00)", border: "#ff660033" },
+        enterprise:   { bg: "linear-gradient(135deg,#2a0a1a,#1a0a2a)", border: "#ff44aa33" }
       }
+      const s = btnStyles[plan] || btnStyles.free
+      btn.style.background  = s.bg
+      btn.style.borderColor = s.border
     }
 
   } catch(e) {
@@ -2807,12 +2819,18 @@ async function loadUserVersion() {
     // Show from localStorage as fallback
     const plan = localStorage.getItem("datta_plan") || "free"
     const info = {
-      free:      { emoji:"🌱", title:"Free Plan",      sub:"50 msgs · All models unlocked" },
-      mini:      { emoji:"⚡", title:"Mini Plan",      sub:"200 msgs · Active" },
-      pro:       { emoji:"🔥", title:"Pro Plan",       sub:"500 msgs · Active" },
-      max:       { emoji:"💎", title:"Max Plan",       sub:"2000 msgs · Active" },
-      ultramax:  { emoji:"👑", title:"Ultra Max Plan", sub:"Unlimited · Active" }
-    }[plan] || { emoji:"🌱", title:"Free Plan", sub:"50 msgs · All models" }
+      free:         { emoji:"🌱", title:"Free Plan",     sub:"20 msgs/day" },
+      "ultra-mini": { emoji:"⚡", title:"Ultra Mini",    sub:"+15 bonus msgs · Active" },
+      starter:      { emoji:"🚀", title:"Starter Plan",  sub:"50 msgs/day · Active" },
+      standard:     { emoji:"⭐", title:"Standard Plan", sub:"120 msgs/day · Active" },
+      plus:         { emoji:"⚡", title:"Plus Plan",     sub:"300 msgs/day · Active" },
+      pro:          { emoji:"🔥", title:"Pro Plan",      sub:"1000 msgs/day · Active" },
+      mini:         { emoji:"⚡", title:"Mini Plan",     sub:"200 msgs/day · Active" },
+      max:          { emoji:"💎", title:"Max Plan",      sub:"2000 msgs/day · Active" },
+      ultramax:     { emoji:"👑", title:"Ultra Max",     sub:"Unlimited · Active" },
+      basic:        { emoji:"🔥", title:"Basic Plan",    sub:"500 msgs/day · Active" },
+      enterprise:   { emoji:"👑", title:"Enterprise",   sub:"Unlimited · Active" }
+    }[plan] || { emoji:"🌱", title:"Free Plan", sub:"20 msgs/day" }
     const emoji = document.getElementById("planBtnEmoji")
     const title = document.getElementById("planBtnTitle")
     const sub = document.getElementById("planBtnSub")
@@ -2824,8 +2842,19 @@ async function loadUserVersion() {
 
 // Load version + usage on startup
 window.addEventListener("DOMContentLoaded", function() {
-  setTimeout(loadUserVersion, 1000)
-  setTimeout(refreshUsageCounter, 1500)  // show real count immediately on load
+  // Check if plan was just updated (e.g. user came back from pricing page)
+  // Load immediately + again after 1s to catch any race condition
+  setTimeout(loadUserVersion, 300)   // fast first load
+  setTimeout(loadUserVersion, 1500)  // confirm after server settles
+  setTimeout(refreshUsageCounter, 1800)
+})
+
+// Also refresh when tab becomes visible again (user switches back from pricing page)
+document.addEventListener("visibilitychange", function() {
+  if (document.visibilityState === "visible") {
+    setTimeout(loadUserVersion, 500)
+    setTimeout(refreshUsageCounter, 800)
+  }
 })
 
 // SUGGESTION CHIPS
