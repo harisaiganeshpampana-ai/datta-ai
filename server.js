@@ -1661,7 +1661,10 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var historyContentLimit = _isCode ? 800 : msgLen > 2000 ? 400 : msgLen > 1000 ? 800 : 1500
     // Use plain JS messages (stripped of Mongoose types)
     var rawMessages = (chat._leanMessages || chat.messages || [])
-    var history = rawMessages.slice(0, -1).slice(-historyLimit)
+    // Detect if this is the FIRST message in this chat (no prior assistant replies)
+    var priorMessages = rawMessages.slice(0, -1)  // everything before current user message
+    var isFirstMessage = priorMessages.filter(m => m.role === "assistant").length === 0
+    var history = priorMessages.slice(-historyLimit)
       .map(m => {
         // Convert content to plain string no matter what type it is
         var raw = m.content
@@ -1836,11 +1839,23 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var isExplainQuestion = !isProblemSolving && (isNarrativeRequest || isCurrentAffairs || isGKHistory || ["what is","what are","what does","what do","why is","why does","why do","how does","how do","explain","tell me about","define","describe","difference between","vs ","versus","when to use","should i use","pros and cons","advantages","disadvantages","history of","who created","who made","full form","meaning of","importance of","role of","function of","types of","examples of","causes of","effects of","impact of","significance of"].some(k => msgLower.includes(k)))
     var isCodeTask = !isExplainQuestion && ["build","create","write","make","code","website","app","script","program","fix","debug","update","improve","implement","develop","generate","show me how to","give me code","example code","sample code","snippet"].some(k => msgLower.includes(k))
     
-    // Auto-switch to Datta 5.4 for coding if user is on 2.1, 4.2, or 4.8
-    var nonCodingModels = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
+    // Datta 2.1 (llama-3.1-8b) — NO coding at all. Always redirect to Datta 5.4.
+    var isDatta21 = (resolvedModel === "llama-3.1-8b-instant" || chosenModel === "llama-3.1-8b-instant")
     let autoSwitchMsg = ""
+    if (isCodeTask && !isImageFile && isDatta21 && !chosenModel.startsWith("persona-")) {
+      // Block coding on Datta 2.1 completely — stream a redirect message and stop
+      var redirectMsg = "⚠️ Coding requires **Datta 5.4**. Datta 2.1 is for chat only.\n\nPlease switch to **Datta 5.4** from the model selector to get full code answers."
+      res.write(redirectMsg)
+      chat.messages.push({ role: "assistant", content: redirectMsg })
+      await chat.save()
+      res.write("CHATID" + chat._id)
+      res.end()
+      cleanupRequest()
+      return
+    }
+    // For other non-8b models doing code — use 70b
+    var nonCodingModels = ["llama-3.3-70b-versatile"]
     if (isCodeTask && !isImageFile && nonCodingModels.includes(resolvedModel) && !chosenModel.startsWith("persona-")) {
-      autoSwitchMsg = ""  // No switch message — just answer directly
       resolvedModel = "llama-3.3-70b-versatile"
     }
     // Now set final model AFTER any auto-switch
@@ -2025,68 +2040,97 @@ You are answering an explanation, educational, or knowledge question. Rules:
 - NEVER stop mid-answer. Always complete the full response.
 ` : isCodeTask ? (isNodeTask ? `
 
-You are answering a Node.js / backend question. Follow these rules with ZERO exceptions.
+You are answering a Node.js / backend coding question.
+${isFirstMessage ? `
+THIS IS THE FIRST MESSAGE — give the FULL, COMPLETE code. No summaries. No placeholders.
 
-FORBIDDEN — never output these under any circumstances:
-- NEVER wrap Node.js inside HTML <script> tags or <!DOCTYPE html>
-- NEVER hardcode keys: const key = "sk-abc123" or process.env.KEY = "value"
-- NEVER use .then()/.catch() chains — async/await + try/catch only
-- NEVER use these outdated/non-existent packages:
-  * require("openai") with Configuration + OpenAIApi  ← v3 API, REMOVED
-  * text-davinci-003  ← SHUT DOWN by OpenAI
-  * require("grok")  ← DOES NOT EXIST as npm package
-  * require("@xai/grok")  ← NOT real
+REQUIRED OUTPUT (all of these, in order):
+1. One-line description of what the code does
+2. .env.example — all required keys, placeholder values only
+3. .gitignore — must include .env and node_modules/
+4. Complete server.js — runnable from top to bottom, zero truncation
+5. Run command: node server.js
 
-CORRECT PACKAGES TO USE (2024/2025):
-- OpenAI: npm install openai  →  import OpenAI from "openai"
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  const res = await openai.chat.completions.create({ model: "gpt-4o-mini", messages: [...] })
+RULES:
+- NEVER use .then()/.catch() — async/await + try/catch only
+- NEVER hardcode API keys — always use process.env
+- NEVER use old packages: require("openai") with Configuration+OpenAIApi is REMOVED
+- Correct OpenAI: import OpenAI from "openai" → new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+- Correct Groq: import Groq from "groq-sdk" → new Groq({ apiKey: process.env.GROQ_API_KEY })
+- Code must be complete — never say "rest of the code remains the same"
+` : `
+THIS IS A FOLLOW-UP — the user already has the full code.
+Show ONLY the parts that change. Format:
 
-- Groq (not "grok"): npm install groq-sdk  →  import Groq from "groq-sdk"
-  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
-  const res = await groq.chat.completions.create({ model: "llama-3.1-8b-instant", messages: [...] })
+// CHANGE 1: [what changed and why]
+// --- FILE: filename.js, FUNCTION: functionName ---
+[only the updated function/block]
 
-REQUIRED FORMAT — always give ALL of these:
-1. Two-line explanation of what the code does
-2. .env.example code block (placeholders only, no real values)
-3. .gitignore code block (must include .env and node_modules/)
-4. server.js code block — complete, runnable, never truncated
-5. One-line run instruction: node server.js or node --env-file=.env server.js
+// CHANGE 2: [what changed and why]
+[only the updated block]
 
-CORRECT server.js SKELETON:
-require("dotenv").config()
-const express = require("express")
-const OpenAI = require("openai")
-const app = express()
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-if (!process.env.OPENAI_API_KEY) { console.error("Missing OPENAI_API_KEY"); process.exit(1) }
-app.get("/api/chat", async (req, res) => {
-  try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: "Hello" }]
-    })
-    res.json({ reply: completion.choices[0].message.content })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-app.listen(3000, () => console.log("Running on port 3000"))
+RULES:
+- NEVER reprint unchanged code — only show what is different
+- Always say which file and which function each change belongs to
+- If it's a new file, write it completely
+- Explain each change in 1 line before the code block
+`}
+
+FORBIDDEN always:
+- NEVER wrap Node.js inside HTML <script> tags
+- NEVER hardcode secrets
+- NEVER use outdated packages
 ` : isFrontendTask ? `
 
-When building frontend websites/apps:
-1. First explain in 2 lines what you are building.
-2. Give COMPLETE working code in ONE HTML file (HTML+CSS+JS together).
-3. Never truncate. Always finish the full code.
-4. After code, give 1 line on how to use it.
+You are answering a frontend (HTML/CSS/JS) coding question.
+${isFirstMessage ? `
+THIS IS THE FIRST MESSAGE — give the FULL, COMPLETE single-file code.
+
+REQUIRED:
+1. One-line description of what you are building
+2. Complete HTML file — all HTML + CSS + JS in one file, nothing omitted
+3. One-line usage instruction
+
+RULES:
+- Never truncate — finish every tag, every function, every style
+- No external CDN dependencies unless absolutely necessary
+- Code must work by just opening the HTML file in a browser
+` : `
+THIS IS A FOLLOW-UP — the user already has the full code.
+Show ONLY what changes. Format:
+
+// CHANGE: [what changed and why]
+// In the <section> or function name it belongs to:
+[only the changed HTML/CSS/JS block]
+
+NEVER reprint the full file again — only the changed parts.
+`}
 ` : `
 
-When writing code:
-1. Briefly explain what the code does (2 lines).
-2. Give COMPLETE working code with correct language label on code block.
-3. Match the language to the question — Python stays Python, Node.js stays Node.js, never mix.
-4. Never truncate. Finish all code completely.
-5. After code, give 1 line explaining how to run it.
+You are answering a coding question (${isFirstMessage ? "first message" : "follow-up"}).
+${isFirstMessage ? `
+THIS IS THE FIRST MESSAGE — give the FULL, COMPLETE code.
+
+REQUIRED:
+1. Brief description (1-2 lines)
+2. Complete, runnable code — nothing omitted, nothing truncated
+3. How to run it (1 line)
+
+RULES:
+- Never say "the rest remains the same" or "..." — write everything
+- Include imports, setup, main logic, error handling — all of it
+- Code must run correctly as-is without modification
+` : `
+THIS IS A FOLLOW-UP — the user already has the full code from earlier in this chat.
+Show ONLY the parts that changed or were added.
+
+Format:
+// CHANGE: [reason]
+// Location: [filename or function name]
+[only the updated block]
+
+NEVER repeat unchanged code. Only show what is new or different.
+`}
 `) : (isDeepKnowledge ? `
 
 You are answering a Current Affairs / GK / History question. The user wants COMPLETE, EXAM-READY information.
