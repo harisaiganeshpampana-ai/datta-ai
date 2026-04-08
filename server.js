@@ -3034,7 +3034,7 @@ function isAdmin(req) {
 }
 
 // Plan prices for revenue calculation
-const PLAN_PRICES = { free:0, starter:49, standard:149, plus:299, pro:799, mini:199, max:1999, ultramax:0, basic:499, enterprise:0 }
+const PLAN_PRICES = { free:0, starter:29, standard:149, plus:299, pro:499, ultimate:799, "ultra-mini":10, mini:199, max:1999, ultramax:0, basic:499, enterprise:0 }
 
 app.get("/admin/stats", authMiddleware, async (req, res) => {
   if (!isAdmin(req)) return res.status(403).json({ error: "Not authorized" })
@@ -3105,7 +3105,7 @@ app.get("/admin/dashboard", authMiddleware, async (req, res) => {
     ])
 
     // Plan distribution
-    const planStats = { free: 0, plus: 0, pro: 0, mini: 0, max: 0, ultramax: 0 }
+    const planStats = { free: 0, starter: 0, plus: 0, pro: 0, ultimate: 0, standard: 0, "ultra-mini": 0, mini: 0, max: 0, ultramax: 0 }
     planGroups.forEach(p => { if (p._id) planStats[p._id] = p.count })
     planStats.free = Math.max(0, totalUsers - activeSubs)
 
