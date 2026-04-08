@@ -1824,7 +1824,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var searchNote = searchContext ? " IMPORTANT: Web search results are provided above. Use them to answer. Write your response as PLAIN TEXT only — no JavaScript, no arrays, no [object Object], no brackets. For sports/IPL: write naturally like 'Today CSK plays against MI at 7:30 PM at Chepauk Stadium'. Extract all values as readable sentences." : ""
 
     // Hard rule injected into EVERY system prompt regardless of model
-    var hardRules = "\n\nHARD RULES (override everything else):\n- NEVER output a Python/code block for non-coding questions like payments, accounts, or app publishing\n- NEVER give generic advice like 'contact support' or 'update payment method' without specific steps\n- If the question is about a real-world problem (payment, account, app store), give exact numbered steps with real cause diagnosis\n- REASONING PROBLEMS: Never stop at first answer. Always check for more possibilities. List ALL valid cases (Case 1, Case 2...). Use structure: Final Answer → Reasoning → Case 1 → Case 2 → Conclusion\n- NEVER use vague words: near / maybe / somewhere / probably. Be precise or say you don't know."
+    // Add emotional support instruction if user is struggling
+    var emotionalNote = isEmotionalStruggle ? "\n\nEMOTIONAL SUPPORT MODE: The user is going through a hard time emotionally. Rules:\n- Acknowledge their feelings FIRST before anything else — 1-2 warm sentences\n- Never dismiss, minimize, or immediately jump to solutions\n- Speak like a caring friend, not a textbook\n- Ask one gentle question to understand more\n- If it feels serious, gently mention that talking to someone they trust can help\n- Keep tone warm, human, non-judgmental throughout" : ""
+    var hardRules = "\n\nHARD RULES (override everything else):\n- NEVER output a Python/code block for non-coding questions like payments, accounts, or app publishing\n- NEVER give generic advice like 'contact support' or 'update payment method' without specific steps\n- If the question is about a real-world problem (payment, account, app store), give exact numbered steps with real cause diagnosis\n- REASONING PROBLEMS: Never stop at first answer. Always check for more possibilities. List ALL valid cases (Case 1, Case 2...). Use structure: Final Answer → Reasoning → Case 1 → Case 2 → Conclusion\n- NEVER use vague words: near / maybe / somewhere / probably. Be precise or say you don't know." + emotionalNote
 
     // Detect if code/build task needs max tokens
     var msgLower = message.toLowerCase()
@@ -2016,6 +2018,81 @@ NEVER say you are Claude, GPT, or any other AI. You are ${ainame}.`,
       res.end()
       return
     }
+
+    // ── EMOTIONAL / CRISIS DETECTION ──────────────────────────────────────────
+    var msgLowerEmo = (message || "").toLowerCase()
+
+    // Crisis — user may be in distress
+    var isCrisisMessage = [
+      "i am going to die","i want to die","i want to kill myself","i will kill myself",
+      "end my life","take my life","no reason to live","can't go on","i give up on life",
+      "i am done with life","life is not worth","want to end it","suicidal","suicide",
+      "nobody cares about me","everyone hates me","i have no one","i am all alone",
+      "i feel like dying","i feel like giving up","nothing to live for"
+    ].some(k => msgLowerEmo.includes(k))
+
+    // User is angry at the AI / venting frustration
+    var isAngryAtAI = [
+      "you are waste","you are a waste","you are useless","you are bad","you are stupid",
+      "you are not good","you are worst","you are the worst","you are trash","you are garbage",
+      "you are dumb","you are idiot","you are pathetic","you suck","you are terrible",
+      "worst ai","bad ai","useless ai","stupid ai","this is useless","this app is bad",
+      "this is trash","this is garbage","hate this","hate you","you don't understand",
+      "you never understand","you can't do anything","you are good for nothing",
+      "bakwas","bekar","faltu","chutiya","gaandu","nonsense ai","waste of time"
+    ].some(k => msgLowerEmo.includes(k))
+
+    // User is frustrated / having a hard time (not at AI specifically)
+    var isEmotionalStruggle = !isCrisisMessage && !isAngryAtAI && [
+      "i am sad","i feel sad","feeling sad","i am depressed","i feel depressed",
+      "feeling depressed","i am lonely","feeling lonely","i feel lonely",
+      "nobody understands","no one understands","i am stressed","feeling stressed",
+      "so stressed","very stressed","i am anxious","feeling anxious","i am scared",
+      "i am afraid","i am worried","so worried","i am tired of","fed up","i can't take it",
+      "i am broken","i feel broken","i feel lost","i am lost","i am helpless",
+      "i feel helpless","i am hopeless","feeling hopeless","i am crying","been crying",
+      "i am in pain","so much pain","everything is wrong","nothing is going right",
+      "i am failing","i failed again","i am a failure","i messed up badly",
+      "i am not okay","i am not fine","not doing well","i am struggling"
+    ].some(k => msgLowerEmo.includes(k))
+
+    // Handle crisis immediately — respond with care, don't send to AI model
+    if (isCrisisMessage) {
+      var crisisResponse = `I hear you, and I'm really glad you're talking to me right now. 💙
+
+What you're feeling is real and it matters — and so do you.
+
+Please reach out to someone who can help right now:
+📞 **iCall (India):** 9152987821
+📞 **Vandrevala Foundation:** 1860-2662-345 (24/7, free)
+📞 **AASRA:** 9820466627
+
+You don't have to face this alone. Is there something specific you're going through that you'd like to talk about? I'm here to listen.`
+      res.write(crisisResponse)
+      chat.messages.push({ role: "assistant", content: crisisResponse })
+      await chat.save()
+      res.write("CHATID" + chat._id)
+      res.end()
+      cleanupRequest()
+      return
+    }
+
+    // Handle AI anger — acknowledge, don't argue back
+    if (isAngryAtAI) {
+      var angryResponse = `I'm sorry I let you down. That's frustrating, and your feedback is fair.
+
+Tell me what went wrong — what were you trying to do, and what did I get wrong? I want to actually fix it, not just say sorry.
+
+I'm here, and I'll do better. 🙏`
+      res.write(angryResponse)
+      chat.messages.push({ role: "assistant", content: angryResponse })
+      await chat.save()
+      res.write("CHATID" + chat._id)
+      res.end()
+      cleanupRequest()
+      return
+    }
+    // ── END EMOTIONAL DETECTION ─────────────────────────────────────────────
 
     // Detect what KIND of code task this is
     var isNodeTask = !isExplainQuestion && ["node.js","nodejs","express","npm","require(","server.js","mongodb","mongoose","dotenv","process.env","package.json"].some(k => msgLower.includes(k))
