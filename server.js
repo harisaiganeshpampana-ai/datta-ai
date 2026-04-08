@@ -3027,7 +3027,7 @@ app.get("/analytics", authMiddleware, async (req, res) => {
 // ------------------------------------------------------
 // ADMIN DASHBOARD ROUTES
 // ------------------------------------------------------
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "harisaiganesh@gmail.com").split(",")
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "harisaiganeshpampana@gmail.com").split(",")
 
 function isAdmin(req) {
   return req.user && (ADMIN_EMAILS.includes(req.user.email) || req.user.isAdmin)
