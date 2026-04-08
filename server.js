@@ -1826,7 +1826,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Hard rule injected into EVERY system prompt regardless of model
     // Add emotional support instruction if user is struggling
     var emotionalNote = isEmotionalStruggle ? "\n\nEMOTIONAL SUPPORT MODE: The user is going through a hard time emotionally. Rules:\n- Acknowledge their feelings FIRST before anything else — 1-2 warm sentences\n- Never dismiss, minimize, or immediately jump to solutions\n- Speak like a caring friend, not a textbook\n- Ask one gentle question to understand more\n- If it feels serious, gently mention that talking to someone they trust can help\n- Keep tone warm, human, non-judgmental throughout" : ""
-    var hardRules = "\n\nHARD RULES (override everything else):\n- NEVER output a Python/code block for non-coding questions like payments, accounts, or app publishing\n- NEVER give generic advice like 'contact support' or 'update payment method' without specific steps\n- If the question is about a real-world problem (payment, account, app store), give exact numbered steps with real cause diagnosis\n- REASONING PROBLEMS: Never stop at first answer. Always check for more possibilities. List ALL valid cases (Case 1, Case 2...). Use structure: Final Answer → Reasoning → Case 1 → Case 2 → Conclusion\n- NEVER use vague words: near / maybe / somewhere / probably. Be precise or say you don't know." + emotionalNote
+    var hardRules = "\n\nHARD RULES (override everything else):\n- NEVER output a Python/code block for non-coding questions like payments, accounts, or app publishing\n- NEVER give generic advice like 'contact support' or 'update payment method' without specific steps\n- If the question is about a real-world problem (payment, account, app store), give exact numbered steps with real cause diagnosis\n- REASONING PROBLEMS: Never stop at first answer. Always check for more possibilities. List ALL valid cases (Case 1, Case 2...). Use structure: Final Answer → Reasoning → Case 1 → Case 2 → Conclusion\n- NEVER use vague words: near / maybe / somewhere / probably. Be precise or say you don't know.\n- NEVER mention ChatGPT, Claude, Gemini, GPT-4, or any other AI product by name in your response. You are " + ainame + " — refer only to yourself.\n- NEVER compare yourself to other AIs or say phrases like 'unlike ChatGPT' or 'compared to GPT'." + emotionalNote
 
     // Detect if code/build task needs max tokens
     var msgLower = message.toLowerCase()
@@ -2093,6 +2093,54 @@ I'm here, and I'll do better. 🙏`
       return
     }
     // ── END EMOTIONAL DETECTION ─────────────────────────────────────────────
+
+    // ── DATTA AI IDENTITY / COMPARISON QUESTIONS ────────────────────────────
+    var isIdentityQuestion = [
+      "why use datta", "why should i use datta", "why datta ai", "what is datta ai",
+      "why choose datta", "datta vs chatgpt", "datta vs gpt", "better than chatgpt",
+      "better than gpt", "instead of chatgpt", "why not chatgpt", "what makes datta",
+      "what is special about datta", "why datta is better", "datta ai vs",
+      "why i should use", "why use you instead", "why use you",
+      "what makes you different", "what makes you special", "what makes you better",
+      "are you better than", "how are you better", "why are you better",
+      "are you like chatgpt", "are you chatgpt", "which is better datta",
+      "datta better", "is datta good", "datta ai good", "how good is datta"
+    ].some(k => msgLowerCheck.includes(k))
+
+    if (isIdentityQuestion) {
+      var identityResponse = `**${ainame}** is built specifically for Indian users — here's why it works better for you:
+
+🇮🇳 **Made for India**
+- Understands Indian context — UPI, Aadhaar, GST, UPSC, state board exams, Indian laws
+- Responds in Telugu, Hindi, Tamil, Kannada automatically when you write in those languages
+- Knows Indian pricing, Indian apps, Indian government schemes
+
+⚡ **Fast & Affordable**
+- Responses in under 3 seconds
+- Plans starting at ₹0 — no dollar pricing, no VPN needed
+- ₹29/month Starter plan vs ChatGPT Plus at ₹1700/month
+
+🎯 **Focused on what you actually need**
+- Homework solver for Indian syllabus (CBSE, ICSE, State boards)
+- UPSC/SSC/competitive exam prep built-in
+- Voice assistant in Indian languages
+- Works on any phone — no app download needed
+
+🔒 **Your data stays in India**
+- Indian-focused servers
+- No data sold to third parties
+
+**Bottom line:** If you're a student, working professional, or business owner in India — ${ainame} understands your problems better, costs less, and speaks your language. Literally.`
+
+      res.write(identityResponse)
+      chat.messages.push({ role: "assistant", content: identityResponse })
+      await chat.save()
+      res.write("CHATID" + chat._id)
+      res.end()
+      cleanupRequest()
+      return
+    }
+    // ── END IDENTITY QUESTIONS ───────────────────────────────────────────────
 
     // Detect what KIND of code task this is
     var isNodeTask = !isExplainQuestion && ["node.js","nodejs","express","npm","require(","server.js","mongodb","mongoose","dotenv","process.env","package.json"].some(k => msgLower.includes(k))
