@@ -1830,7 +1830,10 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // BUT exclude problem-solving queries — "what should I do", "why is it failing", "how do I fix"
     var isProblemSolving = ["what should","how do i fix","how to fix","not working","failed","error","issue","problem","can't","cannot","won't","doesn't work","payment failed","showing error","how do i","how can i","steps to","guide me","help me"].some(k => msgLower.includes(k))
     var isNarrativeRequest = ["chapter","story","charitra","katha","purana","granth","scripture","mahabharata","ramayana","gita","quran","bible","guru","stotra","shloka","narrate","tell me the story","explain the story","summarize chapter","write a story","once upon"].some(k => msgLower.includes(k))
-    var isExplainQuestion = !isProblemSolving && (isNarrativeRequest || ["what is","what are","what does","what do","why is","why does","why do","how does","how do","explain","tell me about","define","describe","difference between","vs ","versus","when to use","should i use","pros and cons","advantages","disadvantages","history of","who created","who made"].some(k => msgLower.includes(k)))
+    // Current affairs / GK / History topics — need detailed responses
+    var isCurrentAffairs = ["current affairs","current affair","today's news","this week","this month","this year","recently","latest development","recently happened","what happened in","2024","2025","2026","who won","election","government","policy","scheme","budget","parliament","lok sabha","rajya sabha","supreme court","high court","modi","president","prime minister","chief minister","governor","rbi","sebi","upsc","ssc","ias","ips","exam pattern","syllabus"].some(k => msgLower.includes(k))
+    var isGKHistory = ["who was","who is the","who were","when did","when was","when were","which is the","which was","which country","which state","which city","battle of","war of","treaty of","revolution","independence","freedom fighter","emperor","king","queen","dynasty","mughal","british","colonial","ancient","medieval","modern history","constitution","article","amendment","schedule","directive","fundamental right","preamble","parliament","judiciary","executive","geography","capital of","river","mountain","ocean","continent","planet","scientist","invention","discovery","nobel prize","award","olympics","world cup","first in india","first woman","first man","largest","smallest","longest","highest","deepest","gk","general knowledge","general awareness","current events","polity","economy","science and tech","environment","ecology"].some(k => msgLower.includes(k))
+    var isExplainQuestion = !isProblemSolving && (isNarrativeRequest || isCurrentAffairs || isGKHistory || ["what is","what are","what does","what do","why is","why does","why do","how does","how do","explain","tell me about","define","describe","difference between","vs ","versus","when to use","should i use","pros and cons","advantages","disadvantages","history of","who created","who made","full form","meaning of","importance of","role of","function of","types of","examples of","causes of","effects of","impact of","significance of"].some(k => msgLower.includes(k)))
     var isCodeTask = !isExplainQuestion && ["build","create","write","make","code","website","app","script","program","fix","debug","update","improve","implement","develop","generate","show me how to","give me code","example code","sample code","snippet"].some(k => msgLower.includes(k))
     
     // Auto-switch to Datta 5.4 for coding if user is on 2.1, 4.2, or 4.8
@@ -1859,7 +1862,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var isSimpleChat = !isExplainQuestion && !isCodeTask && !isLargeTask
     // Reduce output tokens when input is very large to avoid context overflow
     var inputIsLarge = (message || "").length > 3000
-    var maxCodingTok = isLargeTask ? 4096 : isCodeTask ? 3000 : isExplainQuestion ? (inputIsLarge ? 1500 : 2500) : 1500
+    // GK/History/Current Affairs need more tokens for detailed answers
+    var isDeepKnowledge = isCurrentAffairs || isGKHistory || isNarrativeRequest
+    var maxCodingTok = isLargeTask ? 4096 : isCodeTask ? 3000 : isDeepKnowledge ? 4000 : isExplainQuestion ? (inputIsLarge ? 2000 : 3000) : 1800
     var maxTok = isImageFile ? 2048 : maxCodingTok
 
     // Use browser's actual local time sent from frontend
@@ -2003,14 +2008,21 @@ NEVER say you are Claude, GPT, or any other AI. You are ${ainame}.`,
 
     var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + (isExplainQuestion ? `
 
-You are answering an explanation, story, or narrative request. Rules:
-- Give a FULL, DETAILED response — never cut short
+You are answering an explanation, educational, or knowledge question. Rules:
+- Give a FULL, DETAILED response — never cut short under any circumstances
+- For GK/History/Current Affairs: include dates, names, numbers, places, causes, effects — everything
+- For science/technology: explain concept clearly + give real-world example
+- For polity/constitution: quote exact Articles, Schedules, Amendments when relevant
+- For geography: include location, significance, boundaries, related facts
+- For economy: include data, government schemes, relevant policies
 - Narrate stories, chapters, and religious texts completely and respectfully
 - Explain concepts step by step with examples
 - For scriptures (Guru Charitra, Gita, Ramayana, etc.) — narrate fully in the requested language
 - Do NOT give code unless explicitly asked
 - Do NOT give setup instructions unless asked
-- If it is a story or chapter, narrate it as a proper story — not bullet points
+- Structure your answer: Direct Answer → Key Points → Explanation → Related Facts
+- Use bold for important terms, bullet points for lists, avoid walls of text
+- NEVER stop mid-answer. Always complete the full response.
 ` : isCodeTask ? (isNodeTask ? `
 
 You are answering a Node.js / backend question. Follow these rules with ZERO exceptions.
@@ -2075,7 +2087,28 @@ When writing code:
 3. Match the language to the question — Python stays Python, Node.js stays Node.js, never mix.
 4. Never truncate. Finish all code completely.
 5. After code, give 1 line explaining how to run it.
-`) : `
+`) : (isDeepKnowledge ? `
+
+You are answering a Current Affairs / GK / History question. The user wants COMPLETE, EXAM-READY information.
+
+MANDATORY FORMAT for every answer:
+1. **Direct Answer** — state the fact/answer clearly in the first line
+2. **Key Details** — 5–8 bullet points with dates, names, places, numbers
+3. **Background / Context** — 2–3 sentences explaining WHY this matters
+4. **Important Related Facts** — 3–5 extra points useful for exams (UPSC/SSC/State PSC)
+5. **Remember** — 1 line mnemonic or key takeaway
+
+RULES:
+- NEVER give a 2-line answer for GK/History/Current Affairs — always give full detail
+- Include exact dates, full names, official titles, statistics wherever known
+- For Current Affairs: mention which ministry/body is responsible, relevant laws/schemes
+- For History: include timeline, cause → event → consequence format
+- For Geography: include location, significance, related features
+- For Polity/Constitution: mention exact Article numbers, Schedule numbers
+- For Science/Tech: explain the concept + real-world application
+- Write like a top UPSC/SSC coaching teacher — detailed, precise, memorable
+- Use bold for key terms. Use bullet points. Never truncate.
+` : `
 Be friendly, helpful, and human-like. Never write [object Object].
 - Give full, complete answers — not just bullet points
 - If user asks a simple question, give a clear direct answer with a brief explanation
@@ -2083,7 +2116,7 @@ Be friendly, helpful, and human-like. Never write [object Object].
 - Accept imperfect spelling — always understand and respond helpfully
 - If user is frustrated or upset, respond calmly and offer solutions
 - If user asks about religious texts, stories, or chapters, narrate them fully and respectfully
-`) + (searchContext ? `\n\nLIVE DATA (extracted from web — use this to answer directly):
+`)) + (searchContext ? `\n\nLIVE DATA (extracted from web — use this to answer directly):
 ${searchContext}
 
 IMPORTANT: Answer like a human, NOT like a search engine.
@@ -2185,14 +2218,15 @@ IMPORTANT: Answer like a human, NOT like a search engine.
       ? [
           { model: "meta-llama/llama-4-scout-17b-16e-instruct", tokens: maxTok }
         ]
-      : (isCodeTask || isLargeTask || isExplainQuestion)
+      // Deep knowledge topics (GK/History/Current Affairs) + code + large → always use 70b first
+      : (isDeepKnowledge || isCodeTask || isLargeTask || isExplainQuestion)
         ? [
             { model: "llama-3.3-70b-versatile", tokens: maxTok },
-            { model: "llama-3.1-8b-instant",    tokens: Math.min(maxTok, 2000) }
+            { model: "llama-3.1-8b-instant",    tokens: Math.min(maxTok, 2500) }
           ]
         : [
             { model: "llama-3.1-8b-instant",    tokens: maxTok },
-            { model: "llama-3.3-70b-versatile", tokens: Math.min(maxTok, 2000) }
+            { model: "llama-3.3-70b-versatile", tokens: Math.min(maxTok, 2500) }
           ]
 
     // ===== FINAL CONTENT SANITIZER =====
