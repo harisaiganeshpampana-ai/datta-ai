@@ -2712,11 +2712,13 @@ window.toggleVoiceListening = toggleVoiceListening
 // VERSION NAMES based on plan
 const planVersions = {
   free:         { name: "Free",       version: "Datta 2.1", emoji: "🌱" },
-  "ultra-mini": { name: "Ultra Mini", version: "Datta 2.1", emoji: "⚡" },
-  starter:      { name: "Starter",    version: "Datta 2.1", emoji: "🚀" },
-  standard:     { name: "Standard",   version: "Datta 5.4", emoji: "⭐" },
+  starter:      { name: "Starter",    version: "Datta 5.4", emoji: "🚀" },
   plus:         { name: "Plus",       version: "Datta 5.4", emoji: "⚡" },
   pro:          { name: "Pro",        version: "Datta 5.4", emoji: "🔥" },
+  ultimate:     { name: "Ultimate",   version: "Datta 5.4", emoji: "🚀" },
+  "ultra-mini": { name: "Ultra Mini", version: "Datta 2.1", emoji: "⚡" },
+  standard:     { name: "Standard",   version: "Datta 5.4", emoji: "⭐" },
+  mini:         { name: "Mini",       version: "Datta 4.2", emoji: "⚡" },
   max:          { name: "Max",        version: "Datta 5.4", emoji: "💎" },
   ultramax:     { name: "Ultra Max",  version: "Datta 5.4", emoji: "👑" },
   basic:        { name: "Basic",      version: "Datta 4.2", emoji: "⚡" },
@@ -2750,16 +2752,17 @@ async function loadUserVersion() {
     // Build sub text dynamically using limit from server if available
     const limitNum = (data.limits && data.limits.messages) ? data.limits.messages : null
     const planInfo = {
-      free:         { emoji:"🌱", title:"Free Plan",       sub: (limitNum||20) + " msgs/day · Datta 2.1" },
-      "ultra-mini": { emoji:"⚡", title:"Ultra Mini",      sub:"+" + (limitNum ? limitNum - 20 : 15) + " bonus msgs · 24h · Active" },
-      starter:      { emoji:"🚀", title:"Starter Plan",    sub: (limitNum||50) + " msgs/day · Active" },
-      standard:     { emoji:"⭐", title:"Standard Plan",   sub: (limitNum||120) + " msgs/day · Datta 5.4 · Active" },
-      plus:         { emoji:"⚡", title:"Plus Plan",       sub: (limitNum||300) + " msgs/day · All models · Active" },
-      pro:          { emoji:"🔥", title:"Pro Plan",        sub: (limitNum||1000) + " msgs/day · All models · Active" },
-      mini:         { emoji:"⚡", title:"Mini Plan",       sub: (limitNum||200) + " msgs/day · Active" },
+      free:         { emoji:"🌱", title:"Free Plan",       sub: (limitNum||10)   + " msgs/day · Datta 2.1" },
+      starter:      { emoji:"🚀", title:"Starter Plan",    sub: (limitNum||40)   + " msgs/day · Active" },
+      plus:         { emoji:"⚡", title:"Plus Plan",       sub: (limitNum||300)  + " msgs/day · All models · Active" },
+      pro:          { emoji:"🔥", title:"Pro Plan",        sub: (limitNum||700)  + " msgs/day · All models · Active" },
+      ultimate:     { emoji:"🚀", title:"Ultimate Plan",   sub: (limitNum||1500) + " msgs/day · All models · Active" },
+      "ultra-mini": { emoji:"⚡", title:"Ultra Mini",      sub:"+15 bonus msgs · 24h · Active" },
+      standard:     { emoji:"⭐", title:"Standard Plan",   sub: (limitNum||120)  + " msgs/day · Active" },
+      mini:         { emoji:"⚡", title:"Mini Plan",       sub: (limitNum||200)  + " msgs/day · Active" },
       max:          { emoji:"💎", title:"Max Plan",        sub: (limitNum||2000) + " msgs/day · Active" },
       ultramax:     { emoji:"👑", title:"Ultra Max",       sub:"Unlimited · Active" },
-      basic:        { emoji:"🔥", title:"Basic Plan",      sub: (limitNum||500) + " msgs/day · Active" },
+      basic:        { emoji:"🔥", title:"Basic Plan",      sub: (limitNum||500)  + " msgs/day · Active" },
       enterprise:   { emoji:"👑", title:"Enterprise",      sub:"Unlimited · Active" }
     }
 
@@ -2798,11 +2801,12 @@ async function loadUserVersion() {
     if (btn) {
       const btnStyles = {
         free:         { bg: "linear-gradient(135deg,#0a2a1a,#0a1a2a)", border: "#00ff8833" },
-        "ultra-mini": { bg: "linear-gradient(135deg,#2a1a00,#1a1000)", border: "#f59e0b44" },
         starter:      { bg: "linear-gradient(135deg,#001a0a,#001a10)", border: "#00cc6a44" },
-        standard:     { bg: "linear-gradient(135deg,#001020,#001830)", border: "#0099ff44" },
         plus:         { bg: "linear-gradient(135deg,#1a1000,#2a1800)", border: "#f59e0b44" },
         pro:          { bg: "linear-gradient(135deg,#1a0500,#200800)", border: "#ef444444" },
+        ultimate:     { bg: "linear-gradient(135deg,#0a0a2a,#1a0a2a)", border: "#8844ff44" },
+        "ultra-mini": { bg: "linear-gradient(135deg,#2a1a00,#1a1000)", border: "#f59e0b44" },
+        standard:     { bg: "linear-gradient(135deg,#001020,#001830)", border: "#0099ff44" },
         mini:         { bg: "linear-gradient(135deg,#1a1a0a,#2a1a00)", border: "#ffaa0033" },
         max:          { bg: "linear-gradient(135deg,#0a0a2a,#1a0a2a)", border: "#8844ff33" },
         ultramax:     { bg: "linear-gradient(135deg,#2a0a1a,#1a0a2a)", border: "#ff44aa33" },
@@ -2819,18 +2823,19 @@ async function loadUserVersion() {
     // Show from localStorage as fallback
     const plan = localStorage.getItem("datta_plan") || "free"
     const info = {
-      free:         { emoji:"🌱", title:"Free Plan",     sub:"20 msgs/day" },
-      "ultra-mini": { emoji:"⚡", title:"Ultra Mini",    sub:"+15 bonus msgs · Active" },
-      starter:      { emoji:"🚀", title:"Starter Plan",  sub:"50 msgs/day · Active" },
-      standard:     { emoji:"⭐", title:"Standard Plan", sub:"120 msgs/day · Active" },
+      free:         { emoji:"🌱", title:"Free Plan",     sub:"10 msgs/day" },
+      starter:      { emoji:"🚀", title:"Starter Plan",  sub:"40 msgs/day · Active" },
       plus:         { emoji:"⚡", title:"Plus Plan",     sub:"300 msgs/day · Active" },
-      pro:          { emoji:"🔥", title:"Pro Plan",      sub:"1000 msgs/day · Active" },
+      pro:          { emoji:"🔥", title:"Pro Plan",      sub:"700 msgs/day · Active" },
+      ultimate:     { emoji:"🚀", title:"Ultimate Plan", sub:"1500 msgs/day · Active" },
+      "ultra-mini": { emoji:"⚡", title:"Ultra Mini",    sub:"+15 bonus msgs · Active" },
+      standard:     { emoji:"⭐", title:"Standard Plan", sub:"120 msgs/day · Active" },
       mini:         { emoji:"⚡", title:"Mini Plan",     sub:"200 msgs/day · Active" },
       max:          { emoji:"💎", title:"Max Plan",      sub:"2000 msgs/day · Active" },
       ultramax:     { emoji:"👑", title:"Ultra Max",     sub:"Unlimited · Active" },
       basic:        { emoji:"🔥", title:"Basic Plan",    sub:"500 msgs/day · Active" },
       enterprise:   { emoji:"👑", title:"Enterprise",   sub:"Unlimited · Active" }
-    }[plan] || { emoji:"🌱", title:"Free Plan", sub:"20 msgs/day" }
+    }[plan] || { emoji:"🌱", title:"Free Plan", sub:"10 msgs/day" }
     const emoji = document.getElementById("planBtnEmoji")
     const title = document.getElementById("planBtnTitle")
     const sub = document.getElementById("planBtnSub")
