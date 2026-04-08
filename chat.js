@@ -2243,7 +2243,17 @@ function setVA(state) {
 
   // Show detected language in badge
   if (badgeEl) {
-    const langMap = { "te-IN":"తెలుగు", "hi-IN":"हिंदी", "ta-IN":"தமிழ்", "kn-IN":"ಕನ್ನಡ", "en-IN":"English", "en-US":"English" }
+    const langMap = {
+      "te-IN":"తెలుగు", "hi-IN":"हिंदी",
+      "ta-IN":"தமிழ்", "kn-IN":"ಕನ್ನಡ",
+      "ml-IN":"മലയാളം", "bn-IN":"বাংলা",
+      "pa-IN":"ਪੰਜਾਬੀ", "gu-IN":"ગુજરાતી",
+      "or-IN":"ଓଡିଆ", "ur-PK":"اردو",
+      "zh-CN":"中文", "ja-JP":"日本語", "ko-KR":"한국어",
+      "ru-RU":"Русский", "es-ES":"Español",
+      "fr-FR":"Français", "de-DE":"Deutsch",
+      "en-IN":"English", "en-US":"English"
+    }
     const activeLang = window._voiceLang
     badgeEl.textContent = activeLang && activeLang !== "en-IN" ? (langMap[activeLang] || activeLang) : ""
   }
@@ -2256,6 +2266,9 @@ function setVoiceText(text) {
 function setVoiceAIText(text) {
   const el = document.getElementById("voiceAIText")
   if (el) el.textContent = text
+  // Clear karaoke when setting status text
+  const kEl = document.getElementById("vaKaraoke")
+  if (kEl && !isSpeaking) kEl.innerHTML = ""
 }
 
 // ── OPEN / CLOSE ──────────────────────────────────────────────────────────────
@@ -2266,9 +2279,20 @@ function openVoiceAssistant() {
   setVA("idle")
   setVoiceText("")
   setVoiceAIText("")
-  // Greet after short delay
+  // Greet in user language
   setTimeout(() => {
-    if (voiceActive) speakText2("Hello! I am Datta AI. How can I help you?")
+    if (!voiceActive) return
+    const savedLang = window._voiceLang || "en-IN"
+    const greetings = {
+      "te-IN": "నమస్కారం! నేను దత్త ఏఆఇ. మీకు ఎలా సహాయం చేయాలి?",
+      "hi-IN": "नमस्ते! मैं दत्त एआई हूं। मैं आपकी कैसे मदद कर सकता हूं?",
+      "ta-IN": "வணக்கம்! நான் தத்தா ஏஐ. உங்களுக்கு எப்படி உதவலாம்?",
+      "kn-IN": "ನಮಸ್ಕಾರ! ನಾನು ದತ್ತ ಎಐ. ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ?",
+      "ml-IN": "നമസ്കാരം! ഞാൻ ദത്ത AI ആണ്‍. എങ്ങനെ സഹായിക്കട്ടെ?",
+      "bn-IN": "নমস্কার! আমি দত্ত AI. আপনাকে কীভাবে সাহায্য করতে পারি?",
+    }
+    const greeting = greetings[savedLang] || "Hello! I am Datta AI. How can I help you?"
+    speakText2(greeting)
   }, 400)
 }
 
@@ -2299,13 +2323,24 @@ function setVoiceLang(lang) {
 }
 
 function detectLangFromText(text) {
-  // Unicode script detection — returns {tts, api} pair
-  if (/[ఀ-౿]/.test(text)) return { tts: "te-IN", api: "Telugu" }   // Telugu
-  if (/[ऀ-ॿ]/.test(text)) return { tts: "hi-IN", api: "Hindi" }    // Hindi / Devanagari
-  if (/[஀-௿]/.test(text)) return { tts: "ta-IN", api: "Tamil" }    // Tamil
-  if (/[ಀ-೿]/.test(text)) return { tts: "kn-IN", api: "Kannada" }  // Kannada
-  if (/[਀-੿]/.test(text)) return { tts: "pa-IN", api: "Punjabi" }  // Punjabi
-  if (/[ঀ-৿]/.test(text)) return { tts: "bn-IN", api: "Bengali" }  // Bengali
+  if (!text) return { tts: "en-IN", api: "English" }
+  if (/[ఀ-౿]/.test(text)) return { tts: "te-IN", api: "Telugu" }
+  if (/[ऀ-ॿ]/.test(text)) return { tts: "hi-IN", api: "Hindi" }
+  if (/[஀-௿]/.test(text)) return { tts: "ta-IN", api: "Tamil" }
+  if (/[ಀ-೿]/.test(text)) return { tts: "kn-IN", api: "Kannada" }
+  if (/[਀-੿]/.test(text)) return { tts: "pa-IN", api: "Punjabi" }
+  if (/[ঀ-৿]/.test(text)) return { tts: "bn-IN", api: "Bengali" }
+  if (/[ഀ-ൿ]/.test(text)) return { tts: "ml-IN", api: "Malayalam" }
+  if (/[઀-૿]/.test(text)) return { tts: "gu-IN", api: "Gujarati" }
+  if (/[଀-୿]/.test(text)) return { tts: "or-IN", api: "Odia" }
+  if (/[؀-ۿ]/.test(text)) return { tts: "ur-PK", api: "Urdu" }
+  if (/[一-鿿]/.test(text)) return { tts: "zh-CN", api: "Chinese" }
+  if (/[぀-ヿ]/.test(text)) return { tts: "ja-JP", api: "Japanese" }
+  if (/[가-힯]/.test(text)) return { tts: "ko-KR", api: "Korean" }
+  if (/[Ѐ-ӿ]/.test(text)) return { tts: "ru-RU", api: "Russian" }
+  if (/\b(hola|gracias|c.mo|est.s)\b/i.test(text)) return { tts: "es-ES", api: "Spanish" }
+  if (/\b(bonjour|merci|comment)\b/i.test(text)) return { tts: "fr-FR", api: "French" }
+  if (/\b(guten|danke|bitte)\b/i.test(text)) return { tts: "de-DE", api: "German" }
   return { tts: "en-IN", api: "English" }
 }
 
@@ -2483,20 +2518,31 @@ async function processVoiceQuery(query) {
       }
     }
 
-    // Clean for speech (remove markdown)
+    // Deep clean for speech — strip all markdown and symbols
     const cleanText = fullText
-      .replace(/CHATID.*/s, "")
-      .replace(/!\[.*?\]\(.*?\)/g, "Image generated.")
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/CHATID[\s\S]*/g, "")
+      .replace(/```[\s\S]*?```/g, "Code example. ")
+      .replace(/`[^`]+`/g, "")
       .replace(/#{1,6}\s+/g, "")
-      .replace(/\*\*/g, "").replace(/\*/g, "")
-      .replace(/`{3}[\s\S]*?`{3}/g, "Code block.")
-      .replace(/`/g, "")
-      .replace(/\n{3,}/g, "\n")
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/__([^_]+)__/g, "$1")
+      .replace(/_([^_]+)_/g, "$1")
+      .replace(/!\[.*?\]\(.*?\)/g, "")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/^[\s]*[-•▪▸→*]\s+/gm, ". ")
+      .replace(/^[\s]*\d+\.\s+/gm, ". ")
+      .replace(/\|/g, ". ")
+      .replace(/\n{2,}/g, ". ")
+      .replace(/\n/g, ". ")
+      .replace(/\.{2,}/g, ".")
+      .replace(/\s{2,}/g, " ")
       .trim()
 
-    // Show short preview
-    const preview = cleanText.substring(0, 120) + (cleanText.length > 120 ? "…" : "")
+    // Limit to 4 sentences for speaking — nobody wants a 2-minute voice response
+    const _sentences = cleanText.replace(/([.!?])\s+/g, "$1|").split("|")
+    const speakText = _sentences.slice(0, 4).join(" ").trim()
+    const preview = cleanText.substring(0, 160) + (cleanText.length > 160 ? "…" : "")
     setVoiceAIText(preview)
 
     // Add to chat UI
@@ -2520,10 +2566,10 @@ async function processVoiceQuery(query) {
 
     loadSidebar()
 
-    // Speak
+    // Speak clean limited text
     if (!voiceMuted) {
       setVA("speaking")
-      speakText2(cleanText)
+      speakText2(speakText || cleanText)
     } else {
       setVA("idle")
     }
@@ -2551,12 +2597,12 @@ async function processVoiceQuery(query) {
 
 // VOICE PROFILES
 const voiceProfiles = {
-  "aria":    { name: "Aria",    lang: "en-US", rate: 0.95, pitch: 1.1, keywords: ["Google US English","Samantha","Aria","Zira"] },
-  "james":   { name: "James",   lang: "en-US", rate: 0.9,  pitch: 0.85, keywords: ["Google UK English Male","Daniel","James","David"] },
-  "sofia":   { name: "Sofia",   lang: "en-US", rate: 1.0,  pitch: 1.2, keywords: ["Google UK English Female","Karen","Moira","Sofia"] },
-  "neural":  { name: "Neural",  lang: "en-US", rate: 0.95, pitch: 1.0, keywords: ["Neural","Natural","Enhanced","Premium"] },
-  "indian":  { name: "Riya",   lang: "en-IN", rate: 0.9,  pitch: 1.05, gender: "female", keywords: ["Lekha","Veena","Google हिन्दी","en-IN"] },
-  "british": { name: "Oliver", lang: "en-GB", rate: 0.88, pitch: 0.8,  gender: "male",   keywords: ["Google UK English Male","Daniel","George","Arthur","en-GB"] }
+  "aria":    { name: "Aria",    lang: "en-US", rate: 0.85, pitch: 1.05, keywords: ["Google US English","Samantha","Aria","Zira"] },
+  "james":   { name: "James",   lang: "en-US", rate: 0.82, pitch: 0.9,  keywords: ["Google UK English Male","Daniel","James","David"] },
+  "sofia":   { name: "Sofia",   lang: "en-US", rate: 0.88, pitch: 1.1,  keywords: ["Google UK English Female","Karen","Moira","Sofia"] },
+  "neural":  { name: "Neural",  lang: "en-US", rate: 0.85, pitch: 1.0,  keywords: ["Neural","Natural","Enhanced","Premium"] },
+  "indian":  { name: "Riya",   lang: "en-IN", rate: 0.85, pitch: 1.0,  gender: "female", keywords: ["Lekha","Veena","Google Hindi","en-IN"] },
+  "british": { name: "Oliver", lang: "en-GB", rate: 0.82, pitch: 0.85, gender: "male",   keywords: ["Google UK English Male","Daniel","George","Arthur","en-GB"] }
 }
 
 function getSelectedVoiceProfile() {
@@ -2623,64 +2669,129 @@ function pickVoice(profile) {
   return voices[0]
 }
 
+// ── EMOTION DETECTION from text ──────────────────────────────────────────────
+function detectEmotion(text) {
+  const t = text.toLowerCase()
+  if (/won|great|amazing|excellent|congratul|fantastic|perfect|brilliant|best|success/.test(t)) return { label:"🎉 Excited", color:"#f59e0b", rate:0.95, pitch:1.15 }
+  if (/sorry|unfortunate|sad|bad news|failed|problem|issue|error|wrong|difficult/.test(t)) return { label:"😔 Serious", color:"#6b7280", rate:0.78, pitch:0.88 }
+  if (/careful|warning|important|attention|note|remember|make sure|danger|risk/.test(t)) return { label:"⚠️ Alert", color:"#ef4444", rate:0.80, pitch:0.95 }
+  if (/simple|easy|just|quick|basic|simply|directly|step/.test(t)) return { label:"✅ Clear", color:"#10a37f", rate:0.85, pitch:1.0 }
+  if (/hello|hi |namaste|vanakkam|how are you|good morning|good evening/.test(t)) return { label:"👋 Friendly", color:"#0077ff", rate:0.88, pitch:1.08 }
+  return { label: null, color: null, rate: 0.85, pitch: 1.0 }
+}
+
+// ── KARAOKE word highlighter ──────────────────────────────────────────────────
+function startKaraoke(text, totalDuration) {
+  const el = document.getElementById("vaKaraoke")
+  if (!el) return
+  const words = text.trim().split(/\s+/).filter(Boolean)
+  if (!words.length) return
+
+  // Build word spans
+  el.innerHTML = words.map((w, i) =>
+    '<span class="va-word" id="vaw-' + i + '">' + w + ' </span>'
+  ).join("")
+
+  // Estimate ms per word based on total speech duration
+  const msPerWord = Math.max(180, (totalDuration * 1000) / words.length)
+  let idx = 0
+  window._karaokeInterval = setInterval(() => {
+    if (idx > 0) {
+      const prev = document.getElementById("vaw-" + (idx - 1))
+      if (prev) prev.classList.remove("active"), prev.classList.add("done")
+    }
+    const cur = document.getElementById("vaw-" + idx)
+    if (cur) {
+      cur.classList.add("active")
+      cur.scrollIntoView({ block:"nearest", behavior:"smooth" })
+    }
+    idx++
+    if (idx >= words.length) clearInterval(window._karaokeInterval)
+  }, msPerWord)
+}
+
+function stopKaraoke() {
+  if (window._karaokeInterval) clearInterval(window._karaokeInterval)
+  const el = document.getElementById("vaKaraoke")
+  if (el) el.innerHTML = ""
+}
+
+// ── MAIN SPEAK FUNCTION with karaoke + emotion ────────────────────────────────
 function speakText2(text) {
   if (!voiceSynth) return
   stopSpeaking()
+  stopKaraoke()
 
   isSpeaking = true
   setVA("speaking")
+
+  // Detect emotion and update chip
+  const emotion = detectEmotion(text)
+  const chip = document.getElementById("vaEmotionChip")
+  if (chip) {
+    if (emotion.label) {
+      chip.textContent = emotion.label
+      chip.style.display = "inline-block"
+      chip.style.background = (emotion.color || "#10a37f") + "22"
+      chip.style.color = emotion.color || "#10a37f"
+      chip.style.border = "1px solid " + (emotion.color || "#10a37f") + "44"
+    } else {
+      chip.style.display = "none"
+    }
+  }
 
   const utterance = new SpeechSynthesisUtterance(text)
   const profileKey = getSelectedVoiceProfile()
   const profile = voiceProfiles[profileKey] || voiceProfiles.aria
 
-  // Use detected/selected voice language — overrides profile default
-  utterance.lang = window._voiceLang || profile.lang
-  utterance.rate = profile.rate
-  utterance.pitch = profile.pitch
+  // Apply emotion-adjusted rate/pitch on top of profile
+  utterance.lang   = window._voiceLang || profile.lang
+  utterance.rate   = emotion.rate   || profile.rate
+  utterance.pitch  = emotion.pitch  || profile.pitch
   utterance.volume = 1.0
 
-  // Wait for voices to load then pick
-  const setVoiceAndSpeak = () => {
+  const doSpeak = () => {
     const voice = pickVoice(profile)
-    if (voice) {
-      utterance.voice = voice
-      console.log("Speaking with voice:", voice.name)
-    }
+    if (voice) utterance.voice = voice
+
+    // Estimate speech duration for karaoke timing
+    const wordCount = text.trim().split(/\s+/).length
+    const estSeconds = (wordCount / (utterance.rate * 2.8)) // ~2.8 words/sec at rate=1
+    startKaraoke(text, estSeconds)
+
     utterance.onend = () => {
       isSpeaking = false
+      stopKaraoke()
+      if (chip) chip.style.display = "none"
       if (voiceActive) {
         setVA("idle")
         setTimeout(() => { if (voiceActive) startListening() }, 800)
       }
     }
     utterance.onerror = (e) => {
-      console.log("Speech error:", e)
       isSpeaking = false
+      stopKaraoke()
+      if (chip) chip.style.display = "none"
       setVA("idle")
     }
     voiceSynth.speak(utterance)
   }
 
-  // Always wait a moment to ensure voices are loaded
   const availVoices = voiceSynth.getVoices()
   if (availVoices.length > 0) {
-    setVoiceAndSpeak()
+    doSpeak()
   } else {
-    voiceSynth.onvoiceschanged = () => {
-      voiceSynth.onvoiceschanged = null
-      setVoiceAndSpeak()
-    }
-    // Fallback if onvoiceschanged never fires
-    setTimeout(() => {
-      if (isSpeaking === false) setVoiceAndSpeak()
-    }, 1000)
+    voiceSynth.onvoiceschanged = () => { voiceSynth.onvoiceschanged = null; doSpeak() }
+    setTimeout(() => { if (!isSpeaking) doSpeak() }, 1000)
   }
 }
 
 function stopSpeaking() {
   if (voiceSynth) voiceSynth.cancel()
   isSpeaking = false
+  stopKaraoke()
+  const chip = document.getElementById("vaEmotionChip")
+  if (chip) chip.style.display = "none"
 }
 
 // Update the assistant button to open voice overlay
