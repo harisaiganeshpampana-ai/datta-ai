@@ -342,17 +342,18 @@ const Memory = mongoose.model("Memory", MemorySchema)
 
 const planLimits = {
   // ── ACTIVE PLANS ────────────────────────────────────────────
-  free:        { messages: 20,     resetHours: 24, models: ["d21"],       price: 0,   priority: 0 },
-  "ultra-mini":{ messages: 20,     resetHours: 24, models: ["d21"],       price: 10,  priority: 1, extraMessages: 15, expiresHours: 24 },
-  starter:     { messages: 50,     resetHours: 24, models: ["d21"],       price: 49,  priority: 2 },
-  standard:    { messages: 120,    resetHours: 24, models: ["d21","d54"], price: 149, priority: 3 },
-  plus:        { messages: 300,    resetHours: 24, models: ["d21","d54"], price: 299, priority: 4 },
-  pro:         { messages: 1000,   resetHours: 24, models: ["d21","d54"], price: 799, priority: 5 },
+  free:        { messages: 10,     resetHours: 24, models: ["d21"],       price: 0,   priority: 0 },
+  starter:     { messages: 40,     resetHours: 24, models: ["d21","d54"], price: 29,  priority: 1 },
+  plus:        { messages: 300,    resetHours: 24, models: ["d21","d54"], price: 299, priority: 2 },
+  pro:         { messages: 700,    resetHours: 24, models: ["d21","d54"], price: 499, priority: 3 },
+  ultimate:    { messages: 1500,   resetHours: 24, models: ["d21","d54"], price: 799, priority: 4 },
   // ── LEGACY (keep for existing subscribers) ──────────────────
-  mini:        { messages: 200,    resetHours: 24, models: ["d21","d54"], price: 199, priority: 3 },
+  "ultra-mini":{ messages: 20,     resetHours: 24, models: ["d21"],       price: 10,  priority: 1, extraMessages: 15, expiresHours: 24 },
+  standard:    { messages: 120,    resetHours: 24, models: ["d21","d54"], price: 149, priority: 2 },
+  mini:        { messages: 200,    resetHours: 24, models: ["d21","d54"], price: 199, priority: 2 },
   max:         { messages: 2000,   resetHours: 24, models: ["d21","d54"], price: 1999,priority: 5 },
   ultramax:    { messages: 999999, resetHours: 0,  models: ["all"],       price: 0,   priority: 6 },
-  basic:       { messages: 500,    resetHours: 24, models: ["d21","d54"], price: 499, priority: 4 },
+  basic:       { messages: 500,    resetHours: 24, models: ["d21","d54"], price: 499, priority: 3 },
   enterprise:  { messages: 999999, resetHours: 0,  models: ["all"],       price: 0,   priority: 6 }
 }
 const rateLimitStore = {}
@@ -1280,7 +1281,7 @@ app.get("/payment/usage", authMiddleware, async (req, res) => {
 app.post("/payment/activate", authMiddleware, async (req, res) => {
   try {
     const { plan, method, paymentId, period } = req.body
-    const validPlans = ["free","ultra-mini","starter","standard","plus","pro","mini","max","ultramax","basic","enterprise"]
+    const validPlans = ["free","ultra-mini","starter","standard","plus","pro","ultimate","mini","max","ultramax","basic","enterprise"]
     if (!validPlans.includes(plan)) return res.status(400).json({ error: "Invalid plan" })
     const now = new Date()
     const endDate = new Date(now)
