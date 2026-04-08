@@ -95,19 +95,38 @@ td:first-child{color:var(--text);font-weight:600}
 
 <script>
 const S="https://datta-ai-server.onrender.com"
-let tok=localStorage.getItem("adm_tok")||""
+let tok=localStorage.getItem("adm_tok")||localStorage.getItem("datta_token")||""
 let lc=null
 
 async function login(){
   const e=document.getElementById("em").value.trim(),p=document.getElementById("pw").value
   document.getElementById("lerr").textContent=""
-  if(!e||!p){document.getElementById("lerr").textContent="Enter credentials";return}
+  if(!e||!p){document.getElementById("lerr").textContent="Enter email and password";return}
+  document.getElementById("lerr").style.color="#8892b0"
+  document.getElementById("lerr").textContent="Signing in..."
   try{
     const r=await fetch(S+"/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:e,password:p})})
     const d=await r.json()
-    if(!r.ok||!d.token){document.getElementById("lerr").textContent=d.error||"Login failed";return}
-    tok=d.token;localStorage.setItem("adm_tok",tok);show()
-  }catch(err){document.getElementById("lerr").textContent="Connection failed"}
+    if(!r.ok||!d.token){
+      document.getElementById("lerr").style.color="#ff4d6d"
+      document.getElementById("lerr").textContent=d.error||"Login failed"
+      return
+    }
+    // Verify this user is actually admin before entering dashboard
+    const ar=await fetch(S+"/admin/dashboard",{headers:{"Authorization":"Bearer "+d.token}})
+    if(ar.status===403){
+      document.getElementById("lerr").style.color="#ff4d6d"
+      document.getElementById("lerr").textContent="Access denied. This account is not an admin."
+      return
+    }
+    tok=d.token
+    localStorage.setItem("adm_tok",tok)
+    document.getElementById("lerr").textContent=""
+    show()
+  }catch(err){
+    document.getElementById("lerr").style.color="#ff4d6d"
+    document.getElementById("lerr").textContent="Connection failed. Check server."
+  }
 }
 
 function logout(){localStorage.removeItem("adm_tok");tok="";document.getElementById("dashboard").style.display="none";document.getElementById("loginScreen").style.display="flex"}
@@ -115,20 +134,31 @@ function logout(){localStorage.removeItem("adm_tok");tok="";document.getElementB
 function show(){document.getElementById("loginScreen").style.display="none";document.getElementById("dashboard").style.display="block";load();setInterval(load,60000)}
 
 async function load(){
+  document.getElementById("dc").innerHTML='<div class="spin"><div class="spinner"></div></div>'
   try{
     const r=await fetch(S+"/admin/dashboard",{headers:{"Authorization":"Bearer "+tok}})
-    if(r.status===401||r.status===403){logout();return}
-    if(!r.ok)throw new Error("HTTP "+r.status)
+    if(r.status===401){logout();return}
+    if(r.status===403){
+      document.getElementById("dc").innerHTML='<div class="empty" style="color:#ff4d6d">⛔ Access denied.<br><small>Your email is not in ADMIN_EMAILS on Render.</small></div>'
+      return
+    }
+    if(!r.ok){
+      const err=await r.json().catch(()=>({}))
+      document.getElementById("dc").innerHTML='<div class="empty" style="color:#ff4d6d">⚠️ Server error '+r.status+'<br><small>'+(err.error||"Unknown error")+'</small></div>'
+      return
+    }
     const d=await r.json()
     render(d)
     document.getElementById("ts").textContent="Updated "+new Date().toLocaleTimeString()
-  }catch(err){document.getElementById("dc").innerHTML='<div class="empty">⚠️ Failed: '+err.message+'</div>'}
+  }catch(err){
+    document.getElementById("dc").innerHTML='<div class="empty" style="color:#ff4d6d">⚠️ Failed: '+err.message+'<br><small>Is the Render server running?</small></div>'
+  }
 }
 
 function fmt(n){return(n||0).toLocaleString()}
 
 function render(d){
-  const paid=(d.planStats.plus||0)+(d.planStats.pro||0)+(d.planStats.mini||0)+(d.planStats.max||0)
+  const paid=(d.planStats.starter||0)+(d.planStats.plus||0)+(d.planStats.pro||0)+(d.planStats.ultimate||0)+(d.planStats.standard||0)+(d.planStats.mini||0)+(d.planStats.max||0)
   document.getElementById("dc").innerHTML=`
     <div class="cards">
       <div class="card" style="--ca:#4f6ef7"><div class="card-lbl">MRR</div><div class="card-val">₹${fmt(d.mrr)}</div><div class="card-sub">${paid} paying users</div></div>
@@ -164,16 +194,46 @@ function drawLine(data){
 }
 
 function drawBars(stats,total){
-  const plans=[{k:"free",l:"Free",c:"#4ecdc4"},{k:"plus",l:"Plus",c:"#f7984f"},{k:"pro",l:"Pro",c:"#ff4d6d"},{k:"mini",l:"Mini",c:"#4f6ef7"},{k:"max",l:"Max",c:"#a78bfa"}]
-  const fc=Math.max(0,total-(stats.plus||0)-(stats.pro||0)-(stats.mini||0)-(stats.max||0))
+  const plans=[
+    {k:"free",     l:"Free",     c:"#4ecdc4"},
+    {k:"starter",  l:"Starter",  c:"#00cc6a"},
+    {k:"plus",     l:"Plus",     c:"#f7984f"},
+    {k:"pro",      l:"Pro",      c:"#ff4d6d"},
+    {k:"ultimate", l:"Ultimate", c:"#a78bfa"},
+    {k:"standard", l:"Standard", c:"#4f6ef7"},
+    {k:"mini",     l:"Mini",     c:"#ffd166"},
+    {k:"max",      l:"Max",      c:"#e879f9"}
+  ]
+  const paidTotal=(stats.starter||0)+(stats.plus||0)+(stats.pro||0)+(stats.ultimate||0)+(stats.standard||0)+(stats.mini||0)+(stats.max||0)
+  const fc=Math.max(0,total-paidTotal)
   const all={...stats,free:fc}
   const mx=Math.max(1,...plans.map(p=>all[p.k]||0))
   const el=document.getElementById("pb")
   if(!el)return
-  el.innerHTML=plans.map(p=>{const c=all[p.k]||0;const pct=Math.round((c/mx)*100);return`<div class="prow"><div class="plbl">${p.l}</div><div class="pbar-bg"><div class="pbar" style="width:${pct}%;background:${p.c}"></div></div><div class="pcnt">${c}</div></div>`}).join("")
+  el.innerHTML=plans.filter(p=>(all[p.k]||0)>0||p.k==="free").map(p=>{const c=all[p.k]||0;const pct=Math.round((c/mx)*100);return`<div class="prow"><div class="plbl">${p.l}</div><div class="pbar-bg"><div class="pbar" style="width:${pct}%;background:${p.c}"></div></div><div class="pcnt">${c}</div></div>`}).join("")
 }
 
-if(tok)show()
+// Try existing token (adm_tok or datta_token from main app)
+if(tok){
+  // Quick verify the token is still valid and is admin
+  fetch(S+"/admin/dashboard",{headers:{"Authorization":"Bearer "+tok}})
+    .then(r=>{
+      if(r.ok){ show() }
+      else if(r.status===403){
+        // Logged in but not admin
+        document.getElementById("loginScreen").style.display="flex"
+        document.getElementById("lerr").style.color="#ff4d6d"
+        document.getElementById("lerr").textContent="Not an admin account. Use your admin email."
+      } else {
+        // Token expired or invalid — show login
+        tok=""; localStorage.removeItem("adm_tok")
+        document.getElementById("loginScreen").style.display="flex"
+      }
+    })
+    .catch(()=>{ document.getElementById("loginScreen").style.display="flex" })
+} else {
+  document.getElementById("loginScreen").style.display="flex"
+}
 </script>
 </body>
 </html>
