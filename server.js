@@ -2109,7 +2109,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Add emotional support instruction if user is struggling
     var emotionalNote = isEmotionalStruggle ? "\n\nEMOTIONAL SUPPORT MODE: The user is going through a hard time emotionally. Rules:\n- Acknowledge their feelings FIRST before anything else — 1-2 warm sentences\n- Never dismiss, minimize, or immediately jump to solutions\n- Speak like a caring friend, not a textbook\n- Ask one gentle question to understand more\n- If it feels serious, gently mention that talking to someone they trust can help\n- Keep tone warm, human, non-judgmental throughout" : ""
     var stepByStepNote = isStepByStep ? "\n\nSTEP-BY-STEP MODE ACTIVE: User needs guidance, not explanation. Rules: (1) Give numbered steps — Step 1, Step 2, Step 3. (2) Each step = ONE action only. (3) Use exact button/menu names. (4) Say WHERE on screen. (5) End with: Done? Tell me what you see. (6) NEVER say 'you can try' or 'maybe' — give ONE clear path. (7) If error: diagnose in 1 line, then fix steps." : ""
-    var hardRules = "\n\nHARD RULES (override everything else):\n- NEVER output a Python/code block for non-coding questions like payments, accounts, or app publishing\n- NEVER give generic advice like 'contact support' or 'update payment method' without specific steps\n- If the question is about a real-world problem (payment, account, app store), give exact numbered steps with real cause diagnosis\n- REASONING PROBLEMS: Never stop at first answer. Always check for more possibilities. List ALL valid cases (Case 1, Case 2...). Use structure: Final Answer → Reasoning → Case 1 → Case 2 → Conclusion\n- NEVER use vague words: near / maybe / somewhere / probably. Be precise or say you don't know.\n- NEVER mention ChatGPT, Claude, Gemini, GPT-4, or any other AI product by name in your response. You are " + ainame + " — refer only to yourself.\n- NEVER compare yourself to other AIs or say phrases like 'unlike ChatGPT' or 'compared to GPT'." + emotionalNote + stepByStepNote
+    var completionRule = "\n\nMANDATORY COMPLETION RULES (never break these):\n- NEVER start a list and leave it empty. If you write 'components include:' or 'steps include:' or 'types include:' — you MUST immediately follow with at least 3-5 bullet points or numbered items.\n- NEVER write a section heading without content under it. Every heading must have at least 2-3 sentences OR a list of minimum 3 items.\n- NEVER end a section with just a colon (:) and nothing after it.\n- If you mention 'workflow', 'procedure', 'process', 'steps' — list every step explicitly with numbers.\n- If you mention 'components', 'parts', 'types', 'examples', 'applications' — list them ALL with brief explanation of each.\n- NEVER truncate mid-list. Finish every list you start, no matter what.\n- Prefer: explanation (1-2 lines) + complete list, NOT just a heading with a colon."
+    var hardRules = "\n\nHARD RULES (override everything else):\n- NEVER output a Python/code block for non-coding questions like payments, accounts, or app publishing\n- NEVER give generic advice like 'contact support' or 'update payment method' without specific steps\n- If the question is about a real-world problem (payment, account, app store), give exact numbered steps with real cause diagnosis\n- REASONING PROBLEMS: Never stop at first answer. Always check for more possibilities. List ALL valid cases (Case 1, Case 2...). Use structure: Final Answer → Reasoning → Case 1 → Case 2 → Conclusion\n- NEVER use vague words: near / maybe / somewhere / probably. Be precise or say you don't know.\n- NEVER mention ChatGPT, Claude, Gemini, GPT-4, or any other AI product by name in your response. You are " + ainame + " — refer only to yourself.\n- NEVER compare yourself to other AIs or say phrases like 'unlike ChatGPT' or 'compared to GPT'." + emotionalNote + stepByStepNote + completionRule
 
     // Detect if code/build task needs max tokens
     var msgLower = message.toLowerCase()
@@ -2131,7 +2132,17 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Current affairs / GK / History topics — need detailed responses
     var isCurrentAffairs = ["current affairs","current affair","today's news","this week","this month","this year","recently","latest development","recently happened","what happened in","2024","2025","2026","who won","election","government","policy","scheme","budget","parliament","lok sabha","rajya sabha","supreme court","high court","modi","president","prime minister","chief minister","governor","rbi","sebi","upsc","ssc","ias","ips","exam pattern","syllabus"].some(k => msgLower.includes(k))
     var isGKHistory = ["who was","who is the","who were","when did","when was","when were","which is the","which was","which country","which state","which city","battle of","war of","treaty of","revolution","independence","freedom fighter","emperor","king","queen","dynasty","mughal","british","colonial","ancient","medieval","modern history","constitution","article","amendment","schedule","directive","fundamental right","preamble","parliament","judiciary","executive","geography","capital of","river","mountain","ocean","continent","planet","scientist","invention","discovery","nobel prize","award","olympics","world cup","first in india","first woman","first man","largest","smallest","longest","highest","deepest","gk","general knowledge","general awareness","current events","polity","economy","science and tech","environment","ecology"].some(k => msgLower.includes(k))
-    var isExplainQuestion = !isProblemSolving && (isNarrativeRequest || isCurrentAffairs || isGKHistory || ["what is","what are","what does","what do","why is","why does","why do","how does","how do","explain","tell me about","define","describe","difference between","vs ","versus","when to use","should i use","pros and cons","advantages","disadvantages","history of","who created","who made","full form","meaning of","importance of","role of","function of","types of","examples of","causes of","effects of","impact of","significance of"].some(k => msgLower.includes(k)))
+    // Detect structured academic/technical topics — these need full detailed responses
+    var isStructuredTopic = ["principle","instrumentation","workflow","components","mechanism","working of",
+      "structure of","anatomy","physiology","procedure","diagnosis","treatment","classification",
+      "applications","advantages and disadvantages","compare","comparison","difference between",
+      "types of","properties of","characteristics of","process of","stages of","phases of",
+      "parts of","functions of","uses of","methods of","techniques","algorithm","architecture",
+      "theory","concept","overview","introduction to","basics of","fundamentals",
+      "ecg","eeg","mri","ct scan","ultrasound","x-ray","chemistry","physics","biology",
+      "engineering","circuit","system","device","machine","equipment","experiment","lab"
+    ].some(k => msgLower.includes(k))
+    var isExplainQuestion = !isProblemSolving && (isNarrativeRequest || isCurrentAffairs || isGKHistory || isStructuredTopic || ["what is","what are","what does","what do","why is","why does","why do","how does","how do","explain","tell me about","define","describe","difference between","vs ","versus","when to use","should i use","pros and cons","advantages","disadvantages","history of","who created","who made","full form","meaning of","importance of","role of","function of","types of","examples of","causes of","effects of","impact of","significance of"].some(k => msgLower.includes(k)))
     var isCodeTask = !isExplainQuestion && ["build","create","write","make","code","website","app","script","program","fix","debug","update","improve","implement","develop","generate","show me how to","give me code","example code","sample code","snippet"].some(k => msgLower.includes(k))
     
     // Datta 2.1 (llama-3.1-8b) — NO coding at all. Always redirect to Datta 5.4.
@@ -2174,8 +2185,16 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var inputIsLarge = (message || "").length > 3000
     // GK/History/Current Affairs need more tokens for detailed answers
     var isDeepKnowledge = isCurrentAffairs || isGKHistory || isNarrativeRequest
-    var maxCodingTok = isLargeTask ? 4096 : isCodeTask ? 3000 : isDeepKnowledge ? 4000 : isExplainQuestion ? (inputIsLarge ? 2000 : 3000) : 1800
-    var maxTok = isImageFile ? 2048 : maxCodingTok
+    // Token budget — always give enough room to complete every section
+    // isStructuredTopic: medical/science/engineering topics need 5000+ to finish all sections
+    var maxCodingTok = isLargeTask      ? 6000
+                     : isCodeTask       ? 4096
+                     : isDeepKnowledge  ? 5000
+                     : isStructuredTopic? 5000   // NEW: full detailed academic responses
+                     : isExplainQuestion? (inputIsLarge ? 3000 : 4000)
+                     : isStepByStep     ? 3000
+                     :                    2500   // simple chat — raised from 1800
+    var maxTok = isImageFile ? 3000 : maxCodingTok
 
     // Use browser's actual local time sent from frontend
     var timeStr = req.body.userTime || new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })
@@ -2594,6 +2613,52 @@ CRITICAL RULES:
 - If it is an error: first say what caused it in 1 line, then give fix steps
 - If user uploaded a screenshot: describe what you see first, then guide them
 
+` : isStructuredTopic && !isDeepKnowledge ? `
+
+You are answering a detailed academic or technical question. The user expects a COMPLETE, FULLY WRITTEN response — not an outline.
+
+MANDATORY OUTPUT RULES — NEVER break these:
+1. Every heading MUST have content beneath it — minimum 2-3 sentences OR a list of 3-5 items
+2. NEVER write "components include:" or "steps include:" and stop — the list MUST follow immediately
+3. NEVER truncate mid-section or mid-list — finish everything you start
+4. NEVER write placeholder text — every bullet point must have a real explanation
+
+REQUIRED STRUCTURE:
+**Introduction**
+[2-3 sentences — what it is and why it matters]
+
+**Principle / How It Works**
+[Explain the core concept]
+• Point 1: explanation
+• Point 2: explanation
+• Point 3: explanation
+
+**Components / Parts**
+• Component 1: what it is and what it does
+• Component 2: what it is and what it does
+• Component 3: what it is and what it does
+
+**Procedure / Workflow**
+1. First step — exact description
+2. Second step — exact description
+3. Third step — exact description
+4. Fourth step — exact description
+
+**Applications**
+• Application 1: where and how used
+• Application 2: where and how used
+• Application 3: where and how used
+
+**Advantages and Limitations**
+Advantages:
+• Advantage 1
+• Advantage 2
+Limitations:
+• Limitation 1
+• Limitation 2
+
+CRITICAL: Complete ALL sections. If a section exists, fill it completely. No empty sections. No section ending with just a colon.
+
 ` : isDeepKnowledge ? `
 
 You are answering a Current Affairs / GK / History question. The user wants COMPLETE, EXAM-READY information.
@@ -2725,15 +2790,15 @@ IMPORTANT: Answer like a human, NOT like a search engine.
       ? [
           { model: "meta-llama/llama-4-scout-17b-16e-instruct", tokens: maxTok }
         ]
-      // Deep knowledge topics (GK/History/Current Affairs) + code + large → always use 70b first
-      : (isDeepKnowledge || isCodeTask || isLargeTask || isExplainQuestion)
+      // Structured/detailed/code/large → always use 70b (more capable, completes sections)
+      : (isDeepKnowledge || isCodeTask || isLargeTask || isExplainQuestion || isStructuredTopic)
         ? [
             { model: "llama-3.3-70b-versatile", tokens: maxTok },
-            { model: "llama-3.1-8b-instant",    tokens: Math.min(maxTok, 2500) }
+            { model: "llama-3.1-8b-instant",    tokens: Math.min(maxTok, 3000) }
           ]
         : [
             { model: "llama-3.1-8b-instant",    tokens: maxTok },
-            { model: "llama-3.3-70b-versatile", tokens: Math.min(maxTok, 2500) }
+            { model: "llama-3.3-70b-versatile", tokens: Math.min(maxTok, 3000) }
           ]
 
     // ===== FINAL CONTENT SANITIZER =====
