@@ -755,27 +755,59 @@ window.addEventListener("DOMContentLoaded", function() {
 function renderPlanInfo(plan) {
   const planMap = {
     free:"🌱 Free Plan", starter:"🚀 Starter Plan", standard:"⭐ Standard Plan",
-    plus:"⚡ Plus Plan", pro:"🔥 Pro Plan", mini:"⚡ Plus Plan",
-    max:"💎 Max Plan", ultramax:"👑 Ultra Max", basic:"🔥 Pro Plan", enterprise:"👑 Enterprise"
+    plus:"⚡ Plus Plan", pro:"🔥 Pro Plan", ultimate:"👑 Ultimate Plan",
+    "ultra-mini":"⚡ Ultra Mini", mini:"⚡ Mini Plan",
+    max:"💎 Max Plan", ultramax:"👑 Ultra Max", basic:"🔥 Basic Plan", enterprise:"👑 Enterprise"
   }
   document.getElementById("profilePlan").textContent = planMap[plan] || "🌱 Free Plan"
 
   const planDetails = {
-    free:     { color:"#10a37f", msgs:"20 msgs/day", models:"Datta 2.1 only",
-                features:["Web search","Voice input"], locked:["Datta 5.4","PDF upload","Priority"],
-                upgrade:"pricing.html", upgradeLabel:"Upgrade to Starter — ₹49/mo" },
-    starter:  { color:"#00cc6a", msgs:"50 msgs/day", models:"Datta 2.1",
-                features:["Web search","Voice input","Faster than Free"], locked:["Datta 5.4","PDF upload"],
-                upgrade:"pricing.html", upgradeLabel:"Upgrade to Standard — ₹149/mo" },
-    standard: { color:"#0099ff", msgs:"120 msgs/day", models:"Datta 2.1 + Datta 5.4 (limited)",
-                features:["Web search","PDF upload","Datta 5.4 limited"], locked:["Full Datta 5.4","Priority"],
-                upgrade:"pricing.html", upgradeLabel:"Upgrade to Plus — ₹299/mo" },
-    plus:     { color:"#ff8800", msgs:"300 msgs/day", models:"Datta 2.1 + Full Datta 5.4",
-                features:["Full Datta 5.4","PDF upload","Priority responses","Web search"], locked:[],
-                upgrade:null, upgradeLabel:null },
-    pro:      { color:"#ff4444", msgs:"1000 msgs/day", models:"Datta 2.1 + Full Datta 5.4",
-                features:["Full Datta 5.4","Highest priority","PDF upload","1000 msgs/day"], locked:[],
-                upgrade:null, upgradeLabel:null }
+    free: {
+      color:"#10a37f", msgs:"10 msgs/day", models:"Datta 2.1",
+      features:["Datta 2.1 model","2 Datta 5.4 msgs/day","Web search","Voice assistant"],
+      locked:["Full Datta 5.4","PDF upload","Priority responses"],
+      upgrade:"pricing.html", upgradeLabel:"Upgrade to Starter — ₹29/mo"
+    },
+    "ultra-mini": {
+      color:"#f59e0b", msgs:"+15 bonus msgs (24h)", models:"Datta 2.1",
+      features:["15 bonus messages","Valid 24 hours","Web search","Voice assistant"],
+      locked:["Full Datta 5.4","PDF upload","Priority responses"],
+      upgrade:"pricing.html", upgradeLabel:"Upgrade to Starter — ₹29/mo"
+    },
+    starter: {
+      color:"#00cc6a", msgs:"40 msgs/day", models:"Datta 2.1",
+      features:["Datta 2.1 model","10 Datta 5.4 msgs/day","Web search","Voice assistant"],
+      locked:["Full Datta 5.4","PDF upload","Priority responses"],
+      upgrade:"pricing.html", upgradeLabel:"Upgrade to Plus — ₹299/mo"
+    },
+    standard: {
+      color:"#0099ff", msgs:"120 msgs/day", models:"Datta 2.1 + Datta 5.4 (limited)",
+      features:["Datta 2.1 + 5.4 limited","PDF upload","Web search","Voice assistant"],
+      locked:["Full Datta 5.4","Priority responses"],
+      upgrade:"pricing.html", upgradeLabel:"Upgrade to Plus — ₹299/mo"
+    },
+    plus: {
+      color:"#f59e0b", msgs:"300 msgs/day", models:"Datta 2.1 + Full Datta 5.4",
+      features:["Full Datta 5.4","PDF upload","Priority responses","Web search","Voice assistant"],
+      locked:[],
+      upgrade:"pricing.html", upgradeLabel:"Upgrade to Pro — ₹499/mo"
+    },
+    pro: {
+      color:"#ef4444", msgs:"700 msgs/day", models:"Datta 2.1 + Full Datta 5.4",
+      features:["Full Datta 5.4","PDF upload","Fastest responses","Priority access","Web search"],
+      locked:[],
+      upgrade:"pricing.html", upgradeLabel:"Upgrade to Ultimate — ₹799/mo"
+    },
+    ultimate: {
+      color:"#8b5cf6", msgs:"1500 msgs/day", models:"Datta 2.1 + Full Datta 5.4",
+      features:["Full Datta 5.4","PDF upload","Highest priority","1500 msgs/day","Web search"],
+      locked:[],
+      upgrade:null, upgradeLabel:null
+    },
+    mini:       { color:"#f59e0b", msgs:"200 msgs/day", models:"Datta 2.1 + 5.4", features:["200 msgs/day","Datta 5.4","Web search"], locked:[], upgrade:"pricing.html", upgradeLabel:"Upgrade to Plus — ₹299/mo" },
+    max:        { color:"#8b5cf6", msgs:"2000 msgs/day", models:"Datta 2.1 + 5.4", features:["2000 msgs/day","All models","Web search"], locked:[], upgrade:null, upgradeLabel:null },
+    ultramax:   { color:"#ec4899", msgs:"Unlimited", models:"All models", features:["Unlimited messages","All models","Top priority"], locked:[], upgrade:null, upgradeLabel:null },
+    enterprise: { color:"#ec4899", msgs:"Unlimited", models:"All models", features:["Unlimited messages","All models","Enterprise support"], locked:[], upgrade:null, upgradeLabel:null }
   }
 
   const pd = planDetails[plan] || planDetails.free
