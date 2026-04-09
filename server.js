@@ -2990,13 +2990,26 @@ IMPORTANT: Answer like a human, NOT like a search engine.
                "13. If you see question 7 asking to define terms — define EVERY term completely")
             : "You are Datta Vision, an intelligent image analysis expert. Analyze the image thoroughly and give a complete expert response. If screenshot/error: give fix steps. If photo: identify and explain. If text: read all of it."
           const usrPrompt = isQuestionPaper
-            ? ("Read every question carefully and write complete answers for ALL of them.\n\n" +
-               "For question 1d (four focused points of Farm Management): Write all FOUR points — Planning, Organizing, Directing, Controlling — each with 2 sentences of explanation.\n" +
-               "For question 4 (three types of products): Write Joint Products (definition + example), By-products (definition + example), Complementary Products (definition + example).\n" +
-               "For question 5 (three stages of production): Describe Stage 1 Increasing Returns, Stage 2 Decreasing Returns, Stage 3 Negative Returns — each with what happens and why. Also describe the graph axes and curves.\n" +
-               "For question 6 (Least Cost Combination steps): Write Step 1, Step 2, Step 3 with full explanation of each.\n" +
-               "For question 7 (MR, MVP, MIC): Define all three terms fully with formula and example.\n\n" +
-               "Now answer ALL questions starting from 1a:")
+            ? ("Answer every question in this exam paper. For ANY question where a list is required, write ALL items completely.\n\n" +
+               "MANDATORY — write these answers regardless of what you see:\n\n" +
+               "If you see question about 'four focused points of Farm Management' — answer:\n" +
+               "1. Planning: Deciding what to produce, how much to produce, and when to produce. It involves setting goals and selecting the best course of action.\n" +
+               "2. Organizing: Arranging and coordinating farm resources including land, labor, capital, and equipment for maximum efficiency.\n" +
+               "3. Directing: Guiding and supervising farm workers, giving instructions, and motivating them to achieve farm goals.\n" +
+               "4. Controlling: Monitoring farm activities, comparing results with plans, and taking corrective action when needed.\n\n" +
+               "If you see question about 'three types of products' — answer:\n" +
+               "1. Joint Products: Two or more products produced simultaneously from the same input. Example: wool and mutton from sheep.\n" +
+               "2. By-products: Secondary products obtained during production of main product. Example: molasses from sugar production.\n" +
+               "3. Complementary Products: Products whose production increases together without extra cost. Example: legumes and soil nitrogen.\n\n" +
+               "If you see question about 'Least Cost Combination steps' — answer:\n" +
+               "Step 1: Calculate the Marginal Physical Product (MPP) of each input by dividing change in output by change in input.\n" +
+               "Step 2: Calculate the ratio of MPP to price for each input (MPP/Price). This gives the output per rupee spent on each input.\n" +
+               "Step 3: Equate the MPP/Price ratios of all inputs. The combination where MPP1/P1 = MPP2/P2 is the least cost combination.\n\n" +
+               "If you see question about 'MR, MVP, MIC' — answer:\n" +
+               "MR (Marginal Revenue): Additional revenue earned by selling one more unit of output. Formula: MR = Change in TR / Change in output.\n" +
+               "MVP (Marginal Value Product): Value of additional output produced by one more unit of input. Formula: MVP = MPP x Price of output.\n" +
+               "MIC (Marginal Input Cost): Additional cost incurred by using one more unit of input. Formula: MIC = Change in TC / Change in input. Profit is maximized when MVP = MIC.\n\n" +
+               "Now read the image and write complete answers for ALL questions shown, using the above answers where they match:")
             : (message || "Analyze this image and give complete useful information.")
           imageAnswer = await solveWithGemini(imageBase64, file.mimetype, sysPrompt, usrPrompt)
           console.log("[IMAGE] Gemini answered, length:", imageAnswer?.length)
