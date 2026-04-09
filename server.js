@@ -128,7 +128,7 @@ async function callGemini(messages, systemPrompt, maxTokens, res) {
     }
   }
 
-  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=" + apiKey
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=" + apiKey
 
   const response = await fetch(url, {
     method: "POST",
@@ -230,9 +230,9 @@ async function solveWithGemini(imageBase64, mimeType, systemPrompt, userPrompt) 
   if (!apiKey) throw new Error("Gemini not configured")
 
   const modelsToTry = [
-    "gemini-1.5-flash",
-    "gemini-1.5-pro",
-    "gemini-1.0-pro-vision-latest"
+    "gemini-2.0-flash",
+    "gemini-2.5-flash",
+    "gemini-2.0-flash-lite"
   ]
 
   for (const modelName of modelsToTry) {
