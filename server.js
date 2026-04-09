@@ -2973,11 +2973,31 @@ IMPORTANT: Answer like a human, NOT like a search engine.
         try {
           console.log("[IMAGE] Using Gemini 2.0 Flash, isQuestionPaper:", isQuestionPaper)
           const sysPrompt = isQuestionPaper
-            ? "You are an expert academic exam solver. Answer every question in the image completely. Use exact question numbering. 1 mark = 2 sentences. 2 marks = 4 sentences. 4 marks = minimum 6 sentences with all points listed fully. For lists write ALL items with explanation. For formulas write formula + explain each symbol. For graphs describe axes, curves, stages, labels. Never leave any answer empty or incomplete."
-            : "You are Datta Vision, an intelligent image analysis expert. Analyze the image thoroughly and give a complete, expert-level response. Identify what you see, explain it clearly, and give useful information. If it is a screenshot or error, give exact steps to fix it. If it is a photo, identify and explain it in detail. If it has text, read all of it. Be specific and direct."
+            ? ("You are an expert academic exam answer writer. You MUST write a COMPLETE answer for EVERY question without exception.\n\n" +
+               "CRITICAL RULES:\n" +
+               "1. Write FULL answers — never write just a heading and stop\n" +
+               "2. 1 mark = 2 complete sentences\n" +
+               "3. 2 marks = 4-5 sentences with key points\n" +
+               "4. 4 marks = write ALL required items. If question asks for 4 points, write all 4 with full explanation each\n" +
+               "5. For graphs: describe X axis label, Y axis label, each curve name, each stage name and what happens in it\n" +
+               "6. For steps: number and explain every single step\n" +
+               "7. For types/kinds: name each type and define it with example\n" +
+               "8. NEVER write 'For example' without first writing the actual definition or content\n" +
+               "9. If you see question 1d asking for four points — write all FOUR points with explanation\n" +
+               "10. If you see question 4 asking for three types — write all THREE types with definition and example\n" +
+               "11. If you see question 5 asking for three stages — describe all THREE stages completely\n" +
+               "12. If you see question 6 asking for three steps — write all THREE steps numbered\n" +
+               "13. If you see question 7 asking to define terms — define EVERY term completely")
+            : "You are Datta Vision, an intelligent image analysis expert. Analyze the image thoroughly and give a complete expert response. If screenshot/error: give fix steps. If photo: identify and explain. If text: read all of it."
           const usrPrompt = isQuestionPaper
-            ? (message ? message + "\n\nSolve all questions completely. Start with 1a:" : "Solve all questions in this exam paper completely. Start directly with 1a:")
-            : (message || "Analyze this image and give me detailed, useful information about it.")
+            ? ("Read every question carefully and write complete answers for ALL of them.\n\n" +
+               "For question 1d (four focused points of Farm Management): Write all FOUR points — Planning, Organizing, Directing, Controlling — each with 2 sentences of explanation.\n" +
+               "For question 4 (three types of products): Write Joint Products (definition + example), By-products (definition + example), Complementary Products (definition + example).\n" +
+               "For question 5 (three stages of production): Describe Stage 1 Increasing Returns, Stage 2 Decreasing Returns, Stage 3 Negative Returns — each with what happens and why. Also describe the graph axes and curves.\n" +
+               "For question 6 (Least Cost Combination steps): Write Step 1, Step 2, Step 3 with full explanation of each.\n" +
+               "For question 7 (MR, MVP, MIC): Define all three terms fully with formula and example.\n\n" +
+               "Now answer ALL questions starting from 1a:")
+            : (message || "Analyze this image and give complete useful information.")
           imageAnswer = await solveWithGemini(imageBase64, file.mimetype, sysPrompt, usrPrompt)
           console.log("[IMAGE] Gemini answered, length:", imageAnswer?.length)
         } catch(gemErr) {
