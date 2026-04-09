@@ -20,13 +20,16 @@ window.addEventListener("DOMContentLoaded", function() {
     document.documentElement.style.setProperty("--accent", savedAccent)
   }
 
-  // Apply saved font size
-  const savedFontLabel = localStorage.getItem("datta_font_size_label")
-  const savedFontPx    = localStorage.getItem("datta_font_size")
-  if (savedFontPx) {
-    document.documentElement.style.setProperty("--chat-font-size", savedFontPx)
+  // Apply saved font size — check all possible storage keys
+  const savedFontPx = localStorage.getItem("datta_font_size")
+  const savedFontLabel = localStorage.getItem("datta_font_size_label") || localStorage.getItem("datta_fontsize")
+  const fontSizes = { small: "13px", medium: "15px", large: "17px" }
+  const applyFontPx = savedFontPx || fontSizes[savedFontLabel] || null
+  if (applyFontPx) {
+    document.documentElement.style.setProperty("--chat-font-size", applyFontPx)
+    // Apply to all existing bubbles
     document.querySelectorAll(".ai-bubble,.aiBubble,.user-bubble,.userBubble").forEach(
-      el => el.style.fontSize = savedFontPx
+      el => el.style.fontSize = applyFontPx
     )
   }
 
@@ -2037,12 +2040,18 @@ function setTheme(theme, silent) {
 // SET FONT SIZE
 function setFontSize(size) {
   document.querySelectorAll(".fontBtn").forEach(b => b.classList.remove("active"))
-  event.target.classList.add("active")
+  if (event && event.target) event.target.classList.add("active")
   const sizes = { small: "13px", medium: "15px", large: "17px" }
-  document.documentElement.style.setProperty("--chat-font-size", sizes[size])
-  document.querySelectorAll(".ai-bubble, .aiBubble, .user-bubble, .userBubble").forEach(el => el.style.fontSize = sizes[size])
+  const px = sizes[size] || "15px"
+  // Set CSS variable — this affects all bubbles using var(--chat-font-size)
+  document.documentElement.style.setProperty("--chat-font-size", px)
+  // Also set directly on existing bubbles (already rendered)
+  document.querySelectorAll(".ai-bubble, .aiBubble, .user-bubble, .userBubble").forEach(el => el.style.fontSize = px)
+  // Save with BOTH keys so any reader finds it
   localStorage.setItem("datta_fontsize", size)
-  showSettingsMsg("Font size set to " + size, "success")
+  localStorage.setItem("datta_font_size", px)
+  localStorage.setItem("datta_font_size_label", size)
+  showSettingsMsg("Font size: " + size, "success")
 }
 
 // SAVE LANGUAGE
