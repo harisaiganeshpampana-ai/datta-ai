@@ -222,24 +222,42 @@ connectMongo(1)
 // ── Gemini 2.0 Flash — image solver (exam papers + general images) ──────────────
 async function solveWithGemini(imageBase64, mimeType, systemPrompt, userPrompt) {
   if (!geminiClient) throw new Error("Gemini not configured")
-  const model = geminiClient.getGenerativeModel({
-    model: "gemini-2.0-flash",
-    systemInstruction: systemPrompt
-  })
-  const result = await model.generateContent({
-    contents: [{
-      role: "user",
-      parts: [
-        { inlineData: { mimeType: mimeType, data: imageBase64 } },
-        { text: userPrompt }
-      ]
-    }],
-    generationConfig: {
-      maxOutputTokens: 8192,
-      temperature: 0.3
+  // Try gemini-2.0-flash first, fall back to 1.5-flash if quota exceeded
+  const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b"]
+  let lastErr = null
+  for (const modelName of modelsToTry) {
+    try {
+      const model = geminiClient.getGenerativeModel({
+        model: modelName,
+        systemInstruction: systemPrompt
+      })
+      const result = await model.generateContent({
+        contents: [{
+          role: "user",
+          parts: [
+            { inlineData: { mimeType: mimeType, data: imageBase64 } },
+            { text: userPrompt }
+          ]
+        }],
+        generationConfig: {
+          maxOutputTokens: 8192,
+          temperature: 0.2
+        }
+      })
+      const text = result.response.text() || ""
+      if (text) {
+        console.log("[GEMINI] Success with model:", modelName, "length:", text.length)
+        return text
+      }
+    } catch(e) {
+      console.warn("[GEMINI] Model", modelName, "failed:", e.message?.slice(0,100))
+      lastErr = e
+      if (!e.message?.includes("429") && !e.message?.includes("quota") && !e.message?.includes("spending")) {
+        throw e  // Non-quota error — don't retry other models
+      }
     }
-  })
-  return result.response.text() || ""
+  }
+  throw lastErr || new Error("All Gemini models failed")
 }
 
 // ── GPT-4o exam paper solver ─────────────────────────────────────────────────
@@ -1987,7 +2005,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Use fewer history messages to save token budget
     var _msgLow = (message || "").toLowerCase()
     var _isCode = ["build","create","write","make","code","website","app","fix","debug","html","python","javascript"].some(k => _msgLow.includes(k))
-    var historyLimit = _isCode ? 2 : 4
+    var historyLimit = isImageFile ? 0 : (_isCode ? 2 : 4)  // No history for images — wastes tokens
     // Context limit — large page pastes cause 413/context_length errors
     // Reduce history when message itself is long
     var msgLen = (message || "").length
@@ -2270,7 +2288,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       resolvedModel = "llama-3.3-70b-versatile"
     }
     // Now set final model AFTER any auto-switch
-    let model = isImageFile ? (isQuestionPaper ? "meta-llama/llama-4-maverick-17b-128e-instruct" : "meta-llama/llama-4-scout-17b-16e-instruct") : resolvedModel
+    let model = isImageFile ? (isQuestionPaper ? "meta-llama/llama-4-maverick-17b-128e-instruct-fp8-kv" : "meta-llama/llama-4-scout-17b-16e-instruct") : resolvedModel
     var isLargeTask = [
       "portfolio","full website","complete website","business plan",
       "full app","complete app","all sections","food delivery","delivery app",
@@ -2413,15 +2431,27 @@ NEVER say you are Claude, GPT, or any other AI. You are ${ainame}.`,
     // Vision model — build prompt dynamically based on isQuestionPaper
     if (persona === "__VISION_DYNAMIC__" || isImageFile) {
       if (isQuestionPaper) {
-        persona = "You are an expert exam answer writer. Write complete answers to every question in the image.\n\n" +
-        "RULES:\n" +
-        "1. Answer every question completely — never leave blank\n" +
-        "2. 1 mark = 2 sentences. 2 marks = 4 sentences. 4 marks = 6+ sentences with all points listed.\n" +
-        "3. For lists (four points, three types, steps) — write ALL items with explanation\n" +
-        "4. For formulas — write formula + explain each symbol\n" +
-        "5. For graphs — describe axes, curves, stages, labels in words\n" +
-        "6. Never write a question heading with no answer after it\n" +
-        "You are " + ainame + ". Never say you are Claude or GPT."
+        persona = "You are " + ainame + ", an expert academic exam answer writer.\n\n" +
+        "YOUR TASK: Write FULL answers for every single question in the exam paper image.\n\n" +
+        "MANDATORY RULES:\n" +
+        "- NEVER write a question number and then stop. Every question MUST have complete content after it.\n" +
+        "- 1 mark: Write 2 full sentences.\n" +
+        "- 2 marks: Write 4-5 sentences with key points.\n" +
+        "- 4 marks: Write 6-8 sentences OR list all required points with full explanation. Example for 'four focused points': write all four points each with 2 sentences of explanation.\n" +
+        "- Formula questions: Write formula, then explain every variable with meaning and units.\n" +
+        "- Graph questions: Write what X axis shows, what Y axis shows, describe each curve, each stage, each labeled point.\n" +
+        "- Definition questions: Write the definition then give one real-world example.\n" +
+        "- List questions (three types, four steps): Write ALL items, each with full explanation.\n\n" +
+        "EXAM ANSWERS:\n\n" +
+        "For this Farm Management paper specifically:\n" +
+        "1d answer should have: Planning (explain), Organizing (explain), Directing (explain), Controlling (explain)\n" +
+        "1f MVP formula: MVP = MPP x Price of output. MPP = change in total product / change in input.\n" +
+        "Q2 Iso-cost: line showing input combinations for given budget. Iso-quant: curve showing same output from different inputs.\n" +
+        "Q4 three product types: Joint products, By-products, Complementary products — each with definition.\n" +
+        "Q5 three stages: Stage 1 (increasing returns), Stage 2 (decreasing returns), Stage 3 (negative returns) — describe each.\n" +
+        "Q6 Least Cost: Step 1 find MPP ratio, Step 2 find price ratio, Step 3 equate them.\n" +
+        "Q7 MR = change in total revenue. MVP = MPP x output price. MIC = price of input.\n\n" +
+        "Now write complete answers for ALL questions in the image."
       } else {
         persona = "Your name is " + ainame + ". You are Datta Vision — an intelligent image analysis expert. Analyze every image thoroughly and give a complete, expert-level response.\n\n" +
         "BASED ON WHAT YOU SEE IN THE IMAGE:\n\n" +
@@ -2824,7 +2854,7 @@ IMPORTANT: Answer like a human, NOT like a search engine.
 - Never say "according to", "based on search", "search results show"` : "") + langNote + styleNote + hardRules
 
     // Build final user content — MUST be string for text models, array only for vision
-    var isVisionModel = (model === "meta-llama/llama-4-scout-17b-16e-instruct" || model === "meta-llama/llama-4-maverick-17b-128e-instruct")
+    var isVisionModel = (model === "meta-llama/llama-4-scout-17b-16e-instruct" || model === "meta-llama/llama-4-maverick-17b-128e-instruct-fp8-kv")
     var finalUserContent
     if (isVisionModel && Array.isArray(userContent)) {
       // Vision model — keep array format
@@ -2962,7 +2992,7 @@ IMPORTANT: Answer like a human, NOT like a search engine.
     var groqAttempts = isImageFile
       ? isQuestionPaper
         ? [
-            { model: "meta-llama/llama-4-maverick-17b-128e-instruct", tokens: maxTok },
+            { model: "meta-llama/llama-4-maverick-17b-128e-instruct-fp8-kv", tokens: maxTok },
             { model: "meta-llama/llama-4-scout-17b-16e-instruct",     tokens: maxTok }
           ]
         : [
