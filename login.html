@@ -2,321 +2,351 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Josefin+Sans:wght@300;400;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Datta AI - Login</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Datta AI — Login</title>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; font-family:system-ui,Arial,sans-serif; }
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
 body {
-  min-height: 100vh;
+  min-height: 100vh; min-height: 100dvh;
   background: #0a0a0a;
-  color: white;
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: system-ui, -apple-system, Arial, sans-serif;
   overflow-x: hidden;
+  padding: 20px 0 40px;
 }
 
-/* Background glow */
+/* Subtle background glow */
 body::before {
   content: '';
-  position: fixed;
-  top: -200px; left: 50%;
+  position: fixed; top: -150px; left: 50%;
   transform: translateX(-50%);
-  width: 600px; height: 600px;
-  background: radial-gradient(circle, rgba(0,255,136,0.07) 0%, transparent 70%);
-  pointer-events: none;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(16,163,127,0.08) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
 }
 
 .container {
-  width: 100%;
-  max-width: 420px;
-  padding: 24px 20px;
-}
-
-/* LOGO */
-.logo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 32px;
-  animation: fadeDown 0.6s ease forwards;
-}
-
-.logoRing {
-  position: relative;
-  width: 72px; height: 72px;
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 14px;
-}
-
-.logoRing::before {
-  content: '';
-  position: absolute; inset: -3px;
-  border-radius: 50%;
-  background: conic-gradient(from 0deg, #00ff88, #00ccff, #0066ff, #00ff88);
-  animation: spin 3s linear infinite;
-  filter: blur(2px);
-  opacity: 0.8;
-}
-
-.logoRing::after {
-  content: ''; position: absolute; inset: 1px;
-  border-radius: 50%; background: #0a0a0a;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.logoRing img {
-  width: 62px; height: 62px;
-  border-radius: 50%; object-fit: cover;
+  width: 100%; max-width: 400px;
+  padding: 0 20px;
   position: relative; z-index: 1;
 }
 
-.logoTitle {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 32px;
-  letter-spacing: 4px;
+/* ── BRANDING ── */
+.branding {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 28px;
+  animation: fadeDown 0.5s ease both;
+}
+
+@keyframes fadeDown {
+  from { opacity:0; transform:translateY(-16px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* Logo circle — clean, no z-index issues */
+.logo-wrap {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-bottom: 16px;
+  border: 2px solid rgba(16,163,127,0.4);
+  box-shadow: 0 0 0 4px rgba(16,163,127,0.1), 0 8px 24px rgba(0,0,0,0.4);
+  background: #111;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.logo-wrap img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+/* Fallback icon shown when image fails */
+.logo-fallback {
+  display: none;
+  width: 100%; height: 100%;
+  align-items: center; justify-content: center;
+  font-size: 36px; line-height: 1;
+}
+
+.app-name {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 2px;
   background: linear-gradient(90deg, #00ff88, #00ccff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  white-space: nowrap;
+  margin-bottom: 4px;
 }
 
-.logoSub {
-  font-size: 13px; color: #555;
-  margin-top: 4px; letter-spacing: 1px;
+.app-sub {
+  font-size: 13px;
+  color: #666;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
 }
 
-@keyframes fadeDown {
-  from { opacity:0; transform:translateY(-20px); }
-  to   { opacity:1; transform:translateY(0); }
+.app-version {
+  font-size: 11px;
+  color: #333;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
 }
 
-/* CARD */
+/* ── CARD ── */
 .card {
   background: #111;
-  border: 1px solid #222;
+  border: 1px solid #1e1e1e;
   border-radius: 20px;
-  padding: 28px 24px;
-  animation: fadeUp 0.6s ease 0.2s both;
+  padding: 24px 20px;
+  animation: fadeUp 0.5s ease 0.15s both;
 }
 
 @keyframes fadeUp {
-  from { opacity:0; transform:translateY(20px); }
+  from { opacity:0; transform:translateY(16px); }
   to   { opacity:1; transform:translateY(0); }
 }
 
-/* TABS */
+/* ── TABS ── */
 .tabs {
   display: flex;
   background: #1a1a1a;
-  border-radius: 10px;
-  padding: 4px;
-  margin-bottom: 24px;
+  border-radius: 12px;
+  padding: 3px;
+  margin-bottom: 22px;
+  gap: 2px;
 }
 
 .tab {
-  flex: 1; padding: 9px;
+  flex: 1;
+  padding: 10px;
   background: none; border: none;
-  color: #666; font-size: 14px;
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 700; border-radius: 8px;
-  cursor: pointer; transition: all 0.2s;
-  letter-spacing: 0.5px;
+  color: #555; font-size: 14px;
+  font-weight: 600; border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
 }
 
 .tab.active {
-  background: #222; color: white;
+  background: #2a2a2a;
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 
-/* FORM */
+/* ── FORM SECTIONS ── */
 .formSection { display: none; }
 .formSection.active { display: block; }
 
 .formTitle {
-  font-size: 20px; font-weight: 700;
-  margin-bottom: 6px;
+  font-size: 18px; font-weight: 700;
+  margin-bottom: 4px; color: #fff;
 }
 
 .formSub {
   font-size: 13px; color: #555;
-  margin-bottom: 22px;
+  margin-bottom: 20px;
 }
 
-.field {
-  margin-bottom: 14px;
-}
+/* ── FIELDS ── */
+.field { margin-bottom: 14px; }
 
 .field label {
   display: block;
-  font-size: 12px; color: #888;
-  margin-bottom: 6px; font-weight: 500;
-  letter-spacing: 0.5px; text-transform: uppercase;
+  font-size: 11px; color: #666;
+  margin-bottom: 6px; font-weight: 600;
+  letter-spacing: 0.8px; text-transform: uppercase;
 }
 
 .field input {
   width: 100%;
-  padding: 12px 14px;
+  padding: 13px 14px;
   background: #1a1a1a;
-  border: 1px solid #2a2a2a;
-  border-radius: 10px;
-  color: white; font-size: 15px;
+  border: 1px solid #252525;
+  border-radius: 12px;
+  color: #fff; font-size: 15px;
+  font-family: inherit;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -webkit-appearance: none;
 }
 
 .field input:focus {
-  border-color: #00ff88;
+  border-color: #10a37f;
+  box-shadow: 0 0 0 3px rgba(16,163,127,0.12);
 }
 
 .field input::placeholder { color: #444; }
 
-/* SUBMIT BTN */
+/* ── SUBMIT BUTTON ── */
 .submitBtn {
-  width: 100%;
-  padding: 13px;
-  background: linear-gradient(135deg, #00cc6a, #00aaff);
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, #10a37f, #0077cc);
   border: none; border-radius: 12px;
-  color: white; font-size: 15px;
-  font-weight: 700; cursor: pointer;
-  margin-top: 6px;
-  transition: opacity 0.2s, transform 0.1s;
+  color: #fff; font-size: 15px;
+  font-weight: 700; font-family: inherit;
+  cursor: pointer; margin-top: 4px;
+  transition: opacity 0.2s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .submitBtn:hover { opacity: 0.9; }
 .submitBtn:active { transform: scale(0.98); }
 .submitBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* DIVIDER */
+/* ── DIVIDER ── */
 .divider {
   display: flex; align-items: center;
-  gap: 12px; margin: 20px 0;
-  color: #444; font-size: 12px;
+  gap: 10px; margin: 18px 0;
+  color: #333; font-size: 12px;
 }
 .divider::before, .divider::after {
-  content: ''; flex: 1; height: 1px; background: #222;
+  content: ''; flex: 1; height: 1px; background: #1e1e1e;
 }
 
-/* SOCIAL BTNS */
-.socialBtns {
-  display: flex; flex-direction: column; gap: 10px;
-}
-
-.socialBtn {
-  width: 100%; padding: 12px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+/* ── GOOGLE BUTTON ── */
+.googleBtn {
+  width: 100%; padding: 13px;
   border-radius: 12px;
-  color: white; font-size: 14px;
-  font-weight: 500; cursor: pointer;
+  border: 1px solid #252525;
+  background: #fff;
+  color: #111; font-size: 14px;
+  font-weight: 600; font-family: inherit;
+  cursor: pointer;
   display: flex; align-items: center;
   justify-content: center; gap: 10px;
-  transition: background 0.2s, border-color 0.2s;
+  transition: all 0.2s; margin-bottom: 10px;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.socialBtn:hover {
-  background: #222; border-color: #333;
-}
-
-.socialBtn img { width: 20px; height: 20px; }
-
-/* PHONE ROW */
-.phoneRow {
-  display: flex; gap: 8px;
-}
-
-.phoneRow .countryCode {
-  width: 80px; padding: 12px 10px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
-  border-radius: 10px;
-  color: white; font-size: 15px;
-  outline: none;
-}
-
-.phoneRow .field { flex: 1; margin: 0; }
-
-/* GUEST BTN */
-.googleBtn {
-  width: 100%;
-  padding: 13px;
-  border-radius: 12px;
-  border: 1px solid #2a2a2a;
-  background: #fff;
-  color: #1a1a1a;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  transition: all 0.2s;
-  margin-bottom: 10px;
-  font-family: inherit;
-}
-.googleBtn:hover {
-  background: #f5f5f5;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
+.googleBtn:hover { background: #f5f5f5; }
 .googleBtn:active { transform: scale(0.98); }
+
+/* ── PHONE / GUEST BUTTONS ── */
+.socialBtn {
+  width: 100%; padding: 13px;
+  background: #1a1a1a;
+  border: 1px solid #252525;
+  border-radius: 12px;
+  color: #aaa; font-size: 14px;
+  font-weight: 500; font-family: inherit;
+  cursor: pointer; margin-bottom: 8px;
+  display: flex; align-items: center;
+  justify-content: center; gap: 8px;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.socialBtn:hover { background: #222; border-color: #333; }
 
 .guestBtn {
   width: 100%; padding: 12px;
   background: none;
-  border: 1px dashed #2a2a2a;
+  border: 1px dashed #252525;
   border-radius: 12px;
-  color: #666; font-size: 14px;
-  cursor: pointer; margin-top: 10px;
+  color: #555; font-size: 13px;
+  font-family: inherit;
+  cursor: pointer; margin-top: 8px;
   transition: all 0.2s;
 }
+.guestBtn:hover { border-color: #444; color: #999; }
 
-.guestBtn:hover { border-color: #444; color: #aaa; }
+/* ── PHONE ROW ── */
+.phoneRow { display: flex; gap: 8px; }
+.countryCode {
+  width: 75px; padding: 13px 10px;
+  background: #1a1a1a;
+  border: 1px solid #252525;
+  border-radius: 12px;
+  color: #fff; font-size: 15px;
+  font-family: inherit; outline: none;
+  flex-shrink: 0;
+}
+.phoneRow > .field { flex: 1; margin: 0; }
 
-/* ERROR / SUCCESS */
+/* ── MESSAGES ── */
 .msg {
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  margin-bottom: 14px;
-  display: none;
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 13px; line-height: 1.4;
+  margin-bottom: 16px; display: none;
 }
+.msg.error  { background: #1e0a0a; border: 1px solid #3a1010; color: #ff7777; display: block; }
+.msg.success{ background: #0a1e14; border: 1px solid #104420; color: #44ff88; display: block; }
 
-.msg.error { background: #2a1010; border: 1px solid #441010; color: #ff6666; display: block; }
-.msg.success { background: #0a2a1a; border: 1px solid #104410; color: #44ff88; display: block; }
+/* ── SERVER STATUS ── */
+#serverStatus { display: none; margin-bottom: 12px; }
+.wake-banner {
+  display: flex; align-items: center; gap: 10px;
+  background: #111; border: 1px solid #1e1e1e;
+  border-radius: 12px; padding: 12px 14px;
+}
+.wake-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ffaa00; flex-shrink: 0;
+  animation: blink 1.2s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.wake-text { font-size: 12px; color: #888; }
 
-/* LOADING SPINNER */
+/* ── SPINNER ── */
 .spinner {
-  width: 18px; height: 18px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: white;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.25);
+  border-top-color: #fff;
   border-radius: 50%;
-  animation: spin 0.6s linear infinite;
+  animation: spin 0.65s linear infinite;
   display: inline-block; vertical-align: middle;
-  margin-right: 6px;
+  margin-right: 8px;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── FORGOT PASSWORD LINK ── */
+.forgot-row {
+  text-align: center; margin-top: 14px;
+}
+.forgot-row a, .forgot-row span {
+  font-size: 12px; color: #555; text-decoration: none;
+}
+.forgot-row a { color: #10a37f; }
+.forgot-row a:hover { text-decoration: underline; }
 </style>
-
-
-
 </head>
 <body>
 
 <div class="container">
 
-  <!-- LOGO -->
-  <div class="logo">
-    <div class="logoRing">
-      <img src="logo.png" alt="Datta AI">
+  <!-- BRANDING -->
+  <div class="branding">
+    <div class="logo-wrap">
+      <img
+        src="logo.jpeg"
+        alt="Datta AI"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+      >
+      <div class="logo-fallback">🤖</div>
     </div>
-    <div class="logoTitle">Datta AI</div>
-    <div class="logoSub">Your personal AI assistant</div>
-    <div style="font-size:10px;color:#444;letter-spacing:2px;margin-top:6px;font-family:'Rajdhani',sans-serif;">v2.0 SHAKTI</div>
+    <div class="app-name">Datta AI</div>
+    <div class="app-sub">Your personal AI assistant</div>
+    <div class="app-version">Version 2.0</div>
+  </div>
+
+  <!-- SERVER STATUS (shown if server is cold starting) -->
+  <div id="serverStatus">
+    <div class="wake-banner">
+      <div class="wake-dot"></div>
+      <div class="wake-text">Server is starting up — please wait a moment ☕</div>
+    </div>
   </div>
 
   <!-- CARD -->
@@ -328,152 +358,136 @@ body::before {
       <button class="tab" onclick="switchTab('signup')">Sign Up</button>
     </div>
 
-    <!-- ERROR/SUCCESS MSG -->
+    <!-- MESSAGE -->
     <div class="msg" id="msg"></div>
 
-    <!-- LOGIN SECTION -->
+    <!-- LOGIN -->
     <div class="formSection active" id="loginSection">
       <div class="formTitle">Welcome back</div>
       <div class="formSub">Login to continue to Datta AI</div>
 
       <div class="field">
         <label>Email</label>
-        <input type="email" id="loginEmail" placeholder="you@example.com">
+        <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email">
       </div>
       <div class="field">
         <label>Password</label>
-        <input type="password" id="loginPassword" placeholder="Enter your password">
+        <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password">
       </div>
 
-      <button class="submitBtn" onclick="handleLogin()">Login</button>
-      <div style="text-align:center;margin-top:12px;">
-        <span style="font-size:12px;color:#555;">Forgot password? </span>
-        <a href="#" onclick="switchTab('signup');return false;" style="font-size:12px;color:#00ff88;text-decoration:none;">Create new account</a>
+      <button class="submitBtn" id="loginBtn" onclick="handleLogin()">Login</button>
+
+      <div class="forgot-row" style="margin-top:12px;">
+        <span>Don't have an account? </span>
+        <a href="#" onclick="switchTab('signup');return false;">Sign Up</a>
       </div>
 
       <div class="divider">or continue with</div>
 
-      <div class="socialBtns">
-        <button class="googleBtn" onclick="loginWithGoogle()">
-          <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-          Continue with Google
-        </button>
-        <button class="socialBtn" onclick="switchTab('phone')">
-          📱 Continue with Phone
-        </button>
-      </div>
-
-
+      <button class="googleBtn" onclick="loginWithGoogle()">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Continue with Google
+      </button>
+      <button class="socialBtn" onclick="switchTab('phone')">📱 Continue with Phone</button>
     </div>
 
-    <!-- SIGNUP SECTION -->
+    <!-- SIGNUP -->
     <div class="formSection" id="signupSection">
       <div class="formTitle">Create account</div>
-      <div class="formSub">Join Datta AI for free</div>
+      <div class="formSub">Join Datta AI — it's free</div>
 
       <div class="field">
         <label>Username</label>
-        <input type="text" id="signupUsername" placeholder="Choose a username">
+        <input type="text" id="signupUsername" placeholder="Choose a username" autocomplete="username">
       </div>
       <div class="field">
         <label>Email</label>
-        <input type="email" id="signupEmail" placeholder="you@example.com">
+        <input type="email" id="signupEmail" placeholder="you@example.com" autocomplete="email">
       </div>
       <div class="field">
         <label>Password</label>
-        <input type="password" id="signupPassword" placeholder="Min 6 characters">
+        <input type="password" id="signupPassword" placeholder="Min 6 characters" autocomplete="new-password">
       </div>
 
-      <button class="submitBtn" onclick="handleSignup()">Create Account</button>
+      <button class="submitBtn" id="signupBtn" onclick="handleSignup()">Create Account</button>
+
+      <div class="forgot-row" style="margin-top:12px;">
+        <span>Already have an account? </span>
+        <a href="#" onclick="switchTab('login');return false;">Login</a>
+      </div>
 
       <div class="divider">or continue with</div>
-      <div class="socialBtns">
-        <button class="googleBtn" onclick="loginWithGoogle()">
-          <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-          Continue with Google
-        </button>
-        <button class="socialBtn" onclick="switchTab('phone')">
-          📱 Continue with Phone
-        </button>
-      </div>
 
+      <button class="googleBtn" onclick="loginWithGoogle()">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Continue with Google
+      </button>
+      <button class="socialBtn" onclick="switchTab('phone')">📱 Continue with Phone</button>
     </div>
 
-    <!-- PHONE SECTION -->
+    <!-- PHONE -->
     <div class="formSection" id="phoneSection">
       <div class="formTitle">Phone Login</div>
-      <div class="formSub">Enter your phone number</div>
+      <div class="formSub">Enter your mobile number</div>
 
       <div class="field">
         <label>Phone Number</label>
         <div class="phoneRow">
           <input class="countryCode" type="text" id="countryCode" value="+91">
           <div class="field">
-            <input type="tel" id="phoneNumber" placeholder="9876543210">
+            <input type="tel" id="phoneNumber" placeholder="9876543210" autocomplete="tel">
           </div>
         </div>
       </div>
 
       <div class="field" id="otpField" style="display:none;">
         <label>OTP</label>
-        <input type="text" id="otpInput" placeholder="Enter 6-digit OTP" maxlength="6">
+        <input type="number" id="otpInput" placeholder="Enter 6-digit OTP" maxlength="6" autocomplete="one-time-code">
       </div>
 
       <button class="submitBtn" id="phoneBtn" onclick="handlePhone()">Send OTP</button>
-
-      <button class="guestBtn" onclick="switchTab('login')" style="margin-top:10px;">
-        ← Back to Login
-      </button>
+      <button class="guestBtn" onclick="switchTab('login')">← Back to Login</button>
     </div>
 
   </div>
+
 </div>
 
 <script>
 const SERVER = "https://datta-ai-server.onrender.com"
 
-// Run immediately on script load - dont wait for window load
+// Handle Google OAuth redirect
 ;(function() {
   const params = new URLSearchParams(window.location.search)
   const token = params.get("token")
-  if (token && !params.get("user")) {
-    // Token-only redirect (Google OAuth) — let handleGoogleRedirect fetch user data
-    return
-  }
   if (token) {
     localStorage.setItem("datta_token", token)
     const userStr = params.get("user")
     if (userStr) {
       try { localStorage.setItem("datta_user", decodeURIComponent(userStr)) } catch(e) {}
     }
+    // Fetch user if not included
+    if (!userStr) {
+      fetch(SERVER + "/auth/me", { headers: { "Authorization": "Bearer " + token } })
+        .then(r => r.ok ? r.json() : null)
+        .then(u => { if (u) { localStorage.setItem("datta_user", JSON.stringify(u)); localStorage.setItem("datta_plan", u.plan || "free") } })
+        .catch(() => {})
+        .finally(() => { window.location.replace("index.html") })
+      return
+    }
+    window.location.replace("index.html")
+    return
+  }
+  // Already logged in
+  if (localStorage.getItem("datta_token")) {
     window.location.replace("index.html")
   }
 })()
-
-// Check if already logged in
-window.addEventListener("load", function() {
-  const params = new URLSearchParams(window.location.search)
-  if (params.get("token")) return // already handling above
-
-  const token = localStorage.getItem("datta_token")
-  let user = null
-  try {
-    const raw = localStorage.getItem("datta_user")
-    if (raw && raw !== "null") user = JSON.parse(raw)
-  } catch(e) {}
-  if (token) {
-    // Redirect if token exists even if user object not cached yet
-    // index.html will fetch user data from server
-    window.location.href = "index.html"
-  }
-
-})
 
 function switchTab(tab) {
   document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"))
   document.querySelectorAll(".formSection").forEach(s => s.classList.remove("active"))
   clearMsg()
-
   if (tab === "login") {
     document.querySelectorAll(".tab")[0].classList.add("active")
     document.getElementById("loginSection").classList.add("active")
@@ -490,35 +504,19 @@ function showMsg(text, type) {
   el.textContent = text
   el.className = "msg " + type
 }
-
 function clearMsg() {
   const el = document.getElementById("msg")
-  el.className = "msg"
-  el.textContent = ""
+  el.className = "msg"; el.textContent = ""
 }
 
-function setLoading(btnId, loading) {
-  const btn = document.getElementById(btnId) || document.querySelector(".submitBtn")
-  if (loading) {
-    btn.disabled = true
-    btn.innerHTML = '<span class="spinner"></span> Please wait...'
-  } else {
-    btn.disabled = false
-  }
-}
-
-// EMAIL LOGIN
 async function handleLogin() {
   const email = document.getElementById("loginEmail").value.trim()
   const password = document.getElementById("loginPassword").value
   clearMsg()
-
   if (!email || !password) return showMsg("Please fill in all fields", "error")
-
-  const btn = document.querySelectorAll(".submitBtn")[0]
+  const btn = document.getElementById("loginBtn")
   btn.disabled = true
-  btn.innerHTML = '<span class="spinner"></span> Logging in...'
-
+  btn.innerHTML = '<span class="spinner"></span>Logging in...'
   try {
     const res = await fetch(SERVER + "/auth/login", {
       method: "POST",
@@ -526,41 +524,31 @@ async function handleLogin() {
       body: JSON.stringify({ email, password })
     })
     const data = await res.json()
-
     if (!res.ok) {
       showMsg(data.error || "Login failed", "error")
-      btn.disabled = false
-      btn.textContent = "Login"
-      return
+      btn.disabled = false; btn.textContent = "Login"; return
     }
-
     localStorage.setItem("datta_token", data.token)
     localStorage.setItem("datta_user", JSON.stringify(data.user))
     showMsg("Login successful! Redirecting...", "success")
-    setTimeout(() => window.location.href = "index.html", 1000)
-
-  } catch (e) {
-    showMsg("Server error. Please try again.", "error")
-    btn.disabled = false
-    btn.textContent = "Login"
+    setTimeout(() => window.location.href = "index.html", 900)
+  } catch(e) {
+    showMsg("Connection error. Please try again.", "error")
+    btn.disabled = false; btn.textContent = "Login"
   }
 }
 
-// EMAIL SIGNUP
 async function handleSignup() {
   const username = document.getElementById("signupUsername").value.trim()
   const email = document.getElementById("signupEmail").value.trim()
   const password = document.getElementById("signupPassword").value
   clearMsg()
-
   if (!username || !email || !password) return showMsg("Please fill in all fields", "error")
-  if (password.length < 6) return showMsg("Password must be at least 6 characters", "error")
   if (username.length < 3) return showMsg("Username must be at least 3 characters", "error")
-
-  const btn = document.querySelectorAll(".submitBtn")[1]
+  if (password.length < 6) return showMsg("Password must be at least 6 characters", "error")
+  const btn = document.getElementById("signupBtn")
   btn.disabled = true
-  btn.innerHTML = '<span class="spinner"></span> Creating account...'
-
+  btn.innerHTML = '<span class="spinner"></span>Creating account...'
   try {
     const res = await fetch(SERVER + "/auth/signup", {
       method: "POST",
@@ -568,39 +556,30 @@ async function handleSignup() {
       body: JSON.stringify({ username, email, password })
     })
     const data = await res.json()
-
     if (!res.ok) {
       showMsg(data.error || "Signup failed", "error")
-      btn.disabled = false
-      btn.textContent = "Create Account"
-      return
+      btn.disabled = false; btn.textContent = "Create Account"; return
     }
-
     localStorage.setItem("datta_token", data.token)
     localStorage.setItem("datta_user", JSON.stringify(data.user))
     showMsg("Account created! Redirecting...", "success")
-    setTimeout(() => window.location.href = "index.html", 1000)
-
-  } catch (e) {
-    showMsg("Server error. Please try again.", "error")
-    btn.disabled = false
-    btn.textContent = "Create Account"
+    setTimeout(() => window.location.href = "index.html", 900)
+  } catch(e) {
+    showMsg("Connection error. Please try again.", "error")
+    btn.disabled = false; btn.textContent = "Create Account"
   }
 }
 
-// PHONE OTP
 let otpSent = false
 async function handlePhone() {
   const code = document.getElementById("countryCode").value.trim()
   const phone = document.getElementById("phoneNumber").value.trim()
   const btn = document.getElementById("phoneBtn")
-
   if (!otpSent) {
     if (!phone) return showMsg("Enter your phone number", "error")
     clearMsg()
     btn.disabled = true
-    btn.innerHTML = '<span class="spinner"></span> Sending OTP...'
-
+    btn.innerHTML = '<span class="spinner"></span>Sending OTP...'
     try {
       const res = await fetch(SERVER + "/auth/send-otp", {
         method: "POST",
@@ -610,92 +589,47 @@ async function handlePhone() {
       const data = await res.json()
       if (!res.ok) {
         showMsg(data.error || "Failed to send OTP", "error")
-        btn.disabled = false
-        btn.textContent = "Send OTP"
-        return
+        btn.disabled = false; btn.textContent = "Send OTP"; return
       }
       otpSent = true
       document.getElementById("otpField").style.display = "block"
-      btn.disabled = false
-      btn.textContent = "Verify OTP"
+      btn.disabled = false; btn.textContent = "Verify OTP"
       showMsg("OTP sent to " + code + phone, "success")
-    } catch (e) {
-      showMsg("Server error", "error")
-      btn.disabled = false
-      btn.textContent = "Send OTP"
+    } catch(e) {
+      showMsg("Connection error", "error")
+      btn.disabled = false; btn.textContent = "Send OTP"
     }
-
   } else {
     const otp = document.getElementById("otpInput").value.trim()
     if (!otp) return showMsg("Enter the OTP", "error")
     clearMsg()
     btn.disabled = true
-    btn.innerHTML = '<span class="spinner"></span> Verifying...'
-
+    btn.innerHTML = '<span class="spinner"></span>Verifying...'
     try {
       const res = await fetch(SERVER + "/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: document.getElementById("countryCode").value + document.getElementById("phoneNumber").value, otp })
+        body: JSON.stringify({ phone: code + phone, otp })
       })
       const data = await res.json()
       if (!res.ok) {
         showMsg(data.error || "Invalid OTP", "error")
-        btn.disabled = false
-        btn.textContent = "Verify OTP"
-        return
+        btn.disabled = false; btn.textContent = "Verify OTP"; return
       }
       localStorage.setItem("datta_token", data.token)
       localStorage.setItem("datta_user", JSON.stringify(data.user))
       showMsg("Verified! Redirecting...", "success")
-      setTimeout(() => window.location.href = "index.html", 1000)
-    } catch (e) {
-      showMsg("Server error", "error")
-      btn.disabled = false
-      btn.textContent = "Verify OTP"
+      setTimeout(() => window.location.href = "index.html", 900)
+    } catch(e) {
+      showMsg("Connection error", "error")
+      btn.disabled = false; btn.textContent = "Verify OTP"
     }
   }
 }
 
-// Google OAuth login
 function loginWithGoogle() {
-  window.location.href = "https://datta-ai-server.onrender.com/auth/google"
+  window.location.href = SERVER + "/auth/google"
 }
-
-// Handle Google redirect — URL now has only ?token= (no user= to avoid 414)
-async function handleGoogleRedirect() {
-  const params = new URLSearchParams(window.location.search)
-  const token  = params.get("token")
-  const error  = params.get("error")
-
-  if (error) {
-    showMsg("Google login failed. Please try again.", "error")
-    window.history.replaceState({}, "", window.location.pathname)
-    return
-  }
-
-  if (token) {
-    localStorage.setItem("datta_token", token)
-    // Fetch user data from backend using the token
-    try {
-      const SERVER = "https://datta-ai-server.onrender.com"
-      const r = await fetch(SERVER + "/auth/me", {
-        headers: { "Authorization": "Bearer " + token }
-      })
-      if (r.ok) {
-        const user = await r.json()
-        localStorage.setItem("datta_user", JSON.stringify(user))
-        localStorage.setItem("datta_plan", user.plan || "free")
-      }
-    } catch(e) {}
-    window.location.href = "index.html"
-  }
-}
-
-// Run on page load
-handleGoogleRedirect()
-
-
 
 // Enter key support
 document.addEventListener("keydown", function(e) {
@@ -706,36 +640,20 @@ document.addEventListener("keydown", function(e) {
   else if (active.id === "signupSection") handleSignup()
   else if (active.id === "phoneSection") handlePhone()
 })
-</script>
 
-<script>
-// Check if server is awake, show message if waking up
+// Server wake-up check
 async function checkServer() {
   const status = document.getElementById("serverStatus")
-  if (!status) return
   try {
-    const start = Date.now()
-    const res = await fetch("https://datta-ai-server.onrender.com/ping", { 
-      signal: AbortSignal.timeout(5000) 
-    })
-    if (res.ok) {
-      status.style.display = "none"
-    }
+    await fetch(SERVER + "/ping", { signal: AbortSignal.timeout(4000) })
+    status.style.display = "none"
   } catch(e) {
-    // Server is sleeping - show wake up message
-    status.style.display = "flex"
-    status.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;background:#111;border:1px solid #222;border-radius:12px;padding:12px 16px;margin:12px 0;">
-        <div style="width:10px;height:10px;border-radius:50%;background:#ffaa00;animation:pulse 1s infinite;flex-shrink:0;"></div>
-        <div style="font-size:13px;color:#aaa;">Server is waking up... please wait 30 seconds ☕</div>
-      </div>
-      <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}</style>
-    `
-    // Retry every 5 seconds
-    setTimeout(checkServer, 5000)
+    status.style.display = "block"
+    setTimeout(checkServer, 6000)
   }
 }
 checkServer()
 </script>
+
 </body>
 </html>
