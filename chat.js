@@ -1561,7 +1561,22 @@ function speakText(btn) {
 
 // ─── STOP VOICE ───────────────────────────────────────────────────────────────
 function stopVoice() {
-  speechSynthesis.cancel()
+  // Stop TTS speaking immediately
+  if (window.speechSynthesis) window.speechSynthesis.cancel()
+  // Stop the AI stream fetch
+  stopGeneration()
+  // Stop karaoke timer
+  if (window._karaokeInterval) {
+    clearInterval(window._karaokeInterval)
+    window._karaokeInterval = null
+  }
+  // Reset voice UI state
+  isSpeaking = false
+  if (voiceActive) setVA("idle")
+  const chip = document.getElementById("vaEmotionChip")
+  if (chip) chip.style.display = "none"
+  const kEl = document.getElementById("vaKaraoke")
+  if (kEl) kEl.innerHTML = ""
 }
 
 
@@ -2422,9 +2437,18 @@ function stopListening() {
 async function processVoiceQuery(query) {
   if (!query.trim()) return
 
-  // Close commands
-  const closeCmds = ["close", "stop", "exit", "bye", "goodbye", "dismiss", "band karo"]
-  if (closeCmds.some(c => query.toLowerCase().includes(c))) {
+  // Stop/close commands
+  const qLow = query.toLowerCase().trim()
+  const stopCmds = ["stop", "stop it", "stop speaking", "rukk", "ruko", "band karo", "chup", "quiet"]
+  const closeCmds = ["close", "exit", "bye", "goodbye", "dismiss", "close datta"]
+  if (stopCmds.some(c => qLow === c || qLow.startsWith(c))) {
+    stopSpeaking()
+    stopKaraoke()
+    setVoiceAIText("Stopped.")
+    setVA("idle")
+    return
+  }
+  if (closeCmds.some(c => qLow.includes(c))) {
     speakText2("Goodbye! Have a great day!")
     setTimeout(closeVoiceAssistant, 1800)
     return
@@ -2609,64 +2633,65 @@ function getSelectedVoiceProfile() {
   return localStorage.getItem("datta_voice") || "aria"
 }
 
+// Returns { voice, hasNative } — voice may be null if no match
 function pickVoice(profile) {
   const voices = voiceSynth.getVoices()
-  if (!voices.length) return null
+  if (!voices.length) return { voice: null, hasNative: false }
 
-  // Debug - log all available voices once
   if (!window._voicesLogged) {
     window._voicesLogged = true
-    console.log("Available voices:", voices.map(v => v.name + " (" + v.lang + ")").join(", "))
+    console.log("[VA] Available voices:", voices.map(v => v.name + "(" + v.lang + ")").join(", "))
   }
 
-  // If a specific language is set (e.g. te-IN, hi-IN), match that first
   const activeLang = window._voiceLang
-  if (activeLang && activeLang !== "en-IN") {
-    const langCode = activeLang.split("-")[0]  // "te", "hi", "ta", "kn"
-    const nativeLangVoice = voices.find(v => v.lang === activeLang || v.lang.startsWith(langCode))
-    if (nativeLangVoice) {
-      console.log("Voice matched by native lang:", nativeLangVoice.name, nativeLangVoice.lang)
-      return nativeLangVoice
+  const isNonEnglish = activeLang && activeLang !== "en-IN" && activeLang !== "en-US"
+
+  if (isNonEnglish) {
+    const langCode = activeLang.split("-")[0]
+    // Exact match first
+    const exact = voices.find(v => v.lang === activeLang)
+    if (exact) { console.log("[VA] Native exact:", exact.name); return { voice: exact, hasNative: true } }
+    // Prefix match (te-IN, te-XX etc)
+    const prefix = voices.find(v => v.lang.startsWith(langCode))
+    if (prefix) { console.log("[VA] Native prefix:", prefix.name); return { voice: prefix, hasNative: true } }
+    // Google voices include language in name (e.g. "Google Telugu")
+    const langNames = {
+      "te": "telugu", "hi": "hindi", "ta": "tamil", "kn": "kannada",
+      "ml": "malayalam", "bn": "bengali", "pa": "punjabi", "gu": "gujarati",
+      "mr": "marathi", "ur": "urdu"
     }
-    // No native voice available — fall through to English with correct lang tag
+    const langName = langNames[langCode]
+    if (langName) {
+      const byName = voices.find(v => v.name.toLowerCase().includes(langName))
+      if (byName) { console.log("[VA] Native by name:", byName.name); return { voice: byName, hasNative: true } }
+    }
+    // No native voice found — return null voice, browser will use lang tag alone
+    console.log("[VA] No native voice for", activeLang, "— browser will attempt with lang tag only")
+    return { voice: null, hasNative: false }
   }
 
-  // Try exact keyword match
+  // English path — pick best English voice
+  const maleWords = ["male","man","david","james","daniel","george","oliver","alex"]
+  const femaleWords = ["female","woman","samantha","zira","karen","sofia","aria","lisa"]
+  const gWords = profile.gender === "male" ? maleWords : femaleWords
+
+  // Try profile keywords first
   for (const kw of profile.keywords) {
     const found = voices.find(v => v.name.toLowerCase().includes(kw.toLowerCase()))
-    if (found) { console.log("Voice matched by keyword:", found.name); return found }
+    if (found) { console.log("[VA] Profile keyword:", found.name); return { voice: found, hasNative: true } }
   }
-
   // Language match
   const langVoices = voices.filter(v => v.lang.startsWith(profile.lang.split("-")[0]))
-
   if (langVoices.length) {
-    // Gender match by name
-    const maleWords = ["male","man","david","james","daniel","george","oliver","alex","ryan","tom","richard","peter","john","mark"]
-    const femaleWords = ["female","woman","girl","samantha","zira","karen","sofia","aria","victoria","lisa","susan","alice","emma","kate"]
-    const gWords = profile.gender === "male" ? maleWords : femaleWords
-
     const gendered = langVoices.find(v => gWords.some(g => v.name.toLowerCase().includes(g)))
-    if (gendered) { console.log("Voice matched by gender+lang:", gendered.name); return gendered }
-
-    // No gender match - for male pick last, for female pick first
-    if (profile.gender === "male") return langVoices[langVoices.length - 1]
-    return langVoices[0]
+    if (gendered) return { voice: gendered, hasNative: true }
+    return { voice: langVoices[0], hasNative: true }
   }
-
-  // English fallback
+  // Any English
   const engVoices = voices.filter(v => v.lang.startsWith("en"))
-  if (engVoices.length > 0) {
-    const maleWords = ["male","man","david","james","daniel","george","oliver"]
-    const femaleWords = ["female","woman","samantha","zira","karen","aria"]
-    const gWords = profile.gender === "male" ? maleWords : femaleWords
-    const gendered = engVoices.find(v => gWords.some(g => v.name.toLowerCase().includes(g)))
-    if (gendered) return gendered
-    if (profile.gender === "male" && engVoices.length > 1) return engVoices[engVoices.length - 1]
-    return engVoices[0]
-  }
+  if (engVoices.length) return { voice: engVoices[0], hasNative: true }
 
-  return voices[0]
+  return { voice: voices[0], hasNative: true }
 }
 
 // ── EMOTION DETECTION from text ──────────────────────────────────────────────
@@ -2751,8 +2776,15 @@ function speakText2(text) {
   utterance.volume = 1.0
 
   const doSpeak = () => {
-    const voice = pickVoice(profile)
-    if (voice) utterance.voice = voice
+    const { voice, hasNative } = pickVoice(profile)
+    // Only assign voice if it actually speaks the target language
+    // If no native voice found, leave utterance.voice unset — browser uses lang tag alone
+    if (voice && hasNative) utterance.voice = voice
+    else if (!hasNative) {
+      // Force browser to attempt the language without a specific voice object
+      // This works on Android Chrome which has system TTS for Indian languages
+      console.log("[VA] No native voice — relying on lang tag:", utterance.lang)
+    }
 
     // Estimate speech duration for karaoke timing
     const wordCount = text.trim().split(/\s+/).length
@@ -2788,10 +2820,12 @@ function speakText2(text) {
 
 function stopSpeaking() {
   if (voiceSynth) voiceSynth.cancel()
+  if (window.speechSynthesis) window.speechSynthesis.cancel()
   isSpeaking = false
   stopKaraoke()
   const chip = document.getElementById("vaEmotionChip")
   if (chip) chip.style.display = "none"
+  if (voiceActive) setVA("idle")
 }
 
 // Update the assistant button to open voice overlay
