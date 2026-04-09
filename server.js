@@ -1230,6 +1230,21 @@ app.get("/", (req, res) => res.json({ status: "ok", service: "Datta AI Server", 
 app.get("/ping", (req, res) => res.json({ pong: true, time: new Date().toISOString() }))
 app.get("/health", (req, res) => res.json({ status: "ok", db: mongoose.connection.readyState === 1 ? "connected" : "disconnected" }))
 
+// List available Gemini models for this API key
+app.get("/gemini-models", async (req, res) => {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return res.json({ error: "GEMINI_API_KEY not set" })
+  try {
+    const r = await fetch("https://generativelanguage.googleapis.com/v1/models?key=" + apiKey)
+    const data = await r.json()
+    const visionModels = (data.models || [])
+      .filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
+      .filter(m => m.name.includes("vision") || m.name.includes("flash") || m.name.includes("pro"))
+      .map(m => m.name)
+    res.json({ available: visionModels, total: (data.models || []).length })
+  } catch(e) { res.json({ error: e.message }) }
+})
+
 // GOOGLE OAUTH
 if (GoogleStrategy && process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
