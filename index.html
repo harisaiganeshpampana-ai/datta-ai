@@ -2067,165 +2067,176 @@ if ('serviceWorker' in navigator) {
 <div id="voiceOverlay" style="display:none;position:fixed;inset:0;z-index:99998;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;gap:0;">
 
   <style>
-    #voiceOverlay { padding: 20px; box-sizing: border-box; }
+    #voiceOverlay { padding:20px; box-sizing:border-box; }
 
-    /* ── RIPPLE CIRCLES behind orb ── */
+    /* ── ORB WRAP — ChatGPT-style centered solid circle ── */
     .va-ripple-wrap {
-      position: relative; display: flex;
-      align-items: center; justify-content: center;
-      width: 200px; height: 200px; margin-bottom: 4px;
+      position:relative; display:flex;
+      align-items:center; justify-content:center;
+      width:220px; height:220px; margin-bottom:8px;
     }
+
+    /* Outer glow rings — solid filled, scale+fade like ChatGPT */
     .va-ripple {
-      position: absolute; border-radius: 50%;
-      border: 1.5px solid rgba(16,163,127,0.25);
-      animation: rippleIdle 3s ease-out infinite;
-      pointer-events: none;
+      position:absolute; border-radius:50%;
+      background:rgba(16,163,127,0.08);
+      pointer-events:none;
+      transition:background 0.4s;
     }
-    .va-ripple:nth-child(1){width:110px;height:110px;animation-delay:0s}
-    .va-ripple:nth-child(2){width:140px;height:140px;animation-delay:0.6s}
-    .va-ripple:nth-child(3){width:170px;height:170px;animation-delay:1.2s}
-    .va-ripple:nth-child(4){width:200px;height:200px;animation-delay:1.8s}
-    @keyframes rippleIdle {
-      0%  { opacity:0.5; transform:scale(0.92); }
-      100%{ opacity:0;   transform:scale(1); }
-    }
-    /* Listening ripples — red fast */
-    #voiceOverlay.va-listening .va-ripple {
-      border-color: rgba(239,68,68,0.3);
-      animation-name: rippleListen;
-      animation-duration: 1s;
-    }
-    @keyframes rippleListen {
-      0%  { opacity:0.7; transform:scale(0.85); }
-      100%{ opacity:0;   transform:scale(1.1); }
-    }
-    /* Speaking ripples — blue medium */
-    #voiceOverlay.va-speaking .va-ripple {
-      border-color: rgba(0,119,255,0.3);
-      animation-name: rippleSpeak;
-      animation-duration: 1.4s;
-    }
-    @keyframes rippleSpeak {
-      0%  { opacity:0.6; transform:scale(0.88); }
-      100%{ opacity:0;   transform:scale(1.08); }
+    .va-ripple:nth-child(1){width:220px;height:220px;}
+    .va-ripple:nth-child(2){width:180px;height:180px;}
+    .va-ripple:nth-child(3){width:140px;height:140px;}
+
+    /* Idle — slow breathe */
+    #voiceOverlay:not(.va-listening):not(.va-speaking):not(.va-thinking) .va-ripple:nth-child(1){animation:breatheOut 2.8s ease-in-out infinite;}
+    #voiceOverlay:not(.va-listening):not(.va-speaking):not(.va-thinking) .va-ripple:nth-child(2){animation:breatheOut 2.8s ease-in-out infinite 0.2s;}
+    #voiceOverlay:not(.va-listening):not(.va-speaking):not(.va-thinking) .va-ripple:nth-child(3){animation:breatheOut 2.8s ease-in-out infinite 0.4s;}
+    @keyframes breatheOut {
+      0%,100%{transform:scale(0.94);opacity:0.5;}
+      50%{transform:scale(1);opacity:1;}
     }
 
-    /* ── ORB ── */
+    /* Listening — red fast pulse */
+    #voiceOverlay.va-listening .va-ripple{background:rgba(239,68,68,0.1);}
+    #voiceOverlay.va-listening .va-ripple:nth-child(1){animation:listenPulse 0.9s ease-in-out infinite;}
+    #voiceOverlay.va-listening .va-ripple:nth-child(2){animation:listenPulse 0.9s ease-in-out infinite 0.15s;}
+    #voiceOverlay.va-listening .va-ripple:nth-child(3){animation:listenPulse 0.9s ease-in-out infinite 0.3s;}
+    @keyframes listenPulse {
+      0%,100%{transform:scale(0.88);opacity:0.6;}
+      50%{transform:scale(1);opacity:1;}
+    }
+
+    /* Speaking — blue smooth wave like ChatGPT */
+    #voiceOverlay.va-speaking .va-ripple{background:rgba(0,119,255,0.1);}
+    #voiceOverlay.va-speaking .va-ripple:nth-child(1){animation:speakWave 1.2s ease-in-out infinite;}
+    #voiceOverlay.va-speaking .va-ripple:nth-child(2){animation:speakWave 1.2s ease-in-out infinite 0.2s;}
+    #voiceOverlay.va-speaking .va-ripple:nth-child(3){animation:speakWave 1.2s ease-in-out infinite 0.4s;}
+    @keyframes speakWave {
+      0%,100%{transform:scale(0.92);opacity:0.5;}
+      50%{transform:scale(1.04);opacity:1;}
+    }
+
+    /* Thinking — purple slow */
+    #voiceOverlay.va-thinking .va-ripple{background:rgba(168,85,247,0.1);}
+    #voiceOverlay.va-thinking .va-ripple:nth-child(1){animation:thinkPulse 1.8s ease-in-out infinite;}
+    #voiceOverlay.va-thinking .va-ripple:nth-child(2){animation:thinkPulse 1.8s ease-in-out infinite 0.3s;}
+    #voiceOverlay.va-thinking .va-ripple:nth-child(3){animation:thinkPulse 1.8s ease-in-out infinite 0.6s;}
+    @keyframes thinkPulse {
+      0%,100%{transform:scale(0.9);opacity:0.3;}
+      50%{transform:scale(1);opacity:0.8;}
+    }
+
+    /* ── MAIN ORB — solid ChatGPT-style circle ── */
     .va-orb {
-      position: absolute;
-      width: 96px; height: 96px; border-radius: 50%;
-      background: linear-gradient(135deg, #10a37f, #0077ff);
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; border: none;
-      transition: transform 0.15s ease;
-      z-index: 2;
+      position:absolute; z-index:3;
+      width:100px; height:100px; border-radius:50%;
+      background:#10a37f;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; border:none;
+      box-shadow:0 0 32px rgba(16,163,127,0.5), 0 4px 20px rgba(0,0,0,0.4);
+      transition:background 0.3s ease, box-shadow 0.3s ease, transform 0.15s ease;
     }
-    .va-orb:hover { transform: scale(1.06); }
-    .va-orb:active { transform: scale(0.94); }
-    #voiceOverlay.va-listening  .va-orb { background: linear-gradient(135deg,#ef4444,#f97316); }
-    #voiceOverlay.va-thinking   .va-orb { background: linear-gradient(135deg,#a855f7,#ec4899); }
-    #voiceOverlay.va-speaking   .va-orb { background: linear-gradient(135deg,#0077ff,#a855f7); }
-
-    /* ── SPINNER inside orb ── */
-    .va-spinner {
-      display:none; width:36px; height:36px;
-      border:3px solid rgba(255,255,255,0.2);
-      border-top-color:white; border-radius:50%;
-      animation:vaSpin 0.7s linear infinite;
+    .va-orb:hover{transform:scale(1.05);}
+    .va-orb:active{transform:scale(0.96);}
+    #voiceOverlay.va-listening .va-orb{
+      background:#ef4444;
+      box-shadow:0 0 40px rgba(239,68,68,0.6), 0 4px 20px rgba(0,0,0,0.4);
     }
-    @keyframes vaSpin { to{transform:rotate(360deg)} }
-    #voiceOverlay.va-thinking .va-spinner  { display:block; }
-    #voiceOverlay.va-thinking .va-mic-icon { display:none; }
-    #voiceOverlay.va-speaking .va-mic-icon { display:none; }
-    #voiceOverlay.va-speaking .va-speak-icon { display:block !important; }
-
-    /* ── STATUS + BADGE ── */
-    #voiceStatus {
-      margin: 6px 0 2px; font-size:12px; color:var(--text3);
-      letter-spacing:1.5px; text-transform:uppercase; font-weight:600;
+    #voiceOverlay.va-thinking .va-orb{
+      background:#a855f7;
+      box-shadow:0 0 36px rgba(168,85,247,0.55), 0 4px 20px rgba(0,0,0,0.4);
     }
-    #vaLangBadge {
-      font-size:11px; color:var(--accent);
-      letter-spacing:0.5px; min-height:14px;
-      font-weight:600; margin-bottom:8px;
+    #voiceOverlay.va-speaking .va-orb{
+      background:#0077ff;
+      box-shadow:0 0 40px rgba(0,119,255,0.6), 0 4px 20px rgba(0,0,0,0.4);
+      animation:orbSpeakPulse 1.1s ease-in-out infinite;
+    }
+    @keyframes orbSpeakPulse{
+      0%,100%{box-shadow:0 0 32px rgba(0,119,255,0.5),0 4px 20px rgba(0,0,0,0.4);}
+      50%{box-shadow:0 0 56px rgba(0,119,255,0.8),0 4px 20px rgba(0,0,0,0.4);}
     }
 
-    /* ── USER TEXT (what user said) ── */
-    #voiceText {
-      min-height:44px; max-width:360px; width:100%;
-      text-align:center; font-size:17px; color:var(--text);
-      line-height:1.6; padding:0 20px; margin-bottom:4px;
+    /* ── SPINNER ── */
+    .va-spinner{display:none;width:36px;height:36px;border:3px solid rgba(255,255,255,0.25);border-top-color:#fff;border-radius:50%;animation:vaSpin 0.7s linear infinite;}
+    @keyframes vaSpin{to{transform:rotate(360deg)}}
+    #voiceOverlay.va-thinking .va-spinner{display:block;}
+    #voiceOverlay.va-thinking .va-mic-icon{display:none;}
+    #voiceOverlay.va-speaking .va-mic-icon{display:none;}
+    #voiceOverlay.va-speaking .va-speak-icon{display:block!important;}
+
+    /* ── SOUND BARS — below orb, react to state ── */
+    .va-bars{display:flex;align-items:flex-end;gap:4px;height:44px;margin-bottom:4px;}
+    .va-bar{
+      width:4px;border-radius:4px;
+      background:rgba(16,163,127,0.5);
+      animation:barIdle 2s ease-in-out infinite;
+      transform-origin:bottom;
+    }
+    .va-bar:nth-child(1){height:10px;animation-delay:0.0s}
+    .va-bar:nth-child(2){height:20px;animation-delay:0.1s}
+    .va-bar:nth-child(3){height:32px;animation-delay:0.2s}
+    .va-bar:nth-child(4){height:44px;animation-delay:0.05s}
+    .va-bar:nth-child(5){height:28px;animation-delay:0.15s}
+    .va-bar:nth-child(6){height:44px;animation-delay:0.25s}
+    .va-bar:nth-child(7){height:32px;animation-delay:0.08s}
+    .va-bar:nth-child(8){height:20px;animation-delay:0.18s}
+    .va-bar:nth-child(9){height:10px;animation-delay:0.12s}
+    @keyframes barIdle{0%,100%{transform:scaleY(0.2);opacity:0.25}50%{transform:scaleY(0.5);opacity:0.5}}
+
+    /* Listening — red, fast, tall */
+    #voiceOverlay.va-listening .va-bar{
+      background:rgba(239,68,68,0.8);
+      animation-name:barListen;animation-duration:0.5s;
+    }
+    @keyframes barListen{
+      0%,100%{transform:scaleY(0.3);}
+      50%{transform:scaleY(1);}
+    }
+    /* Speaking — blue, medium, rhythmic like sound wave */
+    #voiceOverlay.va-speaking .va-bar{
+      background:rgba(0,119,255,0.85);
+      animation-name:barSpeak;animation-duration:0.7s;
+    }
+    @keyframes barSpeak{
+      0%,100%{transform:scaleY(0.35);}
+      50%{transform:scaleY(1.1);}
+    }
+    /* Thinking — purple, slow */
+    #voiceOverlay.va-thinking .va-bar{
+      background:rgba(168,85,247,0.6);
+      animation-name:barThink;animation-duration:1.4s;
+    }
+    @keyframes barThink{
+      0%,100%{transform:scaleY(0.1);opacity:0.2;}
+      50%{transform:scaleY(0.7);opacity:0.8;}
     }
 
-    /* ── KARAOKE word-by-word highlight ── */
-    #vaKaraoke {
-      min-height:56px; max-width:380px; width:100%;
-      text-align:center; font-size:14px; color:var(--text2);
-      line-height:1.8; padding:0 16px; margin-bottom:20px;
-      word-wrap:break-word;
-    }
-    .va-word {
-      display:inline-block;
-      padding:0 2px; border-radius:4px;
-      transition:all 0.15s ease;
-      color:var(--text2);
-    }
-    .va-word.active {
-      color:#fff;
-      background:rgba(0,119,255,0.35);
-      transform:scale(1.08);
-      border-radius:5px;
-      padding:0 4px;
-    }
-    .va-word.done { color:var(--text3); }
+    /* ── STATUS ── */
+    #voiceStatus{margin:2px 0;font-size:12px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;font-weight:600;}
+    #vaLangBadge{font-size:11px;color:#0077ff;letter-spacing:0.5px;min-height:14px;font-weight:700;margin-bottom:6px;}
+
+    /* ── USER TEXT ── */
+    #voiceText{min-height:44px;max-width:360px;width:100%;text-align:center;font-size:17px;color:var(--text);line-height:1.6;padding:0 20px;margin-bottom:4px;}
+
+    /* ── KARAOKE ── */
+    #vaKaraoke{min-height:52px;max-width:380px;width:100%;text-align:center;font-size:14px;color:var(--text2);line-height:1.8;padding:0 16px;margin-bottom:16px;word-wrap:break-word;}
+    .va-word{display:inline-block;padding:0 2px;border-radius:4px;transition:all 0.12s ease;color:var(--text2);}
+    .va-word.active{color:#fff;background:rgba(0,119,255,0.4);transform:scale(1.1);border-radius:5px;padding:0 5px;}
+    .va-word.done{color:var(--text3);}
 
     /* ── EMOTION CHIP ── */
-    #vaEmotionChip {
-      font-size:10px; padding:3px 10px;
-      border-radius:20px; margin-bottom:6px;
-      display:none; font-weight:700;
-      letter-spacing:0.5px; text-transform:uppercase;
-    }
+    #vaEmotionChip{font-size:10px;padding:3px 10px;border-radius:20px;margin-bottom:4px;display:none;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;}
 
     /* ── CONTROLS ── */
-    .va-controls { display:flex; align-items:center; gap:24px; margin-top:4px; }
-    .va-ctrl-btn {
-      width:48px; height:48px; border-radius:50%;
-      border:1px solid var(--border); background:var(--bg2); color:var(--text2);
-      display:flex; align-items:center; justify-content:center;
-      cursor:pointer; transition:all 0.15s; flex-shrink:0;
-    }
-    .va-ctrl-btn:hover { background:var(--bg3); border-color:var(--accent); }
-
-    /* ── WAVEFORM BARS ── */
-    .va-bars { display:flex; align-items:center; gap:4px; height:40px; margin-bottom:6px; }
-    .va-bar {
-      width:3px; border-radius:3px; background:var(--accent);
-      animation:barIdle 1.6s ease-in-out infinite; transform-origin:center;
-    }
-    .va-bar:nth-child(1){height:8px;animation-delay:0s}
-    .va-bar:nth-child(2){height:16px;animation-delay:0.1s}
-    .va-bar:nth-child(3){height:28px;animation-delay:0.2s}
-    .va-bar:nth-child(4){height:16px;animation-delay:0.3s}
-    .va-bar:nth-child(5){height:8px;animation-delay:0.4s}
-    .va-bar:nth-child(6){height:22px;animation-delay:0.5s}
-    .va-bar:nth-child(7){height:12px;animation-delay:0.6s}
-    .va-bar:nth-child(8){height:30px;animation-delay:0.15s}
-    .va-bar:nth-child(9){height:16px;animation-delay:0.35s}
-    .va-bar:nth-child(10){height:8px;animation-delay:0.25s}
-    @keyframes barIdle{0%,100%{transform:scaleY(0.35);opacity:0.3}50%{transform:scaleY(1);opacity:0.7}}
-    #voiceOverlay.va-listening .va-bar{animation-name:barListen;animation-duration:0.6s;background:#ef4444}
-    @keyframes barListen{0%,100%{transform:scaleY(0.2)}50%{transform:scaleY(1.5)}}
-    #voiceOverlay.va-speaking .va-bar{animation-name:barSpeak;animation-duration:0.85s;background:#0077ff}
-    @keyframes barSpeak{0%,100%{transform:scaleY(0.35)}50%{transform:scaleY(1.2)}}
-    #voiceOverlay.va-thinking .va-bar{animation-name:barThink;animation-duration:1.3s;background:#a855f7}
-    @keyframes barThink{0%,100%{transform:scaleY(0.15);opacity:0.2}50%{transform:scaleY(0.85);opacity:0.9}}
+    .va-controls{display:flex;align-items:center;gap:24px;margin-top:4px;}
+    .va-ctrl-btn{width:48px;height:48px;border-radius:50%;border:1px solid var(--border);background:var(--bg2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;flex-shrink:0;}
+    .va-ctrl-btn:hover{background:var(--bg3);border-color:#0077ff;}
 
     @media(max-width:480px){
-      .va-orb{width:84px;height:84px;}
+      .va-orb{width:88px;height:88px;}
+      .va-ripple-wrap{width:190px;height:190px;}
       #voiceText{font-size:15px!important;}
       #vaKaraoke{font-size:13px!important;}
-      .va-ripple-wrap{width:170px;height:170px;}
     }
   </style>
 
