@@ -1996,15 +1996,17 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       var imgPromptText
       if (isQuestionPaper) {
         imgPromptText = (imgMsg ? imgMsg + "\n\n" : "") +
-          "This is an exam question paper. You must answer EVERY question completely.\n" +
-          "Rules:\n" +
-          "- Start directly with Q1a answer — no introduction\n" +
-          "- Write COMPLETE answers — no empty sections, no '...'\n" +
-          "- For 4 mark questions: minimum 6-8 sentences or 5-6 detailed bullet points\n" +
-          "- For lists/types/points: write ALL items with full explanation of each\n" +
-          "- For graphs: describe all axes, labels, stages in words\n" +
-          "- NEVER stop mid-answer or leave a section blank\n" +
-          "Answer all questions now:"
+          "Read every question in this exam paper carefully and write a COMPLETE answer for each one.\n\n" +
+          "HOW TO ANSWER:\n" +
+          "- 1-mark: 1-2 direct sentences\n" +
+          "- 2-mark: 3-5 sentences with key points\n" +
+          "- 4-mark: Full explanation with ALL required points (minimum 5-6 points written out completely)\n" +
+          "- If asked for N types/kinds/steps/points: write ALL N items, each with full explanation\n" +
+          "- If asked for formula: write formula + explain each variable + numeric example\n" +
+          "- If asked for graph: describe x-axis, y-axis, all curves, all stages, all labeled points\n" +
+          "- If answer starts with a list — COMPLETE the entire list before moving on\n\n" +
+          "CRITICAL: Do not stop mid-answer. Do not leave any section empty.\n" +
+          "Write answers below, starting from Q1:"
       } else if (imgMsg) {
         imgPromptText = imgMsg
       } else {
@@ -2219,7 +2221,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       resolvedModel = "llama-3.3-70b-versatile"
     }
     // Now set final model AFTER any auto-switch
-    let model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : resolvedModel
+    let model = isImageFile ? (isQuestionPaper ? "meta-llama/llama-4-maverick-17b-128e-instruct" : "meta-llama/llama-4-scout-17b-16e-instruct") : resolvedModel
     var isLargeTask = [
       "portfolio","full website","complete website","business plan",
       "full app","complete app","all sections","food delivery","delivery app",
@@ -2248,7 +2250,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
                      : isExplainQuestion? (inputIsLarge ? 3000 : 4000)
                      : isStepByStep     ? 3000
                      :                    2500   // simple chat — raised from 1800
-    var maxTok = isImageFile ? (isQuestionPaper ? 6000 : 3000) : maxCodingTok
+    var maxTok = isImageFile ? (isQuestionPaper ? 8000 : 4000) : maxCodingTok
 
     // Use browser's actual local time sent from frontend
     var timeStr = req.body.userTime || new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })
@@ -2360,7 +2362,7 @@ NEVER say you are Claude, GPT, or any other AI. You are ${ainame}.`,
     var persona = modelPersonas[chosenModel] || modelPersonas["llama-3.3-70b-versatile"]
 
     // Vision model — build prompt dynamically based on isQuestionPaper
-    if (persona === "__VISION_DYNAMIC__" || (isImageFile && chosenModel === "meta-llama/llama-4-scout-17b-16e-instruct")) {
+    if (persona === "__VISION_DYNAMIC__" || isImageFile) {
       if (isQuestionPaper) {
         persona = "Your name is " + ainame + ". You are an expert academic exam answer writer.\n\n" +
         "ABSOLUTE RULES — NEVER BREAK THESE:\n" +
@@ -2793,7 +2795,7 @@ IMPORTANT: Answer like a human, NOT like a search engine.
 - Never say "according to", "based on search", "search results show"` : "") + langNote + styleNote + hardRules
 
     // Build final user content — MUST be string for text models, array only for vision
-    var isVisionModel = (model === "meta-llama/llama-4-scout-17b-16e-instruct")
+    var isVisionModel = (model === "meta-llama/llama-4-scout-17b-16e-instruct" || model === "meta-llama/llama-4-maverick-17b-128e-instruct")
     var finalUserContent
     if (isVisionModel && Array.isArray(userContent)) {
       // Vision model — keep array format
@@ -2882,9 +2884,14 @@ IMPORTANT: Answer like a human, NOT like a search engine.
     console.log("[IMAGE DEBUG] model:", model, "isVisionModel:", isVisionModel, "isImageFile:", isImageFile, "finalUserContent type:", typeof finalUserContent, Array.isArray(finalUserContent) ? "ARRAY len="+finalUserContent.length : "")
     // Vision model gets its own dedicated attempt — no text-model fallback
     var groqAttempts = isImageFile
-      ? [
-          { model: "meta-llama/llama-4-scout-17b-16e-instruct", tokens: maxTok }
-        ]
+      ? isQuestionPaper
+        ? [
+            { model: "meta-llama/llama-4-maverick-17b-128e-instruct", tokens: maxTok },
+            { model: "meta-llama/llama-4-scout-17b-16e-instruct",     tokens: maxTok }
+          ]
+        : [
+            { model: "meta-llama/llama-4-scout-17b-16e-instruct", tokens: maxTok }
+          ]
       // Structured/detailed/code/large → always use 70b (more capable, completes sections)
       : (isDeepKnowledge || isCodeTask || isLargeTask || isExplainQuestion || isStructuredTopic)
         ? [
