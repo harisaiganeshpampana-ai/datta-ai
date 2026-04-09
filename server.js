@@ -222,21 +222,27 @@ connectMongo(1)
 
 // ── Gemini 2.0 Flash — image solver (exam papers + general images) ──────────────
 async function solveWithGemini(imageBase64, mimeType, systemPrompt, userPrompt) {
-  if (!geminiClient) throw new Error("Gemini not configured")
-  // Try gemini-1.5-flash first (available to all users), then fallbacks
-  const modelsToTry = ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest"]
-  let lastErr = null
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) throw new Error("Gemini not configured")
+
+  // Use direct REST API — more reliable than SDK for model name issues
+  // Try multiple model names in order
+  const modelsToTry = [
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
+    "gemini-1.0-pro-vision-latest",
+    "gemini-pro-vision"
+  ]
+
   for (const modelName of modelsToTry) {
     try {
-      const model = geminiClient.getGenerativeModel({
-        model: modelName,
-        systemInstruction: systemPrompt
-      })
-      const result = await model.generateContent({
+      const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${apiKey}`
+      const body = {
+        system_instruction: { parts: [{ text: systemPrompt }] },
         contents: [{
           role: "user",
           parts: [
-            { inlineData: { mimeType: mimeType, data: imageBase64 } },
+            { inline_data: { mime_type: mimeType, data: imageBase64 } },
             { text: userPrompt }
           ]
         }],
@@ -244,21 +250,28 @@ async function solveWithGemini(imageBase64, mimeType, systemPrompt, userPrompt) 
           maxOutputTokens: 8192,
           temperature: 0.2
         }
+      }
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
       })
-      const text = result.response.text() || ""
+      if (!resp.ok) {
+        const errText = await resp.text()
+        console.warn("[GEMINI] Model", modelName, "HTTP", resp.status, errText.slice(0,120))
+        continue  // try next model
+      }
+      const data = await resp.json()
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || ""
       if (text) {
         console.log("[GEMINI] Success with model:", modelName, "length:", text.length)
         return text
       }
     } catch(e) {
-      console.warn("[GEMINI] Model", modelName, "failed:", e.message?.slice(0,100))
-      lastErr = e
-      if (!e.message?.includes("429") && !e.message?.includes("quota") && !e.message?.includes("spending")) {
-        throw e  // Non-quota error — don't retry other models
-      }
+      console.warn("[GEMINI] Model", modelName, "error:", e.message?.slice(0,100))
     }
   }
-  throw lastErr || new Error("All Gemini models failed")
+  throw new Error("All Gemini models failed")
 }
 
 // ── GPT-4o exam paper solver ─────────────────────────────────────────────────
