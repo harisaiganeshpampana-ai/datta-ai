@@ -3005,7 +3005,8 @@ window.addEventListener("DOMContentLoaded", function() {
   // Load immediately + again after 1s to catch any race condition
   setTimeout(loadUserVersion, 300)   // fast first load
   setTimeout(loadUserVersion, 1500)  // confirm after server settles
-  setTimeout(refreshUsageCounter, 1800)
+  refreshUsageCounter()           // immediate
+  setTimeout(refreshUsageCounter, 2500)  // confirm after server responds
 })
 
 // Also refresh when tab becomes visible again (user switches back from pricing page)
@@ -4357,30 +4358,55 @@ window.checkModelAccess = checkModelAccess
 
 // Update usage display in model dropdown + anywhere else showing usage
 function updateUsageDisplay(used, limit) {
-  const el  = document.getElementById("usageDisplay")
+  var lim = limit || 10
+  var pct = Math.min(100, Math.round((used / lim) * 100))
+
+  // Sidebar usage display
+  const el = document.getElementById("usageDisplay")
+  if (el) el.textContent = used + " / " + lim + " messages today"
+
+  // Usage bar
   const bar = document.getElementById("usageBar")
-  if (el) {
-    el.textContent = used + " / " + limit + " messages used today"
-  }
   if (bar) {
-    const pct = Math.min(100, Math.round((used / (limit || 20)) * 100))
     bar.style.width = pct + "%"
     bar.style.background = pct >= 90 ? "#ef4444" : pct >= 70 ? "#f97316" : "var(--accent)"
   }
-  // Also update any inline usage text elements
+
+  // Mobile header usage badge (if exists)
+  const mobileEl = document.getElementById("mobileUsageDisplay")
+  if (mobileEl) mobileEl.textContent = used + "/" + lim
+
+  // Any usage-count elements
   document.querySelectorAll(".usage-count").forEach(el => {
-    el.textContent = used + " / " + limit
+    el.textContent = used + " / " + lim
   })
+
+  // Warning when nearly out
+  if (pct >= 90 && used < lim) {
+    const warn = document.getElementById("usageWarn")
+    if (warn) { warn.textContent = "⚠️ " + (lim - used) + " messages left today"; warn.style.display = "block" }
+  }
 }
 window.updateUsageDisplay = updateUsageDisplay
 
 // Standalone fetch — call any time to refresh counter
 function refreshUsageCounter() {
   const tok = typeof getToken === "function" ? getToken() : localStorage.getItem("datta_token")
-  if (!tok) return
+  if (!tok) {
+    // Token not ready yet — retry after 1 second
+    setTimeout(refreshUsageCounter, 1000)
+    return
+  }
   fetch(SERVER + "/payment/usage", { headers: { "Authorization": "Bearer " + tok } })
     .then(r => r.ok ? r.json() : null)
-    .then(u => { if (u && typeof u.used === "number") updateUsageDisplay(u.used, u.limit || 20) })
+    .then(u => {
+      if (u && typeof u.used === "number") {
+        updateUsageDisplay(u.used, u.limit || 10)
+        // Also store in localStorage so sidebar can read it
+        localStorage.setItem("datta_usage_used", u.used)
+        localStorage.setItem("datta_usage_limit", u.limit || 10)
+      }
+    })
     .catch(() => {})
 }
 window.refreshUsageCounter = refreshUsageCounter
