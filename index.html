@@ -369,24 +369,26 @@ body.sb-collapsed .input-area {
 .msg-row.user-row { justify-content: flex-end; }
 
 .user-bubble {
-  max-width: 72%;
+  max-width: 80%;
   padding: 10px 16px;
   background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: 18px 4px 18px 18px;
   color: var(--text);
-  font-size: 15px; line-height: 1.65;
+  font-size: var(--chat-font-size, 15px); line-height: 1.65;
   word-break: break-word;
 }
 
-.ai-content { display: flex; flex-direction: column; gap: 6px; max-width: 85%; }
+.ai-content { display: flex; flex-direction: column; gap: 6px; max-width: 100%; width: 100%; }
 .ai-bubble {
   padding: 12px 16px;
   background: transparent;
   color: var(--text);
-  font-size: 15px; line-height: 1.75;
+  font-size: var(--chat-font-size, 15px); line-height: 1.75;
   word-break: break-word;
   border-radius: 4px 18px 18px 18px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* AI message actions */
@@ -1119,7 +1121,10 @@ body.notes-open .input-area {
     width: 95% !important;
     bottom: 10px !important;
   }
-  .msg-row { max-width: 100%; padding: 4px 10px; }
+  .msg-row { max-width: 100%; width: 100%; padding: 4px 8px; }
+  .ai-content { max-width: 100% !important; width: 100% !important; }
+  .ai-bubble { font-size: var(--chat-font-size, 15px) !important; padding: 10px 12px !important; width: 100% !important; box-sizing: border-box !important; }
+  .user-bubble { max-width: 85% !important; font-size: var(--chat-font-size, 15px) !important; }
   .chat-scroll { padding-bottom: 180px; }
   .welcome-screen { padding: 0 14px 190px; }
   .sugg-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -1416,7 +1421,7 @@ body.notes-open .input-area {
   .sidebar { width: 220px; flex-shrink: 0; }
   .welcome-title { font-size: 26px; }
   .sugg-grid { grid-template-columns: 1fr 1fr; }
-  .ai-bubble { font-size: 14px; }
+  .ai-bubble { font-size: var(--chat-font-size, 14px); }
   .user-bubble { font-size: 14px; }
   #message { font-size: 14px !important; }
 }
