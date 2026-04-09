@@ -863,16 +863,21 @@ async function sendVerificationEmail(email, token, username) {
   }
 }
 
-// ── ZOHO MAIL — welcome email endpoint ───────────────────────────────────────
-// Env vars needed in Render: ZOHO_USER=admin@datta-ai.com  ZOHO_PASS=yourpassword
+// ── EMAIL SYSTEM ─────────────────────────────────────────────────────────────
+// Primary: Zoho SMTP (admin@datta-ai.com)
+// Fallback: Gmail SMTP
+// All emails are non-blocking — app never fails due to email errors
 
-// Simple in-memory rate limit: 1 email per IP per 60s
+const SUPPORT_EMAIL = "admin@datta-ai.com"
+const APP_URL = "https://datta-ai.com"
+
+// Simple in-memory rate limit: 1 email per user per 60s
 const _emailRateStore = new Map()
-function _checkEmailRate(ip) {
+function _checkEmailRate(key) {
   const now = Date.now()
-  const last = _emailRateStore.get(ip) || 0
-  if (now - last < 60000) return false   // blocked
-  _emailRateStore.set(ip, now)
+  const last = _emailRateStore.get(key) || 0
+  if (now - last < 60000) return false
+  _emailRateStore.set(key, now)
   return true
 }
 
@@ -882,10 +887,147 @@ function createZohoTransporter() {
     port: 465,
     secure: true,
     auth: {
-      user: process.env.ZOHO_USER,
+      user: process.env.ZOHO_USER || SUPPORT_EMAIL,
       pass: process.env.ZOHO_PASS
+    },
+    tls: { rejectUnauthorized: false }
+  })
+}
+
+function createGmailTransporter() {
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD
     }
   })
+}
+
+// Universal send — tries Zoho first, falls back to Gmail, never throws
+async function sendEmail({ to, subject, html }) {
+  const from = `"Datta AI" <${process.env.ZOHO_USER || SUPPORT_EMAIL}>`
+  const mailOptions = { from, to, subject, html }
+
+  // Try Zoho first
+  if (process.env.ZOHO_USER && process.env.ZOHO_PASS) {
+    try {
+      await createZohoTransporter().sendMail(mailOptions)
+      console.log("[EMAIL] Sent via Zoho to:", to, "| Subject:", subject)
+      return true
+    } catch(e) {
+      console.warn("[EMAIL] Zoho failed:", e.message, "— trying Gmail fallback")
+    }
+  }
+  // Fallback to Gmail
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    try {
+      const gMail = { ...mailOptions, from: `"Datta AI" <${process.env.GMAIL_USER}>` }
+      await createGmailTransporter().sendMail(gMail)
+      console.log("[EMAIL] Sent via Gmail to:", to, "| Subject:", subject)
+      return true
+    } catch(e) {
+      console.warn("[EMAIL] Gmail also failed:", e.message)
+    }
+  }
+  console.warn("[EMAIL] No email sent — configure ZOHO_USER/ZOHO_PASS or GMAIL_USER/GMAIL_APP_PASSWORD")
+  return false
+}
+
+// ── EMAIL TEMPLATES ───────────────────────────────────────────────────────────
+function emailBase(bodyHtml) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  body{margin:0;padding:0;background:#f0f2f5;font-family:Arial,Helvetica,sans-serif;}
+  .wrap{max-width:540px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.08);}
+  .header{background:#0a0a0a;padding:28px 36px;text-align:center;}
+  .logo{font-size:22px;font-weight:800;color:#00ff88;letter-spacing:2px;}
+  .tagline{font-size:11px;color:#555;letter-spacing:1px;margin-top:4px;}
+  .body{padding:32px 36px;}
+  .footer{background:#f8f8f8;padding:16px 36px;text-align:center;border-top:1px solid #eee;}
+  .footer p{font-size:11px;color:#999;margin:0;}
+  .footer a{color:#00aa66;text-decoration:none;}
+  h2{font-size:20px;font-weight:700;color:#111;margin:0 0 12px;}
+  p{font-size:14px;color:#555;line-height:1.7;margin:0 0 14px;}
+  .btn{display:inline-block;padding:13px 28px;background:#10a37f;border-radius:10px;color:#fff;font-weight:700;font-size:14px;text-decoration:none;margin:8px 0;}
+  .info-box{background:#f8fff9;border:1px solid #d0f0e0;border-radius:10px;padding:16px 20px;margin:16px 0;}
+  .info-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e8f5ee;font-size:13px;}
+  .info-row:last-child{border-bottom:none;}
+  .info-key{color:#888;}
+  .info-val{color:#111;font-weight:600;}
+  .support-box{background:#fff8f0;border:1px solid #ffe0b2;border-radius:10px;padding:14px 18px;margin:16px 0;font-size:13px;color:#555;}
+</style>
+</head>
+<body>
+<div style="padding:24px 16px;">
+<div class="wrap">
+  <div class="header">
+    <div class="logo">DATTA AI</div>
+    <div class="tagline">YOUR INTELLIGENT ASSISTANT</div>
+  </div>
+  <div class="body">${bodyHtml}</div>
+  <div class="footer">
+    <p>© 2026 Datta AI &nbsp;·&nbsp; <a href="${APP_URL}">${APP_URL}</a></p>
+    <p style="margin-top:4px;">Need help? Email us at <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></p>
+  </div>
+</div>
+</div>
+</body></html>`
+}
+
+function welcomeEmailHtml(name) {
+  return emailBase(`
+    <h2>Welcome to Datta AI, ${name}! 👋</h2>
+    <p>We're glad you're here. Datta AI is your intelligent assistant — built for Indian users, supporting Telugu, Hindi, Tamil and more.</p>
+    <p>Here's what you can do right now:</p>
+    <div class="info-box">
+      <div class="info-row"><span class="info-key">💬 Chat</span><span class="info-val">Ask anything in your language</span></div>
+      <div class="info-row"><span class="info-key">🎙 Voice</span><span class="info-val">Speak naturally, AI responds</span></div>
+      <div class="info-row"><span class="info-key">📚 Learn</span><span class="info-val">GK, History, Current Affairs</span></div>
+      <div class="info-row"><span class="info-key">💻 Code</span><span class="info-val">Datta 5.4 for coding tasks</span></div>
+    </div>
+    <p>Your free plan includes <strong>10 messages/day</strong> with Datta 2.1, plus 2 Datta 5.4 messages daily.</p>
+    <a href="${APP_URL}" class="btn">Start Chatting →</a>
+    <div class="support-box">
+      📧 Any questions? Reach us at <strong>${SUPPORT_EMAIL}</strong>
+    </div>
+  `)
+}
+
+function subscriptionEmailHtml(name, plan, price, billing, nextDate) {
+  const planEmoji = { free:"🌱", starter:"🚀", plus:"⚡", pro:"🔥", ultimate:"👑", "ultra-mini":"⚡" }[plan] || "⭐"
+  const planName = plan.charAt(0).toUpperCase() + plan.slice(1)
+  return emailBase(`
+    <h2>${planEmoji} Subscription Activated!</h2>
+    <p>Hi <strong>${name}</strong>, your payment was successful. You now have full access to your new plan.</p>
+    <div class="info-box">
+      <div class="info-row"><span class="info-key">Plan</span><span class="info-val">${planEmoji} Datta AI ${planName}</span></div>
+      <div class="info-row"><span class="info-key">Amount</span><span class="info-val">₹${price}</span></div>
+      <div class="info-row"><span class="info-key">Billing</span><span class="info-val">${billing}</span></div>
+      <div class="info-row"><span class="info-key">Next renewal</span><span class="info-val">${nextDate}</span></div>
+      <div class="info-row"><span class="info-key">Status</span><span class="info-val" style="color:#10a37f;">✓ Active</span></div>
+    </div>
+    <p>You can manage your subscription anytime from <strong>Settings → Plan</strong> in the app.</p>
+    <a href="${APP_URL}" class="btn">Open Datta AI →</a>
+    <div class="support-box">
+      📧 Questions about billing? Contact us at <strong>${SUPPORT_EMAIL}</strong>
+    </div>
+  `)
+}
+
+function passwordResetEmailHtml(name, resetUrl) {
+  return emailBase(`
+    <h2>Reset your password</h2>
+    <p>Hi <strong>${name}</strong>, we received a request to reset your Datta AI password.</p>
+    <p>Click the button below to set a new password. This link expires in <strong>1 hour</strong>.</p>
+    <a href="${resetUrl}" class="btn">Reset Password →</a>
+    <p style="font-size:12px;color:#aaa;margin-top:16px;">If you didn't request this, ignore this email. Your password won't change.</p>
+    <div class="support-box">
+      📧 Need help? Contact us at <strong>${SUPPORT_EMAIL}</strong>
+    </div>
+  `)
 }
 
 // POST /send — send welcome email to a user
@@ -1017,6 +1159,12 @@ app.post("/auth/signup", async (req, res) => {
 
     // Send verification email (non-blocking)
     sendVerificationEmail(email.toLowerCase(), verifyToken, username).catch(() => {})
+    // Send welcome email (non-blocking — app never waits for this)
+    sendEmail({
+      to: email.toLowerCase(),
+      subject: "Welcome to Datta AI 👋",
+      html: welcomeEmailHtml(username)
+    }).catch(() => {})
 
     // Return token - user can use app but email unverified
     res.json({
@@ -1375,6 +1523,22 @@ app.post("/payment/razorpay-verify", authMiddleware, async (req, res) => {
     )
     // Reset daily usage on new plan activation
     await Usage.findOneAndUpdate({ userId: req.user.id }, { messagesUsed: 0, windowStart: new Date() }).catch(() => {})
+    // Send subscription success email (non-blocking)
+    try {
+      const paidUser = await User.findById(req.user.id).select("username email").catch(() => null)
+      if (paidUser && paidUser.email) {
+        const planPrices = { starter:29, plus:299, pro:499, ultimate:799, standard:149, mini:199, max:1999 }
+        const price = planPrices[plan] || amount || 0
+        const billing = period === "yearly" ? "Yearly" : "Monthly"
+        const nextStr = endDate ? new Date(endDate).toLocaleDateString("en-IN", { day:"numeric", month:"long", year:"numeric" }) : "30 days"
+        sendEmail({
+          to: paidUser.email,
+          subject: "Your Datta AI subscription is active ✅",
+          html: subscriptionEmailHtml(paidUser.username || "there", plan, price, billing, nextStr)
+        }).catch(() => {})
+      }
+    } catch(emailErr) { console.warn("[EMAIL] Subscription email error:", emailErr.message) }
+
     res.json({ success: true, plan, endDate })
   } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
@@ -1436,6 +1600,19 @@ app.post("/payment/ultra-mini-verify", authMiddleware, async (req, res) => {
       { $inc: { /* add to limit tracking */ } },
       { upsert: true }
     ).catch(() => {})
+
+    // Send ultra-mini confirmation email (non-blocking)
+    try {
+      const paidUser = await User.findById(userId).select("username email").catch(() => null)
+      if (paidUser && paidUser.email) {
+        const expiryStr = ultraMiniExpiry.toLocaleString("en-IN", { hour:"2-digit", minute:"2-digit", day:"numeric", month:"short" })
+        sendEmail({
+          to: paidUser.email,
+          subject: "Datta AI: +15 bonus messages added ⚡",
+          html: subscriptionEmailHtml(paidUser.username || "there", "ultra-mini", 10, "One-time top-up", expiryStr + " (24h)")
+        }).catch(() => {})
+      }
+    } catch(emailErr) { console.warn("[EMAIL] Ultra-mini email error:", emailErr.message) }
 
     res.json({ success: true, plan: "ultra-mini", extraMessages: 15, expiresAt: ultraMiniExpiry })
   } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
