@@ -5,6 +5,8 @@ import mongoose from "mongoose"
 import multer from "multer"
 import crypto from "crypto"
 import Groq from "groq-sdk"
+import OpenAI from "openai"
+import { GoogleGenerativeAI } from "@google/generative-ai"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import passport from "passport"
@@ -88,6 +90,8 @@ passport.serializeUser((u, done) => done(null, u))
 passport.deserializeUser((u, done) => done(null, u))
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "missing" })
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null
+const geminiClient = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null
 
 // ── GEMINI API (Google — free, high quality) ──────────────────────────────
 async function callGemini(messages, systemPrompt, maxTokens, res) {
@@ -214,6 +218,50 @@ mongoose.connection.on('error', function(err) {
 })
 
 connectMongo(1)
+
+// ── Gemini 2.0 Flash — image solver (exam papers + general images) ──────────────
+async function solveWithGemini(imageBase64, mimeType, systemPrompt, userPrompt) {
+  if (!geminiClient) throw new Error("Gemini not configured")
+  const model = geminiClient.getGenerativeModel({
+    model: "gemini-2.0-flash",
+    systemInstruction: systemPrompt
+  })
+  const result = await model.generateContent({
+    contents: [{
+      role: "user",
+      parts: [
+        { inlineData: { mimeType: mimeType, data: imageBase64 } },
+        { text: userPrompt }
+      ]
+    }],
+    generationConfig: {
+      maxOutputTokens: 8192,
+      temperature: 0.3
+    }
+  })
+  return result.response.text() || ""
+}
+
+// ── GPT-4o exam paper solver ─────────────────────────────────────────────────
+async function solveExamWithGPT4o(imageBase64, mimeType, userMsg, ainame) {
+  if (!openai) throw new Error("OpenAI not configured")
+  const systemPrompt = "You are an expert academic exam solver. Answer every question in the image completely and correctly. Use exact question numbering. 1 mark = 2 sentences. 2 marks = 4 sentences. 4 marks = minimum 6 sentences with all points. For lists write ALL items. For formulas write formula + explain symbols. For graphs describe axes, curves, stages. Never leave any answer empty."
+  const userPrompt = (userMsg ? userMsg + "\n\n" : "") + "Solve all questions in this exam paper completely. Start directly with 1a answer:"
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o",
+    max_tokens: 4000,
+    messages: [{
+      role: "system", content: systemPrompt
+    }, {
+      role: "user",
+      content: [
+        { type: "image_url", image_url: { url: "data:" + mimeType + ";base64," + imageBase64, detail: "high" } },
+        { type: "text", text: userPrompt }
+      ]
+    }]
+  })
+  return response.choices[0].message.content || ""
+}
 
 // Safe string extractor — prevents [object Object] in AI responses
 function safeStr(val) {
@@ -1996,17 +2044,18 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       var imgPromptText
       if (isQuestionPaper) {
         imgPromptText = (imgMsg ? imgMsg + "\n\n" : "") +
-          "Read every question in this exam paper carefully and write a COMPLETE answer for each one.\n\n" +
-          "HOW TO ANSWER:\n" +
-          "- 1-mark: 1-2 direct sentences\n" +
-          "- 2-mark: 3-5 sentences with key points\n" +
-          "- 4-mark: Full explanation with ALL required points (minimum 5-6 points written out completely)\n" +
-          "- If asked for N types/kinds/steps/points: write ALL N items, each with full explanation\n" +
-          "- If asked for formula: write formula + explain each variable + numeric example\n" +
-          "- If asked for graph: describe x-axis, y-axis, all curves, all stages, all labeled points\n" +
-          "- If answer starts with a list — COMPLETE the entire list before moving on\n\n" +
-          "CRITICAL: Do not stop mid-answer. Do not leave any section empty.\n" +
-          "Write answers below, starting from Q1:"
+          "You are solving this exam paper. Write the FULL answer for every question.\n\n" +
+          "IMPORTANT — for EVERY question, even if it asks for a list or points, write the COMPLETE content:\n\n" +
+          "For question 1d (four focused points) write like this:\n" +
+          "1. Planning: (full explanation)\n" +
+          "2. Organizing: (full explanation)\n" +
+          "3. Directing: (full explanation)\n" +
+          "4. Controlling: (full explanation)\n\n" +
+          "For formulas write: Formula, then explain each symbol.\n" +
+          "For definitions write: Definition sentence, then explain with example.\n" +
+          "For graphs write: Describe X axis, Y axis, each curve, each stage with labels.\n" +
+          "For types/kinds write each type with full explanation.\n\n" +
+          "START ANSWERING NOW — begin with 1a and go through every question:"
       } else if (imgMsg) {
         imgPromptText = imgMsg
       } else {
@@ -2364,35 +2413,15 @@ NEVER say you are Claude, GPT, or any other AI. You are ${ainame}.`,
     // Vision model — build prompt dynamically based on isQuestionPaper
     if (persona === "__VISION_DYNAMIC__" || isImageFile) {
       if (isQuestionPaper) {
-        persona = "Your name is " + ainame + ". You are an expert academic exam answer writer.\n\n" +
-        "ABSOLUTE RULES — NEVER BREAK THESE:\n" +
-        "1. Start IMMEDIATELY with the first answer. Zero introduction.\n" +
-        "2. NEVER write Step 1, Step 2, Step 3.\n" +
-        "3. NEVER describe the image or paper.\n" +
-        "4. NEVER leave any answer empty or incomplete.\n" +
-        "5. NEVER write a question label and then give no content.\n\n" +
-        "ANSWER LENGTH BY MARKS (strictly follow):\n" +
-        "1 mark: 2 full sentences with the complete answer.\n" +
-        "2 marks: 4-5 sentences or 3-4 detailed bullet points.\n" +
-        "4 marks: At least 6-8 sentences or 5-6 detailed bullet points. Must include: definition + full explanation + example.\n" +
-        "5+ marks: Full paragraph with all sub-points covered in detail.\n\n" +
-        "SPECIFIC RULES:\n" +
-        "- Question asks for 4 points → write ALL 4 points with full explanation each.\n" +
-        "- Question asks for 3 types/kinds → define all 3 with full explanation each.\n" +
-        "- Question asks for formula → write formula, explain every variable, give example.\n" +
-        "- Question asks for graph → describe all axes labels, all curves, all stages, all key points in words.\n" +
-        "- Question asks for steps → write ALL steps fully numbered.\n" +
-        "- Question asks for definition → full textbook definition + 1 example.\n\n" +
-        "EXAMPLE OF WRONG (never do this):\n" +
-        "1d. Four focused points of Farm Management:\n(nothing written)\n\n" +
-        "EXAMPLE OF CORRECT:\n" +
-        "1d. Four focused points of Farm Management are:\n" +
-        "1. Planning: Deciding what crops to grow, when to plant, and what resources to allocate based on market and weather conditions.\n" +
-        "2. Organizing: Arranging and coordinating labor, land, capital, and equipment for maximum productivity.\n" +
-        "3. Directing: Supervising farm workers, giving instructions, and guiding daily operations.\n" +
-        "4. Controlling: Comparing actual farm results with planned targets and taking corrective action when needed.\n\n" +
-        "Use this exact level of detail for every 4-mark answer.\n" +
-        "NEVER say you are Claude or any other AI. You are " + ainame + "."
+        persona = "You are an expert exam answer writer. Write complete answers to every question in the image.\n\n" +
+        "RULES:\n" +
+        "1. Answer every question completely — never leave blank\n" +
+        "2. 1 mark = 2 sentences. 2 marks = 4 sentences. 4 marks = 6+ sentences with all points listed.\n" +
+        "3. For lists (four points, three types, steps) — write ALL items with explanation\n" +
+        "4. For formulas — write formula + explain each symbol\n" +
+        "5. For graphs — describe axes, curves, stages, labels in words\n" +
+        "6. Never write a question heading with no answer after it\n" +
+        "You are " + ainame + ". Never say you are Claude or GPT."
       } else {
         persona = "Your name is " + ainame + ". You are Datta Vision — an intelligent image analysis expert. Analyze every image thoroughly and give a complete, expert-level response.\n\n" +
         "BASED ON WHAT YOU SEE IN THE IMAGE:\n\n" +
@@ -2883,6 +2912,53 @@ IMPORTANT: Answer like a human, NOT like a search engine.
     // Simple chat → 8b first (faster/cheaper), fallback 70b
     console.log("[IMAGE DEBUG] model:", model, "isVisionModel:", isVisionModel, "isImageFile:", isImageFile, "finalUserContent type:", typeof finalUserContent, Array.isArray(finalUserContent) ? "ARRAY len="+finalUserContent.length : "")
     // Vision model gets its own dedicated attempt — no text-model fallback
+    // For ALL image uploads — use Gemini 2.0 Flash (free, excellent vision)
+    // Falls back to GPT-4o then Groq if Gemini fails
+    if (isImageFile && file) {
+      const imageBase64 = file.buffer.toString("base64")
+      let imageAnswer = null
+
+      // Try Gemini first (free, best for Indian academic content)
+      if (geminiClient) {
+        try {
+          console.log("[IMAGE] Using Gemini 2.0 Flash, isQuestionPaper:", isQuestionPaper)
+          const sysPrompt = isQuestionPaper
+            ? "You are an expert academic exam solver. Answer every question in the image completely. Use exact question numbering. 1 mark = 2 sentences. 2 marks = 4 sentences. 4 marks = minimum 6 sentences with all points listed fully. For lists write ALL items with explanation. For formulas write formula + explain each symbol. For graphs describe axes, curves, stages, labels. Never leave any answer empty or incomplete."
+            : "You are Datta Vision, an intelligent image analysis expert. Analyze the image thoroughly and give a complete, expert-level response. Identify what you see, explain it clearly, and give useful information. If it is a screenshot or error, give exact steps to fix it. If it is a photo, identify and explain it in detail. If it has text, read all of it. Be specific and direct."
+          const usrPrompt = isQuestionPaper
+            ? (message ? message + "\n\nSolve all questions completely. Start with 1a:" : "Solve all questions in this exam paper completely. Start directly with 1a:")
+            : (message || "Analyze this image and give me detailed, useful information about it.")
+          imageAnswer = await solveWithGemini(imageBase64, file.mimetype, sysPrompt, usrPrompt)
+          console.log("[IMAGE] Gemini answered, length:", imageAnswer?.length)
+        } catch(gemErr) {
+          console.warn("[IMAGE] Gemini failed:", gemErr.message, "— trying fallback")
+        }
+      }
+
+      // Fallback to GPT-4o if Gemini failed
+      if (!imageAnswer && openai && isQuestionPaper) {
+        try {
+          console.log("[EXAM] Falling back to GPT-4o")
+          imageAnswer = await solveExamWithGPT4o(imageBase64, file.mimetype, message || "", ainame)
+        } catch(gptErr) {
+          console.warn("[EXAM] GPT-4o also failed:", gptErr.message)
+        }
+      }
+
+      // If we got an answer from Gemini or GPT-4o — stream it and return
+      if (imageAnswer) {
+        res.write(imageAnswer)
+        chat.messages.push({ role: "assistant", content: imageAnswer })
+        await chat.save()
+        res.write("CHATID" + chat._id)
+        res.end()
+        cleanupRequest()
+        return
+      }
+      // If both failed — fall through to Groq vision below
+      console.warn("[IMAGE] All premium solvers failed — using Groq vision as last resort")
+    }
+
     var groqAttempts = isImageFile
       ? isQuestionPaper
         ? [
