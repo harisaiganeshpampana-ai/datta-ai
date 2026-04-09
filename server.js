@@ -1977,14 +1977,40 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       .filter(m => !m.content.includes("data:image") && !m.content.includes("data:application"))
     var isImageFile = file && file.mimetype?.startsWith("image/")
     console.log("[IMAGE DEBUG] file:", !!file, "mimetype:", file?.mimetype, "isImageFile:", isImageFile, "message:", (message||"").slice(0,40))
+
+    // Detect if uploaded image is a question paper / exam paper
+    var isQuestionPaper = isImageFile && (
+      !message ||  // no message = user just uploaded image wanting answers
+      ["question", "paper", "exam", "solve", "answer", "answers", "solution",
+       "marks", "mark", "mcq", "fill in", "define", "explain all", "answer all",
+       "question paper", "test paper", "assignment", "homework", "worksheet",
+       "solve this", "give answers", "all answers", "complete answers",
+       "1 mark", "2 mark", "4 mark", "unit", "module", "semester"
+      ].some(k => (message||"").toLowerCase().includes(k))
+    )
+
     let userContent
     if (isImageFile) {
-      var imgMsg = message || "Analyze this image and guide me step by step on what to do."
-      var imgPromptPrefix = imgMsg.toLowerCase().includes("explain") || imgMsg.toLowerCase().includes("what") || imgMsg.toLowerCase().includes("analyze")
-        ? imgMsg
-        : imgMsg + " (Please: 1. Describe what you see briefly. 2. Identify the problem or goal. 3. Give exact numbered steps.)"
-      userContent = [{ type: "text", text: imgPromptPrefix + searchContext }, { type: "image_url", image_url: { url: "data:" + file.mimetype + ";base64," + file.buffer.toString("base64") } }]
-      console.log("[IMAGE DEBUG] userContent built as array, parts:", userContent.length)
+      var imgMsg = message || ""
+
+      var imgPromptText
+      if (isQuestionPaper) {
+        // Academic exam solver mode — answer all questions directly
+        imgPromptText = imgMsg + (imgMsg ? "\n\n" : "") +
+          "TASK: This is a question paper. Answer ALL questions completely. " +
+          "Start directly with answers. Use exact question numbering. " +
+          "Do NOT describe the image. Do NOT say what the paper contains. " +
+          "Just answer every question."
+      } else if (imgMsg.toLowerCase().includes("explain") || imgMsg.toLowerCase().includes("what") || imgMsg.toLowerCase().includes("analyze")) {
+        imgPromptText = imgMsg
+      } else if (imgMsg) {
+        imgPromptText = imgMsg + " (Please: 1. Describe what you see briefly. 2. Identify the problem or goal. 3. Give exact numbered steps.)"
+      } else {
+        imgPromptText = "Analyze this image and guide me step by step on what to do."
+      }
+
+      userContent = [{ type: "text", text: imgPromptText + searchContext }, { type: "image_url", image_url: { url: "data:" + file.mimetype + ";base64," + file.buffer.toString("base64") } }]
+      console.log("[IMAGE DEBUG] userContent built as array, parts:", userContent.length, "isQuestionPaper:", isQuestionPaper)
     } else if (file) {
       try {
         var isPDF = file.mimetype === "application/pdf" || file.originalname?.toLowerCase().endsWith(".pdf")
@@ -2153,7 +2179,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "show me how","teach me","walk me through","guide me through"
     ].some(k => msgLower.includes(k))
     // Images ALWAYS trigger step-by-step mode
-    var isStepByStep = isProblemSolving || isImageFile
+    var isStepByStep = isProblemSolving || (isImageFile && !isQuestionPaper)
     var isNarrativeRequest = ["chapter","story","charitra","katha","purana","granth","scripture","mahabharata","ramayana","gita","quran","bible","guru","stotra","shloka","narrate","tell me the story","explain the story","summarize chapter","write a story","once upon"].some(k => msgLower.includes(k))
     // Current affairs / GK / History topics — need detailed responses
     var isCurrentAffairs = ["current affairs","current affair","today's news","this week","this month","this year","recently","latest development","recently happened","what happened in","2024","2025","2026","who won","election","government","policy","scheme","budget","parliament","lok sabha","rajya sabha","supreme court","high court","modi","president","prime minister","chief minister","governor","rbi","sebi","upsc","ssc","ias","ips","exam pattern","syllabus"].some(k => msgLower.includes(k))
@@ -2220,7 +2246,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
                      : isExplainQuestion? (inputIsLarge ? 3000 : 4000)
                      : isStepByStep     ? 3000
                      :                    2500   // simple chat — raised from 1800
-    var maxTok = isImageFile ? 3000 : maxCodingTok
+    var maxTok = isImageFile ? (isQuestionPaper ? 6000 : 3000) : maxCodingTok
 
     // Use browser's actual local time sent from frontend
     var timeStr = req.body.userTime || new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })
@@ -2316,26 +2342,54 @@ When user faces an error:
 - If current method won't work, say: "Stop using this — switch to X instead"
 
 NEVER say you are Claude, GPT, or any other AI. You are ${ainame}.`,
-      "meta-llama/llama-4-scout-17b-16e-instruct": `Your name is ${ainame}. You are Datta Vision — an expert at reading screenshots, error messages, and UI screens, and guiding users step-by-step.
+      "meta-llama/llama-4-scout-17b-16e-instruct": `Your name is ${ainame}. You are Datta Vision — an expert at reading and solving academic papers, analyzing screenshots, and guiding users step-by-step.
 
-WHEN USER UPLOADS AN IMAGE:
-1. First: Briefly describe what you see (1-2 sentences — screen name, state, what's visible)
-2. Then: Identify what the user is trying to do or what problem exists
-3. Then: Give EXACT numbered steps to fix or proceed
+${isQuestionPaper ? `
+EXAM SOLVER MODE — ACTIVE:
+You are an academic exam solver. Your ONLY job is to answer ALL questions in the image.
 
-STEP FORMAT (use for every response):
+STRICT RULES:
+1. Do NOT describe the image
+2. Do NOT say "This paper contains..." or "The image shows..."
+3. Do NOT ask the user anything
+4. Start DIRECTLY with answers from Question 1
+
+OUTPUT FORMAT:
+- Use EXACT question numbering from the paper (1a, 1b, 2a, 3, etc.)
+- Answer length based on marks:
+  • 1 mark → 1-2 lines, direct answer
+  • 2 marks → 3-4 lines with key points
+  • 4 marks → structured explanation with bullet points
+  • 5-10 marks → full detailed answer with all sub-points
+
+CONTENT RULES:
+- Definition question → give the exact definition
+- Formula question → write the formula clearly
+- Diagram question → describe the diagram with all labeled parts
+- Theory question → key points only, no unnecessary story
+- MCQ → just the correct answer with 1-line reason
+- Fill in blank → just the correct word/phrase
+- Derivation → show all steps
+
+IMPORTANT: Your output must look like a perfect student answer sheet.
+Never leave any question unanswered. If a question is unclear, make the best academic assumption and answer it.
+` : `
+SCREEN/IMAGE ANALYSIS MODE:
+When user uploads a screenshot or image:
+1. Briefly describe what you see (1-2 sentences only)
+2. Identify the user's goal or problem
+3. Give EXACT numbered steps to fix or proceed
+
+STEP FORMAT:
 Step 1: [Exact action — which button, where on screen, what to type]
 Step 2: [Next exact action]
-Step 3: [And so on...]
 
 RULES:
-- Say exactly WHICH button to click and WHERE it is (top-left, bottom, center)
-- Say exactly WHAT to type if typing is needed
-- Assume the user is a complete beginner — no assumptions
-- One action per step only — never combine two actions in one step
+- Say exactly WHICH button to click and WHERE (top-left, bottom, center)
+- One action per step — never combine two steps
 - After steps, ask: "Done? Tell me what you see and I'll guide you to the next step."
-- NEVER say "configure", "set up", "manage" without explaining exactly how
-- NEVER give vague steps like "go to settings" — always say exactly which settings
+- NEVER say "configure" without showing how exactly
+`}
 
 NEVER say you are any other AI. You are ${ainame}.`,
       "persona-lawyer":  `Your name is ${ainame}. You are in Lawyer mode. Provide general legal information. Always advise consulting a licensed lawyer. NEVER say you are any other AI.`,
