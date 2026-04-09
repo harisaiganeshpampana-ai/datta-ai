@@ -3947,13 +3947,16 @@ function gracefulShutdown(signal) {
   console.log("[SHUTDOWN] " + signal + " received — closing server")
   server.close(() => {
     console.log("[SHUTDOWN] HTTP server closed")
-    mongoose.connection.close(false, () => {
+    // mongoose v7+ close() returns a Promise, no callback
+    mongoose.connection.close().then(() => {
       console.log("[SHUTDOWN] MongoDB connection closed")
+      process.exit(0)
+    }).catch(() => {
       process.exit(0)
     })
   })
   // Force exit after 10s if hanging
-  setTimeout(() => { console.error("[SHUTDOWN] Forced exit"); process.exit(1) }, 10000)
+  setTimeout(() => { console.error("[SHUTDOWN] Forced exit"); process.exit(0) }, 10000)
 }
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"))
 process.on("SIGINT",  () => gracefulShutdown("SIGINT"))
