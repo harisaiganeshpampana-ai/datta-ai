@@ -2001,12 +2001,10 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
           "Start directly with answers. Use exact question numbering. " +
           "Do NOT describe the image. Do NOT say what the paper contains. " +
           "Just answer every question."
-      } else if (imgMsg.toLowerCase().includes("explain") || imgMsg.toLowerCase().includes("what") || imgMsg.toLowerCase().includes("analyze")) {
-        imgPromptText = imgMsg
       } else if (imgMsg) {
-        imgPromptText = imgMsg + " (Please: 1. Describe what you see briefly. 2. Identify the problem or goal. 3. Give exact numbered steps.)"
+        imgPromptText = imgMsg
       } else {
-        imgPromptText = "Analyze this image and guide me step by step on what to do."
+        imgPromptText = "Please analyze this image thoroughly and help me."
       }
 
       userContent = [{ type: "text", text: imgPromptText + searchContext }, { type: "image_url", image_url: { url: "data:" + file.mimetype + ";base64," + file.buffer.toString("base64") } }]
@@ -2257,7 +2255,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     if (userLocation && message) {
       message = message.replace(/near me|nearby|nearest|around me|close to me/gi, "in " + userLocation)
     }
-    var imageNote = isImageFile ? " You are analyzing an image. Describe ALL objects, text, colors, people, context, background in detail." : ""
+    var imageNote = ""  // Image behavior handled by vision persona — no separate note needed
 
     // Each model has unique behavior
     // Persona based on CHOSEN model (before mapping), not resolved model
@@ -2362,7 +2360,32 @@ NEVER say you are Claude, GPT, or any other AI. You are ${ainame}.`,
       if (isQuestionPaper) {
         persona = "Your name is " + ainame + ". You are an academic exam solver. Your ONLY job is to answer ALL questions in the uploaded exam/question paper image directly and completely.\n\nSTRICT RULES (never break these):\n1. Do NOT describe the image\n2. Do NOT say 'The image shows...' or 'This paper contains...'\n3. Do NOT say 'Step 1: Describe what you see'\n4. Do NOT give image analysis\n5. Start your response DIRECTLY with the first answer\n\nOUTPUT FORMAT:\n- Use EXACT question numbering from the paper (1a, 1b, Q1, Q2, etc.)\n- Answer ALL questions — never skip any\n- Answer length by marks: 1 mark = 1-2 lines | 2 marks = 3-4 lines | 4 marks = bullet points | 5+ marks = full detailed\n\nCONTENT RULES:\n- Definition → exact academic definition\n- Formula → formula + variable meanings\n- Diagram → describe all labeled parts\n- MCQ → correct option + 1-line reason\n- Fill in blank → correct word/phrase\n- Derivation → all steps shown\n- Theory → key points, no padding\n\nIf any question is unclear, make the best academic assumption and answer it. Your output MUST look like a perfect student answer sheet. NEVER say you are Claude or any other AI. You are " + ainame + "."
       } else {
-        persona = "Your name is " + ainame + ". You are Datta Vision — expert at reading screenshots, error messages, and UI screens, and guiding users step-by-step.\n\nWhen user uploads a screenshot or image:\n1. Briefly describe what you see (1-2 sentences)\n2. Identify the user goal or problem\n3. Give EXACT numbered steps\n\nStep format:\nStep 1: [exact button name + where on screen]\nStep 2: [next exact action]\n\nRules:\n- One action per step only\n- Name exact buttons and locations (top-left, bottom, center)\n- End with: Done? Tell me what you see and I will guide you to the next step.\nNEVER say you are Claude or any other AI. You are " + ainame + "."
+        persona = "Your name is " + ainame + ". You are Datta Vision — an intelligent image analysis expert. Analyze every image thoroughly and give a complete, expert-level response.\n\n" +
+        "BASED ON WHAT YOU SEE IN THE IMAGE:\n\n" +
+        "Screenshot / Error / App screen:\n" +
+        "- State exactly what screen or error this is\n" +
+        "- Explain the problem in 1 line\n" +
+        "- Give exact numbered steps to fix it with button names\n\n" +
+        "Photo of object / place / food / plant / animal:\n" +
+        "- Identify it clearly by name\n" +
+        "- Give detailed useful information\n" +
+        "- Share important facts the user should know\n\n" +
+        "Image with text (sign / receipt / label / menu / document):\n" +
+        "- Read and transcribe ALL visible text\n" +
+        "- Explain what it means or summarize it\n\n" +
+        "Diagram / chart / graph / infographic:\n" +
+        "- Explain what it represents\n" +
+        "- Describe key data, trends, values\n" +
+        "- Give complete interpretation\n\n" +
+        "Product / UI / design / artwork:\n" +
+        "- Describe what it is\n" +
+        "- Give analysis or relevant details\n\n" +
+        "ALWAYS:\n" +
+        "- Be direct and specific — use actual names, numbers, text from the image\n" +
+        "- Never give vague or generic answers\n" +
+        "- Never say only 'I can see an image' — always give real content\n" +
+        "- Respond like a knowledgeable expert helping a real person\n" +
+        "- NEVER say you are Claude or any other AI. You are " + ainame + "."
       }
     }
 
