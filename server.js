@@ -325,6 +325,8 @@ const UsageSchema = new mongoose.Schema({
   totalImages: { type: Number, default: 0 },
   windowStart: { type: Date, default: Date.now },
   imageWindowStart: { type: Date, default: Date.now },
+  freeD54Used: { type: Number, default: 0 },       // free plan: 2 Datta 5.4 per day
+  freeD54WindowStart: { type: Date, default: Date.now },
   firstEverMessage: { type: Boolean, default: true },
   updatedAt: { type: Date, default: Date.now }
 })
@@ -1505,17 +1507,49 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
         const requestedModelKey = req.body.modelKey || "d21"
         const planConfig = planLimits[userPlan] || planLimits.free
         const allowedModels = planConfig.models
-        // Check if model is allowed (skip if plan allows "all")
-        if (!allowedModels.includes("all") && !allowedModels.includes(requestedModelKey)) {
-          // Determine minimum plan needed
-          let upgradeTo = "Plus"
+
+        // Free plan special case: allow 2 Datta 5.4 messages per day
+        if (userPlan === "free" && requestedModelKey === "d54") {
+          const usageDoc = await Usage.findOne({ userId }).catch(() => null)
+          const now = new Date()
+          const resetMs = 24 * 60 * 60 * 1000
+          let freeD54Used = 0
+          let freeD54Start = now
+
+          if (usageDoc) {
+            const expired = now - new Date(usageDoc.freeD54WindowStart || now) > resetMs
+            freeD54Used = expired ? 0 : (usageDoc.freeD54Used || 0)
+            freeD54Start = expired ? now : (usageDoc.freeD54WindowStart || now)
+          }
+
+          if (freeD54Used >= 2) {
+            // Free d54 limit hit
+            cleanupRequest()
+            return res.status(403).json({
+              error: "MODEL_LOCKED",
+              message: "You've used your 2 free Datta 5.4 messages for today. Upgrade to Starter (₹29) for more.",
+              plan: "free",
+              requiredPlan: "starter",
+              freeD54Remaining: 0
+            })
+          }
+          // Increment free d54 count
+          await Usage.findOneAndUpdate(
+            { userId },
+            { freeD54Used: freeD54Used + 1, freeD54WindowStart: freeD54Start, updatedAt: now },
+            { upsert: true }
+          ).catch(() => {})
+          // Allow the request to proceed with d54
+        } else if (!allowedModels.includes("all") && !allowedModels.includes(requestedModelKey)) {
+          // Paid plan model check
+          let upgradeTo = "Starter"
           if (requestedModelKey === "d54") {
-            upgradeTo = userPlan === "free" || userPlan === "starter" ? "Standard" : "Plus"
+            upgradeTo = "Starter"
           }
           cleanupRequest()
           return res.status(403).json({
             error: "MODEL_LOCKED",
-            message: `Upgrade to ${upgradeTo} plan to use this model.`,
+            message: `Upgrade to ${upgradeTo} plan (₹29/month) to use Datta 5.4.`,
             plan: userPlan,
             requiredPlan: upgradeTo.toLowerCase()
           })
@@ -1807,19 +1841,38 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }
     // Auto-detect language from user's actual message Unicode script
     function detectInputLanguage(text) {
-      if (/[ఀ-౿]/.test(text)) return "Telugu"   // Telugu script
-      if (/[ऀ-ॿ]/.test(text)) return "Hindi"    // Devanagari / Hindi
-      if (/[஀-௿]/.test(text)) return "Tamil"    // Tamil script
-      if (/[ಀ-೿]/.test(text)) return "Kannada"  // Kannada script
-      if (/[਀-੿]/.test(text)) return "Punjabi"  // Gurmukhi / Punjabi
-      if (/[ঀ-৿]/.test(text)) return "Bengali"  // Bengali script
-      return null  // no Indian script detected
+      if (!text) return null
+      // Indian scripts — ordered by unicode range
+      if (/[ఀ-౿]/.test(text)) return "Telugu"     // Telugu
+      if (/[ऀ-ॿ]/.test(text)) return "Hindi"      // Devanagari (Hindi/Marathi/Sanskrit)
+      if (/[஀-௿]/.test(text)) return "Tamil"      // Tamil
+      if (/[ಀ-೿]/.test(text)) return "Kannada"    // Kannada
+      if (/[਀-੿]/.test(text)) return "Punjabi"    // Gurmukhi
+      if (/[ঀ-৿]/.test(text)) return "Bengali"    // Bengali
+      if (/[ഀ-ൿ]/.test(text)) return "Malayalam"  // Malayalam
+      if (/[઀-૿]/.test(text)) return "Gujarati"   // Gujarati
+      if (/[଀-୿]/.test(text)) return "Odia"       // Odia/Oriya
+      if (/[؀-ۿ]/.test(text)) return "Urdu"       // Arabic/Urdu script
+      if (/[ऀ-ॿ]/.test(text)) return "Marathi"    // Marathi (Devanagari — already Hindi above but context matters)
+      // Non-Indian foreign scripts
+      if (/[一-鿿]/.test(text)) return "Chinese"    // Chinese
+      if (/[぀-ヿ]/.test(text)) return "Japanese"   // Japanese
+      if (/[가-힯]/.test(text)) return "Korean"     // Korean
+      if (/[Ѐ-ӿ]/.test(text)) return "Russian"    // Cyrillic
+      if (/[Ͱ-Ͽ]/.test(text)) return "Greek"      // Greek
+      // Detect common non-English Latin-based languages by keywords
+      if (/(hola|gracias|cómo|estás|qué|español|por favor)/i.test(text)) return "Spanish"
+      if (/(bonjour|merci|français|comment|allez|vous|bonsoir)/i.test(text)) return "French"
+      if (/(guten|danke|schön|bitte|deutsch|wie geht|hallo)/i.test(text)) return "German"
+      if (/(ciao|grazie|italiano|come|stai|prego|salve)/i.test(text)) return "Italian"
+      if (/(olá|obrigado|português|como|você|está|bom dia)/i.test(text)) return "Portuguese"
+      return null  // English or unknown — default to English
     }
     var autoDetectedLang = detectInputLanguage(message)
     var effectiveLang = autoDetectedLang || language
     var langNote = (effectiveLang && effectiveLang !== "English" && effectiveLang !== "Auto")
-      ? " IMPORTANT: The user is writing in " + effectiveLang + ". You MUST respond entirely in " + effectiveLang + ". Do not switch to English."
-      : " Always respond in English unless the user writes to you in another language first — if they do, match their language exactly."
+      ? " CRITICAL LANGUAGE RULE: The user is communicating in " + effectiveLang + ". Your ENTIRE response MUST be in " + effectiveLang + " script and language. Rules: (1) Write every single word in " + effectiveLang + " — no English words mixed in unless it is a technical term with no " + effectiveLang + " equivalent. (2) Use natural " + effectiveLang + " — not a word-by-word translation. (3) If you don't know a word in " + effectiveLang + ", use the most common local equivalent. (4) NEVER switch to English mid-response. (5) Numbers and dates can stay as digits. This is non-negotiable."
+      : " Respond in clear, simple English. Use short sentences. Avoid jargon. Be direct and easy to understand."
     var styleNote = styleNotes[style] || ""
     var searchNote = searchContext ? " IMPORTANT: Web search results are provided above. Use them to answer. Write your response as PLAIN TEXT only — no JavaScript, no arrays, no [object Object], no brackets. For sports/IPL: write naturally like 'Today CSK plays against MI at 7:30 PM at Chepauk Stadium'. Extract all values as readable sentences." : ""
 
