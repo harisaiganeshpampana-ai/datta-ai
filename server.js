@@ -1211,6 +1211,11 @@ app.post("/send", async (req, res) => {
   }
 })
 
+// ── HEALTH CHECK ──────────────────────────────────────────────────────────────
+app.get("/", (req, res) => res.json({ status: "ok", service: "Datta AI Server", version: "2.0" }))
+app.get("/ping", (req, res) => res.json({ pong: true, time: new Date().toISOString() }))
+app.get("/health", (req, res) => res.json({ status: "ok", db: mongoose.connection.readyState === 1 ? "connected" : "disconnected" }))
+
 // GOOGLE OAUTH
 if (GoogleStrategy && process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
@@ -1441,17 +1446,27 @@ app.post("/auth/verify-otp", async (req, res) => {
   }
 })
 
-app.get("/auth/google", passport.authenticate("google", { scope: ["profile","email"] }))
-app.get("/auth/google/callback",
-  passport.authenticate("google", { session: false, failureRedirect: FRONTEND_URL + "/login.html?error=google_failed" }),
-  (req, res) => {
-    // Send login alert email — fire and forget
-    sendLoginAlertEmail(req.user.user.email, req.user.user.username || "User").catch(() => {})
-    // Only put token in URL — frontend fetches user data separately
-    // Putting full user JSON in URL causes 414 URI Too Long
-    res.redirect(FRONTEND_URL + "/login.html?token=" + req.user.token)
-  }
-)
+// Google OAuth routes — only register if credentials are configured
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  app.get("/auth/google", passport.authenticate("google", { scope: ["profile","email"] }))
+  app.get("/auth/google/callback",
+    passport.authenticate("google", { session: false, failureRedirect: FRONTEND_URL + "/login.html?error=google_failed" }),
+    (req, res) => {
+      sendLoginAlertEmail(req.user.user.email, req.user.user.username || "User").catch(() => {})
+      res.redirect(FRONTEND_URL + "/login.html?token=" + req.user.token)
+    }
+  )
+  console.log("[AUTH] Google OAuth enabled")
+} else {
+  // Google OAuth not configured — return friendly error instead of crashing
+  app.get("/auth/google", (req, res) => {
+    res.redirect(FRONTEND_URL + "/login.html?error=google_not_configured")
+  })
+  app.get("/auth/google/callback", (req, res) => {
+    res.redirect(FRONTEND_URL + "/login.html?error=google_not_configured")
+  })
+  console.log("[AUTH] Google OAuth disabled — GOOGLE_CLIENT_ID not set")
+}
 
 app.post("/auth/update-username", authMiddleware, async (req, res) => {
   try {
@@ -4450,6 +4465,17 @@ setInterval(async () => {
 
 
 const PORT = process.env.PORT || 3000
+// Global error handler — prevent crashes from unhandled errors
+app.use((err, req, res, next) => {
+  console.error("[GLOBAL ERROR]", err.message)
+  if (!res.headersSent) res.status(500).json({ error: "Server error. Please try again." })
+})
+
+// Handle uncaught promise rejections — log but don't crash
+process.on("unhandledRejection", (reason) => {
+  console.error("[UNHANDLED REJECTION]", reason?.message || reason)
+})
+
 const server = app.listen(PORT, "0.0.0.0", () => console.log("Datta AI Server running on port " + PORT))
 
 // Graceful shutdown — required for Render/Railway zero-downtime deploys
