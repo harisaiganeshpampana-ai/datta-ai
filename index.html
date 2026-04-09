@@ -359,34 +359,33 @@ body.sb-collapsed .input-area {
 /* ── MESSAGES ── */
 .msg-row {
   width: 100%; max-width: 860px;
-  padding: 4px 20px;
+  padding: 6px 20px;
   margin: 0 auto;
   display: flex;
-  animation: msgIn 0.18s ease;
+  animation: msgIn 0.2s ease;
 }
-@keyframes msgIn { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: translateY(0); } }
+@keyframes msgIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
 
 .msg-row.user-row { justify-content: flex-end; }
 
 .user-bubble {
   max-width: 80%;
-  padding: 10px 16px;
+  padding: 12px 18px;
   background: var(--bg3);
   border: 1px solid var(--border);
-  border-radius: 18px 4px 18px 18px;
+  border-radius: 20px 4px 20px 20px;
   color: var(--text);
-  font-size: var(--chat-font-size, 15px); line-height: 1.65;
+  font-size: var(--chat-font-size, 15px); line-height: 1.7;
   word-break: break-word;
 }
 
-.ai-content { display: flex; flex-direction: column; gap: 6px; max-width: 100%; width: 100%; }
+.ai-content { display: flex; flex-direction: column; gap: 4px; max-width: 100%; width: 100%; }
 .ai-bubble {
-  padding: 12px 16px;
+  padding: 4px 4px 4px 0;
   background: transparent;
   color: var(--text);
-  font-size: var(--chat-font-size, 15px); line-height: 1.75;
+  font-size: var(--chat-font-size, 15px); line-height: 1.8;
   word-break: break-word;
-  border-radius: 4px 18px 18px 18px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -473,10 +472,18 @@ body.sb-collapsed .input-area {
 .ai-bubble h1, .ai-bubble h2, .ai-bubble h3 { color: var(--text); font-weight: 600; margin: 14px 0 6px; }
 .ai-bubble p { margin: 0 0 10px; }
 .ai-bubble p:last-child { margin: 0; }
-.ai-bubble ul, .ai-bubble ol { padding-left: 20px; margin: 8px 0; }
-.ai-bubble li { margin-bottom: 4px; }
+.ai-bubble ul { padding-left: 0; margin: 10px 0; list-style: none; }
+.ai-bubble ol { padding-left: 22px; margin: 10px 0; }
+.ai-bubble ul li { margin-bottom: 6px; padding-left: 20px; position: relative; }
+.ai-bubble ul li::before { content: "•"; position: absolute; left: 4px; color: var(--accent); font-weight: 700; }
+.ai-bubble ol li { margin-bottom: 6px; padding-left: 4px; }
+.ai-bubble li { line-height: 1.7; }
 .ai-bubble strong { color: var(--text); font-weight: 600; }
 .ai-bubble a { color: var(--accent); text-decoration: none; }
+.ai-bubble p { margin: 0 0 12px; line-height: 1.8; }
+.ai-bubble p:last-child { margin: 0; }
+.ai-bubble h1, .ai-bubble h2 { font-size: 17px; margin: 16px 0 8px; }
+.ai-bubble h3 { font-size: 15px; margin: 14px 0 6px; }
 
 /* Typing cursor */
 .typing-cursor {
@@ -594,17 +601,17 @@ body.sb-collapsed .input-area {
 
 .input-wrap {
   background: var(--bg2) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 16px !important;
-  padding: 6px 8px 6px 14px !important;
+  border: 1.5px solid var(--border) !important;
+  border-radius: 28px !important;
+  padding: 8px 10px 8px 18px !important;
   display: flex !important;
   flex-direction: column !important;
-  box-shadow: 0 4px 20px var(--shadow) !important;
-  transition: border-color 0.2s, box-shadow 0.2s !important;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.1) !important;
+  transition: border-color 0.22s, box-shadow 0.22s !important;
 }
 .input-wrap:focus-within {
   border-color: var(--accent) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent), 0 4px 20px var(--shadow) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent), 0 4px 24px rgba(0,0,0,0.2) !important;
 }
 
 /* File preview */
@@ -1121,10 +1128,10 @@ body.notes-open .input-area {
     width: 95% !important;
     bottom: 10px !important;
   }
-  .msg-row { max-width: 100%; width: 100%; padding: 4px 8px; }
+  .msg-row { max-width: 100%; width: 100%; padding: 6px 12px; }
   .ai-content { max-width: 100% !important; width: 100% !important; }
-  .ai-bubble { font-size: var(--chat-font-size, 15px) !important; padding: 10px 12px !important; width: 100% !important; box-sizing: border-box !important; }
-  .user-bubble { max-width: 85% !important; font-size: var(--chat-font-size, 15px) !important; }
+  .ai-bubble { font-size: var(--chat-font-size, 15px) !important; padding: 4px 0 !important; width: 100% !important; box-sizing: border-box !important; line-height: 1.8 !important; }
+  .user-bubble { max-width: 86% !important; font-size: var(--chat-font-size, 15px) !important; padding: 11px 16px !important; }
   .chat-scroll { padding-bottom: 180px; }
   .welcome-screen { padding: 0 14px 190px; }
   .sugg-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
