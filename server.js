@@ -1878,14 +1878,14 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var style = req.body.style || "Balanced"
     var ainame = req.body.ainame || "Datta AI"
     var styleNotes = {
-      Short: " Keep responses very brief - 1-3 sentences max unless code is needed.",
-      Detailed: " Give thorough, comprehensive, detailed responses.",
-      Formal: " Use formal professional language.",
-      Casual: " Be friendly, casual and conversational like a friend.",
-      Technical: " Use technical terminology and be precise.",
-      Creative: " Be creative, use analogies and interesting examples.",
-      Simple: " Use very simple language, avoid jargon, explain everything clearly.",
-      Balanced: ""
+      Short:    "\n\nSTYLE RULE — SHORT: Answer in maximum 3 sentences. Be direct. No extra info unless code is needed.",
+      Detailed: "\n\nSTYLE RULE — DETAILED: Give a thorough complete response. Include examples, explanation, and context. Never cut short.",
+      Formal:   "\n\nSTYLE RULE — FORMAL: Use formal professional language only. Structured paragraphs. No casual words.",
+      Casual:   "\n\nSTYLE RULE — CASUAL: Respond like a friendly person texting a friend. Short sentences. Warm tone.",
+      Technical:"\n\nSTYLE RULE — TECHNICAL: Use exact technical terms, numbers, and precise details. No vague explanations.",
+      Creative: "\n\nSTYLE RULE — CREATIVE: Be imaginative. Use analogies, stories, and interesting examples to explain.",
+      Simple:   "\n\nSTYLE RULE — SIMPLE: Use very simple words. Explain like teaching a 10-year-old. Zero jargon.",
+      Balanced: "\n\nSTYLE RULE — BALANCED: Give a complete clear answer with a good explanation. Use examples when they help."
     }
     // Auto-detect language from user's actual message Unicode script
     function detectInputLanguage(text) {
