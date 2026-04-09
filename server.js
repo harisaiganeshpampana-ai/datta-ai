@@ -1250,9 +1250,36 @@ app.delete("/auth/delete-account", authMiddleware, async (req, res) => {
 // SUBSCRIPTION ROUTES
 app.get("/payment/subscription", authMiddleware, async (req, res) => {
   try {
-    const sub = await Subscription.findOne({ userId: req.user.id, active: true })
-    const plan = sub ? sub.plan : "free"
-    res.json({ plan, period: sub?.period || "monthly", endDate: sub?.endDate || null, limits: planLimits[plan] })
+    const userId = req.user.id
+    const sub = await Subscription.findOne({ userId, active: true })
+    let plan = sub ? sub.plan : "free"
+
+    // Auto-expire ultra-mini if 24h passed
+    if (plan === "ultra-mini" && sub && sub.ultraMiniExpiry) {
+      if (new Date() > new Date(sub.ultraMiniExpiry)) {
+        const revertPlan = sub.previousPlan || "free"
+        await Subscription.findOneAndUpdate({ userId }, { plan: revertPlan, extraMessages: 0 })
+        plan = revertPlan
+        console.log("[SUBSCRIPTION] ultra-mini expired, reverted to:", revertPlan)
+      }
+    }
+
+    // Also auto-expire monthly/yearly plans past endDate
+    if (sub && sub.endDate && plan !== "free" && plan !== "ultra-mini") {
+      if (new Date() > new Date(sub.endDate)) {
+        await Subscription.findOneAndUpdate({ userId }, { plan: "free", active: false })
+        plan = "free"
+        console.log("[SUBSCRIPTION] plan expired, reverted to free")
+      }
+    }
+
+    res.json({
+      plan,
+      period: sub?.period || "monthly",
+      endDate: sub?.endDate || null,
+      ultraMiniExpiry: sub?.ultraMiniExpiry || null,
+      limits: planLimits[plan] || planLimits.free
+    })
   } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
@@ -1261,18 +1288,29 @@ app.get("/payment/usage", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id
     const sub    = await Subscription.findOne({ userId, active: true }).catch(() => null)
-    const plan   = sub ? sub.plan : "free"
-    const limits = planLimits[plan] || planLimits.free
-    const usage  = await Usage.findOne({ userId }).catch(() => null)
-    const now    = Date.now()
+    let plan     = sub ? sub.plan : "free"
+
+    // Auto-expire ultra-mini
+    if (plan === "ultra-mini" && sub && sub.ultraMiniExpiry) {
+      if (new Date() > new Date(sub.ultraMiniExpiry)) {
+        plan = sub.previousPlan || "free"
+      }
+    }
+    // Auto-expire monthly plans
+    if (sub && sub.endDate && plan !== "free" && plan !== "ultra-mini") {
+      if (new Date() > new Date(sub.endDate)) plan = "free"
+    }
+
+    const limits  = planLimits[plan] || planLimits.free
+    const usage   = await Usage.findOne({ userId }).catch(() => null)
+    const now     = Date.now()
     const resetMs = limits.resetHours * 60 * 60 * 1000
     let used = 0
     if (usage) {
-      // Reset if window expired
       const expired = resetMs > 0 && (now - new Date(usage.windowStart).getTime()) > resetMs
       used = expired ? 0 : (usage.messagesUsed || 0)
     }
-    console.log("[USAGE] userId:", userId, "plan:", plan, "messagesUsed:", used, "limit:", limits.messages)
+    console.log("[USAGE] userId:", userId, "plan:", plan, "used:", used, "limit:", limits.messages)
     res.json({ used, limit: limits.messages, plan })
   } catch(err) {
     console.error("[USAGE ERROR]", err.message)
@@ -1444,8 +1482,18 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     if (!message && !file) return res.status(400).json({ error: "No message or file" })
 
     const sub = await Subscription.findOne({ userId, active: true }).catch(() => null)
-    const userPlan = sub ? sub.plan : "free"
+    let userPlan = sub ? sub.plan : "free"
+
+    // Auto-expire ultra-mini in chat route too
+    if (userPlan === "ultra-mini" && sub && sub.ultraMiniExpiry) {
+      if (new Date() > new Date(sub.ultraMiniExpiry)) {
+        userPlan = sub.previousPlan || "free"
+        Subscription.findOneAndUpdate({ userId }, { plan: userPlan, extraMessages: 0 }).catch(() => {})
+      }
+    }
+
     const userIsAdmin = isAdmin(req)
+    if (userIsAdmin) userPlan = "ultramax"   // admin bypasses all limits
 
     // ── ABUSE CHECKS (run before any DB/AI work) ─────────────────────────────
     if (!userIsAdmin) {
@@ -3134,6 +3182,12 @@ function isAdmin(req) {
   return req.user && (ADMIN_EMAILS.includes(req.user.email) || req.user.isAdmin)
 }
 
+// Admin gets unlimited plan access — used in usage and model checks
+function getEffectivePlan(req, subPlan) {
+  if (isAdmin(req)) return "ultramax"   // admin = unlimited everything
+  return subPlan || "free"
+}
+
 // Plan prices for revenue calculation
 const PLAN_PRICES = { free:0, starter:29, standard:149, plus:299, pro:499, ultimate:799, "ultra-mini":10, mini:199, max:1999, ultramax:0, basic:499, enterprise:0 }
 
@@ -3854,6 +3908,25 @@ app.get("/feedback/stats", authMiddleware, async (req, res) => {
     res.status(500).json({ error: sanitizeError(err).userMsg })
   }
 })
+
+// ── STARTUP: Fix stale ultra-mini subscriptions ────────────────────────────
+// Runs once on server start — reverts expired ultra-mini to previousPlan
+;(async () => {
+  try {
+    await new Promise(r => setTimeout(r, 5000)) // wait for DB connection
+    const now = new Date()
+    const expired = await Subscription.find({
+      plan: "ultra-mini",
+      ultraMiniExpiry: { $lt: now }
+    }).catch(() => [])
+    for (const sub of expired) {
+      const revert = sub.previousPlan || "free"
+      await Subscription.findByIdAndUpdate(sub._id, { plan: revert, extraMessages: 0 })
+      console.log("[STARTUP] Reverted expired ultra-mini for userId:", sub.userId, "→", revert)
+    }
+    if (expired.length > 0) console.log("[STARTUP] Fixed", expired.length, "expired ultra-mini subscriptions")
+  } catch(e) { console.log("[STARTUP] ultra-mini cleanup error:", e.message) }
+})()
 
 // KEEP ALIVE - ping self every 5 minutes to prevent Render sleep
 const SELF_URL = process.env.RAILWAY_PUBLIC_DOMAIN ? "https://" + process.env.RAILWAY_PUBLIC_DOMAIN : process.env.RENDER_EXTERNAL_URL || "https://datta-ai-server.onrender.com"
