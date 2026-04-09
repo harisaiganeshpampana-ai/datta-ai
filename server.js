@@ -1953,7 +1953,11 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     console.log("[IMAGE DEBUG] file:", !!file, "mimetype:", file?.mimetype, "isImageFile:", isImageFile, "message:", (message||"").slice(0,40))
     let userContent
     if (isImageFile) {
-      userContent = [{ type: "text", text: (message || "Analyze this image.") + searchContext }, { type: "image_url", image_url: { url: "data:" + file.mimetype + ";base64," + file.buffer.toString("base64") } }]
+      var imgMsg = message || "Analyze this image and guide me step by step on what to do."
+      var imgPromptPrefix = imgMsg.toLowerCase().includes("explain") || imgMsg.toLowerCase().includes("what") || imgMsg.toLowerCase().includes("analyze")
+        ? imgMsg
+        : imgMsg + " (Please: 1. Describe what you see briefly. 2. Identify the problem or goal. 3. Give exact numbered steps.)"
+      userContent = [{ type: "text", text: imgPromptPrefix + searchContext }, { type: "image_url", image_url: { url: "data:" + file.mimetype + ";base64," + file.buffer.toString("base64") } }]
       console.log("[IMAGE DEBUG] userContent built as array, parts:", userContent.length)
     } else if (file) {
       try {
@@ -2104,14 +2108,25 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Hard rule injected into EVERY system prompt regardless of model
     // Add emotional support instruction if user is struggling
     var emotionalNote = isEmotionalStruggle ? "\n\nEMOTIONAL SUPPORT MODE: The user is going through a hard time emotionally. Rules:\n- Acknowledge their feelings FIRST before anything else — 1-2 warm sentences\n- Never dismiss, minimize, or immediately jump to solutions\n- Speak like a caring friend, not a textbook\n- Ask one gentle question to understand more\n- If it feels serious, gently mention that talking to someone they trust can help\n- Keep tone warm, human, non-judgmental throughout" : ""
-    var hardRules = "\n\nHARD RULES (override everything else):\n- NEVER output a Python/code block for non-coding questions like payments, accounts, or app publishing\n- NEVER give generic advice like 'contact support' or 'update payment method' without specific steps\n- If the question is about a real-world problem (payment, account, app store), give exact numbered steps with real cause diagnosis\n- REASONING PROBLEMS: Never stop at first answer. Always check for more possibilities. List ALL valid cases (Case 1, Case 2...). Use structure: Final Answer → Reasoning → Case 1 → Case 2 → Conclusion\n- NEVER use vague words: near / maybe / somewhere / probably. Be precise or say you don't know.\n- NEVER mention ChatGPT, Claude, Gemini, GPT-4, or any other AI product by name in your response. You are " + ainame + " — refer only to yourself.\n- NEVER compare yourself to other AIs or say phrases like 'unlike ChatGPT' or 'compared to GPT'." + emotionalNote
+    var stepByStepNote = isStepByStep ? "\n\nSTEP-BY-STEP MODE ACTIVE: User needs guidance, not explanation. Rules: (1) Give numbered steps — Step 1, Step 2, Step 3. (2) Each step = ONE action only. (3) Use exact button/menu names. (4) Say WHERE on screen. (5) End with: Done? Tell me what you see. (6) NEVER say 'you can try' or 'maybe' — give ONE clear path. (7) If error: diagnose in 1 line, then fix steps." : ""
+    var hardRules = "\n\nHARD RULES (override everything else):\n- NEVER output a Python/code block for non-coding questions like payments, accounts, or app publishing\n- NEVER give generic advice like 'contact support' or 'update payment method' without specific steps\n- If the question is about a real-world problem (payment, account, app store), give exact numbered steps with real cause diagnosis\n- REASONING PROBLEMS: Never stop at first answer. Always check for more possibilities. List ALL valid cases (Case 1, Case 2...). Use structure: Final Answer → Reasoning → Case 1 → Case 2 → Conclusion\n- NEVER use vague words: near / maybe / somewhere / probably. Be precise or say you don't know.\n- NEVER mention ChatGPT, Claude, Gemini, GPT-4, or any other AI product by name in your response. You are " + ainame + " — refer only to yourself.\n- NEVER compare yourself to other AIs or say phrases like 'unlike ChatGPT' or 'compared to GPT'." + emotionalNote + stepByStepNote
 
     // Detect if code/build task needs max tokens
     var msgLower = message.toLowerCase()
     // Detect if user is ASKING A QUESTION about tech vs ASKING TO BUILD/WRITE something
     // Detect pure explanation queries (theory questions)
     // BUT exclude problem-solving queries — "what should I do", "why is it failing", "how do I fix"
-    var isProblemSolving = ["what should","how do i fix","how to fix","not working","failed","error","issue","problem","can't","cannot","won't","doesn't work","payment failed","showing error","how do i","how can i","steps to","guide me","help me"].some(k => msgLower.includes(k))
+    var isProblemSolving = [
+      "what should","how do i fix","how to fix","not working","failed","error","issue","problem",
+      "can't","cannot","won't","doesn't work","payment failed","showing error",
+      "how do i","how can i","steps to","guide me","help me",
+      "what next","what to do","next step","what should i do","what do i do",
+      "how to start","where to start","where do i","stuck","confused",
+      "not sure","don't know how","don't understand","please help",
+      "show me how","teach me","walk me through","guide me through"
+    ].some(k => msgLower.includes(k))
+    // Images ALWAYS trigger step-by-step mode
+    var isStepByStep = isProblemSolving || isImageFile
     var isNarrativeRequest = ["chapter","story","charitra","katha","purana","granth","scripture","mahabharata","ramayana","gita","quran","bible","guru","stotra","shloka","narrate","tell me the story","explain the story","summarize chapter","write a story","once upon"].some(k => msgLower.includes(k))
     // Current affairs / GK / History topics — need detailed responses
     var isCurrentAffairs = ["current affairs","current affair","today's news","this week","this month","this year","recently","latest development","recently happened","what happened in","2024","2025","2026","who won","election","government","policy","scheme","budget","parliament","lok sabha","rajya sabha","supreme court","high court","modi","president","prime minister","chief minister","governor","rbi","sebi","upsc","ssc","ias","ips","exam pattern","syllabus"].some(k => msgLower.includes(k))
@@ -2256,7 +2271,28 @@ When user faces an error:
 - If current method won't work, say: "Stop using this — switch to X instead"
 
 NEVER say you are Claude, GPT, or any other AI. You are ${ainame}.`,
-      "meta-llama/llama-4-scout-17b-16e-instruct":     `Your name is ${ainame}. You are Datta Vision - image analysis expert. Analyze images in extreme detail. NEVER say you are any other AI.`,
+      "meta-llama/llama-4-scout-17b-16e-instruct": `Your name is ${ainame}. You are Datta Vision — an expert at reading screenshots, error messages, and UI screens, and guiding users step-by-step.
+
+WHEN USER UPLOADS AN IMAGE:
+1. First: Briefly describe what you see (1-2 sentences — screen name, state, what's visible)
+2. Then: Identify what the user is trying to do or what problem exists
+3. Then: Give EXACT numbered steps to fix or proceed
+
+STEP FORMAT (use for every response):
+Step 1: [Exact action — which button, where on screen, what to type]
+Step 2: [Next exact action]
+Step 3: [And so on...]
+
+RULES:
+- Say exactly WHICH button to click and WHERE it is (top-left, bottom, center)
+- Say exactly WHAT to type if typing is needed
+- Assume the user is a complete beginner — no assumptions
+- One action per step only — never combine two actions in one step
+- After steps, ask: "Done? Tell me what you see and I'll guide you to the next step."
+- NEVER say "configure", "set up", "manage" without explaining exactly how
+- NEVER give vague steps like "go to settings" — always say exactly which settings
+
+NEVER say you are any other AI. You are ${ainame}.`,
       "persona-lawyer":  `Your name is ${ainame}. You are in Lawyer mode. Provide general legal information. Always advise consulting a licensed lawyer. NEVER say you are any other AI.`,
       "persona-teacher": `Your name is ${ainame}. You are in Teacher mode. Explain concepts simply with examples. Be patient and encouraging. NEVER say you are any other AI.`,
       "persona-chef":    `Your name is ${ainame}. You are in Chef mode. Help with recipes, cooking tips, meal planning. Be enthusiastic about food. NEVER say you are any other AI.`,
@@ -2534,7 +2570,31 @@ Format:
 
 NEVER repeat unchanged code. Only show what is new or different.
 `}
-`) : (isDeepKnowledge ? `
+`) : (isStepByStep && !isDeepKnowledge && !isNarrativeRequest ? `
+
+You are a step-by-step mentor guiding a beginner. The user needs EXACT actions, not explanations.
+
+STRICT FORMAT — every response MUST follow this:
+First line: What you understand the user is trying to do (1 sentence)
+Then numbered steps:
+
+Step 1: [Exact action — button name, location on screen, what to type]
+Step 2: [Next exact action]
+Step 3: [Continue...]
+
+After steps: "Done? Tell me what you see and I'll guide you to the next step."
+
+CRITICAL RULES:
+- ONE action per step — never combine
+- Use exact button/menu names in quotes: click "Save", click "New File"
+- Say WHERE on screen: "top-right corner", "bottom of the page", "left sidebar"
+- Assume complete beginner — explain even obvious things
+- NEVER say "configure", "navigate to", "set up" without exact sub-steps
+- NEVER say "you can try" or "maybe" — give ONE clear path only
+- If it is an error: first say what caused it in 1 line, then give fix steps
+- If user uploaded a screenshot: describe what you see first, then guide them
+
+` : isDeepKnowledge ? `
 
 You are answering a Current Affairs / GK / History question. The user wants COMPLETE, EXAM-READY information.
 
