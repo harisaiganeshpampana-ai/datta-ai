@@ -158,36 +158,62 @@ async function callGemini(messages, systemPrompt, maxTokens, res) {
   return full
 }
 
-;(async () => {
+// ── MongoDB connection with retry — never crash on timeout ──
+async function runMigration() {
   try {
-    await mongoose.connect(process.env.MONGO_URI)
-    console.log("MongoDB connected")
-    // Startup migration: fix all stored array content -> plain strings
-    try {
-      const badChats = await Chat.find({ 'messages.content': { $type: 4 } }).limit(1000).lean()
-      let fixCount = 0
-      for (const chat of badChats) {
-        const newMsgs = chat.messages.map(function(m) {
-          if (!Array.isArray(m.content)) return m
-          var txt = m.content
-            .filter(function(p) { return p && p.type === 'text' && p.text })
-            .map(function(p) { return String(p.text) })
-            .join(' ').trim()
-          return { role: m.role, content: txt || '[image]' }
-        })
-        await Chat.updateOne({ _id: chat._id }, { $set: { messages: newMsgs } })
-        fixCount++
-      }
-      if (fixCount > 0) console.log('[MIGRATION] Cleaned', fixCount, 'chats with array message content')
-      else console.log('[MIGRATION] No array content found - all clean')
-    } catch(migErr) { console.log('[MIGRATION] Error:', migErr.message) }
+    const badChats = await Chat.find({ 'messages.content': { $type: 4 } }).limit(1000).lean()
+    let fixCount = 0
+    for (const chat of badChats) {
+      const newMsgs = chat.messages.map(function(m) {
+        if (!Array.isArray(m.content)) return m
+        var txt = m.content
+          .filter(function(p) { return p && p.type === 'text' && p.text })
+          .map(function(p) { return String(p.text) })
+          .join(' ').trim()
+        return { role: m.role, content: txt || '[image]' }
+      })
+      await Chat.updateOne({ _id: chat._id }, { $set: { messages: newMsgs } })
+      fixCount++
+    }
+    if (fixCount > 0) console.log('[MIGRATION] Cleaned', fixCount, 'chats')
+    else console.log('[MIGRATION] No array content found - all clean')
+  } catch(migErr) { console.log('[MIGRATION] Error:', migErr.message) }
+}
+
+async function connectMongo(attempt) {
+  attempt = attempt || 1
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 15000,  // 15s timeout per attempt
+      connectTimeoutMS: 15000,
+      socketTimeoutMS: 30000,
+    })
+    console.log("MongoDB connected (attempt " + attempt + ")")
+    await runMigration()
   } catch(e) {
-    // Async DB errors caught here — not possible to catch with sync try/catch
-    // because mongoose.connect() returns a Promise
-    console.error("DB connection error:", e.message)
-    process.exit(1)  // Exit if DB fails — app cannot function without it
+    console.error("DB connection error (attempt " + attempt + "):", e.message)
+    if (attempt < 5) {
+      // Retry with exponential backoff: 3s, 6s, 12s, 24s
+      var delay = Math.min(3000 * Math.pow(2, attempt - 1), 30000)
+      console.log("Retrying MongoDB in", delay/1000, "seconds...")
+      setTimeout(function() { connectMongo(attempt + 1) }, delay)
+    } else {
+      console.error("MongoDB failed after 5 attempts — server will run without DB")
+      // DO NOT process.exit — keep server alive, Render will not restart
+    }
   }
-})()
+}
+
+// Also reconnect if connection drops during runtime
+mongoose.connection.on('disconnected', function() {
+  console.warn('[MONGO] Disconnected — attempting reconnect...')
+  setTimeout(function() { connectMongo(1) }, 5000)
+})
+mongoose.connection.on('error', function(err) {
+  console.error('[MONGO] Connection error:', err.message)
+})
+
+connectMongo(1)
 
 // Safe string extractor — prevents [object Object] in AI responses
 function safeStr(val) {
