@@ -124,7 +124,7 @@ async function callGemini(messages, systemPrompt, maxTokens, res) {
     }
   }
 
-  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=" + apiKey
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:streamGenerateContent?alt=sse&key=" + apiKey
 
   const response = await fetch(url, {
     method: "POST",
@@ -224,7 +224,7 @@ connectMongo(1)
 async function solveWithGemini(imageBase64, mimeType, systemPrompt, userPrompt) {
   if (!geminiClient) throw new Error("Gemini not configured")
   // Try gemini-1.5-flash first (available to all users), then fallbacks
-  const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-1.5-flash-8b"]
+  const modelsToTry = ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest"]
   let lastErr = null
   for (const modelName of modelsToTry) {
     try {
@@ -2886,9 +2886,13 @@ IMPORTANT: Answer like a human, NOT like a search engine.
       ? finalUserContent   // vision model: keep array
       : safeStr(finalUserContent) || "Hello"
 
+    // For image requests — send ONLY system + current message
+    // History wastes tokens and confuses vision models
+    var effectiveHistory = isImageFile ? [] : history.map(h => normalizeMsg(h))
+
     var groqMessages = [
       { role: "system", content: safeStr(systemWithMemory) },
-      ...history.map(h => normalizeMsg(h)),
+      ...effectiveHistory,
       { role: "user", content: userMsg_final }
     ]
 
