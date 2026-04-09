@@ -115,8 +115,12 @@ async function callGemini(messages, systemPrompt, maxTokens, res) {
     geminiContents.push({ role: "user", parts: [{ text: "Continue" }] })
   }
 
+  // Prepend system prompt to first user message (system_instruction not supported in v1beta for all models)
+  if (geminiContents.length > 0 && geminiContents[0].role === "user") {
+    geminiContents[0].parts.unshift({ text: systemPrompt + "\n\n" })
+  }
+
   const body = {
-    system_instruction: { parts: [{ text: systemPrompt }] },
     contents: geminiContents,
     generationConfig: {
       maxOutputTokens: maxTokens,
@@ -124,7 +128,7 @@ async function callGemini(messages, systemPrompt, maxTokens, res) {
     }
   }
 
-  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:streamGenerateContent?alt=sse&key=" + apiKey
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=" + apiKey
 
   const response = await fetch(url, {
     method: "POST",
@@ -225,25 +229,22 @@ async function solveWithGemini(imageBase64, mimeType, systemPrompt, userPrompt) 
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) throw new Error("Gemini not configured")
 
-  // Use direct REST API — more reliable than SDK for model name issues
-  // Try multiple model names in order
   const modelsToTry = [
     "gemini-1.5-flash",
     "gemini-1.5-pro",
-    "gemini-1.0-pro-vision-latest",
-    "gemini-pro-vision"
+    "gemini-1.0-pro-vision-latest"
   ]
 
   for (const modelName of modelsToTry) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${apiKey}`
+      const url = "https://generativelanguage.googleapis.com/v1/models/" + modelName + ":generateContent?key=" + apiKey
+      // Combine system prompt into user message — v1 API doesn't support system_instruction
+      const combinedPrompt = systemPrompt + "\n\n" + userPrompt
       const body = {
-        system_instruction: { parts: [{ text: systemPrompt }] },
         contents: [{
-          role: "user",
           parts: [
             { inline_data: { mime_type: mimeType, data: imageBase64 } },
-            { text: userPrompt }
+            { text: combinedPrompt }
           ]
         }],
         generationConfig: {
@@ -258,8 +259,8 @@ async function solveWithGemini(imageBase64, mimeType, systemPrompt, userPrompt) 
       })
       if (!resp.ok) {
         const errText = await resp.text()
-        console.warn("[GEMINI] Model", modelName, "HTTP", resp.status, errText.slice(0,120))
-        continue  // try next model
+        console.warn("[GEMINI] Model", modelName, "HTTP", resp.status, errText.slice(0, 150))
+        continue
       }
       const data = await resp.json()
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || ""
@@ -268,7 +269,7 @@ async function solveWithGemini(imageBase64, mimeType, systemPrompt, userPrompt) 
         return text
       }
     } catch(e) {
-      console.warn("[GEMINI] Model", modelName, "error:", e.message?.slice(0,100))
+      console.warn("[GEMINI] Model", modelName, "error:", e.message?.slice(0, 100))
     }
   }
   throw new Error("All Gemini models failed")
