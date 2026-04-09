@@ -92,6 +92,7 @@ passport.deserializeUser((u, done) => done(null, u))
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "missing" })
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null
 const geminiClient = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null
+// Available Gemini models (2025): gemini-1.5-flash, gemini-1.5-pro, gemini-1.5-flash-8b
 
 // ── GEMINI API (Google — free, high quality) ──────────────────────────────
 async function callGemini(messages, systemPrompt, maxTokens, res) {
@@ -123,7 +124,7 @@ async function callGemini(messages, systemPrompt, maxTokens, res) {
     }
   }
 
-  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=" + apiKey
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=" + apiKey
 
   const response = await fetch(url, {
     method: "POST",
@@ -222,8 +223,8 @@ connectMongo(1)
 // ── Gemini 2.0 Flash — image solver (exam papers + general images) ──────────────
 async function solveWithGemini(imageBase64, mimeType, systemPrompt, userPrompt) {
   if (!geminiClient) throw new Error("Gemini not configured")
-  // Try gemini-2.0-flash first, fall back to 1.5-flash if quota exceeded
-  const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b"]
+  // Try gemini-1.5-flash first (available to all users), then fallbacks
+  const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-1.5-flash-8b"]
   let lastErr = null
   for (const modelName of modelsToTry) {
     try {
@@ -2288,7 +2289,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       resolvedModel = "llama-3.3-70b-versatile"
     }
     // Now set final model AFTER any auto-switch
-    let model = isImageFile ? (isQuestionPaper ? "meta-llama/llama-4-maverick-17b-128e-instruct-fp8-kv" : "meta-llama/llama-4-scout-17b-16e-instruct") : resolvedModel
+    let model = isImageFile ? "meta-llama/llama-4-scout-17b-16e-instruct" : resolvedModel
     var isLargeTask = [
       "portfolio","full website","complete website","business plan",
       "full app","complete app","all sections","food delivery","delivery app",
@@ -2854,7 +2855,7 @@ IMPORTANT: Answer like a human, NOT like a search engine.
 - Never say "according to", "based on search", "search results show"` : "") + langNote + styleNote + hardRules
 
     // Build final user content — MUST be string for text models, array only for vision
-    var isVisionModel = (model === "meta-llama/llama-4-scout-17b-16e-instruct" || model === "meta-llama/llama-4-maverick-17b-128e-instruct-fp8-kv")
+    var isVisionModel = (model === "meta-llama/llama-4-scout-17b-16e-instruct")
     var finalUserContent
     if (isVisionModel && Array.isArray(userContent)) {
       // Vision model — keep array format
@@ -2990,14 +2991,9 @@ IMPORTANT: Answer like a human, NOT like a search engine.
     }
 
     var groqAttempts = isImageFile
-      ? isQuestionPaper
-        ? [
-            { model: "meta-llama/llama-4-maverick-17b-128e-instruct-fp8-kv", tokens: maxTok },
-            { model: "meta-llama/llama-4-scout-17b-16e-instruct",     tokens: maxTok }
-          ]
-        : [
-            { model: "meta-llama/llama-4-scout-17b-16e-instruct", tokens: maxTok }
-          ]
+      ? [
+          { model: "meta-llama/llama-4-scout-17b-16e-instruct", tokens: maxTok }
+        ]
       // Structured/detailed/code/large → always use 70b (more capable, completes sections)
       : (isDeepKnowledge || isCodeTask || isLargeTask || isExplainQuestion || isStructuredTopic)
         ? [
