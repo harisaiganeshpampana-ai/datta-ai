@@ -2157,7 +2157,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     
     // Force search for news/war/current events even if shouldSearch is false
     var isNewsQuery = ["war","news","latest","attack","conflict","killed","died","today","happened","current","update"].some(k => (message||"").toLowerCase().includes(k))
-    if ((shouldSearch || isNewsQuery) && process.env.TAVILY_API_KEY) {
+    // Never search for code/build requests — wastes tokens and causes bad results
+    var isCodeRequest = isCodeTask || isLargeTask || ["build","create","make","write code","html","css","javascript","python","app","website"].some(k => (message||"").toLowerCase().includes(k))
+    if ((shouldSearch || isNewsQuery) && !isCodeRequest && process.env.TAVILY_API_KEY) {
       let searchQuery = message
 
       // For IPL/cricket queries — always search in English regardless of input language
@@ -2339,7 +2341,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "datta-code",
       "datta-think",
       "llama-3.3-70b-versatile",
-      "deepseek-r1-distill-llama-70b"
+      "llama-3.3-70b-versatile"
     ]
     let chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.1-8b-instant"
     var modelKey = req.body.modelKey || "d21" // d21, d42, d48, d54
@@ -2368,10 +2370,10 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "persona-interview":"llama-3.1-8b-instant",
       "persona-business": "llama-3.3-70b-versatile",
       // Datta Code — DeepSeek R1 (best free coding model, shows reasoning)
-      "datta-code":                    "deepseek-r1-distill-llama-70b",
+      "datta-code":                    "llama-3.3-70b-versatile",
       // Datta Think — DeepSeek R1 (shows reasoning steps)
-      "datta-think":                   "deepseek-r1-distill-llama-70b",
-      "deepseek-r1-distill-llama-70b": "deepseek-r1-distill-llama-70b"
+      "datta-think":                   "llama-3.3-70b-versatile",
+      "llama-3.3-70b-versatile": "llama-3.3-70b-versatile"
     }
     // If frontend sends full Groq model ID directly, use as-is
     // If it sends a short name, map it
@@ -2482,8 +2484,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }
 
     // Auto-upgrade to Qwen Coder for code tasks when on standard models
-    var isDattaCode = (resolvedModel === "deepseek-r1-distill-llama-70b" && (chosenModel === "datta-code" || modelKey === "dcode"))
-    var isDattaThink = (resolvedModel === "deepseek-r1-distill-llama-70b")
+    var isDattaCode = (resolvedModel === "llama-3.3-70b-versatile" && (chosenModel === "datta-code" || modelKey === "dcode"))
+    var isDattaThink = (resolvedModel === "llama-3.3-70b-versatile")
     // For other non-8b models doing code — use 70b
     var nonCodingModels = ["llama-3.3-70b-versatile"]
     if (isCodeTask && !isImageFile && nonCodingModels.includes(resolvedModel) && !chosenModel.startsWith("persona-")) {
@@ -2648,7 +2650,7 @@ NEVER say you are Claude, GPT, or any other AI. You are ${ainame}.`,
       "persona-business": `Your name is ${ainame}. You are in Business Advisor mode. Help with business ideas, startups, marketing, finance, GST, business plans. Give practical Indian business advice. NEVER say you are any other AI.`,
 
       // ── DATTA CODE ────────────────────────────────────────────────────────
-      "deepseek-r1-distill-llama-70b": `Your name is ${ainame}. You are Datta Code Agent — a world-class full-stack developer and UI designer.
+      "datta-code": `Your name is ${ainame}. You are Datta Code Agent — a world-class full-stack developer and UI designer.
 
 WHEN BUILDING APPS OR WEBSITES — MANDATORY QUALITY STANDARDS:
 1. Always use modern, beautiful design — dark themes with proper color variables, smooth animations, clean typography
@@ -2691,7 +2693,7 @@ When reviewing code: list ALL issues, then give COMPLETE fixed code.
 When building: write ALL files completely, never truncate.
 When explaining: go through code line by line if needed.`,
       // ── DATTA THINK ───────────────────────────────────────────────────────
-      "deepseek-r1-distill-llama-70b": `Your name is ${ainame}. You are Datta Think — an advanced reasoning AI that thinks step by step before answering.
+      "datta-think": `Your name is ${ainame}. You are Datta Think — an advanced reasoning AI that thinks step by step before answering.
 
 You excel at:
 - Complex coding problems and debugging
@@ -2712,7 +2714,11 @@ NEVER say you are Claude, GPT, or any other AI. You are ${ainame} — Datta Thin
     }
 
     // Use chosenModel for persona lookup (before model mapping)
-    var persona = modelPersonas[chosenModel] || modelPersonas["llama-3.3-70b-versatile"]
+    // For dcode/dthink — use modelKey to pick the right persona
+    var _personaKey = chosenModel
+    if (modelKey === "dcode") _personaKey = "datta-code"
+    if (modelKey === "dthink") _personaKey = "datta-think"
+    var persona = modelPersonas[_personaKey] || modelPersonas[chosenModel] || modelPersonas["llama-3.3-70b-versatile"]
 
     // Vision model — build prompt dynamically based on isQuestionPaper
     if (persona === "__VISION_DYNAMIC__" || isImageFile) {
@@ -3484,12 +3490,12 @@ CRITICAL RULES FOR USING SEARCH RESULTS:
       // Datta Code → Qwen Coder (best coding model)
       : isDattaCode
         ? [
-            { model: "deepseek-r1-distill-llama-70b", tokens: maxTok },
+            { model: "llama-3.3-70b-versatile", tokens: maxTok },
             { model: "llama-3.3-70b-versatile",       tokens: maxTok }
           ]
       // Datta Think → DeepSeek R1 (reasoning model)
       : isDattaThink
-        ? [{ model: "deepseek-r1-distill-llama-70b", tokens: maxTok }]
+        ? [{ model: "llama-3.3-70b-versatile", tokens: maxTok }]
       // Structured/detailed/code/large → 70b
       : (isDeepKnowledge || isCodeTask || isLargeTask || isExplainQuestion || isStructuredTopic)
         ? [
