@@ -2338,7 +2338,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       // Datta Code models
       "datta-code",
       "datta-think",
-      "qwen-2.5-coder-32b",
+      "qwen-qwq-32b",
       "deepseek-r1-distill-llama-70b"
     ]
     let chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.1-8b-instant"
@@ -2368,8 +2368,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "persona-interview":"llama-3.1-8b-instant",
       "persona-business": "llama-3.3-70b-versatile",
       // Datta Code — Qwen 2.5 Coder (best free coding model)
-      "datta-code":                    "qwen-2.5-coder-32b",
-      "qwen-2.5-coder-32b":   "qwen-2.5-coder-32b",
+      "datta-code":                    "qwen-qwq-32b",
+      "qwen-qwq-32b":   "qwen-qwq-32b",
       // Datta Think — DeepSeek R1 (shows reasoning steps)
       "datta-think":                   "deepseek-r1-distill-llama-70b",
       "deepseek-r1-distill-llama-70b": "deepseek-r1-distill-llama-70b"
@@ -2483,7 +2483,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }
 
     // Auto-upgrade to Qwen Coder for code tasks when on standard models
-    var isDattaCode = (resolvedModel === "qwen-2.5-coder-32b")
+    var isDattaCode = (resolvedModel === "qwen-qwq-32b")
     var isDattaThink = (resolvedModel === "deepseek-r1-distill-llama-70b")
     // For other non-8b models doing code — use 70b
     var nonCodingModels = ["llama-3.3-70b-versatile"]
@@ -2649,7 +2649,7 @@ NEVER say you are Claude, GPT, or any other AI. You are ${ainame}.`,
       "persona-business": `Your name is ${ainame}. You are in Business Advisor mode. Help with business ideas, startups, marketing, finance, GST, business plans. Give practical Indian business advice. NEVER say you are any other AI.`,
 
       // ── DATTA CODE ────────────────────────────────────────────────────────
-      "qwen-2.5-coder-32b": `Your name is ${ainame}. You are Datta Code Agent — the most powerful coding assistant built for Indian developers.
+      "qwen-qwq-32b": `Your name is ${ainame}. You are Datta Code Agent — the most powerful coding assistant built for Indian developers.
 
 EXPERTISE:
 - All languages: JavaScript, Python, Java, C++, Kotlin, Swift, Go, Rust, PHP
@@ -3353,31 +3353,35 @@ CRITICAL RULES FOR USING SEARCH RESULTS:
               console.log("[EXAM] Step 2: Answering with Llama 70b...")
 
               // Step 2: Answer with powerful 70b model
-              const answerSystemPrompt = "You are an expert academic exam answer writer with knowledge of all subjects. " +
-                "Write COMPLETE, DETAILED answers for every single question. " +
-                "RULES:\n" +
-                "1. Answer EVERY question — never skip, never leave blank\n" +
-                "2. 1 mark = 2 full sentences with complete answer\n" +
-                "3. 2 marks = 4-6 sentences covering all key points\n" +
-                "4. 4 marks = 8-10 sentences OR a detailed list of all required points each with explanation\n" +
-                "5. 5+ marks = full comprehensive answer with all sub-points\n" +
-                "6. For 'list N points/types/steps' — write ALL N items with full explanation each\n" +
-                "7. For formulas — write formula + explain every variable + give example\n" +
-                "8. For graphs — describe X axis, Y axis, every curve, every stage, all labeled points\n" +
-                "9. For definitions — give textbook definition + real-world example\n" +
-                "10. NEVER write just a heading — always put full content after every question number\n" +
-                "Format: Use the exact question numbers from the paper. Write clearly and completely."
+              const answerSystemPrompt = "You are an expert academic exam answer writer. " +
+                "Write COMPLETE answers for every question using the EXACT question numbers from the paper.\n\n" +
+                "FORMAT RULES:\n" +
+                "- Start every answer with its question number: '1a.' '1b.' '2.' '3.' '4.' '5.' '6.' '7.'\n" +
+                "- NEVER skip a question number\n" +
+                "- NEVER merge multiple questions into one paragraph without labels\n\n" +
+                "ANSWER RULES BY MARKS:\n" +
+                "1 mark: 2-3 complete sentences. Include definition + one example.\n" +
+                "2 marks: Start with clear definition of EACH term separately, then explain with example.\n" +
+                "4 marks: 6-8 sentences OR numbered list of all required points each with full explanation.\n\n" +
+                "SPECIFIC RULES:\n" +
+                "- Definition question: Give the ACTUAL definition first, THEN the explanation\n" +
+                "- 'Define X and Y': Define X completely, then define Y completely — separately labeled\n" +
+                "- Graph question: Describe X-axis label, Y-axis label, each curve name, each stage\n" +
+                "- 'Three types' or 'Four points': Write ALL of them numbered with explanation each\n" +
+                "- Formula question: Write formula, explain each symbol, give numerical example\n" +
+                "- NEVER start an answer mid-sentence without the question label\n" +
+                "- NEVER write 'The graph shows...' without describing what the axes and curves actually show"
 
-              const answerUserPrompt = "EXAM QUESTIONS (extracted from image):\n\n" +
+              const answerUserPrompt = "Here are the exam questions:\n\n" +
                 extractedQuestions +
                 "\n\n---\n" +
-                "Now write COMPLETE answers for every question above.\n" +
-                "Important:\n" +
-                "- Go through each question one by one\n" +
-                "- Write full answer for each — no shortcuts\n" +
-                "- If a question asks for N points/types/steps, write ALL N with explanation\n" +
-                "- Your answer sheet must be complete enough to score full marks\n\n" +
-                "BEGIN ANSWERS:"
+                "Write answers for every question. Rules:\n" +
+                "1. Label every answer with exact question number (1a, 1b, 2, 3, 4, 5, 6, 7)\n" +
+                "2. For 'Define X and Y' — define X first with full answer, then define Y with full answer\n" +
+                "3. For graph questions — describe axes, curves, stages with their names and what they show\n" +
+                "4. For 'three types' — write all three with name + definition + example each\n" +
+                "5. Never skip a question\n\n" +
+                "START ANSWERS NOW:"
 
               // Use Groq 70b for answering — it's excellent at text
               const groqAnswerResp = await groq.chat.completions.create({
@@ -3464,7 +3468,7 @@ CRITICAL RULES FOR USING SEARCH RESULTS:
       ? [{ model: "meta-llama/llama-4-scout-17b-16e-instruct", tokens: maxTok }]
       // Datta Code → Qwen Coder (best coding model)
       : isDattaCode
-        ? [{ model: "qwen-2.5-coder-32b", tokens: maxTok }]
+        ? [{ model: "qwen-qwq-32b", tokens: maxTok }]
       // Datta Think → DeepSeek R1 (reasoning model)
       : isDattaThink
         ? [{ model: "deepseek-r1-distill-llama-70b", tokens: maxTok }]
