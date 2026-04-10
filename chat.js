@@ -4294,8 +4294,12 @@ window.updateModeIndicator = updateModeIndicator
 
 function getPersonaModel() {
   const persona = localStorage.getItem("datta_persona")
+  const modelKey = localStorage.getItem("datta_model_key") || "d21"
+  // If user explicitly selected a special model, ignore persona
+  if (["dcode","dthink","chitra"].includes(modelKey)) {
+    return localStorage.getItem("datta_model") || "llama-3.1-8b-instant"
+  }
   if (persona && persona !== "none") {
-    // Auto-switch to Datta 1.1 for persona modes
     return "persona-" + persona
   }
   return localStorage.getItem("datta_model") || "llama-3.1-8b-instant"
@@ -4344,6 +4348,9 @@ document.addEventListener("click", function(e) {
 })
 
 function selectInputModel(modelId, key, label) {
+  // Clear persona when user manually selects a model
+  localStorage.removeItem("datta_persona")
+  localStorage.removeItem("datta_persona_label")
   // Update pill text
   const pill = document.getElementById("activeModelName")
   if (pill) pill.textContent = label
