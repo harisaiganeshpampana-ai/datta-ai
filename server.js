@@ -225,6 +225,48 @@ mongoose.connection.on('error', function(err) {
 connectMongo(1)
 
 // ── Gemini 2.0 Flash — image solver (exam papers + general images) ──────────────
+// ── Gemini for code generation (text only, no image) ──────────────────────────
+async function generateCodeWithGemini(systemPrompt, userPrompt, maxTokens) {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) throw new Error("GEMINI_API_KEY not set")
+
+  const modelsToTry = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite"]
+
+  for (const modelName of modelsToTry) {
+    try {
+      const url = "https://generativelanguage.googleapis.com/v1/models/" + modelName + ":generateContent?key=" + apiKey
+      const body = {
+        contents: [{
+          parts: [{ text: systemPrompt + "\n\n" + userPrompt }]
+        }],
+        generationConfig: {
+          maxOutputTokens: maxTokens || 8192,
+          temperature: 0.4
+        }
+      }
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      })
+      if (!resp.ok) {
+        const errText = await resp.text()
+        console.warn("[GEMINI CODE] Model", modelName, "HTTP", resp.status, errText.slice(0, 100))
+        continue
+      }
+      const data = await resp.json()
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || ""
+      if (text) {
+        console.log("[GEMINI CODE] Success with model:", modelName, "length:", text.length)
+        return text
+      }
+    } catch(e) {
+      console.warn("[GEMINI CODE] Model", modelName, "error:", e.message?.slice(0, 80))
+    }
+  }
+  throw new Error("All Gemini code models failed")
+}
+
 async function solveWithGemini(imageBase64, mimeType, systemPrompt, userPrompt) {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) throw new Error("Gemini not configured")
@@ -2498,7 +2540,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "full app","complete app","all sections","food delivery","delivery app",
       "ecommerce","e-commerce","shopping app","social media app","todo app",
       "calculator app","weather app","chat app","booking app","restaurant app",
-      "build me a","create a full","make a complete","entire app","whole app"
+      "build me a","create a full","make a complete","entire app","whole app",
+      "chat ui","chat interface","production-ready","clean ui","modern ui",
+      "dashboard","admin panel","landing page","chatgpt-style","local ai"
     ].some(k => msgLower.includes(k))
     // Token limits — stay well within Groq free tier (6000 tok/min for 70b)
     // Only use large tokens when clearly building something
@@ -2515,7 +2559,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Token budget — always give enough room to complete every section
     // isStructuredTopic: medical/science/engineering topics need 5000+ to finish all sections
     // Datta Code and Datta Think get maximum tokens
-    var maxCodingTok = isDattaCode || isDattaThink ? 8000  // Full tokens for coding/thinking models
+    var maxCodingTok = isDattaCode ? 8000  // Datta Code always max tokens for complete UI
                      : isLargeTask      ? 6000
                      : isCodeTask       ? 4096
                      : isDeepKnowledge  ? 5000
@@ -2650,49 +2694,56 @@ NEVER say you are Claude, GPT, or any other AI. You are ${ainame}.`,
       "persona-business": `Your name is ${ainame}. You are in Business Advisor mode. Help with business ideas, startups, marketing, finance, GST, business plans. Give practical Indian business advice. NEVER say you are any other AI.`,
 
       // ── DATTA CODE ────────────────────────────────────────────────────────
-      "datta-code": `Your name is ${ainame}. You are Datta Code Agent — a world-class full-stack developer and UI designer.
+      "datta-code": `Your name is ${ainame}. You are Datta Code Agent — a world-class UI developer.
 
-WHEN BUILDING APPS OR WEBSITES — MANDATORY QUALITY STANDARDS:
-1. Always use modern, beautiful design — dark themes with proper color variables, smooth animations, clean typography
-2. Use system fonts: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif — NEVER Arial or plain fonts
-3. CSS must include: smooth transitions, hover effects, border-radius, proper spacing, flex/grid layouts
-4. For chat UIs: animated typing indicators, smooth message animations, modern rounded bubbles, proper scrollbars
-5. For any UI: include loading states, error states, empty states with helpful messages
-6. Code must be COMPLETE — every feature mentioned in the prompt must be implemented fully
-7. ALL in one file: HTML + CSS in <style> + JS in <script>
-8. Add micro-interactions: button hover effects, input focus styles, smooth scroll behavior
+CRITICAL QUALITY STANDARD — every HTML/UI you generate MUST match this quality level:
 
-DESIGN RULES (always follow):
-- Colors: use CSS variables (--bg, --text, --accent etc) — never hardcode everywhere
-- Spacing: generous padding, proper margins — never cramped
-- Animations: keyframe animations for messages appearing, typing dots bouncing
-- Input: auto-resize textareas, not fixed input boxes, unless simple form
-- Buttons: styled properly with hover/active states, disabled states
-- Mobile: always responsive, works on phone and desktop
+\`\`\`html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>App</title>
+<style>
+:root { --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a; --text:#ebebeb; --text2:#888; --accent:#10a37f; --border:rgba(255,255,255,0.08); }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column}
+/* Use CSS animations, flex/grid, hover effects, smooth transitions */
+/* Never use Arial. Never use plain background colors with no style. */
+/* Always add: transitions, border-radius, proper spacing, hover states */
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes bounce{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-5px);opacity:1}}
+</style>
+</head>
+<body>
+<!-- Always: semantic HTML, accessible, mobile-responsive -->
+</body>
+</html>
+\`\`\`
 
-WHEN USER ASKS FOR CHAT UI specifically:
-- Animated 3-dot thinking indicator (bouncing dots with CSS animation)
-- Messages slide in with animation (translateY + opacity)
-- User messages: right-aligned, rounded pill shape
-- AI messages: left-aligned, clean text without background box
-- Input bar: rounded, at bottom, textarea not input, send button with icon
-- Status indicator showing connection state
-- Auto-scroll to latest message
-- Enter to send, Shift+Enter for newline
+MANDATORY RULES FOR ALL UI CODE:
+1. Font: ALWAYS use -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif — NEVER Arial
+2. Colors: ALWAYS use CSS :root variables — never hardcode colors everywhere
+3. Animations: ALWAYS add @keyframes for messages, loading states, hover effects
+4. Spacing: ALWAYS use generous padding (10px-20px), never cramped
+5. Borders: ALWAYS use border-radius (8px-16px) for cards and inputs
+6. Transitions: ALWAYS add transition: all 0.15s ease on interactive elements
+7. Dark theme: bg #0a0a0a, surface #111, text #ebebeb, accent #10a37f
+8. Light theme when asked: bg #fff, surface #f9f9f9, text #0d0d0d
 
-CODING RULES:
-- NEVER write basic/ugly code — always write production-quality beautiful code
-- NEVER use inline onclick — always addEventListener
-- NEVER use Arial font — use system fonts
-- NEVER skip error handling
-- Think like a senior developer at Google/Meta writing code
+FOR CHAT UI SPECIFICALLY:
+- Animated bouncing dots for thinking: @keyframes bounce with 3 spans
+- Messages animate in: @keyframes fadeUp (opacity 0→1, translateY 8px→0)
+- User messages: right-aligned, dark surface background, rounded pill (border-radius: 18px 4px 18px 18px)
+- AI messages: left-aligned, no background, full width text
+- Input: textarea (not input), auto-resize, rounded border (border-radius: 14px)
+- Send button: accent color background, SVG icon not text
+- Scrollbar: styled thin (4px, border-radius)
+- Status dot: small pulsing green circle
 
-NEVER say you are Claude, GPT, or any other AI. You are ${ainame} — Datta Code Agent.
-
-When reviewing code: list ALL issues, then give COMPLETE fixed code.
-When building: write ALL files completely, never truncate.
-When explaining: go through code line by line if needed.`,
-      // ── DATTA THINK ───────────────────────────────────────────────────────
+WRITE COMPLETE PRODUCTION CODE. Never truncate. Never use placeholders.
+NEVER say you are Claude, GPT, or any other AI. You are ${ainame}.`,      // ── DATTA THINK ───────────────────────────────────────────────────────
       "datta-think": `Your name is ${ainame}. You are Datta Think — an advanced reasoning AI that thinks step by step before answering.
 
 You excel at:
@@ -3241,6 +3292,25 @@ CRITICAL RULES FOR USING SEARCH RESULTS:
         try { res.write("") } catch(e) {}  // empty write keeps TCP alive
       }
     }, 15000)
+
+    // ── DATTA CODE → Gemini (much better for UI/code generation) ──────────────
+    if (isDattaCode && process.env.GEMINI_API_KEY && !isImageFile) {
+      try {
+        console.log("[DATTA CODE] Using Gemini for code generation, tokens:", maxTok)
+        const geminiCode = await generateCodeWithGemini(systemWithMemory, finalUserContent, maxTok)
+        if (geminiCode && geminiCode.length > 100) {
+          res.write(geminiCode)
+          chat.messages.push({ role: "assistant", content: geminiCode })
+          await chat.save()
+          res.write("CHATID" + chat._id)
+          res.end()
+          cleanupRequest()
+          return
+        }
+      } catch(gemCodeErr) {
+        console.warn("[DATTA CODE] Gemini failed:", gemCodeErr.message, "— falling back to Groq")
+      }
+    }
 
     // Groq only — reliable, fast, no token limits
     // Debug: log what the AI receives
