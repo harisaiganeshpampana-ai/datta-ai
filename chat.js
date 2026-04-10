@@ -5105,3 +5105,49 @@ function useTool(tool) {
   msgInput.style.height = Math.min(msgInput.scrollHeight, 200) + "px"
 }
 window.useTool = useTool
+
+// ── ARTIFACTS PAGE — show all generated artifacts ──────────────────────────────
+function openArtifactsPage() {
+  const sidebar = document.getElementById("sidebar")
+  if (sidebar && window.innerWidth < 768) sidebar.classList.remove("open","show")
+
+  // Check if there is a current artifact open
+  const panel = document.getElementById("artifactPanel")
+  if (panel && panel.classList.contains("open")) {
+    // Already open — just focus it
+    return
+  }
+
+  // Show a message explaining artifacts
+  const chatBox = document.getElementById("chatBox")
+  if (!chatBox) return
+
+  hideWelcome && hideWelcome()
+
+  chatBox.innerHTML = `
+    <div class="msg-row">
+      <div class="aiContent">
+        <div class="ai-bubble" style="padding:20px;background:var(--bg2);border:1px solid var(--border);border-radius:16px;max-width:520px;">
+          <div style="font-size:20px;margin-bottom:12px;">🎨 Artifacts</div>
+          <p style="color:var(--text2);margin-bottom:16px;line-height:1.7;">Artifacts are generated code, websites, and apps that appear in the preview panel. When Datta AI writes HTML, CSS, or JavaScript code, it automatically opens in the artifact panel so you can see it live.</p>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+            <div style="background:var(--bg3);border-radius:10px;padding:10px 14px;font-size:13px;">
+              <strong style="color:var(--text);">💻 Code preview</strong> — See your HTML/CSS running live as it generates
+            </div>
+            <div style="background:var(--bg3);border-radius:10px;padding:10px 14px;font-size:13px;">
+              <strong style="color:var(--text);">📋 Copy & Download</strong> — One click to copy or save any generated file
+            </div>
+            <div style="background:var(--bg3);border-radius:10px;padding:10px 14px;font-size:13px;">
+              <strong style="color:var(--text);">🌐 Open in new tab</strong> — Launch your generated website directly
+            </div>
+          </div>
+          <p style="color:var(--text3);font-size:13px;">Try asking: <em>"Build me a landing page for my app"</em> or <em>"Create a calculator in HTML"</em></p>
+          <div style="display:flex;gap:8px;margin-top:16px;">
+            <button onclick="setCodeAgentMode && (document.getElementById('message').value='Build me a beautiful landing page for Datta AI in HTML with dark theme', document.getElementById('message').focus())" style="padding:8px 16px;border-radius:8px;border:1px solid var(--accent);background:rgba(16,163,127,0.1);color:var(--accent);font-size:13px;cursor:pointer;font-family:inherit;">Try it →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+}
+window.openArtifactsPage = openArtifactsPage
