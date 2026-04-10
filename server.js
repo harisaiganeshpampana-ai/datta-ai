@@ -2155,7 +2155,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     const isLocalQuery = message && ["restaurant","hotel","shop","cafe","food","near","place","hospital","pharmacy","atm","bank","cinema","mall","park"].some(t => message.toLowerCase().includes(t))
     const shouldSearch = message && !urlContext && (needsWebSearch(message) || (isLocalQuery && userLocation))
     
-    if (shouldSearch && process.env.TAVILY_API_KEY) {
+    // Force search for news/war/current events even if shouldSearch is false
+    var isNewsQuery = ["war","news","latest","attack","conflict","killed","died","today","happened","current","update"].some(k => (message||"").toLowerCase().includes(k))
+    if ((shouldSearch || isNewsQuery) && process.env.TAVILY_API_KEY) {
       let searchQuery = message
 
       // For IPL/cricket queries — always search in English regardless of input language
@@ -3265,7 +3267,16 @@ CRITICAL RULES FOR USING SEARCH RESULTS:
             toolResult = await convertCurrency(tool.amount, tool.from, tool.to)
           } else if (tool.type === "news") {
             console.log("[TOOL] News about:", tool.topic)
-            toolResult = await getNews(tool.topic, detectedLang)
+            toolResult = await getNews(tool.topic, autoDetectedLang || "en")
+            // If news API not available, force Tavily web search
+            if (!toolResult && process.env.TAVILY_API_KEY) {
+              console.log("[TOOL] News API unavailable — forcing Tavily search for:", tool.topic)
+              const newsSearchResult = await webSearch("latest news " + tool.topic + " today 2026")
+              if (newsSearchResult) {
+                // searchContext will be set below — just mark that we want search
+                message = message  // keep original message, Tavily will run below
+              }
+            }
           }
         } catch(toolErr) {
           console.warn("[TOOL] Error:", toolErr.message)
