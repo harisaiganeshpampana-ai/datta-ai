@@ -627,7 +627,8 @@ const _searchCache = new Map()
 async function getWeather(location) {
   const apiKey = process.env.OPENWEATHER_API_KEY
   if (!apiKey) {
-    // Fallback: use web search for weather
+    // No API key — return null so AI handles it via web search
+    console.log("[WEATHER] No OPENWEATHER_API_KEY set — skipping tool")
     return null
   }
   try {
@@ -2574,6 +2575,14 @@ CONVERSATIONAL STYLE (very important):
 - If user seems confused — rephrase differently, don't repeat same answer
 - One question at a time — never ask multiple questions at once
 
+RESPONSE FORMAT RULES (always follow):
+- For normal chat: plain conversational text, no unnecessary headers or bullet points
+- Only use headers (##) for long technical documents or guides
+- Only use bullet points when listing 4+ distinct items
+- For introductions before code: plain sentences ONLY — no ## headers, no ** bold, no boxes
+- Never start a response with a header for a conversational message
+- Write like a knowledgeable human, not a formatted document
+
 WHEN GIVING STEP-BY-STEP GUIDANCE:
 Structure every step like this:
 → Action: Exactly what to click/type/select
@@ -2924,10 +2933,10 @@ ${isFirstMessage ? `
 THIS IS THE FIRST MESSAGE.
 
 ${isLargeTask ? `
-Before writing code, briefly tell the user what you are building in 2-3 natural sentences — like a colleague explaining to another. Say what the app does, what tech you are using, and what files you will create. Keep it conversational, no headers, no boxes, no markdown formatting for this intro part. Then add one line break and start the code immediately.
+Write 2-3 plain sentences describing what you will build. NO headers. NO bullet points. NO bold text. NO boxes. Plain sentences only — like texting a friend. Then immediately start the code.
 
-Example intro style:
-"I'll build you a complete food delivery app with Node.js and MongoDB. It will have customer ordering, restaurant management, and Razorpay payments — organized across server.js, routes, and a simple frontend. Here's the full code:"
+Example (copy this style exactly):
+I'll build a complete food delivery app using Node.js and MongoDB. It will include customer ordering, restaurant management, and Razorpay payments across server.js and a simple frontend. Here is the full code:
 
 ` : ""}
 
@@ -2977,7 +2986,9 @@ ${isLargeTask ? `
 ## 🎨 What I'm Building
 [describe the app/website]
 
-Before writing code, briefly explain in 2-3 natural sentences what you are building — the layout, main sections, and key features. No headers, no boxes, just natural text like a designer explaining their plan. Then start the code immediately.
+Write 2-3 plain sentences describing the website you will build. NO headers. NO bullet points. NO bold. Plain text only. Then start the code immediately.
+
+Example: I'll build a dark-themed portfolio website with a hero section, projects grid, and contact form — all in one HTML file. Here is the code:
 
 ` : ""}
 
@@ -3007,7 +3018,7 @@ ${isFirstMessage ? `
 THIS IS THE FIRST MESSAGE.
 
 ${isLargeTask ? `
-Before writing code, explain in 2-3 natural sentences what you will build, the approach you are taking, and why. No headers or boxes — just clear natural language. Then start the code.
+Write 2-3 plain sentences about what you are building and why. No headers, no boxes, no bullet points. Plain text only. Then start the code.
 
 ` : ""}
 
@@ -3241,6 +3252,10 @@ IMPORTANT: Answer like a human, NOT like a search engine.
           if (tool.type === "weather") {
             console.log("[TOOL] Weather for:", tool.location)
             toolResult = await getWeather(tool.location)
+            // If no weather API key, let web search handle it
+            if (!toolResult && !process.env.OPENWEATHER_API_KEY) {
+              console.log("[TOOL] No weather API — web search will handle")
+            }
           } else if (tool.type === "currency") {
             console.log("[TOOL] Currency:", tool.amount, tool.from, "->", tool.to)
             toolResult = await convertCurrency(tool.amount, tool.from, tool.to)
@@ -3261,8 +3276,7 @@ IMPORTANT: Answer like a human, NOT like a search engine.
           cleanupRequest()
           return
         }
-        // If tool failed, fall through to normal AI response
-        console.log("[TOOL] Tool returned null — using AI fallback")
+        console.log("[TOOL] Tool returned null — using AI/web-search fallback")
       }
     }
 
