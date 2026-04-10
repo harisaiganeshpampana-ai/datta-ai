@@ -451,18 +451,18 @@ const Memory = mongoose.model("Memory", MemorySchema)
 
 const planLimits = {
   // ── ACTIVE PLANS ────────────────────────────────────────────
-  free:        { messages: 10,     resetHours: 24, models: ["d21"],       price: 0,   priority: 0 },
-  starter:     { messages: 40,     resetHours: 24, models: ["d21","d54"], price: 29,  priority: 1 },
-  plus:        { messages: 300,    resetHours: 24, models: ["d21","d54"], price: 299, priority: 2 },
-  pro:         { messages: 700,    resetHours: 24, models: ["d21","d54"], price: 499, priority: 3 },
-  ultimate:    { messages: 1500,   resetHours: 24, models: ["d21","d54"], price: 799, priority: 4 },
+  free:        { messages: 10,     resetHours: 24, models: ["d21","dcode","dthink"],       price: 0,   priority: 0 },
+  starter:     { messages: 40,     resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 29,  priority: 1 },
+  plus:        { messages: 300,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 299, priority: 2 },
+  pro:         { messages: 700,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 499, priority: 3 },
+  ultimate:    { messages: 1500,   resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 799, priority: 4 },
   // ── LEGACY (keep for existing subscribers) ──────────────────
-  "ultra-mini":{ messages: 20,     resetHours: 24, models: ["d21"],       price: 10,  priority: 1, extraMessages: 15, expiresHours: 24 },
-  standard:    { messages: 120,    resetHours: 24, models: ["d21","d54"], price: 149, priority: 2 },
-  mini:        { messages: 200,    resetHours: 24, models: ["d21","d54"], price: 199, priority: 2 },
-  max:         { messages: 2000,   resetHours: 24, models: ["d21","d54"], price: 1999,priority: 5 },
+  "ultra-mini":{ messages: 20,     resetHours: 24, models: ["d21","dcode","dthink"],       price: 10,  priority: 1, extraMessages: 15, expiresHours: 24 },
+  standard:    { messages: 120,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 149, priority: 2 },
+  mini:        { messages: 200,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 199, priority: 2 },
+  max:         { messages: 2000,   resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 1999,priority: 5 },
   ultramax:    { messages: 999999, resetHours: 0,  models: ["all"],       price: 0,   priority: 6 },
-  basic:       { messages: 500,    resetHours: 24, models: ["d21","d54"], price: 499, priority: 3 },
+  basic:       { messages: 500,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 499, priority: 3 },
   enterprise:  { messages: 999999, resetHours: 0,  models: ["all"],       price: 0,   priority: 6 }
 }
 const rateLimitStore = {}
@@ -2037,18 +2037,19 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
           ).catch(() => {})
           // Allow the request to proceed with d54
         } else if (!allowedModels.includes("all") && !allowedModels.includes(requestedModelKey)) {
-          // Paid plan model check
-          let upgradeTo = "Starter"
-          if (requestedModelKey === "d54") {
-            upgradeTo = "Starter"
+          // dcode and dthink are always free — never block them
+          if (requestedModelKey === "dcode" || requestedModelKey === "dthink") {
+            // Allow — fall through
+          } else {
+            // Paid plan model check
+            cleanupRequest()
+            return res.status(403).json({
+              error: "MODEL_LOCKED",
+              message: "Upgrade to Starter plan (₹29/month) to use Datta 5.4.",
+              plan: userPlan,
+              requiredPlan: "starter"
+            })
           }
-          cleanupRequest()
-          return res.status(403).json({
-            error: "MODEL_LOCKED",
-            message: `Upgrade to ${upgradeTo} plan (₹29/month) to use Datta 5.4.`,
-            plan: userPlan,
-            requiredPlan: upgradeTo.toLowerCase()
-          })
         }
       }
     }
@@ -3278,27 +3279,45 @@ IMPORTANT: Answer like a human, NOT like a search engine.
         try {
           console.log("[EXAM] Step 1: Extracting questions from image with Gemini...")
 
-          // Step 1: Extract questions from image
-          const extractUrl = "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=" + process.env.GEMINI_API_KEY
-          const extractBody = {
-            contents: [{
-              parts: [
-                { inline_data: { mime_type: file.mimetype, data: imageBase64 } },
-                { text: "Read this exam paper image carefully. Extract and list EVERY question exactly as written. Include question numbers, marks, and all parts (a, b, c etc). Do not answer anything — just transcribe all questions accurately." }
-              ]
-            }],
-            generationConfig: { maxOutputTokens: 2048, temperature: 0 }
+          // Step 1: Extract questions from image — try multiple Gemini models
+          const geminiModels = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"]
+          let extractedQuestions = ""
+          for (const gModel of geminiModels) {
+            try {
+              const extractUrl = "https://generativelanguage.googleapis.com/v1/models/" + gModel + ":generateContent?key=" + process.env.GEMINI_API_KEY
+              const extractBody = {
+                contents: [{
+                  parts: [
+                    { inline_data: { mime_type: file.mimetype, data: imageBase64 } },
+                    { text: "Read this exam paper image carefully. Extract and list EVERY question exactly as written. Include question numbers, marks, and all parts (a, b, c etc). Do not answer anything — just transcribe all questions accurately." }
+                  ]
+                }],
+                generationConfig: { maxOutputTokens: 2048, temperature: 0 }
+              }
+              const extractResp = await fetch(extractUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(extractBody)
+              })
+              if (extractResp.ok) {
+                const extractData = await extractResp.json()
+                const txt = extractData?.candidates?.[0]?.content?.parts?.[0]?.text || ""
+                if (txt && txt.length > 50) {
+                  extractedQuestions = txt
+                  console.log("[EXAM] Step 1 success with model:", gModel, "chars:", txt.length)
+                  break
+                }
+              } else {
+                const errTxt = await extractResp.text()
+                console.warn("[EXAM] Step 1 model", gModel, "failed:", extractResp.status, errTxt.slice(0,100))
+              }
+            } catch(mErr) {
+              console.warn("[EXAM] Step 1 model", gModel, "error:", mErr.message)
+            }
           }
 
-          const extractResp = await fetch(extractUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(extractBody)
-          })
-
-          if (extractResp.ok) {
-            const extractData = await extractResp.json()
-            const extractedQuestions = extractData?.candidates?.[0]?.content?.parts?.[0]?.text || ""
+          if (true) {
+            // extractedQuestions is set above
 
             if (extractedQuestions && extractedQuestions.length > 50) {
               console.log("[EXAM] Step 1 done. Questions extracted:", extractedQuestions.length, "chars")
@@ -3348,7 +3367,7 @@ IMPORTANT: Answer like a human, NOT like a search engine.
               }
             }
           } else {
-            console.warn("[EXAM] Step 1 failed:", extractResp.status)
+            console.warn("[EXAM] Step 1: no questions extracted from any model")
           }
         } catch(twoStepErr) {
           console.warn("[EXAM] Two-step failed:", twoStepErr.message, "— falling back to single-step")
