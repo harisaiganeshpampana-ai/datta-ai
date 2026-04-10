@@ -1243,7 +1243,7 @@ async function send() {
 
     // ── ARTIFACT DETECTION ── Auto-open artifact panel for large code blocks
     if (typeof detectAndOpenArtifact === "function" && streamText && streamText.length > 300) {
-      const hasLargeCode = (streamText.match(/```[\s\S]*?```/g) || []).some(b => b.length > 400)
+      const hasLargeCode = (streamText.match(/```[\s\S]*?```/g) || []).some(b => b.length > 150)
       if (hasLargeCode) {
         setTimeout(() => detectAndOpenArtifact(streamText), 400)
       }
@@ -4956,6 +4956,7 @@ var _artifactLang = ""
 var _artifactFileName = ""
 
 function openArtifact(code, lang, title) {
+  if (!code || !code.trim()) return
   _artifactCode = code
   _artifactLang = lang || "html"
   _artifactFileName = title || ("artifact." + (_artifactLang === "html" ? "html" : _artifactLang === "css" ? "css" : _artifactLang === "python" ? "py" : "js"))
@@ -5064,11 +5065,12 @@ function detectAndOpenArtifact(responseText) {
   const code = largestBlock.replace(/```\w*\n?/, "").replace(/```$/, "").trim()
 
   // Only open for substantial code (not tiny snippets)
-  if (code.length < 200) return false
+  if (code.length < 80) return false
 
-  // Generate smart title
-  const ext = lang === "js" ? "js" : lang === "py" ? "py" : lang === "css" ? "css" : "html"
-  const title = "artifact." + ext
+  // Generate smart title from first line of code or common patterns
+  const ext = lang === "js" ? "js" : lang === "py" ? "py" : lang === "css" ? "css" : lang === "sql" ? "sql" : lang === "java" ? "java" : "html"
+  let title = "artifact." + ext
+  // title already set as artifact.ext
   openArtifact(code, lang, title)
   return true
 }
