@@ -358,8 +358,8 @@ body.sb-collapsed .input-area {
 
 /* ── MESSAGES ── */
 .msg-row {
-  width: 100%; max-width: 860px;
-  padding: 6px 20px;
+  width: 100%; max-width: 780px;
+  padding: 8px 20px;
   margin: 0 auto;
   display: flex;
   animation: msgIn 0.2s ease;
@@ -381,10 +381,10 @@ body.sb-collapsed .input-area {
 
 .ai-content { display: flex; flex-direction: column; gap: 4px; max-width: 100%; width: 100%; }
 .ai-bubble {
-  padding: 4px 4px 4px 0;
+  padding: 2px 0 12px 0;
   background: transparent;
   color: var(--text);
-  font-size: var(--chat-font-size, 15px); line-height: 1.8;
+  font-size: var(--chat-font-size, 15px); line-height: 1.82;
   word-break: break-word;
   width: 100%;
   box-sizing: border-box;
@@ -523,42 +523,52 @@ body.sb-collapsed .input-area {
 
 .welcome-inner {
   display: flex; flex-direction: column;
-  align-items: center; gap: 32px;
+  align-items: center; gap: 24px;
   width: 100%; max-width: 600px;
   text-align: center;
 }
+
+/* Claude-style gradient title */
 .welcome-title {
-  font-size: clamp(24px, 4vw, 32px);
-  font-weight: 600; letter-spacing: -0.5px;
-  color: var(--text); margin: 0;
+  font-size: clamp(22px, 5vw, 32px);
+  font-weight: 700; letter-spacing: -0.5px;
+  background: linear-gradient(135deg, var(--text) 0%, var(--text2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
 }
 .welcome-sub {
-  font-size: 15px; color: var(--text3); margin: -20px 0 0;
+  font-size: 14px; color: var(--text3);
+  margin: -12px 0 0; line-height: 1.5;
 }
 
+/* Suggestion cards */
 .sugg-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px; width: 100%;
+  gap: 8px; width: 100%;
 }
 .sugg-card {
   display: flex; flex-direction: column;
-  align-items: flex-start; gap: 8px;
-  padding: 14px 16px;
+  align-items: flex-start; gap: 6px;
+  padding: 12px 14px;
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 12px; cursor: pointer;
+  border-radius: 14px; cursor: pointer;
   font-family: inherit;
   text-align: left;
-  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  transition: all 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
 }
-.sugg-card:hover {
+.sugg-card:hover, .sugg-card:active {
   background: var(--bg3);
   border-color: var(--accent);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
-.sugg-icon { font-size: 18px; }
-.sugg-text { font-size: 13px; color: var(--text2); line-height: 1.4; }
+.sugg-icon { font-size: 16px; }
+.sugg-text { font-size: 12.5px; color: var(--text2); line-height: 1.4; font-weight: 400; }
 .sugg-card:hover .sugg-text { color: var(--text); }
 
 /* ── INPUT AREA — always fixed, always centered ── */
@@ -598,6 +608,27 @@ body.sb-collapsed .input-area {
   background: var(--accent);
   flex-shrink: 0;
 }
+
+.tool-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text2);
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+  font-family: inherit;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.tool-btn:hover, .tool-btn:active {
+  background: var(--bg3);
+  color: var(--text);
+  border-color: var(--accent);
+}
+#toolBar::-webkit-scrollbar { display: none; }
 
 .input-wrap {
   background: var(--bg2) !important;
@@ -709,14 +740,9 @@ body.sb-collapsed .input-area {
   bottom: 2px;
 }
 @media (max-width: 767px) {
-  /* On mobile input is at bottom:10px, height ~70px → disclaimer sits at ~84px */
+  /* Hide fixed disclaimer on mobile — shown below each message instead */
   #aiDisclaimer {
-    bottom: 82px !important;
-    font-size: 9px;
-    white-space: normal;
-    max-width: 85%;
-    text-align: center;
-    line-height: 1.4;
+    display: none !important;
   }
 }
 
@@ -938,6 +964,126 @@ body.sb-collapsed .input-area {
 .model-desc  { font-size: 11px; color: var(--text3); margin-top: 1px; }
 .model-check { color: var(--accent); font-weight: 700; font-size: 15px; }
 
+/* ── ARTIFACTS PANEL (Claude-style code preview) ── */
+.artifact-panel {
+  position: fixed;
+  top: 52px; right: 0;
+  width: 45vw; max-width: 680px; min-width: 340px;
+  height: calc(100vh - 52px);
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  z-index: 200;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: -8px 0 32px rgba(0,0,0,0.3);
+}
+.artifact-panel.open {
+  transform: translateX(0);
+}
+body.artifact-open .main {
+  margin-right: 45vw;
+}
+body.artifact-open .input-area {
+  left: calc(260px + (100vw - 260px - 45vw) / 2) !important;
+}
+@media (max-width: 767px) {
+  .artifact-panel {
+    width: 100vw; max-width: 100vw;
+    top: 0; height: 100vh;
+    z-index: 2000;
+  }
+  body.artifact-open .main { margin-right: 0; }
+  body.artifact-open .input-area { left: 50% !important; }
+}
+
+.artifact-header {
+  display: flex; align-items: center;
+  padding: 0 14px;
+  height: 48px;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+  flex-shrink: 0;
+}
+.artifact-title {
+  flex: 1;
+  font-size: 13px; font-weight: 600;
+  color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.artifact-tabs {
+  display: flex; gap: 2px;
+  background: var(--bg3);
+  border-radius: 8px; padding: 3px;
+}
+.artifact-tab {
+  padding: 4px 12px;
+  border-radius: 6px; border: none;
+  background: none; color: var(--text3);
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+.artifact-tab.active {
+  background: var(--bg2);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.artifact-close {
+  width: 28px; height: 28px;
+  border-radius: 7px; border: none;
+  background: none; color: var(--text3);
+  cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.artifact-close:hover { background: var(--bg3); color: var(--text); }
+
+.artifact-body {
+  flex: 1; overflow: hidden; position: relative;
+}
+.artifact-code-view {
+  height: 100%; overflow-y: auto; overflow-x: auto;
+  padding: 16px;
+  font-family: "SF Mono","Fira Code","Consolas",monospace;
+  font-size: 13px; line-height: 1.7;
+  color: var(--text);
+  background: var(--bg);
+  white-space: pre;
+  display: none;
+}
+.artifact-code-view.active { display: block; }
+.artifact-preview {
+  height: 100%; width: 100%;
+  border: none; background: white;
+  display: none;
+}
+.artifact-preview.active { display: block; }
+
+.artifact-footer {
+  display: flex; align-items: center;
+  padding: 8px 14px; gap: 8px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.artifact-action-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg3); color: var(--text2);
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+.artifact-action-btn:hover { background: var(--bg2); color: var(--text); }
+
+/* Chat shrinks when artifact is open */
+@media (min-width: 768px) {
+  body.artifact-open .chat-scroll {
+    padding-right: 0;
+  }
+}
+
 /* ── NOTES PANEL ── */
 .notes-panel {
   position: fixed;
@@ -1107,38 +1253,210 @@ body.notes-open .input-area {
   .notes-top-btn { display: flex !important; }
 }
 
-/* Mobile */
+/* ══════════════════════════════════════════
+   MOBILE — Claude-quality UI (max-width: 767px)
+   ══════════════════════════════════════════ */
 @media (max-width: 767px) {
+
+  /* ── SIDEBAR — full screen slide-in ── */
   .sidebar {
     position: fixed !important;
-    top: 52px !important; left: 0 !important;
-    height: calc(100vh - 52px) !important;
-    width: 280px !important;
-    z-index: 999 !important;
+    top: 0 !important; left: 0 !important;
+    height: 100dvh !important;
+    width: 82vw !important; max-width: 310px !important;
+    z-index: 1001 !important;
     transform: translateX(-100%) !important;
-    transition: transform 0.28s ease !important;
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1) !important;
+    box-shadow: none !important;
+    overflow-y: auto !important;
   }
   .sidebar.open, .sidebar.show {
     transform: translateX(0) !important;
-    box-shadow: 4px 0 24px rgba(0,0,0,0.5) !important;
+    box-shadow: 12px 0 48px rgba(0,0,0,0.7) !important;
   }
+
+  /* Sidebar overlay */
+  .sidebar-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+  }
+  .sidebar.open ~ .sidebar-overlay,
+  .sidebar.show ~ .sidebar-overlay { display: block; }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    padding: 0 14px !important;
+    height: 52px !important;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    background: rgba(var(--bg-rgb, 33,33,33), 0.95) !important;
+  }
+  .theme-switch { display: none !important; }
+
+  /* ── MAIN CONTENT ── */
+  .app-body { height: calc(100dvh - 52px) !important; }
+  .main-content { width: 100% !important; }
+
+  /* ── CHAT SCROLL AREA ── */
+  .chat-scroll {
+    padding-bottom: 170px !important;
+    padding-top: 8px !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-behavior: smooth !important;
+  }
+
+  /* ── MESSAGES — full width like Claude ── */
+  .msg-row {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 4px 16px !important;
+    margin: 0 !important;
+  }
+
+  /* ── AI BUBBLE — clean, full width ── */
+  .ai-content {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+  .ai-bubble {
+    font-size: var(--chat-font-size, 15px) !important;
+    line-height: 1.85 !important;
+    padding: 4px 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    word-break: break-word !important;
+  }
+  .ai-bubble p {
+    margin-bottom: 12px !important;
+    line-height: 1.85 !important;
+  }
+  .ai-bubble p:last-child { margin-bottom: 0 !important; }
+  .ai-bubble ul {
+    padding-left: 0 !important;
+    margin: 10px 0 !important;
+    list-style: none !important;
+  }
+  .ai-bubble ul li {
+    padding-left: 20px !important;
+    position: relative !important;
+    margin-bottom: 8px !important;
+    line-height: 1.7 !important;
+  }
+  .ai-bubble ul li::before {
+    content: "•" !important;
+    position: absolute !important;
+    left: 4px !important;
+    color: var(--accent) !important;
+    font-weight: 700 !important;
+  }
+  .ai-bubble ol {
+    padding-left: 22px !important;
+    margin: 10px 0 !important;
+  }
+  .ai-bubble ol li { margin-bottom: 8px !important; line-height: 1.7 !important; }
+  .ai-bubble h1, .ai-bubble h2 {
+    font-size: 17px !important;
+    margin: 18px 0 8px !important;
+    font-weight: 700 !important;
+  }
+  .ai-bubble h3 { font-size: 15px !important; margin: 14px 0 6px !important; }
+  .ai-bubble pre {
+    font-size: 12.5px !important;
+    padding: 12px !important;
+    border-radius: 10px !important;
+    overflow-x: auto !important;
+    margin: 10px 0 !important;
+  }
+  .ai-bubble code { font-size: 12.5px !important; }
+  .ai-bubble strong { font-weight: 700 !important; }
+  .ai-bubble.ai-bubble { max-width: 100% !important; }
+
+  /* ── USER BUBBLE — clean pill shape ── */
+  .user-bubble {
+    max-width: 84% !important;
+    font-size: var(--chat-font-size, 15px) !important;
+    padding: 12px 16px !important;
+    border-radius: 20px 4px 20px 20px !important;
+    line-height: 1.7 !important;
+    word-break: break-word !important;
+  }
+
+  /* ── ACTION BUTTONS ── */
+  .ai-actions, .aiActions { opacity: 1 !important; }
+  .user-actions, .userActions { opacity: 1 !important; }
+  .action-btn { width: 30px !important; height: 30px !important; }
+
+  /* ── INPUT AREA — sticky bottom ── */
   .input-area {
     left: 50% !important;
     transform: translateX(-50%) !important;
-    width: 95% !important;
-    bottom: 10px !important;
+    width: 94% !important;
+    bottom: 12px !important;
+    max-width: 100% !important;
   }
-  .msg-row { max-width: 100%; width: 100%; padding: 6px 12px; }
-  .ai-content { max-width: 100% !important; width: 100% !important; }
-  .ai-bubble { font-size: var(--chat-font-size, 15px) !important; padding: 4px 0 !important; width: 100% !important; box-sizing: border-box !important; line-height: 1.8 !important; }
-  .user-bubble { max-width: 86% !important; font-size: var(--chat-font-size, 15px) !important; padding: 11px 16px !important; }
-  .chat-scroll { padding-bottom: 180px; }
-  .welcome-screen { padding: 0 14px 190px; }
-  .sugg-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
-  .theme-switch { display: none !important; }
-  .notes-panel { display: none !important; }  /* still hidden on mobile - open via button */
-  body.notes-open .input-area { left: 50% !important; }
+  .tool-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text2);
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+  font-family: inherit;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.tool-btn:hover, .tool-btn:active {
+  background: var(--bg3);
+  color: var(--text);
+  border-color: var(--accent);
+}
+#toolBar::-webkit-scrollbar { display: none; }
+
+.input-wrap {
+    border-radius: 26px !important;
+    padding: 8px 10px 8px 16px !important;
+  }
+  #message {
+    font-size: 16px !important;
+    min-height: 24px !important;
+  }
+
+  /* ── WELCOME SCREEN ── */
+  .welcome-screen {
+    padding: 20px 16px 190px !important;
+    align-items: flex-start !important;
+  }
+  .welcome-title { font-size: 22px !important; }
+  .welcome-sub { font-size: 14px !important; }
+  .sugg-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+  .sugg-card {
+    padding: 12px !important;
+    font-size: 13px !important;
+    border-radius: 14px !important;
+  }
+
+  /* ── HIDE DESKTOP PANELS ── */
+  .notes-panel { display: none !important; }
+
+  /* ── USAGE DISPLAY — visible on mobile ── */
+  #usageDisplay { font-size: 12px !important; }
+
+  /* ── SMOOTH SCROLL FIX ── */
   body.sb-collapsed .input-area { left: 50% !important; }
+  body.notes-open .input-area { left: 50% !important; }
+
+  /* ── SAFE AREA (iPhone notch) ── */
+  .input-area { padding-bottom: env(safe-area-inset-bottom, 0) !important; }
+  .chat-scroll { padding-bottom: calc(160px + env(safe-area-inset-bottom, 0)) !important; }
 }
 
 @media (min-width: 1400px) {
@@ -1166,14 +1484,14 @@ body.notes-open .input-area {
 
 /* User bubble — right aligned */
 .user-bubble {
-  max-width: 70%;
+  max-width: 78%;
   background: var(--bg3) !important;
   border: 1px solid var(--border);
   border-radius: 18px 4px 18px 18px;
-  padding: 10px 16px;
+  padding: 11px 16px;
   color: var(--text);
-  font-size: 15px;
-  line-height: 1.65;
+  font-size: var(--chat-font-size, 15px);
+  line-height: 1.7;
   word-break: break-word;
   text-align: left;
 }
@@ -1182,20 +1500,45 @@ body.notes-open .input-area {
 .aiContent {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   align-items: flex-start;
   width: 100%;
+  max-width: 100%;
 }
 
-/* AI bubble — left aligned */
+/* AI bubble — full width, clean Claude style */
 .ai-bubble {
-  max-width: 85%;
-  padding: 10px 4px;
+  max-width: 100%;
+  width: 100%;
+  padding: 2px 0;
   color: var(--text);
-  font-size: 15px;
-  line-height: 1.75;
+  font-size: var(--chat-font-size, 15px);
+  line-height: 1.85;
   word-break: break-word;
+  box-sizing: border-box;
 }
+
+/* AI bubble content formatting */
+.ai-bubble p { margin: 0 0 12px; line-height: 1.85; }
+.ai-bubble p:last-child { margin: 0; }
+.ai-bubble ul { list-style: none; padding: 0; margin: 10px 0; }
+.ai-bubble ul li { padding-left: 18px; position: relative; margin-bottom: 7px; line-height: 1.7; }
+.ai-bubble ul li::before { content: "•"; position: absolute; left: 4px; color: var(--accent); font-weight: 700; }
+.ai-bubble ol { padding-left: 22px; margin: 10px 0; }
+.ai-bubble ol li { margin-bottom: 7px; line-height: 1.7; padding-left: 4px; }
+.ai-bubble h1, .ai-bubble h2 { font-size: 17px; font-weight: 700; margin: 18px 0 8px; color: var(--text); }
+.ai-bubble h3 { font-size: 15px; font-weight: 700; margin: 14px 0 6px; color: var(--text); }
+.ai-bubble strong { font-weight: 700; color: var(--text); }
+.ai-bubble em { font-style: italic; }
+.ai-bubble a { color: var(--accent); text-decoration: none; }
+.ai-bubble code { background: var(--bg3); border-radius: 4px; padding: 2px 6px; font-size: 13px; }
+.ai-bubble pre { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px; overflow-x: auto; margin: 12px 0; }
+.ai-bubble pre code { background: none; padding: 0; font-size: 13px; line-height: 1.55; }
+.ai-bubble blockquote { border-left: 3px solid var(--accent); padding-left: 12px; color: var(--text2); margin: 10px 0; }
+.ai-bubble hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+.ai-bubble table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.ai-bubble th { background: var(--bg3); padding: 8px 12px; text-align: left; font-weight: 600; border: 1px solid var(--border); }
+.ai-bubble td { padding: 7px 12px; border: 1px solid var(--border); }
 
 /* AI action buttons row */
 .aiActions {
@@ -1203,23 +1546,50 @@ body.notes-open .input-area {
   align-items: center;
   gap: 2px;
   opacity: 0;
-  transition: opacity 0.15s;
-  padding: 0 2px;
+  transition: opacity 0.2s ease;
+  padding: 4px 0 2px;
   flex-wrap: wrap;
+  margin-top: 2px;
 }
+/* Show on hover desktop */
 .msg-row:hover .aiActions { opacity: 1; }
+/* Always show on mobile */
+@media (max-width: 767px) {
+  .aiActions { opacity: 1 !important; }
+}
 
 .actionBtn {
-  width: 28px; height: 28px;
-  border-radius: 6px; border: none;
+  width: 30px; height: 30px;
+  border-radius: 7px; border: none;
   background: none;
   color: var(--text3);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  font-size: 13px;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
 }
 .actionBtn:hover { background: var(--bg3); color: var(--text); }
-.actionDivider { width: 1px; height: 14px; background: var(--border); margin: 0 2px; }
+.actionBtn:active { transform: scale(0.92); }
+.actionDivider { width: 1px; height: 14px; background: var(--border); margin: 0 3px; flex-shrink: 0; }
+
+/* Thumbs up active state */
+.actionBtn.likeBtn.active { color: #10a37f !important; background: rgba(16,163,127,0.1) !important; }
+/* Thumbs down active state */
+.actionBtn.dislikeBtn.active { color: #ef4444 !important; background: rgba(239,68,68,0.1) !important; }
+
+/* Disclaimer text below response */
+.ai-disclaimer {
+  font-size: 11px;
+  color: var(--text3);
+  padding: 6px 0 2px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.msg-row:hover .ai-disclaimer { opacity: 1; }
+@media (max-width: 767px) {
+  .ai-disclaimer { opacity: 1 !important; font-size: 11px; }
+}
 
 /* User actions */
 .userActions {
@@ -1519,6 +1889,27 @@ html, body { overflow-x: hidden; max-width: 100vw; }
 .user-bubble, .ai-bubble { word-break: break-word; overflow-wrap: break-word; }
 
 /* Input wrap — never overflow */
+.tool-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text2);
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+  font-family: inherit;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.tool-btn:hover, .tool-btn:active {
+  background: var(--bg3);
+  color: var(--text);
+  border-color: var(--accent);
+}
+#toolBar::-webkit-scrollbar { display: none; }
+
 .input-wrap { box-sizing: border-box; }
 
 /* Code blocks — horizontal scroll, never break layout */
@@ -1565,6 +1956,27 @@ html, body { overflow-x: hidden; max-width: 100vw; }
 
 /* Input wrap — show active border WITHOUT needing :focus-within on TV */
 /* On TV, border stays subtle always — AI generation state shown via stop btn */
+.tool-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text2);
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+  font-family: inherit;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.tool-btn:hover, .tool-btn:active {
+  background: var(--bg3);
+  color: var(--text);
+  border-color: var(--accent);
+}
+#toolBar::-webkit-scrollbar { display: none; }
+
 .input-wrap {
   border-color: var(--border) !important;
 }
@@ -1576,7 +1988,28 @@ html, body { overflow-x: hidden; max-width: 100vw; }
   }
 }
 /* While AI is generating — show active border regardless of focus */
-body.is-generating .input-wrap {
+body.is-generating .tool-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text2);
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+  font-family: inherit;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.tool-btn:hover, .tool-btn:active {
+  background: var(--bg3);
+  color: var(--text);
+  border-color: var(--accent);
+}
+#toolBar::-webkit-scrollbar { display: none; }
+
+.input-wrap {
   border-color: rgba(220,60,60,0.4) !important;
   box-shadow: 0 0 0 2px rgba(220,60,60,0.1) !important;
 }
@@ -1724,6 +2157,30 @@ body.is-generating .input-wrap {
   <div class="sb-label">Recent</div>
   <div class="sb-list" id="history"></div>
 
+  <!-- ── TOOLS SECTION ── -->
+  <div style="padding: 8px 10px 4px; border-top: 1px solid var(--border); margin-top: 4px;">
+    <div style="font-size:10px;color:var(--text3);letter-spacing:1.2px;text-transform:uppercase;padding: 4px 4px 6px;">Tools</div>
+
+    <!-- Code Agent -->
+    <button onclick="openCodeAgent()" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;border:none;background:none;color:var(--text2);cursor:pointer;font-family:inherit;font-size:13px;text-align:left;transition:background 0.15s;-webkit-tap-highlight-color:transparent;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='none'">
+      <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#00c864,#0077ff);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">💻</div>
+      <div>
+        <div style="font-weight:600;color:var(--text);font-size:13px;">Code Agent</div>
+        <div style="font-size:11px;color:var(--text3);">Analyze · Fix · Review code</div>
+      </div>
+    </button>
+
+    <!-- Exam Solver -->
+    <button onclick="openExamSolver()" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;border:none;background:none;color:var(--text2);cursor:pointer;font-family:inherit;font-size:13px;text-align:left;transition:background 0.15s;-webkit-tap-highlight-color:transparent;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='none'">
+      <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#f59e0b,#ef4444);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">📝</div>
+      <div>
+        <div style="font-weight:600;color:var(--text);font-size:13px;">Exam Solver</div>
+        <div style="font-size:11px;color:var(--text3);">Upload paper → get answers</div>
+      </div>
+    </button>
+
+  </div>
+
   <div class="sb-bottom">
     <div class="sb-plan" id="planBtn" onclick="navigateTo('pricing.html')">
       <span id="planBtnEmoji" style="font-size:16px;">🌱</span>
@@ -1753,33 +2210,48 @@ body.is-generating .input-wrap {
 
 <!-- ── MAIN ── -->
 <div class="main">
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:998;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);"></div>
   <div class="chat-wrap">
 
     <!-- Welcome screen -->
     <div class="welcome-screen" id="welcomeScreen">
       <div class="welcome-inner">
-        <h1 class="welcome-title">What can I build for you?</h1>
-        <p class="welcome-sub">Ask anything. Code, create, research, analyze.</p>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <div style="width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#10a37f,#0077ff);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(16,163,127,0.3);">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+          </div>
+          <h1 class="welcome-title" id="welcomeTitle">Good morning!</h1>
+          <p class="welcome-sub">How can I help you today?</p>
+        </div>
         <div class="sugg-grid" id="suggestionChips">
           <button class="sugg-card" onclick="useChip(this)">
+            <span class="sugg-icon">📄</span>
+            <span class="sugg-text">Solve my exam paper</span>
+          </button>
+          <button class="sugg-card" onclick="useChip(this)">
+            <span class="sugg-icon">💻</span>
+            <span class="sugg-text">Help me code something</span>
+          </button>
+          <button class="sugg-card" onclick="useChip(this)">
             <span class="sugg-icon">🌐</span>
-            <span class="sugg-text">Build me a portfolio website</span>
+            <span class="sugg-text">Search latest news</span>
           </button>
           <button class="sugg-card" onclick="useChip(this)">
-            <span class="sugg-icon">🐍</span>
-            <span class="sugg-text">Write a Python web scraper</span>
-          </button>
-          <button class="sugg-card" onclick="useChip(this)">
-            <span class="sugg-icon">🧠</span>
-            <span class="sugg-text">Explain machine learning</span>
-          </button>
-          <button class="sugg-card" onclick="useChip(this)">
-            <span class="sugg-icon">📰</span>
-            <span class="sugg-text">Latest tech news today</span>
+            <span class="sugg-icon">🎤</span>
+            <span class="sugg-text">Talk to voice assistant</span>
           </button>
         </div>
       </div>
     </div>
+    <script>
+    // Dynamic greeting like Claude
+    (function() {
+      var h = new Date().getHours()
+      var g = h < 12 ? "Good morning!" : h < 17 ? "Good afternoon!" : "Good evening!"
+      var el = document.getElementById("welcomeTitle")
+      if (el) el.textContent = g
+    })()
+    </script>
 
     <!-- Chat messages -->
     <div class="chat-scroll" id="chat"></div>
@@ -1791,7 +2263,25 @@ body.is-generating .input-wrap {
   <div class="input-area" id="inputArea">
 
     <!-- Model pill -->
-    <div class="input-model-bar">
+    <!-- Quick tool buttons -->
+  <div id="toolBar" style="display:flex;gap:6px;padding:0 4px 6px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;">
+    <button class="tool-btn" onclick="useTool('weather')" title="Check weather">
+      🌤️ Weather
+    </button>
+    <button class="tool-btn" onclick="useTool('currency')" title="Convert currency">
+      💱 Currency
+    </button>
+    <button class="tool-btn" onclick="useTool('news')" title="Get latest news">
+      📰 News
+    </button>
+    <button class="tool-btn" onclick="useTool('calculate')" title="Calculate">
+      🧮 Calculate
+    </button>
+    <button class="tool-btn" onclick="useTool('translate')" title="Translate text">
+      🌐 Translate
+    </button>
+  </div>
+  <div class="input-model-bar">
       <button class="model-pill" id="activeModelPill" onclick="event.stopPropagation();toggleModelDropdown()">
         <span class="model-dot"></span>
         <span id="activeModelName">Datta 2.1</span>
@@ -1855,10 +2345,48 @@ body.is-generating .input-wrap {
 
   </div><!-- /.input-area -->
   <div id="aiDisclaimer" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);font-size:10px;color:var(--text3);text-align:center;pointer-events:none;z-index:499;white-space:nowrap;padding-bottom:env(safe-area-inset-bottom,0px);">
-    Datta AI can make mistakes. Verify important info. &nbsp;·&nbsp; <a href="privacy.html" style="color:var(--text3);text-decoration:none;pointer-events:all;">Privacy Policy</a>
+    Datta AI can make mistakes. Verify important info. &nbsp;·&nbsp; <a href="privacy.html" style="color:var(--text3);text-decoration:none;pointer-events:all;">Privacy</a> &nbsp;·&nbsp; <a href="terms.html" style="color:var(--text3);text-decoration:none;pointer-events:all;">Terms</a>
   </div>
 
 </div><!-- /.main -->
+
+<!-- ── ARTIFACTS PANEL ── -->
+<div class="artifact-panel" id="artifactPanel">
+  <div class="artifact-header">
+    <div style="width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,#10a37f,#0077ff);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8" stroke="white" fill="none" stroke-width="2"/></svg>
+    </div>
+    <div class="artifact-title" id="artifactTitle">Artifact</div>
+    <div class="artifact-tabs">
+      <button class="artifact-tab active" id="tabCode" onclick="switchArtifactTab('code')">Code</button>
+      <button class="artifact-tab" id="tabPreview" onclick="switchArtifactTab('preview')">Preview</button>
+    </div>
+    <button class="artifact-close" onclick="closeArtifact()" title="Close">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="artifact-body">
+    <div class="artifact-code-view active" id="artifactCodeView"></div>
+    <iframe class="artifact-preview" id="artifactPreview" sandbox="allow-scripts allow-same-origin"></iframe>
+  </div>
+  <div class="artifact-footer">
+    <button class="artifact-action-btn" onclick="copyArtifact()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy
+    </button>
+    <button class="artifact-action-btn" onclick="downloadArtifact()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download
+    </button>
+    <button class="artifact-action-btn" onclick="openArtifactInNewTab()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Open
+    </button>
+    <div style="flex:1"></div>
+    <span id="artifactLang" style="font-size:11px;color:var(--text3);"></span>
+  </div>
+</div>
+
 </div><!-- /.app-body -->
 
 <script>
@@ -2062,11 +2590,36 @@ if ('serviceWorker' in navigator) {
       <div class="model-badge" style="background:rgba(255,80,60,0.15);color:#ff5040;">5.4</div>
       <div>
         <div class="model-name">Datta 5.4 <span id="d54PlanBadge" style="font-size:10px;background:rgba(255,136,0,0.15);color:#ff8800;border:1px solid rgba(255,136,0,0.3);border-radius:4px;padding:1px 5px;margin-left:4px;">Plus+</span></div>
-        <div class="model-desc">Coding · Debugging · Complex tasks</div>
+        <div class="model-desc">Smart · Analysis · Complex tasks</div>
       </div>
     </div>
     <span class="model-check" id="mdic-d54"></span>
   </div>
+
+  <div style="font-size:10px;color:var(--text3);padding:8px 10px 4px;letter-spacing:1.5px;text-transform:uppercase;border-top:1px solid var(--border);margin-top:4px;">⚡ Specialized</div>
+
+  <div class="model-drop-item" id="mdi-dcode" onclick="selectInputModel('qwen-2.5-coder-32b-instruct','dcode','Datta Code')">
+    <div class="model-drop-left">
+      <div class="model-badge" style="background:rgba(0,200,100,0.15);color:#00c864;">💻</div>
+      <div>
+        <div class="model-name">Datta Code <span style="font-size:10px;background:rgba(0,200,100,0.12);color:#00c864;border:1px solid rgba(0,200,100,0.3);border-radius:4px;padding:1px 5px;margin-left:4px;">Free</span></div>
+        <div class="model-desc">Qwen 2.5 Coder · Best for programming</div>
+      </div>
+    </div>
+    <span class="model-check" id="mdic-dcode"></span>
+  </div>
+
+  <div class="model-drop-item" id="mdi-dthink" onclick="selectInputModel('deepseek-r1-distill-llama-70b','dthink','Datta Think')">
+    <div class="model-drop-left">
+      <div class="model-badge" style="background:rgba(168,85,247,0.15);color:#a855f7;">🧠</div>
+      <div>
+        <div class="model-name">Datta Think <span style="font-size:10px;background:rgba(168,85,247,0.12);color:#a855f7;border:1px solid rgba(168,85,247,0.3);border-radius:4px;padding:1px 5px;margin-left:4px;">Free</span></div>
+        <div class="model-desc">DeepSeek R1 · Step-by-step reasoning</div>
+      </div>
+    </div>
+    <span class="model-check" id="mdic-dthink"></span>
+  </div>
+
   <div style="padding:10px 12px 6px;border-top:1px solid var(--border);margin-top:4px;">
     <div id="usageDisplay" style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:5px;"></div>
     <div style="height:3px;background:var(--bg3);border-radius:3px;overflow:hidden;">
