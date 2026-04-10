@@ -481,14 +481,16 @@ const UsageSchema = new mongoose.Schema({
 })
 const Usage = mongoose.model("Usage", UsageSchema)
 
-// MEMORY SCHEMA - persists user memory
+// MEMORY SCHEMA - persistent cross-conversation memory like Claude
 const MemorySchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  key: String,
-  value: mongoose.Schema.Types.Mixed,
-  category: { type: String, default: "general" },
+  key: { type: String, required: true },
+  value: { type: String, maxlength: 500 },
+  category: { type: String, default: "general", enum: ["personal","project","preference","skill","goal","general"] },
+  importance: { type: Number, default: 1 },  // 1=low, 2=medium, 3=high
   updatedAt: { type: Date, default: Date.now }
 })
+MemorySchema.index({ userId: 1, key: 1 }, { unique: true })
 const Memory = mongoose.model("Memory", MemorySchema)
 
 const planLimits = {
@@ -1062,27 +1064,62 @@ async function saveMemory(userId, key, value, category) {
 }
 
 async function getMemories(userId) {
-  const memories = await Memory.find({ userId }).sort({ updatedAt: -1 }).limit(5)
+  const memories = await Memory.find({ userId })
+    .sort({ importance: -1, updatedAt: -1 })
+    .limit(30)
   if (!memories.length) return ""
-  const memText = memories.map(m => m.key + ": " + String(m.value).substring(0, 100)).join(", ")
-  return "\n[Memory: " + memText + "]"
+
+  // Group by category for better context
+  const groups = {}
+  for (const m of memories) {
+    const cat = m.category || "general"
+    if (!groups[cat]) groups[cat] = []
+    groups[cat].push(m.key + ": " + String(m.value).substring(0, 200))
+  }
+
+  let memText = "\n\n[What I remember about you:\n"
+  if (groups.personal)    memText += "Personal: " + groups.personal.join(" | ") + "\n"
+  if (groups.project)     memText += "Projects: " + groups.project.join(" | ") + "\n"
+  if (groups.preference)  memText += "Preferences: " + groups.preference.join(" | ") + "\n"
+  if (groups.skill)       memText += "Skills: " + groups.skill.join(" | ") + "\n"
+  if (groups.goal)        memText += "Goals: " + groups.goal.join(" | ") + "\n"
+  if (groups.general)     memText += "Other: " + groups.general.join(" | ") + "\n"
+  memText += "]"
+
+  return memText
 }
 
 async function extractAndSaveMemory(userId, userMessage, aiResponse) {
   try {
-    // Ask AI to extract memorable facts from conversation
     const extraction = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
       messages: [{
         role: "user",
-        content: `Extract key facts about the user from this conversation that should be remembered for future sessions. Only extract clear personal facts (name, location, preferences, job, etc). Return as JSON array: [{"key": "user_name", "value": "John", "category": "personal"}]. If nothing to remember, return [].
+        content: `You are a memory extraction system. Extract ALL important facts about the user from this conversation that should be remembered FOREVER for future conversations.
 
-User said: "${userMessage.substring(0, 500)}"
-AI responded: "${aiResponse.substring(0, 200)}"
+Extract these types of facts:
+- personal: name, age, location, language, education, occupation, family
+- project: apps/websites/projects they are building, tech stack, project names, progress
+- preference: preferred language (Telugu/Hindi/English), coding style, themes, tools
+- skill: programming languages, frameworks, technologies they know
+- goal: what they want to build, career goals, learning goals
 
-Return ONLY valid JSON array, nothing else.`
+User message: "${userMessage.substring(0, 800)}"
+AI response: "${aiResponse.substring(0, 400)}"
+
+Return ONLY a JSON array. Each item: {"key": "short_unique_key", "value": "detailed value up to 200 chars", "category": "personal|project|preference|skill|goal|general", "importance": 1-3}
+
+Examples:
+[
+  {"key": "user_name", "value": "Ganesh", "category": "personal", "importance": 3},
+  {"key": "main_project", "value": "Datta AI - Indian AI chatbot app with Node.js, MongoDB, Groq API, hosted on Render and Vercel", "category": "project", "importance": 3},
+  {"key": "prefers_telugu", "value": "User speaks Telugu and prefers explanations in Telugu sometimes", "category": "preference", "importance": 2},
+  {"key": "tech_stack", "value": "Node.js, Express, MongoDB, Groq, Gemini, Razorpay, React, HTML/CSS", "category": "skill", "importance": 2}
+]
+
+If nothing important to remember, return []. Return ONLY valid JSON.`
       }],
-      max_tokens: 200,
+      max_tokens: 500,
       temperature: 0.1
     })
 
@@ -1090,16 +1127,16 @@ Return ONLY valid JSON array, nothing else.`
     const clean = raw.replace(/```json|```/g, "").trim()
     const facts = JSON.parse(clean)
 
-    if (Array.isArray(facts)) {
+    if (Array.isArray(facts) && facts.length > 0) {
       for (const fact of facts) {
         if (fact.key && fact.value) {
-          await saveMemory(userId, fact.key, fact.value, fact.category || "general")
+          await saveMemory(userId, fact.key, String(fact.value).substring(0, 500), fact.category || "general")
         }
       }
-      if (facts.length > 0) console.log("Saved", facts.length, "memories for user")
+      console.log("[MEMORY] Saved", facts.length, "memories for user", userId)
     }
   } catch(e) {
-    console.log("Memory extraction skipped:", e.message)
+    console.log("[MEMORY] Extraction skipped:", e.message)
   }
 }
 
@@ -2238,11 +2275,11 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Use fewer history messages to save token budget
     var _msgLow = (message || "").toLowerCase()
     var _isCode = ["build","create","write","make","code","website","app","fix","debug","html","python","javascript"].some(k => _msgLow.includes(k))
-    var historyLimit = isImageFile ? 0 : (_isCode ? 2 : 4)  // No history for images — wastes tokens
+    var historyLimit = isImageFile ? 0 : (_isCode ? 4 : 4)  // Code needs more history to see previous code
     // Context limit — large page pastes cause 413/context_length errors
     // Reduce history when message itself is long
     var msgLen = (message || "").length
-    var historyContentLimit = _isCode ? 800 : msgLen > 2000 ? 400 : msgLen > 1000 ? 800 : 1500
+    var historyContentLimit = _isCode ? 3000 : msgLen > 2000 ? 400 : msgLen > 1000 ? 800 : 1500
     // Use plain JS messages (stripped of Mongoose types)
     var rawMessages = (chat._leanMessages || chat.messages || [])
     // Detect if this is the FIRST message in this chat (no prior assistant replies)
@@ -3054,21 +3091,16 @@ RULES:
 - Correct Groq: import Groq from "groq-sdk" → new Groq({ apiKey: process.env.GROQ_API_KEY })
 - Code must be complete — never say "rest of the code remains the same"
 ` : `
-THIS IS A FOLLOW-UP — the user already has the full code.
-Show ONLY the parts that change. Format:
-
-// CHANGE 1: [what changed and why]
-// --- FILE: filename.js, FUNCTION: functionName ---
-[only the updated function/block]
-
-// CHANGE 2: [what changed and why]
-[only the updated block]
+THIS IS A FOLLOW-UP — the user wants to add or change something.
 
 RULES:
-- NEVER reprint unchanged code — only show what is different
-- Always say which file and which function each change belongs to
-- If it's a new file, write it completely
-- Explain each change in 1 line before the code block
+- First say what you are adding/changing in 1-2 sentences
+- For small changes (1-2 functions): show only the changed code with clear labels
+- For large changes (new feature/page): output the complete updated file
+- Always match the existing code style, variable names, and design
+- If adding UI: keep exact same CSS variables, fonts, and colors as before
+- Never say "rest of the code stays the same" — always show complete working code
+- Label each change: // ADDED: settings panel, // MODIFIED: send function
 `}
 
 FORBIDDEN always:
@@ -3109,11 +3141,13 @@ RULES:
 THIS IS A FOLLOW-UP — the user already has the full code.
 Show ONLY what changes. Format:
 
-// CHANGE: [what changed and why]
-// In the <section> or function name it belongs to:
-[only the changed HTML/CSS/JS block]
+The user wants to add or modify something in the existing HTML app.
 
-NEVER reprint the full file again — only the changed parts.
+IMPORTANT: Output the COMPLETE updated HTML file with the change integrated.
+- Keep ALL previous HTML, CSS, JS intact
+- Add the new feature seamlessly with the same design and colors
+- Use the same CSS variables, fonts, and style as the original
+- User cannot merge partial code — give them the full working file
 `}
 ` : `
 
@@ -3137,7 +3171,7 @@ RULES:
 - Code must run correctly as-is without modification
 ` : `
 THIS IS A FOLLOW-UP — the user already has the full code from earlier in this chat.
-Show ONLY the parts that changed or were added.
+Output the complete updated code with the change integrated. Keep the same style and design.
 
 Format:
 // CHANGE: [reason]
@@ -3271,8 +3305,8 @@ CRITICAL RULES FOR USING SEARCH RESULTS:
       finalUserContent = (textContent + urlStr).trim() || "Hello"
     }
 
-    // Trim memoryContext to save tokens
-    var trimmedMemory = (memoryContext || "").substring(0, 300)
+    // Inject full memory context — this is what makes Datta AI remember everything
+    var trimmedMemory = (memoryContext || "").substring(0, 2000)
     var systemWithMemory = systemPrompt + trimmedMemory
 
     let stream
@@ -3776,8 +3810,8 @@ CRITICAL RULES FOR USING SEARCH RESULTS:
 
     chat.messages.push({ role: "assistant", content: full })
 
-    // Save memories from this conversation (non-blocking)
-    if (!req.user.isGuest && message) {
+    // Save memories from this conversation (non-blocking) — runs after every message
+    if (!req.user.isGuest && message && message.length > 20) {
       extractAndSaveMemory(userId, message, full).catch(() => {})
     }
 
