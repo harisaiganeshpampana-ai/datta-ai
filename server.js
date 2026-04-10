@@ -2927,6 +2927,13 @@ I'm here, and I'll do better. 🙏`
     // ── END EMOTIONAL DETECTION ─────────────────────────────────────────────
 
     // ── DATTA AI IDENTITY / COMPARISON QUESTIONS ────────────────────────────
+    var isWhoMadeYou = [
+      "who made you", "who created you", "who built you", "who developed you",
+      "who are you", "what are you", "tell me about yourself", "introduce yourself",
+      "who is behind you", "who owns you", "who made datta", "who created datta",
+      "who built datta", "where are you from", "what company made you"
+    ].some(k => msgLowerCheck.includes(k))
+
     var isIdentityQuestion = [
       "why use datta", "why should i use datta", "why datta ai", "what is datta ai",
       "why choose datta", "datta vs chatgpt", "datta vs gpt", "better than chatgpt",
@@ -2939,31 +2946,54 @@ I'm here, and I'll do better. 🙏`
       "datta better", "is datta good", "datta ai good", "how good is datta"
     ].some(k => msgLowerCheck.includes(k))
 
+    if (isWhoMadeYou) {
+      var whoMadeResponse = `I'm ${ainame} — an AI assistant made for Indian users.
+
+I was built by a passionate Indian developer to give everyone access to powerful AI at an affordable price. Unlike ChatGPT or Gemini, I'm designed specifically with Indian context in mind — I understand UPI, Aadhaar, UPSC, Indian languages like Telugu and Hindi, and Indian pricing.
+
+I run on a combination of the best AI models available — fast, capable, and always improving.
+
+Is there something specific I can help you with today?`
+
+      res.write(whoMadeResponse)
+      chat.messages.push({ role: "assistant", content: whoMadeResponse })
+      await chat.save()
+      res.write("CHATID" + chat._id)
+      res.end()
+      cleanupRequest()
+      return
+    }
+
     if (isIdentityQuestion) {
-      var identityResponse = `**${ainame}** is built specifically for Indian users — here's why it works better for you:
+      var identityResponse = `Here's the honest answer — why ${ainame} instead of ChatGPT, Gemini, or others:
 
-🇮🇳 **Made for India**
-- Understands Indian context — UPI, Aadhaar, GST, UPSC, state board exams, Indian laws
-- Responds in Telugu, Hindi, Tamil, Kannada automatically when you write in those languages
-- Knows Indian pricing, Indian apps, Indian government schemes
+**1. Price — 6x cheaper**
+ChatGPT Plus costs ₹1,700/month. ${ainame} starts at ₹29/month — same powerful AI, fraction of the cost. Free plan available. No credit card needed.
 
-⚡ **Fast & Affordable**
-- Responses in under 3 seconds
-- Plans starting at ₹0 — no dollar pricing, no VPN needed
-- ₹29/month Starter plan vs ChatGPT Plus at ₹1700/month
+**2. Built for India — not just translated**
+ChatGPT was built for the US and adapted for India. ${ainame} was built FOR India from day one:
+- Understands UPI, Razorpay, Aadhaar, GST, IRCTC, Indian government schemes
+- Knows UPSC, CBSE, ICSE, state board syllabus inside out
+- Speaks Telugu, Hindi, Tamil, Kannada — switches automatically to your language
+- Gives answers in ₹ not $, Indian context not American context
 
-🎯 **Focused on what you actually need**
-- Homework solver for Indian syllabus (CBSE, ICSE, State boards)
-- UPSC/SSC/competitive exam prep built-in
-- Voice assistant in Indian languages
-- Works on any phone — no app download needed
+**3. Exam Solver — nobody else has this**
+Upload any question paper photo → get complete answers for every question with marks-based explanations. Works for engineering, agriculture, medical, arts — any Indian university exam. ChatGPT and Gemini cannot do this properly.
 
-🔒 **Your data stays in India**
-- Indian-focused servers
-- No data sold to third parties
+**4. No VPN. No dollar payment. Works from India instantly.**
+ChatGPT often has capacity issues and needs foreign payment. ${ainame} works with UPI, from any Indian phone, right now.
 
-**Bottom line:** If you're a student, working professional, or business owner in India — ${ainame} understands your problems better, costs less, and speaks your language. Literally.`
+**5. Voice in your language**
+Speak Telugu or Hindi, get answers spoken back in Telugu or Hindi. ChatGPT voice is English-first.
 
+**6. Code built for Indian developers**
+Knows Razorpay integration, Aadhaar API, GST invoice generation, Indian startup tech stack. ChatGPT gives you generic international answers for these.
+
+**The honest bottom line:**
+If you are outside India and need the absolute best AI — ChatGPT is great.
+If you are in India — ${ainame} costs 6x less, speaks your language, understands your exam system, and was built specifically for your problems.
+
+Start free. No card needed.`
       res.write(identityResponse)
       chat.messages.push({ role: "assistant", content: identityResponse })
       await chat.save()
