@@ -175,161 +175,106 @@ body {
 }
 
 /* ── SIDEBAR ── */
+/* ══════════════════════════════════════════
+   SIDEBAR — Premium design
+   ══════════════════════════════════════════ */
 .sidebar {
-  width: 260px;
-  flex-shrink: 0;
-  height: 100%;
+  width: 240px; flex-shrink: 0; height: 100%;
   background: var(--bg2);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  z-index: 90;
+  border-right: 0.5px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden; z-index: 90;
   transition: width 0.25s ease, opacity 0.25s ease;
 }
-
-/* Desktop collapsed */
-body.sb-collapsed .sidebar {
-  width: 0;
-  border: none;
-  opacity: 0;
-  overflow: hidden;
-}
-body.sb-collapsed .input-area {
-  left: calc(100vw / 2) !important;
-}
+body.sb-collapsed .sidebar { width:0; border:none; opacity:0; overflow:hidden; }
+body.sb-collapsed .input-area { left: calc(100vw / 2) !important; }
 
 .sb-top {
-  padding: 12px;
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 10px;
+  border-bottom: 0.5px solid var(--border);
   flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
 }
-.sb-newchat {
-  display: flex; align-items: center; gap: 8px;
-  width: 100%;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--text);
-  font-size: 14px; font-weight: 500;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.15s;
-}
-.sb-newchat:hover { background: var(--bg3); }
-.sb-newchat svg { flex-shrink: 0; }
+.sb-logo { display:flex; align-items:center; gap:7px; font-size:14px; font-weight:500; color:var(--text); text-decoration:none; }
+.sb-logo-dot { width:22px; height:22px; border-radius:6px; background:linear-gradient(135deg,#10a37f,#0077ff); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.sb-newchat { width:28px; height:28px; border-radius:7px; border:none; background:none; color:var(--text2); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background 0.15s, color 0.15s; flex-shrink:0; -webkit-tap-highlight-color:transparent; }
+.sb-newchat:hover { background:var(--bg3); color:var(--text); }
 
-.sb-search-wrap { padding: 8px 10px 4px; }
+.sb-search-wrap { padding:6px 8px 8px; border-bottom:0.5px solid var(--border); flex-shrink:0; }
 .sb-search {
-  width: 100%;
-  padding: 7px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--input);
-  color: var(--text);
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
+  width:100%; padding:7px 10px 7px 30px;
+  border-radius:8px; border:0.5px solid var(--border);
+  background:var(--bg3); color:var(--text);
+  font-size:12.5px; font-family:inherit; outline:none;
+  transition:border-color 0.15s, background 0.15s;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:9px center;
 }
-.sb-search:focus { border-color: var(--accent); }
-.sb-search::placeholder { color: var(--text3); }
+.sb-search:focus { border-color:var(--accent); background:var(--bg2); }
+.sb-search::placeholder { color:var(--text3); }
 
 .sb-label {
-  font-size: 11px; font-weight: 600;
-  color: var(--text3);
-  text-transform: uppercase; letter-spacing: 0.7px;
-  padding: 8px 12px 4px;
+  font-size:10px; font-weight:600;
+  color:var(--text3);
+  text-transform:uppercase; letter-spacing:0.8px;
+  padding:10px 14px 4px; flex-shrink:0;
 }
 
-.sb-list {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 2px 6px;
-}
-.sb-list::-webkit-scrollbar { width: 4px; }
-.sb-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.sb-list { flex:1; overflow-y:auto; overflow-x:hidden; padding:2px 6px 4px; min-height:0; }
+.sb-list::-webkit-scrollbar { width:3px; }
+.sb-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
 
 .chat-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 7px 8px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.12s;
-  margin-bottom: 1px;
-  position: relative;
-  min-width: 0;
+  display:flex; align-items:center; gap:8px;
+  padding:6px 10px; border-radius:8px;
+  cursor:pointer; transition:background 0.12s;
+  margin-bottom:1px; position:relative; min-width:0;
+  -webkit-tap-highlight-color:transparent;
 }
-.chat-item:hover { background: var(--bg3); }
-.chat-item.active { background: var(--bg3); }
+.chat-item:hover, .chat-item.active { background:var(--bg3); }
+.chat-item-icon { color:var(--text3); flex-shrink:0; opacity:0.5; }
+.chat-item-title { flex:1; min-width:0; font-size:12.5px; color:var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.chat-item:hover .chat-item-title, .chat-item.active .chat-item-title { color:var(--text); }
+.chat-item-del { opacity:0; background:none; border:none; color:var(--text3); cursor:pointer; padding:3px 4px; border-radius:5px; display:flex; flex-shrink:0; transition:opacity 0.15s, color 0.15s, background 0.15s; }
+.chat-item:hover .chat-item-del { opacity:1; }
+.chat-item-del:hover { color:#ef4444; background:rgba(239,68,68,0.1); }
 
-.chat-item-icon { color: var(--text3); flex-shrink: 0; }
-.chat-item-title {
-  flex: 1; min-width: 0;
-  font-size: 13px; color: var(--text2);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.chat-item:hover .chat-item-title { color: var(--text); }
-.chat-item.active .chat-item-title { color: var(--text); }
+.sb-divider { height:0.5px; background:var(--border); margin:4px 0; flex-shrink:0; }
+.sb-section-row { display:flex; align-items:center; justify-content:space-between; padding-right:8px; flex-shrink:0; }
 
-.chat-item-del {
-  opacity: 0; background: none; border: none;
-  color: var(--text3); cursor: pointer; padding: 2px 4px;
-  border-radius: 4px; display: flex; flex-shrink: 0;
-  transition: opacity 0.15s, color 0.15s;
-}
-.chat-item:hover .chat-item-del { opacity: 1; }
-.chat-item-del:hover { color: #e55; }
+.sb-tools { padding:0 6px 4px; flex-shrink:0; }
+.sb-tool-item { display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:8px; border:none; background:none; color:var(--text2); cursor:pointer; font-family:inherit; font-size:13px; text-align:left; width:100%; transition:background 0.15s, color 0.15s; -webkit-tap-highlight-color:transparent; }
+.sb-tool-item:hover { background:var(--bg3); color:var(--text); }
+.sb-tool-icon { width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+.sb-tool-info { display:flex; flex-direction:column; gap:1px; min-width:0; }
+.sb-tool-name { font-size:12.5px; font-weight:500; color:var(--text); line-height:1.3; }
+.sb-tool-desc { font-size:11px; color:var(--text3); }
 
-/* Sidebar bottom */
-.sb-bottom {
-  padding: 10px 10px 12px;
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.sb-plan {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  cursor: pointer; margin-bottom: 6px;
-  transition: background 0.15s;
-}
-.sb-plan:hover { background: var(--bg3); }
-.sb-plan-text { flex: 1; min-width: 0; }
-.sb-plan-name { font-size: 13px; font-weight: 600; color: var(--text); }
-.sb-plan-sub  { font-size: 11px; color: var(--text3); }
+.sb-spacer { flex:1; min-height:8px; }
 
-.sb-profile {
-  display: flex; align-items: center; gap: 8px;
-  padding: 6px 8px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.sb-profile:hover { background: var(--bg3); }
-.sb-avatar {
-  width: 30px; height: 30px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #fff; font-size: 12px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.sb-profile-name { font-size: 13px; font-weight: 500; color: var(--text); }
-.sb-profile-sub  { font-size: 11px; color: var(--text3); }
-.sb-profile-info { flex: 1; min-width: 0; }
-.sb-profile-btns { display: flex; gap: 4px; }
-.sb-icon-btn {
-  width: 26px; height: 26px;
-  border-radius: 6px; border: none;
-  background: none; color: var(--text3);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: background 0.12s, color 0.12s;
-}
-.sb-icon-btn:hover { background: var(--bg3); color: var(--text); }
+.sb-bottom { border-top:0.5px solid var(--border); padding:6px 6px 10px; flex-shrink:0; }
+
+.sb-plan { display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px; background:none; border:none; cursor:pointer; transition:background 0.15s; width:100%; text-align:left; font-family:inherit; text-decoration:none; -webkit-tap-highlight-color:transparent; }
+.sb-plan:hover { background:var(--bg3); }
+.sb-plan-icon { width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+.sb-plan-text { flex:1; min-width:0; }
+.sb-plan-name { font-size:12.5px; font-weight:500; color:var(--text); }
+.sb-plan-sub { font-size:11px; color:var(--text3); }
+
+.sb-usage-wrap { padding:3px 10px 6px; }
+.sb-usage-label { font-size:10.5px; color:var(--text3); text-align:center; margin-bottom:3px; }
+.sb-usage-track { height:2px; background:var(--bg3); border-radius:2px; overflow:hidden; }
+
+.sb-profile { display:flex; align-items:center; gap:9px; padding:6px 10px; border-radius:8px; cursor:default; transition:background 0.15s; }
+.sb-profile:hover { background:var(--bg3); }
+.sb-avatar { width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.sb-profile-info { flex:1; min-width:0; }
+.sb-profile-name { font-size:12.5px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sb-profile-sub { font-size:11px; color:var(--text3); }
+.sb-profile-btns { display:flex; gap:2px; }
+.sb-icon-btn { width:26px; height:26px; border-radius:6px; border:none; background:none; color:var(--text3); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background 0.12s, color 0.12s; -webkit-tap-highlight-color:transparent; }
+.sb-icon-btn:hover { background:var(--bg3); color:var(--text); }
 
 /* ── MAIN ── */
 .main {
@@ -2141,12 +2086,16 @@ body.is-generating .tool-btn {
 
 <!-- ── SIDEBAR ── -->
 <div class="sidebar" id="sidebar">
+
   <div class="sb-top">
-    <button class="sb-newchat" onclick="newChat()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-      New chat
+    <a class="sb-logo" href="index.html">
+      <div class="sb-logo-dot">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+      </div>
+      Datta AI
+    </a>
+    <button class="sb-newchat" onclick="newChat()" title="New chat">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
     </button>
   </div>
 
@@ -2154,58 +2103,78 @@ body.is-generating .tool-btn {
     <input class="sb-search" type="text" id="search" placeholder="Search chats..." onkeyup="searchChats(this.value)" autocomplete="off">
   </div>
 
-  <div class="sb-label">Recent</div>
-  <div class="sb-list" id="history"></div>
-
-  <!-- ── TOOLS SECTION ── -->
-  <div style="padding: 8px 10px 4px; border-top: 1px solid var(--border); margin-top: 4px;">
-    <div style="font-size:10px;color:var(--text3);letter-spacing:1.2px;text-transform:uppercase;padding: 4px 4px 6px;">Tools</div>
-
-    <!-- Code Agent -->
-    <button onclick="openCodeAgent()" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;border:none;background:none;color:var(--text2);cursor:pointer;font-family:inherit;font-size:13px;text-align:left;transition:background 0.15s;-webkit-tap-highlight-color:transparent;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='none'">
-      <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#00c864,#0077ff);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">💻</div>
-      <div>
-        <div style="font-weight:600;color:var(--text);font-size:13px;">Code Agent</div>
-        <div style="font-size:11px;color:var(--text3);">Analyze · Fix · Review code</div>
+  <!-- Starred / Pinned section -->
+  <div class="sb-section-row">
+    <span class="sb-label" style="padding:10px 4px 4px;">Starred</span>
+  </div>
+  <div class="sb-tools" style="padding:0 6px 2px;">
+    <button class="sb-tool-item" onclick="openCodeAgent()">
+      <div class="sb-tool-icon" style="background:linear-gradient(135deg,#00c864,#0077ff);">💻</div>
+      <div class="sb-tool-info">
+        <div class="sb-tool-name">Code Agent</div>
+        <div class="sb-tool-desc">Fix · Review · Build</div>
       </div>
     </button>
-
-    <!-- Exam Solver -->
-    <button onclick="openExamSolver()" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;border:none;background:none;color:var(--text2);cursor:pointer;font-family:inherit;font-size:13px;text-align:left;transition:background 0.15s;-webkit-tap-highlight-color:transparent;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='none'">
-      <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#f59e0b,#ef4444);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">📝</div>
-      <div>
-        <div style="font-weight:600;color:var(--text);font-size:13px;">Exam Solver</div>
-        <div style="font-size:11px;color:var(--text3);">Upload paper → get answers</div>
+    <button class="sb-tool-item" onclick="openExamSolver()">
+      <div class="sb-tool-icon" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">📝</div>
+      <div class="sb-tool-info">
+        <div class="sb-tool-name">Exam Solver</div>
+        <div class="sb-tool-desc">Upload paper → answers</div>
       </div>
     </button>
-
+    <button class="sb-tool-item" onclick="openArtifactsPage()">
+      <div class="sb-tool-icon" style="background:linear-gradient(135deg,#8b5cf6,#6366f1);">🎨</div>
+      <div class="sb-tool-info">
+        <div class="sb-tool-name">Artifacts</div>
+        <div class="sb-tool-desc">View generated code</div>
+      </div>
+    </button>
   </div>
 
+  <div class="sb-divider"></div>
+
+  <!-- Recents -->
+  <div class="sb-section-row">
+    <span class="sb-label" style="padding:8px 4px 4px;">Recents</span>
+  </div>
+  <div class="sb-list" id="history"></div>
+
+  <div class="sb-spacer"></div>
+
   <div class="sb-bottom">
-    <div class="sb-plan" id="planBtn" onclick="navigateTo('pricing.html')">
-      <span id="planBtnEmoji" style="font-size:16px;">🌱</span>
+    <button class="sb-plan" id="planBtn" onclick="navigateTo('pricing.html')">
+      <div class="sb-plan-icon" id="planBtnEmoji">🌱</div>
       <div class="sb-plan-text">
         <div class="sb-plan-name" id="planBtnTitle">Free Plan</div>
-        <div class="sb-plan-sub"  id="planBtnSub">All models unlocked</div>
+        <div class="sb-plan-sub" id="planBtnSub">Upgrade for more</div>
       </div>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+
+    <div class="sb-usage-wrap">
+      <div class="sb-usage-label" id="usageDisplay"></div>
+      <div class="sb-usage-track">
+        <div id="usageBar" style="height:100%;background:var(--accent);border-radius:2px;width:0%;transition:width 0.4s ease;"></div>
+      </div>
     </div>
+
     <div class="sb-profile">
-      <div class="sb-avatar" id="profileAvatar">G</div>
+      <div class="sb-avatar" id="profileAvatar">U</div>
       <div class="sb-profile-info">
         <div class="sb-profile-name" id="profileName">User</div>
-        <div class="sb-profile-sub"  id="profileSub">Free Plan</div>
+        <div class="sb-profile-sub" id="profileSub">Free Plan</div>
       </div>
       <div class="sb-profile-btns">
         <button class="sb-icon-btn" onclick="openSettings()" title="Settings">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
         <button class="sb-icon-btn" onclick="logout()" title="Logout">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </button>
       </div>
     </div>
   </div>
+
 </div><!-- /.sidebar -->
 
 <!-- ── MAIN ── -->
