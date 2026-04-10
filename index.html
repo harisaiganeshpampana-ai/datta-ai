@@ -16,7 +16,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Datta AI">
-<meta name="theme-color" content="#0d0d0f">
+<meta name="theme-color" content="#0a0a0a">
 <link rel="apple-touch-icon" href="logo.jpeg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,32 +33,32 @@
 /* ── THEME VARIABLES ── */
 :root {
   --accent: #10a37f;
-  --accent2: #0077ff;
+  --accent2: #0055ff;
   --radius: 12px;
 }
 [data-theme="dark"] {
-  --bg:      #212121;
-  --bg2:     #2f2f2f;
-  --bg3:     #383838;
-  --text:    #ececec;
-  --text2:   #a0a0a0;
-  --text3:   #666;
-  --border:  rgba(255,255,255,0.1);
-  --card:    rgba(255,255,255,0.05);
-  --input:   #2f2f2f;
-  --shadow:  rgba(0,0,0,0.4);
+  --bg:      #0a0a0a;
+  --bg2:     #111111;
+  --bg3:     #1a1a1a;
+  --text:    #ebebeb;
+  --text2:   #999999;
+  --text3:   #555555;
+  --border:  rgba(255,255,255,0.08);
+  --card:    rgba(255,255,255,0.04);
+  --input:   #111111;
+  --shadow:  rgba(0,0,0,0.6);
 }
 [data-theme="light"] {
-  --bg:      #f9f9f9;
-  --bg2:     #ffffff;
+  --bg:      #ffffff;
+  --bg2:     #f9f9f9;
   --bg3:     #f0f0f0;
   --text:    #0d0d0d;
-  --text2:   #444;
-  --text3:   #888;
-  --border:  #e5e5e5;
+  --text2:   #555555;
+  --text3:   #999999;
+  --border:  #e8e8e8;
   --card:    #ffffff;
-  --input:   #ffffff;
-  --shadow:  rgba(0,0,0,0.1);
+  --input:   #f9f9f9;
+  --shadow:  rgba(0,0,0,0.08);
 }
 [data-theme="eye"] {
   --bg:      #1a1f17;
@@ -1546,33 +1546,33 @@ body.notes-open .input-area {
 
 /* Thinking block */
 .thinkingBlock {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 16px;
   max-width: 85%;
+  padding: 4px 0 8px;
+  background: none;
+  border: none;
 }
 .thinkingHeader {
   display: flex; align-items: center; gap: 8px;
-  font-size: 13px; color: var(--text3);
-  margin-bottom: 8px;
+  font-size: 12px; color: var(--text3);
+  margin-bottom: 6px;
 }
 .thinkingOrb {
-  width: 8px; height: 8px; border-radius: 50%;
+  width: 6px; height: 6px; border-radius: 50%;
   background: var(--accent);
   animation: orbPulse 1.2s ease-in-out infinite;
+  flex-shrink: 0;
 }
-.thinkingTitle { color: var(--text2); font-weight: 500; }
+.thinkingTitle { color: var(--text3); font-weight: 400; font-size: 12px; }
 .thinkingDots span { animation: dotBounce 1.2s infinite; display: inline-block; }
 .thinkingDots span:nth-child(2) { animation-delay: 0.2s; }
 .thinkingDots span:nth-child(3) { animation-delay: 0.4s; }
 .thinkStep {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 13px; color: var(--text2);
-  padding: 2px 0;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text3);
+  padding: 1px 0;
 }
-.thinkStepIcon { font-size: 14px; }
-.thinkStepLoader { margin-left: auto; font-size: 11px; color: var(--accent); }
+.thinkStepIcon { font-size: 12px; opacity: 0.7; }
+.thinkStepLoader { margin-left: auto; font-size: 10px; color: var(--accent); }
 
 /* Scroll down button */
 #scrollDownBtn {
@@ -2058,8 +2058,8 @@ body.is-generating .tool-btn {
     <button id="modeIndicator" onclick="navigateTo('settings.html')" style="display:none;padding:4px 12px;background:rgba(0,180,255,0.1);border:1px solid rgba(0,180,255,0.2);border-radius:20px;color:#00aaff;font-size:11px;cursor:pointer;white-space:nowrap;"></button>
     <!-- Theme switcher -->
     <div class="theme-switch">
-      <button class="theme-btn" id="topThemeDark"  onclick="setTheme('dark')">Dark</button>
-      <button class="theme-btn" id="topThemeLight" onclick="setTheme('light')">Light</button>
+      <button class="theme-btn" id="topThemeDark"  onclick="setTheme('dark')">Black</button>
+      <button class="theme-btn" id="topThemeLight" onclick="setTheme('light')">White</button>
       <button class="theme-btn" id="topThemeEye"   onclick="setTheme('eye')">Eye</button>
     </div>
     <!-- Settings -->
@@ -2567,7 +2567,7 @@ if ('serviceWorker' in navigator) {
 
   <div style="font-size:10px;color:var(--text3);padding:8px 10px 4px;letter-spacing:1.5px;text-transform:uppercase;border-top:1px solid var(--border);margin-top:4px;">⚡ Specialized</div>
 
-  <div class="model-drop-item" id="mdi-dcode" onclick="selectInputModel('qwen-2.5-coder-32b','dcode','Datta Code')">
+  <div class="model-drop-item" id="mdi-dcode" onclick="selectInputModel('qwen-qwq-32b','dcode','Datta Code')">
     <div class="model-drop-left">
       <div class="model-badge" style="background:rgba(0,200,100,0.15);color:#00c864;">💻</div>
       <div>
