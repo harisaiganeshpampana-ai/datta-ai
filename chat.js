@@ -785,36 +785,27 @@ async function send() {
     <div class="thinkingBlock" id="thinkingBlock">
       <div class="thinkingHeader">
         <div class="thinkingOrb"></div>
-        <span class="thinkingTitle">Thinking</span>
+        <span class="thinkingTitle" id="thinkingCurrentStep">${steps[0] ? steps[0].text : "Thinking"}</span>
         <span class="thinkingDots"><span>.</span><span>.</span><span>.</span></span>
-      </div>
-      <div class="thinkingSteps" id="thinkingSteps">
-        ${steps.map((s,i) => `
-          <div class="thinkStep" id="thinkStep${i}" style="opacity:0;transform:translateY(6px);transition:all 0.3s ease ${i*0.4}s;">
-            <span class="thinkStepIcon">${s.icon}</span>
-            <span class="thinkStepText">${s.text}</span>
-            <span class="thinkStepLoader" id="stepLoader${i}"></span>
-          </div>`).join("")}
       </div>
     </div>
   `
   chatBox.appendChild(aiDiv)
   chatBox.scrollTop = chatBox.scrollHeight
 
-  // Animate steps in sequence
-  steps.forEach((s, i) => {
-    setTimeout(() => {
-      const el = document.getElementById("thinkStep" + i)
-      if (el) { el.style.opacity = "1"; el.style.transform = "translateY(0)" }
-      // Mark previous step done
-      if (i > 0) {
-        const prev = document.getElementById("stepLoader" + (i-1))
-        const prevEl = document.getElementById("thinkStep" + (i-1))
-        if (prev) prev.innerHTML = '<span style="color:#00ff88;">✓</span>'
-        if (prevEl) prevEl.style.opacity = "0.5"
-      }
-    }, i * 400)
-  })
+  // Cycle through step text labels like Claude — no list, just one line updating
+  let _stepIdx = 0
+  const _stepTimer = setInterval(() => {
+    _stepIdx++
+    if (_stepIdx < steps.length) {
+      const label = document.getElementById("thinkingCurrentStep")
+      if (label) label.textContent = steps[_stepIdx].text
+    } else {
+      clearInterval(_stepTimer)
+    }
+  }, 1400)
+  // Store timer ref to clear when done
+  aiDiv._stepTimer = _stepTimer
 
   // Build FormData
   controller = new AbortController()
