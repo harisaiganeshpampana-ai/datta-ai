@@ -1879,9 +1879,9 @@ async function loadSmartSuggestions() {
   // Just use static chips - no API call needed
   // Dynamic chips from server were causing [object Object] error
   chips.innerHTML = `
+    <button class="sugg-card" onclick="useChip(this)"><span class="sugg-icon">🚀</span><span class="sugg-text">I want to build an app — guide me from scratch, I am a beginner</span></button>
     <button class="sugg-card" onclick="useChip(this)"><span class="sugg-icon">🌐</span><span class="sugg-text">Build me a portfolio website</span></button>
-    <button class="sugg-card" onclick="useChip(this)"><span class="sugg-icon">🐍</span><span class="sugg-text">Write a Python web scraper</span></button>
-    <button class="sugg-card" onclick="useChip(this)"><span class="sugg-icon">🧠</span><span class="sugg-text">Explain machine learning</span></button>
+    <button class="sugg-card" onclick="useChip(this)"><span class="sugg-icon">📝</span><span class="sugg-text">Solve my exam paper</span></button>
     <button class="sugg-card" onclick="useChip(this)"><span class="sugg-icon">💼</span><span class="sugg-text">Create a business plan</span></button>
   `
 }
@@ -3075,6 +3075,11 @@ function useChip(btn) {
     const textEl = btn.querySelector(".sugg-text") || btn.querySelector(".suggText") || btn.querySelector(".chipText")
     input.value = textEl ? textEl.textContent.trim() : btn.textContent.replace(/^[^\s]+\s/, "").trim()
     input.focus()
+    // Auto-select Datta Code for coding/app/build requests
+    const codingKeywords = ["build", "app", "website", "code", "program", "beginner", "scratch", "portfolio", "python", "developer"]
+    if (codingKeywords.some(k => input.value.toLowerCase().includes(k))) {
+      selectInputModel("llama-3.3-70b-versatile", "dcode", "Datta Code 💻")
+    }
     send()
   }
 }
