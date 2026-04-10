@@ -1233,10 +1233,14 @@ async function send() {
     if (_swMsg) _swMsg.remove()
 
     // ── ARTIFACT DETECTION ── Auto-open artifact panel for large code blocks
-    if (typeof detectAndOpenArtifact === "function" && streamText && streamText.length > 300) {
-      const hasLargeCode = (streamText.match(/```[\s\S]*?```/g) || []).some(b => b.length > 150)
-      if (hasLargeCode) {
-        setTimeout(() => detectAndOpenArtifact(streamText), 400)
+    if (typeof detectAndOpenArtifact === "function" && streamText && streamText.length > 200) {
+      // Detect any code block — html, js, python, css etc
+      const codeBlocks = streamText.match(/```[\s\S]*?```/g) || []
+      const hasCode = codeBlocks.some(b => b.length > 100)
+      // Also detect full HTML documents without backticks
+      const hasFullHTML = streamText.includes("<!DOCTYPE") || streamText.includes("<html")
+      if (hasCode || hasFullHTML) {
+        setTimeout(() => detectAndOpenArtifact(streamText), 500)
       }
     }
 
@@ -3195,7 +3199,7 @@ const modelData = {
   d42:    { model: "llama-3.3-70b-versatile",                       icon: "", name: "Datta 4.2" },
   d48:    { model: "llama-3.3-70b-versatile",                       icon: "", name: "Datta 4.8" },
   d54:    { model: "llama-3.3-70b-versatile",                       icon: "", name: "Datta 5.4" },
-  dcode:  { model: "qwen-qwq-32b",                   icon: "💻", name: "Datta Code" },
+  dcode:  { model: "llama-3.3-70b-versatile",                   icon: "💻", name: "Datta Code" },
   dthink: { model: "deepseek-r1-distill-llama-70b",                 icon: "🧠", name: "Datta Think" },
   chitra: { model: "meta-llama/llama-4-scout-17b-16e-instruct",     icon: "", name: "Datta Vision" },
   // Legacy support
@@ -4493,7 +4497,7 @@ function openCodeAgent() {
   newChat()
 
   // Switch to Datta Code model
-  selectInputModel("qwen-qwq-32b", "dcode", "Datta Code 💻")
+  selectInputModel("deepseek-r1-distill-llama-70b", "dcode", "Datta Code 💻")
 
   // Set placeholder and show prompt
   const msgInput = document.getElementById("message")
@@ -5048,6 +5052,16 @@ function openArtifactInNewTab() {
 
 // Detect code blocks in AI response and show in artifact panel
 function detectAndOpenArtifact(responseText) {
+  // Check for full HTML document without backticks (direct HTML output)
+  if ((responseText.includes("<!DOCTYPE") || responseText.includes("<html")) && !responseText.includes("```")) {
+    const htmlStart = responseText.indexOf("<!DOCTYPE") !== -1 ? responseText.indexOf("<!DOCTYPE") : responseText.indexOf("<html")
+    const code = responseText.slice(htmlStart).trim()
+    if (code.length > 100) {
+      openArtifact(code, "html", "app.html")
+      return true
+    }
+  }
+
   // Simple extraction - find largest code block
   const allBlocks = responseText.match(/```(\w+)?\n([\s\S]*?)```/g) || []
   if (allBlocks.length === 0) return false
@@ -5069,7 +5083,15 @@ function detectAndOpenArtifact(responseText) {
   const ext = lang === "js" ? "js" : lang === "py" ? "py" : lang === "css" ? "css" : lang === "sql" ? "sql" : lang === "java" ? "java" : "html"
   let title = "artifact." + ext
   // title already set as artifact.ext
-  openArtifact(code, lang, title)
+  // Try to get smart title from page title tag or first heading
+  let smartTitle = title
+  if (lang === "html") {
+    const titleMatch = code.match(/<title[^>]*>([^<]+)<\/title>/i)
+    if (titleMatch && titleMatch[1]) {
+      smartTitle = titleMatch[1].trim().toLowerCase().replace(/\s+/g, "-") + ".html"
+    }
+  }
+  openArtifact(code, lang, smartTitle)
   return true
 }
 
