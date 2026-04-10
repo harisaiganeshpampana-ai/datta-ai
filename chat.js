@@ -3200,7 +3200,7 @@ const modelData = {
   d48:    { model: "llama-3.3-70b-versatile",                       icon: "", name: "Datta 4.8" },
   d54:    { model: "llama-3.3-70b-versatile",                       icon: "", name: "Datta 5.4" },
   dcode:  { model: "llama-3.3-70b-versatile",                   icon: "💻", name: "Datta Code" },
-  dthink: { model: "deepseek-r1-distill-llama-70b",                 icon: "🧠", name: "Datta Think" },
+  dthink: { model: "llama-3.3-70b-versatile",                 icon: "🧠", name: "Datta Think" },
   chitra: { model: "meta-llama/llama-4-scout-17b-16e-instruct",     icon: "", name: "Datta Vision" },
   // Legacy support
   veda:   { model: "llama-3.3-70b-versatile",  icon: "", name: "Datta 4.2" },
@@ -4497,7 +4497,7 @@ function openCodeAgent() {
   newChat()
 
   // Switch to Datta Code model
-  selectInputModel("deepseek-r1-distill-llama-70b", "dcode", "Datta Code 💻")
+  selectInputModel("llama-3.3-70b-versatile", "dcode", "Datta Code 💻")
 
   // Set placeholder and show prompt
   const msgInput = document.getElementById("message")
