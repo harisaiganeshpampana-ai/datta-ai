@@ -734,6 +734,7 @@ async function send() {
   const msgLow = text.toLowerCase()
   const willSearch = ["latest news","breaking news","live score","stock price","crypto price","bitcoin price","gold price","petrol price","weather in","weather today","who won","election result","trending now","ipl 2025","ipl 2026","world cup","search for","look up","news about","just happened","announced today"].some(t => msgLow.includes(t))
   const willCode = ["build","create a website","write code","make an app","html","python","javascript","css","react","debug","fix this code","script"].some(t => msgLow.includes(t))
+  const willBuildLarge = ["food delivery","delivery app","ecommerce","e-commerce","shopping app","social media","chat app","booking app","full website","complete app","full app","full stack","fullstack","saas","startup","business app","ride sharing","uber","zomato","amazon","clone"].some(t => msgLow.includes(t))
   const willAnalyze = ["analyze","analyse","explain","summarize","what is","who is","how does","why does","pdf","document","file"].some(t => msgLow.includes(t))
   const willPlan = ["business plan","fitness plan","study plan","workout plan","meal plan","project plan","roadmap","strategy"].some(t => msgLow.includes(t))
 
@@ -744,6 +745,13 @@ async function send() {
       { icon:"🌐", text:"Searching the web..." },
       { icon:"📊", text:"Analyzing results..." },
       { icon:"✍️", text:"Writing answer..." }
+    ]
+    if (willBuildLarge) return [
+      { icon:"🧠", text:"Understanding your app idea..." },
+      { icon:"📐", text:"Planning architecture..." },
+      { icon:"📁", text:"Designing file structure..." },
+      { icon:"💻", text:"Writing code..." },
+      { icon:"🔍", text:"Reviewing & completing..." }
     ]
     if (willCode) return [
       { icon:"🧠", text:"Understanding requirements..." },
@@ -1040,15 +1048,14 @@ async function send() {
         </div>
         <div class="aiActions" data-msg-id="${msgId}" data-model="${_selModel}">
           <button class="actionBtn" title="Copy" onclick="copyText(this)"><i data-lucide="copy"></i></button>
-          <button class="actionBtn" title="Download as PDF" onclick="downloadAsPDF(this)"><i data-lucide="file-down"></i></button>
-          <button class="actionBtn" title="Save to File Manager" onclick="saveToFileManager(this)"><i data-lucide="bookmark"></i></button>
           <button class="actionBtn" title="Speak" onclick="speakText(this)"><i data-lucide="volume-2"></i></button>
-          <button class="actionBtn" title="Stop" onclick="stopVoice()"><i data-lucide="square"></i></button>
           <button class="actionBtn" title="Regenerate" onclick="regenerateFrom(this)"><i data-lucide="refresh-ccw"></i></button>
+          <button class="actionBtn" title="Download" onclick="downloadAsPDF(this)"><i data-lucide="file-down"></i></button>
           <div class="actionDivider"></div>
           <button class="actionBtn likeBtn" title="Good response" onclick="likeMsg(this)"><i data-lucide="thumbs-up"></i></button>
-          <button class="actionBtn dislikeBtn" title="Bad response" onclick="dislikeMsg(this)"><i data-lucide="thumbs-down"></i></button>
+          <button class="actionBtn dislikeBtn" title="Bad response — give feedback" onclick="dislikeMsg(this)"><i data-lucide="thumbs-down"></i></button>
         </div>
+        <div class="ai-disclaimer">Datta AI can make mistakes. Please verify important information.</div>
       </div>
     `
 
@@ -1056,6 +1063,22 @@ async function send() {
     const decoder = new TextDecoder()
     let streamText = ""
     let span = aiDiv.querySelector(".stream")
+
+    // Show "still working" indicator for large tasks after 8 seconds
+    var stillWorkingTimer = null
+    if (willBuildLarge || willCode) {
+      stillWorkingTimer = setTimeout(() => {
+        if (!isGenerating) return
+        const bubble = aiDiv.querySelector(".ai-bubble")
+        if (bubble && bubble.textContent.length < 100) {
+          const workingEl = document.createElement("div")
+          workingEl.id = "stillWorkingMsg"
+          workingEl.style.cssText = "color:var(--text3);font-size:13px;padding:6px 0;display:flex;align-items:center;gap:8px;"
+          workingEl.innerHTML = "<span style='width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;animation:orbPulse 1s infinite;'></span> Still working on it — building your complete app..."
+          bubble.parentNode.insertBefore(workingEl, bubble)
+        }
+      }, 8000)
+    }
 
     // ── TYPING STATE ──────────────────────────────────
     let typingActive = true      // false = user stopped typing animation
@@ -1212,6 +1235,19 @@ async function send() {
 
     hideStopBtn()
     loadSidebar()
+
+    // Clear still working indicator when done
+    if (typeof stillWorkingTimer !== "undefined" && stillWorkingTimer) clearTimeout(stillWorkingTimer)
+    const _swMsg = document.getElementById("stillWorkingMsg")
+    if (_swMsg) _swMsg.remove()
+
+    // ── ARTIFACT DETECTION ── Auto-open artifact panel for large code blocks
+    if (typeof detectAndOpenArtifact === "function" && streamText && streamText.length > 300) {
+      const hasLargeCode = (streamText.match(/```[\s\S]*?```/g) || []).some(b => b.length > 400)
+      if (hasLargeCode) {
+        setTimeout(() => detectAndOpenArtifact(streamText), 400)
+      }
+    }
 
     refreshUsageCounter()  // update X/20 counter after each successful response
 
@@ -1391,26 +1427,32 @@ async function openChat(chatId) {
 
   messages.forEach(m => {
     if (m.role === "user") {
+      var msgContent = safeContent(m.content)
+      // Show image icon if message was an image upload
+      var isImageMsg = msgContent.startsWith("📷") || msgContent.includes("(📷") || msgContent.startsWith("[Image:")
+      var displayContent = msgContent.replace(/\[Image: (.+?)\]/g, "📷 $1")
       chatBox.innerHTML += `
         <div class="msg-row user-row">
-          <div class="user-bubble">${safeContent(m.content)}</div>
+          <div class="user-bubble" style="${isImageMsg ? "opacity:0.85;" : ""}">${displayContent}</div>
         </div>
       `
     } else {
+      var aiContent = m.content || ""
+      // Skip empty messages
+      if (!aiContent.trim()) return
       chatBox.innerHTML += `
         <div class="msg-row">
           <div class="aiContent">
-            <div class="ai-bubble">${marked.parse(safeContent(m.content))}</div>
+            <div class="ai-bubble">${marked.parse(safeContent(aiContent))}</div>
             <div class="aiActions">
               <button class="actionBtn" title="Copy" onclick="copyText(this)"><i data-lucide="copy"></i></button>
-              <button class="actionBtn" title="Download as PDF" onclick="downloadAsPDF(this)"><i data-lucide="file-down"></i></button>
               <button class="actionBtn" title="Speak" onclick="speakText(this)"><i data-lucide="volume-2"></i></button>
-              <button class="actionBtn" title="Stop" onclick="stopVoice()"><i data-lucide="square"></i></button>
               <button class="actionBtn" title="Regenerate" onclick="regenerateFrom(this)"><i data-lucide="refresh-cw"></i></button>
               <div class="actionDivider"></div>
               <button class="actionBtn likeBtn" title="Good response" onclick="likeMsg(this)"><i data-lucide="thumbs-up"></i></button>
               <button class="actionBtn dislikeBtn" title="Bad response" onclick="dislikeMsg(this)"><i data-lucide="thumbs-down"></i></button>
             </div>
+            <div class="ai-disclaimer">Datta AI can make mistakes. Verify important info.</div>
           </div>
         </div>
       `
@@ -2232,6 +2274,20 @@ function dislikeMsg(btn) { _sendFeedback(btn, "dislike") }
 window.likeMsg = likeMsg
 window.dislikeMsg = dislikeMsg
 window._sendDislikeReason = _sendDislikeReason
+
+// Enhanced like with visual feedback
+const _origLike = likeMsg
+window.likeMsg = function(btn) {
+  _origLike(btn)
+  btn.classList.toggle("active")
+  // Remove dislike active if present
+  const row = btn.closest(".aiActions")
+  if (row) {
+    const dislikeBtn = row.querySelector(".dislikeBtn")
+    if (dislikeBtn) dislikeBtn.classList.remove("active")
+  }
+  if (btn.classList.contains("active")) showToast("👍 Thanks for the feedback!")
+}
 
 // ── VOICE ASSISTANT (SIRI-LIKE) ──────────────────────────────────────────────
 
@@ -3060,22 +3116,36 @@ function toggleTheme() {
 window.toggleTheme = toggleTheme
 
 // ── FEATURE 3: MOBILE UI - Auto collapse sidebar on mobile ──────────────────
+function openSidebar() {
+  const sidebar = document.querySelector(".sidebar")
+  const backdrop = document.getElementById("sidebarBackdrop")
+  if (!sidebar) return
+  sidebar.classList.add("open", "show")
+  if (backdrop) backdrop.style.display = "block"
+  document.body.style.overflow = "hidden"
+}
+
+function closeSidebar() {
+  const sidebar = document.querySelector(".sidebar")
+  const backdrop = document.getElementById("sidebarBackdrop")
+  if (!sidebar) return
+  sidebar.classList.remove("open", "show")
+  if (backdrop) backdrop.style.display = "none"
+  document.body.style.overflow = ""
+}
+
 function toggleSidebar() {
   const sidebar = document.querySelector(".sidebar")
   if (!sidebar) return
 
   if (window.innerWidth < 768) {
-    // MOBILE: slide in/out with overlay
+    // MOBILE: slide in/out with backdrop
     const isOpen = sidebar.classList.contains("open")
-    sidebar.classList.toggle("open", !isOpen)
-    sidebar.classList.toggle("show", !isOpen)
-    // Use the sb-overlay already in HTML
-    const overlay = document.getElementById("sb-overlay")
-    if (overlay) overlay.style.display = !isOpen ? "block" : "none"
+    if (isOpen) { closeSidebar() } else { openSidebar() }
   } else {
     // DESKTOP: collapse sidebar width
-    const isCollapsed = sidebar.classList.toggle("sb-collapsed")
-    // Shift input center point
+    document.body.classList.toggle("sb-collapsed")
+    const isCollapsed = document.body.classList.contains("sb-collapsed")
     const inputArea = document.getElementById("inputArea")
     if (inputArea) {
       inputArea.style.left = isCollapsed
@@ -3086,6 +3156,8 @@ function toggleSidebar() {
 }
 
 window.toggleSidebar = toggleSidebar
+window.openSidebar = openSidebar
+window.closeSidebar = closeSidebar
 
 
 // ── FEATURE 5: AI MODEL SELECTOR ────────────────────────────────────────────
@@ -3128,16 +3200,18 @@ window.showToast = showToast
 
 // ── MODEL PICKER ─────────────────────────────────────────────────────────────
 const modelData = {
-  d21:    { model: "llama-3.1-8b-instant",                        icon: "", name: "Datta 2.1" },
-  d42:    { model: "llama-3.3-70b-versatile",                     icon: "", name: "Datta 4.2" },
-  d48:    { model: "llama-3.3-70b-versatile",               icon: "", name: "Datta 4.8" },
-  d54:    { model: "llama-3.3-70b-versatile",                          icon: "", name: "Datta 5.4" },
-  chitra: { model: "meta-llama/llama-4-scout-17b-16e-instruct",   icon: "", name: "Datta Vision" },
+  d21:    { model: "llama-3.1-8b-instant",                          icon: "", name: "Datta 2.1" },
+  d42:    { model: "llama-3.3-70b-versatile",                       icon: "", name: "Datta 4.2" },
+  d48:    { model: "llama-3.3-70b-versatile",                       icon: "", name: "Datta 4.8" },
+  d54:    { model: "llama-3.3-70b-versatile",                       icon: "", name: "Datta 5.4" },
+  dcode:  { model: "qwen-2.5-coder-32b-instruct",                   icon: "💻", name: "Datta Code" },
+  dthink: { model: "deepseek-r1-distill-llama-70b",                 icon: "🧠", name: "Datta Think" },
+  chitra: { model: "meta-llama/llama-4-scout-17b-16e-instruct",     icon: "", name: "Datta Vision" },
   // Legacy support
   veda:   { model: "llama-3.3-70b-versatile",  icon: "", name: "Datta 4.2" },
   surya:  { model: "llama-3.1-8b-instant",     icon: "", name: "Datta 2.1" },
-  agni:   { model: "llama-3.3-70b-versatile", icon: "", name: "Datta 4.8" },
-  brahma: { model: "llama-3.3-70b-versatile",       icon: "", name: "Datta 5.4" }
+  agni:   { model: "llama-3.3-70b-versatile",  icon: "", name: "Datta 4.8" },
+  brahma: { model: "llama-3.3-70b-versatile",  icon: "", name: "Datta 5.4" }
 }
 
 // Model picker removed - using modelDropdown only
@@ -4168,7 +4242,7 @@ function updateModeIndicator(key, label) {
     btn.style.display = "none"
     // Restore actual model name in pill
     const savedKey = localStorage.getItem("datta_model_key") || "d21"
-    const savedName = { d21:"Datta 2.1", d42:"Datta 4.2", d48:"Datta 4.8", d54:"Datta 5.4" }
+    const savedName = { d21:"Datta 2.1", d42:"Datta 4.2", d48:"Datta 4.8", d54:"Datta 5.4", dcode:"Datta Code 💻", dthink:"Datta Think 🧠" }
     if (pill) pill.textContent = savedName[savedKey] || "Datta 2.1"
   } else {
     const icons = { lawyer:"⚖️", teacher:"📚", chef:"👨‍🍳", fitness:"💪", upsc:"🏛️", student:"📖", interview:"🎯", business:"💼" }
@@ -4191,7 +4265,7 @@ function initModeIndicator() {
       pill.textContent = "Datta 1.1"
     } else {
       const modelKey = localStorage.getItem("datta_model_key") || "d21"
-      const names = { d21:"Datta 2.1", d42:"Datta 4.2", d48:"Datta 4.8", d54:"Datta 5.4" }
+      const names = { d21:"Datta 2.1", d42:"Datta 4.2", d48:"Datta 4.8", d54:"Datta 5.4", dcode:"Datta Code 💻", dthink:"Datta Think 🧠" }
       pill.textContent = names[modelKey] || "Datta 2.1"
     }
   }
@@ -4410,6 +4484,118 @@ function refreshUsageCounter() {
     .catch(() => {})
 }
 window.refreshUsageCounter = refreshUsageCounter
+
+// ── CODE AGENT ─────────────────────────────────────────────────────────────────
+function openCodeAgent() {
+  // Close sidebar on mobile
+  const sidebar = document.getElementById("sidebar")
+  if (sidebar && window.innerWidth < 768) sidebar.classList.remove("open","show")
+
+  // Start a new chat with Code Agent mode
+  newChat()
+
+  // Switch to Datta Code model
+  selectInputModel("qwen-2.5-coder-32b-instruct", "dcode", "Datta Code 💻")
+
+  // Set placeholder and show prompt
+  const msgInput = document.getElementById("message")
+  if (msgInput) {
+    msgInput.placeholder = "Paste your code here and describe what you need..."
+    msgInput.focus()
+  }
+
+  // Show welcome message in chat
+  setTimeout(() => {
+    const chatBox = document.getElementById("chatBox")
+    if (!chatBox) return
+    chatBox.innerHTML = `
+      <div class="msg-row">
+        <div class="aiContent">
+          <div class="ai-bubble" style="padding:16px;background:var(--bg2);border:1px solid var(--border);border-radius:16px;">
+            <div style="font-size:18px;margin-bottom:10px;">💻 Datta Code Agent</div>
+            <p style="color:var(--text2);margin-bottom:12px;">I can help you with any coding task. Here's what I can do:</p>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="background:var(--bg3);border-radius:10px;padding:10px 14px;cursor:pointer;" onclick="setCodeAgentMode('fix')">
+                🔧 <strong>Fix bugs</strong> — Paste your code + error message
+              </div>
+              <div style="background:var(--bg3);border-radius:10px;padding:10px 14px;cursor:pointer;" onclick="setCodeAgentMode('review')">
+                🔍 <strong>Code review</strong> — Find security issues and improvements
+              </div>
+              <div style="background:var(--bg3);border-radius:10px;padding:10px 14px;cursor:pointer;" onclick="setCodeAgentMode('build')">
+                🏗️ <strong>Build feature</strong> — Describe what you want to add
+              </div>
+              <div style="background:var(--bg3);border-radius:10px;padding:10px 14px;cursor:pointer;" onclick="setCodeAgentMode('explain')">
+                📖 <strong>Explain code</strong> — Understand what code does
+              </div>
+              <div style="background:var(--bg3);border-radius:10px;padding:10px 14px;cursor:pointer;" onclick="setCodeAgentMode('optimize')">
+                ⚡ <strong>Optimize</strong> — Make code faster and cleaner
+              </div>
+            </div>
+            <p style="color:var(--text3);font-size:12px;margin-top:14px;">Or just paste your code and ask anything — I understand all languages.</p>
+          </div>
+        </div>
+      </div>
+    `
+    lucide.createIcons()
+  }, 100)
+}
+
+function setCodeAgentMode(mode) {
+  const msgInput = document.getElementById("message")
+  if (!msgInput) return
+    const prompts = {
+    fix: "Here is my code and the error I am getting:\n\n```\n[paste your code here]\n```\n\nError: [paste error message]\n\nPlease fix it and explain what was wrong.",
+    review: "Please review this code for bugs, security issues, and improvements:\n\n```\n[paste your code here]\n```",
+    build: "I have this existing code:\n\n```\n[paste your code here]\n```\n\nI want to add: [describe the feature]",
+    explain: "Please explain what this code does, step by step:\n\n```\n[paste your code here]\n```",
+    optimize: "Please optimize this code for better performance and readability:\n\n```\n[paste your code here]\n```"
+  }
+  msgInput.value = prompts[mode] || ""
+  msgInput.focus()
+  // Auto-resize textarea
+  msgInput.style.height = "auto"
+  msgInput.style.height = Math.min(msgInput.scrollHeight, 200) + "px"
+}
+window.setCodeAgentMode = setCodeAgentMode
+window.openCodeAgent = openCodeAgent
+
+// ── EXAM SOLVER SHORTCUT ───────────────────────────────────────────────────────
+function openExamSolver() {
+  // Close sidebar on mobile
+  const sidebar = document.getElementById("sidebar")
+  if (sidebar && window.innerWidth < 768) sidebar.classList.remove("open","show")
+
+  newChat()
+
+  setTimeout(() => {
+    const chatBox = document.getElementById("chatBox")
+    if (!chatBox) return
+    chatBox.innerHTML = `
+      <div class="msg-row">
+        <div class="aiContent">
+          <div class="ai-bubble" style="padding:16px;background:var(--bg2);border:1px solid var(--border);border-radius:16px;">
+            <div style="font-size:18px;margin-bottom:10px;">📝 Exam Solver</div>
+            <p style="color:var(--text2);margin-bottom:12px;">Upload your question paper image and I'll answer every question completely.</p>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
+              <div style="background:var(--bg3);border-radius:10px;padding:10px 14px;font-size:13px;">
+                ✅ Works for any subject — Farm Management, Physics, Chemistry, History, Engineering
+              </div>
+              <div style="background:var(--bg3);border-radius:10px;padding:10px 14px;font-size:13px;">
+                ✅ Answers based on marks — 1 mark, 2 marks, 4 marks
+              </div>
+              <div style="background:var(--bg3);border-radius:10px;padding:10px 14px;font-size:13px;">
+                ✅ Complete answers — never leaves questions blank
+              </div>
+            </div>
+            <p style="color:var(--text3);font-size:13px;">📎 Click the attachment icon below and upload your question paper image to start.</p>
+          </div>
+        </div>
+      </div>
+    `
+    lucide.createIcons()
+  }, 100)
+}
+window.openExamSolver = openExamSolver
 
 
 // ══════════════════════════════════════════════════════
@@ -4760,3 +4946,162 @@ window.downloadNotes = downloadNotes
   `
   document.head.appendChild(s)
 })()
+
+// ══════════════════════════════════════════════════════════════════
+// ARTIFACTS — Claude-style live code preview panel
+// ══════════════════════════════════════════════════════════════════
+
+var _artifactCode = ""
+var _artifactLang = ""
+var _artifactFileName = ""
+
+function openArtifact(code, lang, title) {
+  _artifactCode = code
+  _artifactLang = lang || "html"
+  _artifactFileName = title || ("artifact." + (_artifactLang === "html" ? "html" : _artifactLang === "css" ? "css" : _artifactLang === "python" ? "py" : "js"))
+
+  const panel = document.getElementById("artifactPanel")
+  const titleEl = document.getElementById("artifactTitle")
+  const langEl = document.getElementById("artifactLang")
+  const codeView = document.getElementById("artifactCodeView")
+
+  if (!panel) return
+
+  // Set title and lang
+  if (titleEl) titleEl.textContent = _artifactFileName
+  if (langEl) langEl.textContent = _artifactLang.toUpperCase()
+
+  // Show code
+  if (codeView) codeView.textContent = code
+
+  // Switch to code tab by default
+  switchArtifactTab("code")
+
+  // Open panel
+  panel.classList.add("open")
+  document.body.classList.add("artifact-open")
+
+  // Auto-switch to preview for HTML
+  if (_artifactLang === "html") {
+    setTimeout(() => switchArtifactTab("preview"), 300)
+  }
+}
+
+function closeArtifact() {
+  const panel = document.getElementById("artifactPanel")
+  if (panel) panel.classList.remove("open")
+  document.body.classList.remove("artifact-open")
+}
+
+function switchArtifactTab(tab) {
+  const codeView = document.getElementById("artifactCodeView")
+  const preview = document.getElementById("artifactPreview")
+  const tabCode = document.getElementById("tabCode")
+  const tabPreview = document.getElementById("tabPreview")
+
+  if (tab === "code") {
+    if (codeView) codeView.classList.add("active")
+    if (preview) preview.classList.remove("active")
+    if (tabCode) tabCode.classList.add("active")
+    if (tabPreview) tabPreview.classList.remove("active")
+  } else {
+    if (codeView) codeView.classList.remove("active")
+    if (preview) preview.classList.add("active")
+    if (tabCode) tabCode.classList.remove("active")
+    if (tabPreview) tabPreview.classList.add("active")
+    // Load preview
+    if (preview && _artifactCode) {
+      if (_artifactLang === "html") {
+        preview.srcdoc = _artifactCode
+      } else if (_artifactLang === "css") {
+        preview.srcdoc = "<style>" + _artifactCode + "</style><div style='padding:20px;font-family:sans-serif;'>CSS Preview</div>"
+      } else {
+        preview.srcdoc = "<pre style='padding:20px;font-family:monospace;white-space:pre-wrap;'>" + _artifactCode + "</pre>"
+      }
+    }
+  }
+}
+
+function copyArtifact() {
+  if (_artifactCode) {
+    navigator.clipboard.writeText(_artifactCode)
+    showToast("✅ Code copied!")
+  }
+}
+
+function downloadArtifact() {
+  if (!_artifactCode) return
+  const blob = new Blob([_artifactCode], { type: "text/plain" })
+  const a = document.createElement("a")
+  a.href = URL.createObjectURL(blob)
+  a.download = _artifactFileName
+  a.click()
+  URL.revokeObjectURL(a.href)
+  showToast("📥 Downloaded!")
+}
+
+function openArtifactInNewTab() {
+  if (!_artifactCode) return
+  const blob = new Blob([_artifactCode], { type: "text/html" })
+  const url = URL.createObjectURL(blob)
+  window.open(url, "_blank")
+}
+
+// Detect code blocks in AI response and show in artifact panel
+function detectAndOpenArtifact(responseText) {
+  // Simple extraction - find largest code block
+  const allBlocks = responseText.match(/```(\w+)?\n([\s\S]*?)```/g) || []
+  if (allBlocks.length === 0) return false
+
+  let largestBlock = allBlocks[0]
+  for (const b of allBlocks) {
+    if (b.length > largestBlock.length) largestBlock = b
+  }
+
+  const langMatch = largestBlock.match(/```(\w+)?/)
+  const rawLang = (langMatch && langMatch[1]) ? langMatch[1].toLowerCase() : "html"
+  const lang = rawLang === "javascript" ? "js" : rawLang === "python" ? "py" : rawLang === "jsx" ? "html" : rawLang === "typescript" ? "js" : rawLang
+  const code = largestBlock.replace(/```\w*\n?/, "").replace(/```$/, "").trim()
+
+  // Only open for substantial code (not tiny snippets)
+  if (code.length < 200) return false
+
+  // Generate smart title
+  const ext = lang === "js" ? "js" : lang === "py" ? "py" : lang === "css" ? "css" : "html"
+  const title = "artifact." + ext
+  openArtifact(code, lang, title)
+  return true
+}
+
+window.openArtifact = openArtifact
+window.closeArtifact = closeArtifact
+window.switchArtifactTab = switchArtifactTab
+window.copyArtifact = copyArtifact
+window.downloadArtifact = downloadArtifact
+window.openArtifactInNewTab = openArtifactInNewTab
+window.detectAndOpenArtifact = detectAndOpenArtifact
+// ── QUICK TOOLS ────────────────────────────────────────────────────────────────
+function useTool(tool) {
+  const msgInput = document.getElementById("message")
+  if (!msgInput) return
+
+  const templates = {
+    weather: "What is the weather in ",
+    currency: "Convert 100 USD to INR",
+    news: "What is the latest news about ",
+    calculate: "Calculate: ",
+    translate: "Translate to Hindi: "
+  }
+
+  const template = templates[tool] || ""
+  msgInput.value = template
+  msgInput.focus()
+
+  // Place cursor at end
+  msgInput.setSelectionRange(template.length, template.length)
+
+  // Auto-resize
+  msgInput.style.height = "auto"
+  msgInput.style.height = Math.min(msgInput.scrollHeight, 200) + "px"
+}
+window.useTool = useTool
