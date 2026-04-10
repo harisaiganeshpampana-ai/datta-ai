@@ -621,6 +621,140 @@ function authMiddleware(req, res, next) {
 // Search cache — same query within 30s returns cached result (saves API calls)
 const _searchCache = new Map()
 
+// ── TOOLS ─────────────────────────────────────────────────────────────────────
+
+// Weather Tool — OpenWeatherMap free API
+async function getWeather(location) {
+  const apiKey = process.env.OPENWEATHER_API_KEY
+  if (!apiKey) {
+    // Fallback: use web search for weather
+    return null
+  }
+  try {
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&appid=${apiKey}&units=metric`
+    const resp = await fetch(url)
+    if (!resp.ok) return null
+    const data = await resp.json()
+    const weather = {
+      location: data.name + ", " + data.sys.country,
+      temp: Math.round(data.main.temp),
+      feels_like: Math.round(data.main.feels_like),
+      condition: data.weather[0].description,
+      humidity: data.main.humidity,
+      wind: Math.round(data.wind.speed * 3.6), // m/s to km/h
+      min: Math.round(data.main.temp_min),
+      max: Math.round(data.main.temp_max)
+    }
+    return `🌤️ **Weather in ${weather.location}**
+🌡️ Temperature: ${weather.temp}°C (feels like ${weather.feels_like}°C)
+☁️ Condition: ${weather.condition.charAt(0).toUpperCase() + weather.condition.slice(1)}
+💧 Humidity: ${weather.humidity}%
+💨 Wind: ${weather.wind} km/h
+📊 Today's range: ${weather.min}°C – ${weather.max}°C`
+  } catch(e) {
+    console.warn("[WEATHER] Error:", e.message)
+    return null
+  }
+}
+
+// Currency Tool — ExchangeRate-API free tier
+async function convertCurrency(amount, from, to) {
+  try {
+    const url = `https://api.exchangerate-api.com/v4/latest/${from.toUpperCase()}`
+    const resp = await fetch(url)
+    if (!resp.ok) return null
+    const data = await resp.json()
+    const rate = data.rates[to.toUpperCase()]
+    if (!rate) return null
+    const converted = (amount * rate).toFixed(2)
+    const rateDisplay = rate.toFixed(4)
+    return `💱 **Currency Conversion**
+${amount} ${from.toUpperCase()} = **${converted} ${to.toUpperCase()}**
+Exchange rate: 1 ${from.toUpperCase()} = ${rateDisplay} ${to.toUpperCase()}
+Rate source: ExchangeRate-API · Updated: ${new Date().toLocaleString("en-IN", {timeZone:"Asia/Kolkata"})}`
+  } catch(e) {
+    console.warn("[CURRENCY] Error:", e.message)
+    return null
+  }
+}
+
+// News Tool — NewsAPI free tier
+async function getNews(topic, language) {
+  const apiKey = process.env.NEWS_API_KEY
+  if (!apiKey) return null
+  try {
+    const lang = language === "hi" ? "hi" : "en"
+    const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(topic)}&language=${lang}&sortBy=publishedAt&pageSize=5&apiKey=${apiKey}`
+    const resp = await fetch(url)
+    if (!resp.ok) return null
+    const data = await resp.json()
+    if (!data.articles || data.articles.length === 0) return null
+    let result = `📰 **Latest News: ${topic}**
+
+`
+    data.articles.slice(0, 4).forEach((a, i) => {
+      const time = new Date(a.publishedAt).toLocaleString("en-IN", {timeZone:"Asia/Kolkata", day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"})
+      result += `**${i+1}. ${a.title}**
+${a.description ? a.description.slice(0,120) + "..." : ""}
+*${a.source.name} · ${time}*
+
+`
+    })
+    return result.trim()
+  } catch(e) {
+    console.warn("[NEWS] Error:", e.message)
+    return null
+  }
+}
+
+// Tool detector — checks if user message needs a specific tool
+function detectTool(message) {
+  const msg = message.toLowerCase().trim()
+
+  // Weather detection
+  const weatherMatch = msg.match(/weather\s+(?:in|at|of|for)?\s*([a-z\s,]+?)(?:\?|$|today|tomorrow|now)/i) ||
+                       msg.match(/(?:temperature|forecast|climate)\s+(?:in|at|of)?\s*([a-z\s,]+?)(?:\?|$)/i) ||
+                       msg.match(/how(?:'s| is) (?:the )?weather\s+(?:in|at)?\s*([a-z\s,]+?)(?:\?|$)/i)
+  if (weatherMatch) {
+    const location = weatherMatch[1].trim()
+    if (location.length > 1) return { type: "weather", location }
+  }
+
+  // Currency detection
+  const currencyMatch = msg.match(/(\d+(?:\.\d+)?)\s*([a-z]{3})\s+(?:to|in|=)\s*([a-z]{3})/i) ||
+                        msg.match(/convert\s+(\d+(?:\.\d+)?)\s*([a-z]{3})\s+to\s+([a-z]{3})/i) ||
+                        msg.match(/(\d+(?:\.\d+)?)\s+(?:dollars?|usd|rupees?|inr|euros?|eur|pounds?|gbp|yen|jpy)\s+(?:to|in)\s+([a-z]+)/i)
+  if (currencyMatch) {
+    let amount, from, to
+    if (currencyMatch[3]) {
+      amount = parseFloat(currencyMatch[1])
+      from = currencyMatch[2]
+      to = currencyMatch[3]
+    } else {
+      const fromWords = { dollars:"USD", usd:"USD", rupees:"INR", inr:"INR", euros:"EUR", eur:"EUR", pounds:"GBP", gbp:"GBP", yen:"JPY", jpy:"JPY" }
+      amount = parseFloat(currencyMatch[1])
+      const fromWord = currencyMatch[2]?.toLowerCase()
+      from = fromWords[fromWord] || fromWord?.toUpperCase()
+      to = currencyMatch[3]?.toLowerCase() || "INR"
+      const toWords = fromWords
+      to = toWords[to] || to.toUpperCase()
+    }
+    if (amount && from && to && from !== to) return { type: "currency", amount, from, to }
+  }
+
+  // News detection  
+  const newsMatch = msg.match(/(?:latest|recent|today'?s?|breaking|current)\s+news\s+(?:about|on|of)?\s*([a-z\s]+?)(?:\?|$)/i) ||
+                   msg.match(/news\s+(?:about|on|of)\s+([a-z\s]+?)(?:\?|$)/i) ||
+                   msg.match(/what(?:'s| is) happening\s+(?:in|with|to)?\s*([a-z\s]+?)(?:\?|$)/i)
+  if (newsMatch) {
+    const topic = newsMatch[1].trim()
+    if (topic.length > 2) return { type: "news", topic }
+  }
+
+  return null
+}
+
+
 // Monthly counter — stops search after 800 calls to prevent exhaustion
 let _searchCount = 0
 let _searchCountMonth = new Date().getMonth()
@@ -1965,7 +2099,13 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       chat = await Chat.create({ userId, title, messages: [] })
     }
 
-    chat.messages.push({ role: "user", content: message || "[File: " + (file?.originalname || "unknown") + "]" })
+    // For image uploads — save descriptive message so chat history makes sense on reload
+    var userMsgContent = message || ""
+    if (file) {
+      var fileDesc = isImageFile ? "📷 Image: " + (file.originalname || "image") : "📎 File: " + (file.originalname || "file")
+      userMsgContent = userMsgContent ? userMsgContent + " (" + fileDesc + ")" : fileDesc
+    }
+    chat.messages.push({ role: "user", content: userMsgContent || "Hello" })
     await chat.save()
     res.setHeader("x-chat-id", chat._id.toString())
     res.setHeader("Content-Type", "text/plain; charset=utf-8")
@@ -2190,7 +2330,12 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       // Persona models
       "datta-1.1",
       "persona-lawyer","persona-teacher","persona-chef","persona-fitness",
-      "persona-upsc","persona-student","persona-interview","persona-business"
+      "persona-upsc","persona-student","persona-interview","persona-business",
+      // Datta Code models
+      "datta-code",
+      "datta-think",
+      "qwen-2.5-coder-32b-instruct",
+      "deepseek-r1-distill-llama-70b"
     ]
     let chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.1-8b-instant"
     var modelKey = req.body.modelKey || "d21" // d21, d42, d48, d54
@@ -2217,7 +2362,13 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "persona-upsc":     "llama-3.3-70b-versatile",
       "persona-student":  "llama-3.1-8b-instant",
       "persona-interview":"llama-3.1-8b-instant",
-      "persona-business": "llama-3.3-70b-versatile"
+      "persona-business": "llama-3.3-70b-versatile",
+      // Datta Code — Qwen 2.5 Coder (best free coding model)
+      "datta-code":                    "qwen-2.5-coder-32b-instruct",
+      "qwen-2.5-coder-32b-instruct":   "qwen-2.5-coder-32b-instruct",
+      // Datta Think — DeepSeek R1 (shows reasoning steps)
+      "datta-think":                   "deepseek-r1-distill-llama-70b",
+      "deepseek-r1-distill-llama-70b": "deepseek-r1-distill-llama-70b"
     }
     // If frontend sends full Groq model ID directly, use as-is
     // If it sends a short name, map it
@@ -2313,12 +2464,11 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var isExplainQuestion = !isProblemSolving && (isNarrativeRequest || isCurrentAffairs || isGKHistory || isStructuredTopic || ["what is","what are","what does","what do","why is","why does","why do","how does","how do","explain","tell me about","define","describe","difference between","vs ","versus","when to use","should i use","pros and cons","advantages","disadvantages","history of","who created","who made","full form","meaning of","importance of","role of","function of","types of","examples of","causes of","effects of","impact of","significance of"].some(k => msgLower.includes(k)))
     var isCodeTask = !isExplainQuestion && ["build","create","write","make","code","website","app","script","program","fix","debug","update","improve","implement","develop","generate","show me how to","give me code","example code","sample code","snippet"].some(k => msgLower.includes(k))
     
-    // Datta 2.1 (llama-3.1-8b) — NO coding at all. Always redirect to Datta 5.4.
+    // Datta 2.1 (llama-3.1-8b) — NO coding at all. Redirect to Datta Code.
     var isDatta21 = (resolvedModel === "llama-3.1-8b-instant" || chosenModel === "llama-3.1-8b-instant")
     let autoSwitchMsg = ""
     if (isCodeTask && !isImageFile && isDatta21 && !chosenModel.startsWith("persona-")) {
-      // Block coding on Datta 2.1 completely — stream a redirect message and stop
-      var redirectMsg = "⚠️ Coding requires **Datta 5.4**. Datta 2.1 is for chat only.\n\nPlease switch to **Datta 5.4** from the model selector to get full code answers."
+      var redirectMsg = "⚠️ Coding requires **Datta Code** or **Datta 5.4**.\n\nDatta 2.1 is for chat only. Switch to **Datta Code** for the best coding experience — it uses Qwen 2.5 Coder, a model built specifically for programming."
       res.write(redirectMsg)
       chat.messages.push({ role: "assistant", content: redirectMsg })
       await chat.save()
@@ -2327,6 +2477,10 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       cleanupRequest()
       return
     }
+
+    // Auto-upgrade to Qwen Coder for code tasks when on standard models
+    var isDattaCode = (resolvedModel === "qwen-2.5-coder-32b-instruct")
+    var isDattaThink = (resolvedModel === "deepseek-r1-distill-llama-70b")
     // For other non-8b models doing code — use 70b
     var nonCodingModels = ["llama-3.3-70b-versatile"]
     if (isCodeTask && !isImageFile && nonCodingModels.includes(resolvedModel) && !chosenModel.startsWith("persona-")) {
@@ -2355,13 +2509,15 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var isDeepKnowledge = isCurrentAffairs || isGKHistory || isNarrativeRequest
     // Token budget — always give enough room to complete every section
     // isStructuredTopic: medical/science/engineering topics need 5000+ to finish all sections
-    var maxCodingTok = isLargeTask      ? 6000
+    // Datta Code and Datta Think get maximum tokens
+    var maxCodingTok = isDattaCode || isDattaThink ? 8000  // Full tokens for coding/thinking models
+                     : isLargeTask      ? 6000
                      : isCodeTask       ? 4096
                      : isDeepKnowledge  ? 5000
-                     : isStructuredTopic? 5000   // NEW: full detailed academic responses
+                     : isStructuredTopic? 5000
                      : isExplainQuestion? (inputIsLarge ? 3000 : 4000)
                      : isStepByStep     ? 3000
-                     :                    2500   // simple chat — raised from 1800
+                     :                    2500
     var maxTok = isImageFile ? (isQuestionPaper ? 8000 : 4000) : maxCodingTok
 
     // Use browser's actual local time sent from frontend
@@ -2405,6 +2561,17 @@ CORE BEHAVIOR:
 - Be direct, practical, slightly strict when the user is about to make a mistake
 - Focus on execution, not theory
 - Adapt to Indian context automatically (UPI, Razorpay, GST, Aadhaar, Play Store India, INR, etc.)
+
+CONVERSATIONAL STYLE (very important):
+- Ask ONE clarifying question when the user's request is unclear — don't assume
+- After giving a long answer, ask: "Does this make sense? Want me to go deeper on any part?"
+- After solving a problem, ask: "Did this fix it? Tell me what you see now"
+- For multi-step tasks, confirm each step: "Done with Step 1? Tell me when ready for Step 2"
+- If user says "yes" or "ok" — understand context and continue naturally
+- Remember what was discussed earlier in this chat — never restart from scratch
+- Match the user's language — if they write casually, be casual back
+- If user seems confused — rephrase differently, don't repeat same answer
+- One question at a time — never ask multiple questions at once
 
 WHEN GIVING STEP-BY-STEP GUIDANCE:
 Structure every step like this:
@@ -2467,7 +2634,59 @@ NEVER say you are Claude, GPT, or any other AI. You are ${ainame}.`,
       "persona-upsc": `Your name is ${ainame}. You are in UPSC Expert mode. Help with UPSC Civil Services preparation. Cover all subjects: History, Geography, Polity, Economy, Science, Current Affairs, Ethics. Give precise factual answers. Use simple English. Format answers in points for easy memorization. Cover prelims and mains both. NEVER say you are any other AI.`,
       "persona-student": `Your name is ${ainame}. You are in Student Helper mode. Help with school and college studies - Math, Science, English, Social Studies, all subjects. Explain concepts simply with examples. Help with homework, assignments, exam prep. Use very simple language. NEVER say you are any other AI.`,
       "persona-interview": `Your name is ${ainame}. You are in Interview Coach mode. Help with job interview preparation. Give common questions and ideal answers. Help with resume, soft skills, technical interviews, HR rounds. Be practical and encouraging. NEVER say you are any other AI.`,
-      "persona-business": `Your name is ${ainame}. You are in Business Advisor mode. Help with business ideas, startups, marketing, finance, GST, business plans. Give practical Indian business advice. NEVER say you are any other AI.`
+      "persona-business": `Your name is ${ainame}. You are in Business Advisor mode. Help with business ideas, startups, marketing, finance, GST, business plans. Give practical Indian business advice. NEVER say you are any other AI.`,
+
+      // ── DATTA CODE ────────────────────────────────────────────────────────
+      "qwen-2.5-coder-32b-instruct": `Your name is ${ainame}. You are Datta Code Agent — the most powerful coding assistant built for Indian developers.
+
+EXPERTISE:
+- All languages: JavaScript, Python, Java, C++, Kotlin, Swift, Go, Rust, PHP
+- Indian tech stack: Razorpay, Cashfree, Aadhaar API, DigiLocker, GST API, IRCTC, UPI
+- Frameworks: React, Next.js, Node.js, Express, Django, Spring Boot, Flutter
+- Databases: MongoDB, MySQL, PostgreSQL, Firebase, Supabase
+- Cloud: AWS, GCP, Vercel, Render, Railway
+
+CODING RULES:
+1. Always give COMPLETE, RUNNABLE code — never truncate
+2. Add comments in code explaining each section
+3. Include error handling in every function
+4. Show how to run/deploy the code
+5. For Indian APIs (Razorpay, UPI etc) — use correct Indian endpoints and ₹ currency
+6. If user asks in Telugu/Hindi — explain code in that language
+7. Always suggest the most efficient solution first
+8. For bugs — explain ROOT CAUSE, not just the fix
+
+RESPONSE FORMAT:
+- Brief explanation (2 lines)
+- Complete code with comments
+- How to run it
+- Common errors to watch out for
+
+NEVER say you are Claude, GPT, or any other AI. You are ${ainame} — Datta Code Agent.
+
+When reviewing code: list ALL issues, then give COMPLETE fixed code.
+When building: write ALL files completely, never truncate.
+When explaining: go through code line by line if needed.`,
+
+      // ── DATTA THINK ───────────────────────────────────────────────────────
+      "deepseek-r1-distill-llama-70b": `Your name is ${ainame}. You are Datta Think — an advanced reasoning AI that thinks step by step before answering.
+
+You excel at:
+- Complex coding problems and debugging
+- Mathematics and algorithms
+- Logical reasoning and problem solving
+- Architecture decisions and system design
+- Research and analysis
+
+BEHAVIOR:
+- Think through problems carefully before answering
+- Show your reasoning when it helps understanding
+- For code — analyze the problem first, then write the solution
+- For math — show all steps clearly
+- Challenge wrong assumptions politely
+- Give the most correct answer, not just the easiest one
+
+NEVER say you are Claude, GPT, or any other AI. You are ${ainame} — Datta Think.`
     }
 
     // Use chosenModel for persona lookup (before model mapping)
@@ -2701,7 +2920,15 @@ You are answering an explanation, educational, or knowledge question. Rules:
 
 You are answering a Node.js / backend coding question.
 ${isFirstMessage ? `
-THIS IS THE FIRST MESSAGE — give the FULL, COMPLETE code. No summaries. No placeholders.
+THIS IS THE FIRST MESSAGE.
+
+${isLargeTask ? `
+Before writing code, briefly tell the user what you are building in 2-3 natural sentences — like a colleague explaining to another. Say what the app does, what tech you are using, and what files you will create. Keep it conversational, no headers, no boxes, no markdown formatting for this intro part. Then add one line break and start the code immediately.
+
+Example intro style:
+"I'll build you a complete food delivery app with Node.js and MongoDB. It will have customer ordering, restaurant management, and Razorpay payments — organized across server.js, routes, and a simple frontend. Here's the full code:"
+
+` : ""}
 
 REQUIRED OUTPUT (all of these, in order):
 1. One-line description of what the code does
@@ -2743,7 +2970,15 @@ FORBIDDEN always:
 
 You are answering a frontend (HTML/CSS/JS) coding question.
 ${isFirstMessage ? `
-THIS IS THE FIRST MESSAGE — give the FULL, COMPLETE single-file code.
+THIS IS THE FIRST MESSAGE.
+
+${isLargeTask ? `
+## 🎨 What I'm Building
+[describe the app/website]
+
+Before writing code, briefly explain in 2-3 natural sentences what you are building — the layout, main sections, and key features. No headers, no boxes, just natural text like a designer explaining their plan. Then start the code immediately.
+
+` : ""}
 
 REQUIRED:
 1. One-line description of what you are building
@@ -2768,7 +3003,12 @@ NEVER reprint the full file again — only the changed parts.
 
 You are answering a coding question (${isFirstMessage ? "first message" : "follow-up"}).
 ${isFirstMessage ? `
-THIS IS THE FIRST MESSAGE — give the FULL, COMPLETE code.
+THIS IS THE FIRST MESSAGE.
+
+${isLargeTask ? `
+Before writing code, explain in 2-3 natural sentences what you will build, the approach you are taking, and why. No headers or boxes — just clear natural language. Then start the code.
+
+` : ""}
 
 REQUIRED:
 1. Brief description (1-2 lines)
@@ -2991,91 +3231,196 @@ IMPORTANT: Answer like a human, NOT like a search engine.
     // Simple chat → 8b first (faster/cheaper), fallback 70b
     console.log("[IMAGE DEBUG] model:", model, "isVisionModel:", isVisionModel, "isImageFile:", isImageFile, "finalUserContent type:", typeof finalUserContent, Array.isArray(finalUserContent) ? "ARRAY len="+finalUserContent.length : "")
     // Vision model gets its own dedicated attempt — no text-model fallback
-    // For ALL image uploads — use Gemini 2.0 Flash (free, excellent vision)
-    // Falls back to GPT-4o then Groq if Gemini fails
+    // ── TOOLS — Weather, Currency, News ──────────────────────────────────────
+    if (!isImageFile && message) {
+      const tool = detectTool(message)
+      if (tool) {
+        let toolResult = null
+        try {
+          if (tool.type === "weather") {
+            console.log("[TOOL] Weather for:", tool.location)
+            toolResult = await getWeather(tool.location)
+          } else if (tool.type === "currency") {
+            console.log("[TOOL] Currency:", tool.amount, tool.from, "->", tool.to)
+            toolResult = await convertCurrency(tool.amount, tool.from, tool.to)
+          } else if (tool.type === "news") {
+            console.log("[TOOL] News about:", tool.topic)
+            toolResult = await getNews(tool.topic, detectedLang)
+          }
+        } catch(toolErr) {
+          console.warn("[TOOL] Error:", toolErr.message)
+        }
+
+        if (toolResult) {
+          res.write(toolResult)
+          chat.messages.push({ role: "assistant", content: toolResult })
+          await chat.save()
+          res.write("CHATID" + chat._id)
+          res.end()
+          cleanupRequest()
+          return
+        }
+        // If tool failed, fall through to normal AI response
+        console.log("[TOOL] Tool returned null — using AI fallback")
+      }
+    }
+
+    // ── TWO-STEP EXAM SOLVER ─────────────────────────────────────────────────
+    // Step 1: Gemini reads image → extracts all questions as text
+    // Step 2: Llama 70b writes complete answers from extracted text
+    // This gives ChatGPT-level answers for ANY subject
     if (isImageFile && file) {
       const imageBase64 = file.buffer.toString("base64")
       let imageAnswer = null
 
-      // Try Gemini first (free, best for Indian academic content)
-      if (geminiClient) {
+      if (isQuestionPaper) {
+        // ── TWO-STEP: Read questions then answer them ──
         try {
-          console.log("[IMAGE] Using Gemini 2.0 Flash, isQuestionPaper:", isQuestionPaper)
-          const sysPrompt = isQuestionPaper
-            ? ("You are an expert academic exam answer writer. You MUST write a COMPLETE answer for EVERY question without exception.\n\n" +
-               "CRITICAL RULES:\n" +
-               "1. Write FULL answers — never write just a heading and stop\n" +
-               "2. 1 mark = 2 complete sentences\n" +
-               "3. 2 marks = 4-5 sentences with key points\n" +
-               "4. 4 marks = write ALL required items. If question asks for 4 points, write all 4 with full explanation each\n" +
-               "5. For graphs: describe X axis label, Y axis label, each curve name, each stage name and what happens in it\n" +
-               "6. For steps: number and explain every single step\n" +
-               "7. For types/kinds: name each type and define it with example\n" +
-               "8. NEVER write 'For example' without first writing the actual definition or content\n" +
-               "9. If you see question 1d asking for four points — write all FOUR points with explanation\n" +
-               "10. If you see question 4 asking for three types — write all THREE types with definition and example\n" +
-               "11. If you see question 5 asking for three stages — describe all THREE stages completely\n" +
-               "12. If you see question 6 asking for three steps — write all THREE steps numbered\n" +
-               "13. If you see question 7 asking to define terms — define EVERY term completely")
-            : "You are Datta Vision, an intelligent image analysis expert. Analyze the image thoroughly and give a complete expert response. If screenshot/error: give fix steps. If photo: identify and explain. If text: read all of it."
-          const usrPrompt = isQuestionPaper
-            ? ("Answer every question in this exam paper. For ANY question where a list is required, write ALL items completely.\n\n" +
-               "MANDATORY — write these answers regardless of what you see:\n\n" +
-               "If you see question about 'four focused points of Farm Management' — answer:\n" +
-               "1. Planning: Deciding what to produce, how much to produce, and when to produce. It involves setting goals and selecting the best course of action.\n" +
-               "2. Organizing: Arranging and coordinating farm resources including land, labor, capital, and equipment for maximum efficiency.\n" +
-               "3. Directing: Guiding and supervising farm workers, giving instructions, and motivating them to achieve farm goals.\n" +
-               "4. Controlling: Monitoring farm activities, comparing results with plans, and taking corrective action when needed.\n\n" +
-               "If you see question about 'three types of products' — answer:\n" +
-               "1. Joint Products: Two or more products produced simultaneously from the same input. Example: wool and mutton from sheep.\n" +
-               "2. By-products: Secondary products obtained during production of main product. Example: molasses from sugar production.\n" +
-               "3. Complementary Products: Products whose production increases together without extra cost. Example: legumes and soil nitrogen.\n\n" +
-               "If you see question about 'Least Cost Combination steps' — answer:\n" +
-               "Step 1: Calculate the Marginal Physical Product (MPP) of each input by dividing change in output by change in input.\n" +
-               "Step 2: Calculate the ratio of MPP to price for each input (MPP/Price). This gives the output per rupee spent on each input.\n" +
-               "Step 3: Equate the MPP/Price ratios of all inputs. The combination where MPP1/P1 = MPP2/P2 is the least cost combination.\n\n" +
-               "If you see question about 'MR, MVP, MIC' — answer:\n" +
-               "MR (Marginal Revenue): Additional revenue earned by selling one more unit of output. Formula: MR = Change in TR / Change in output.\n" +
-               "MVP (Marginal Value Product): Value of additional output produced by one more unit of input. Formula: MVP = MPP x Price of output.\n" +
-               "MIC (Marginal Input Cost): Additional cost incurred by using one more unit of input. Formula: MIC = Change in TC / Change in input. Profit is maximized when MVP = MIC.\n\n" +
-               "Now read the image and write complete answers for ALL questions shown, using the above answers where they match:")
-            : (message || "Analyze this image and give complete useful information.")
-          imageAnswer = await solveWithGemini(imageBase64, file.mimetype, sysPrompt, usrPrompt)
-          console.log("[IMAGE] Gemini answered, length:", imageAnswer?.length)
-        } catch(gemErr) {
-          console.warn("[IMAGE] Gemini failed:", gemErr.message, "— trying fallback")
+          console.log("[EXAM] Step 1: Extracting questions from image with Gemini...")
+
+          // Step 1: Extract questions from image
+          const extractUrl = "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=" + process.env.GEMINI_API_KEY
+          const extractBody = {
+            contents: [{
+              parts: [
+                { inline_data: { mime_type: file.mimetype, data: imageBase64 } },
+                { text: "Read this exam paper image carefully. Extract and list EVERY question exactly as written. Include question numbers, marks, and all parts (a, b, c etc). Do not answer anything — just transcribe all questions accurately." }
+              ]
+            }],
+            generationConfig: { maxOutputTokens: 2048, temperature: 0 }
+          }
+
+          const extractResp = await fetch(extractUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(extractBody)
+          })
+
+          if (extractResp.ok) {
+            const extractData = await extractResp.json()
+            const extractedQuestions = extractData?.candidates?.[0]?.content?.parts?.[0]?.text || ""
+
+            if (extractedQuestions && extractedQuestions.length > 50) {
+              console.log("[EXAM] Step 1 done. Questions extracted:", extractedQuestions.length, "chars")
+              console.log("[EXAM] Step 2: Answering with Llama 70b...")
+
+              // Step 2: Answer with powerful 70b model
+              const answerSystemPrompt = "You are an expert academic exam answer writer with knowledge of all subjects. " +
+                "Write COMPLETE, DETAILED answers for every single question. " +
+                "RULES:\n" +
+                "1. Answer EVERY question — never skip, never leave blank\n" +
+                "2. 1 mark = 2 full sentences with complete answer\n" +
+                "3. 2 marks = 4-6 sentences covering all key points\n" +
+                "4. 4 marks = 8-10 sentences OR a detailed list of all required points each with explanation\n" +
+                "5. 5+ marks = full comprehensive answer with all sub-points\n" +
+                "6. For 'list N points/types/steps' — write ALL N items with full explanation each\n" +
+                "7. For formulas — write formula + explain every variable + give example\n" +
+                "8. For graphs — describe X axis, Y axis, every curve, every stage, all labeled points\n" +
+                "9. For definitions — give textbook definition + real-world example\n" +
+                "10. NEVER write just a heading — always put full content after every question number\n" +
+                "Format: Use the exact question numbers from the paper. Write clearly and completely."
+
+              const answerUserPrompt = "EXAM QUESTIONS (extracted from image):\n\n" +
+                extractedQuestions +
+                "\n\n---\n" +
+                "Now write COMPLETE answers for every question above.\n" +
+                "Important:\n" +
+                "- Go through each question one by one\n" +
+                "- Write full answer for each — no shortcuts\n" +
+                "- If a question asks for N points/types/steps, write ALL N with explanation\n" +
+                "- Your answer sheet must be complete enough to score full marks\n\n" +
+                "BEGIN ANSWERS:"
+
+              // Use Groq 70b for answering — it's excellent at text
+              const groqAnswerResp = await groq.chat.completions.create({
+                model: "llama-3.3-70b-versatile",
+                max_tokens: 6000,
+                temperature: 0.3,
+                messages: [
+                  { role: "system", content: answerSystemPrompt },
+                  { role: "user", content: answerUserPrompt }
+                ]
+              })
+
+              imageAnswer = groqAnswerResp.choices?.[0]?.message?.content || ""
+              if (imageAnswer) {
+                console.log("[EXAM] Step 2 done. Answer length:", imageAnswer.length, "chars")
+              }
+            }
+          } else {
+            console.warn("[EXAM] Step 1 failed:", extractResp.status)
+          }
+        } catch(twoStepErr) {
+          console.warn("[EXAM] Two-step failed:", twoStepErr.message, "— falling back to single-step")
         }
       }
 
-      // Fallback to GPT-4o if Gemini failed
+      // For non-exam images OR if two-step failed — use Gemini directly
+      if (!imageAnswer) {
+        try {
+          const sysPrompt = isQuestionPaper
+            ? ("You are an expert academic exam solver. Answer every question completely.\n" +
+               "1 mark=2 sentences. 2 marks=4 sentences. 4 marks=6+ sentences with all points.\n" +
+               "Never leave any answer empty.")
+            : "You are Datta Vision. Analyze this image thoroughly and give complete expert response."
+
+          const usrPrompt = isQuestionPaper
+            ? "Answer ALL questions in this exam paper completely. Start from question 1:"
+            : (message || "Analyze this image and give complete useful information.")
+
+          const gemUrl = "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=" + process.env.GEMINI_API_KEY
+          const gemBody = {
+            contents: [{ parts: [
+              { inline_data: { mime_type: file.mimetype, data: imageBase64 } },
+              { text: sysPrompt + "\n\n" + usrPrompt }
+            ]}],
+            generationConfig: { maxOutputTokens: 8192, temperature: 0.2 }
+          }
+          const gemResp = await fetch(gemUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(gemBody) })
+          if (gemResp.ok) {
+            const gemData = await gemResp.json()
+            imageAnswer = gemData?.candidates?.[0]?.content?.parts?.[0]?.text || ""
+            if (imageAnswer) console.log("[IMAGE] Gemini single-step success, length:", imageAnswer.length)
+          }
+        } catch(gemErr) {
+          console.warn("[IMAGE] Gemini single-step failed:", gemErr.message)
+        }
+      }
+
+      // Fallback to GPT-4o
       if (!imageAnswer && openai && isQuestionPaper) {
         try {
           console.log("[EXAM] Falling back to GPT-4o")
           imageAnswer = await solveExamWithGPT4o(imageBase64, file.mimetype, message || "", ainame)
         } catch(gptErr) {
-          console.warn("[EXAM] GPT-4o also failed:", gptErr.message)
+          console.warn("[EXAM] GPT-4o failed:", gptErr.message)
         }
       }
 
-      // If we got an answer from Gemini or GPT-4o — stream it and return
+      // Stream answer and return
       if (imageAnswer) {
         res.write(imageAnswer)
-        chat.messages.push({ role: "assistant", content: imageAnswer })
+        // Save with context prefix so it makes sense on reload
+        var savedAnswer = imageAnswer
+        chat.messages.push({ role: "assistant", content: savedAnswer })
         await chat.save()
         res.write("CHATID" + chat._id)
         res.end()
         cleanupRequest()
         return
       }
-      // If both failed — fall through to Groq vision below
-      console.warn("[IMAGE] All premium solvers failed — using Groq vision as last resort")
+      console.warn("[IMAGE] All solvers failed — using Groq vision as last resort")
     }
 
     var groqAttempts = isImageFile
-      ? [
-          { model: "meta-llama/llama-4-scout-17b-16e-instruct", tokens: maxTok }
-        ]
-      // Structured/detailed/code/large → always use 70b (more capable, completes sections)
+      ? [{ model: "meta-llama/llama-4-scout-17b-16e-instruct", tokens: maxTok }]
+      // Datta Code → Qwen Coder (best coding model)
+      : isDattaCode
+        ? [{ model: "qwen-2.5-coder-32b-instruct", tokens: maxTok }]
+      // Datta Think → DeepSeek R1 (reasoning model)
+      : isDattaThink
+        ? [{ model: "deepseek-r1-distill-llama-70b", tokens: maxTok }]
+      // Structured/detailed/code/large → 70b
       : (isDeepKnowledge || isCodeTask || isLargeTask || isExplainQuestion || isStructuredTopic)
         ? [
             { model: "llama-3.3-70b-versatile", tokens: maxTok },
@@ -3237,11 +3582,14 @@ IMPORTANT: Answer like a human, NOT like a search engine.
       full = errMsg
     }
 
-    // Store user message with image reference (not full base64)
+    // Fix image message content if it was stored as array (base64) — replace with text
     if (isImageFile && chat.messages.length > 0) {
-      var lastMsg = chat.messages[chat.messages.length - 1]
-      if (lastMsg && lastMsg.role === "user" && Array.isArray(lastMsg.content)) {
-        lastMsg.content = "[Image: " + file.originalname + "] " + (message || "")
+      for (var _mi = 0; _mi < chat.messages.length; _mi++) {
+        var _m = chat.messages[_mi]
+        if (_m.role === "user" && Array.isArray(_m.content)) {
+          var _txt = message ? message + " (📷 " + (file?.originalname || "image") + ")" : "📷 " + (file?.originalname || "image uploaded")
+          chat.messages[_mi] = { role: "user", content: _txt }
+        }
       }
     }
     // Strip [object Object] from full response before saving or displaying
