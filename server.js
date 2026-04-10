@@ -2336,7 +2336,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       // Datta Code models
       "datta-code",
       "datta-think",
-      "qwen-2.5-coder-32b-instruct",
+      "qwen-2.5-coder-32b",
       "deepseek-r1-distill-llama-70b"
     ]
     let chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.1-8b-instant"
@@ -2366,8 +2366,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "persona-interview":"llama-3.1-8b-instant",
       "persona-business": "llama-3.3-70b-versatile",
       // Datta Code — Qwen 2.5 Coder (best free coding model)
-      "datta-code":                    "qwen-2.5-coder-32b-instruct",
-      "qwen-2.5-coder-32b-instruct":   "qwen-2.5-coder-32b-instruct",
+      "datta-code":                    "qwen-2.5-coder-32b",
+      "qwen-2.5-coder-32b":   "qwen-2.5-coder-32b",
       // Datta Think — DeepSeek R1 (shows reasoning steps)
       "datta-think":                   "deepseek-r1-distill-llama-70b",
       "deepseek-r1-distill-llama-70b": "deepseek-r1-distill-llama-70b"
@@ -2481,7 +2481,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }
 
     // Auto-upgrade to Qwen Coder for code tasks when on standard models
-    var isDattaCode = (resolvedModel === "qwen-2.5-coder-32b-instruct")
+    var isDattaCode = (resolvedModel === "qwen-2.5-coder-32b")
     var isDattaThink = (resolvedModel === "deepseek-r1-distill-llama-70b")
     // For other non-8b models doing code — use 70b
     var nonCodingModels = ["llama-3.3-70b-versatile"]
@@ -2647,7 +2647,7 @@ NEVER say you are Claude, GPT, or any other AI. You are ${ainame}.`,
       "persona-business": `Your name is ${ainame}. You are in Business Advisor mode. Help with business ideas, startups, marketing, finance, GST, business plans. Give practical Indian business advice. NEVER say you are any other AI.`,
 
       // ── DATTA CODE ────────────────────────────────────────────────────────
-      "qwen-2.5-coder-32b-instruct": `Your name is ${ainame}. You are Datta Code Agent — the most powerful coding assistant built for Indian developers.
+      "qwen-2.5-coder-32b": `Your name is ${ainame}. You are Datta Code Agent — the most powerful coding assistant built for Indian developers.
 
 EXPERTISE:
 - All languages: JavaScript, Python, Java, C++, Kotlin, Swift, Go, Rust, PHP
@@ -3449,7 +3449,7 @@ IMPORTANT: Answer like a human, NOT like a search engine.
       ? [{ model: "meta-llama/llama-4-scout-17b-16e-instruct", tokens: maxTok }]
       // Datta Code → Qwen Coder (best coding model)
       : isDattaCode
-        ? [{ model: "qwen-2.5-coder-32b-instruct", tokens: maxTok }]
+        ? [{ model: "qwen-2.5-coder-32b", tokens: maxTok }]
       // Datta Think → DeepSeek R1 (reasoning model)
       : isDattaThink
         ? [{ model: "deepseek-r1-distill-llama-70b", tokens: maxTok }]
