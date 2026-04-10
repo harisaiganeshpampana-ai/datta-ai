@@ -2424,7 +2424,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       ? " CRITICAL LANGUAGE RULE: The user is communicating in " + effectiveLang + ". Your ENTIRE response MUST be in " + effectiveLang + " script and language. Rules: (1) Write every single word in " + effectiveLang + " — no English words mixed in unless it is a technical term with no " + effectiveLang + " equivalent. (2) Use natural " + effectiveLang + " — not a word-by-word translation. (3) If you don't know a word in " + effectiveLang + ", use the most common local equivalent. (4) NEVER switch to English mid-response. (5) Numbers and dates can stay as digits. This is non-negotiable."
       : " Respond in clear, simple English. Use short sentences. Avoid jargon. Be direct and easy to understand."
     var styleNote = styleNotes[style] || ""
-    var searchNote = searchContext ? " IMPORTANT: Web search results are provided above. Use them to answer. Write your response as PLAIN TEXT only — no JavaScript, no arrays, no [object Object], no brackets. For sports/IPL: write naturally like 'Today CSK plays against MI at 7:30 PM at Chepauk Stadium'. Extract all values as readable sentences." : ""
+    var searchNote = searchContext ? " CRITICAL: Use ONLY the web search results provided to answer this question. DO NOT generate generic or placeholder content. Extract specific facts, names, dates, numbers from the search results and write them directly. If the results mention specific events, people, or numbers — use them. Never write headings like 'Key Players' or 'Recent Developments' with empty content." : ""
 
     // Hard rule injected into EVERY system prompt regardless of model
     // Add emotional support instruction if user is struggling
@@ -3144,11 +3144,15 @@ Be friendly, helpful, and human-like. Never write [object Object].
 `)) + (searchContext ? `\n\nLIVE DATA (extracted from web — use this to answer directly):
 ${searchContext}
 
-IMPORTANT: Answer like a human, NOT like a search engine.
-- Say "Today's match is SRH vs RCB at 7:30 PM" — NOT "According to search results..."
-- Say "The weather in Hyderabad is 34°C" — NOT "Based on the search results provided..."
-- Just state the facts directly and conversationally.
-- Never say "according to", "based on search", "search results show"` : "") + langNote + styleNote + hardRules
+CRITICAL RULES FOR USING SEARCH RESULTS:
+- Extract SPECIFIC facts from the results — names, dates, numbers, locations, events
+- Write them directly as statements: "Russia launched missiles at Kyiv on April 9th, killing 12 people"
+- NEVER write generic headings like "Key Players", "Recent Developments", "Humanitarian Impact" with empty bullets
+- NEVER say "various conflicts are ongoing" — say WHICH conflicts and WHAT happened
+- NEVER say "key players include" without actually naming them
+- Summarize what the search results ACTUALLY say, not what you think should be said
+- If results show specific news — use that news directly
+- Be specific, factual, and direct like a news anchor reading the latest bulletin` : "") + langNote + styleNote + hardRules
 
     // Build final user content — MUST be string for text models, array only for vision
     var isVisionModel = (model === "meta-llama/llama-4-scout-17b-16e-instruct")
