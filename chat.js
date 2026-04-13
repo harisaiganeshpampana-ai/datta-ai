@@ -69,34 +69,58 @@ if (typeof mermaid !== "undefined") {
 
 // Render mermaid diagrams inside a container
 async function renderMermaid(container) {
-  if (typeof mermaid === "undefined") return
+  if (typeof mermaid === "undefined") {
+    console.warn("[MERMAID] Library not loaded")
+    return
+  }
   const blocks = container.querySelectorAll(".mermaid-block")
+  if (!blocks.length) return
+
   for (const block of blocks) {
     if (block.dataset.rendered) continue
-    block.dataset.rendered = "true"
     const code = block.textContent.trim()
+    if (!code || code.length < 5) continue
+    block.dataset.rendered = "true"
     try {
-      const id = "mermaid-" + Math.random().toString(36).slice(2)
+      const id = "mg" + Math.random().toString(36).slice(2, 8)
       const { svg } = await mermaid.render(id, code)
       block.innerHTML = svg
-      block.style.cssText = "background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;padding:16px;overflow-x:auto;margin:12px 0;"
+      block.style.cssText = "background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;padding:16px;overflow-x:auto;margin:12px 0;text-align:center;"
+      // Make SVG responsive
+      const svgEl = block.querySelector("svg")
+      if (svgEl) { svgEl.style.maxWidth = "100%"; svgEl.style.height = "auto" }
     } catch(e) {
-      console.warn("[MERMAID] Render failed:", e.message)
-      block.style.cssText = "background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;padding:12px;font-family:monospace;font-size:12px;color:var(--text2);white-space:pre;overflow-x:auto;"
+      console.warn("[MERMAID] Render failed:", e.message, "Code:", code.slice(0,50))
+      block.dataset.rendered = ""  // allow retry
+      // Show as formatted code instead
+      block.style.cssText = "background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;padding:14px;font-family:monospace;font-size:12px;color:var(--text2);white-space:pre;overflow-x:auto;margin:12px 0;"
     }
   }
 }
 
 // Custom marked renderer to convert mermaid code blocks to divs
 function buildMarked() {
-  const renderer = new marked.Renderer()
-  renderer.code = function(code, lang) {
-    if (lang === "mermaid") {
-      return '<div class="mermaid-block">' + code + '</div>'
+  // Handle both marked v4 (token object) and v3 (string args)
+  const renderer = {
+    code(token) {
+      // marked v4+ passes token object
+      const code = typeof token === "object" ? (token.text || "") : token
+      const lang = typeof token === "object" ? (token.lang || "") : (arguments[1] || "")
+      if (lang === "mermaid" || lang === "MERMAID") {
+        return '<div class="mermaid-block" style="background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;padding:16px;margin:12px 0;overflow-x:auto;">' + code.trim() + '</div>'
+      }
+      const escapedCode = code.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      return '<pre style="background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;padding:14px;overflow-x:auto;margin:10px 0;"><code class="language-' + lang + '" style="font-family:monospace;font-size:13px;color:var(--text);">' + escapedCode + '</code></pre>'
     }
-    return '<pre><code class="language-' + (lang||"") + '">' + code + '</code></pre>'
   }
-  marked.setOptions({ renderer, breaks: true, gfm: true })
+  try {
+    marked.use({ renderer, breaks: true, gfm: true })
+  } catch(e) {
+    // fallback for older marked
+    const r = new marked.Renderer()
+    r.code = renderer.code
+    marked.setOptions({ renderer: r, breaks: true, gfm: true })
+  }
 }
 buildMarked()
 
@@ -1262,11 +1286,11 @@ async function send() {
     // Use fullText for saving (not displayed text)
     streamText = fullText
 
-    // Render mermaid diagrams if any
-    setTimeout(() => {
-      renderMermaid(aiDiv)
+    // Render mermaid diagrams after stream ends
+    setTimeout(async () => {
+      await renderMermaid(aiDiv)
       injectRunAppButton(aiDiv, fullText)
-    }, 200)
+    }, 300)
 
     // Add action buttons to user messages after generation
     chatBox.querySelectorAll(".user-bubble, .userBubble").forEach(bubble => {
