@@ -43,6 +43,63 @@ window.addEventListener("DOMContentLoaded", function() {
 
 
 // SAFE CONTENT — prevents [object Object] anywhere in UI
+// ── MERMAID INIT ─────────────────────────────────────────────────────────────
+if (typeof mermaid !== "undefined") {
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: document.documentElement.getAttribute("data-theme") === "light" ? "default" : "dark",
+    themeVariables: {
+      darkMode: document.documentElement.getAttribute("data-theme") !== "light",
+      primaryColor: "#10a37f",
+      primaryTextColor: "#ebebeb",
+      primaryBorderColor: "#333",
+      lineColor: "#888",
+      background: "#0a0a0a",
+      mainBkg: "#111",
+      nodeBorder: "#333",
+      clusterBkg: "#1a1a1a",
+      titleColor: "#ebebeb",
+      edgeLabelBackground: "#1a1a1a",
+      fontSize: "14px"
+    },
+    flowchart: { curve: "basis", padding: 20 },
+    securityLevel: "loose"
+  })
+}
+
+// Render mermaid diagrams inside a container
+async function renderMermaid(container) {
+  if (typeof mermaid === "undefined") return
+  const blocks = container.querySelectorAll(".mermaid-block")
+  for (const block of blocks) {
+    if (block.dataset.rendered) continue
+    block.dataset.rendered = "true"
+    const code = block.textContent.trim()
+    try {
+      const id = "mermaid-" + Math.random().toString(36).slice(2)
+      const { svg } = await mermaid.render(id, code)
+      block.innerHTML = svg
+      block.style.cssText = "background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;padding:16px;overflow-x:auto;margin:12px 0;"
+    } catch(e) {
+      console.warn("[MERMAID] Render failed:", e.message)
+      block.style.cssText = "background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;padding:12px;font-family:monospace;font-size:12px;color:var(--text2);white-space:pre;overflow-x:auto;"
+    }
+  }
+}
+
+// Custom marked renderer to convert mermaid code blocks to divs
+function buildMarked() {
+  const renderer = new marked.Renderer()
+  renderer.code = function(code, lang) {
+    if (lang === "mermaid") {
+      return '<div class="mermaid-block">' + code + '</div>'
+    }
+    return '<pre><code class="language-' + (lang||"") + '">' + code + '</code></pre>'
+  }
+  marked.setOptions({ renderer, breaks: true, gfm: true })
+}
+buildMarked()
+
 function safeContent(c) {
   if (c === null || c === undefined) return ""
   if (typeof c === "string") {
@@ -935,15 +992,24 @@ async function send() {
         return
       }
 
-      if (errData.error === "MODEL_LOCKED") {
+      if (errData.error === "MODEL_LOCKED" || errData.error === "DCODE_LIMIT") {
         hideStopBtn()
+        const isDcode = errData.error === "DCODE_LIMIT"
         aiDiv.innerHTML = `
           <div class="aiContent">
-            <div class="ai-bubble" style="background:#1a0a00;border:1px solid #ff880033;border-radius:16px;padding:20px;text-align:center;max-width:300px;">
-              <div style="font-size:28px;margin-bottom:8px;">🔒</div>
-              <div style="font-weight:700;color:var(--text);margin-bottom:6px;">Model not available on your plan</div>
-              <div style="font-size:13px;color:var(--text3);margin-bottom:16px;">${errData.message || "Upgrade to access this model."}</div>
-              <a href="pricing.html" style="display:inline-block;padding:10px 20px;background:linear-gradient(135deg,#ff8800,#ffaa00);border-radius:10px;color:#000;font-weight:700;text-decoration:none;font-size:13px;">Upgrade Plan</a>
+            <div class="ai-bubble" style="background:var(--bg2);border:0.5px solid var(--border);border-radius:16px;padding:20px;max-width:360px;">
+              <div style="font-size:28px;margin-bottom:8px;">${isDcode ? "💻" : "🔒"}</div>
+              <div style="font-weight:600;color:var(--text);margin-bottom:6px;">${isDcode ? "Datta Code limit reached" : "Model locked"}</div>
+              <div style="font-size:13px;color:var(--text3);margin-bottom:14px;">${errData.message || "Upgrade to continue."}</div>
+              ${isDcode ? `<div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;text-align:left;">
+                <div style="color:var(--text3);margin-bottom:6px;font-weight:500;">DATTA CODE MESSAGES / DAY</div>
+                <div style="color:var(--text2);margin-bottom:3px;">🌱 Free — 3 messages</div>
+                <div style="color:var(--text2);margin-bottom:3px;">⭐ Starter ₹29 — 5 messages</div>
+                <div style="color:var(--text2);margin-bottom:3px;">⚡ Plus ₹299 — 30 messages</div>
+                <div style="color:var(--text2);margin-bottom:3px;">🚀 Pro ₹499 — 60 messages</div>
+                <div style="color:var(--accent);font-weight:500;">👑 Ultimate ₹799 — 300 messages</div>
+              </div>` : ""}
+              <a href="pricing.html" style="display:block;padding:10px;background:var(--accent);border-radius:10px;color:#fff;font-weight:600;text-decoration:none;font-size:13px;text-align:center;">Upgrade Plan →</a>
             </div>
           </div>`
         return
@@ -1191,8 +1257,11 @@ async function send() {
     // Use fullText for saving (not displayed text)
     streamText = fullText
 
-    // Inject Run App button AFTER DOM is fully rendered
-    setTimeout(() => injectRunAppButton(aiDiv, fullText), 100)
+    // Render mermaid diagrams if any
+    setTimeout(() => {
+      renderMermaid(aiDiv)
+      injectRunAppButton(aiDiv, fullText)
+    }, 200)
 
     // Add action buttons to user messages after generation
     chatBox.querySelectorAll(".user-bubble, .userBubble").forEach(bubble => {
