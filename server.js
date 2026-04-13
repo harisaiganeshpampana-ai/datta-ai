@@ -23,26 +23,15 @@ const app = express()
 
 // ── CORS — must be the VERY FIRST middleware, before ALL routes ───────────────
 // Allows datta-ai.com + localhost dev + any subdomain
-const ALLOWED_ORIGINS = [
-  "https://datta-ai.com",
-  "https://www.datta-ai.com",
-  "http://localhost:3000",
-  "http://localhost:5500",
-  "http://127.0.0.1:5500"
-]
+// CORS — allow all origins, always
 app.use((req, res, next) => {
-  const origin = req.headers.origin
-  // Allow the specific origin if in whitelist, otherwise allow all (for Render health checks)
-  if (origin && ALLOWED_ORIGINS.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin)
-  } else {
-    res.setHeader("Access-Control-Allow-Origin", "*")
-  }
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,x-chat-id,Accept")
-  res.setHeader("Access-Control-Expose-Headers", "x-chat-id")
-  res.setHeader("Access-Control-Max-Age", "86400") // cache preflight 24h
-  // Handle OPTIONS preflight immediately — do not pass to routes
+  const origin = req.headers.origin || "*"
+  res.setHeader("Access-Control-Allow-Origin", origin)
+  res.setHeader("Access-Control-Allow-Credentials", "true")
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,PATCH,OPTIONS")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,x-chat-id,Accept,X-Requested-With")
+  res.setHeader("Access-Control-Expose-Headers", "x-chat-id,Content-Type")
+  res.setHeader("Access-Control-Max-Age", "86400")
   if (req.method === "OPTIONS") {
     return res.status(204).end()
   }
@@ -4070,7 +4059,11 @@ var systemWithMemory = systemPrompt + memoryNote
     clearInterval(heartbeatTimer)
     cleanupRequest()
     console.error("Chat error:", err.message)
-    if (!res.headersSent) res.status(500).send("Server error: " + err.message)
+    if (!res.headersSent) {
+      res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*")
+      res.setHeader("Access-Control-Allow-Credentials", "true")
+      res.status(500).json({ error: "Server error", message: err.message })
+    }
     else res.end()
   }
 })
