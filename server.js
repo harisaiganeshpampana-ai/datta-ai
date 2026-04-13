@@ -2008,6 +2008,10 @@ app.post("/payment/stripe-session", authMiddleware, async (req, res) => {
 })
 
 // CHAT ROUTE
+
+// Global fallback — prevents "cleanupRequest is not defined" in async callbacks
+var cleanupRequest = function() { /* global no-op fallback */ }
+
 app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
   try {
     const message = req.body.message || ""
@@ -3575,12 +3579,14 @@ var systemWithMemory = systemPrompt + memoryNote
         console.log("[DATTA CODE] Using Gemini for code generation, tokens:", maxTok)
         const geminiCode = await generateCodeWithGemini(systemWithMemory, finalUserContent, maxTok)
         if (geminiCode && geminiCode.length > 100) {
-          res.write(geminiCode)
-          chat.messages.push({ role: "assistant", content: geminiCode })
-          await chat.save()
-          res.write("CHATID" + chat._id)
-          res.end()
-          cleanupRequest()
+          if (!res.writableEnded) {
+            res.write(geminiCode)
+            chat.messages.push({ role: "assistant", content: geminiCode })
+            await chat.save()
+            res.write("CHATID" + chat._id)
+            res.end()
+          }
+          if (typeof cleanupRequest === "function") cleanupRequest()
           return
         }
       } catch(gemCodeErr) {
