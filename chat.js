@@ -99,34 +99,33 @@ async function renderMermaid(container) {
 }
 
 // Custom marked renderer to convert mermaid code blocks to divs
-function buildMarked() {
-  // Handle both marked v4 (token object) and v3 (string args)
-  const renderer = {
-    code(token) {
-      // marked v4+ passes token object
-      const code = typeof token === "object" ? (token.text || "") : token
-      const lang = typeof token === "object" ? (token.lang || "") : (arguments[1] || "")
-      if (lang === "mermaid" || lang === "MERMAID") {
-        return '<div class="mermaid-block" style="background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;padding:16px;margin:12px 0;overflow-x:auto;">' + code.trim() + '</div>'
-      }
-      const escapedCode = code.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-      return '<pre style="background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;padding:14px;overflow-x:auto;margin:10px 0;"><code class="language-' + lang + '" style="font-family:monospace;font-size:13px;color:var(--text);">' + escapedCode + '</code></pre>'
-    }
-  }
-  try {
-    marked.use({ renderer, breaks: true, gfm: true })
-  } catch(e) {
-    // fallback for older marked
-    const r = new marked.Renderer()
-    r.code = renderer.code
-    marked.setOptions({ renderer: r, breaks: true, gfm: true })
-  }
+// Post-process HTML to convert mermaid code blocks to renderable divs
+function processMermaidInHTML(html) {
+  // Replace <pre><code class="language-mermaid">...</code></pre> with mermaid-block div
+  return html
+    .replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/gi, function(match, code) {
+      const decoded = code.replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&#39;/g,"'").replace(/&quot;/g,'"')
+      return '<div class="mermaid-block">' + decoded.trim() + '</div>'
+    })
+    .replace(/<pre><code class="language-MERMAID">([\s\S]*?)<\/code><\/pre>/gi, function(match, code) {
+      const decoded = code.replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&#39;/g,"'").replace(/&quot;/g,'"')
+      return '<div class="mermaid-block">' + decoded.trim() + '</div>'
+    })
 }
-buildMarked()
+
+// Also handle raw mermaid blocks in text (not yet parsed)
+function extractMermaidFromText(text) {
+  return text.replace(/```mermaid([\s\S]*?)```/gi, function(match, code) {
+    return '<div class="mermaid-block">' + code.trim() + '</div>'
+    return '<div class="mermaid-block">' + code.trim() + '</div>'
+  })
+}
 
 function safeContent(c) {
   if (c === null || c === undefined) return ""
   if (typeof c === "string") {
+    // Normalize MERMAID to mermaid for rendering
+    c = c.replace(/```MERMAID/g, "```mermaid").replace(/```Mermaid/g, "```mermaid")
     return c.split("[object Object]").join("").split("[object object]").join("").split("[Object Object]").join("").trim()
   }
   if (typeof c === "number" || typeof c === "boolean") return String(c)
@@ -588,7 +587,23 @@ if (typeof marked !== 'undefined') {
 
   renderer.code = function(token, lang) {
     const codeStr = (token && typeof token === "object") ? (token.text || token.raw || "") : String(token || "")
-    const langStr = ((token && typeof token === "object") ? (token.lang || "") : (lang || "")).toLowerCase()
+    const langStr = ((token && typeof token === "object") ? (token.lang || "") : (lang || "")).toLowerCase().trim()
+
+    // ── MERMAID — render as diagram block ────────────────────────────────────
+    const isMermaid = langStr === "mermaid" || langStr === "MERMAID".toLowerCase() ||
+      (!langStr && (
+        codeStr.trim().startsWith("graph ") ||
+        codeStr.trim().startsWith("flowchart ") ||
+        codeStr.trim().startsWith("sequenceDiagram") ||
+        codeStr.trim().startsWith("erDiagram") ||
+        codeStr.trim().startsWith("mindmap") ||
+        codeStr.trim().startsWith("pie title") ||
+        codeStr.trim().startsWith("gantt")
+      ))
+    if (isMermaid) {
+      return '<div class="mermaid-block" style="background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;padding:20px;margin:12px 0;text-align:center;">' + codeStr.trim() + '</div>'
+    }
+
     const escaped = codeStr.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
     const isPreviewable = ["html","css","javascript","js"].includes(langStr) || codeStr.trim().startsWith("<!DOCTYPE") || codeStr.trim().startsWith("<html")
     const uid = "code_" + Math.random().toString(36).slice(2,8)
@@ -1191,7 +1206,12 @@ async function send() {
           displayedLen = Math.min(displayedLen + step, fullText.length)
 
           const visible = safeContent(fullText.slice(0, displayedLen))
-          span.innerHTML = marked.parse(visible) + '<span class="typingCursor">|</span>'
+          const parsedHTML = processMermaidInHTML(marked.parse(visible))
+          span.innerHTML = parsedHTML + '<span class="typingCursor">|</span>'
+          // Render mermaid if block is complete (has closing ```)
+          if (parsedHTML.includes("mermaid-block") && !span.querySelector(".mermaid-block svg")) {
+            renderMermaid(span)
+          }
           scrollBottom()
 
           // Detect auto-switch model pill
@@ -1216,12 +1236,12 @@ async function send() {
 
       // Final clean render — remove cursor
       if (typingActive) {
-        span.innerHTML = marked.parse(safeContent(fullText.slice(0, displayedLen)))
+        span.innerHTML = processMermaidInHTML(marked.parse(safeContent(fullText.slice(0, displayedLen))))
       } else {
         // Stopped by user — show what was typed so far
         const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
         const name = user.username || "you"
-        span.innerHTML = marked.parse(safeContent(fullText.slice(0, displayedLen))) +
+        span.innerHTML = processMermaidInHTML(marked.parse(safeContent(fullText.slice(0, displayedLen)))) +
           '<div class="stoppedMsg">Response stopped by ' + name + '</div>'
       }
       lucide.createIcons()
@@ -1536,7 +1556,7 @@ async function openChat(chatId) {
       chatBox.innerHTML += `
         <div class="msg-row">
           <div class="aiContent">
-            <div class="ai-bubble">${marked.parse(safeContent(aiContent))}</div>
+            <div class="ai-bubble">${processMermaidInHTML(marked.parse(safeContent(aiContent)))}</div>
             <div class="aiActions">
               <button class="actionBtn" title="Copy" onclick="copyText(this)"><i data-lucide="copy"></i></button>
               <button class="actionBtn" title="Speak" onclick="speakText(this)"><i data-lucide="volume-2"></i></button>
