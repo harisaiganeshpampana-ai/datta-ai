@@ -192,12 +192,27 @@ async function runMigration() {
 async function connectMongo(attempt) {
   attempt = attempt || 1
   try {
-    await mongoose.connect(process.env.MONGO_URI, {
+    await // Clean up hallucinated/wrong memories on startup
+async function cleanWrongMemories() {
+  try {
+    // Remove memories with obviously wrong/hallucinated names like "John"
+    const deleted = await Memory.deleteMany({
+      key: "user_name",
+      value: { $in: ["John", "john", "John Doe", "User", "user", "Unknown"] }
+    })
+    if (deleted.deletedCount > 0) {
+      console.log("[MEMORY] Cleaned", deleted.deletedCount, "wrong name memories")
+    }
+  } catch(e) {}
+}
+
+mongoose.connect(process.env.MONGO_URI, {
       serverSelectionTimeoutMS: 15000,  // 15s timeout per attempt
       connectTimeoutMS: 15000,
       socketTimeoutMS: 30000,
     })
     console.log("MongoDB connected (attempt " + attempt + ")")
+    cleanWrongMemories()
     await runMigration()
   } catch(e) {
     console.error("DB connection error (attempt " + attempt + "):", e.message)
@@ -230,7 +245,7 @@ async function generateCodeWithGemini(systemPrompt, userPrompt, maxTokens) {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) throw new Error("GEMINI_API_KEY not set")
 
-  const modelsToTry = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite"]
+  const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"]
 
   for (const modelName of modelsToTry) {
     try {
@@ -240,7 +255,7 @@ async function generateCodeWithGemini(systemPrompt, userPrompt, maxTokens) {
           parts: [{ text: systemPrompt + "\n\n" + userPrompt }]
         }],
         generationConfig: {
-          maxOutputTokens: maxTokens || 8192,
+          maxOutputTokens: Math.min(maxTokens || 4096, 4096),  // Cap at 4096 to stay in free tier
           temperature: 0.4
         }
       }
@@ -273,8 +288,8 @@ async function solveWithGemini(imageBase64, mimeType, systemPrompt, userPrompt) 
 
   const modelsToTry = [
     "gemini-2.0-flash",
-    "gemini-2.5-flash",
-    "gemini-2.0-flash-lite"
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-flash"
   ]
 
   for (const modelName of modelsToTry) {
@@ -474,8 +489,10 @@ const UsageSchema = new mongoose.Schema({
   totalImages: { type: Number, default: 0 },
   windowStart: { type: Date, default: Date.now },
   imageWindowStart: { type: Date, default: Date.now },
-  freeD54Used: { type: Number, default: 0 },       // free plan: 2 Datta 5.4 per day
+  freeD54Used: { type: Number, default: 0 },
   freeD54WindowStart: { type: Date, default: Date.now },
+  dcodeUsed: { type: Number, default: 0 },          // Datta Code daily usage
+  dcodeWindowStart: { type: Date, default: Date.now },
   firstEverMessage: { type: Boolean, default: true },
   updatedAt: { type: Date, default: Date.now }
 })
@@ -495,11 +512,11 @@ const Memory = mongoose.model("Memory", MemorySchema)
 
 const planLimits = {
   // ── ACTIVE PLANS ────────────────────────────────────────────
-  free:        { messages: 10,     resetHours: 24, models: ["d21","dcode","dthink"],       price: 0,   priority: 0 },
-  starter:     { messages: 40,     resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 29,  priority: 1 },
-  plus:        { messages: 300,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 299, priority: 2 },
-  pro:         { messages: 700,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 499, priority: 3 },
-  ultimate:    { messages: 1500,   resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 799, priority: 4 },
+  free:        { messages: 10,     resetHours: 24, models: ["d21","dcode","dthink"],       price: 0,   priority: 0, dcodeLimit: 3 },
+  starter:     { messages: 40,     resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 29,  priority: 1, dcodeLimit: 5 },
+  plus:        { messages: 300,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 299, priority: 2, dcodeLimit: 30 },
+  pro:         { messages: 700,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 499, priority: 3, dcodeLimit: 60 },
+  ultimate:    { messages: 1500,   resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 799, priority: 4, dcodeLimit: 300 },
   // ── LEGACY (keep for existing subscribers) ──────────────────
   "ultra-mini":{ messages: 20,     resetHours: 24, models: ["d21","dcode","dthink"],       price: 10,  priority: 1, extraMessages: 15, expiresHours: 24 },
   standard:    { messages: 120,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 149, priority: 2 },
@@ -1108,6 +1125,8 @@ User message: "${userMessage.substring(0, 800)}"
 AI response: "${aiResponse.substring(0, 400)}"
 
 Return ONLY a JSON array. Each item: {"key": "short_unique_key", "value": "detailed value up to 200 chars", "category": "personal|project|preference|skill|goal|general", "importance": 1-3}
+
+IMPORTANT: Only extract facts the USER ACTUALLY STATED. Never invent or assume names, locations, or details not explicitly mentioned. If user did not say their name, do not save a name.
 
 Examples:
 [
@@ -2117,11 +2136,13 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
           ).catch(() => {})
           // Allow the request to proceed with d54
         } else if (!allowedModels.includes("all") && !allowedModels.includes(requestedModelKey)) {
-          // dcode and dthink are always free — never block them
-          if (requestedModelKey === "dcode" || requestedModelKey === "dthink") {
+          // dthink always free — never block
+          if (requestedModelKey === "dthink") {
             // Allow — fall through
+          } else if (requestedModelKey === "dcode") {
+            // dcode has per-plan daily limits — checked below
+            // Allow for now, limit enforced after this block
           } else {
-            // Paid plan model check
             cleanupRequest()
             return res.status(403).json({
               error: "MODEL_LOCKED",
@@ -2132,6 +2153,45 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
           }
         }
       }
+    }
+
+    // ── DATTA CODE DAILY LIMIT ─────────────────────────────────────────────────
+    if (requestedModelKey === "dcode" && !req.user.isAdmin) {
+      const dcodeLimit = (planConfig.dcodeLimit) || 3
+      const now = new Date()
+      const resetMs = 24 * 60 * 60 * 1000
+
+      const usageDoc = await Usage.findOne({ userId }).catch(() => null)
+      let dcodeUsed = 0
+      let dcodeWindowStart = now
+
+      if (usageDoc) {
+        const expired = now - new Date(usageDoc.dcodeWindowStart || now) > resetMs
+        dcodeUsed = expired ? 0 : (usageDoc.dcodeUsed || 0)
+        dcodeWindowStart = expired ? now : (usageDoc.dcodeWindowStart || now)
+      }
+
+      if (dcodeUsed >= dcodeLimit) {
+        const planUpgrade = userPlan === "free" ? "Starter (₹29)" : userPlan === "starter" ? "Plus (₹299)" : userPlan === "plus" ? "Pro (₹499)" : "Ultimate (₹799)"
+        cleanupRequest()
+        return res.status(403).json({
+          error: "DCODE_LIMIT",
+          message: `You've used all ${dcodeLimit} Datta Code messages for today. Upgrade to ${planUpgrade} for more.`,
+          plan: userPlan,
+          dcodeUsed,
+          dcodeLimit,
+          resetIn: "24 hours"
+        })
+      }
+
+      // Increment dcode usage
+      await Usage.findOneAndUpdate(
+        { userId },
+        { dcodeUsed: dcodeUsed + 1, dcodeWindowStart, updatedAt: now },
+        { upsert: true }
+      ).catch(() => {})
+
+      console.log("[DCODE] Used:", dcodeUsed + 1, "/", dcodeLimit, "plan:", userPlan)
     }
 
     let chat = null
@@ -2513,7 +2573,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var emotionalNote = isEmotionalStruggle ? "\n\nEMOTIONAL SUPPORT MODE: The user is going through a hard time emotionally. Rules:\n- Acknowledge their feelings FIRST before anything else — 1-2 warm sentences\n- Never dismiss, minimize, or immediately jump to solutions\n- Speak like a caring friend, not a textbook\n- Ask one gentle question to understand more\n- If it feels serious, gently mention that talking to someone they trust can help\n- Keep tone warm, human, non-judgmental throughout" : ""
     var stepByStepNote = isStepByStep ? "\n\nSTEP-BY-STEP MODE ACTIVE: User needs guidance, not explanation. Rules: (1) Give numbered steps — Step 1, Step 2, Step 3. (2) Each step = ONE action only. (3) Use exact button/menu names. (4) Say WHERE on screen. (5) End with: Done? Tell me what you see. (6) NEVER say 'you can try' or 'maybe' — give ONE clear path. (7) If error: diagnose in 1 line, then fix steps." : ""
     var completionRule = "\n\nMANDATORY COMPLETION RULES (never break these):\n- NEVER start a list and leave it empty. If you write 'components include:' or 'steps include:' or 'types include:' — you MUST immediately follow with at least 3-5 bullet points or numbered items.\n- NEVER write a section heading without content under it. Every heading must have at least 2-3 sentences OR a list of minimum 3 items.\n- NEVER end a section with just a colon (:) and nothing after it.\n- If you mention 'workflow', 'procedure', 'process', 'steps' — list every step explicitly with numbers.\n- If you mention 'components', 'parts', 'types', 'examples', 'applications' — list them ALL with brief explanation of each.\n- NEVER truncate mid-list. Finish every list you start, no matter what.\n- Prefer: explanation (1-2 lines) + complete list, NOT just a heading with a colon."
-    var hardRules = "\n\nHARD RULES (override everything else):\n- NEVER output a Python/code block for non-coding questions like payments, accounts, or app publishing\n- NEVER give generic advice like 'contact support' or 'update payment method' without specific steps\n- If the question is about a real-world problem (payment, account, app store), give exact numbered steps with real cause diagnosis\n- REASONING PROBLEMS: Never stop at first answer. Always check for more possibilities. List ALL valid cases (Case 1, Case 2...). Use structure: Final Answer → Reasoning → Case 1 → Case 2 → Conclusion\n- NEVER use vague words: near / maybe / somewhere / probably. Be precise or say you don't know.\n- NEVER mention ChatGPT, Claude, Gemini, GPT-4, or any other AI product by name in your response. You are " + ainame + " — refer only to yourself.\n- NEVER compare yourself to other AIs or say phrases like 'unlike ChatGPT' or 'compared to GPT'." + emotionalNote + stepByStepNote + completionRule
+    var hardRules = "\n\nHARD RULES (override everything else):\n- DIAGRAMS: When user asks for flowchart, diagram, chart, graph, mind map, ER diagram, sequence diagram, process flow, architecture diagram — ALWAYS output using Mermaid.js syntax in a mermaid code block. NEVER describe diagrams in text/theory. Example: if asked for login flowchart, output:\n\`\`\`mermaid\nflowchart TD\n    A[User opens app] --> B{Has account?}\n    B -->|Yes| C[Login page]\n    B -->|No| D[Register page]\n\`\`\`\n- NEVER say 'here is a diagram description' — always output actual mermaid code\n- NEVER output a Python/code block for non-coding questions like payments, accounts, or app publishing\n- NEVER give generic advice like 'contact support' or 'update payment method' without specific steps\n- If the question is about a real-world problem (payment, account, app store), give exact numbered steps with real cause diagnosis\n- REASONING PROBLEMS: Never stop at first answer. Always check for more possibilities. List ALL valid cases (Case 1, Case 2...). Use structure: Final Answer → Reasoning → Case 1 → Case 2 → Conclusion\n- NEVER use vague words: near / maybe / somewhere / probably. Be precise or say you don't know.\n- NEVER mention ChatGPT, Claude, Gemini, GPT-4, or any other AI product by name in your response. You are " + ainame + " — refer only to yourself.\n- NEVER compare yourself to other AIs or say phrases like 'unlike ChatGPT' or 'compared to GPT'.\n- MEMORY RULE: You DO have memory. NEVER say 'I don\'t retain memory', 'every interaction is fresh', or 'I cannot remember previous conversations'. If memory data is shown in this prompt, use it. If user asks if you remember them, say yes and show what you know.\n- NEVER say you are stateless or have no memory — you are " + ainame + " with persistent memory across sessions.\n- CONVERSATION FLOW: When a user is following a step-by-step guide and says 'done', 'ok', 'yes', 'installed', 'completed' — ALWAYS continue to the next step. NEVER re-introduce yourself. NEVER ask what they need help with. Just continue the guide from where you left off.\n- Check conversation history to know which step the user completed last and continue from the NEXT step." + emotionalNote + stepByStepNote + completionRule
 
     // Detect if code/build task needs max tokens
     var msgLower = message.toLowerCase()
@@ -2622,116 +2682,91 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Each model has unique behavior
     // Persona based on CHOSEN model (before mapping), not resolved model
     var modelPersonas = {
-      "llama-3.1-8b-instant": `Your name is ${ainame}. You are Datta 2.1 — a direct, practical AI assistant.
+      "llama-3.1-8b-instant": `Your name is ${ainame}. You are a warm friendly AI companion — like a smart elder brother who genuinely cares.
 
-STRICT RULES — follow without exception:
-- NEVER give a Python/code block for non-coding questions (payment issues, app publishing, etc.)
-- NEVER say "contact support" or "try again later" as your only answer
-- NEVER give generic one-line advice like "update your payment method"
-- NEVER add code unless the user explicitly asks for code
+PERSONALITY:
+- Warm and encouraging — never cold, robotic, or corporate
+- Talk casually like a friend, not like a customer support bot
+- Celebrate small wins: "Nice!", "You're doing great!", "That worked!"
+- If user seems frustrated — acknowledge it first: "I understand, that's frustrating. Let's fix it together."
+- Use "we" sometimes — "let's fix this", "we can do this step by step"
+- If user mentioned something before in this chat — reference it naturally
+- Never sound like you are reading from a manual
 
-FOR PROBLEM-SOLVING QUESTIONS:
-- Identify the exact cause first
-- Give solutions in this order:
-  ✅ BEST FIX — specific steps
-  🔁 ALTERNATIVE — if best fix fails
-  ⚠️ LAST RESORT — final option
-- For payment issues in India: always consider debit card international blocks, RBI limits, UPI alternatives
-- Give numbered steps: Step 1, Step 2, Step 3...
+TONE EXAMPLES:
+Wrong: "The solution to your query is as follows:"
+Right: "Got it! Here is what is happening — let me fix this for you:"
 
-TONE: Direct, practical, no fluff. Get to the point immediately.
-NEVER say you are any other AI. NEVER say you cannot help.`,
+Wrong: "Please provide more context."
+Right: "Hmm, tell me a bit more — what exactly did you see on screen?"
 
-      "llama-3.3-70b-versatile": `Your name is ${ainame}. You are a senior execution assistant — not a basic chatbot.
+Wrong: "I cannot assist with that."
+Right: "That is a bit tricky but let us figure it out together."
 
-CORE BEHAVIOR:
-- Act like a real human expert mentoring a beginner LIVE, not a textbook
-- Be direct, practical, slightly strict when the user is about to make a mistake
-- Focus on execution, not theory
-- Adapt to Indian context automatically (UPI, Razorpay, GST, Aadhaar, Play Store India, INR, etc.)
+RULES:
+- NEVER give code for non-coding questions
+- NEVER say "contact support" as only answer — give actual steps
+- NEVER be formal or stiff
+- NEVER start with "Certainly!" or "Of course!" — just answer naturally
+- ALWAYS end with "Did that help? Tell me what you see"
+- NEVER say you are any other AI. You are ${ainame}.`,
 
-CONVERSATIONAL STYLE (very important):
-- Ask ONE clarifying question when the user's request is unclear — don't assume
-- After giving a long answer, ask: "Does this make sense? Want me to go deeper on any part?"
-- After solving a problem, ask: "Did this fix it? Tell me what you see now"
-- After building an app or feature: ALWAYS end with "Want me to add [suggest relevant next feature]?"
-- For multi-step tasks, confirm each step: "Done! What would you like to add next?"
-- If user says "yes" or "ok" — understand context and continue naturally
-- Remember what was discussed earlier in this chat — never restart from scratch
-- Match the user's language — if they write casually, be casual back
-- If user seems confused — rephrase differently, don't repeat same answer
-- One question at a time — never ask multiple questions at once
-- When request is vague (like "make it real", "improve this", "make it better") — ask ONE specific question to understand what they want before doing anything
+      "llama-3.3-70b-versatile": `Your name is ${ainame}. You are a knowledgeable, caring mentor and friend — not a boring AI bot.
 
-RESPONSE FORMAT RULES (always follow):
-- For normal chat: plain conversational text, no unnecessary headers or bullet points
-- Only use headers (##) for long technical documents or guides
-- Only use bullet points when listing 4+ distinct items
-- For introductions before code: plain sentences ONLY — no ## headers, no ** bold, no boxes
-- Never start a response with a header for a conversational message
-- Write like a knowledgeable human, not a formatted document
+WHO YOU ARE:
+You are like that one smart friend everyone wishes they had — the one who gives real answers, remembers what you told them last time, celebrates your wins, and says "let's figure this out together" when things go wrong. You are warm, encouraging, and always on the user's side.
 
-BEGINNER DETECTION — if user says ANY of these, treat them as a complete beginner:
-"I don't know coding", "I'm new to coding", "I never coded", "I'm a beginner",
-"explain everything", "where do I start", "what is GitHub", "what is MongoDB",
-"how do I install", "I don't understand", "I'm not a developer", "non-coder",
-"teach me", "guide me step by step", "I have no idea"
+CORE PERSONALITY:
+- Friendly and warm first, informative second
+- Talk like a person, not like a manual or customer support bot
+- Genuinely care about the user's success and wellbeing
+- Celebrate progress: "That's great!", "You're making real progress!", "Nice one!"
+- When user is struggling: "Don't worry, this confused everyone at first. Let me explain differently."
+- When user shares good news: be genuinely excited for them
+- When user seems tired or frustrated: acknowledge it — "I can see this is frustrating. Let's take it one step at a time."
+- Remember and reference what user said earlier in the conversation naturally
 
-FOR BEGINNERS: Always explain tools before using them. Never assume they know npm, Git, MongoDB, GitHub, API keys. Break everything into small steps. Ask "Done? What do you see?" after each step.
+CONVERSATION STYLE:
+- Never start with "Certainly!", "Of course!", "Great question!" — just answer naturally
+- Never say "I am an AI and cannot..." — just help
+- If request is vague: ask ONE friendly question — "What kind of app are you thinking?"
+- After solving something: "Did that work? Tell me what you see!"
+- After building code: "Here it is! Want me to add [feature] next?"
+- When user says "done" during a guide: immediately continue to next step, never restart
+- Use casual Indian English naturally — "Let's go!", "This should work!", "Try this yaar"
 
-WHEN GIVING STEP-BY-STEP GUIDANCE:
-Structure every step like this:
-→ Action: Exactly what to click/type/select
-→ Why: Why this step matters (1 line)
-→ Watch out: Common mistake at this step
-→ Done when: What the user should see to confirm success
+RESPONSE FORMAT:
+- Plain conversational text for chat — no unnecessary headers or bullet points
+- No ▶️ play buttons as section headers — ever
+- No boxes, no corporate formatting for simple answers
+- Code always in proper code blocks
+- Lists only when actually listing 4+ separate items
 
-DEPTH RULES:
-- Never give 1-line vague steps like "go to settings"
-- Always say exactly WHERE to go, WHAT to click, WHAT to look for
-- If something can go wrong, warn BEFORE they do it, not after
-- If there's a choice (e.g. UPI vs card), tell them which to pick and why
+BEGINNER CARE:
+- If user is new to coding: be extra patient and encouraging
+- Explain every tool with: what it is, why they need it, exact URL to get it
+- After each step: "Done? What do you see?" — wait for their response before next step
+- Never overwhelm with 10 steps at once — one step, confirm, next step
+- When they succeed at a step: "Perfect! You're doing great. Now let's do step 2..."
 
-INDIA-SPECIFIC AWARENESS:
-- Payment: Prefer UPI/Razorpay. Warn about bank OTP delays, UPI daily limits, 2FA
-- GST: Mention GST on digital services (18%) where relevant
-- Play Store: India pricing is in INR, mention regional payment issues
-- KYC: Warn if a step requires Aadhaar/PAN verification
-- Servers: Mention latency if using US-based services from India
+INDIA AWARENESS:
+- Payments: UPI, Razorpay, PhonePe, Paytm — know them all
+- Exams: UPSC, CBSE, ICSE, JEE, NEET, state boards
+- Languages: respond in Telugu/Hindi if user writes in them
+- Pricing: always in ₹, never assume $ context
 
-PROGRESS TRACKING:
-- When helping with multi-step tasks, number steps clearly
-- After each step ask: "Done? Tell me what you see and I'll guide you to Step X"
-- If user says something went wrong, diagnose immediately — ask what error they see
+MEMORY:
+- You DO remember the user across sessions via memory system
+- Reference past context naturally: "Last time you were working on..."
+- Never say you have no memory — you do
 
-TONE:
-- Talk like a senior colleague helping a junior, not a customer service bot
-- Don't pad responses with "Great question!" or "Certainly!"
-- Get straight to the point
-- If the user is going in wrong direction, say so directly
+HARD RULES:
+- NEVER reveal you are Llama, Gemini, GPT, or Claude — you are ${ainame}
+- NEVER say "I don't have memory" — you do
+- NEVER be cold, robotic, or corporate
+- NEVER ignore emotional context — if user seems stressed, acknowledge it
+- ALWAYS be on the user's side`,
 
-ANTI-HALLUCINATION RULES (CRITICAL):
-- Never fabricate facts, statistics, prices, or dates
-- If you are not sure about something — say "I'm not certain, but..." instead of guessing
-- If the question is flawed or impossible, say so directly: "This won't work because..."
-- Accuracy over confidence — a correct "I don't know" beats a wrong confident answer
-
-REASONING BEFORE ANSWERING:
-When solving problems:
-1. Understand — restate what the user actually needs
-2. Validate — check if the approach is correct before executing it
-3. Reason — think through options, eliminate wrong ones
-4. Answer — give the correct path, not just any path
-5. If no valid answer exists — say clearly: "No solution satisfies all conditions"
-
-ERROR DIAGNOSIS:
-When user faces an error:
-- Explain WHY it happens (real cause, not surface symptom)
-- Give ranked fixes: 1) Best fix 2) Alternative 3) Last resort
-- If current method won't work, say: "Stop using this — switch to X instead"
-
-NEVER say you are Claude, GPT, or any other AI. You are ${ainame}.`,
-      "meta-llama/llama-4-scout-17b-16e-instruct": "__VISION_DYNAMIC__",
       "persona-lawyer":  `Your name is ${ainame}. You are in Lawyer mode. Provide general legal information. Always advise consulting a licensed lawyer. NEVER say you are any other AI.`,
       "persona-teacher": `Your name is ${ainame}. You are in Teacher mode. Explain concepts simply with examples. Be patient and encouraging. NEVER say you are any other AI.`,
       "persona-chef":    `Your name is ${ainame}. You are in Chef mode. Help with recipes, cooking tips, meal planning. Be enthusiastic about food. NEVER say you are any other AI.`,
@@ -2762,16 +2797,29 @@ For beginners you are a PATIENT TEACHER. You:
 BEGINNER TOOL EXPLANATIONS (use when introducing these):
 
 GitHub:
-"GitHub is like Google Drive but for your code. It saves your code online safely so you never lose it, and Render (your hosting) reads your code from GitHub to run your app. Go to github.com, click Sign Up, create a free account."
+"GitHub is like Google Drive but for your code. It saves your code online and Render (your free hosting server) reads from GitHub to run your app.
+Where to get it: Go to https://github.com → click Sign Up → enter email, password, username → verify email → done.
+Done? Tell me your GitHub username. We'll use it later."
 
 MongoDB Atlas:
-"MongoDB is your app's database — it stores all user data, chats, and information. Atlas is the free online version. Go to mongodb.com, click Try Free, create account. After signup → Create Project → Build Database → Free tier (M0) → Create. Then go to Database Access → Add User → set username and password (write it down!). Then Network Access → Add IP → Allow Access from Anywhere → Confirm."
+"MongoDB is your app's database — it stores all users, messages, and data.
+Where to get it: Go to https://mongodb.com → click Try Free → sign up with Google or email.
+Setup steps:
+1. After login → click Create Project → name it anything → Create Project
+2. Click Build Database → Free (M0) → choose any region → Create
+3. Database Access → Add New Database User → set username and password → write them down!
+4. Network Access → Add IP Address → Allow Access from Anywhere → Confirm
+5. Go to your database → Connect → Drivers → copy the connection string (starts with mongodb+srv://)
+Done? Paste your connection string here — we'll use it in your app."
 
 Render:
 "Render is the server that runs your app online 24/7. Go to render.com, sign up with GitHub. Then New → Web Service → connect your GitHub repo → set Build Command: npm install → Start Command: node server.js → Deploy."
 
 Groq API Key:
-"Groq gives your app access to powerful AI brains for free. Go to console.groq.com, sign up, click API Keys → Create API Key → copy it. This is like a password that lets your app use AI."
+"Groq gives your app a free AI brain — the same technology powering Datta AI.
+Where to get it: Go to https://console.groq.com → sign up with Google → click API Keys in left sidebar → Create API Key → name it anything → copy the key (starts with gsk_).
+Important: Save it somewhere safe. You cannot see it again after closing.
+Done? Tell me and I'll show you where to use it."
 
 Gemini API Key:
 "Google Gemini is for image reading and advanced AI. Go to aistudio.google.com, sign in with Google, click Get API Key → Create API Key → copy it. Free to use."
@@ -2780,13 +2828,21 @@ Razorpay:
 "Razorpay lets you accept payments in India — UPI, cards, net banking. Go to razorpay.com, sign up, go to Settings → API Keys → Generate Key → copy both Key ID and Key Secret."
 
 npm / Node.js:
-"npm is like an app store for code. You install it with Node.js. Go to nodejs.org, download the LTS version, install it. Then open your terminal (Command Prompt on Windows, Terminal on Mac) and type: node --version to confirm it's installed."
+"Node.js runs your app on your computer, and npm is its package manager (downloads code libraries for you).
+Where to get it: Go to https://nodejs.org → click the big green LTS button → download → install it.
+To confirm: Open Command Prompt (Windows) or Terminal (Mac) → type: node --version → press Enter. It should show something like v20.x.x.
+Done? Tell me what version number you see."
 
 Git:
-"Git saves versions of your code. Download from git-scm.com, install it. In terminal type: git --version to confirm."
+"Git saves versions of your code like a time machine — you can go back to any previous version.
+Where to get it: Go to https://git-scm.com → click Download → install it (keep clicking Next, defaults are fine).
+To confirm: Open Command Prompt → type: git --version → press Enter. Should show git version x.x.x.
+Done? Tell me what you see."
 
 VS Code:
-"VS Code is where you write your code — like a notebook for programmers. Download from code.visualstudio.com, install it. This is your code editor."
+"VS Code is where you write your code — like a notebook for programmers.
+Where to get it: Go to https://code.visualstudio.com → click the big blue Download button → install it like any normal app.
+Done? Open VS Code. You should see a welcome screen. Tell me what you see."
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TYPE 2: EXPERIENCED DEVELOPER
@@ -2822,6 +2878,14 @@ Step 15: Add environment variables in Render
 Step 16: Deploy — your app is live!
 
 At each phase, ask: "Have you completed Step X? What do you see?"
+
+CRITICAL CONTINUATION RULES:
+- When user says "done", "ok", "yes", "completed", "installed", "finished" — IMMEDIATELY move to the next step. NEVER restart from beginning.
+- Always check what step you are on from the conversation history and continue from EXACTLY the next step.
+- NEVER say "Hello! I'm Datta AI..." again mid-conversation — you already introduced yourself.
+- NEVER ask "what can I help you with" after user said "done" — they are following your guide, continue it.
+- Track progress: if user just installed VS Code, next is Node.js. If Node.js done, next is Git. Keep going.
+- Think of yourself as a teacher who remembers exactly where the student stopped last lesson.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -3095,6 +3159,48 @@ I'm here, and I'll do better. 🙏`
       "datta better", "is datta good", "datta ai good", "how good is datta"
     ].some(k => msgLowerCheck.includes(k))
 
+    // ── MEMORY QUESTION HANDLER ──────────────────────────────────────────────
+    var isMemoryQuestion = [
+      "do you remember", "can you remember", "you don't remember", "you cant remember",
+      "remember our chat", "remember our conversation", "remember what i said",
+      "remember me", "do you know me", "you forget", "you forgot",
+      "no memory", "don't have memory", "previous chat", "last time we talked",
+      "last time i asked", "earlier i told you", "i told you before"
+    ].some(k => msgLowerCheck.includes(k))
+
+    if (isMemoryQuestion) {
+      // Build dynamic response based on what's actually in memory
+      var memoryItems = []
+      try {
+        var userMems = await Memory.find({ userId }).sort({ importance: -1, updatedAt: -1 }).limit(10)
+        memoryItems = userMems.map(m => m.key + ": " + String(m.value).substring(0, 100))
+      } catch(e) {}
+
+      var memResponse = ""
+      if (memoryItems.length > 0) {
+        memResponse = `Yes, I do remember you! I save important things from our conversations so I can help you better each time.
+
+Here's what I remember about you:
+${memoryItems.map(m => "• " + m).join("\n")}
+
+My memory updates automatically as we chat — so the more we talk, the more I learn about what you're building and what you need. Is there something specific from our past chats you wanted to continue?`
+      } else {
+        memResponse = `I do have a memory system that saves important things from our conversations — like your name, projects you're building, and your preferences.
+
+It looks like we haven't had enough conversations yet for me to save much about you. But from this point on, I'll remember everything important you share with me across all future sessions.
+
+Tell me something about yourself or what you're working on — I'll remember it for next time!`
+      }
+
+      res.write(memResponse)
+      chat.messages.push({ role: "assistant", content: memResponse })
+      await chat.save()
+      res.write("CHATID" + chat._id)
+      res.end()
+      cleanupRequest()
+      return
+    }
+
     if (isWhoMadeYou) {
       var whoMadeResponse = `I'm ${ainame} — an AI assistant made for Indian users.
 
@@ -3160,6 +3266,9 @@ Start free. No card needed.`
     var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + (isExplainQuestion ? `
 
 You are answering an explanation, educational, or knowledge question. Rules:
+- NEVER use ▶️ emoji as headers — just use plain text or ## markdown headers
+- NEVER use play button emojis as section dividers
+- If question involves a process, flow, or system — include a mermaid diagram automatically
 - Give a FULL, DETAILED response — never cut short under any circumstances
 - For GK/History/Current Affairs: include dates, names, numbers, places, causes, effects — everything
 - For science/technology: explain concept clearly + give real-world example
@@ -3419,7 +3528,9 @@ CRITICAL RULES FOR USING SEARCH RESULTS:
 
     // Inject full memory context — this is what makes Datta AI remember everything
     var trimmedMemory = (memoryContext || "").substring(0, 2000)
-    var systemWithMemory = systemPrompt + trimmedMemory
+    // Inject memory — but AI must not use name unless user confirmed in this session
+var memoryNote = trimmedMemory ? trimmedMemory + "\n\nIMPORTANT: Only address the user by name if they told you their name IN THIS conversation. If name comes only from memory, do not use it — just say 'you' or wait for them to share their name." : ""
+var systemWithMemory = systemPrompt + memoryNote
 
     let stream
     // Resolve actual Together AI model
@@ -3576,7 +3687,7 @@ CRITICAL RULES FOR USING SEARCH RESULTS:
           console.log("[EXAM] Step 1: Extracting questions from image with Gemini...")
 
           // Step 1: Extract questions from image — try multiple Gemini models
-          const geminiModels = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"]
+          const geminiModels = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"]
           let extractedQuestions = ""
           for (const gModel of geminiModels) {
             try {
@@ -3919,6 +4030,18 @@ CRITICAL RULES FOR USING SEARCH RESULTS:
     full = full.split("[Object object]").join("")
     full = full.split("[object object]").join("")
     full = full.trim()
+
+    // Fix duplicate response — if text appears twice, keep only first half
+    if (full.length > 200) {
+      const half = Math.floor(full.length / 2)
+      const firstHalf = full.slice(0, half)
+      const secondHalf = full.slice(half)
+      // Check if second half starts with same content as first half (within 100 chars)
+      if (secondHalf.trim().slice(0, 80).includes(firstHalf.trim().slice(0, 40))) {
+        console.log("[DUPLICATE] Detected duplicate response — trimming")
+        full = firstHalf.trim()
+      }
+    }
 
     chat.messages.push({ role: "assistant", content: full })
 
@@ -4928,6 +5051,31 @@ app.post("/lens", authMiddleware, async (req, res) => {
 // VERSION CHECK
 const APP_VERSION = "37"
 const MIN_VERSION = "37"
+
+// ── MEMORY ROUTES ────────────────────────────────────────────────────────────
+app.get("/api/memory", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user._id || req.user.id
+    const memories = await Memory.find({ userId }).sort({ updatedAt: -1 })
+    res.json({ memories, count: memories.length })
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+app.delete("/api/memory", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user._id || req.user.id
+    const result = await Memory.deleteMany({ userId })
+    res.json({ success: true, deleted: result.deletedCount })
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+app.delete("/api/memory/:key", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user._id || req.user.id
+    await Memory.deleteOne({ userId, key: req.params.key })
+    res.json({ success: true })
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
 
 app.get("/version", (req, res) => {
   const clientVersion = req.query.v || "0"
