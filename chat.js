@@ -1072,7 +1072,12 @@ async function send() {
         aiDiv.innerHTML = `<div class="aiContent"><div class="ai-bubble" style="background:#110a0a;border:1px solid #ff444422;"><div style="color:#ff8888;font-weight:600;margin-bottom:8px;">⏱️ Server timeout</div><div style="color:#888;font-size:13px;margin-bottom:12px;">This task was too large. Try breaking it into smaller parts.</div></div></div>`
       } else {
         const errMsg = errBody.message || errBody.error || "Request failed (" + res.status + ")"
-        aiDiv.innerHTML = `<div class="aiContent"><div class="ai-bubble" style="color:#ff8844;">⚠️ ${errMsg}. Please try again.</div></div>`
+        // Check if it's a network/server error
+        const isNetworkErr = errMsg.includes("fetch") || errMsg.includes("network") || errMsg.includes("Failed")
+        const networkMsg = isNetworkErr
+          ? `Server is waking up — this happens after 15 minutes of no activity on free hosting. <a href="https://datta-ai-server.onrender.com/" target="_blank" style="color:var(--accent);">Click here to wake it</a> then try again in 30 seconds.`
+          : errMsg + ". Please try again."
+        aiDiv.innerHTML = `<div class="aiContent"><div class="ai-bubble" style="color:#ff8844;">⚠️ ${networkMsg}</div></div>`
       }
       hideStopBtn()
       return
@@ -4446,6 +4451,18 @@ function selectInputModel(modelId, key, label) {
 }
 
 // Init on load
+// ── KEEP SERVER ALIVE — ping every 10 min to prevent Render sleep ──────────
+function keepServerAlive() {
+  const token = localStorage.getItem("datta_token")
+  if (!token) return
+  fetch(SERVER + "/", { method: "GET" })
+    .then(() => console.log("[PING] Server alive"))
+    .catch(() => console.log("[PING] Server sleeping — will wake on next message"))
+}
+// Ping immediately on load then every 10 minutes
+setTimeout(keepServerAlive, 3000)
+setInterval(keepServerAlive, 10 * 60 * 1000)
+
 window.addEventListener("DOMContentLoaded", function() {
   const key = localStorage.getItem("datta_model_key") || "d21"
   const m = modelData[key]
