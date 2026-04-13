@@ -2092,9 +2092,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
         }
 
         // ── MODEL ACCESS CONTROL ────────────────────────────────────────────
-        const requestedModelKey = req.body.modelKey || "d21"
-        const planConfig = planLimits[userPlan] || planLimits.free
-        const allowedModels = planConfig.models
+        requestedModelKey = req.body.modelKey || "d21"  // update from request body
+        var planConfig = planLimits[userPlan] || planLimits.free
+        var allowedModels = planConfig.models
 
         // Free plan special case: allow 2 Datta 5.4 messages per day
         if (userPlan === "free" && requestedModelKey === "d54") {
@@ -2150,7 +2150,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
 
     // ── DATTA CODE DAILY LIMIT ─────────────────────────────────────────────────
     if (requestedModelKey === "dcode" && !req.user.isAdmin) {
-      const dcodeLimit = (planConfig.dcodeLimit) || 3
+      var _planCfg = planLimits[userPlan] || planLimits.free
+      const dcodeLimit = (_planCfg.dcodeLimit) || 3
       const now = new Date()
       const resetMs = 24 * 60 * 60 * 1000
 
@@ -2477,6 +2478,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     ]
     let chosenModel = validModels.includes(selectedModel) ? selectedModel : "llama-3.1-8b-instant"
     var modelKey = req.body.modelKey || "d21" // d21, d42, d48, d54
+    var requestedModelKey = modelKey  // alias used in access control blocks
 
     // All models available on all plans
     var is48 = modelKey === "d48"
