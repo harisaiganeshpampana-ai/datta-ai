@@ -189,13 +189,8 @@ async function runMigration() {
   } catch(migErr) { console.log('[MIGRATION] Error:', migErr.message) }
 }
 
-async function connectMongo(attempt) {
-  attempt = attempt || 1
-  try {
-    await // Clean up hallucinated/wrong memories on startup
 async function cleanWrongMemories() {
   try {
-    // Remove memories with obviously wrong/hallucinated names like "John"
     const deleted = await Memory.deleteMany({
       key: "user_name",
       value: { $in: ["John", "john", "John Doe", "User", "user", "Unknown"] }
@@ -206,13 +201,17 @@ async function cleanWrongMemories() {
   } catch(e) {}
 }
 
-mongoose.connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 15000,  // 15s timeout per attempt
+async function connectMongo(attempt) {
+  attempt = attempt || 1
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 15000,
       connectTimeoutMS: 15000,
       socketTimeoutMS: 30000,
     })
     console.log("MongoDB connected (attempt " + attempt + ")")
-    cleanWrongMemories()
+    // Clean wrong memories async after connect
+    setImmediate(() => { if (typeof cleanWrongMemories === "function") cleanWrongMemories().catch(() => {}) })
     await runMigration()
   } catch(e) {
     console.error("DB connection error (attempt " + attempt + "):", e.message)
@@ -509,6 +508,7 @@ const MemorySchema = new mongoose.Schema({
 })
 MemorySchema.index({ userId: 1, key: 1 }, { unique: true })
 const Memory = mongoose.model("Memory", MemorySchema)
+
 
 const planLimits = {
   // ── ACTIVE PLANS ────────────────────────────────────────────
@@ -5373,6 +5373,15 @@ function gracefulShutdown(signal) {
   })
   // Force exit after 10s if hanging
   setTimeout(() => { console.error("[SHUTDOWN] Forced exit"); process.exit(0) }, 10000)
+
+// Global error handlers — prevent server from crashing on unhandled errors
+process.on("uncaughtException", (err) => {
+  console.error("[UNCAUGHT EXCEPTION]", err.message)
+})
+process.on("unhandledRejection", (reason) => {
+  console.error("[UNHANDLED REJECTION]", typeof reason === "object" ? reason?.message : reason)
+})
+
 }
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"))
 process.on("SIGINT",  () => gracefulShutdown("SIGINT"))
