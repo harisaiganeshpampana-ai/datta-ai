@@ -503,10 +503,10 @@ const Memory = mongoose.model("Memory", MemorySchema)
 
 const planLimits = {
   // ── ACTIVE PLANS ────────────────────────────────────────────
-  free:        { messages: 10,     resetHours: 24, models: ["d21","dcode","dthink"],       price: 0,   priority: 0, dcodeLimit: 3 },
-  starter:     { messages: 40,     resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 29,  priority: 1, dcodeLimit: 5 },
-  plus:        { messages: 300,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 299, priority: 2, dcodeLimit: 30 },
-  pro:         { messages: 700,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 499, priority: 3, dcodeLimit: 60 },
+  free:        { messages: 10,     resetHours: 24, models: ["d21","dcode","dthink"],       price: 0,   priority: 0, dcodeLimit: 3   },
+  starter:     { messages: 40,     resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 29,  priority: 1, dcodeLimit: 5   },
+  plus:        { messages: 300,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 299, priority: 2, dcodeLimit: 30  },
+  pro:         { messages: 700,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 499, priority: 3, dcodeLimit: 60  },
   ultimate:    { messages: 1500,   resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 799, priority: 4, dcodeLimit: 300 },
   // ── LEGACY (keep for existing subscribers) ──────────────────
   "ultra-mini":{ messages: 20,     resetHours: 24, models: ["d21","dcode","dthink"],       price: 10,  priority: 1, extraMessages: 15, expiresHours: 24 },
