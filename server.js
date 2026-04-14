@@ -234,7 +234,7 @@ async function generateCodeWithGemini(systemPrompt, userPrompt, maxTokens) {
   if (!apiKey) throw new Error("GEMINI_API_KEY not set")
 
   // Updated April 2026 — use v1beta with currently available models
-  const modelsToTry = ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest", "gemini-1.5-flash"]
+  const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-exp", "gemini-exp-1206"]
 
   for (const modelName of modelsToTry) {
     try {
@@ -2906,15 +2906,37 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       }
     }
 
+    // 10 fallback models — if one hits rate limit, next one tries automatically
+    var _codeTok = Math.min(maxTok, 8000)
+    var _chatTok = Math.min(maxTok, 3000)
     var groqAttempts = isImageFile
       ? [{ model: "meta-llama/llama-4-scout-17b-16e-instruct", tokens: maxTok }]
       : isDattaCode
-        ? [{ model: "llama-3.3-70b-versatile", tokens: maxTok }, { model: "llama-3.3-70b-versatile", tokens: maxTok }]
+        ? [
+            { model: "llama-3.3-70b-versatile",          tokens: _codeTok },
+            { model: "llama-3.1-70b-versatile",           tokens: _codeTok },
+            { model: "llama-3.1-8b-instant",              tokens: _codeTok },
+            { model: "gemma2-9b-it",                      tokens: _codeTok },
+            { model: "mixtral-8x7b-32768",                tokens: _codeTok }
+          ]
       : isDattaThink
-        ? [{ model: "llama-3.3-70b-versatile", tokens: maxTok }]
+        ? [
+            { model: "llama-3.3-70b-versatile",          tokens: maxTok },
+            { model: "llama-3.1-8b-instant",              tokens: maxTok }
+          ]
       : (isDeepKnowledge || isCodeTask || isLargeTask || isExplainQuestion || isStructuredTopic)
-        ? [{ model: "llama-3.3-70b-versatile", tokens: maxTok }, { model: "llama-3.1-8b-instant", tokens: Math.min(maxTok, 3000) }]
-        : [{ model: "llama-3.1-8b-instant", tokens: maxTok }, { model: "llama-3.3-70b-versatile", tokens: Math.min(maxTok, 3000) }]
+        ? [
+            { model: "llama-3.3-70b-versatile",          tokens: maxTok },
+            { model: "llama-3.1-8b-instant",              tokens: _chatTok },
+            { model: "gemma2-9b-it",                      tokens: _chatTok },
+            { model: "mixtral-8x7b-32768",                tokens: _chatTok }
+          ]
+        : [
+            { model: "llama-3.1-8b-instant",              tokens: maxTok },
+            { model: "llama-3.3-70b-versatile",          tokens: _chatTok },
+            { model: "gemma2-9b-it",                      tokens: _chatTok },
+            { model: "mixtral-8x7b-32768",                tokens: _chatTok }
+          ]
 
     ;(function sanitizeGroqMessages() {
       var lastIdx = groqMessages.length - 1
