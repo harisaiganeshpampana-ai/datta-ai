@@ -2809,25 +2809,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       }
     }, 15000)
 
-    if (isDattaCode && process.env.GEMINI_API_KEY && !isImageFile) {
-      try {
-        console.log("[DATTA CODE] Using Gemini for code generation, tokens:", maxTok)
-        const geminiCode = await generateCodeWithGemini(systemWithMemory, finalUserContent, maxTok)
-        if (geminiCode && geminiCode.length > 100) {
-          if (!res.writableEnded) {
-            res.write(geminiCode)
-            chat.messages.push({ role: "assistant", content: geminiCode })
-            await chat.save()
-            res.write("CHATID" + chat._id)
-            res.end()
-          }
-          if (typeof cleanupRequest === "function") cleanupRequest()
-          return
-        }
-      } catch(gemCodeErr) {
-        console.warn("[DATTA CODE] Gemini failed:", gemCodeErr.message, "— falling back to Groq")
-      }
-    }
+    // Gemini code generation disabled - using Groq directly (more reliable)
+    // if (isDattaCode && process.env.GEMINI_API_KEY && !isImageFile) { ... }
 
     if (!isImageFile && message) {
       const tool = detectTool(message)
