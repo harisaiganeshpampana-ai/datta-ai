@@ -4212,14 +4212,7 @@ if ("serviceWorker" in navigator) {
     })
   })
 
-  // When new SW takes control - reload page
-  let refreshing = false
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!refreshing) {
-      refreshing = true
-      window.location.reload()
-    }
-  })
+  // Do NOT reload on controller change — causes infinite refresh loop
 }
 
 function showUpdateToast() {
@@ -4264,8 +4257,7 @@ function forceUpdate() {
       keys.forEach(key => caches.delete(key))
     })
   }
-  // Hard reload after 500ms
-  setTimeout(() => window.location.reload(true), 500)
+  console.log("[UPDATE] Cache cleared")
 }
 
 window.forceUpdate = forceUpdate
@@ -4295,10 +4287,6 @@ if ("serviceWorker" in navigator) {
     })
   }).catch(e => console.log("SW:", e))
 
-  let refreshing = false
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!refreshing) { refreshing = true; window.location.reload() }
-  })
 }
 
 window.confirmDelete = confirmDelete
