@@ -4028,6 +4028,33 @@ var systemWithMemory = systemPrompt + memoryNote
     full = full.split("[object object]").join("")
     full = full.trim()
 
+    // Wrap raw mermaid code in fences if missing
+    if ((full.includes("graph LR") || full.includes("graph TD") || full.includes("flowchart")) && !full.includes("```mermaid")) {
+      var lines = full.split("\n")
+      var result = []
+      var inDiagram = false
+      var diagramLines = []
+      for (var li = 0; li < lines.length; li++) {
+        var l = lines[li].trim()
+        if (!inDiagram && (l.startsWith("graph ") || l.startsWith("flowchart ") || l.startsWith("sequenceDiagram"))) {
+          inDiagram = true
+          diagramLines = [l]
+        } else if (inDiagram && (l === "" || li === lines.length - 1)) {
+          if (l !== "") diagramLines.push(l)
+          result.push("```mermaid")
+          result.push(diagramLines.join("\n"))
+          result.push("```")
+          diagramLines = []
+          inDiagram = false
+        } else if (inDiagram) {
+          diagramLines.push(l)
+        } else {
+          result.push(lines[li])
+        }
+      }
+      full = result.join("\n")
+    }
+
     // Fix duplicate response — if text appears twice, keep only first half
     if (full.length > 200) {
       const half = Math.floor(full.length / 2)
