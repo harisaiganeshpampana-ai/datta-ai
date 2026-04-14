@@ -69,32 +69,33 @@ if (typeof mermaid !== "undefined") {
 
 // Render mermaid diagrams inside a container
 async function renderMermaid(container) {
-  if (typeof mermaid === "undefined") {
-    console.warn("[MERMAID] Library not loaded")
-    return
-  }
+  if (typeof mermaid === "undefined") return
   const blocks = container.querySelectorAll(".mermaid-block")
   if (!blocks.length) return
 
   for (const block of blocks) {
-    if (block.dataset.rendered) continue
+    if (block.dataset.rendered === "done") continue
     const code = block.textContent.trim()
-    // Only render if code looks complete (has at least one --> arrow)
-    if (!code || code.length < 20 || !code.includes("-->") && !code.includes("->")) continue
-    block.dataset.rendered = "true"
+    // Must be complete — needs graph/flowchart header + at least 2 arrows + closing
+    const hasHeader = code.startsWith("graph ") || code.startsWith("flowchart ") || code.startsWith("sequenceDiagram") || code.startsWith("erDiagram")
+    const arrowCount = (code.match(/-->/g) || []).length
+    if (!hasHeader || arrowCount < 1 || code.length < 30) continue
+    
+    block.dataset.rendered = "done"
+    block.textContent = ""  // clear text before rendering
     try {
       const id = "mg" + Math.random().toString(36).slice(2, 8)
       const { svg } = await mermaid.render(id, code)
       block.innerHTML = svg
-      block.style.cssText = "background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;padding:16px;overflow-x:auto;margin:12px 0;text-align:center;"
-      // Make SVG responsive
+      block.style.cssText = "background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;padding:20px;overflow-x:auto;margin:14px 0;text-align:center;"
       const svgEl = block.querySelector("svg")
       if (svgEl) { svgEl.style.maxWidth = "100%"; svgEl.style.height = "auto" }
+      console.log("[MERMAID] Rendered successfully")
     } catch(e) {
-      console.warn("[MERMAID] Render failed:", e.message, "Code:", code.slice(0,50))
-      block.dataset.rendered = ""  // allow retry
-      // Show as formatted code instead
-      block.style.cssText = "background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;padding:14px;font-family:monospace;font-size:12px;color:var(--text2);white-space:pre;overflow-x:auto;margin:12px 0;"
+      console.warn("[MERMAID] Render failed:", e.message)
+      block.dataset.rendered = ""
+      block.style.cssText = "background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;padding:14px;font-family:monospace;font-size:12px;color:var(--text2);white-space:pre-wrap;overflow-x:auto;margin:12px 0;"
+      block.textContent = code  // restore code text
     }
   }
 }
@@ -1209,10 +1210,6 @@ async function send() {
           const visible = safeContent(fullText.slice(0, displayedLen))
           const parsedHTML = processMermaidInHTML(marked.parse(visible))
           span.innerHTML = parsedHTML + '<span class="typingCursor">|</span>'
-          // Render mermaid if block is complete (has closing ```)
-          if (parsedHTML.includes("mermaid-block") && !span.querySelector(".mermaid-block svg")) {
-            renderMermaid(span)
-          }
           scrollBottom()
 
           // Detect auto-switch model pill
