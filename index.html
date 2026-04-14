@@ -2360,12 +2360,28 @@ body.is-generating .tool-btn {
 </div><!-- /.app-body -->
 
 <script>
-// Register service worker for PWA / Play Store
+// Register service worker for PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(r => console.log('[SW] registered:', r.scope))
-      .catch(e => console.log('[SW] failed:', e))
+    navigator.serviceWorker.register('./sw.js?v=3')
+      .then(reg => {
+        console.log('[SW] registered:', reg.scope)
+        // Check for updates
+        reg.addEventListener('updatefound', () => {
+          const newSW = reg.installing
+          if (newSW) {
+            newSW.addEventListener('statechange', () => {
+              if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                console.log('[SW] update available')
+              }
+            })
+          }
+        })
+      })
+      .catch(e => {
+        // SW failed — not critical, app still works
+        console.log('[SW] registration skipped:', e.message)
+      })
   })
 }
 </script>
