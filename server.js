@@ -234,7 +234,7 @@ async function generateCodeWithGemini(systemPrompt, userPrompt, maxTokens) {
   if (!apiKey) throw new Error("GEMINI_API_KEY not set")
 
   // Updated April 2026 — use v1beta with currently available models
-  const modelsToTry = ["gemini-2.0-flash-lite", "gemini-1.5-flash-8b", "gemini-1.5-flash-8b"]
+  const modelsToTry = ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest", "gemini-1.5-flash"]
 
   for (const modelName of modelsToTry) {
     try {
