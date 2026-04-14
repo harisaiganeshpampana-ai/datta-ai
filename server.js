@@ -234,7 +234,7 @@ async function generateCodeWithGemini(systemPrompt, userPrompt, maxTokens) {
   if (!apiKey) throw new Error("GEMINI_API_KEY not set")
 
   // Updated April 2026 — use v1beta with currently available models
-  const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-exp", "gemini-exp-1206"]
+  const modelsToTry = ["gemini-2.5-flash-preview-04-17", "gemini-2.5-pro-exp-03-25", "gemini-2.0-flash-thinking-exp-01-21"]
 
   for (const modelName of modelsToTry) {
     try {
@@ -2906,36 +2906,36 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       }
     }
 
-    // 10 fallback models — if one hits rate limit, next one tries automatically
-    var _codeTok = Math.min(maxTok, 8000)
-    var _chatTok = Math.min(maxTok, 3000)
+    // Fallback models — only currently alive Groq models
+    var _codeTok = Math.min(maxTok, 6000)
+    var _chatTok = Math.min(maxTok, 2000)
     var groqAttempts = isImageFile
       ? [{ model: "meta-llama/llama-4-scout-17b-16e-instruct", tokens: maxTok }]
       : isDattaCode
         ? [
-            { model: "llama-3.3-70b-versatile",          tokens: _codeTok },
-            { model: "llama-3.1-70b-versatile",           tokens: _codeTok },
-            { model: "llama-3.1-8b-instant",              tokens: _codeTok },
-            { model: "gemma2-9b-it",                      tokens: _codeTok },
-            { model: "mixtral-8x7b-32768",                tokens: _codeTok }
+            { model: "llama-3.3-70b-versatile",  tokens: _codeTok },
+            { model: "llama3-70b-8192",           tokens: _codeTok },
+            { model: "llama3-8b-8192",            tokens: _codeTok },
+            { model: "llama-3.1-8b-instant",      tokens: 2000 }
           ]
       : isDattaThink
         ? [
-            { model: "llama-3.3-70b-versatile",          tokens: maxTok },
-            { model: "llama-3.1-8b-instant",              tokens: maxTok }
+            { model: "llama-3.3-70b-versatile",  tokens: maxTok },
+            { model: "llama3-70b-8192",           tokens: maxTok },
+            { model: "llama3-8b-8192",            tokens: maxTok }
           ]
       : (isDeepKnowledge || isCodeTask || isLargeTask || isExplainQuestion || isStructuredTopic)
         ? [
-            { model: "llama-3.3-70b-versatile",          tokens: maxTok },
-            { model: "llama-3.1-8b-instant",              tokens: _chatTok },
-            { model: "gemma2-9b-it",                      tokens: _chatTok },
-            { model: "mixtral-8x7b-32768",                tokens: _chatTok }
+            { model: "llama-3.3-70b-versatile",  tokens: maxTok },
+            { model: "llama3-70b-8192",           tokens: maxTok },
+            { model: "llama3-8b-8192",            tokens: _chatTok },
+            { model: "llama-3.1-8b-instant",      tokens: 2000 }
           ]
         : [
-            { model: "llama-3.1-8b-instant",              tokens: maxTok },
-            { model: "llama-3.3-70b-versatile",          tokens: _chatTok },
-            { model: "gemma2-9b-it",                      tokens: _chatTok },
-            { model: "mixtral-8x7b-32768",                tokens: _chatTok }
+            { model: "llama-3.1-8b-instant",      tokens: maxTok },
+            { model: "llama-3.3-70b-versatile",  tokens: _chatTok },
+            { model: "llama3-70b-8192",           tokens: _chatTok },
+            { model: "llama3-8b-8192",            tokens: _chatTok }
           ]
 
     ;(function sanitizeGroqMessages() {
@@ -3005,8 +3005,17 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
         console.error("[GROQ] error attempt", attempt+1, "status:", status, "msg:", groqErr.message?.slice(0,100))
         if (attempt < groqAttempts.length - 1) {
           full = ""
-          if (status === 429 || groqErr.message?.includes("rate")) await new Promise(r => setTimeout(r, 2000))
-          else if (status === 500 || status === 503) await new Promise(r => setTimeout(r, 1000))
+          if (status === 429 || groqErr.message?.includes("rate")) {
+            console.log("[GROQ] Rate limit — waiting 3s before next model")
+            await new Promise(r => setTimeout(r, 3000))
+          } else if (status === 400 && groqErr.message?.includes("decommission")) {
+            console.log("[GROQ] Model decommissioned — trying next")
+          } else if (status === 413) {
+            console.log("[GROQ] Too large — reducing tokens for next attempt")
+            groqAttempts[attempt+1].tokens = Math.min(groqAttempts[attempt+1].tokens, 1500)
+          } else if (status === 500 || status === 503) {
+            await new Promise(r => setTimeout(r, 1000))
+          }
           continue
         }
       }
