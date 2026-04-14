@@ -110,7 +110,6 @@ function processMermaidInHTML(html) {
 function extractMermaidFromText(text) {
   return text.replace(/```mermaid([\s\S]*?)```/gi, function(match, code) {
     return '<div class="mermaid-block">' + code.trim() + '</div>'
-    return '<div class="mermaid-block">' + code.trim() + '</div>'
   })
 }
 
@@ -1296,15 +1295,20 @@ async function send() {
 
     // Render mermaid ONLY after full stream complete — not during typing
     setTimeout(async () => {
-      // Wait for typing animation to finish first
+      // Wait for typing animation to finish
       let waitCount = 0
-      while (typingActive && waitCount < 100) {
+      while (typingActive && waitCount < 60) {
         await new Promise(r => setTimeout(r, 100))
         waitCount++
       }
+      // Force re-parse with mermaid extraction before rendering
+      const span = aiDiv.querySelector(".ai-bubble, .aiBubble")
+      if (span && fullText.includes("mermaid")) {
+        span.innerHTML = processMermaidInHTML(extractMermaidFromText(marked.parse(safeContent(fullText))))
+      }
       await renderMermaid(aiDiv)
       injectRunAppButton(aiDiv, fullText)
-    }, 500)
+    }, 600)
 
     // Add action buttons to user messages after generation
     chatBox.querySelectorAll(".user-bubble, .userBubble").forEach(bubble => {
