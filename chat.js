@@ -74,8 +74,13 @@ async function renderMermaid(container) {
   if (!blocks.length) return
   for (const block of blocks) {
     if (block.dataset.rendered === "done") continue
-    const code = block.textContent.trim()
-    if (!code || code.length < 20) continue
+    let code = block.textContent.trim()
+    if (!code || code.length < 10) continue
+    // Fix common AI mistakes in mermaid syntax
+    code = code.replace(/[|][>]/g, "-->")
+              .replace(/backtick-backtick-backtick/gi, "")
+              .replace(/^mermaid[^A-Z]/i, "")
+              .trim()
     block.dataset.rendered = "done"
     try {
       const id = "mg" + Date.now() + Math.random().toString(36).slice(2,6)
@@ -87,6 +92,7 @@ async function renderMermaid(container) {
     } catch(e) {
       block.dataset.rendered = ""
       block.style.cssText = "background:var(--bg2,#111);border:1px solid var(--border,#222);border-radius:8px;padding:14px;font-family:monospace;font-size:12px;color:var(--text2,#aaa);white-space:pre-wrap;overflow-x:auto;margin:12px 0;"
+      block.textContent = code
     }
   }
 }
@@ -117,6 +123,8 @@ function safeContent(c) {
   if (c === null || c === undefined) return ""
   if (typeof c === "string") {
     c = c.replace(/```MERMAID/gi, "```mermaid")
+    c = c.replace(/backtick-backtick-backtick\s*mermaid/gi, "```mermaid")
+    c = c.replace(/backtick-backtick-backtick/gi, "```")
     return c.split("[object Object]").join("").split("[object object]").join("").split("[Object Object]").join("").trim()
   }
   if (typeof c === "number" || typeof c === "boolean") return String(c)
