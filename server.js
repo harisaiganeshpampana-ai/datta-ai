@@ -233,17 +233,19 @@ async function generateCodeWithGemini(systemPrompt, userPrompt, maxTokens) {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) throw new Error("GEMINI_API_KEY not set")
 
+  // Updated April 2026 — use v1beta with currently available models
   const modelsToTry = ["gemini-2.0-flash-lite", "gemini-1.5-flash-8b", "gemini-1.5-flash-8b"]
 
   for (const modelName of modelsToTry) {
     try {
       const url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + apiKey
+      console.log("[GEMINI CODE] Trying:", url.replace(apiKey, "KEY_HIDDEN"))
       const body = {
         contents: [{
           parts: [{ text: systemPrompt + "\n\n" + userPrompt }]
         }],
         generationConfig: {
-          maxOutputTokens: Math.min(maxTokens || 4096, 4096),  // Cap at 4096 to stay in free tier
+          maxOutputTokens: Math.min(maxTokens || 4096, 4096),
           temperature: 0.4
         }
       }
@@ -254,13 +256,13 @@ async function generateCodeWithGemini(systemPrompt, userPrompt, maxTokens) {
       })
       if (!resp.ok) {
         const errText = await resp.text()
-        console.warn("[GEMINI CODE] Model", modelName, "HTTP", resp.status, errText.slice(0, 100))
+        console.warn("[GEMINI CODE] Model", modelName, "HTTP", resp.status, errText.slice(0, 150))
         continue
       }
       const data = await resp.json()
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || ""
       if (text) {
-        console.log("[GEMINI CODE] Success with model:", modelName, "length:", text.length)
+        console.log("[GEMINI CODE] SUCCESS model:", modelName, "length:", text.length)
         return text
       }
     } catch(e) {
@@ -2809,8 +2811,24 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       }
     }, 15000)
 
-    // Gemini code generation disabled - using Groq directly (more reliable)
-    // if (isDattaCode && process.env.GEMINI_API_KEY && !isImageFile) { ... }
+    if (isDattaCode && process.env.GEMINI_API_KEY && !isImageFile) {
+      try {
+        const geminiCode = await generateCodeWithGemini(systemWithMemory, safeStr(finalUserContent), maxTok)
+        if (geminiCode && geminiCode.length > 100) {
+          if (!res.writableEnded) {
+            res.write(geminiCode)
+            chat.messages.push({ role: "assistant", content: geminiCode })
+            await chat.save()
+            res.write("CHATID" + chat._id)
+            res.end()
+          }
+          if (typeof cleanupRequest === "function") cleanupRequest()
+          return
+        }
+      } catch(gemCodeErr) {
+        console.warn("[DATTA CODE] Gemini failed:", gemCodeErr.message, "— using Groq")
+      }
+    }
 
     if (!isImageFile && message) {
       const tool = detectTool(message)
