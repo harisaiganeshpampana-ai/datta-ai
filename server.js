@@ -117,7 +117,7 @@ async function callGemini(messages, systemPrompt, maxTokens, res) {
     }
   }
 
-  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=" + apiKey
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:streamGenerateContent?alt=sse&key=" + apiKey
 
   const response = await fetch(url, {
     method: "POST",
@@ -233,7 +233,7 @@ async function generateCodeWithGemini(systemPrompt, userPrompt, maxTokens) {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) throw new Error("GEMINI_API_KEY not set")
 
-  const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"]
+  const modelsToTry = ["gemini-2.0-flash-001", "gemini-1.5-flash-001", "gemini-1.5-flash-8b-001"]
 
   for (const modelName of modelsToTry) {
     try {
@@ -2855,7 +2855,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       let imageAnswer = null
       if (isQuestionPaper) {
         try {
-          const geminiModels = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"]
+          const geminiModels = ["gemini-2.0-flash-001", "gemini-1.5-flash-001", "gemini-1.5-flash-8b-001"]
           let extractedQuestions = ""
           for (const gModel of geminiModels) {
             try {
@@ -2885,7 +2885,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       }
       if (!imageAnswer) {
         try {
-          const gemUrl = "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=" + process.env.GEMINI_API_KEY
+          const gemUrl = "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash-001:generateContent?key=" + process.env.GEMINI_API_KEY
           const gemBody = { contents: [{ parts: [{ inline_data: { mime_type: file.mimetype, data: imageBase64 } }, { text: isQuestionPaper ? "Answer ALL questions in this exam paper completely. Start from question 1:" : (message || "Analyze this image and give complete useful information.") }] }], generationConfig: { maxOutputTokens: 8192, temperature: 0.2 } }
           const gemResp = await fetch(gemUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(gemBody) })
           if (gemResp.ok) {
@@ -2934,6 +2934,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       }
     })()
 
+    var stream = null
     for (let attempt = 0; attempt < groqAttempts.length; attempt++) {
       var { model: tryModel, tokens: tryTokens } = groqAttempts[attempt]
       if (attempt > 0 && tryModel === groqAttempts[attempt-1].model) continue
