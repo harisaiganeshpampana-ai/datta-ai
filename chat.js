@@ -79,7 +79,8 @@ async function renderMermaid(container) {
   for (const block of blocks) {
     if (block.dataset.rendered) continue
     const code = block.textContent.trim()
-    if (!code || code.length < 5) continue
+    // Only render if code looks complete (has at least one --> arrow)
+    if (!code || code.length < 20 || !code.includes("-->") && !code.includes("->")) continue
     block.dataset.rendered = "true"
     try {
       const id = "mg" + Math.random().toString(36).slice(2, 8)
@@ -1306,11 +1307,17 @@ async function send() {
     // Use fullText for saving (not displayed text)
     streamText = fullText
 
-    // Render mermaid diagrams after stream ends
+    // Render mermaid ONLY after full stream complete — not during typing
     setTimeout(async () => {
+      // Wait for typing animation to finish first
+      let waitCount = 0
+      while (typingActive && waitCount < 100) {
+        await new Promise(r => setTimeout(r, 100))
+        waitCount++
+      }
       await renderMermaid(aiDiv)
       injectRunAppButton(aiDiv, fullText)
-    }, 300)
+    }, 500)
 
     // Add action buttons to user messages after generation
     chatBox.querySelectorAll(".user-bubble, .userBubble").forEach(bubble => {
