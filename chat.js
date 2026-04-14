@@ -72,30 +72,21 @@ async function renderMermaid(container) {
   if (typeof mermaid === "undefined") return
   const blocks = container.querySelectorAll(".mermaid-block")
   if (!blocks.length) return
-
   for (const block of blocks) {
     if (block.dataset.rendered === "done") continue
     const code = block.textContent.trim()
-    // Must be complete — needs graph/flowchart header + at least 2 arrows + closing
-    const hasHeader = code.startsWith("graph ") || code.startsWith("flowchart ") || code.startsWith("sequenceDiagram") || code.startsWith("erDiagram")
-    const arrowCount = (code.match(/-->/g) || []).length
-    if (!hasHeader || arrowCount < 1 || code.length < 30) continue
-    
+    if (!code || code.length < 20) continue
     block.dataset.rendered = "done"
-    block.textContent = ""  // clear text before rendering
     try {
-      const id = "mg" + Math.random().toString(36).slice(2, 8)
+      const id = "mg" + Date.now() + Math.random().toString(36).slice(2,6)
       const { svg } = await mermaid.render(id, code)
       block.innerHTML = svg
-      block.style.cssText = "background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;padding:20px;overflow-x:auto;margin:14px 0;text-align:center;"
+      block.style.cssText = "background:var(--bg2,#111);border:1px solid var(--border,#222);border-radius:12px;padding:20px;overflow-x:auto;margin:14px 0;text-align:center;"
       const svgEl = block.querySelector("svg")
       if (svgEl) { svgEl.style.maxWidth = "100%"; svgEl.style.height = "auto" }
-      console.log("[MERMAID] Rendered successfully")
     } catch(e) {
-      console.warn("[MERMAID] Render failed:", e.message)
       block.dataset.rendered = ""
-      block.style.cssText = "background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;padding:14px;font-family:monospace;font-size:12px;color:var(--text2);white-space:pre-wrap;overflow-x:auto;margin:12px 0;"
-      block.textContent = code  // restore code text
+      block.style.cssText = "background:var(--bg2,#111);border:1px solid var(--border,#222);border-radius:8px;padding:14px;font-family:monospace;font-size:12px;color:var(--text2,#aaa);white-space:pre-wrap;overflow-x:auto;margin:12px 0;"
     }
   }
 }
@@ -126,8 +117,7 @@ function extractMermaidFromText(text) {
 function safeContent(c) {
   if (c === null || c === undefined) return ""
   if (typeof c === "string") {
-    // Normalize MERMAID to mermaid for rendering
-    c = c.replace(/```MERMAID/g, "```mermaid").replace(/```Mermaid/g, "```mermaid")
+    c = c.replace(/```MERMAID/gi, "```mermaid")
     return c.split("[object Object]").join("").split("[object object]").join("").split("[Object Object]").join("").trim()
   }
   if (typeof c === "number" || typeof c === "boolean") return String(c)
