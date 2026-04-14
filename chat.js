@@ -76,11 +76,15 @@ async function renderMermaid(container) {
     if (block.dataset.rendered === "done") continue
     let code = block.textContent.trim()
     if (!code || code.length < 10) continue
-    // Fix common AI mistakes in mermaid syntax
-    code = code.replace(/[|][>]/g, "-->")
-              .replace(/backtick-backtick-backtick/gi, "")
-              .replace(/^mermaid[^A-Z]/i, "")
-              .trim()
+
+    // Clean AI syntax mistakes
+    code = code
+      .replace(/\|>/g, "")                    // remove wrong |> 
+      .replace(/-->\|([^|]+)\|>/g, "-->|$1|") // fix -->|label|> to -->|label|
+      .replace(/backtick-backtick-backtick\s*/gi, "")
+      .replace(/^mermaid\s*/i, "")
+      .trim()
+
     block.dataset.rendered = "done"
     try {
       const id = "mg" + Date.now() + Math.random().toString(36).slice(2,6)
@@ -90,9 +94,9 @@ async function renderMermaid(container) {
       const svgEl = block.querySelector("svg")
       if (svgEl) { svgEl.style.maxWidth = "100%"; svgEl.style.height = "auto" }
     } catch(e) {
+      // Render failed - show as clean code block, not error
       block.dataset.rendered = ""
-      block.style.cssText = "background:var(--bg2,#111);border:1px solid var(--border,#222);border-radius:8px;padding:14px;font-family:monospace;font-size:12px;color:var(--text2,#aaa);white-space:pre-wrap;overflow-x:auto;margin:12px 0;"
-      block.textContent = code
+      block.innerHTML = "<pre style='text-align:left;font-size:12px;color:var(--text2,#aaa);overflow-x:auto;'>" + code.replace(/</g,"&lt;") + "</pre>"
     }
   }
 }
