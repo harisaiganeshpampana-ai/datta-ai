@@ -77,15 +77,19 @@ async function renderMermaid(container) {
     let code = block.textContent.trim()
     if (!code || code.length < 10) continue
 
-    // Clean AI syntax mistakes
+    // Clean AI syntax mistakes before rendering
+    // Fix common wrong patterns the AI generates
     code = code
-      .replace(/\|>/g, "")                    // remove wrong |> 
-      .replace(/-->\|([^|]+)\|>/g, "-->|$1|") // fix -->|label|> to -->|label|
-      .replace(/backtick-backtick-backtick\s*/gi, "")
-      .replace(/^mermaid\s*/i, "")
+      .replace(/[|][>]/g, "-->")           
+      .replace(/backtick-backtick-backtick/gi, "")
       .trim()
+    // Fix lines like: D --> 3x Expenses| E  (missing node brackets)
+    code = code.split("\n").map(function(line) {
+      // Fix bare labels without pipes: A --> sometext B  =>  A --> B
+      line = line.replace(/-->[^|[{(\n]*[|][^|[\n]*/g, "-->")
+      return line
+    }).join("\n")
 
-    block.dataset.rendered = "done"
     try {
       const id = "mg" + Date.now() + Math.random().toString(36).slice(2,6)
       const { svg } = await mermaid.render(id, code)
