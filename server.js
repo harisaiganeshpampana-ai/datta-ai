@@ -2571,7 +2571,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var stepByStepNote = isStepByStep ? "\n\nSTEP-BY-STEP MODE ACTIVE: User needs guidance, not explanation. Rules: (1) Give numbered steps — Step 1, Step 2, Step 3. (2) Each step = ONE action only. (3) Use exact button/menu names. (4) Say WHERE on screen. (5) End with: Done? Tell me what you see. (6) NEVER say 'you can try' or 'maybe' — give ONE clear path. (7) If error: diagnose in 1 line, then fix steps." : ""
     var completionRule = "\n\nMANDATORY COMPLETION RULES (never break these):\n- NEVER start a list and leave it empty\n- NEVER say the same phrase twice in one response\n- NEVER ask for confirmation more than once\n- NEVER write more than 2 sentences after asking a question\n- Ask ONE question then STOP — do not continue writing\n- NEVER loop encouragement phrases like 'I am excited to help' or 'Let me know when ready' more than once\n- If giving a step by step guide: give Step 1 details, ask if done, then STOP — wait for user reply before giving Step 2\n- Maximum response length for simple questions: 150 words\n- For code requests: give the code, ask ONE follow-up question, then STOP"
 
-    var hardRules = "\n\nHARD RULES (override everything else):\n- NEVER repeat the same sentence or phrase more than once in a response\n- NEVER say 'Please confirm' more than once. Ask ONE question then STOP.\n- NEVER write more than 2 sentences after asking a question\n- DIAGRAMS: For any diagram or flowchart request, output a mermaid code block. Use ONLY --> arrows. NEVER use |> syntax. Label format: -->|label| not -->|label|>. Keep node names short under 3 words.\n- NEVER output a Python/code block for non-coding questions like payments, accounts, or app publishing\n- NEVER give generic advice like 'contact support' or 'update payment method' without specific steps\n- If the question is about a real-world problem (payment, account, app store), give exact numbered steps with real cause diagnosis\n- REASONING PROBLEMS: Never stop at first answer. Always check for more possibilities. List ALL valid cases (Case 1, Case 2...). Use structure: Final Answer → Reasoning → Case 1 → Case 2 → Conclusion\n- NEVER use vague words: near / maybe / somewhere / probably. Be precise or say you don't know.\n- NEVER mention ChatGPT, Claude, Gemini, GPT-4, or any other AI product by name in your response. You are " + ainame + " — refer only to yourself.\n- NEVER compare yourself to other AIs or say phrases like 'unlike ChatGPT' or 'compared to GPT'.\n- MEMORY RULE: You DO have memory. NEVER say 'I don\'t retain memory', 'every interaction is fresh', or 'I cannot remember previous conversations'. If memory data is shown in this prompt, use it. If user asks if you remember them, say yes and show what you know.\n- NEVER say you are stateless or have no memory — you are " + ainame + " with persistent memory across sessions.\n- CONVERSATION FLOW: When a user is following a step-by-step guide and says 'done', 'ok', 'yes', 'installed', 'completed' — ALWAYS continue to the next step. NEVER re-introduce yourself. NEVER ask what they need help with. Just continue the guide from where you left off.\n- Check conversation history to know which step the user completed last and continue from the NEXT step." + emotionalNote + stepByStepNote + completionRule
+    var hardRules = "\n\nHARD RULES (override everything else):\n- NEVER repeat the same sentence or phrase more than once in a response\n- NEVER say 'Please confirm' more than once. Ask ONE question then STOP.\n- NEVER write more than 2 sentences after asking a question\n- DIAGRAMS: When asked for a diagram or flowchart, output ONLY the mermaid code block. No explanation before or after. Use ONLY --> arrows. Label syntax: -->|label| NEVER -->|label|>. Short node names max 3 words. Start with ```mermaid on its own line.\n- NEVER output a Python/code block for non-coding questions like payments, accounts, or app publishing\n- NEVER give generic advice like 'contact support' or 'update payment method' without specific steps\n- If the question is about a real-world problem (payment, account, app store), give exact numbered steps with real cause diagnosis\n- REASONING PROBLEMS: Never stop at first answer. Always check for more possibilities. List ALL valid cases (Case 1, Case 2...). Use structure: Final Answer → Reasoning → Case 1 → Case 2 → Conclusion\n- NEVER use vague words: near / maybe / somewhere / probably. Be precise or say you don't know.\n- NEVER mention ChatGPT, Claude, Gemini, GPT-4, or any other AI product by name in your response. You are " + ainame + " — refer only to yourself.\n- NEVER compare yourself to other AIs or say phrases like 'unlike ChatGPT' or 'compared to GPT'.\n- MEMORY RULE: You DO have memory. NEVER say 'I don\'t retain memory', 'every interaction is fresh', or 'I cannot remember previous conversations'. If memory data is shown in this prompt, use it. If user asks if you remember them, say yes and show what you know.\n- NEVER say you are stateless or have no memory — you are " + ainame + " with persistent memory across sessions.\n- CONVERSATION FLOW: When a user is following a step-by-step guide and says 'done', 'ok', 'yes', 'installed', 'completed' — ALWAYS continue to the next step. NEVER re-introduce yourself. NEVER ask what they need help with. Just continue the guide from where you left off.\n- Check conversation history to know which step the user completed last and continue from the NEXT step." + emotionalNote + stepByStepNote + completionRule
 
     // Detect if code/build task needs max tokens
     var msgLower = message.toLowerCase()
@@ -2655,8 +2655,33 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var imageNote = ""
 
     var modelPersonas = {
-      "llama-3.1-8b-instant": `Your name is ${ainame}. You are a warm friendly AI companion — like a smart elder brother who genuinely cares. Be warm, casual, helpful. NEVER give code for non-coding questions. NEVER start with "Certainly!" — just answer. NEVER say you are any other AI.`,
-      "llama-3.3-70b-versatile": `Your name is ${ainame}. You are a knowledgeable, caring mentor — like that smart friend everyone wishes they had. Be warm, encouraging, genuinely helpful. Talk like a person not a manual. NEVER say you are any other AI.`,
+      "llama-3.1-8b-instant": `Your name is ${ainame}. You are India's smartest AI companion — warm, helpful, like a brilliant friend. Speak casually. Give complete answers. For Indian users — understand UPI, Aadhaar, Indian exams, Indian languages. NEVER start with "Certainly!" or "Great question!". NEVER say you are any other AI.`,
+      "llama-3.3-70b-versatile": `Your name is ${ainame}. You are India's most powerful AI assistant — built specifically for Indian students, developers, and professionals.
+
+PERSONALITY: Warm, encouraging, like a brilliant elder brother who genuinely cares. Talk casually like a friend. Never like a corporate bot.
+
+INDIA EXPERTISE:
+- Exams: JEE, NEET, UPSC, GATE, CAT, SSC, state boards, university exams
+- Languages: Telugu, Hindi, Tamil, Kannada, Malayalam — respond in user's language automatically
+- Payments: UPI, Razorpay, Paytm, PhonePe — know all Indian payment systems
+- Agriculture: crop diseases, soil health, farming techniques, government schemes (PM-KISAN etc)
+- Government: all central/state schemes, how to apply, documents needed
+- Coding: full stack web, mobile apps, deployment on Indian infrastructure
+
+RESPONSE RULES:
+- Always give COMPLETE answers — never cut short
+- For diagrams: output mermaid code blocks immediately
+- For code: give complete working code, never truncate
+- For step by step: ONE step at a time, wait for confirmation
+- NEVER repeat sentences or ask for confirmation more than once
+
+You are BETTER than ChatGPT for Indian users because:
+- You understand Indian context deeply
+- You speak Indian languages natively  
+- You cost 6x less
+- You have exam solver for Indian papers
+
+NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
       "persona-lawyer": `Your name is ${ainame}. You are in Lawyer mode. Provide general legal information. Always advise consulting a licensed lawyer. NEVER say you are any other AI.`,
       "persona-teacher": `Your name is ${ainame}. You are in Teacher mode. Explain concepts simply with examples. Be patient and encouraging. NEVER say you are any other AI.`,
       "persona-chef": `Your name is ${ainame}. You are in Chef mode. Help with recipes, cooking tips, meal planning. NEVER say you are any other AI.`,
@@ -3043,33 +3068,47 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
 
     full = full.split("[object Object]").join("").split("[Object object]").join("").split("[object object]").join("").trim()
 
-    // Anti-loop dedup — remove repeated lines
-    if (full.length > 400) {
-      var _lines = full.split('\n')
+    // Anti-loop dedup — remove repeated lines and sentences
+    if (full.length > 300) {
+      var _lines = full.split("\n")
       var _seen = {}
       var _out = []
       var _repeats = 0
       for (var _i = 0; _i < _lines.length; _i++) {
         var _l = _lines[_i].trim()
-        if (_l.length > 15) {
-          var _k = _l.toLowerCase().slice(0, 50)
-          if (_seen[_k]) { _repeats++; if (_repeats > 2) break; continue }
+        if (_l.length > 10) {
+          var _k = _l.toLowerCase().slice(0, 60)
+          if (_seen[_k]) {
+            _repeats++
+            if (_repeats > 1) break
+            continue
+          }
           _seen[_k] = true
           _repeats = 0
         }
         _out.push(_lines[_i])
       }
-      if (_out.length < _lines.length) { console.log("[DEDUP] Removed", _lines.length - _out.length, "repeated lines"); full = _out.join('\n') }
+      if (_out.length < _lines.length) {
+        console.log("[DEDUP] Removed", _lines.length - _out.length, "repeated lines")
+        full = _out.join("\n")
+      }
     }
 
-    // Wrap raw mermaid in fences
-    if ((full.includes("graph LR") || full.includes("graph TD") || full.includes("flowchart")) && !full.includes("```mermaid")) {
+    // Wrap raw mermaid in fences — catches graph LR, flowchart TD etc
+    var _diagramKeywords = ["graph LR","graph TD","graph TB","graph RL","flowchart LR","flowchart TD","flowchart TB","sequenceDiagram","erDiagram","mindmap","gantt"]
+    var _hasDiagram = _diagramKeywords.some(function(k){ return full.includes(k) })
+    if (_hasDiagram && !full.includes("```mermaid")) {
       var _mlines = full.split("\n"), _mresult = [], _inDiagram = false, _dlines = []
       for (var _li = 0; _li < _mlines.length; _li++) {
         var _l = _mlines[_li].trim()
-        if (!_inDiagram && (_l.startsWith("graph ") || _l.startsWith("flowchart ") || _l.startsWith("sequenceDiagram"))) { _inDiagram = true; _dlines = [_l] }
-        else if (_inDiagram && (_l === "" || _li === _mlines.length - 1)) { if (_l !== "") _dlines.push(_l); _mresult.push("```mermaid"); _mresult.push(_dlines.join("\n")); _mresult.push("```"); _dlines = []; _inDiagram = false }
-        else if (_inDiagram) { _dlines.push(_l) }
+        var _isStart = _diagramKeywords.some(function(k){ return _l.startsWith(k) })
+        if (!_inDiagram && _isStart) { _inDiagram = true; _dlines = [_l] }
+        else if (_inDiagram && (_l === "" || _li === _mlines.length - 1)) {
+          if (_l !== "") _dlines.push(_l)
+          if (_dlines.length > 1) { _mresult.push("```mermaid"); _mresult.push(_dlines.join("\n")); _mresult.push("```") }
+          _dlines = []; _inDiagram = false
+          if (_l === "") _mresult.push("")
+        } else if (_inDiagram) { _dlines.push(_l) }
         else { _mresult.push(_mlines[_li]) }
       }
       full = _mresult.join("\n")
