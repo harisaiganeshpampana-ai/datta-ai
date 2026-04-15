@@ -2636,14 +2636,14 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var inputIsLarge = (message || "").length > 3000
     var isDeepKnowledge = isCurrentAffairs || isGKHistory || isNarrativeRequest
     var maxCodingTok = isDattaCode ? 8000
-                     : isLargeTask      ? 6000
-                     : isCodeTask       ? 4096
-                     : isDeepKnowledge  ? 5000
-                     : isStructuredTopic? 5000
-                     : isExplainQuestion? (inputIsLarge ? 3000 : 4000)
-                     : isStepByStep     ? 3000
-                     :                    2500
-    var maxTok = isImageFile ? (isQuestionPaper ? 8000 : 4000) : maxCodingTok
+                     : isLargeTask      ? 8000
+                     : isCodeTask       ? 8000
+                     : isDeepKnowledge  ? 8000
+                     : isStructuredTopic? 8000
+                     : isExplainQuestion? 8000
+                     : isStepByStep     ? 4000
+                     :                    4000
+    var maxTok = isImageFile ? (isQuestionPaper ? 8000 : 8000) : maxCodingTok
 
     var timeStr = req.body.userTime || new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })
     var dateStr = req.body.userDate || new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Kolkata" })
@@ -2932,8 +2932,8 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
     }
 
     // Fallback models — only currently alive Groq models
-    var _codeTok = Math.min(maxTok, 6000)
-    var _chatTok = Math.min(maxTok, 2000)
+    var _codeTok = Math.min(maxTok, 8000)
+    var _chatTok = Math.min(maxTok, 4000)
     var groqAttempts = isImageFile
       ? [{ model: "meta-llama/llama-4-scout-17b-16e-instruct", tokens: maxTok }]
       : isDattaCode
@@ -3017,7 +3017,7 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
           var token = part.choices?.[0]?.delta?.content
           if (token && typeof token === "string") {
             full += token
-            if (full.length > 8000) { try { stream.controller?.abort() } catch(e) {} break }
+            // No hard char limit — let model complete naturally
             if (!res.writableEnded) res.write(token)
           }
         }
