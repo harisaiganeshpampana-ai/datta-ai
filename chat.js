@@ -77,18 +77,14 @@ async function renderMermaid(container) {
     let code = block.textContent.trim()
     if (!code || code.length < 10) continue
 
-    // Clean AI syntax mistakes before rendering
-    // Fix common wrong patterns the AI generates
+    // Clean syntax mistakes
     code = code
-      .replace(/[|][>]/g, "-->")           
+      .replace(/[|][>]/g, "-->")
       .replace(/backtick-backtick-backtick/gi, "")
+      .replace(/^mermaid\s*/i, "")
       .trim()
-    // Fix lines like: D --> 3x Expenses| E  (missing node brackets)
-    code = code.split("\n").map(function(line) {
-      // Fix bare labels without pipes: A --> sometext B  =>  A --> B
-      line = line.replace(/-->[^|[{(\n]*[|][^|[\n]*/g, "-->")
-      return line
-    }).join("\n")
+
+    block.dataset.rendered = "done"
 
     try {
       const id = "mg" + Date.now() + Math.random().toString(36).slice(2,6)
@@ -98,12 +94,19 @@ async function renderMermaid(container) {
       const svgEl = block.querySelector("svg")
       if (svgEl) { svgEl.style.maxWidth = "100%"; svgEl.style.height = "auto" }
     } catch(e) {
-      // Render failed - show as clean code block, not error
-      block.dataset.rendered = ""
-      block.innerHTML = "<pre style='text-align:left;font-size:12px;color:var(--text2,#aaa);overflow-x:auto;'>" + code.replace(/</g,"&lt;") + "</pre>"
+      // NEVER show syntax error — show clean code instead
+      block.style.cssText = "background:var(--bg2,#111);border:1px solid var(--border,#222);border-radius:8px;padding:14px;margin:12px 0;overflow-x:auto;"
+      block.innerHTML = "<pre style=\"margin:0;font-size:12px;color:var(--text2,#aaa);white-space:pre-wrap;font-family:monospace;\">" + code.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;") + "</pre>"
     }
   }
+  // Hide any stray mermaid error messages
+  container.querySelectorAll("*").forEach(function(el) {
+    if (el.children.length === 0 && el.textContent && el.textContent.includes("Syntax error in text")) {
+      el.style.display = "none"
+    }
+  })
 }
+
 
 // Custom marked renderer to convert mermaid code blocks to divs
 // Post-process HTML to convert mermaid code blocks to renderable divs
