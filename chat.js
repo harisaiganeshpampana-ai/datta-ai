@@ -118,9 +118,17 @@ function processMermaidInHTML(html) {
 
 // Also handle raw mermaid blocks in text (not yet parsed)
 function extractMermaidFromText(text) {
-  return text.replace(/```mermaid([\s\S]*?)```/gi, function(match, code) {
+  // First handle proper ```mermaid blocks
+  text = text.replace(/```mermaid([\s\S]*?)```/gi, function(match, code) {
     return '<div class="mermaid-block">' + code.trim() + '</div>'
   })
+  // Also catch raw graph LR / flowchart TD without backticks
+  text = text.replace(/(^|\n)((?:graph|flowchart) [A-Z]{1,3}[\s\S]*?)(?=\n\n|\n[A-Za-z]|$)/gm, function(match, pre, code) {
+    if (match.includes('mermaid-block')) return match
+    if (code.trim().length < 20) return match
+    return pre + '<div class="mermaid-block">' + code.trim() + '</div>'
+  })
+  return text
 }
 
 function safeContent(c) {
@@ -1315,8 +1323,15 @@ async function send() {
       }
       // Force re-parse with mermaid extraction before rendering
       const span = aiDiv.querySelector(".ai-bubble, .aiBubble")
-      if (span && fullText.includes("mermaid")) {
-        span.innerHTML = processMermaidInHTML(extractMermaidFromText(marked.parse(safeContent(fullText))))
+      if (span) {
+        const hasDiagram = fullText.includes("mermaid") || 
+                           fullText.includes("graph LR") || 
+                           fullText.includes("graph TD") || 
+                           fullText.includes("flowchart")
+        if (hasDiagram) {
+          const parsed = marked.parse(safeContent(fullText))
+          span.innerHTML = processMermaidInHTML(extractMermaidFromText(parsed))
+        }
       }
       await renderMermaid(aiDiv)
       injectRunAppButton(aiDiv, fullText)
