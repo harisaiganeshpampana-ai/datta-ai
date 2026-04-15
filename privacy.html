@@ -15,128 +15,142 @@ body { background:#0a0a0a; color:#ccc; font-family:system-ui,Arial,sans-serif; l
 h1 { font-size:26px; font-weight:700; color:#fff; margin-bottom:6px; }
 .meta { font-size:12px; color:#444; margin-bottom:32px; }
 h2 { font-size:16px; font-weight:700; color:#fff; margin:28px 0 10px; padding-left:12px; border-left:3px solid #00ff88; }
+h3 { font-size:14px; font-weight:600; color:#ddd; margin:16px 0 8px; }
 p { font-size:14px; color:#999; margin-bottom:12px; }
 ul { padding-left:20px; margin-bottom:14px; }
 li { font-size:14px; color:#999; margin-bottom:5px; line-height:1.7; }
 .box { background:#111; border:1px solid #1e1e1e; border-radius:12px; padding:16px 20px; margin:20px 0; }
 .box p { margin:0; color:#aaa; }
+.highlight { background:#0d1a1a; border:1px solid #1a3d3d; border-radius:12px; padding:16px 20px; margin:16px 0; }
+.highlight p { margin:0; color:#88cccc; }
 a { color:#00ccff; text-decoration:none; }
 a:hover { text-decoration:underline; }
 .contact-card { background:#0d1a0d; border:1px solid #1a3d1a; border-radius:12px; padding:20px 24px; margin:24px 0; }
 .contact-card p { color:#aaa; margin-bottom:6px; }
+table { width:100%; border-collapse:collapse; margin:14px 0; }
+th { background:#111; color:#aaa; font-size:12px; padding:10px 14px; text-align:left; border:1px solid #1e1e1e; }
+td { font-size:13px; color:#888; padding:10px 14px; border:1px solid #1e1e1e; vertical-align:top; }
 .footer { text-align:center; padding:28px; border-top:1px solid #1a1a1a; color:#333; font-size:12px; margin-top:40px; }
 </style>
 </head>
 <body>
 <div class="header">
   <div class="logo">DATTA AI</div>
-  <a href="index.html" class="back">Back to App</a>
+  <a href="index.html" class="back">← Back to App</a>
 </div>
 <div class="container">
   <h1>Privacy Policy</h1>
   <div class="meta">Last updated: April 2026 · Effective immediately · Version 2.0</div>
-  <div class="box"><p>Your privacy matters to us. This Privacy Policy explains how Datta AI collects, uses, stores, and protects your personal information when you use our services at datta-ai.com or through our mobile application.</p></div>
+  <div class="box"><p>Your privacy is important to us. This Policy explains what data we collect, why we collect it, how we use it, and your rights. Datta AI is operated from India and this policy is compliant with India's Digital Personal Data Protection Act (DPDPA) 2023.</p></div>
 
   <h2>1. Information We Collect</h2>
+  <table>
+    <tr><th>Data Type</th><th>What We Collect</th><th>Why</th></tr>
+    <tr><td>Account Info</td><td>Name, email, encrypted password</td><td>Account creation and authentication</td></tr>
+    <tr><td>Chat Data</td><td>Messages and AI responses</td><td>Chat history and service improvement</td></tr>
+    <tr><td>Usage Data</td><td>Message count, models used, features accessed, timestamps</td><td>Plan enforcement and analytics</td></tr>
+    <tr><td>Device Info</td><td>Device type, OS, browser, IP address</td><td>Security and fraud prevention</td></tr>
+    <tr><td>Payment Info</td><td>Plan name, transaction IDs only</td><td>Subscription management</td></tr>
+    <tr><td>Voice Data</td><td>Processed locally on device only</td><td>Voice assistant feature</td></tr>
+    <tr><td>Images</td><td>Temporarily processed, not stored</td><td>Image analysis feature</td></tr>
+  </table>
+  <div class="highlight"><p>💳 We never store your card numbers, UPI IDs, or bank details. All payment processing is handled by Razorpay under their PCI-DSS certified infrastructure.</p></div>
+
+  <h2>2. How We Use Your Data</h2>
   <ul>
-    <li><strong>Account information:</strong> Name, email address, and encrypted password when you register</li>
-    <li><strong>Chat data:</strong> Messages and conversations stored to provide chat history</li>
-    <li><strong>Usage data:</strong> Message count, features used, models selected, timestamps</li>
-    <li><strong>Device information:</strong> Device type, OS, browser, and IP address for security</li>
-    <li><strong>Payment information:</strong> Plan name, billing cycle, transaction IDs only. Card and UPI details are processed by Razorpay and never stored on our servers</li>
-    <li><strong>Voice data:</strong> Processed locally on your device via Web Speech API. We do not record or store your voice</li>
+    <li>Provide and improve the Datta AI service</li>
+    <li>Authenticate your account and maintain security</li>
+    <li>Enforce usage limits based on your subscription plan</li>
+    <li>Send important service notifications (not marketing without consent)</li>
+    <li>Detect and prevent fraud or abuse</li>
+    <li>Comply with legal obligations</li>
+    <li>Analyze aggregate usage patterns to improve our service</li>
+  </ul>
+  <p>We do NOT use your personal chat data to train AI models. We do NOT sell your personal information to third parties.</p>
+
+  <h2>3. Third-Party Services</h2>
+  <p>Datta AI integrates with the following third-party services:</p>
+  <table>
+    <tr><th>Service</th><th>Purpose</th><th>Data Shared</th></tr>
+    <tr><td>Groq Inc. (USA)</td><td>AI language models (Llama, Qwen, DeepSeek)</td><td>Your chat messages (anonymized)</td></tr>
+    <tr><td>Google (Gemini API)</td><td>Image analysis and exam solving</td><td>Uploaded images, chat messages</td></tr>
+    <tr><td>Google OAuth</td><td>Sign in with Google</td><td>Name, email, Google profile ID</td></tr>
+    <tr><td>Razorpay</td><td>Payment processing</td><td>Transaction amount, plan info</td></tr>
+    <tr><td>MongoDB Atlas (USA)</td><td>Database storage</td><td>All account and chat data (encrypted)</td></tr>
+    <tr><td>Render.com (USA)</td><td>Backend server hosting</td><td>Server logs, IP addresses</td></tr>
+    <tr><td>Vercel (USA)</td><td>Frontend hosting</td><td>IP addresses, access logs</td></tr>
+  </table>
+  <p>Each third-party service has its own privacy policy. We recommend reviewing their policies. By using Datta AI, you consent to data being processed by these services as necessary to provide our features.</p>
+
+  <h2>4. Data Storage and Security</h2>
+  <h3>Where Your Data Is Stored</h3>
+  <p>Your data is stored on MongoDB Atlas servers (United States). We use encryption in transit (HTTPS/TLS) and encryption at rest for sensitive data.</p>
+  <h3>Security Measures</h3>
+  <ul>
+    <li>Passwords are hashed using bcrypt — we never store plain text passwords</li>
+    <li>Authentication uses JWT tokens with secure expiry</li>
+    <li>All communications use HTTPS encryption</li>
+    <li>Database access is restricted and monitored</li>
+    <li>We conduct regular security reviews</li>
+  </ul>
+  <h3>Data Retention</h3>
+  <ul>
+    <li>Chat history: Retained while your account is active</li>
+    <li>Account data: Deleted within 30 days of account deletion request</li>
+    <li>Payment records: Retained for 7 years as required by Indian tax law</li>
+    <li>Server logs: Retained for 90 days for security purposes</li>
   </ul>
 
-  <h2>2. How We Use Your Information</h2>
+  <h2>5. Children's Privacy</h2>
+  <p>Datta AI is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If we discover we have collected data from a child under 13, we will delete it immediately. Parents or guardians who believe their child under 13 has provided us with personal data should contact us at <a href="mailto:admin@datta-ai.com">admin@datta-ai.com</a>.</p>
+
+  <h2>6. Your Rights</h2>
+  <p>Under India's Digital Personal Data Protection Act (DPDPA) 2023, you have the right to:</p>
   <ul>
-    <li>To provide and improve the Datta AI service</li>
-    <li>To manage your account, subscription, and usage limits</li>
-    <li>To send transactional emails (welcome on signup, confirmation after payment)</li>
-    <li>To provide customer support</li>
-    <li>To detect and prevent abuse and unauthorized access</li>
-    <li>To comply with legal obligations</li>
+    <li><strong>Access:</strong> Request a copy of the personal data we hold about you</li>
+    <li><strong>Correction:</strong> Request correction of inaccurate personal data</li>
+    <li><strong>Deletion:</strong> Request deletion of your account and personal data</li>
+    <li><strong>Portability:</strong> Request your chat history in a machine-readable format</li>
+    <li><strong>Withdrawal of Consent:</strong> Withdraw consent to data processing (this will require account deletion)</li>
+    <li><strong>Grievance Redressal:</strong> Lodge a complaint with us or the Data Protection Board of India</li>
   </ul>
-  <p>We do <strong>not</strong> sell your personal data. We do not use your conversations for advertising.</p>
+  <p>To exercise these rights, email <a href="mailto:admin@datta-ai.com">admin@datta-ai.com</a>. We will respond within 30 days.</p>
 
-  <h2>3. Data Storage and Security</h2>
+  <h2>7. Cookies and Local Storage</h2>
+  <p>We use browser local storage (not traditional cookies) to store:</p>
   <ul>
-    <li>Data stored on <strong>MongoDB Atlas</strong> with encryption at rest</li>
-    <li>All communication uses <strong>HTTPS/TLS encryption</strong></li>
-    <li>Passwords are hashed with bcrypt — we cannot view your password</li>
-    <li>Secure JWT authentication with token expiry</li>
-    <li>Payments handled by <strong>Razorpay</strong> (PCI-DSS compliant)</li>
-    <li>Rate limiting and abuse prevention protect all accounts</li>
+    <li>Your authentication token (to keep you logged in)</li>
+    <li>Theme preference (dark/light/eye care)</li>
+    <li>Font size and display settings</li>
+    <li>Selected AI model preference</li>
   </ul>
+  <p>This data stays on your device and is not transmitted to our servers except the authentication token for API requests.</p>
 
-  <h2>4. Subscription and Payment</h2>
-  <ul>
-    <li>Payment processed by <strong>Razorpay</strong> — India's leading payment gateway</li>
-    <li>Payment signatures verified server-side before activating any subscription</li>
-    <li>We store plan name, billing cycle, and payment ID only — not card or bank details</li>
-    <li>Confirmation email sent to your registered address after successful payment</li>
-    <li>Manage subscription from Settings in the app</li>
-  </ul>
+  <h2>8. Voice and Image Data</h2>
+  <h3>Voice</h3>
+  <p>Voice input is processed entirely by your device's Web Speech API (provided by your browser or operating system). We do not record, transmit, or store your voice audio. Only the text transcription of your speech is sent to our servers.</p>
+  <h3>Images</h3>
+  <p>When you upload an image for analysis, it is temporarily transmitted to Google's Gemini API for processing. Images are not permanently stored on our servers. The image reference is saved as a text label (e.g., "📷 filename.jpg") in your chat history.</p>
 
-  <h2>5. Email Communication</h2>
-  <p>We only send emails when necessary:</p>
-  <ul>
-    <li><strong>Welcome email:</strong> Once when you create your account</li>
-    <li><strong>Subscription confirmation:</strong> After each successful payment</li>
-    <li><strong>Email verification:</strong> When you register</li>
-    <li><strong>Password reset:</strong> Only when you request it</li>
-  </ul>
-  <p>We do <strong>not</strong> send marketing emails or promotional spam.</p>
+  <h2>9. Data Transfers</h2>
+  <p>As Datta AI uses servers and third-party services located in the United States, your data may be transferred to and processed in the United States. By using our service, you consent to this transfer. We ensure appropriate safeguards are in place through our agreements with service providers.</p>
 
-  <h2>6. Data Retention</h2>
-  <ul>
-    <li>Account and chat data retained while your account is active</li>
-    <li>Delete your account anytime from Settings — data removed within 30 days</li>
-    <li>Payment records retained up to 7 years for legal compliance</li>
-  </ul>
+  <h2>10. Changes to This Policy</h2>
+  <p>We may update this Privacy Policy from time to time. We will notify you of significant changes via email or in-app notification at least 15 days before they take effect. The "Last updated" date at the top reflects the most recent revision.</p>
 
-  <h2>7. Third-Party Services</h2>
-  <ul>
-    <li><strong>Groq AI:</strong> Processes chat messages to generate AI responses</li>
-    <li><strong>Razorpay:</strong> All payment processing</li>
-    <li><strong>MongoDB Atlas:</strong> Cloud database storage</li>
-    <li><strong>Zoho Mail:</strong> Transactional email delivery</li>
-    <li><strong>Tavily:</strong> Powers live web search in responses</li>
-    <li><strong>Google OAuth:</strong> Optional sign-in with Google</li>
-  </ul>
-
-  <h2>8. Children's Privacy</h2>
-  <p>Datta AI is not directed to children under 13. We do not knowingly collect information from children under 13. If you believe a child has provided personal information, contact us at <a href="mailto:admin@datta-ai.com">admin@datta-ai.com</a> immediately.</p>
-
-  <h2>9. Your Rights</h2>
-  <ul>
-    <li><strong>Access:</strong> Request a copy of your personal data</li>
-    <li><strong>Correction:</strong> Update information from Settings</li>
-    <li><strong>Deletion:</strong> Delete account and all data from Settings</li>
-    <li><strong>Portability:</strong> Request your chat history</li>
-    <li><strong>Objection:</strong> Contact us to object to specific data processing</li>
-  </ul>
-
-  <h2>10. Cookies and Local Storage</h2>
-  <p>Datta AI uses browser local storage to save preferences (theme, language, model). No tracking cookies, no advertising pixels, no third-party trackers.</p>
-
-  <h2>11. Changes to This Policy</h2>
-  <p>We may update this policy from time to time. Significant changes will be communicated via email. The "Last updated" date above will always reflect the latest version.</p>
+  <h2>11. Grievance Officer</h2>
+  <div class="contact-card">
+    <p><strong style="color:#fff;">Grievance Officer — Datta AI</strong></p>
+    <p>📧 Email: <a href="mailto:admin@datta-ai.com">admin@datta-ai.com</a></p>
+    <p>🌐 Website: <a href="https://datta-ai.com">datta-ai.com</a></p>
+    <p>📍 India</p>
+    <p style="margin-top:10px;color:#aaa;font-size:13px;">For privacy concerns, please email with subject "Privacy Concern — [your email]". We will respond within 30 days as required by DPDPA 2023.</p>
+  </div>
 
   <h2>12. Contact Us</h2>
-  <p>For any questions, concerns, or data requests related to this Privacy Policy:</p>
-  <div class="contact-card">
-    <p><strong>Datta AI Support Team</strong></p>
-    <p>Email: <strong><a href="mailto:admin@datta-ai.com">admin@datta-ai.com</a></strong></p>
-    <p>Website: <strong><a href="https://datta-ai.com">datta-ai.com</a></strong></p>
-    <p>Location: India</p>
-    <p style="margin-top:8px;font-size:12px;color:#555;">We respond to all privacy inquiries within 48 hours.</p>
-  </div>
-  <div class="box" style="margin-top:28px;">
-    <p>By using Datta AI, you agree to this Privacy Policy. If you do not agree, please stop using the service and delete your account.</p>
-  </div>
+  <p>For any questions about this Privacy Policy or your personal data, contact us at <a href="mailto:admin@datta-ai.com">admin@datta-ai.com</a>. We are committed to resolving privacy concerns promptly and transparently.</p>
+
 </div>
-<div class="footer">
-  <p>2026 Datta AI · <a href="https://datta-ai.com" style="color:#333;">datta-ai.com</a> · <a href="mailto:admin@datta-ai.com" style="color:#333;">admin@datta-ai.com</a></p>
-</div>
+<div class="footer">© 2026 Datta AI · <a href="privacy.html" style="color:#555;">Privacy Policy</a> · <a href="terms.html" style="color:#555;">Terms of Service</a></div>
 </body>
 </html>
