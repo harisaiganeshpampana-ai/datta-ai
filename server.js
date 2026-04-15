@@ -2011,6 +2011,41 @@ app.post("/payment/stripe-session", authMiddleware, async (req, res) => {
 
 // CHAT ROUTE
 
+// ── MERMAID SYNTAX FIXER — fixes AI-generated broken mermaid ────────────────
+function fixMermaidSyntax(text) {
+  // Find mermaid blocks and fix them
+  return text.replace(/```mermaid([\s\S]*?)```/gi, function(match, code) {
+    var lines = code.trim().split("\n")
+    var fixed = []
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim()
+      if (!line) continue
+
+      // Fix: A -->[Fixed Expenses] => A --> B[Fixed Expenses]
+      // Pattern: node -->[text] with no source node letter
+      line = line.replace(/^([A-Z])\s*-->\[([^\]]+)\]/g, function(m, from, label) {
+        var nextLetter = String.fromCharCode(from.charCodeAt(0) + 1)
+        return from + ' --> ' + nextLetter + '[' + label + ']'
+      })
+
+      // Fix: --> [text] with space => -->[text]  
+      line = line.replace(/-->\s*\[/g, '--> [')
+
+      // Fix: -->|label without closing pipe => -->|label|
+      line = line.replace(/-->\|([^|]+)(?!\|)/g, '-->|$1|')
+
+
+      // Fix missing node names - if line is just --> something
+      line = line.replace(/^-->/g, '')
+
+      fixed.push(line)
+    }
+    return "```mermaid\n" + fixed.join("\n") + "\n```"
+  })
+}
+
+// ── MERMAID SYNTAX FIXER — fixes AI-generated broken mermaid ────────────────
+
 // Global fallback — prevents "cleanupRequest is not defined" in async callbacks
 var cleanupRequest = function() { /* global no-op fallback */ }
 
@@ -2767,6 +2802,45 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
     var isWhoMadeYou = ["who made you","who created you","who built you","who developed you","who are you","what are you","tell me about yourself","introduce yourself","who is behind you","who owns you","who made datta","who created datta","who built datta","where are you from","what company made you"].some(k => msgLowerCheck.includes(k))
     var isIdentityQuestion = ["why use datta","why should i use datta","why datta ai","what is datta ai","why choose datta","datta vs chatgpt","datta vs gpt","better than chatgpt","better than gpt","instead of chatgpt","why not chatgpt","what makes datta","what is special about datta","why datta is better","datta ai vs","why i should use","why use you instead","why use you","what makes you different","what makes you special","what makes you better","are you better than","how are you better","why are you better","are you like chatgpt","are you chatgpt","which is better datta","datta better","is datta good","datta ai good","how good is datta"].some(k => msgLowerCheck.includes(k))
 
+    // ── SMART DIAGRAM GENERATOR ─────────────────────────────────────────────
+    var isDiagramRequest = !isImageFile && message && [
+      "flowchart","flow chart","diagram","chart","graph","mind map","mindmap","draw"
+    ].some(k => message.toLowerCase().includes(k))
+
+    if (isDiagramRequest && !isImageFile) {
+      // Generate diagram using AI but with strict system prompt
+      var diagramSystemPrompt = "You are a mermaid diagram generator. Output ONLY valid mermaid syntax. Nothing else. No explanation. No text before or after the code block.\n\nSTRICT RULES:\n1. Start with ```mermaid\n2. Second line must be: flowchart TD or graph LR\n3. Every node must have a letter ID and text in brackets: A[text] B{text}\n4. Arrows must be: A --> B or A -->|label| B\n5. NEVER write: A -->[text] — this is WRONG\n6. NEVER write bare text after arrow without node ID\n7. End with ```\n\nCORRECT:\n```mermaid\nflowchart TD\n    A[Start] --> B[Step 1]\n    B -->|yes| C[Done]\n    B -->|no| D[Retry]\n```\n\nWRONG (never do this):\n```\nA -->[Fixed Expenses]\nB --> [text]\n```"
+
+      try {
+        var diagramStream = await groq.chat.completions.create({
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            { role: "system", content: diagramSystemPrompt },
+            { role: "user", content: message }
+          ],
+          max_tokens: 1000,
+          temperature: 0.1,
+          stream: false
+        })
+        var diagramCode = diagramStream.choices?.[0]?.message?.content?.trim() || ""
+        if (diagramCode && diagramCode.includes("```mermaid")) {
+          // Clean and send
+          diagramCode = fixMermaidSyntax(diagramCode)
+          res.write(diagramCode)
+          chat.messages.push({ role: "assistant", content: diagramCode })
+          await chat.save()
+          res.write("CHATID" + chat._id)
+          res.end()
+          cleanupRequest()
+          return
+        }
+      } catch(diagErr) {
+        console.warn("[DIAGRAM] Generation failed:", diagErr.message)
+        // Fall through to normal response
+      }
+    }
+    // ── END SMART DIAGRAM GENERATOR ─────────────────────────────────────────
+
     var isMemoryQuestion = ["do you remember","can you remember","you don't remember","you cant remember","remember our chat","remember our conversation","remember what i said","remember me","do you know me","you forget","you forgot","no memory","don't have memory","previous chat","last time we talked","last time i asked","earlier i told you","i told you before"].some(k => msgLowerCheck.includes(k))
 
     if (isMemoryQuestion) {
@@ -3131,6 +3205,10 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
       full = _mresult.join("\n")
     }
 
+    // Fix any broken mermaid syntax before saving/sending
+    if (full.includes("```mermaid")) {
+      full = fixMermaidSyntax(full)
+    }
     chat.messages.push({ role: "assistant", content: full })
     if (!req.user.isGuest && message && message.length > 20) extractAndSaveMemory(userId, message, full).catch(() => {})
     if (chat.messages.length === 4 || chat.title === "New conversation") {
