@@ -117,7 +117,7 @@ async function callGemini(messages, systemPrompt, maxTokens, res) {
     }
   }
 
-  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:streamGenerateContent?alt=sse&key=" + apiKey
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=" + apiKey
 
   const response = await fetch(url, {
     method: "POST",
@@ -234,7 +234,7 @@ async function generateCodeWithGemini(systemPrompt, userPrompt, maxTokens) {
   if (!apiKey) throw new Error("GEMINI_API_KEY not set")
 
   // Updated April 2026 — use v1beta with currently available models
-  const modelsToTry = ["gemini-2.5-flash-preview-04-17", "gemini-2.5-pro-exp-03-25", "gemini-2.0-flash"]
+  const modelsToTry = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"]
 
   for (const modelName of modelsToTry) {
     try {
@@ -277,9 +277,9 @@ async function solveWithGemini(imageBase64, mimeType, systemPrompt, userPrompt) 
   if (!apiKey) throw new Error("Gemini not configured")
 
   const modelsToTry = [
-    "gemini-2.5-flash-preview-04-17",
-    "gemini-2.5-pro-exp-03-25",
-    "gemini-2.0-flash"
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite"
   ]
 
   for (const modelName of modelsToTry) {
@@ -2972,7 +2972,7 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
       let imageAnswer = null
       if (isQuestionPaper) {
         try {
-          const geminiModels = ["gemini-2.5-flash-preview-04-17", "gemini-2.5-pro-exp-03-25", "gemini-2.0-flash"]
+          const geminiModels = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"]
           let extractedQuestions = ""
           for (const gModel of geminiModels) {
             try {
