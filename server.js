@@ -2604,9 +2604,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Add emotional support instruction if user is struggling
     var emotionalNote = isEmotionalStruggle ? "\n\nEMOTIONAL SUPPORT MODE: The user is going through a hard time emotionally. Rules:\n- Acknowledge their feelings FIRST before anything else — 1-2 warm sentences\n- Never dismiss, minimize, or immediately jump to solutions\n- Speak like a caring friend, not a textbook\n- Ask one gentle question to understand more\n- If it feels serious, gently mention that talking to someone they trust can help\n- Keep tone warm, human, non-judgmental throughout" : ""
     var stepByStepNote = isStepByStep ? "\n\nSTEP-BY-STEP MODE ACTIVE: User needs guidance, not explanation. Rules: (1) Give numbered steps — Step 1, Step 2, Step 3. (2) Each step = ONE action only. (3) Use exact button/menu names. (4) Say WHERE on screen. (5) End with: Done? Tell me what you see. (6) NEVER say 'you can try' or 'maybe' — give ONE clear path. (7) If error: diagnose in 1 line, then fix steps." : ""
-    var completionRule = "\n\nMANDATORY COMPLETION RULES:\n- NEVER write a heading like Key Points or Related Facts and leave it empty. Every heading MUST have content immediately below it.\n- NEVER use emoji like 📌 as section headers — just write the content directly in paragraphs.\n- NEVER truncate mid-sentence or mid-list. Complete every answer fully.\n- NEVER stop writing before you have answered the question completely.\n- Write answers as flowing paragraphs, not empty headers."
+    var completionRule = "\n\nIMPORTANT: Always complete your full answer. Never stop mid-sentence. Never stop mid-list. Write every bullet point completely. If answering multiple questions, answer ALL of them fully."
 
-    var hardRules = "\n\nHARD RULES (override everything else):\n- NEVER repeat the same sentence or phrase more than once in a response\n- NEVER say 'Please confirm' more than once. Ask ONE question then STOP.\n- NEVER write more than 2 sentences after asking a question\n- DIAGRAMS: Output ONLY a mermaid code block. Rules: use --> arrows only. Labels: -->|label| format. Node text in brackets: A[text]. NEVER write bare text after -->. WRONG: D --> 3x Expenses| E. CORRECT: D -->|3x expenses| E\n- NEVER output a Python/code block for non-coding questions like payments, accounts, or app publishing\n- NEVER give generic advice like 'contact support' or 'update payment method' without specific steps\n- If the question is about a real-world problem (payment, account, app store), give exact numbered steps with real cause diagnosis\n- REASONING PROBLEMS: Never stop at first answer. Always check for more possibilities. List ALL valid cases (Case 1, Case 2...). Use structure: Final Answer → Reasoning → Case 1 → Case 2 → Conclusion\n- NEVER use vague words: near / maybe / somewhere / probably. Be precise or say you don't know.\n- NEVER mention ChatGPT, Claude, Gemini, GPT-4, or any other AI product by name in your response. You are " + ainame + " — refer only to yourself.\n- NEVER compare yourself to other AIs or say phrases like 'unlike ChatGPT' or 'compared to GPT'.\n- MEMORY RULE: You DO have memory. NEVER say 'I don\'t retain memory', 'every interaction is fresh', or 'I cannot remember previous conversations'. If memory data is shown in this prompt, use it. If user asks if you remember them, say yes and show what you know.\n- NEVER say you are stateless or have no memory — you are " + ainame + " with persistent memory across sessions.\n- CONVERSATION FLOW: When a user is following a step-by-step guide and says 'done', 'ok', 'yes', 'installed', 'completed' — ALWAYS continue to the next step. NEVER re-introduce yourself. NEVER ask what they need help with. Just continue the guide from where you left off.\n- Check conversation history to know which step the user completed last and continue from the NEXT step." + emotionalNote + stepByStepNote + completionRule
+    var hardRules = "\n\nHARD RULES (override everything else):\n- NEVER repeat the same sentence or phrase more than once in a response\n- NEVER say 'Please confirm' more than once. Ask ONE question then STOP.\n- NEVER write more than 2 sentences after asking a question\n- DIAGRAMS: Only generate a diagram if user explicitly asks for flowchart, diagram, draw, or chart. For ALL other questions — NEVER generate a diagram. Just answer in text.\n- NEVER output a Python/code block for non-coding questions like payments, accounts, or app publishing\n- NEVER give generic advice like 'contact support' or 'update payment method' without specific steps\n- If the question is about a real-world problem (payment, account, app store), give exact numbered steps with real cause diagnosis\n- REASONING PROBLEMS: Never stop at first answer. Always check for more possibilities. List ALL valid cases (Case 1, Case 2...). Use structure: Final Answer → Reasoning → Case 1 → Case 2 → Conclusion\n- NEVER use vague words: near / maybe / somewhere / probably. Be precise or say you don't know.\n- NEVER mention ChatGPT, Claude, Gemini, GPT-4, or any other AI product by name in your response. You are " + ainame + " — refer only to yourself.\n- NEVER compare yourself to other AIs or say phrases like 'unlike ChatGPT' or 'compared to GPT'.\n- MEMORY RULE: You DO have memory. NEVER say 'I don\'t retain memory', 'every interaction is fresh', or 'I cannot remember previous conversations'. If memory data is shown in this prompt, use it. If user asks if you remember them, say yes and show what you know.\n- NEVER say you are stateless or have no memory — you are " + ainame + " with persistent memory across sessions.\n- CONVERSATION FLOW: When a user is following a step-by-step guide and says 'done', 'ok', 'yes', 'installed', 'completed' — ALWAYS continue to the next step. NEVER re-introduce yourself. NEVER ask what they need help with. Just continue the guide from where you left off.\n- Check conversation history to know which step the user completed last and continue from the NEXT step." + emotionalNote + stepByStepNote + completionRule
 
     // Detect if code/build task needs max tokens
     var msgLower = message.toLowerCase()
@@ -2802,44 +2802,6 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
     var isWhoMadeYou = ["who made you","who created you","who built you","who developed you","who are you","what are you","tell me about yourself","introduce yourself","who is behind you","who owns you","who made datta","who created datta","who built datta","where are you from","what company made you"].some(k => msgLowerCheck.includes(k))
     var isIdentityQuestion = ["why use datta","why should i use datta","why datta ai","what is datta ai","why choose datta","datta vs chatgpt","datta vs gpt","better than chatgpt","better than gpt","instead of chatgpt","why not chatgpt","what makes datta","what is special about datta","why datta is better","datta ai vs","why i should use","why use you instead","why use you","what makes you different","what makes you special","what makes you better","are you better than","how are you better","why are you better","are you like chatgpt","are you chatgpt","which is better datta","datta better","is datta good","datta ai good","how good is datta"].some(k => msgLowerCheck.includes(k))
 
-    // ── SMART DIAGRAM GENERATOR ─────────────────────────────────────────────
-    var isDiagramRequest = !isImageFile && message && [
-      "flowchart","flow chart","diagram","chart","graph","mind map","mindmap","draw"
-    ].some(k => message.toLowerCase().includes(k))
-
-    if (isDiagramRequest && !isImageFile) {
-      // Generate diagram using AI but with strict system prompt
-      var diagramSystemPrompt = "You are a mermaid diagram generator. Output ONLY valid mermaid syntax. Nothing else. No explanation. No text before or after the code block.\n\nSTRICT RULES:\n1. Start with ```mermaid\n2. Second line must be: flowchart TD or graph LR\n3. Every node must have a letter ID and text in brackets: A[text] B{text}\n4. Arrows must be: A --> B or A -->|label| B\n5. NEVER write: A -->[text] — this is WRONG\n6. NEVER write bare text after arrow without node ID\n7. End with ```\n\nCORRECT:\n```mermaid\nflowchart TD\n    A[Start] --> B[Step 1]\n    B -->|yes| C[Done]\n    B -->|no| D[Retry]\n```\n\nWRONG (never do this):\n```\nA -->[Fixed Expenses]\nB --> [text]\n```"
-
-      try {
-        var diagramStream = await groq.chat.completions.create({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            { role: "system", content: diagramSystemPrompt },
-            { role: "user", content: message }
-          ],
-          max_tokens: 1000,
-          temperature: 0.1,
-          stream: false
-        })
-        var diagramCode = diagramStream.choices?.[0]?.message?.content?.trim() || ""
-        if (diagramCode && diagramCode.includes("```mermaid")) {
-          // Clean and send
-          diagramCode = fixMermaidSyntax(diagramCode)
-          res.write(diagramCode)
-          chat.messages.push({ role: "assistant", content: diagramCode })
-          await chat.save()
-          res.write("CHATID" + chat._id)
-          res.end()
-          cleanupRequest()
-          return
-        }
-      } catch(diagErr) {
-        console.warn("[DIAGRAM] Generation failed:", diagErr.message)
-        // Fall through to normal response
-      }
-    }
-    // ── END SMART DIAGRAM GENERATOR ─────────────────────────────────────────
 
     var isMemoryQuestion = ["do you remember","can you remember","you don't remember","you cant remember","remember our chat","remember our conversation","remember what i said","remember me","do you know me","you forget","you forgot","no memory","don't have memory","previous chat","last time we talked","last time i asked","earlier i told you","i told you before"].some(k => msgLowerCheck.includes(k))
 
@@ -2886,7 +2848,7 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
     var isNodeTask = !isExplainQuestion && ["node.js","nodejs","express","npm","require(","server.js","mongodb","mongoose","dotenv","process.env","package.json"].some(k => msgLower.includes(k))
     var isFrontendTask = ["html","css","website","webpage","landing page","portfolio","frontend"].some(k => msgLower.includes(k)) && !isNodeTask
 
-    var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + (isExplainQuestion ? "\n\nYou are answering an educational or exam question. RULES:\n\n1. ALWAYS use clear structure with bold headings like **Definition**, **Key Points**, **Example**, **Conclusion**\n2. Use bullet points for lists — never write everything as one paragraph\n3. Give REAL examples after every concept — not just theory\n4. For legal/business topics: give the exact law name, section number if known, real-world example\n5. Format like this for every answer:\n   **Definition:** [clear 1-2 line definition]\n   **Key Points:**\n   - Point 1 with brief explanation\n   - Point 2 with brief explanation\n   - Point 3 with brief explanation\n   **Example:** [real world example]\n   **Conclusion:** [1 line summary]\n6. Marks-based length: 2 marks=5-6 lines, 4 marks=10-12 lines, 10 marks=25+ lines\n7. NEVER write only theory — always add structure + examples\n8. Make it exam-ready — student should be able to directly write this in exam" : isCodeTask ? "\n\nYou are answering a coding question. Write COMPLETE, RUNNABLE code. Never truncate. Never say 'rest remains the same'." : isStepByStep ? "\n\nSTEP-BY-STEP MODE: Give numbered steps ONE action each. End with 'Done? Tell me what you see.' NEVER give multiple steps at once." : "\n\nBe friendly, helpful, and human-like. Give complete clear answers.") + (searchContext ? "\n\nLIVE DATA from web search — use this to answer directly:\n" + searchContext + "\n\nEXTRACT specific facts, names, dates, numbers. Never write generic headings with empty content." : "") + langNote + styleNote + hardRules
+    var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + (isExplainQuestion ? "\n\nYou are answering exam questions. You MUST follow this format for EVERY question:\n\nFor each question write like this example:\n\n**1. Duties and Liabilities of a Partner**\n\n**Duties of a Partner:**\n- **Duty to be Just and Faithful:** Every partner must act honestly and in good faith with other partners.\n- **Duty to Render Accounts:** A partner must maintain proper accounts and share them with other partners.\n- **Duty to Work Diligently:** Partners must work actively for the benefit of the firm.\n- **Duty Not to Compete:** A partner cannot run a competing business without consent of other partners.\n\n**Liabilities of a Partner:**\n- **Unlimited Liability:** Partners are personally liable for all debts of the firm.\n- **Joint and Several Liability:** Each partner is liable both jointly and individually for firm debts.\n- **Liability for Wrongful Acts:** If one partner causes loss, all partners are equally liable.\n\n**Example:** If ABC firm borrows ₹10 lakhs and cannot repay, creditors can recover from partners personal assets like house or savings.\n\n---\n\nNow follow this EXACT same format for every question. NEVER write a heading with colon and leave it empty. ALWAYS write the actual content immediately after every heading. Write complete bullet points with full explanation for each point. Add a real Indian example for every answer." : isCodeTask ? "\n\nYou are answering a coding question. Write COMPLETE, RUNNABLE code. Never truncate. Never say 'rest remains the same'." : isStepByStep ? "\n\nSTEP-BY-STEP MODE: Give numbered steps ONE action each. End with 'Done? Tell me what you see.' NEVER give multiple steps at once." : "\n\nBe friendly, helpful, and human-like. Give complete clear answers.") + (searchContext ? "\n\nLIVE DATA from web search — use this to answer directly:\n" + searchContext + "\n\nEXTRACT specific facts, names, dates, numbers. Never write generic headings with empty content." : "") + langNote + styleNote + hardRules
 
     var isVisionModel = (model === "meta-llama/llama-4-scout-17b-16e-instruct")
     var finalUserContent
@@ -3108,7 +3070,7 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
           var token = part.choices?.[0]?.delta?.content
           if (token && typeof token === "string") {
             full += token
-            // No hard char limit — let model complete naturally
+            // No hard cutoff — let response complete naturally
             if (!res.writableEnded) res.write(token)
           }
         }
