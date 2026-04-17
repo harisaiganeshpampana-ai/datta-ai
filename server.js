@@ -2606,7 +2606,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var stepByStepNote = isStepByStep ? "\n\nSTEP-BY-STEP MODE ACTIVE: User needs guidance, not explanation. Rules: (1) Give numbered steps — Step 1, Step 2, Step 3. (2) Each step = ONE action only. (3) Use exact button/menu names. (4) Say WHERE on screen. (5) End with: Done? Tell me what you see. (6) NEVER say 'you can try' or 'maybe' — give ONE clear path. (7) If error: diagnose in 1 line, then fix steps." : ""
     var completionRule = "\n\nIMPORTANT: Always complete your full answer. Never stop mid-sentence. Never stop mid-list. Write every bullet point completely. If answering multiple questions, answer ALL of them fully."
 
-    var hardRules = "\n\nHARD RULES (override everything else):\n- NEVER repeat the same sentence or phrase more than once in a response\n- NEVER say 'Please confirm' more than once. Ask ONE question then STOP.\n- NEVER write more than 2 sentences after asking a question\n- DIAGRAMS: Only generate a diagram if user explicitly asks for flowchart, diagram, draw, or chart. For ALL other questions — NEVER generate a diagram. Just answer in text.\n- NEVER output a Python/code block for non-coding questions like payments, accounts, or app publishing\n- NEVER give generic advice like 'contact support' or 'update payment method' without specific steps\n- If the question is about a real-world problem (payment, account, app store), give exact numbered steps with real cause diagnosis\n- REASONING PROBLEMS: Never stop at first answer. Always check for more possibilities. List ALL valid cases (Case 1, Case 2...). Use structure: Final Answer → Reasoning → Case 1 → Case 2 → Conclusion\n- NEVER use vague words: near / maybe / somewhere / probably. Be precise or say you don't know.\n- NEVER mention ChatGPT, Claude, Gemini, GPT-4, or any other AI product by name in your response. You are " + ainame + " — refer only to yourself.\n- NEVER compare yourself to other AIs or say phrases like 'unlike ChatGPT' or 'compared to GPT'.\n- MEMORY RULE: You DO have memory. NEVER say 'I don\'t retain memory', 'every interaction is fresh', or 'I cannot remember previous conversations'. If memory data is shown in this prompt, use it. If user asks if you remember them, say yes and show what you know.\n- NEVER say you are stateless or have no memory — you are " + ainame + " with persistent memory across sessions.\n- CONVERSATION FLOW: When a user is following a step-by-step guide and says 'done', 'ok', 'yes', 'installed', 'completed' — ALWAYS continue to the next step. NEVER re-introduce yourself. NEVER ask what they need help with. Just continue the guide from where you left off.\n- Check conversation history to know which step the user completed last and continue from the NEXT step." + emotionalNote + stepByStepNote + completionRule
+    var hardRules = "\n\nHARD RULES (override everything else):\n- NEVER repeat the same sentence or phrase more than once in a response\n- NEVER say 'Please confirm' more than once. Ask ONE question then STOP.\n- DIAGRAMS: Only generate a diagram if user explicitly asks for flowchart, diagram, draw, or chart. For ALL other questions — NEVER generate a diagram. Just answer in text.\n- NEVER output a Python/code block for non-coding questions like payments, accounts, or app publishing\n- NEVER give generic advice like 'contact support' or 'update payment method' without specific steps\n- If the question is about a real-world problem (payment, account, app store), give exact numbered steps with real cause diagnosis\n- REASONING PROBLEMS: Never stop at first answer. Always check for more possibilities. List ALL valid cases (Case 1, Case 2...). Use structure: Final Answer → Reasoning → Case 1 → Case 2 → Conclusion\n- NEVER use vague words: near / maybe / somewhere / probably. Be precise or say you don't know.\n- NEVER mention ChatGPT, Claude, Gemini, GPT-4, or any other AI product by name in your response. You are " + ainame + " — refer only to yourself.\n- NEVER compare yourself to other AIs or say phrases like 'unlike ChatGPT' or 'compared to GPT'.\n- MEMORY RULE: You DO have memory. NEVER say 'I don\'t retain memory', 'every interaction is fresh', or 'I cannot remember previous conversations'. If memory data is shown in this prompt, use it. If user asks if you remember them, say yes and show what you know.\n- NEVER say you are stateless or have no memory — you are " + ainame + " with persistent memory across sessions.\n- CONVERSATION FLOW: When a user is following a step-by-step guide and says 'done', 'ok', 'yes', 'installed', 'completed' — ALWAYS continue to the next step. NEVER re-introduce yourself. NEVER ask what they need help with. Just continue the guide from where you left off.\n- Check conversation history to know which step the user completed last and continue from the NEXT step." + emotionalNote + stepByStepNote + completionRule
 
     // Detect if code/build task needs max tokens
     var msgLower = message.toLowerCase()
@@ -2670,15 +2670,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var isSimpleChat = !isExplainQuestion && !isCodeTask && !isLargeTask
     var inputIsLarge = (message || "").length > 3000
     var isDeepKnowledge = isCurrentAffairs || isGKHistory || isNarrativeRequest
-    var maxCodingTok = isDattaCode ? 8000
-                     : isLargeTask      ? 8000
-                     : isCodeTask       ? 8000
-                     : isDeepKnowledge  ? 8000
-                     : isStructuredTopic? 8000
-                     : isExplainQuestion? 8000
-                     : isStepByStep     ? 4000
-                     :                    4000
-    var maxTok = isImageFile ? (isQuestionPaper ? 8000 : 8000) : maxCodingTok
+    // Maximum tokens for ALL request types — no artificial limits
+    var maxCodingTok = 8000
+    var maxTok = 8000
 
     var timeStr = req.body.userTime || new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })
     var dateStr = req.body.userDate || new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Kolkata" })
@@ -2985,8 +2979,8 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
     }
 
     // Fallback models — only currently alive Groq models
-    var _codeTok = Math.min(maxTok, 8000)
-    var _chatTok = Math.min(maxTok, 4000)
+    var _codeTok = 8000
+    var _chatTok = 8000
     var groqAttempts = isImageFile
       ? [{ model: "meta-llama/llama-4-scout-17b-16e-instruct", tokens: maxTok }]
       : isDattaCode
