@@ -630,9 +630,9 @@ if (typeof marked !== 'undefined') {
 
     const previewBtn = isPreviewable ? `
       <button onclick="toggleSplitPreview('${uid}')" 
-        style="display:flex;align-items:center;gap:5px;padding:3px 10px;background:rgba(0,201,167,0.12);border:1px solid rgba(0,201,167,0.3);border-radius:6px;color:#00c9a7;font-size:11px;cursor:pointer;font-family:inherit;">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Preview
+        style="display:flex;align-items:center;gap:6px;padding:6px 14px;background:linear-gradient(135deg,#10a37f,#0077ff);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:0.3px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="white" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        ▶ Preview
       </button>` : ""
 
     return `<div class="code-block-wrap" id="${uid}_wrap" data-code="${encoded}" data-lang="${langStr}" style="margin:12px 0;border-radius:12px;overflow:hidden;border:1px solid #1e1e2e;">
@@ -861,17 +861,21 @@ async function send() {
       { icon:"✍️", text:"Writing answer..." }
     ]
     if (willBuildLarge) return [
-      { icon:"🧠", text:"Understanding your app idea..." },
-      { icon:"📐", text:"Planning architecture..." },
-      { icon:"📁", text:"Designing file structure..." },
-      { icon:"💻", text:"Writing code..." },
-      { icon:"🔍", text:"Reviewing & completing..." }
+      { icon:"🧠", text:"Reading your request..." },
+      { icon:"📐", text:"Planning app architecture..." },
+      { icon:"📁", text:"Setting up file structure..." },
+      { icon:"🗄️", text:"Writing server.js..." },
+      { icon:"🎨", text:"Building frontend UI..." },
+      { icon:"⚙️", text:"Adding API routes..." },
+      { icon:"💳", text:"Adding UPI payment..." },
+      { icon:"✅", text:"Reviewing & finalizing..." }
     ]
     if (willCode) return [
-      { icon:"🧠", text:"Understanding requirements..." },
-      { icon:"🏗️", text:"Planning structure..." },
+      { icon:"🧠", text:"Reading your request..." },
+      { icon:"🏗️", text:"Planning code structure..." },
       { icon:"💻", text:"Writing code..." },
-      { icon:"✅", text:"Reviewing output..." }
+      { icon:"🔍", text:"Reviewing output..." },
+      { icon:"✅", text:"Finalizing..." }
     ]
     if (willPlan) return [
       { icon:"📋", text:"Understanding your goal..." },
@@ -896,29 +900,44 @@ async function send() {
   let aiDiv = document.createElement("div")
   aiDiv.className = "msg-row"
   aiDiv.innerHTML = `
-    <div class="thinkingBlock" id="thinkingBlock">
-      <div class="thinkingHeader">
-        <div class="thinkingOrb"></div>
-        <span class="thinkingTitle" id="thinkingCurrentStep">${steps[0] ? steps[0].text : "Thinking"}</span>
-        <span class="thinkingDots"><span>.</span><span>.</span><span>.</span></span>
-      </div>
+    <div class="thinkingBlock" id="thinkingBlock" style="padding:12px 16px;background:var(--bg2,#111);border:1px solid var(--border,#222);border-radius:12px;margin:8px 0;max-width:400px;">
+      <div id="thinkingStepsList" style="display:flex;flex-direction:column;gap:6px;"></div>
     </div>
   `
   chatBox.appendChild(aiDiv)
   chatBox.scrollTop = chatBox.scrollHeight
 
-  // Cycle through step text labels like Claude — no list, just one line updating
+  // Show steps one by one like Claude
   let _stepIdx = 0
+  const stepsList = aiDiv.querySelector("#thinkingStepsList")
+
+  function addStep(step, done) {
+    const el = document.createElement("div")
+    el.style.cssText = "display:flex;align-items:center;gap:8px;font-size:13px;color:" + (done ? "var(--text2,#888)" : "var(--text,#eee)") + ";transition:all 0.3s;"
+    el.innerHTML = done
+      ? `<span style="color:#10a37f;font-size:11px;">✓</span><span style="color:var(--text2,#888);">${step.text}</span>`
+      : `<span class="thinkingOrb" style="width:8px;height:8px;border-radius:50%;background:#10a37f;animation:orbPulse 1s infinite;flex-shrink:0;"></span><span>${step.text}</span>`
+    stepsList.appendChild(el)
+    return el
+  }
+
+  // Add first step
+  let currentStepEl = addStep(steps[0], false)
+
   const _stepTimer = setInterval(() => {
+    // Mark current as done
+    if (currentStepEl) {
+      currentStepEl.innerHTML = `<span style="color:#10a37f;font-size:11px;">✓</span><span style="color:var(--text2,#888);">${steps[_stepIdx].text}</span>`
+      currentStepEl.style.color = "var(--text2,#888)"
+    }
     _stepIdx++
     if (_stepIdx < steps.length) {
-      const label = document.getElementById("thinkingCurrentStep")
-      if (label) label.textContent = steps[_stepIdx].text
+      currentStepEl = addStep(steps[_stepIdx], false)
+      chatBox.scrollTop = chatBox.scrollHeight
     } else {
       clearInterval(_stepTimer)
     }
-  }, 1400)
-  // Store timer ref to clear when done
+  }, 1200)
   aiDiv._stepTimer = _stepTimer
 
   // Build FormData
