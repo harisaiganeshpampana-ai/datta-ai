@@ -1753,6 +1753,7 @@ function speakText(btn) {
 function stopVoice() {
   // Stop TTS speaking immediately
   if (window.speechSynthesis) window.speechSynthesis.cancel()
+  if (window._currentAudio) { window._currentAudio.pause(); window._currentAudio = null }
   // Stop the AI stream fetch
   stopGeneration()
   // Stop karaoke timer
@@ -1823,7 +1824,11 @@ function startVoiceListener() {
   const micBtn = document.getElementById("micBtn")
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition
   _micRecognition = new SR()
-  _micRecognition.lang = localStorage.getItem("datta_voice_lang") || "en-IN"
+  const srLang = window._voiceLang || localStorage.getItem("datta_voice_lang") || "en-IN"
+  _micRecognition.lang = srLang
+  _micRecognition.continuous = false
+  _micRecognition.interimResults = true
+  console.log("[VOICE] Speech recognition lang:", srLang)
   _micRecognition.continuous = false
   _micRecognition.interimResults = true
 
@@ -2953,80 +2958,69 @@ function stopKaraoke() {
 
 // ── MAIN SPEAK FUNCTION with karaoke + emotion ────────────────────────────────
 function speakText2(text) {
-  if (!voiceSynth) return
   stopSpeaking()
-  stopKaraoke()
-
+  if (typeof stopKaraoke === "function") stopKaraoke()
   isSpeaking = true
   setVA("speaking")
 
-  // Detect emotion and update chip
-  const emotion = detectEmotion(text)
-  const chip = document.getElementById("vaEmotionChip")
-  if (chip) {
-    if (emotion.label) {
-      chip.textContent = emotion.label
-      chip.style.display = "inline-block"
-      chip.style.background = (emotion.color || "#10a37f") + "22"
-      chip.style.color = emotion.color || "#10a37f"
-      chip.style.border = "1px solid " + (emotion.color || "#10a37f") + "44"
-    } else {
-      chip.style.display = "none"
+  const lang = window._voiceLang || "en-IN"
+  const isIndian = lang !== "en-IN" && lang !== "en-US" && lang !== "en-GB"
+
+  // For Indian languages - use Google Translate TTS (free, high quality Telugu/Hindi)
+  if (isIndian && text.length < 200) {
+    try {
+      const encodedText = encodeURIComponent(text.substring(0, 180))
+      const ttsUrl = "https://translate.google.com/translate_tts?ie=UTF-8&q=" + encodedText + "&tl=" + lang.split("-")[0] + "&client=tw-ob"
+      const audio = new Audio(ttsUrl)
+      audio.playbackRate = 0.9
+      audio.onended = () => { isSpeaking = false; setVA("idle") }
+      audio.onerror = () => { browserSpeak(text, lang) }
+      audio.play().catch(() => { browserSpeak(text, lang) })
+      window._currentAudio = audio
+      return
+    } catch(e) {
+      browserSpeak(text, lang)
     }
   }
 
-  const utterance = new SpeechSynthesisUtterance(text)
-  const profileKey = getSelectedVoiceProfile()
-  const profile = voiceProfiles[profileKey] || voiceProfiles.aria
+  // For longer text or English - use browser TTS
+  browserSpeak(text, lang)
+}
 
-  // Apply emotion-adjusted rate/pitch on top of profile
-  utterance.lang   = window._voiceLang || profile.lang
-  utterance.rate   = emotion.rate   || profile.rate
-  utterance.pitch  = emotion.pitch  || profile.pitch
+function browserSpeak(text, lang) {
+  if (!window.speechSynthesis) { isSpeaking = false; setVA("idle"); return }
+  const utterance = new SpeechSynthesisUtterance(text)
+  utterance.lang = lang || "en-IN"
+  utterance.rate = 0.85
+  utterance.pitch = 1.0
   utterance.volume = 1.0
 
-  const doSpeak = () => {
-    const { voice, hasNative } = pickVoice(profile)
-    // Only assign voice if it actually speaks the target language
-    // If no native voice found, leave utterance.voice unset — browser uses lang tag alone
-    if (voice && hasNative) utterance.voice = voice
-    else if (!hasNative) {
-      // Force browser to attempt the language without a specific voice object
-      // This works on Android Chrome which has system TTS for Indian languages
-      console.log("[VA] No native voice — relying on lang tag:", utterance.lang)
-    }
+  // Try to find best voice for language
+  const voices = speechSynthesis.getVoices()
+  const langCode = (lang || "en").split("-")[0].toLowerCase()
+  const langNames = { "te":"telugu","hi":"hindi","ta":"tamil","kn":"kannada","ml":"malayalam" }
+  const langName = langNames[langCode]
 
-    // Estimate speech duration for karaoke timing
-    const wordCount = text.trim().split(/\s+/).length
-    const estSeconds = (wordCount / (utterance.rate * 2.8)) // ~2.8 words/sec at rate=1
-    startKaraoke(text, estSeconds)
+  let voice = voices.find(v => v.lang === lang)
+  if (!voice && langName) voice = voices.find(v => v.name.toLowerCase().includes(langName))
+  if (!voice) voice = voices.find(v => v.lang.startsWith(langCode))
+  if (!voice && lang.includes("IN")) voice = voices.find(v => v.lang.includes("IN"))
+  if (voice) utterance.voice = voice
 
-    utterance.onend = () => {
-      isSpeaking = false
-      stopKaraoke()
-      if (chip) chip.style.display = "none"
-      if (voiceActive) {
-        setVA("idle")
-        setTimeout(() => { if (voiceActive) startListening() }, 800)
-      }
-    }
-    utterance.onerror = (e) => {
-      isSpeaking = false
-      stopKaraoke()
-      if (chip) chip.style.display = "none"
-      setVA("idle")
-    }
-    voiceSynth.speak(utterance)
-  }
-
-  const availVoices = voiceSynth.getVoices()
-  if (availVoices.length > 0) {
-    doSpeak()
-  } else {
-    voiceSynth.onvoiceschanged = () => { voiceSynth.onvoiceschanged = null; doSpeak() }
-    setTimeout(() => { if (!isSpeaking) doSpeak() }, 1000)
-  }
+  utterance.onend = () => { isSpeaking = false; setVA("idle") }
+  utterance.onerror = () => { isSpeaking = false; setVA("idle") }
+  speechSynthesis.speak(utterance)
 }
+
+function stopSpeakingAudio() {
+  if (window._currentAudio) {
+    window._currentAudio.pause()
+    window._currentAudio = null
+  }
+  if (window.speechSynthesis) window.speechSynthesis.cancel()
+  isSpeaking = false
+}
+
 
 function stopSpeaking() {
   if (voiceSynth) voiceSynth.cancel()
