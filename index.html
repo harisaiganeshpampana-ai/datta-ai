@@ -1537,13 +1537,34 @@ body.notes-open .input-area {
   .ai-disclaimer { opacity: 1 !important; font-size: 11px; }
 }
 
-/* User actions */
+/* User actions — always visible below user message */
 .userActions {
-  display: flex; align-items: center; gap: 2px;
+  display: flex; align-items: center; gap: 4px;
   justify-content: flex-end;
-  opacity: 0; transition: opacity 0.15s;
+  opacity: 1;
+  margin-top: 6px;
 }
 .user-row:hover .userActions { opacity: 1; }
+
+/* User action button — transparent, no white box */
+.uaBtn {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text3, #888);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+  padding: 0;
+}
+.uaBtn:hover {
+  background: var(--bg3, #1a1a1a);
+  color: var(--text, #eee);
+}
+.uaBtn svg { width: 14px; height: 14px; }
 
 /* Thinking block */
 .thinkingBlock {
