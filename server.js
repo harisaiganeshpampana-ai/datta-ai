@@ -3072,7 +3072,14 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
         const geminiAnswer = await generateCodeWithGemini(systemWithMemory, safeStr(finalUserContent), maxTok)
         if (geminiAnswer && geminiAnswer.length > 50) {
           if (!res.writableEnded) {
-            res.write(geminiAnswer)
+            // Stream the answer in small chunks so frontend displays it properly
+            const chunkSize = 40
+            for (let i = 0; i < geminiAnswer.length; i += chunkSize) {
+              if (res.writableEnded) break
+              res.write(geminiAnswer.substring(i, i + chunkSize))
+              // Small delay so chunks stream, not dump all at once
+              await new Promise(r => setTimeout(r, 15))
+            }
             chat.messages.push({ role: "assistant", content: geminiAnswer })
             await chat.save()
             res.write("CHATID" + chat._id)
