@@ -3134,16 +3134,29 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
             } catch(mErr) { console.warn("[EXAM] Step 1 model", gModel, "error:", mErr.message) }
           }
           if (extractedQuestions && extractedQuestions.length > 50) {
-            const groqAnswerResp = await groq.chat.completions.create({
-              model: "llama-3.3-70b-versatile",
-              max_tokens: 6000,
-              temperature: 0.3,
-              messages: [
-                { role: "system", content: "You are India's best exam answer writer. Write answers based on EXACT marks:\n- 1 mark = 2-3 lines\n- 2 marks = 4-5 lines\n- 3 marks = 6-7 lines\n- 4 marks = 8-10 lines\n- 5 marks = 12-15 lines\n- 10 marks = 20-25 lines\n\nFor EVERY question: check marks, write exactly that much. Label with question number. For formulas: formula + symbols + example. For definitions: definition + example. For lists: ALL items with explanation. NEVER skip any question." },
-                { role: "user", content: "Here are the exam questions:\n\n" + extractedQuestions + "\n\nWrite complete answers for every question now:" }
-              ]
-            })
-            imageAnswer = groqAnswerResp.choices?.[0]?.message?.content || ""
+            // Use Gemini 2.5 Pro to write answers (Groq rate limit issues)
+            try {
+              const examSystem = "You are India's best exam answer writer. Write answers based on EXACT marks:\n- 1 mark = 2-3 lines\n- 2 marks = 4-5 lines\n- 3 marks = 6-7 lines\n- 4 marks = 8-10 lines\n- 5 marks = 12-15 lines\n- 10 marks = 20-25 lines\n\nFor EVERY question: check marks, write exactly that much. Label with question number. For formulas: formula + symbols + example. For definitions: definition + example. For lists: ALL items with explanation. Complete every list that starts with a colon — never leave items empty. NEVER skip any question."
+              const examUser = "Here are the exam questions:\n\n" + extractedQuestions + "\n\nWrite complete answers for every question now. For lists, write ALL items fully — never stop at just a heading:"
+              imageAnswer = await generateCodeWithGemini(examSystem, examUser, 8000)
+              console.log("[EXAM] Gemini answered:", imageAnswer?.length || 0, "chars")
+            } catch(gemExamErr) {
+              console.warn("[EXAM] Gemini failed, trying Groq:", gemExamErr.message)
+              try {
+                const groqAnswerResp = await groq.chat.completions.create({
+                  model: "llama-3.3-70b-versatile",
+                  max_tokens: 6000,
+                  temperature: 0.3,
+                  messages: [
+                    { role: "system", content: "Write exam answers. 1 mark=2-3 lines, 2 marks=4-5 lines, 4 marks=8-10 lines, 10 marks=20-25 lines. Complete all lists fully." },
+                    { role: "user", content: "Questions:\n" + extractedQuestions + "\n\nWrite full answers:" }
+                  ]
+                })
+                imageAnswer = groqAnswerResp.choices?.[0]?.message?.content || ""
+              } catch(groqErr) {
+                console.warn("[EXAM] Groq also failed:", groqErr.message)
+              }
+            }
           }
         } catch(twoStepErr) { console.warn("[EXAM] Two-step failed:", twoStepErr.message) }
       }
