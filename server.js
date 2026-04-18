@@ -2170,6 +2170,77 @@ async function callOpenRouter(systemPrompt, userMessage, maxTokens) {
 }
 // ── END OPENROUTER FALLBACK ─────────────────────────────────────────────
 
+// ── AUTO-COMPLETE INCOMPLETE LISTS ─────────────────────────────────────
+// Detects "Duties are:" followed by nothing, asks AI to fill it in
+async function autoCompleteIncomplete(text, sysPrompt, userMsg) {
+  if (!text || text.length < 100) return text
+  
+  // Find lines ending with colon that are followed by blank line or new heading
+  const lines = text.split("\n")
+  const incompleteHeadings = []
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim()
+    if (!line.endsWith(":")) continue
+    // Check if next non-blank line is empty or starts with number (new heading)
+    let nextLine = ""
+    for (let j = i + 1; j < lines.length && j < i + 3; j++) {
+      const t = lines[j].trim()
+      if (t.length === 0) continue
+      nextLine = t
+      break
+    }
+    // If next line starts with digit (new question) or is empty, this heading has no content
+    if (!nextLine || /^\d+[.\s]/.test(nextLine) || nextLine.length < 20 || nextLine.endsWith(":")) {
+      incompleteHeadings.push(line)
+    }
+  }
+  
+  if (incompleteHeadings.length === 0) return text
+  
+  console.log("[AUTO-COMPLETE] Found", incompleteHeadings.length, "incomplete lists:", incompleteHeadings.slice(0, 3))
+  
+  // Ask Gemini to fill in the missing lists
+  try {
+    const fillPrompt = "The previous answer has empty sections. For EACH of these headings, write 4-5 complete bullet points with real content:\n\n" + 
+      incompleteHeadings.map((h, i) => (i+1) + ". " + h).join("\n") +
+      "\n\nFormat your response exactly like this:\n" +
+      incompleteHeadings[0] + "\n- [complete bullet 1]\n- [complete bullet 2]\n- [complete bullet 3]\n- [complete bullet 4]\n\n" +
+      "Write all items fully. The original user question was: " + userMsg.substring(0, 500)
+    
+    const filled = await generateCodeWithGemini("You fill in missing content for exam answers. Always write 4-5 complete bullet points for each heading.", fillPrompt, 4000)
+    
+    if (filled && filled.length > 100) {
+      // Replace each incomplete heading in original with heading + filled content
+      let result = text
+      const filledSections = filled.split(/\n(?=[A-Z][^\n]*:\s*$)/m)
+      
+      for (const heading of incompleteHeadings) {
+        // Find the filled section that matches this heading
+        const matchingFill = filledSections.find(s => s.trim().startsWith(heading))
+        if (matchingFill) {
+          // Replace heading-only line with heading + content
+          const headingRegex = new RegExp(heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*$", "gm")
+          result = result.replace(headingRegex, matchingFill.trim())
+        }
+      }
+      
+      // If we couldn't match individually, append all filled content at end
+      if (result === text) {
+        result = text + "\n\n" + filled
+      }
+      
+      console.log("[AUTO-COMPLETE] Filled", incompleteHeadings.length, "lists, new length:", result.length)
+      return result
+    }
+  } catch(e) {
+    console.warn("[AUTO-COMPLETE] Failed:", e.message)
+  }
+  
+  return text
+}
+// ── END AUTO-COMPLETE ────────────────────────────────────────────────────
+
 // ── MERMAID SYNTAX FIXER — fixes AI-generated broken mermaid ────────────────
 function fixMermaidSyntax(text) {
   // Find mermaid blocks and fix them
