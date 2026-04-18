@@ -681,11 +681,8 @@ if (typeof marked !== 'undefined') {
   renderer.heading = function(token, level) {
     const text = ms(token)
     const lvl  = (token && token.depth) || level || 1
-    const icons = { 1:"✨", 2:"📌", 3:"▶️" }
-    const sizes = { 1:"22px", 2:"18px", 3:"16px" }
-    return `<div style="display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-weight:700;font-size:${sizes[lvl]||"15px"};color:var(--text,#fff);">
-      <span>${icons[lvl]||"•"}</span><span>${text}</span>
-    </div>`
+    const sizes = { 1:"20px", 2:"17px", 3:"15px" }
+    return `<div style="margin:18px 0 10px;font-weight:700;font-size:${sizes[lvl]||"15px"};color:var(--text,#fff);line-height:1.4;">${text}</div>`
   }
 
   renderer.listitem = function(token) {
