@@ -2117,6 +2117,59 @@ app.post("/payment/stripe-session", authMiddleware, async (req, res) => {
 
 // CHAT ROUTE
 
+// ── OPENROUTER FALLBACK — works when Groq and Gemini both fail ─────────
+async function callOpenRouter(systemPrompt, userMessage, maxTokens) {
+  const apiKey = process.env.OPENROUTER_API_KEY
+  if (!apiKey) throw new Error("OPENROUTER_API_KEY not set")
+
+  // Free models on OpenRouter (as of 2026)
+  const modelsToTry = [
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "google/gemini-2.0-flash-exp:free",
+    "mistralai/mistral-7b-instruct:free",
+    "qwen/qwen-2-7b-instruct:free"
+  ]
+
+  for (const modelName of modelsToTry) {
+    try {
+      console.log("[OPENROUTER] Trying:", modelName)
+      const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + apiKey,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://datta-ai.com",
+          "X-Title": "Datta AI"
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage }
+          ],
+          max_tokens: Math.min(maxTokens || 4000, 4000),
+          temperature: 0.7
+        })
+      })
+      if (!resp.ok) {
+        const errText = await resp.text()
+        console.warn("[OPENROUTER]", modelName, "failed:", resp.status, errText.slice(0, 100))
+        continue
+      }
+      const data = await resp.json()
+      const text = data?.choices?.[0]?.message?.content || ""
+      if (text && text.length > 20) {
+        console.log("[OPENROUTER] SUCCESS model:", modelName, "length:", text.length)
+        return text
+      }
+    } catch(e) {
+      console.warn("[OPENROUTER]", modelName, "error:", e.message?.slice(0, 80))
+    }
+  }
+  throw new Error("All OpenRouter models failed")
+}
+// ── END OPENROUTER FALLBACK ─────────────────────────────────────────────
+
 // ── MERMAID SYNTAX FIXER — fixes AI-generated broken mermaid ────────────────
 function fixMermaidSyntax(text) {
   // Find mermaid blocks and fix them
@@ -2149,6 +2202,7 @@ function fixMermaidSyntax(text) {
     return "```mermaid\n" + fixed.join("\n") + "\n```"
   })
 }
+
 
 // ── MERMAID SYNTAX FIXER — fixes AI-generated broken mermaid ────────────────
 
@@ -3212,10 +3266,10 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
       }
     }
 
-    // If all Groq failed, try Gemini as last resort
+    // FALLBACK 1: Try Gemini if Groq all failed
     if (lastError && full === "" && process.env.GEMINI_API_KEY && !isImageFile) {
       try {
-        console.log("[FALLBACK] Trying Gemini since all Groq failed")
+        console.log("[FALLBACK 1] Trying Gemini since all Groq failed")
         var lastUserMsg = safeMessages[safeMessages.length - 1]?.content || message || ""
         if (typeof lastUserMsg !== "string") lastUserMsg = message || ""
         var geminiSystem = safeMessages[0]?.role === "system" ? safeMessages[0].content : ""
@@ -3225,10 +3279,30 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
           if (!res.writableEnded) res.write(geminiAnswer)
           full = geminiAnswer
           lastError = null
-          console.log("[FALLBACK] Gemini succeeded, chars:", geminiAnswer.length)
+          console.log("[FALLBACK 1] Gemini succeeded, chars:", geminiAnswer.length)
         }
       } catch(gemErr) {
-        console.warn("[FALLBACK] Gemini also failed:", gemErr.message)
+        console.warn("[FALLBACK 1] Gemini failed:", gemErr.message)
+      }
+    }
+
+    // FALLBACK 2: Try OpenRouter if both Groq and Gemini failed
+    if (lastError && full === "" && process.env.OPENROUTER_API_KEY && !isImageFile) {
+      try {
+        console.log("[FALLBACK 2] Trying OpenRouter since Groq and Gemini failed")
+        var orUserMsg = safeMessages[safeMessages.length - 1]?.content || message || ""
+        if (typeof orUserMsg !== "string") orUserMsg = message || ""
+        var orSystem = safeMessages[0]?.role === "system" ? safeMessages[0].content : ""
+        if (typeof orSystem !== "string") orSystem = ""
+        var orAnswer = await callOpenRouter(orSystem, orUserMsg, maxTok)
+        if (orAnswer && orAnswer.length > 50) {
+          if (!res.writableEnded) res.write(orAnswer)
+          full = orAnswer
+          lastError = null
+          console.log("[FALLBACK 2] OpenRouter succeeded, chars:", orAnswer.length)
+        }
+      } catch(orErr) {
+        console.warn("[FALLBACK 2] OpenRouter failed:", orErr.message)
       }
     }
 
