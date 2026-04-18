@@ -3142,14 +3142,59 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
         )
         const geminiAnswer = await generateCodeWithGemini(systemWithMemory, safeStr(finalUserContent), maxTok)
         if (geminiAnswer && geminiAnswer.length > 50) {
+          // AUTO-FILL empty headings before streaming
+          const lines = geminiAnswer.split("\n")
+          const emptyHeadings = []
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li].trim()
+            if (!line.endsWith(":") || line.length > 150) continue
+            let hasContent = false
+            for (let lj = li + 1; lj < Math.min(lines.length, li + 3); lj++) {
+              const next = lines[lj].trim()
+              if (next.startsWith("-") || next.startsWith("*") || next.startsWith("•")) { hasContent = true; break }
+              if (next.length > 40 && !next.endsWith(":") && !/^\d+[.)]/.test(next)) { hasContent = true; break }
+            }
+            if (!hasContent) emptyHeadings.push({ idx: li, heading: line })
+          }
+
+          if (emptyHeadings.length > 0) {
+            console.log("[AUTO-FILL]", emptyHeadings.length, "empty headings detected")
+            try {
+              const askList = emptyHeadings.map(h => h.heading).join("\n")
+              const fillResp = await generateCodeWithGemini(
+                "For each heading given, write 5 bullet points below it. Each bullet starts with dash and is a complete sentence.",
+                "Write 5 bullet points under each heading:\n" + askList + "\n\nContext: " + (message || "").substring(0, 400),
+                3000
+              )
+              if (fillResp && fillResp.length > 50) {
+                for (const item of emptyHeadings) {
+                  const pos = fillResp.indexOf(item.heading)
+                  if (pos >= 0) {
+                    const after = fillResp.substring(pos + item.heading.length)
+                    const bullets = []
+                    for (const rl of after.split("\n")) {
+                      const t = rl.trim()
+                      if (t.startsWith("-") || t.startsWith("*")) bullets.push("- " + t.replace(/^[-*]\s*/, ""))
+                      else if (bullets.length >= 3 && !t.startsWith("-")) break
+                      if (bullets.length >= 6) break
+                    }
+                    if (bullets.length >= 3) {
+                      lines[item.idx] = item.heading + "\n" + bullets.join("\n")
+                    }
+                  }
+                }
+                geminiAnswer = lines.join("\n")
+                console.log("[AUTO-FILL] Done, new length:", geminiAnswer.length)
+              }
+            } catch(fillErr) { console.warn("[AUTO-FILL] Failed:", fillErr.message) }
+          }
+
           if (!res.writableEnded) {
-            // Stream the answer in small chunks so frontend displays it properly
-            const chunkSize = 40
+            const chunkSize = 50
             for (let i = 0; i < geminiAnswer.length; i += chunkSize) {
               if (res.writableEnded) break
               res.write(geminiAnswer.substring(i, i + chunkSize))
-              // Small delay so chunks stream, not dump all at once
-              await new Promise(r => setTimeout(r, 15))
+              await new Promise(r => setTimeout(r, 10))
             }
             chat.messages.push({ role: "assistant", content: geminiAnswer })
             await chat.save()
