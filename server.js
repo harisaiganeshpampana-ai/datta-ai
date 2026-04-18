@@ -3096,28 +3096,21 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
       : isDattaCode
         ? [
             { model: "llama-3.3-70b-versatile",  tokens: _codeTok },
-            { model: "llama3-70b-8192",           tokens: _codeTok },
-            { model: "llama3-8b-8192",            tokens: _codeTok },
             { model: "llama-3.1-8b-instant",      tokens: 2000 }
           ]
       : isDattaThink
         ? [
             { model: "llama-3.3-70b-versatile",  tokens: maxTok },
-            { model: "llama3-70b-8192",           tokens: maxTok },
-            { model: "llama3-8b-8192",            tokens: maxTok }
+            { model: "llama-3.1-8b-instant",      tokens: 2000 }
           ]
       : (isDeepKnowledge || isCodeTask || isLargeTask || isExplainQuestion || isStructuredTopic)
         ? [
             { model: "llama-3.3-70b-versatile",  tokens: maxTok },
-            { model: "llama3-70b-8192",           tokens: maxTok },
-            { model: "llama3-8b-8192",            tokens: _chatTok },
             { model: "llama-3.1-8b-instant",      tokens: 2000 }
           ]
         : [
             { model: "llama-3.1-8b-instant",      tokens: maxTok },
-            { model: "llama-3.3-70b-versatile",  tokens: _chatTok },
-            { model: "llama3-70b-8192",           tokens: _chatTok },
-            { model: "llama3-8b-8192",            tokens: _chatTok }
+            { model: "llama-3.3-70b-versatile",  tokens: _chatTok }
           ]
 
     ;(function sanitizeGroqMessages() {
@@ -3216,6 +3209,26 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
           }
           continue
         }
+      }
+    }
+
+    // If all Groq failed, try Gemini as last resort
+    if (lastError && full === "" && process.env.GEMINI_API_KEY && !isImageFile) {
+      try {
+        console.log("[FALLBACK] Trying Gemini since all Groq failed")
+        var lastUserMsg = safeMessages[safeMessages.length - 1]?.content || message || ""
+        if (typeof lastUserMsg !== "string") lastUserMsg = message || ""
+        var geminiSystem = safeMessages[0]?.role === "system" ? safeMessages[0].content : ""
+        if (typeof geminiSystem !== "string") geminiSystem = ""
+        var geminiAnswer = await generateCodeWithGemini(geminiSystem, lastUserMsg, maxTok)
+        if (geminiAnswer && geminiAnswer.length > 50) {
+          if (!res.writableEnded) res.write(geminiAnswer)
+          full = geminiAnswer
+          lastError = null
+          console.log("[FALLBACK] Gemini succeeded, chars:", geminiAnswer.length)
+        }
+      } catch(gemErr) {
+        console.warn("[FALLBACK] Gemini also failed:", gemErr.message)
       }
     }
 
