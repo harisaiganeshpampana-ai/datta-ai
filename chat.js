@@ -1,5 +1,111 @@
 const SERVER = "https://datta-ai-server.onrender.com"
 
+// ── OFFLINE ANSWER BANK ─────────────────────────────────────────────────
+// Saves answers locally so they work offline next time
+const AnswerBank = {
+  DB_NAME: "datta_answer_bank",
+  MAX_ENTRIES: 500,
+
+  // Hash question to use as key
+  hash(q) {
+    const clean = q.toLowerCase().trim().replace(/\s+/g, " ").substring(0, 200)
+    let h = 0
+    for (let i = 0; i < clean.length; i++) {
+      h = ((h << 5) - h + clean.charCodeAt(i)) | 0
+    }
+    return "q_" + Math.abs(h)
+  },
+
+  // Save answer for a question
+  save(question, answer) {
+    try {
+      if (!question || !answer || answer.length < 20) return
+      const key = this.hash(question)
+      const entry = {
+        q: question.substring(0, 200),
+        a: answer.substring(0, 5000),
+        t: Date.now(),
+        lang: localStorage.getItem("datta_language") || "English"
+      }
+      localStorage.setItem(this.DB_NAME + "_" + key, JSON.stringify(entry))
+      this.cleanup()
+      console.log("[OFFLINE BANK] Saved:", question.substring(0, 40))
+    } catch(e) { console.warn("[OFFLINE BANK] Save failed:", e) }
+  },
+
+  // Find answer for a question (exact or similar match)
+  find(question) {
+    try {
+      if (!question) return null
+      const key = this.hash(question)
+      const exact = localStorage.getItem(this.DB_NAME + "_" + key)
+      if (exact) {
+        const entry = JSON.parse(exact)
+        console.log("[OFFLINE BANK] Exact match found")
+        return entry
+      }
+      // Fuzzy match — find similar questions
+      const clean = question.toLowerCase().trim()
+      const keywords = clean.split(/\s+/).filter(w => w.length > 3)
+      if (keywords.length < 2) return null
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i)
+        if (!k || !k.startsWith(this.DB_NAME + "_")) continue
+        try {
+          const entry = JSON.parse(localStorage.getItem(k))
+          const entryQ = entry.q.toLowerCase()
+          const matches = keywords.filter(w => entryQ.includes(w)).length
+          if (matches >= Math.min(3, keywords.length - 1)) {
+            console.log("[OFFLINE BANK] Fuzzy match:", entry.q.substring(0, 40))
+            return entry
+          }
+        } catch(e) {}
+      }
+      return null
+    } catch(e) { return null }
+  },
+
+  // Remove oldest entries if over limit
+  cleanup() {
+    const keys = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith(this.DB_NAME + "_")) keys.push(k)
+    }
+    if (keys.length <= this.MAX_ENTRIES) return
+    const entries = keys.map(k => {
+      try { return { k, t: JSON.parse(localStorage.getItem(k)).t || 0 } }
+      catch(e) { return { k, t: 0 } }
+    }).sort((a, b) => a.t - b.t)
+    const toDelete = entries.slice(0, entries.length - this.MAX_ENTRIES)
+    toDelete.forEach(e => localStorage.removeItem(e.k))
+  },
+
+  // Get stats
+  stats() {
+    let count = 0, size = 0
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith(this.DB_NAME + "_")) {
+        count++
+        size += (localStorage.getItem(k) || "").length
+      }
+    }
+    return { count, sizeKB: Math.round(size / 1024) }
+  },
+
+  // Check if offline
+  isOffline() {
+    return !navigator.onLine
+  }
+}
+
+window.AnswerBank = AnswerBank
+// ── END OFFLINE ANSWER BANK ──────────────────────────────────────────────
+
+
+
 // Global state — var so they're hoisted and available from HTML onclick
 var _ddOpen = false
 var _ddClickTime = 0
@@ -788,6 +894,27 @@ async function send() {
   window._stopTyping = false
   window._retryCount = 0
 
+  // OFFLINE MODE — check answer bank if no internet
+  if (window.AnswerBank && AnswerBank.isOffline()) {
+    const txtInput = document.getElementById("message")
+    const q = txtInput && txtInput.value.trim()
+    if (q) {
+      const cached = AnswerBank.find(q)
+      if (cached) {
+        hideWelcome()
+        document.body.classList.add("chat-started")
+        chatBox.innerHTML += `<div class="msg-row user-row"><div class="user-bubble">${q}</div></div>`
+        chatBox.innerHTML += `<div class="msg-row"><div class="aiContent"><div class="ai-bubble">${marked.parse(cached.a)}<div style="margin-top:10px;padding:6px 10px;background:rgba(16,163,127,0.1);border-radius:8px;font-size:11px;color:#10a37f;display:inline-block;">📦 Offline Answer · Saved ${new Date(cached.t).toLocaleDateString()}</div></div></div></div>`
+        txtInput.value = ""
+        chatBox.scrollTop = chatBox.scrollHeight
+        return
+      } else {
+        showToast("You are offline and this question is not saved. Connect to internet.")
+        return
+      }
+    }
+  }
+
   const input = document.getElementById("message")
   const filePreview = document.getElementById("filePreview")
 
@@ -1339,6 +1466,11 @@ async function send() {
     // Use fullText for saving (not displayed text)
     streamText = fullText
 
+    // Save to offline answer bank
+    if (window.AnswerBank && window.lastUserMsg && fullText) {
+      AnswerBank.save(window.lastUserMsg, fullText)
+    }
+
     // Render mermaid ONLY after full stream complete — not during typing
     setTimeout(async () => {
       // Wait for typing animation to finish
@@ -1595,9 +1727,21 @@ async function openChat(chatId) {
       // Show image icon if message was an image upload
       var isImageMsg = msgContent.startsWith("📷") || msgContent.includes("(📷") || msgContent.startsWith("[Image:")
       var displayContent = msgContent.replace(/\[Image: (.+?)\]/g, "📷 $1")
+      var escapedTxt = msgContent.replace(/'/g, "\\'").replace(/"/g, "&quot;")
       chatBox.innerHTML += `
         <div class="msg-row user-row">
           <div class="user-bubble" style="${isImageMsg ? "opacity:0.85;" : ""}">${displayContent}</div>
+          <div class="userActions">
+            <button class="uaBtn" title="Copy" onclick="navigator.clipboard.writeText(this.closest('.msg-row').querySelector('.user-bubble').innerText);showToast('Copied!')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            <button class="uaBtn" title="Edit & resend" onclick="editMessage(this)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="uaBtn" title="Retry" onclick="retryMessage(this)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+            </button>
+          </div>
         </div>
       `
     } else {
@@ -2719,6 +2863,7 @@ async function processVoiceQuery(query) {
       formData.append("style",    localStorage.getItem("datta_ai_style") || "Balanced")  // user-chosen style
       formData.append("ainame",   "Datta AI")
       formData.append("voice",    "true")
+      formData.append("voiceMode", "homework")  // Voice Homework Helper mode
       return formData
     }
 
