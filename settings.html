@@ -375,12 +375,131 @@ html, body {
         <div class="row-icon" style="background:rgba(245,158,11,0.12);">⭐</div>
         <div class="row-content">
           <div class="row-label">Upgrade Plan</div>
-          <div class="row-sub">Starter ₹49 · Standard ₹149 · Plus ₹299 · Pro ₹799</div>
+          <div class="row-sub">Starter ₹29 · Plus ₹299 · Pro ₹499 · Ultimate ₹799</div>
+        </div>
+        <div class="row-right"><span class="row-arrow">›</span></div>
+      </div>
+      <div class="row clickable" onclick="openFamilyModal()">
+        <div class="row-icon" style="background:rgba(139,92,246,0.12);">👨‍👩‍👧‍👦</div>
+        <div class="row-content">
+          <div class="row-label">Family Account</div>
+          <div class="row-sub" id="familyStatus">Share your plan with family members</div>
         </div>
         <div class="row-right"><span class="row-arrow">›</span></div>
       </div>
     </div>
   </div>
+
+  <!-- Family Account Modal -->
+  <div id="familyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:var(--bg2,#1a1a1a);border:1px solid var(--border,#333);border-radius:16px;padding:24px;max-width:420px;width:100%;max-height:90vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="margin:0;color:var(--text,#fff);font-size:18px;">👨‍👩‍👧‍👦 Family Account</h3>
+        <button onclick="closeFamilyModal()" style="background:none;border:none;color:var(--text2,#888);font-size:20px;cursor:pointer;">✕</button>
+      </div>
+      <div id="familyContent" style="color:var(--text2,#bbb);font-size:14px;line-height:1.6;">
+        Loading...
+      </div>
+    </div>
+  </div>
+
+  <script>
+  async function openFamilyModal() {
+    document.getElementById("familyModal").style.display = "flex"
+    document.getElementById("familyContent").innerHTML = "Loading..."
+    try {
+      const token = localStorage.getItem("datta_token")
+      const res = await fetch("https://datta-ai-server.onrender.com/family/members", {
+        headers: { "Authorization": "Bearer " + token }
+      })
+      const data = await res.json()
+      renderFamily(data)
+    } catch(e) {
+      document.getElementById("familyContent").innerHTML = "Error loading family data"
+    }
+  }
+
+  function renderFamily(data) {
+    const el = document.getElementById("familyContent")
+    if (!data.familyAllowed) {
+      el.innerHTML = `
+        <div style="padding:16px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:10px;text-align:center;">
+          <div style="font-size:28px;margin-bottom:8px;">🔒</div>
+          <div style="color:var(--text,#fff);font-weight:600;margin-bottom:6px;">Family Account requires Plus, Pro, or Ultimate plan</div>
+          <div style="font-size:12px;color:var(--text3,#888);margin-bottom:16px;">Share your subscription with up to 5 family members</div>
+          <a href="pricing.html" style="display:inline-block;padding:10px 20px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;border-radius:10px;text-decoration:none;font-weight:600;font-size:13px;">Upgrade Now</a>
+        </div>`
+      return
+    }
+
+    const members = data.members || []
+    const slotsLeft = data.maxMembers - members.length
+    el.innerHTML = `
+      <div style="margin-bottom:14px;padding:10px 14px;background:rgba(16,163,127,0.08);border:1px solid rgba(16,163,127,0.25);border-radius:10px;font-size:12px;color:#10a37f;">
+        ✓ Your ${data.plan.toUpperCase()} plan — ${members.length}/${data.maxMembers} members added
+      </div>
+
+      <div style="margin-bottom:16px;">
+        ${members.length === 0 ? '<div style="padding:14px;text-align:center;color:var(--text3,#888);font-size:13px;">No family members yet</div>' : members.map(m => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg3,#222);border-radius:8px;margin-bottom:6px;">
+            <div>
+              <div style="color:var(--text,#fff);font-size:13px;font-weight:500;">${m.name || m.email}</div>
+              <div style="color:var(--text3,#888);font-size:11px;">${m.email}</div>
+            </div>
+            <button onclick="removeMember('${m.userId}')" style="padding:4px 10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;color:#ef4444;font-size:11px;cursor:pointer;">Remove</button>
+          </div>
+        `).join('')}
+      </div>
+
+      ${slotsLeft > 0 ? `
+        <div style="border-top:1px solid var(--border,#333);padding-top:14px;">
+          <div style="font-size:12px;color:var(--text2,#bbb);margin-bottom:8px;">Add family member by email:</div>
+          <div style="display:flex;gap:8px;">
+            <input id="newMemberEmail" type="email" placeholder="family@email.com" style="flex:1;padding:10px 12px;background:var(--bg3,#222);border:1px solid var(--border,#333);border-radius:8px;color:var(--text,#fff);font-size:13px;" />
+            <button onclick="addMember()" style="padding:10px 16px;background:#10a37f;border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer;font-size:13px;">Add</button>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--text3,#888);">They must already have a Datta AI account (free)</div>
+        </div>
+      ` : '<div style="padding:10px;text-align:center;color:var(--text3,#888);font-size:12px;">Maximum members reached</div>'}
+    `
+  }
+
+  async function addMember() {
+    const email = document.getElementById("newMemberEmail").value.trim()
+    if (!email) return
+    try {
+      const token = localStorage.getItem("datta_token")
+      const res = await fetch("https://datta-ai-server.onrender.com/family/add-member", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ email })
+      })
+      const data = await res.json()
+      if (data.success) {
+        openFamilyModal()  // refresh
+      } else {
+        alert(data.error || "Could not add member")
+      }
+    } catch(e) { alert("Error: " + e.message) }
+  }
+
+  async function removeMember(memberId) {
+    if (!confirm("Remove this family member?")) return
+    try {
+      const token = localStorage.getItem("datta_token")
+      await fetch("https://datta-ai-server.onrender.com/family/remove-member", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ memberId })
+      })
+      openFamilyModal()
+    } catch(e) { alert("Error: " + e.message) }
+  }
+
+  function closeFamilyModal() {
+    document.getElementById("familyModal").style.display = "none"
+  }
+  </script>
 
   <!-- Appearance -->
   <div class="section">
