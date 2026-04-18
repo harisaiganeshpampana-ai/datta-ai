@@ -250,7 +250,8 @@ function safeContent(c) {
     c = c.replace(/```MERMAID/gi, "```mermaid")
     c = c.replace(/backtick-backtick-backtick\s*mermaid/gi, "```mermaid")
     c = c.replace(/backtick-backtick-backtick/gi, "```")
-    return c.split("[object Object]").join("").split("[object object]").join("").split("[Object Object]").join("").trim()
+    // Remove [object Object] artifacts but DO NOT trim — preserves whitespace between chunks
+    return c.split("[object Object]").join("").split("[object object]").join("").split("[Object Object]").join("")
   }
   if (typeof c === "number" || typeof c === "boolean") return String(c)
   if (Array.isArray(c)) {
@@ -1442,11 +1443,14 @@ async function send() {
         const parts = chunk.split("CHATID")
         if (parts[0]) fullText += safeContent(parts[0])
         currentChatId = (parts[1] || "").trim()
-        // Stream is complete — signal typing loop
+        console.log("[STREAM] CHATID received, fullText length:", fullText.length)
         typingDone = true
       } else {
         const cleanChunk = safeContent(chunk)
-        if (cleanChunk.trim()) fullText += cleanChunk
+        if (cleanChunk.length > 0) {
+          fullText += cleanChunk
+          console.log("[STREAM] chunk received, total:", fullText.length)
+        }
       }
     }
 
