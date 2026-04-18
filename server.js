@@ -245,7 +245,7 @@ async function generateCodeWithGemini(systemPrompt, userPrompt, maxTokens) {
           parts: [{ text: systemPrompt + "\n\n" + userPrompt }]
         }],
         generationConfig: {
-          maxOutputTokens: Math.min(maxTokens || 4096, 4096),
+          maxOutputTokens: Math.min(maxTokens || 8192, 8192),
           temperature: 0.4
         }
       }
@@ -2796,6 +2796,16 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var isVoiceHomework = req.body.voiceMode === "homework" || req.body.voiceMode === "true"
     if (isVoiceHomework) console.log("[VOICE HOMEWORK] Active")
     
+    // STUDENT MODE — route to Gemini (better for education)
+    var isStudentQuestion = message && [
+      "question paper","exam","exam ready","marks","mid ","semester","unit test",
+      "textbook","syllabus","jee","neet","upsc","gate","tspsc","appsc","ssc",
+      "class 10","class 11","class 12","board exam","ncert","state board",
+      "important questions","model paper","previous year","pyq",
+      "bsc","btech","mtech","mba","bcom","ba ","msc","phd",
+      "homework","assignment","doubt","explain this","solve this"
+    ].some(k => message.toLowerCase().includes(k))
+    
     var isExplainQuestion = !isProblemSolving && (isNarrativeRequest || isCurrentAffairs || isGKHistory || isStructuredTopic || ["what is","what are","what does","what do","why is","why does","why do","how does","how do","explain","tell me about","define","describe","difference between","vs ","versus","when to use","should i use","pros and cons","advantages","disadvantages","history of","who created","who made","full form","meaning of","importance of","role of","function of","types of","examples of","causes of","effects of","impact of","significance of"].some(k => msgLower.includes(k)))
     var isCodeTask = !isExplainQuestion && ["build","create","write","make","code","website","app","script","program","fix","debug","update","improve","implement","develop","generate","show me how to","give me code","example code","sample code","snippet"].some(k => msgLower.includes(k))
 
@@ -3047,13 +3057,23 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
       }
     }, 15000)
 
-    if (isDattaCode && process.env.GEMINI_API_KEY && !isImageFile) {
+    // Use Gemini 2.5 Pro for: Datta Code, explain questions, question papers, large tasks
+    var useGemini = process.env.GEMINI_API_KEY && !isImageFile && (
+      isDattaCode || isExplainQuestion || isLargeTask || isDeepKnowledge || isStructuredTopic
+    )
+    if (useGemini) {
       try {
-        const geminiCode = await generateCodeWithGemini(systemWithMemory, safeStr(finalUserContent), maxTok)
-        if (geminiCode && geminiCode.length > 100) {
+        console.log("[GEMINI PRIMARY] Using Gemini for:", 
+          isDattaCode ? "Datta Code" : 
+          isExplainQuestion ? "Explain Question" : 
+          isLargeTask ? "Large Task" :
+          isDeepKnowledge ? "Deep Knowledge" : "Structured Topic"
+        )
+        const geminiAnswer = await generateCodeWithGemini(systemWithMemory, safeStr(finalUserContent), maxTok)
+        if (geminiAnswer && geminiAnswer.length > 50) {
           if (!res.writableEnded) {
-            res.write(geminiCode)
-            chat.messages.push({ role: "assistant", content: geminiCode })
+            res.write(geminiAnswer)
+            chat.messages.push({ role: "assistant", content: geminiAnswer })
             await chat.save()
             res.write("CHATID" + chat._id)
             res.end()
@@ -3061,8 +3081,8 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
           if (typeof cleanupRequest === "function") cleanupRequest()
           return
         }
-      } catch(gemCodeErr) {
-        console.warn("[DATTA CODE] Gemini failed:", gemCodeErr.message, "— using Groq")
+      } catch(gemErr) {
+        console.warn("[GEMINI PRIMARY] Failed:", gemErr.message, "— falling back to Groq")
       }
     }
 
