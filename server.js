@@ -425,16 +425,25 @@ const Chat = mongoose.model("Chat", ChatSchema)
 const SubscriptionSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   plan: { type: String, default: "free" },
-  previousPlan: { type: String, default: "free" },   // for ultra-mini revert
+  previousPlan: { type: String, default: "free" },
   period: { type: String, default: "monthly" },
   paymentId: String,
   orderId: String,
   method: String,
   startDate: { type: Date, default: Date.now },
   endDate: Date,
-  ultraMiniExpiry: Date,                              // ultra-mini 24h expiry
-  extraMessages: { type: Number, default: 0 },        // bonus messages from ultra-mini
-  active: { type: Boolean, default: true }
+  ultraMiniExpiry: Date,
+  extraMessages: { type: Number, default: 0 },
+  active: { type: Boolean, default: true },
+  // FAMILY ACCOUNT — owner shares plan with up to 4 family members
+  familyMembers: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    name: String,
+    email: String,
+    addedAt: { type: Date, default: Date.now }
+  }],
+  isFamilyPlan: { type: Boolean, default: false },
+  familyOwnerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" }  // if this user is a member, not owner
 })
 const Subscription = mongoose.model("Subscription", SubscriptionSchema)
 
@@ -1757,10 +1766,107 @@ app.delete("/auth/delete-account", authMiddleware, async (req, res) => {
 })
 
 // SUBSCRIPTION ROUTES
+// ── FAMILY ACCOUNT ROUTES ──────────────────────────────────────────────
+app.get("/family/members", authMiddleware, async (req, res) => {
+  try {
+    const sub = await Subscription.findOne({ userId: req.user.id, active: true })
+    if (!sub) return res.json({ members: [], isOwner: false, isFamilyPlan: false })
+
+    // Check eligibility — only plus/pro/ultimate can use family
+    const familyAllowed = ["plus", "pro", "ultimate"].includes(sub.plan)
+    res.json({
+      members: sub.familyMembers || [],
+      isOwner: true,
+      isFamilyPlan: sub.isFamilyPlan || false,
+      plan: sub.plan,
+      familyAllowed,
+      maxMembers: sub.plan === "ultimate" ? 5 : sub.plan === "pro" ? 4 : 3
+    })
+  } catch(e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.post("/family/add-member", authMiddleware, async (req, res) => {
+  try {
+    const { email } = req.body
+    if (!email) return res.status(400).json({ error: "Email required" })
+
+    const sub = await Subscription.findOne({ userId: req.user.id, active: true })
+    if (!sub) return res.status(403).json({ error: "No active subscription" })
+
+    if (!["plus", "pro", "ultimate"].includes(sub.plan)) {
+      return res.status(403).json({ error: "Family Account needs Plus, Pro, or Ultimate plan" })
+    }
+
+    const maxMembers = sub.plan === "ultimate" ? 5 : sub.plan === "pro" ? 4 : 3
+    if ((sub.familyMembers || []).length >= maxMembers) {
+      return res.status(403).json({ error: "Maximum " + maxMembers + " family members reached" })
+    }
+
+    // Find user by email
+    const memberUser = await User.findOne({ email: email.toLowerCase().trim() })
+    if (!memberUser) return res.status(404).json({ error: "User not found. They must sign up first." })
+
+    if (memberUser._id.toString() === req.user.id) {
+      return res.status(400).json({ error: "You cannot add yourself" })
+    }
+
+    // Check if already added
+    if ((sub.familyMembers || []).some(m => m.userId.toString() === memberUser._id.toString())) {
+      return res.status(400).json({ error: "Already added to family" })
+    }
+
+    sub.familyMembers = sub.familyMembers || []
+    sub.familyMembers.push({
+      userId: memberUser._id,
+      name: memberUser.username || memberUser.email,
+      email: memberUser.email
+    })
+    sub.isFamilyPlan = true
+    await sub.save()
+
+    console.log("[FAMILY] Added", email, "to family of", req.user.id)
+    res.json({ success: true, member: { email: memberUser.email, name: memberUser.username } })
+  } catch(e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.post("/family/remove-member", authMiddleware, async (req, res) => {
+  try {
+    const { memberId } = req.body
+    const sub = await Subscription.findOne({ userId: req.user.id, active: true })
+    if (!sub) return res.status(404).json({ error: "No subscription" })
+
+    sub.familyMembers = (sub.familyMembers || []).filter(m => m.userId.toString() !== memberId)
+    if (sub.familyMembers.length === 0) sub.isFamilyPlan = false
+    await sub.save()
+
+    res.json({ success: true })
+  } catch(e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+// ── END FAMILY ACCOUNT ROUTES ──────────────────────────────────────────
+
 app.get("/payment/subscription", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id
-    const sub = await Subscription.findOne({ userId, active: true })
+    let sub = await Subscription.findOne({ userId, active: true })
+
+    // FAMILY ACCOUNT — if user is a family member, use owner's subscription
+    if (!sub) {
+      const familySub = await Subscription.findOne({
+        "familyMembers.userId": userId,
+        active: true,
+        isFamilyPlan: true
+      })
+      if (familySub) {
+        sub = familySub
+        console.log("[FAMILY] User", userId, "using family plan from", familySub.userId)
+      }
+    }
     let plan = sub ? sub.plan : "free"
 
     // Auto-expire ultra-mini if 24h passed
@@ -2632,6 +2738,10 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "ecg","eeg","mri","ct scan","ultrasound","x-ray","chemistry","physics","biology",
       "engineering","circuit","system","device","machine","equipment","experiment","lab"
     ].some(k => msgLower.includes(k))
+    // ── VOICE HOMEWORK HELPER ──
+    var isVoiceHomework = req.body.voiceMode === "homework" || req.body.voiceMode === "true"
+    if (isVoiceHomework) console.log("[VOICE HOMEWORK] Active")
+    
     var isExplainQuestion = !isProblemSolving && (isNarrativeRequest || isCurrentAffairs || isGKHistory || isStructuredTopic || ["what is","what are","what does","what do","why is","why does","why do","how does","how do","explain","tell me about","define","describe","difference between","vs ","versus","when to use","should i use","pros and cons","advantages","disadvantages","history of","who created","who made","full form","meaning of","importance of","role of","function of","types of","examples of","causes of","effects of","impact of","significance of"].some(k => msgLower.includes(k)))
     var isCodeTask = !isExplainQuestion && ["build","create","write","make","code","website","app","script","program","fix","debug","update","improve","implement","develop","generate","show me how to","give me code","example code","sample code","snippet"].some(k => msgLower.includes(k))
 
@@ -2842,7 +2952,7 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
     var isNodeTask = !isExplainQuestion && ["node.js","nodejs","express","npm","require(","server.js","mongodb","mongoose","dotenv","process.env","package.json"].some(k => msgLower.includes(k))
     var isFrontendTask = ["html","css","website","webpage","landing page","portfolio","frontend"].some(k => msgLower.includes(k)) && !isNodeTask
 
-    var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + (isExplainQuestion ? "\n\nYou are answering exam questions. You MUST follow this format for EVERY question:\n\nFor each question write like this example:\n\n**1. Duties and Liabilities of a Partner**\n\n**Duties of a Partner:**\n- **Duty to be Just and Faithful:** Every partner must act honestly and in good faith with other partners.\n- **Duty to Render Accounts:** A partner must maintain proper accounts and share them with other partners.\n- **Duty to Work Diligently:** Partners must work actively for the benefit of the firm.\n- **Duty Not to Compete:** A partner cannot run a competing business without consent of other partners.\n\n**Liabilities of a Partner:**\n- **Unlimited Liability:** Partners are personally liable for all debts of the firm.\n- **Joint and Several Liability:** Each partner is liable both jointly and individually for firm debts.\n- **Liability for Wrongful Acts:** If one partner causes loss, all partners are equally liable.\n\n**Example:** If ABC firm borrows ₹10 lakhs and cannot repay, creditors can recover from partners personal assets like house or savings.\n\n---\n\nNow follow this EXACT same format for every question. NEVER write a heading with colon and leave it empty. ALWAYS write the actual content immediately after every heading. Write complete bullet points with full explanation for each point. Add a real Indian example for every answer." : isCodeTask ? "\n\nYou are answering a coding question. Write COMPLETE, RUNNABLE code. Never truncate. Never say 'rest remains the same'." : isStepByStep ? "\n\nSTEP-BY-STEP MODE: Give numbered steps ONE action each. End with 'Done? Tell me what you see.' NEVER give multiple steps at once." : "\n\nBe friendly, helpful, and human-like. Give complete clear answers.") + (searchContext ? "\n\nLIVE DATA from web search — use this to answer directly:\n" + searchContext + "\n\nEXTRACT specific facts, names, dates, numbers. Never write generic headings with empty content." : "") + langNote + styleNote + hardRules
+    var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + (isVoiceHomework ? "\n\nVOICE HOMEWORK MODE: Student is asking homework via voice. Write a spoken-friendly answer:\n- NO markdown, NO bullet points, NO headings, NO code blocks, NO asterisks\n- Keep it SHORT — 4-6 sentences maximum\n- Use simple words, speak like a friendly tutor\n- If question is in Telugu/Hindi/any Indian language, respond in SAME language naturally\n- Start with direct answer, then brief explanation with ONE example\n- End with: Any more doubts? Ask me anything!" : isExplainQuestion ? "\n\nYou are answering exam questions. You MUST follow this format for EVERY question:\n\nFor each question write like this example:\n\n**1. Duties and Liabilities of a Partner**\n\n**Duties of a Partner:**\n- **Duty to be Just and Faithful:** Every partner must act honestly and in good faith with other partners.\n- **Duty to Render Accounts:** A partner must maintain proper accounts and share them with other partners.\n- **Duty to Work Diligently:** Partners must work actively for the benefit of the firm.\n- **Duty Not to Compete:** A partner cannot run a competing business without consent of other partners.\n\n**Liabilities of a Partner:**\n- **Unlimited Liability:** Partners are personally liable for all debts of the firm.\n- **Joint and Several Liability:** Each partner is liable both jointly and individually for firm debts.\n- **Liability for Wrongful Acts:** If one partner causes loss, all partners are equally liable.\n\n**Example:** If ABC firm borrows ₹10 lakhs and cannot repay, creditors can recover from partners personal assets like house or savings.\n\n---\n\nNow follow this EXACT same format for every question. NEVER write a heading with colon and leave it empty. ALWAYS write the actual content immediately after every heading. Write complete bullet points with full explanation for each point. Add a real Indian example for every answer." : isCodeTask ? "\n\nYou are answering a coding question. Write COMPLETE, RUNNABLE code. Never truncate. Never say 'rest remains the same'." : isStepByStep ? "\n\nSTEP-BY-STEP MODE: Give numbered steps ONE action each. End with 'Done? Tell me what you see.' NEVER give multiple steps at once." : "\n\nBe friendly, helpful, and human-like. Give complete clear answers.") + (searchContext ? "\n\nLIVE DATA from web search — use this to answer directly:\n" + searchContext + "\n\nEXTRACT specific facts, names, dates, numbers. Never write generic headings with empty content." : "") + langNote + styleNote + hardRules
 
     var isVisionModel = (model === "meta-llama/llama-4-scout-17b-16e-instruct")
     var finalUserContent
