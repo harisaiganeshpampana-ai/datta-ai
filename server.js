@@ -2952,7 +2952,7 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
     var isNodeTask = !isExplainQuestion && ["node.js","nodejs","express","npm","require(","server.js","mongodb","mongoose","dotenv","process.env","package.json"].some(k => msgLower.includes(k))
     var isFrontendTask = ["html","css","website","webpage","landing page","portfolio","frontend"].some(k => msgLower.includes(k)) && !isNodeTask
 
-    var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + (isVoiceHomework ? "\n\nVOICE HOMEWORK MODE: Student is asking homework via voice. Write a spoken-friendly answer:\n- NO markdown, NO bullet points, NO headings, NO code blocks, NO asterisks\n- Keep it SHORT — 4-6 sentences maximum\n- Use simple words, speak like a friendly tutor\n- If question is in Telugu/Hindi/any Indian language, respond in SAME language naturally\n- Start with direct answer, then brief explanation with ONE example\n- End with: Any more doubts? Ask me anything!" : isExplainQuestion ? "\n\nAnswer every exam question with 4-6 bullet points. Each bullet is a FULL sentence with real content. Never stop at a heading or sub-heading alone.\n\nFOLLOW THIS EXACT FORMAT - copy the structure exactly:\n\n1. Duties and Liabilities of a Partner\n- Must act in good faith and for common benefit of the firm\n- Should not make secret profits from firm business\n- Must maintain proper accounts and share true information\n- Liable for firm debts jointly and severally\n- Responsible for own acts and acts of other partners\n\n2. Formation and Registration of Partnership\n- Formed by agreement called Partnership Deed between partners\n- Deed includes name, capital, profit sharing ratio and duties\n- Registration under Indian Partnership Act 1932 is optional but recommended\n- Application submitted to Registrar of Firms with firm details\n- Registration gives legal protection in disputes\n\nNow write answers for all questions in this exact pattern. Each answer needs 5 complete bullet points with real content. NEVER output just headings with colons like Duties: or Process: - always write the actual 5 bullet points below each heading." : isCodeTask ? "\n\nYou are answering a coding question. Write COMPLETE, RUNNABLE code. Never truncate. Never say 'rest remains the same'." : isStepByStep ? "\n\nSTEP-BY-STEP MODE: Give numbered steps ONE action each. End with 'Done? Tell me what you see.' NEVER give multiple steps at once." : "\n\nBe friendly, helpful, and human-like. Give complete clear answers.") + (searchContext ? "\n\nLIVE DATA from web search — use this to answer directly:\n" + searchContext + "\n\nEXTRACT specific facts, names, dates, numbers. Never write generic headings with empty content." : "") + langNote + styleNote + hardRules
+    var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + (isVoiceHomework ? "\n\nVOICE HOMEWORK MODE: Student is asking homework via voice. Write a spoken-friendly answer:\n- NO markdown, NO bullet points, NO headings, NO code blocks, NO asterisks\n- Keep it SHORT — 4-6 sentences maximum\n- Use simple words, speak like a friendly tutor\n- If question is in Telugu/Hindi/any Indian language, respond in SAME language naturally\n- Start with direct answer, then brief explanation with ONE example\n- End with: Any more doubts? Ask me anything!" : isExplainQuestion ? "\n\nYou write exam answers for Indian college students. Rules:\n1. Start your response directly with the first answer - NO preamble, NO I will provide the answers, NO Let me help you.\n2. For each numbered question, write the question title on one line, then 5 dash-bullet points below it, each bullet being a full sentence.\n3. Answer EVERY question in the list. If user gives 9 questions, you write 9 answers.\n4. Use plain text formatting only - no ** bold, no ## headings, no emoji.\n5. Separate each answer with one blank line.\n\nYour response must begin like this: 1. [question title] newline - [first bullet] and so on. Start writing the actual answer IMMEDIATELY in your first words." : isCodeTask ? "\n\nYou are answering a coding question. Write COMPLETE, RUNNABLE code. Never truncate. Never say 'rest remains the same'." : isStepByStep ? "\n\nSTEP-BY-STEP MODE: Give numbered steps ONE action each. End with 'Done? Tell me what you see.' NEVER give multiple steps at once." : "\n\nBe friendly, helpful, and human-like. Give complete clear answers.") + (searchContext ? "\n\nLIVE DATA from web search — use this to answer directly:\n" + searchContext + "\n\nEXTRACT specific facts, names, dates, numbers. Never write generic headings with empty content." : "") + langNote + styleNote + hardRules
 
     var isVisionModel = (model === "meta-llama/llama-4-scout-17b-16e-instruct")
     var finalUserContent
@@ -3159,9 +3159,25 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
           return { role: m.role, content: String(c || "[message]") }
         })
 
+        // For exam questions, inject partial assistant response to force continuation
+        var injectedMessages = safeMessages
+        if (isExplainQuestion && safeMessages.length > 0) {
+          var lastUser = safeMessages[safeMessages.length - 1]
+          if (lastUser && lastUser.role === "user" && typeof lastUser.content === "string") {
+            var userMsg = lastUser.content
+            // Check if user is asking multiple questions
+            var qMatches = userMsg.match(/\d+\s*[.)]/g)
+            if (qMatches && qMatches.length >= 2) {
+              injectedMessages = [...safeMessages, {
+                role: "assistant",
+                content: "1. "
+              }]
+            }
+          }
+        }
         stream = await groq.chat.completions.create({
           model: tryModel,
-          messages: safeMessages,
+          messages: injectedMessages,
           max_tokens: tryTokens,
           temperature: isDattaCode ? 0.3 : 0.7,
           stream: true,
