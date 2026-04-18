@@ -1326,6 +1326,15 @@ async function send() {
     const decoder = new TextDecoder()
     let streamText = ""
     let span = aiDiv.querySelector(".stream")
+    if (!span) {
+      console.error("[TYPING] No .stream span found — recreating")
+      const bubble = aiDiv.querySelector(".ai-bubble, .aiBubble")
+      if (bubble) {
+        bubble.innerHTML = '<span class="stream"></span>'
+        span = bubble.querySelector(".stream")
+      }
+    }
+    console.log("[TYPING] span element:", span ? "FOUND" : "MISSING")
 
     // Show "still working" indicator for large tasks after 8 seconds
     var stillWorkingTimer = null
@@ -1392,9 +1401,17 @@ async function send() {
         }
       }
 
-      // Final clean render — remove cursor
-      if (typingActive) {
-        span.innerHTML = processMermaidInHTML(marked.parse(safeContent(fullText.slice(0, displayedLen))))
+      // Final clean render — show FULL content not just typed portion
+      if (typingActive && span) {
+        const finalText = safeContent(fullText)
+        span.innerHTML = processMermaidInHTML(marked.parse(finalText))
+        console.log("[TYPING] Final render complete, length:", finalText.length)
+      } else if (!span) {
+        console.error("[TYPING] Cannot render — span is null!")
+        const bubble = aiDiv.querySelector(".ai-bubble, .aiBubble")
+        if (bubble) {
+          bubble.innerHTML = processMermaidInHTML(marked.parse(safeContent(fullText)))
+        }
       } else {
         // Stopped by user — show what was typed so far
         const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
