@@ -1,60 +1,24 @@
-// Datta AI Service Worker v7 — force fresh HTML, no update loops
-const CACHE = 'datta-ai-v7'
+// Datta AI Service Worker v8 — NO CACHE, pure passthrough
+// Fixes 404 refresh loop from old bad cache
 
 self.addEventListener('install', e => {
-  console.log('[SW] Installing v7')
+  console.log('[SW] v8 installing')
   self.skipWaiting()
 })
 
 self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.map(k => {
-        console.log('[SW] Deleting old cache:', k)
-        return caches.delete(k)
-      }))
-    ).then(() => {
-      console.log('[SW] Activated v7')
-      return self.clients.claim()
-    })
-  )
+  e.waitUntil((async () => {
+    // Wipe ALL caches
+    const keys = await caches.keys()
+    await Promise.all(keys.map(k => caches.delete(k)))
+    console.log('[SW] v8 cleared all caches')
+    await self.clients.claim()
+  })())
 })
 
-self.addEventListener('message', e => {
-  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting()
-})
-
+// Pass everything to network - no caching
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return
-  const url = new URL(e.request.url)
-
-  if (url.hostname !== location.hostname) return
-  if (url.pathname.startsWith('/chat')) return
-  if (url.pathname.startsWith('/payment')) return
-  if (url.pathname.startsWith('/auth')) return
-  if (url.pathname.startsWith('/api')) return
-  if (url.pathname.startsWith('/google')) return
-  if (url.pathname.startsWith('/stop')) return
-  if (url.pathname.startsWith('/family')) return
-
-  // HTML files — ALWAYS fresh, never cache
-  if (url.pathname.endsWith('.html') || url.pathname === '/' || url.pathname === '') {
-    e.respondWith(
-      fetch(e.request, { cache: 'no-store' }).catch(() => caches.match(e.request))
-    )
-    return
-  }
-
-  // Other assets — network first, cache fallback
-  e.respondWith(
-    fetch(e.request)
-      .then(res => {
-        if (res && res.ok && res.type === 'basic') {
-          const clone = res.clone()
-          caches.open(CACHE).then(c => c.put(e.request, clone))
-        }
-        return res
-      })
-      .catch(() => caches.match(e.request))
-  )
+  // Don't intercept - let browser handle natively
+  return
 })
