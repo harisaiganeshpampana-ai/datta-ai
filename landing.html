@@ -1,542 +1,1148 @@
-/* =====================================================
-   DATTA AI — MASTER LAYOUT v2
-   Only this file controls positioning.
-   ===================================================== */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Tool to Build Apps, Websites & Business Plans — Datta AI</title>
+<meta name="description" content="Build apps, websites, and business plans instantly with Datta AI. No coding. No confusion. Just describe what you need. Free to start.">
 
-*, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-body { display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+<meta property="og:title" content="Datta AI — Build Apps, Websites & Business Plans with AI">
+<meta property="og:description" content="No coding. No confusion. Just tell Datta AI what you need.">
+<meta property="og:url" content="https://datta-ai.com">
 
-/* ── TOPBAR ── */
-.topbar {
-  position: fixed; top: 0; left: 0; right: 0;
-  height: 56px; z-index: 1000;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 12px;
-  background: var(--bg2); border-bottom: 1px solid var(--border);
-}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-.menuBtn {
-  width: 34px; height: 34px; border-radius: 10px;
-  border: 1px solid var(--border); background: transparent;
-  color: var(--text2); display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: background 0.15s; flex-shrink: 0;
-}
-.menuBtn:hover { background: var(--bg3); }
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+</script>
 
-.tbBtn {
-  width: 34px; height: 34px; border-radius: 10px;
-  border: 1px solid var(--border); background: transparent;
-  color: var(--text2); display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: background 0.15s; flex-shrink: 0;
-}
-.tbBtn:hover { background: var(--bg3); }
-
-/* ── THEME SWITCHER ── */
-.topThemeSwitch {
-  display: flex; align-items: center; gap: 2px;
-  background: var(--bg3); border: 1px solid var(--border);
-  border-radius: 10px; padding: 3px;
-}
-.topThemeBtn {
-  padding: 4px 10px; border-radius: 7px; border: none;
-  background: transparent; color: var(--text3);
-  font-size: 12px; cursor: pointer; font-family: inherit;
-  transition: all 0.15s; white-space: nowrap;
-}
-.topThemeBtn:hover { background: var(--card); color: var(--text); }
-.topThemeBtn.active { background: var(--accent); color: #fff; font-weight: 600; }
-/* alias for theme buttons in HTML */
-.theme-btn { padding: 4px 10px; border-radius: 7px; border: none; background: transparent; color: var(--text3); font-size: 12px; cursor: pointer; font-family: inherit; transition: all 0.15s; white-space: nowrap; }
-.theme-btn:hover { background: var(--card); color: var(--text); }
-.theme-btn.active { background: var(--accent); color: #fff; font-weight: 600; }
-
-/* ── APP BODY ── */
-.app-body {
-  display: flex;
-  height: calc(100vh - 56px);
-  margin-top: 56px;
-  overflow: hidden;
-}
-
-/* ── SIDEBAR ── */
-.sidebar {
-  width: 260px;
-  flex-shrink: 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--bg2);
-  border-right: 1px solid var(--border);
-  transition: width 0.28s ease;
-  z-index: 90;
-}
-
-/* Desktop collapse */
-body.sidebar-collapsed .sidebar { width: 0; }
-
-/* ── SIDEBAR INNER ── */
-.sidebarTop { padding: 14px 10px 10px; flex-shrink: 0; }
-.sidebarBrand { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 10px; padding: 0 4px; letter-spacing: -0.3px; }
-
-.newChatBtn {
-  display: flex; align-items: center; gap: 8px;
-  width: 100%; padding: 9px 12px; border-radius: 10px;
-  border: 1px solid var(--border); background: var(--card);
-  color: var(--text2); font-size: 14px; font-weight: 500;
-  cursor: pointer; font-family: inherit; transition: background 0.15s;
-}
-.newChatBtn:hover { background: var(--bg3); color: var(--text); }
-
-.recentsLabel {
-  font-size: 11px; font-weight: 600; color: var(--text3);
-  letter-spacing: 0.8px; text-transform: uppercase;
-  padding: 10px 14px 4px;
-}
-
-.searchBox {
-  margin: 4px 8px 6px; padding: 8px 12px;
-  width: calc(100% - 16px); border-radius: 10px;
-  border: 1px solid var(--border); background: var(--input);
-  color: var(--text); font-size: 13px; font-family: inherit; outline: none;
-  transition: border-color 0.15s;
-}
-.searchBox:focus { border-color: var(--accent); }
-.searchBox::placeholder { color: var(--text3); }
-
-.history { flex: 1; overflow-y: auto; padding: 0 4px; }
-
-.chatItem {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 10px; border-radius: 10px;
-  cursor: pointer; transition: background 0.15s;
-  margin-bottom: 1px; position: relative;
-}
-.chatItem:hover { background: var(--bg3); }
-.chatItem.active { background: var(--bg3); }
-.chatTitle { flex: 1; font-size: 13px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.chatItem:hover .chatTitle, .chatItem.active .chatTitle { color: var(--text); }
-.chatIcon { flex-shrink: 0; color: var(--text3); }
-
-.deleteBtn {
-  opacity: 0; background: none; border: none;
-  color: var(--text3); cursor: pointer; padding: 2px 4px;
-  border-radius: 6px; display: flex; align-items: center;
-  transition: opacity 0.15s, color 0.15s; flex-shrink: 0;
-}
-.chatItem:hover .deleteBtn { opacity: 1; }
-.deleteBtn:hover { color: #ff6666; }
-
-.upgradeBtn {
-  margin: 6px 8px; padding: 10px 12px; border-radius: 12px;
-  border: 1px solid var(--border); background: var(--card);
-  display: flex; align-items: center; gap: 8px;
-  cursor: pointer; transition: background 0.15s; flex-shrink: 0;
-}
-.upgradeBtn:hover { background: var(--bg3); }
-
-.sidebarProfile {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; border-top: 1px solid var(--border); flex-shrink: 0;
-}
-.profileAvatar {
-  width: 32px; height: 32px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #fff; font-size: 13px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.profileInfo { flex: 1; min-width: 0; overflow: hidden; }
-.profileName { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.profileSub { font-size: 11px; color: var(--text3); }
-.profileSettings {
-  width: 28px; height: 28px; border-radius: 8px;
-  border: 1px solid var(--border); background: none; color: var(--text3);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: background 0.15s; flex-shrink: 0;
-}
-.profileSettings:hover { background: var(--bg3); color: var(--text); }
-
-/* ── MAIN ── */
-.main {
-  flex: 1; min-width: 0;
-  display: flex; flex-direction: column;
-  overflow: hidden; position: relative;
-  background: var(--bg);
-}
-
-/* ── CHAT WRAPPER ── */
-.chatWrapper {
-  flex: 1; width: 100%;
-  display: flex; flex-direction: column;
-  overflow: hidden; position: relative;
-}
-
-/* ── CHAT SCROLL AREA ── */
-.chat {
-  flex: 1; width: 100%;
-  overflow-y: auto; overflow-x: hidden;
-  display: flex; flex-direction: column; align-items: center;
-  padding: 24px 0 180px;
-}
-
-/* ── MESSAGE ROWS ── */
-.messageRow {
-  width: 100%; max-width: 860px;
-  padding: 0 20px; margin: 0 auto 2px;
-  display: flex; gap: 10px;
-}
-.messageRow.userRow { justify-content: flex-end; }
-
-.userBubble {
-  max-width: 72%; padding: 11px 16px;
-  border-radius: 18px 4px 18px 18px;
-  word-break: break-word; font-size: 15px; line-height: 1.6;
-  background: var(--bg3); border: 1px solid var(--border); color: var(--text);
-}
-.aiBubble {
-  max-width: 85%; padding: 12px 16px;
-  border-radius: 4px 18px 18px 18px;
-  word-break: break-word; font-size: 15px; line-height: 1.7;
-  background: var(--card); border: 1px solid var(--border); color: var(--text);
-}
-
-/* ── INPUT — ALWAYS CENTERED ── */
-.inputArea {
-  position: fixed !important;
-  bottom: 20px !important;
-  /* Math: center of (viewport minus sidebar) */
-  left: calc(260px + (100vw - 260px) / 2) !important;
-  transform: translateX(-50%) !important;
-  right: auto !important;
-  width: min(90%, 860px) !important;
-  z-index: 500 !important;
-  display: flex !important; flex-direction: column !important;
-  pointer-events: none !important;
-}
-.inputArea > * { pointer-events: all !important; }
-
-/* Collapsed sidebar → input re-centers */
-body.sidebar-collapsed .inputArea {
-  left: 50% !important;
-}
-
-.inputModelBar {
-  width: 100%; padding: 0 4px 8px;
-  display: flex; align-items: center;
-}
-
-.inputWrap {
-  width: 100%; border-radius: 16px; padding: 6px 8px 6px 14px;
-  display: flex; flex-direction: column;
-  background: var(--input); border: 1px solid var(--border);
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.inputWrap:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
-}
-
-.inputRow {
-  display: flex; align-items: center; gap: 8px;
-  min-height: 44px; width: 100%;
-}
-
-#message {
-  flex: 1; min-width: 0; height: 44px;
-  border: none; outline: none;
-  font-size: 15px; padding: 0 4px;
-  background: transparent; color: var(--text);
-  caret-color: var(--accent);
-}
-#message::placeholder { color: var(--text3); }
-
-.plusBtn, .micBtn, .actionMainBtn {
-  flex-shrink: 0; width: 36px; height: 36px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center; cursor: pointer;
-}
-.plusBtn { background: var(--card); border: 1px solid var(--border); color: var(--text2); }
-.micBtn  { background: var(--card); border: 1px solid var(--border); color: var(--text2); }
-
-/* ── WELCOME SCREEN ── */
-.welcomeScreen {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  padding: 0 24px 180px;
-  z-index: 2; pointer-events: none;
-}
-.welcomeScreen > * { pointer-events: all; }
-.chat-started .welcomeScreen { display: none !important; }
-.chat-started #suggestionChips,
-.chat-started .suggestionGrid { display: none !important; }
-
-.welcomeInner {
-  display: flex; flex-direction: column; align-items: center;
-  gap: 36px; width: 100%; max-width: 600px;
-}
-
-.welcomeHeading { text-align: center; }
-.welcomeTitle {
-  font-size: clamp(24px, 4vw, 34px); font-weight: 700;
-  letter-spacing: -0.5px; margin: 0 0 10px;
-  background: linear-gradient(135deg, var(--text) 30%, var(--accent));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
-.welcomeSub { font-size: 15px; color: var(--text3); margin: 0; }
-
-.suggestionGrid {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 10px; width: 100%;
-}
-
-.suggCard {
-  display: flex; flex-direction: column; gap: 8px;
-  padding: 16px; border-radius: 14px;
-  border: 1px solid var(--border); background: var(--card);
-  cursor: pointer; text-align: left; font-family: inherit;
-  transition: background 0.18s, border-color 0.18s, transform 0.18s;
-  min-height: 80px;
-}
-.suggCard:hover {
-  background: var(--bg3); border-color: var(--accent);
-  transform: translateY(-2px);
-}
-.suggIcon { font-size: 20px; }
-.suggText { font-size: 13px; color: var(--text2); line-height: 1.4; }
-
-/* ── SETTINGS MODAL ── */
-.settingsModal {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.75); z-index: 9999;
-  align-items: center; justify-content: center; padding: 20px;
-}
-.settingsModal.show { display: flex !important; }
-.modalBox {
-  background: var(--bg2); border: 1px solid var(--border);
-  border-radius: 20px; width: 480px; max-width: 95vw;
-  max-height: 88vh; overflow-y: auto;
-  display: flex; flex-direction: column;
-}
-.modalHeader {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
-}
-.modalTitle { font-size: 16px; font-weight: 600; color: var(--text); }
-.modalClose {
-  width: 30px; height: 30px; border-radius: 8px;
-  border: 1px solid var(--border); background: none; color: var(--text2);
-  cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
-  transition: background 0.15s;
-}
-.modalClose:hover { background: rgba(255,80,80,0.12); color: #ff6666; }
-
-.settingsTabs {
-  display: flex; gap: 0; border-bottom: 1px solid var(--border);
-  overflow-x: auto; flex-shrink: 0;
-}
-.sTab {
-  padding: 10px 14px; border: none; background: none;
-  color: var(--text3); font-size: 13px; cursor: pointer;
-  border-bottom: 2px solid transparent; white-space: nowrap;
-  transition: color 0.15s; font-family: inherit;
-}
-.sTab:hover { color: var(--text2); }
-.sTab.active { color: var(--accent); border-bottom-color: var(--accent); }
-.sTab.danger:hover { color: #ff6666; }
-
-.sTabContent { display: none; padding: 16px 20px; }
-.sTabContent.active { display: block; }
-
-.sSection { margin-bottom: 20px; }
-.sLabel { font-size: 12px; color: var(--text3); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px; }
-.sHint { font-size: 12px; color: var(--text3); margin-top: 4px; }
-.sRow { display: flex; gap: 8px; align-items: center; }
-.sInput {
-  width: 100%; padding: 10px 12px; border-radius: 10px;
-  border: 1px solid var(--border); background: var(--input);
-  color: var(--text); font-size: 14px; outline: none; font-family: inherit;
-  transition: border-color 0.15s;
-}
-.sInput:focus { border-color: var(--accent); }
-.sSelect {
-  width: 100%; padding: 10px 12px; border-radius: 10px;
-  border: 1px solid var(--border); background: var(--input);
-  color: var(--text); font-size: 14px; outline: none; font-family: inherit;
-}
-.sSaveBtn {
-  padding: 10px 18px; border-radius: 10px;
-  border: none; background: var(--accent); color: #fff;
-  font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
-  white-space: nowrap; transition: opacity 0.15s;
-}
-.sSaveBtn:hover { opacity: 0.85; }
-.settingsMsg { font-size: 13px; padding: 0 20px 8px; }
-
-.themeOptions { display: flex; gap: 8px; flex-wrap: wrap; }
-.themeBtn {
-  padding: 8px 16px; border-radius: 10px;
-  border: 1px solid var(--border); background: var(--card);
-  color: var(--text2); font-size: 13px; cursor: pointer; font-family: inherit;
-  transition: all 0.15s;
-}
-.themeBtn:hover { background: var(--bg3); color: var(--text); }
-.themeBtn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-
-.sRow .fontBtn {
-  flex: 1; padding: 8px; border-radius: 10px;
-  border: 1px solid var(--border); background: var(--card);
-  color: var(--text2); font-size: 13px; cursor: pointer; font-family: inherit;
-  transition: all 0.15s;
-}
-.fontBtn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-
-.sToggleRow { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
-.sToggleLabel { font-size: 14px; color: var(--text); }
-.sDangerBox { background: rgba(255,80,80,0.05); border: 1px solid rgba(255,80,80,0.15); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
-.sDangerTitle { font-size: 14px; font-weight: 600; color: #ff6666; margin-bottom: 6px; }
-.sDangerDesc { font-size: 13px; color: var(--text3); margin-bottom: 12px; }
-.sDangerBtn { padding: 9px 16px; border-radius: 10px; border: 1px solid rgba(255,80,80,0.4); background: rgba(255,80,80,0.1); color: #ff6666; font-size: 13px; cursor: pointer; font-family: inherit; transition: background 0.15s; }
-.sDangerBtn:hover { background: rgba(255,80,80,0.2); }
-
-/* Toggle switch */
-.toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
-.toggle input { opacity: 0; width: 0; height: 0; }
-.toggleSlider { position: absolute; inset: 0; background: var(--bg3); border-radius: 11px; cursor: pointer; transition: background 0.2s; border: 1px solid var(--border); }
-.toggleSlider::before { content: ""; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: var(--text3); top: 2px; left: 2px; transition: transform 0.2s, background 0.2s; }
-.toggle input:checked + .toggleSlider { background: var(--accent); border-color: var(--accent); }
-.toggle input:checked + .toggleSlider::before { transform: translateX(18px); background: #fff; }
-
-/* ── NOTES PANEL ── */
-#notesPanel {
-  position: fixed; top: 56px; right: -420px;
-  width: 380px; height: calc(100vh - 56px);
-  z-index: 995; display: flex; flex-direction: column;
-  background: var(--bg2); border-left: 1px solid var(--border);
-  transition: right 0.3s ease;
-}
-#notesPanel.open { right: 0; }
-body.notes-open .inputArea { left: calc(260px + (100vw - 260px - 380px) / 2) !important; }
-.notesTopBtn { display: none; }
-
-.notesPanelHeader { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.notesPanelTitle { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text); }
-.notesPanelBtn { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text2); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s; }
-.notesPanelBtn:hover { background: var(--bg3); }
-.notesPanelClose:hover { background: rgba(255,80,80,0.1); color: #ff6666; }
-.notesTextarea { flex: 1; background: transparent; border: none; outline: none; resize: none; padding: 16px; font-size: 14px; line-height: 1.7; color: var(--text); font-family: inherit; caret-color: var(--accent); }
-.notesTextarea::placeholder { color: var(--text3); }
-.notesPanelFooter { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text3); flex-shrink: 0; }
-.notesSaved { color: var(--accent); }
-
-/* ── SIDEBAR OVERLAY ── */
-#sidebarOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 998; display: none; }
-
-/* ── SCROLL DOWN BTN ── */
-#scrollDownBtn { position: fixed; bottom: 100px; right: 20px; width: 36px; height: 36px; border-radius: 50%; background: var(--bg2); border: 1px solid var(--border); color: var(--text2); cursor: pointer; display: none; z-index: 100; align-items: center; justify-content: center; font-size: 16px; }
-#scrollDownBtn.show { display: flex; }
-
-/* ── TYPING CURSOR ── */
-.typingCursor { display: inline-block; width: 2px; height: 1em; background: var(--accent); margin-left: 2px; vertical-align: text-bottom; border-radius: 1px; animation: blink 0.6s step-end infinite; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-.stoppedMsg { font-size: 12px; color: rgba(220,100,100,0.65); margin-top: 6px; font-style: italic; }
-
-/* ── DYNAMIC SEND/STOP BUTTON ── */
-.actionMainBtn { border: none; }
-.actionMainBtn.send-state { background: linear-gradient(135deg, var(--accent), var(--accent2)); box-shadow: 0 2px 12px color-mix(in srgb, var(--accent) 35%, transparent); }
-.actionMainBtn.send-state:hover { transform: scale(1.06); }
-.actionMainBtn.stop-state { background: #1a0808; border: 1.5px solid rgba(255,80,80,0.5); animation: stopPulse 1.5s ease infinite; }
-.actionMainBtn.stop-state:hover { background: rgba(255,60,60,0.15); }
-@keyframes stopPulse { 0%,100%{box-shadow:0 0 0 0 rgba(255,80,80,0.4)} 50%{box-shadow:0 0 0 5px rgba(255,80,80,0)} }
-
-/* ── MODEL DROPDOWN ── */
-.modelDropItem { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 10px; cursor: pointer; transition: background 0.15s; margin-bottom: 2px; }
-.modelDropItem:hover, .modelDropItem.active { background: var(--bg3); }
-
-/* ── CODE BLOCKS ── */
-.codeBlockWrap { margin: 12px 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
-.codeBlockHeader { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: var(--bg3); border-bottom: 1px solid var(--border); }
-.codeLang { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; }
-.codeCopyBtn, .codeRunBtn { font-size: 11px; color: var(--text3); background: none; border: none; cursor: pointer; padding: 2px 6px; border-radius: 4px; font-family: inherit; }
-.codeCopyBtn:hover, .codeRunBtn:hover { color: var(--text); background: var(--card); }
-pre { margin: 0; padding: 14px; background: var(--bg); overflow-x: auto; }
-code { font-family: 'Courier New', monospace; font-size: 13px; color: var(--text); }
-
-/* ── AI ACTIONS ── */
-.aiContent { display: flex; flex-direction: column; max-width: 85%; gap: 4px; }
-.aiActions { display: flex; align-items: center; gap: 4px; opacity: 0; transition: opacity 0.2s; padding: 0 2px; }
-.messageRow:hover .aiActions { opacity: 1; }
-.actionBtn { width: 28px; height: 28px; border-radius: 8px; background: none; border: none; color: var(--text3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; }
-.actionBtn:hover { background: var(--bg3); color: var(--text); }
-.actionDivider { width: 1px; height: 14px; background: var(--border); margin: 0 2px; }
-.likeBtn.active { color: var(--accent); }
-.dislikeBtn.active { color: #ff6666; }
-
-/* User actions */
-.userActions { display: flex; gap: 4px; justify-content: flex-end; margin-top: 2px; opacity: 0; transition: opacity 0.2s; }
-.messageRow:hover .userActions { opacity: 1; }
-.uaBtn { width: 26px; height: 26px; border-radius: 8px; background: none; border: none; color: var(--text3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
-.uaBtn:hover { background: var(--bg3); color: var(--text); }
-
-/* Thinking block */
-.thinkingBlock { background: var(--card); border: 1px solid var(--border); border-radius: 4px 18px 18px 18px; padding: 14px 18px; max-width: 85%; }
-.thinkingHeader { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.thinkingOrb { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); animation: orbPulse 1.2s ease infinite; }
-@keyframes orbPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.85)} }
-.thinkingTitle { font-size: 13px; color: var(--text3); font-weight: 500; }
-.thinkingDots { display: flex; gap: 3px; }
-.thinkingDots span { width: 4px; height: 4px; border-radius: 50%; background: var(--text3); animation: dot 1.2s ease infinite; }
-.thinkingDots span:nth-child(2){animation-delay:.2s} .thinkingDots span:nth-child(3){animation-delay:.4s}
-@keyframes dot{0%,100%{opacity:0.3}50%{opacity:1}}
-.thinkStep { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text3); padding: 3px 0; }
-.thinkStepIcon { font-size: 14px; }
-.thinkStepLoader { margin-left: auto; font-size: 11px; }
-
-/* File preview chip */
-.filePreviewChip { display: flex; align-items: center; gap: 6px; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; font-size: 12px; color: var(--text2); }
-.filePreviewChip #clearFile { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 14px; }
-
-/* ═══════ TABLET 768–1024 ═══════ */
-@media (min-width: 768px) and (max-width: 1024px) {
-  .sidebar { width: 220px; }
-  .inputArea { left: calc(220px + (100vw - 220px) / 2) !important; width: min(92%, 720px) !important; }
-  .messageRow { max-width: 700px; }
-  .notesTopBtn { display: flex; }
-  #notesPanel { width: 300px; right: -320px; }
-  body.notes-open .inputArea { left: calc(220px + (100vw - 220px - 300px) / 2) !important; }
-  body.sidebar-collapsed .inputArea { left: 50% !important; }
-}
-
-/* ═══════ DESKTOP 1025+ ═══════ */
-@media (min-width: 1025px) {
-  .notesTopBtn { display: flex; }
-}
-@media (min-width: 1400px) {
-  .inputArea { width: min(88%, 900px) !important; }
-  .messageRow { max-width: 900px; }
-}
-
-/* ═══════ MOBILE <768 ═══════ */
-@media (max-width: 767px) {
-  .sidebar {
-    position: fixed; top: 56px; left: 0;
-    height: calc(100vh - 56px); width: 280px;
-    z-index: 999; transform: translateX(-100%);
-    transition: transform 0.28s ease;
-    border-right: 1px solid var(--border);
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg-1: #0f0f0f;
+    --bg-2: #141414;
+    --bg-3: #1a1a1a;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --text: #ffffff;
+    --text-2: #b8b8b8;
+    --text-3: #707070;
+    --accent: #00ff88;
+    --accent-hover: #00d971;
+    --accent-dim: rgba(0, 255, 136, 0.15);
+    --accent-soft: rgba(0, 255, 136, 0.08);
+    --display: 'Bricolage Grotesque', sans-serif;
+    --serif: 'Instrument Serif', Georgia, serif;
+    --mono: 'JetBrains Mono', monospace;
   }
-  .sidebar.open, .sidebar.show { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,0.4); }
-  body.sidebar-collapsed .sidebar { width: 280px; transform: translateX(-100%); }
 
-  .inputArea {
-    left: 50% !important; transform: translateX(-50%) !important;
-    width: 95% !important; bottom: 10px !important;
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--display);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
-  .messageRow { max-width: 100%; padding: 0 10px; }
-  .chat { padding-bottom: 150px; }
-  .welcomeScreen { padding: 0 14px 160px; }
-  .topThemeSwitch { display: none; }
-  #notesPanel { display: none; }
-  .notesTopBtn { display: none !important; }
-  body.notes-open .inputArea { left: 50% !important; }
-  body.sidebar-collapsed .inputArea { left: 50% !important; }
-}
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; border: none; }
+  ::selection { background: var(--accent); color: #000; }
+
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+  section { padding: 100px 0; position: relative; }
+
+  @media (max-width: 768px) { section { padding: 64px 0; } }
+
+  /* NAV */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 16px 0;
+    background: rgba(10, 10, 10, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    transition: transform 0.3s;
+  }
+
+  .nav-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    max-width: 1200px; margin: 0 auto; padding: 0 24px;
+  }
+
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--display); font-weight: 700; font-size: 20px;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-mark {
+    width: 32px; height: 32px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), #00d9ff);
+    display: flex; align-items: center; justify-content: center;
+    color: #000; font-weight: 800; font-size: 18px;
+  }
+
+  .logo b { color: var(--accent); }
+
+  .nav-cta {
+    padding: 10px 22px; background: var(--accent); color: #000;
+    border-radius: 100px; font-weight: 700; font-size: 14px;
+    transition: all 0.15s;
+  }
+  .nav-cta:hover { background: var(--accent-hover); transform: translateY(-1px); }
+
+  /* HERO */
+  .hero { padding: 160px 0 100px; position: relative; overflow: hidden; }
+
+  .hero::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 900px 600px at 80% 10%, rgba(0, 255, 136, 0.12), transparent 60%),
+      radial-gradient(ellipse 600px 400px at 10% 90%, rgba(0, 217, 255, 0.06), transparent 60%);
+    pointer-events: none;
+  }
+
+  .hero::after {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 800px 600px at center, black 20%, transparent 80%);
+    -webkit-mask-image: radial-gradient(ellipse 800px 600px at center, black 20%, transparent 80%);
+    pointer-events: none;
+  }
+
+  .hero-inner {
+    position: relative; z-index: 2;
+    max-width: 900px; margin: 0 auto; text-align: center;
+  }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 8px 18px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(0, 255, 136, 0.25);
+    border-radius: 100px; color: var(--accent);
+    font-size: 13px; font-weight: 600;
+    margin-bottom: 28px;
+  }
+
+  .pill-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.2); }
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--display);
+    letter-spacing: -2px; font-weight: 700; line-height: 1.05;
+  }
+
+  .hero h1 {
+    font-size: clamp(44px, 7vw, 80px);
+    margin-bottom: 24px;
+    animation: fadeUp 0.8s ease-out 0.1s both;
+  }
+
+  .hero h1 em {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, var(--accent) 0%, #00d9ff 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero p {
+    font-size: clamp(17px, 2vw, 22px); color: var(--text-2);
+    max-width: 620px; margin: 0 auto 40px; line-height: 1.5;
+    animation: fadeUp 0.8s ease-out 0.2s both;
+  }
+
+  .hero-ctas {
+    display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+    margin-bottom: 40px;
+    animation: fadeUp 0.8s ease-out 0.3s both;
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 16px 32px; border-radius: 100px;
+    font-size: 15px; font-weight: 700; letter-spacing: 0.2px;
+    transition: all 0.2s; white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--accent); color: #000;
+    box-shadow: 0 8px 30px rgba(0, 255, 136, 0.25);
+  }
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 255, 136, 0.35);
+  }
+
+  .btn-secondary {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border-strong);
+  }
+  .btn-secondary:hover { background: var(--bg-2); border-color: var(--accent); }
+
+  .btn-arrow { width: 16px; height: 16px; transition: transform 0.2s; }
+  .btn:hover .btn-arrow { transform: translateX(3px); }
+
+  .trust-line {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    color: var(--text-3); font-size: 14px;
+    animation: fadeUp 0.8s ease-out 0.4s both;
+  }
+
+  .avatars { display: flex; }
+  .avatars span {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid var(--bg);
+    background: linear-gradient(135deg, #00ff88, #00d9ff);
+    margin-left: -8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #000;
+  }
+  .avatars span:first-child { margin-left: 0; }
+  .avatars span:nth-child(2) { background: linear-gradient(135deg, #ff9955, #ff5580); }
+  .avatars span:nth-child(3) { background: linear-gradient(135deg, #5588ff, #aa55ff); }
+
+  .hero-preview {
+    position: relative; max-width: 900px;
+    margin: 60px auto 0; padding: 0 20px; z-index: 2;
+    animation: fadeUp 1s ease-out 0.5s both;
+  }
+
+  .preview-frame {
+    background: var(--bg-1);
+    border: 1px solid var(--border-strong);
+    border-radius: 16px; padding: 20px;
+    box-shadow: 0 20px 80px rgba(0, 0, 0, 0.5), 0 0 120px rgba(0, 255, 136, 0.08);
+  }
+
+  .preview-head { display: flex; gap: 6px; margin-bottom: 14px; }
+  .preview-head span { width: 10px; height: 10px; border-radius: 50%; background: var(--bg-3); }
+  .preview-head span:nth-child(1) { background: #ff5f57; }
+  .preview-head span:nth-child(2) { background: #febc2e; }
+  .preview-head span:nth-child(3) { background: #28c840; }
+
+  .preview-chat {
+    background: var(--bg); border-radius: 12px; padding: 24px;
+    min-height: 280px; font-family: var(--mono); font-size: 14px;
+  }
+
+  .msg-user {
+    background: var(--bg-2); padding: 14px 18px; border-radius: 14px;
+    margin-bottom: 16px; color: var(--text);
+    max-width: 80%; margin-left: auto;
+  }
+  .msg-user::before {
+    content: 'You'; display: block;
+    font-size: 11px; color: var(--text-3);
+    margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px;
+  }
+
+  .msg-ai { padding: 14px 18px; color: var(--text-2); max-width: 90%; }
+  .msg-ai::before {
+    content: '● Datta AI'; display: block;
+    font-size: 11px; color: var(--accent);
+    margin-bottom: 8px; text-transform: uppercase;
+    letter-spacing: 1px; font-weight: 700;
+  }
+
+  .typing-cursor {
+    display: inline-block; width: 8px; height: 14px;
+    background: var(--accent); animation: blink 1s infinite;
+    margin-left: 2px; vertical-align: middle;
+  }
+
+  @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+
+  /* SECTION HEAD */
+  .sec-head { text-align: center; max-width: 720px; margin: 0 auto 64px; }
+  .sec-label {
+    display: inline-block; color: var(--accent);
+    font-size: 13px; font-weight: 700; letter-spacing: 3px;
+    text-transform: uppercase; margin-bottom: 16px;
+  }
+  .sec-head h2 { font-size: clamp(32px, 5vw, 52px); margin-bottom: 16px; }
+  .sec-head h2 em {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    color: var(--accent);
+  }
+  .sec-head p { color: var(--text-2); font-size: 18px; line-height: 1.5; }
+
+  /* PROBLEM */
+  .problem {
+    background: var(--bg-1);
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+
+  .problem-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 20px; margin-bottom: 48px;
+  }
+
+  @media (max-width: 768px) { .problem-grid { grid-template-columns: 1fr; } }
+
+  .problem-card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 20px; padding: 32px 28px;
+  }
+
+  .problem-card .x {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: rgba(255, 80, 80, 0.1);
+    border: 1px solid rgba(255, 80, 80, 0.25);
+    display: flex; align-items: center; justify-content: center;
+    color: #ff6666; margin-bottom: 20px;
+  }
+
+  .problem-card h4 { font-size: 18px; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .problem-card p { color: var(--text-3); font-size: 15px; line-height: 1.5; }
+
+  .solution-line { text-align: center; padding: 40px 0 0; }
+  .solution-line h3 { font-size: clamp(28px, 4vw, 42px); margin-bottom: 8px; }
+  .solution-line h3 em {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    color: var(--accent);
+  }
+  .solution-line p { color: var(--text-2); font-size: 17px; }
+
+  /* FEATURES */
+  .features-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+  }
+  @media (max-width: 900px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 500px) { .features-grid { grid-template-columns: 1fr; } }
+
+  .feature {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 20px; padding: 32px 26px;
+    position: relative; overflow: hidden;
+    transition: all 0.25s;
+  }
+  .feature:hover {
+    border-color: var(--accent);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 255, 136, 0.08);
+  }
+  .feature::after {
+    content: ''; position: absolute; top: 0; right: 0;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, var(--accent-soft), transparent 70%);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .feature:hover::after { opacity: 1; }
+
+  .feature-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    background: var(--accent-dim);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px; color: var(--accent);
+    position: relative; z-index: 1;
+  }
+
+  .feature h4 { font-size: 19px; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .feature p { color: var(--text-2); font-size: 14px; line-height: 1.5; }
+
+  /* HOW */
+  .how {
+    background: var(--bg-1);
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  @media (max-width: 768px) { .steps { grid-template-columns: 1fr; gap: 16px; } }
+
+  .step {
+    background: var(--bg-2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 32px 28px;
+  }
+
+  .step-num {
+    font-family: var(--serif); font-size: 48px;
+    font-style: italic; font-weight: 400;
+    color: var(--accent); line-height: 1;
+    margin-bottom: 16px; letter-spacing: -2px;
+  }
+
+  .step h4 { font-size: 20px; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .step p { color: var(--text-2); font-size: 14px; line-height: 1.5; }
+
+  /* DEMO */
+  .demo-tabs {
+    display: flex; gap: 8px; justify-content: center;
+    margin-bottom: 32px; flex-wrap: wrap;
+  }
+
+  .demo-tab {
+    padding: 10px 20px; background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 100px; color: var(--text-2);
+    font-size: 14px; font-weight: 600; transition: all 0.2s;
+  }
+  .demo-tab.active {
+    background: var(--accent); color: #000; border-color: var(--accent);
+  }
+
+  .demo-frame {
+    background: var(--bg-1); border: 1px solid var(--border-strong);
+    border-radius: 20px; padding: 24px;
+    max-width: 960px; margin: 0 auto;
+    box-shadow: 0 20px 80px rgba(0, 0, 0, 0.4);
+  }
+
+  .demo-panel { display: none; }
+  .demo-panel.active { display: block; }
+
+  .demo-content {
+    background: var(--bg); border-radius: 14px; padding: 28px;
+    min-height: 360px; font-family: var(--mono); font-size: 13px;
+  }
+
+  .demo-prompt {
+    color: var(--text-3); margin-bottom: 16px;
+    padding: 12px 16px; background: var(--bg-2);
+    border-radius: 10px; border-left: 2px solid var(--accent);
+  }
+  .demo-prompt b { color: var(--text); }
+
+  .demo-output {
+    color: var(--text-2); line-height: 1.7; white-space: pre-wrap;
+  }
+  .demo-output .tag { color: #ff9955; }
+  .demo-output .key { color: var(--accent); }
+  .demo-output .str { color: #00d9ff; }
+  .demo-output .h { color: var(--text); font-weight: 600; }
+  .demo-output hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+  .sample-site {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 10px; padding: 24px; font-family: var(--display);
+  }
+  .sample-site-nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .sample-site-logo { font-weight: 800; font-size: 16px; }
+  .sample-site-menu { display: flex; gap: 16px; font-size: 13px; color: rgba(255,255,255,0.7); }
+  .sample-site-hero { padding: 30px 0; text-align: center; }
+  .sample-site-hero h3 { font-size: 28px; letter-spacing: -1px; margin-bottom: 8px; color: #fff; }
+  .sample-site-hero p { font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 16px; }
+  .sample-site-btn {
+    display: inline-block; padding: 10px 22px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white; border-radius: 100px;
+    font-size: 12px; font-weight: 700;
+  }
+
+  /* TESTIMONIALS */
+  .testimonials { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  @media (max-width: 768px) { .testimonials { grid-template-columns: 1fr; } }
+
+  .testi {
+    background: var(--bg-1); border: 1px solid var(--border);
+    border-radius: 20px; padding: 28px;
+  }
+
+  .testi-stars {
+    color: var(--accent); font-size: 14px;
+    margin-bottom: 12px; letter-spacing: 2px;
+  }
+
+  .testi-quote {
+    font-size: 16px; line-height: 1.5;
+    color: var(--text); margin-bottom: 20px;
+  }
+
+  .testi-author { display: flex; align-items: center; gap: 12px; }
+
+  .testi-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #00d9ff);
+    display: flex; align-items: center; justify-content: center;
+    color: #000; font-weight: 800; font-size: 16px;
+  }
+
+  .testi-name { font-weight: 700; font-size: 14px; }
+  .testi-role { font-size: 12px; color: var(--text-3); }
+
+  .stats {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 40px; margin-top: 80px;
+    padding: 40px; background: var(--bg-1);
+    border: 1px solid var(--border); border-radius: 24px;
+  }
+  @media (max-width: 768px) { .stats { grid-template-columns: 1fr; gap: 24px; padding: 28px; } }
+
+  .stat { text-align: center; }
+  .stat-num {
+    font-family: var(--serif); font-style: italic;
+    font-size: 54px; line-height: 1; color: var(--accent);
+    margin-bottom: 6px; letter-spacing: -2px;
+  }
+  .stat-label { color: var(--text-2); font-size: 14px; letter-spacing: 0.5px; }
+
+  /* PRICING */
+  .pricing {
+    background: var(--bg-1);
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+
+  .pricing-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 20px; max-width: 800px; margin: 0 auto;
+  }
+  @media (max-width: 700px) { .pricing-grid { grid-template-columns: 1fr; } }
+
+  .plan {
+    background: var(--bg-2); border: 1px solid var(--border);
+    border-radius: 24px; padding: 36px 32px;
+    position: relative;
+  }
+
+  .plan-pro {
+    background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 100%);
+    border: 1px solid var(--accent);
+    box-shadow: 0 20px 60px rgba(0, 255, 136, 0.12);
+  }
+
+  .plan-badge {
+    position: absolute; top: -12px; left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 16px; background: var(--accent);
+    color: #000; font-size: 11px; font-weight: 800;
+    letter-spacing: 1.5px; border-radius: 100px;
+  }
+
+  .plan-name {
+    font-size: 14px; color: var(--text-3);
+    letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 14px; font-weight: 700;
+  }
+
+  .plan-price { display: flex; align-items: baseline; gap: 6px; margin-bottom: 28px; }
+  .plan-price-amount {
+    font-size: 48px; font-weight: 800; letter-spacing: -2px;
+    font-family: var(--display);
+  }
+  .plan-price-per { color: var(--text-3); font-size: 14px; }
+
+  .plan-features { list-style: none; margin-bottom: 28px; }
+  .plan-features li {
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    color: var(--text-2); font-size: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .plan-features li:last-child { border-bottom: none; }
+  .plan-features li .check { width: 18px; height: 18px; flex-shrink: 0; color: var(--accent); }
+
+  .plan .btn { width: 100%; justify-content: center; padding: 14px 24px; }
+
+  /* FINAL CTA */
+  .final-cta {
+    position: relative; overflow: hidden;
+    background: var(--bg); padding: 120px 0;
+  }
+
+  .final-cta::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 800px 500px at 50% 50%, rgba(0, 255, 136, 0.18), transparent 70%);
+  }
+
+  .final-cta-inner {
+    position: relative; z-index: 2; text-align: center;
+    max-width: 720px; margin: 0 auto;
+  }
+
+  .final-cta h2 {
+    font-size: clamp(38px, 6vw, 68px);
+    margin-bottom: 20px; letter-spacing: -2.5px;
+  }
+
+  .final-cta h2 em {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    background: linear-gradient(135deg, var(--accent) 0%, #00d9ff 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .final-cta p { color: var(--text-2); font-size: 18px; margin-bottom: 36px; }
+
+  /* FOOTER */
+  footer {
+    background: var(--bg); border-top: 1px solid var(--border);
+    padding: 48px 0 32px;
+  }
+  .foot-inner {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 20px;
+  }
+  .foot-links { display: flex; gap: 24px; flex-wrap: wrap; }
+  .foot-links a { color: var(--text-3); font-size: 14px; transition: color 0.2s; }
+  .foot-links a:hover { color: var(--accent); }
+  .foot-copy { color: var(--text-3); font-size: 13px; }
+
+  /* STICKY MOBILE CTA */
+  .sticky-cta {
+    display: none; position: fixed;
+    bottom: 20px; left: 16px; right: 16px;
+    z-index: 99; padding: 16px 24px;
+    background: var(--accent); color: #000;
+    border-radius: 100px; font-weight: 800; font-size: 15px;
+    text-align: center; box-shadow: 0 10px 40px rgba(0, 255, 136, 0.4);
+    animation: stickyIn 0.4s ease-out;
+  }
+
+  @keyframes stickyIn {
+    from { transform: translateY(100px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  @media (max-width: 768px) { .sticky-cta.show { display: block; } }
+
+  .icon { width: 24px; height: 24px; stroke-width: 2; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#" class="logo">
+      <div class="logo-mark">D</div>
+      Datta<b>AI</b>
+    </a>
+    <a href="chat.html" class="nav-cta" onclick="trackClick('nav_cta')">Start Free</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap hero-inner">
+    <div class="pill">
+      <span class="pill-dot"></span>
+      New · AI Builder for India
+    </div>
+
+    <h1>Build Apps, Websites &amp;<br><em>Business Plans</em> Instantly<br>with AI</h1>
+
+    <p>No coding. No confusion. Just tell Datta AI what you need — get results in seconds.</p>
+
+    <div class="hero-ctas">
+      <a href="chat.html" class="btn btn-primary" onclick="trackClick('hero_primary_cta')">
+        Start Free Now
+        <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </a>
+      <a href="#demo" class="btn btn-secondary" onclick="trackClick('hero_demo_cta')">Try Demo</a>
+    </div>
+
+    <div class="trust-line">
+      <div class="avatars">
+        <span>R</span><span>P</span><span>A</span>
+      </div>
+      <span>Used by <b style="color:var(--text);">1,000+</b> builders across India</span>
+    </div>
+  </div>
+
+  <div class="hero-preview">
+    <div class="preview-frame">
+      <div class="preview-head"><span></span><span></span><span></span></div>
+      <div class="preview-chat">
+        <div class="msg-user">Build me a landing page for my startup — a food delivery app for college students</div>
+        <div class="msg-ai">
+          Creating your landing page now...<br><br>
+          ✓ Modern hero section with gradient background<br>
+          ✓ 4 feature cards with icons<br>
+          ✓ Mobile-responsive layout<br>
+          ✓ Signup form connected to backend<br>
+          ✓ UPI payment integration<br><br>
+          Done. Full HTML + CSS ready. Want me to add login?<span class="typing-cursor"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="problem">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-label">The Problem</div>
+      <h2>Tired of wasting time<br>building things <em>from scratch?</em></h2>
+    </div>
+
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="x">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </div>
+        <h4>Building apps is complex</h4>
+        <p>Hiring developers costs lakhs. Learning to code takes years.</p>
+      </div>
+      <div class="problem-card">
+        <div class="x">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </div>
+        <h4>Websites take weeks</h4>
+        <p>Templates look generic. Custom sites need designers, developers, hosting.</p>
+      </div>
+      <div class="problem-card">
+        <div class="x">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </div>
+        <h4>Planning is confusing</h4>
+        <p>Business plans, pitch decks, strategies — hours of research lost.</p>
+      </div>
+    </div>
+
+    <div class="solution-line">
+      <h3>Datta AI does it <em>in seconds.</em></h3>
+      <p>One tool. Any idea. Instant output.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-label">Features</div>
+      <h2>Everything you need,<br><em>nothing you don't.</em></h2>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature">
+        <div class="feature-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+        </div>
+        <h4>Build Apps from Idea</h4>
+        <p>Describe your app. Get working code ready to deploy.</p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M3 9h18M9 21V9"/>
+          </svg>
+        </div>
+        <h4>Create Portfolio Sites</h4>
+        <p>Professional websites generated instantly. Fully responsive.</p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+          </svg>
+        </div>
+        <h4>Generate Business Plans</h4>
+        <p>Complete plans with market research, revenue models, projections.</p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <h4>AI Chat Assistant</h4>
+        <p>Ask anything. Get answers in Telugu, Hindi, or English.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW -->
+<section class="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-label">How It Works</div>
+      <h2>Three steps to<br><em>your idea, built.</em></h2>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <h4>Enter your idea</h4>
+        <p>Describe what you want — in plain English, Telugu, or Hindi.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <h4>AI generates output</h4>
+        <p>Code, designs, plans — whatever you need, in seconds.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <h4>Edit &amp; use instantly</h4>
+        <p>Copy, download, deploy. Ready to use right away.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section id="demo">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-label">Demo</div>
+      <h2>See it <em>in action.</em></h2>
+      <p>Real examples. Real output. Generated in under 10 seconds.</p>
+    </div>
+
+    <div class="demo-tabs">
+      <button class="demo-tab active" data-demo="app" onclick="switchDemo('app')">📱 App</button>
+      <button class="demo-tab" data-demo="site" onclick="switchDemo('site')">🎨 Website</button>
+      <button class="demo-tab" data-demo="plan" onclick="switchDemo('plan')">📊 Business Plan</button>
+    </div>
+
+    <div class="demo-frame">
+      <div class="demo-panel active" id="demo-app">
+        <div class="demo-content">
+          <div class="demo-prompt"><b>You:</b> Build a todo app with dark theme</div>
+          <div class="demo-output"><span class="tag">&lt;html&gt;</span>
+  <span class="tag">&lt;body&gt;</span>
+    <span class="h">// Todo App — Dark Theme</span>
+    <span class="key">const</span> todos = [];
+
+    <span class="key">function</span> addTodo(text) <span class="str">{
+      todos.push(text);
+      renderList();
+    }</span>
+
+    <span class="key">function</span> renderList() <span class="str">{
+      list.innerHTML = todos
+        .map(t => <span class="tag">&lt;li&gt;</span>${t}<span class="tag">&lt;/li&gt;</span>)
+        .join('');
+    }</span>
+<hr>
+<span class="h">✓ Complete app generated · 42 lines</span>
+<span class="h">✓ Ready to deploy</span></div>
+        </div>
+      </div>
+
+      <div class="demo-panel" id="demo-site">
+        <div class="demo-content">
+          <div class="demo-prompt"><b>You:</b> Create a portfolio site for a photographer</div>
+          <div class="sample-site">
+            <div class="sample-site-nav">
+              <div class="sample-site-logo">LENSCRAFT</div>
+              <div class="sample-site-menu">
+                <span>Work</span><span>About</span><span>Contact</span>
+              </div>
+            </div>
+            <div class="sample-site-hero">
+              <h3>Capturing Moments,<br><em style="font-family:var(--serif);color:#a78bfa;">Creating Memories</em></h3>
+              <p>Wedding · Portrait · Fashion Photography</p>
+              <div class="sample-site-btn">View Portfolio →</div>
+            </div>
+          </div>
+          <div style="margin-top:16px;color:var(--text-3);font-size:12px;font-family:var(--mono);">
+            ✓ Full HTML + CSS generated · Mobile responsive · 1.2s load time
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-panel" id="demo-plan">
+        <div class="demo-content">
+          <div class="demo-prompt"><b>You:</b> Business plan for a tea cafe in Hyderabad</div>
+          <div class="demo-output"><span class="h">CHAI CULTURE — BUSINESS PLAN</span>
+<hr>
+<span class="key">Executive Summary</span>
+Modern tea cafe targeting college students
+and young professionals in Hyderabad.
+
+<span class="key">Target Market</span>
+• Age: 18-35
+• Location: Hitec City, Banjara Hills
+• Size: 50,000+ daily foot traffic
+
+<span class="key">Revenue Model</span>
+• Avg ticket: ₹180
+• Daily target: 150 customers
+• Monthly revenue: ₹8.1L
+
+<span class="key">Startup Cost</span>
+• Setup: ₹18L
+• Working capital: ₹6L
+• <b>Total: ₹24L</b>
+
+<span class="key">Break-even</span>
+• 14 months at 70% capacity
+<hr>
+<span class="h">✓ Full 12-page plan generated</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-label">Loved by Users</div>
+      <h2>Fast, simple,<br><em>beginner-friendly.</em></h2>
+    </div>
+
+    <div class="testimonials">
+      <div class="testi">
+        <div class="testi-stars">★ ★ ★ ★ ★</div>
+        <div class="testi-quote">"Built my entire portfolio in 10 minutes. No coding. No headache. Datta AI is a gamechanger."</div>
+        <div class="testi-author">
+          <div class="testi-avatar">R</div>
+          <div>
+            <div class="testi-name">Rahul Kumar</div>
+            <div class="testi-role">Freelance Designer</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="testi">
+        <div class="testi-stars">★ ★ ★ ★ ★</div>
+        <div class="testi-quote">"Made business plan for my startup pitch in 5 minutes. Got funded in 2 weeks. Best tool for founders."</div>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:linear-gradient(135deg,#ff9955,#ff5580);">P</div>
+          <div>
+            <div class="testi-name">Priya Sharma</div>
+            <div class="testi-role">Startup Founder</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="testi">
+        <div class="testi-stars">★ ★ ★ ★ ★</div>
+        <div class="testi-quote">"Indian AI that actually understands us. Works in Telugu perfectly. Finally something for our market."</div>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:linear-gradient(135deg,#5588ff,#aa55ff);">A</div>
+          <div>
+            <div class="testi-name">Arjun Reddy</div>
+            <div class="testi-role">Student, IIT Hyderabad</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num">1,000+</div>
+        <div class="stat-label">Active Users</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">10s</div>
+        <div class="stat-label">Avg Response Time</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">3</div>
+        <div class="stat-label">Languages Supported</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-label">Pricing</div>
+      <h2>Simple, honest<br><em>pricing.</em></h2>
+      <p>Start free. Upgrade when you need more. Cancel anytime.</p>
+    </div>
+
+    <div class="pricing-grid">
+      <div class="plan">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">
+          <span class="plan-price-amount">₹0</span>
+          <span class="plan-price-per">/forever</span>
+        </div>
+        <ul class="plan-features">
+          <li>
+            <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+            10 AI requests per day
+          </li>
+          <li>
+            <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+            Build apps &amp; websites
+          </li>
+          <li>
+            <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+            Chat in any language
+          </li>
+          <li>
+            <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+            Basic support
+          </li>
+        </ul>
+        <a href="chat.html" class="btn btn-secondary" onclick="trackClick('pricing_free_cta')">Start Free</a>
+      </div>
+
+      <div class="plan plan-pro">
+        <div class="plan-badge">MOST POPULAR</div>
+        <div class="plan-name" style="color:var(--accent);">Pro</div>
+        <div class="plan-price">
+          <span class="plan-price-amount">₹29</span>
+          <span class="plan-price-per">/month</span>
+        </div>
+        <ul class="plan-features">
+          <li>
+            <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+            Unlimited AI requests
+          </li>
+          <li>
+            <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+            Faster responses
+          </li>
+          <li>
+            <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+            Priority models
+          </li>
+          <li>
+            <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+            Voice &amp; image features
+          </li>
+          <li>
+            <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+            Priority support
+          </li>
+        </ul>
+        <a href="pricing.html" class="btn btn-primary" onclick="trackClick('pricing_pro_cta')">
+          Upgrade to Pro
+          <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final-cta">
+  <div class="wrap final-cta-inner">
+    <h2>Start Building<br>with AI <em>Today.</em></h2>
+    <p>Free to try. No credit card. Be building in 30 seconds.</p>
+    <a href="chat.html" class="btn btn-primary" onclick="trackClick('final_cta')" style="padding:20px 40px;font-size:17px;">
+      Try Datta AI Now
+      <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M5 12h14M12 5l7 7-7 7"/>
+      </svg>
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap foot-inner">
+    <div class="foot-copy">© 2026 LR AI · Built in India 🇮🇳</div>
+    <div class="foot-links">
+      <a href="chat.html">Launch App</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <a href="mailto:support@datta-ai.com">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<a href="chat.html" class="sticky-cta" id="stickyCta" onclick="trackClick('sticky_mobile_cta')">
+  🚀 Start Free — Try Datta AI
+</a>
+
+<script>
+  function switchDemo(name) {
+    document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'))
+    document.querySelectorAll('.demo-panel').forEach(p => p.classList.remove('active'))
+    document.querySelector(`.demo-tab[data-demo="${name}"]`).classList.add('active')
+    document.getElementById('demo-' + name).classList.add('active')
+    trackClick('demo_tab_' + name)
+  }
+
+  function trackClick(label) {
+    if (typeof gtag === 'function') {
+      gtag('event', 'click', {
+        event_category: 'CTA',
+        event_label: label
+      })
+      if (label.includes('cta') || label.includes('primary')) {
+        gtag('event', 'conversion', {
+          send_to: 'AW-XXXXXXXXX/YourConversionLabel'
+        })
+      }
+    }
+    console.log('[CTA]', label)
+  }
+
+  const stickyCta = document.getElementById('stickyCta')
+  window.addEventListener('scroll', () => {
+    const scrolled = window.scrollY
+    if (scrolled > 600 && scrolled < document.body.offsetHeight - 1200) {
+      stickyCta.classList.add('show')
+    } else {
+      stickyCta.classList.remove('show')
+    }
+  }, { passive: true })
+
+  let nav = document.querySelector('.nav')
+  let navLast = 0
+  window.addEventListener('scroll', () => {
+    const s = window.scrollY
+    if (s > 100 && s > navLast) {
+      nav.style.transform = 'translateY(-100%)'
+    } else {
+      nav.style.transform = 'translateY(0)'
+    }
+    navLast = s
+  }, { passive: true })
+
+  document.querySelectorAll('a[href="chat.html"]').forEach(link => {
+    link.addEventListener('click', () => {
+      if (typeof gtag === 'function') {
+        gtag('event', 'start_app', {
+          event_category: 'Engagement',
+          event_label: 'Landing to App'
+        })
+      }
+    })
+  })
+</script>
+
+</body>
+</html>
