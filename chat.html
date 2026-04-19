@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="Datta AI — India's own AI assistant. Chat, code, create, and solve exam papers in Telugu, Hindi, and English.">
+
+<title>Datta AI — Your Personal AI Assistant</title>
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2300ff88'/><text x='50' y='72' text-anchor='middle' font-size='64' font-weight='800' fill='black' font-family='sans-serif'>D</text></svg>">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg2: #141414;
+    --bg3: #1a1a1a;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --text: #ffffff;
+    --text2: #b8b8b8;
+    --text3: #808080;
+    --accent: #00ff88;
+    --accent-dim: rgba(0, 255, 136, 0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; border: none; background: transparent; color: inherit; }
+  input, textarea { font-family: inherit; }
+  ::selection { background: var(--accent); color: #000; }
+
+  /* LAYOUT */
+  .app {
+    display: flex;
+    height: 100vh;
+    width: 100%;
+    position: relative;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 280px;
+    background: #0a0a0a;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 768px) {
+    .sidebar {
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      z-index: 100;
+      transform: translateX(-100%);
+      box-shadow: 10px 0 50px rgba(0,0,0,0.5);
+    }
+    .sidebar.open { transform: translateX(0); }
+  }
+
+  .sidebar-head {
+    padding: 18px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 17px;
+  }
+
+  .logo-mark {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #00ff88, #00d9ff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-weight: 800;
+    font-size: 16px;
+  }
+
+  .logo b { color: var(--accent); }
+
+  .icon-btn {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text2);
+    transition: background 0.15s;
+  }
+  .icon-btn:hover { background: var(--bg3); color: var(--text); }
+
+  .new-chat-btn {
+    margin: 12px;
+    padding: 12px 16px;
+    background: var(--accent);
+    color: #000;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform 0.1s;
+  }
+  .new-chat-btn:hover { transform: translateY(-1px); }
+
+  .chat-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 8px 12px;
+  }
+
+  .chat-list::-webkit-scrollbar { width: 6px; }
+  .chat-list::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+
+  .chat-item {
+    padding: 10px 12px;
+    margin-bottom: 2px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .chat-item:hover { background: var(--bg3); color: var(--text); }
+  .chat-item.active { background: var(--bg3); color: var(--text); }
+
+  .chat-item-delete {
+    opacity: 0;
+    padding: 2px;
+    color: #ff6666;
+    transition: opacity 0.15s;
+  }
+  .chat-item:hover .chat-item-delete { opacity: 0.7; }
+  .chat-item-delete:hover { opacity: 1 !important; }
+
+  .sidebar-foot {
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .user-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .user-row:hover { background: var(--bg3); }
+
+  .user-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #00d9ff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-weight: 800;
+    font-size: 14px;
+  }
+
+  .user-name {
+    font-size: 13px;
+    font-weight: 600;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* MAIN CHAT AREA */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--bg);
+  }
+
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,10,10,0.8);
+    backdrop-filter: blur(20px);
+  }
+
+  .top-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .menu-btn {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .model-pill {
+    padding: 6px 14px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .model-pill:hover { border-color: var(--accent); }
+
+  .top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .chat-box {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px 180px;
+    scroll-behavior: smooth;
+  }
+
+  .chat-box::-webkit-scrollbar { width: 8px; }
+  .chat-box::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 4px; }
+
+  /* Welcome screen */
+  .welcome {
+    max-width: 720px;
+    margin: 80px auto 40px;
+    text-align: center;
+    padding: 0 20px;
+  }
+
+  .welcome-logo {
+    width: 64px; height: 64px;
+    margin: 0 auto 24px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, var(--accent), #00d9ff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-weight: 800;
+    font-size: 32px;
+    box-shadow: 0 20px 60px rgba(0, 255, 136, 0.3);
+  }
+
+  .welcome h1 {
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    letter-spacing: -1px;
+  }
+
+  .welcome h1 .accent {
+    background: linear-gradient(135deg, var(--accent), #00d9ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .welcome p {
+    color: var(--text2);
+    font-size: 15px;
+    margin-bottom: 32px;
+  }
+
+  .suggestions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 600px) {
+    .suggestions { grid-template-columns: 1fr; }
+  }
+
+  .sugg {
+    padding: 14px 16px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    text-align: left;
+    font-size: 13px;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .sugg:hover {
+    border-color: var(--accent);
+    color: var(--text);
+    transform: translateY(-1px);
+  }
+  .sugg-emoji { display: block; font-size: 20px; margin-bottom: 6px; }
+
+  /* MESSAGES */
+  .msg-row {
+    max-width: 760px;
+    margin: 0 auto 16px;
+    padding: 0 4px;
+    animation: msgIn 0.3s ease-out;
+  }
+
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .user-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .user-bubble {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 12px 16px;
+    border-radius: 18px 18px 4px 18px;
+    max-width: 85%;
+    color: var(--text);
+    word-wrap: break-word;
+    line-height: 1.5;
+  }
+
+  .userActions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: flex-end;
+    margin-top: 6px;
+    opacity: 1;
+  }
+
+  .uaBtn {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+    padding: 0;
+  }
+  .uaBtn:hover { background: var(--bg3); color: var(--text); }
+  .uaBtn svg { width: 14px; height: 14px; }
+
+  .aiContent {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ai-bubble {
+    padding: 4px 4px;
+    max-width: 100%;
+    color: var(--text);
+    line-height: 1.7;
+    word-wrap: break-word;
+  }
+
+  .ai-bubble p { margin-bottom: 12px; }
+  .ai-bubble p:last-child { margin-bottom: 0; }
+
+  .ai-bubble h1, .ai-bubble h2, .ai-bubble h3, .ai-bubble h4 {
+    margin: 18px 0 10px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .ai-bubble h1 { font-size: 22px; }
+  .ai-bubble h2 { font-size: 19px; }
+  .ai-bubble h3 { font-size: 17px; }
+
+  .ai-bubble ul, .ai-bubble ol {
+    margin: 10px 0 16px 4px;
+    padding-left: 0;
+  }
+
+  .ai-bubble li {
+    list-style: none;
+    margin: 8px 0;
+    padding-left: 20px;
+    position: relative;
+    line-height: 1.6;
+  }
+  .ai-bubble ul li::before {
+    content: "•";
+    position: absolute;
+    left: 6px;
+    color: var(--accent);
+    font-weight: 800;
+  }
+
+  .ai-bubble code {
+    background: var(--bg3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: #ff9955;
+  }
+
+  .ai-bubble pre {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    overflow-x: auto;
+    margin: 12px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+
+  .ai-bubble pre code {
+    background: transparent;
+    padding: 0;
+    color: var(--text);
+  }
+
+  .ai-bubble strong { color: var(--text); font-weight: 700; }
+  .ai-bubble a { color: var(--accent); text-decoration: underline; }
+  .ai-bubble blockquote {
+    border-left: 3px solid var(--accent);
+    padding-left: 14px;
+    margin: 12px 0;
+    color: var(--text2);
+  }
+
+  .aiActions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 10px;
+  }
+
+  .actionBtn {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .actionBtn:hover { background: var(--bg3); color: var(--text); }
+  .actionBtn svg { width: 14px; height: 14px; }
+  .actionDivider {
+    width: 1px; height: 18px;
+    background: var(--border);
+    margin: 0 4px;
+  }
+  .likeBtn.active { color: var(--accent); }
+  .dislikeBtn.active { color: #ff6666; }
+
+  .ai-disclaimer {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 8px;
+    font-style: italic;
+  }
+
+  .typingCursor {
+    display: inline-block;
+    width: 2px;
+    height: 16px;
+    background: var(--accent);
+    animation: blink 1s infinite;
+    vertical-align: middle;
+    margin-left: 2px;
+  }
+
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
+
+  .thinkingBlock {
+    padding: 12px 16px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin: 8px 0;
+    max-width: 400px;
+  }
+
+  .thinkingOrb {
+    animation: orbPulse 1s infinite;
+  }
+
+  @keyframes orbPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+  }
+
+  /* COMPOSER */
+  .composer-wrap {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 16px;
+    background: linear-gradient(to top, var(--bg) 70%, transparent);
+    pointer-events: none;
+  }
+
+  .composer {
+    max-width: 760px;
+    margin: 0 auto;
+    background: var(--bg2);
+    border: 1px solid var(--border-strong);
+    border-radius: 20px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: all;
+    transition: border-color 0.15s;
+  }
+
+  .composer:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
+  }
+
+  #filePreview {
+    display: none;
+    padding: 10px 14px;
+    background: var(--bg3);
+    border-radius: 12px;
+    font-size: 13px;
+    align-items: center;
+    gap: 10px;
+  }
+
+  #filePreview.show { display: flex; }
+
+  #filePreview img {
+    max-width: 80px;
+    max-height: 60px;
+    border-radius: 8px;
+  }
+
+  #filePreview .remove {
+    margin-left: auto;
+    color: #ff6666;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  .composer-main {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  #message {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.5;
+    padding: 10px 8px;
+    resize: none;
+    max-height: 200px;
+    min-height: 24px;
+  }
+
+  .composer-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .comp-btn {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text2);
+    transition: all 0.15s;
+  }
+  .comp-btn:hover { background: var(--bg3); color: var(--text); }
+
+  .send-btn {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: var(--accent);
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    font-size: 0;
+  }
+  .send-btn:hover { transform: translateY(-1px); }
+  .send-btn svg { width: 18px; height: 18px; }
+
+  .send-btn.stop {
+    background: #ff5555;
+    color: #fff;
+  }
+
+  input[type="file"] { display: none; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 20px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 13px;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .toast.show { opacity: 1; }
+
+  /* Sidebar overlay (mobile) */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 99;
+    backdrop-filter: blur(4px);
+  }
+  .sidebar-overlay.show { display: block; }
+  @media (min-width: 769px) { .sidebar-overlay.show { display: none; } }
+
+  /* Hide sidebar on very small screens */
+  @media (max-width: 768px) {
+    .sidebar-head .logo { font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <a href="index.html" class="logo">
+        <div class="logo-mark">D</div>
+        <span>Datta<b>AI</b></span>
+      </a>
+      <button class="icon-btn" onclick="toggleSidebar()" title="Close sidebar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <button class="new-chat-btn" onclick="newChat()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      New chat
+    </button>
+
+    <div class="chat-list" id="chatList">
+      <!-- Chat history populated by JS -->
+    </div>
+
+    <div class="sidebar-foot">
+      <div class="user-row" onclick="window.location.href='settings.html'">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <div class="user-name" id="userName">User</div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </div>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <!-- MAIN AREA -->
+  <main class="main">
+
+    <!-- TOP BAR -->
+    <div class="top-bar">
+      <div class="top-bar-left">
+        <button class="menu-btn icon-btn" onclick="toggleSidebar()" title="Menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div class="model-pill" onclick="showModelPicker()">
+          <span id="activeModelName">Datta 2.1</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="top-bar-right">
+        <button class="icon-btn" onclick="window.location.href='pricing.html'" title="Upgrade">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- CHAT BOX -->
+    <div class="chat-box" id="chatBox">
+
+      <!-- Welcome / empty state -->
+      <div class="welcome" id="welcome">
+        <div class="welcome-logo">D</div>
+        <h1>How can <span class="accent">Datta AI</span> help you?</h1>
+        <p>Ask anything. Build anything. In Telugu, Hindi, or English.</p>
+
+        <div class="suggestions">
+          <div class="sugg" onclick="fillPrompt('Build a todo app with dark theme')">
+            <span class="sugg-emoji">💻</span>
+            <strong>Build a todo app</strong><br>
+            with dark theme
+          </div>
+          <div class="sugg" onclick="fillPrompt('Write me a business plan for a tea cafe in Hyderabad')">
+            <span class="sugg-emoji">📊</span>
+            <strong>Business plan</strong><br>
+            tea cafe in Hyderabad
+          </div>
+          <div class="sugg" onclick="fillPrompt('Explain photosynthesis in simple Telugu')">
+            <span class="sugg-emoji">📚</span>
+            <strong>Explain photosynthesis</strong><br>
+            in simple Telugu
+          </div>
+          <div class="sugg" onclick="fillPrompt('Create a portfolio website for a photographer')">
+            <span class="sugg-emoji">🎨</span>
+            <strong>Portfolio website</strong><br>
+            for photographer
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- COMPOSER -->
+    <div class="composer-wrap">
+      <div class="composer">
+        <div id="filePreview"></div>
+
+        <div class="composer-main">
+          <textarea id="message" placeholder="Ask Datta AI anything..." rows="1" onkeydown="handleKeydown(event)" oninput="autoGrow(this)"></textarea>
+
+          <div class="composer-actions">
+            <label for="photoInput" class="comp-btn" title="Upload photo">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+            </label>
+            <input type="file" id="photoInput" accept="image/*" onchange="handleFile(this)">
+
+            <button class="comp-btn" onclick="startVoiceListener()" title="Voice">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            </button>
+
+            <button class="send-btn" id="sendBtn" onclick="send()" title="Send">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 11.5L21 3l-7 18-2-9-9-2z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Voice overlay (hidden, activated from chat.js) -->
+<div id="voiceOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;">
+  <div id="voiceStatus" style="color:var(--text);font-size:18px;">Tap to speak</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ════════════ CORE JS FUNCTIONS ════════════ -->
+<script>
+  // Auth check — redirect to login if not authenticated
+  (function() {
+    const token = localStorage.getItem("datta_token")
+    if (!token || token.length < 20) {
+      // Check if this is first-time visit (allow guest usage) or require login
+      // For now, allow guest — comment next line to allow guests
+      // window.location.replace("login.html")
+    }
+  })()
+
+  // Global state
+  var chatBox = document.getElementById("chatBox")
+  var currentChatId = null
+  var isGenerating = false
+  var controller = null
+  var streamText = ""
+  var typingActive = false
+
+  // Sidebar toggle
+  function toggleSidebar() {
+    document.getElementById("sidebar").classList.toggle("open")
+    document.getElementById("sidebarOverlay").classList.toggle("show")
+  }
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById("toast")
+    t.textContent = msg
+    t.classList.add("show")
+    setTimeout(() => t.classList.remove("show"), 2000)
+  }
+
+  // Auto-grow textarea
+  function autoGrow(el) {
+    el.style.height = "auto"
+    el.style.height = Math.min(el.scrollHeight, 200) + "px"
+  }
+
+  // Handle Enter key
+  function handleKeydown(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      send()
+    }
+  }
+
+  // Fill prompt from suggestion
+  function fillPrompt(text) {
+    const input = document.getElementById("message")
+    input.value = text
+    input.focus()
+    autoGrow(input)
+  }
+
+  // Hide welcome screen
+  function hideWelcome() {
+    const w = document.getElementById("welcome")
+    if (w) w.style.display = "none"
+  }
+
+  // New chat
+  function newChat() {
+    currentChatId = null
+    chatBox.innerHTML = ""
+    chatBox.innerHTML = `
+      <div class="welcome" id="welcome">
+        <div class="welcome-logo">D</div>
+        <h1>How can <span class="accent">Datta AI</span> help you?</h1>
+        <p>Ask anything. Build anything. In Telugu, Hindi, or English.</p>
+      </div>
+    `
+    document.body.classList.remove("chat-started")
+    if (window.innerWidth < 768) {
+      document.getElementById("sidebar").classList.remove("open")
+      document.getElementById("sidebarOverlay").classList.remove("show")
+    }
+  }
+
+  // Get token
+  function getToken() {
+    return localStorage.getItem("datta_token") || ""
+  }
+
+  // Stop generation
+  function stopGeneration() {
+    if (controller) { try { controller.abort() } catch(e) {} }
+    window._stopTyping = true
+    isGenerating = false
+    document.getElementById("sendBtn").classList.remove("stop")
+  }
+
+  // Show/hide stop button
+  function showStopBtn() {
+    const btn = document.getElementById("sendBtn")
+    btn.classList.add("stop")
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;"><rect x="6" y="6" width="12" height="12"/></svg>'
+    btn.onclick = stopGeneration
+  }
+
+  function hideStopBtn() {
+    const btn = document.getElementById("sendBtn")
+    btn.classList.remove("stop")
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 11.5L21 3l-7 18-2-9-9-2z"/></svg>'
+    btn.onclick = send
+  }
+
+  // Load user info
+  function loadUser() {
+    try {
+      const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
+      const name = user.username || user.email || "User"
+      document.getElementById("userName").textContent = name
+      document.getElementById("userAvatar").textContent = name[0].toUpperCase()
+    } catch(e) {}
+  }
+
+  // Load chat list
+  async function loadSidebar() {
+    const token = getToken()
+    if (!token) return
+    try {
+      const res = await fetch("https://datta-ai-server.onrender.com/chats", {
+        headers: { "Authorization": "Bearer " + token }
+      })
+      const chats = await res.json()
+      const list = document.getElementById("chatList")
+      if (!Array.isArray(chats) || chats.length === 0) {
+        list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">No chats yet</div>'
+        return
+      }
+      list.innerHTML = chats.map(c => `
+        <div class="chat-item ${c._id === currentChatId ? 'active' : ''}" onclick="openChat('${c._id}')">
+          <span>${(c.title || 'Untitled').substring(0, 30)}</span>
+          <span class="chat-item-delete" onclick="event.stopPropagation();deleteChat('${c._id}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/>
+            </svg>
+          </span>
+        </div>
+      `).join("")
+    } catch(e) { console.warn("Failed to load chats:", e) }
+  }
+
+  async function openChat(chatId) {
+    currentChatId = chatId
+    chatBox.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);">Loading...</div>'
+    document.body.classList.add("chat-started")
+    try {
+      const token = getToken()
+      const res = await fetch("https://datta-ai-server.onrender.com/chat/" + chatId, {
+        headers: { "Authorization": "Bearer " + token }
+      })
+      const chat = await res.json()
+      chatBox.innerHTML = ""
+      if (chat.messages && Array.isArray(chat.messages)) {
+        chat.messages.forEach(m => {
+          if (m.role === "user") {
+            chatBox.innerHTML += `<div class="msg-row user-row"><div class="user-bubble">${safeContent(m.content)}</div></div>`
+          } else {
+            chatBox.innerHTML += `<div class="msg-row"><div class="aiContent"><div class="ai-bubble">${marked.parse(safeContent(m.content))}</div></div></div>`
+          }
+        })
+      }
+      if (window.innerWidth < 768) toggleSidebar()
+      chatBox.scrollTop = chatBox.scrollHeight
+    } catch(e) {
+      chatBox.innerHTML = '<div style="color:#ff6666;text-align:center;padding:20px;">Error loading chat</div>'
+    }
+  }
+
+  async function deleteChat(chatId) {
+    if (!confirm("Delete this chat?")) return
+    const token = getToken()
+    try {
+      await fetch("https://datta-ai-server.onrender.com/chat/" + chatId, {
+        method: "DELETE",
+        headers: { "Authorization": "Bearer " + token }
+      })
+      if (currentChatId === chatId) newChat()
+      loadSidebar()
+    } catch(e) { showToast("Delete failed") }
+  }
+
+  // Safe content
+  function safeContent(c) {
+    if (c === null || c === undefined) return ""
+    if (typeof c === "string") {
+      c = c.replace(/```MERMAID/gi, "```mermaid")
+      return c.split("[object Object]").join("").split("[object object]").join("").split("[Object Object]").join("")
+    }
+    if (Array.isArray(c)) {
+      return c.map(item => safeContent(item.text || item)).filter(Boolean).join("")
+    }
+    if (typeof c === "object") {
+      return c.text || c.content || ""
+    }
+    return String(c)
+  }
+
+  // Send message
+  async function send() {
+    if (isGenerating) return
+    const input = document.getElementById("message")
+    const text = input.value.trim()
+    if (!text) return
+
+    hideWelcome()
+    document.body.classList.add("chat-started")
+
+    // Show user message
+    chatBox.innerHTML += `
+      <div class="msg-row user-row">
+        <div class="user-bubble">${text}</div>
+        <div class="userActions">
+          <button class="uaBtn" title="Copy" onclick="navigator.clipboard.writeText('${text.replace(/'/g,"\\'")}'); showToast('Copied!')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+    `
+    input.value = ""
+    autoGrow(input)
+
+    // Create AI div with thinking indicator
+    const aiDiv = document.createElement("div")
+    aiDiv.className = "msg-row"
+    aiDiv.innerHTML = `
+      <div class="thinkingBlock">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="thinkingOrb" style="width:8px;height:8px;border-radius:50%;background:var(--accent);"></div>
+          <span style="color:var(--text2);font-size:13px;">Thinking...</span>
+        </div>
+      </div>
+    `
+    chatBox.appendChild(aiDiv)
+    chatBox.scrollTop = chatBox.scrollHeight
+
+    isGenerating = true
+    showStopBtn()
+    controller = new AbortController()
+
+    try {
+      const formData = new FormData()
+      formData.append("message", text)
+      formData.append("chatId", currentChatId || "")
+      formData.append("token", getToken())
+      formData.append("language", localStorage.getItem("datta_language") || "English")
+      formData.append("model", localStorage.getItem("datta_model") || "llama-3.3-70b-versatile")
+      formData.append("modelKey", localStorage.getItem("datta_model_key") || "d21")
+      formData.append("ainame", "Datta AI")
+
+      const res = await fetch("https://datta-ai-server.onrender.com/chat", {
+        method: "POST",
+        body: formData,
+        signal: controller.signal
+      })
+
+      if (!res.ok) throw new Error("Server error " + res.status)
+
+      // Replace thinking with bubble
+      aiDiv.innerHTML = `
+        <div class="aiContent">
+          <div class="ai-bubble"><span class="stream"></span></div>
+          <div class="aiActions">
+            <button class="actionBtn" title="Copy" onclick="copyAi(this)"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><rect x='9' y='9' width='13' height='13' rx='2'/><path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/></svg></button>
+            <button class="actionBtn" title="Regenerate" onclick="regenerateFrom(this)"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><polyline points='23 4 23 10 17 10'/><polyline points='1 20 1 14 7 14'/><path d='M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15'/></svg></button>
+          </div>
+          <div class="ai-disclaimer">Datta AI can make mistakes. Verify important info.</div>
+        </div>
+      `
+
+      const span = aiDiv.querySelector(".stream")
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let fullText = ""
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        if (window._stopTyping) break
+
+        const chunk = decoder.decode(value)
+        if (chunk.includes("CHATID")) {
+          const parts = chunk.split("CHATID")
+          if (parts[0]) fullText += safeContent(parts[0])
+          currentChatId = (parts[1] || "").trim()
+        } else {
+          fullText += safeContent(chunk)
+        }
+
+        if (span) {
+          span.innerHTML = marked.parse(fullText) + '<span class="typingCursor"></span>'
+          chatBox.scrollTop = chatBox.scrollHeight
+        }
+      }
+
+      // Final render without cursor
+      if (span) {
+        span.innerHTML = marked.parse(fullText)
+      }
+
+      window._stopTyping = false
+      loadSidebar()
+    } catch(e) {
+      console.error("Send error:", e)
+      aiDiv.innerHTML = `<div class="aiContent"><div class="ai-bubble" style="color:#ff6666;">⚠️ ${e.message || "Failed to get response"}. Please try again.</div></div>`
+    } finally {
+      isGenerating = false
+      hideStopBtn()
+      controller = null
+    }
+  }
+
+  function copyAi(btn) {
+    const bubble = btn.closest(".aiContent").querySelector(".ai-bubble")
+    if (bubble) {
+      navigator.clipboard.writeText(bubble.innerText)
+      showToast("Copied!")
+    }
+  }
+
+  async function regenerateFrom(btn) {
+    const allRows = Array.from(chatBox.querySelectorAll(".msg-row"))
+    const thisRow = btn.closest(".msg-row")
+    const idx = allRows.indexOf(thisRow)
+    if (idx < 1) return
+    const userRow = allRows[idx - 1]
+    if (!userRow.classList.contains("user-row")) return
+    const userText = userRow.querySelector(".user-bubble")?.innerText
+    if (!userText) return
+    thisRow.remove()
+    document.getElementById("message").value = userText
+    send()
+  }
+
+  function handleFile(input) {
+    const file = input.files[0]
+    if (!file) return
+    const preview = document.getElementById("filePreview")
+    if (file.type.startsWith("image/")) {
+      const url = URL.createObjectURL(file)
+      preview.innerHTML = `<img src="${url}"><span style="flex:1;">${file.name}</span><span class="remove" onclick="clearFile()">✕</span>`
+    } else {
+      preview.innerHTML = `<span>📄 ${file.name}</span><span class="remove" onclick="clearFile()">✕</span>`
+    }
+    preview.classList.add("show")
+  }
+
+  function clearFile() {
+    document.getElementById("photoInput").value = ""
+    const preview = document.getElementById("filePreview")
+    preview.innerHTML = ""
+    preview.classList.remove("show")
+  }
+
+  function showModelPicker() {
+    // Simple prompt for now
+    const models = ["Datta 2.1", "Datta 4.2", "Datta 5.4", "Datta Code", "Datta Think"]
+    const keys = ["d21", "d42", "d54", "dcode", "dthink"]
+    const current = localStorage.getItem("datta_model_key") || "d21"
+    const currentIdx = keys.indexOf(current)
+    const choice = prompt("Choose model:\n" + models.map((m, i) => (i+1) + ". " + m).join("\n"), (currentIdx+1).toString())
+    if (choice) {
+      const i = parseInt(choice) - 1
+      if (i >= 0 && i < models.length) {
+        localStorage.setItem("datta_model_key", keys[i])
+        document.getElementById("activeModelName").textContent = models[i]
+      }
+    }
+  }
+
+  function startVoiceListener() {
+    // Redirect to voice mode - actual voice UI is in chat.js if loaded
+    showToast("Voice feature coming soon")
+  }
+
+  // Initialize
+  loadUser()
+  loadSidebar()
+
+  // Set model pill
+  const modelKey = localStorage.getItem("datta_model_key") || "d21"
+  const modelNames = { d21:"Datta 2.1", d42:"Datta 4.2", d54:"Datta 5.4", dcode:"Datta Code 💻", dthink:"Datta Think 🧠" }
+  document.getElementById("activeModelName").textContent = modelNames[modelKey] || "Datta 2.1"
+
+  // Initialize mermaid
+  if (typeof mermaid !== "undefined") {
+    mermaid.initialize({ startOnLoad: false, theme: "dark" })
+  }
+
+  // Focus input on load
+  setTimeout(() => document.getElementById("message").focus(), 100)
+</script>
+
+</body>
+</html>
