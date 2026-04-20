@@ -758,10 +758,20 @@ if (typeof marked !== 'undefined') {
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
           ${previewBtn}
-          <button onclick="copyBlockCode(this)" data-code="${encoded}"
-            style="display:flex;align-items:center;gap:5px;padding:3px 10px;background:none;border:1px solid #2a2a3a;border-radius:6px;color:#555;font-size:11px;cursor:pointer;font-family:inherit;">
+          <button onclick="copyBlockCode(this)" data-code="${encoded}" title="Copy code"
+            style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:none;border:1px solid #2a2a3a;border-radius:6px;color:#aaa;font-size:11px;cursor:pointer;font-family:inherit;transition:all 0.15s;">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             Copy
+          </button>
+          <button onclick="downloadBlockCode(this)" data-code="${encoded}" data-lang="${langStr}" title="Download as file"
+            style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:none;border:1px solid #2a2a3a;border-radius:6px;color:#aaa;font-size:11px;cursor:pointer;font-family:inherit;transition:all 0.15s;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download
+          </button>
+          <button onclick="editBlockCode(this)" data-uid="${uid}" title="Edit code"
+            style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:none;border:1px solid #2a2a3a;border-radius:6px;color:#aaa;font-size:11px;cursor:pointer;font-family:inherit;transition:all 0.15s;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
           </button>
         </div>
       </div>
@@ -3954,16 +3964,127 @@ function copyBlockCode(btn) {
     btn.style.borderColor = "rgba(0,201,167,0.4)"
     setTimeout(() => {
       btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`
-      btn.style.color = "#555"
+      btn.style.color = "#aaa"
       btn.style.borderColor = "#2a2a3a"
     }, 2000)
   })
+}
+
+// Download code as file
+function downloadBlockCode(btn) {
+  const code = decodeURIComponent(btn.dataset.code)
+  const lang = (btn.dataset.lang || "").toLowerCase()
+
+  // Determine file extension from language
+  const extMap = {
+    html: "html", css: "css", javascript: "js", js: "js",
+    python: "py", java: "java", cpp: "cpp", c: "c",
+    ruby: "rb", go: "go", rust: "rs", php: "php",
+    sql: "sql", json: "json", xml: "xml", yaml: "yml", yml: "yml",
+    md: "md", markdown: "md", sh: "sh", bash: "sh",
+    typescript: "ts", ts: "ts", jsx: "jsx", tsx: "tsx",
+    vue: "vue", swift: "swift", kotlin: "kt", dart: "dart"
+  }
+  const ext = extMap[lang] || "txt"
+
+  // Auto-detect if code is HTML even without lang tag
+  const finalExt = (!lang && code.trim().toLowerCase().startsWith("<!doctype")) ? "html" : ext
+
+  const filename = "datta-ai-" + Date.now() + "." + finalExt
+  const blob = new Blob([code], { type: "text/plain;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  setTimeout(() => {
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }, 100)
+
+  // Visual feedback
+  btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Downloaded!`
+  btn.style.color = "#00c9a7"
+  btn.style.borderColor = "rgba(0,201,167,0.4)"
+  setTimeout(() => {
+    btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download`
+    btn.style.color = "#aaa"
+    btn.style.borderColor = "#2a2a3a"
+  }, 2000)
+}
+
+// Edit code inline
+function editBlockCode(btn) {
+  const uid = btn.dataset.uid
+  const wrap = document.getElementById(uid + "_wrap")
+  const pre = document.getElementById(uid + "_pre")
+  if (!wrap || !pre) return
+
+  const codeEl = pre.querySelector("code")
+  const currentCode = decodeURIComponent(wrap.dataset.code || "")
+
+  // Replace <pre> with <textarea>
+  const textarea = document.createElement("textarea")
+  textarea.value = currentCode
+  textarea.id = uid + "_edit"
+  textarea.style.cssText = "flex:1;min-width:0;margin:0;padding:16px;background:#0d0d12;color:#e0e0e0;border:none;outline:none;font-family:'Courier New',monospace;font-size:13px;line-height:1.65;resize:vertical;min-height:" + Math.max(pre.offsetHeight, 200) + "px;width:100%;"
+
+  const split = document.getElementById(uid + "_split")
+  pre.style.display = "none"
+  split.insertBefore(textarea, pre)
+  textarea.focus()
+
+  // Change Edit button to Save/Cancel
+  const toolbar = btn.parentElement
+  const originalBtn = btn.cloneNode(true)
+
+  btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Save`
+  btn.style.color = "#00c9a7"
+  btn.style.borderColor = "rgba(0,201,167,0.4)"
+  btn.onclick = function() {
+    const newCode = textarea.value
+    // Update stored code
+    wrap.dataset.code = encodeURIComponent(newCode)
+    // Update copy/download data attrs
+    toolbar.querySelectorAll("button[data-code]").forEach(b => {
+      b.dataset.code = encodeURIComponent(newCode)
+    })
+    // Update code display
+    const escaped = newCode.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    codeEl.innerHTML = escaped
+    pre.style.display = ""
+    textarea.remove()
+    // Restore Edit button
+    btn.innerHTML = originalBtn.innerHTML
+    btn.style.color = "#aaa"
+    btn.style.borderColor = "#2a2a3a"
+    btn.onclick = function() { editBlockCode(btn) }
+    showToast && showToast("Code updated!")
+  }
+
+  // Add Cancel button temporarily
+  const cancelBtn = document.createElement("button")
+  cancelBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancel`
+  cancelBtn.style.cssText = "display:flex;align-items:center;gap:5px;padding:4px 10px;background:none;border:1px solid #ff5555;border-radius:6px;color:#ff5555;font-size:11px;cursor:pointer;font-family:inherit;"
+  cancelBtn.onclick = function() {
+    pre.style.display = ""
+    textarea.remove()
+    cancelBtn.remove()
+    btn.innerHTML = originalBtn.innerHTML
+    btn.style.color = "#aaa"
+    btn.style.borderColor = "#2a2a3a"
+    btn.onclick = function() { editBlockCode(btn) }
+  }
+  toolbar.insertBefore(cancelBtn, btn)
 }
 
 window.toggleSplitPreview = toggleSplitPreview
 window.reloadSplitPreview = reloadSplitPreview
 window.openFullPreview    = openFullPreview
 window.copyBlockCode      = copyBlockCode
+window.downloadBlockCode  = downloadBlockCode
+window.editBlockCode      = editBlockCode
 window.addCodePreview     = addCodePreview
 window.copyCodeBlock = copyBlockCode
 
