@@ -708,8 +708,9 @@ if (typeof marked !== 'undefined') {
   }
 
   renderer.code = function(token, lang) {
-    const codeStr = (token && typeof token === "object") ? (token.text || token.raw || "") : String(token || "")
-    const langStr = ((token && typeof token === "object") ? (token.lang || "") : (lang || "")).toLowerCase().trim()
+    try {
+      const codeStr = (token && typeof token === "object") ? (token.text || token.raw || "") : String(token || "")
+      const langStr = ((token && typeof token === "object") ? (token.lang || "") : (lang || "")).toLowerCase().trim()
 
     // ── MERMAID — render as diagram block ────────────────────────────────────
     const isMermaid = langStr === "mermaid" || langStr === "MERMAID".toLowerCase() ||
@@ -730,7 +731,18 @@ if (typeof marked !== 'undefined') {
     const isPreviewable = ["html","css","javascript","js"].includes(langStr) || codeStr.trim().startsWith("<!DOCTYPE") || codeStr.trim().startsWith("<html")
     const uid = "code_" + Math.random().toString(36).slice(2,8)
     const langLabel = langStr ? `<span style="font-size:11px;color:#555;letter-spacing:1.5px;text-transform:uppercase;font-family:'Courier New',monospace;">${langStr}</span>` : ""
-    const encoded = encodeURIComponent(codeStr)
+    // Safe encoding — catches malformed strings during streaming
+    let encoded
+    try {
+      encoded = encodeURIComponent(codeStr)
+    } catch(e) {
+      // If encoding fails (malformed UTF-16), strip problematic chars and retry
+      try {
+        encoded = encodeURIComponent(codeStr.replace(/[\uD800-\uDFFF]/g, ""))
+      } catch(e2) {
+        encoded = ""
+      }
+    }
 
     const previewBtn = isPreviewable ? `
       <button onclick="toggleSplitPreview('${uid}')" 
@@ -757,6 +769,16 @@ if (typeof marked !== 'undefined') {
         <pre id="${uid}_pre" style="flex:1;min-width:0;margin:0;padding:16px;background:#0d0d12;overflow-x:auto;transition:flex 0.3s ease;"><code style="font-family:'Courier New',monospace;font-size:13px;color:#e0e0e0;line-height:1.65;">${escaped}</code></pre>
       </div>
     </div>`
+    } catch(e) {
+      // If rendering fails for any reason, show code as plain pre block
+      console.warn("[RENDERER] Code block render failed:", e.message)
+      try {
+        const safe = String(token || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+        return '<pre style="background:#0a0a0a;border:1px solid #2a2a2a;border-radius:8px;padding:12px;overflow-x:auto;font-family:monospace;font-size:12px;color:#ddd;">' + safe + '</pre>'
+      } catch(e2) {
+        return '<pre style="color:#ff6666;">[code block error]</pre>'
+      }
+    }
   }
 
   renderer.codespan = function(token) {
@@ -1421,7 +1443,14 @@ async function send() {
           displayedLen = Math.min(displayedLen + step, fullText.length)
 
           const visible = safeContent(fullText.slice(0, displayedLen))
-          const parsedHTML = processMermaidInHTML(marked.parse(visible))
+          let parsedHTML
+          try {
+            parsedHTML = processMermaidInHTML(marked.parse(visible))
+          } catch(e) {
+            console.warn("[MARKED] Parse failed during typing:", e.message)
+            // Fallback: show raw text with HTML escaped
+            parsedHTML = visible.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")
+          }
           span.innerHTML = parsedHTML + '<span class="typingCursor">|</span>'
           scrollBottom()
 
