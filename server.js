@@ -3687,11 +3687,20 @@ app.get("/admin/stats", authMiddleware, async (req, res) => {
 app.get("/admin/dashboard", authMiddleware, async (req, res) => {
   if (!isAdmin(req)) return res.status(403).json({ error: "Not authorized" })
   try {
-    // Get basic counts (fail-safe — use .catch to prevent crashes)
+    // Date ranges
+    const now = new Date()
+    const today = new Date(now); today.setHours(0,0,0,0)
+    const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)
+    const last7Days = new Date(now); last7Days.setDate(last7Days.getDate() - 7)
+    const last30Days = new Date(now); last30Days.setDate(last30Days.getDate() - 30)
+    const last90Days = new Date(now); last90Days.setDate(last90Days.getDate() - 90)
+    const last365Days = new Date(now); last365Days.setDate(last365Days.getDate() - 365)
+
+    // TOTAL COUNTS
     const totalUsers = await User.countDocuments().catch(() => 0)
     const totalChats = await Chat.countDocuments().catch(() => 0)
 
-    // Messages count — use simpler query, fallback to 0
+    // Messages count
     let totalMessagesCount = 0
     try {
       const msgResult = await Chat.aggregate([
@@ -3702,51 +3711,148 @@ app.get("/admin/dashboard", authMiddleware, async (req, res) => {
       totalMessagesCount = msgResult[0]?.total || 0
     } catch(e) { console.warn("[ADMIN] Message count failed:", e.message) }
 
-    // Plan stats
-    let planStats = {}
+    // NEW USERS by time period
+    const newUsersToday = await User.countDocuments({ createdAt: { $gte: today } }).catch(() => 0)
+    const newUsersYesterday = await User.countDocuments({
+      createdAt: { $gte: yesterday, $lt: today }
+    }).catch(() => 0)
+    const newUsersWeek = await User.countDocuments({ createdAt: { $gte: last7Days } }).catch(() => 0)
+    const newUsersMonth = await User.countDocuments({ createdAt: { $gte: last30Days } }).catch(() => 0)
+    const newUsers90Days = await User.countDocuments({ createdAt: { $gte: last90Days } }).catch(() => 0)
+    const newUsersYear = await User.countDocuments({ createdAt: { $gte: last365Days } }).catch(() => 0)
+
+    // CHATS created by period
+    const chatsToday = await Chat.countDocuments({ createdAt: { $gte: today } }).catch(() => 0)
+    const chatsWeek = await Chat.countDocuments({ createdAt: { $gte: last7Days } }).catch(() => 0)
+    const chatsMonth = await Chat.countDocuments({ createdAt: { $gte: last30Days } }).catch(() => 0)
+
+    // PLAN STATS
+    let planStats = { free: 0, starter: 0, plus: 0, pro: 0, ultimate: 0 }
     try {
       const plans = await Subscription.aggregate([
         { $match: { active: true } },
         { $group: { _id: "$plan", count: { $sum: 1 } } }
       ])
-      plans.forEach(p => { planStats[p._id || "free"] = p.count })
+      plans.forEach(p => {
+        if (p._id) planStats[p._id] = p.count
+      })
     } catch(e) { console.warn("[ADMIN] Plan stats failed:", e.message) }
 
-    // Users today
-    const today = new Date(); today.setHours(0,0,0,0)
-    const newUsersToday = await User.countDocuments({ createdAt: { $gte: today } }).catch(() => 0)
-
-    // Revenue
+    // REVENUE — total and by period
     let totalRevenue = 0
+    let revenueToday = 0
+    let revenueWeek = 0
+    let revenueMonth = 0
+    let revenueYear = 0
     let activePaidUsers = 0
+
     try {
-      const allSubs = await Subscription.find({ active: true, plan: { $ne: "free" } })
+      const allSubs = await Subscription.find({
+        plan: { $ne: "free" }
+      }).lean()
+
       allSubs.forEach(s => {
         const price = PLAN_PRICES[s.plan] || 0
-        if (price > 0) {
-          totalRevenue += price
+        if (price <= 0) return
+
+        // Count active users
+        if (s.active) {
           activePaidUsers++
+          totalRevenue += price
+        }
+
+        // Revenue by period based on start date
+        if (s.startDate) {
+          const start = new Date(s.startDate)
+          if (start >= today) revenueToday += price
+          if (start >= last7Days) revenueWeek += price
+          if (start >= last30Days) revenueMonth += price
+          if (start >= last365Days) revenueYear += price
         }
       })
     } catch(e) { console.warn("[ADMIN] Revenue calc failed:", e.message) }
 
-    // Recent users
+    // RECENT USERS (last 20)
     let recentUsers = []
     try {
-      recentUsers = await User.find().sort({ createdAt: -1 }).limit(10).select("username email createdAt").lean()
+      recentUsers = await User.find()
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .select("username email createdAt")
+        .lean()
     } catch(e) { console.warn("[ADMIN] Recent users failed:", e.message) }
+
+    // GROWTH CHART DATA — last 30 days of signups
+    let signupChart = []
+    try {
+      const signups = await User.aggregate([
+        { $match: { createdAt: { $gte: last30Days } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ])
+      signupChart = signups
+    } catch(e) { console.warn("[ADMIN] Signup chart failed:", e.message) }
 
     res.json({
       isAdmin: true,
       success: true,
+      generatedAt: now.toISOString(),
+
+      // Totals
+      totals: {
+        users: totalUsers,
+        chats: totalChats,
+        messages: totalMessagesCount,
+        activePaidUsers,
+        revenue: totalRevenue
+      },
+
+      // New users by period
+      newUsers: {
+        today: newUsersToday,
+        yesterday: newUsersYesterday,
+        week: newUsersWeek,
+        month: newUsersMonth,
+        last90Days: newUsers90Days,
+        year: newUsersYear
+      },
+
+      // Chats by period
+      chats: {
+        today: chatsToday,
+        week: chatsWeek,
+        month: chatsMonth,
+        total: totalChats
+      },
+
+      // Revenue by period
+      revenue: {
+        today: revenueToday,
+        week: revenueWeek,
+        month: revenueMonth,
+        year: revenueYear,
+        total: totalRevenue
+      },
+
+      // Plan distribution
+      planStats,
+
+      // Recent activity
+      recentUsers: recentUsers || [],
+      signupChart: signupChart || [],
+
+      // Legacy keys for backward compat
       totalUsers,
       totalChats,
       totalMessages: totalMessagesCount,
       newUsersToday,
       activePaidUsers,
-      totalRevenue,
-      planStats,
-      recentUsers: recentUsers || []
+      totalRevenue
     })
   } catch(err) {
     console.error("[ADMIN DASHBOARD] Fatal error:", err.message, err.stack)
