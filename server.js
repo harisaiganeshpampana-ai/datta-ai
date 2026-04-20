@@ -2925,7 +2925,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "what can i do","how many messages","daily limit","limit"
     ].some(k => message.toLowerCase().includes(k))
     
-    var pricingKnowledge = "\n\nDATTA AI PRICING PLANS (use this EXACT info):\n\nFREE (₹0/month):\n- 10 messages per day\n- 3 Datta Code requests per day\n- Access: Datta 2.1, Datta Code, Datta Think\n\nSTARTER (₹29/month):\n- 40 messages per day\n- 5 Datta Code requests per day\n- Access: Datta 2.1, Datta 5.4, Datta Code, Datta Think\n\nPLUS (₹299/month):\n- 300 messages per day\n- 30 Datta Code requests per day\n- All models\n- Family Account: 3 members\n- Priority response speed\n\nPRO (₹499/month):\n- 700 messages per day\n- 60 Datta Code requests per day\n- All models\n- Family Account: 4 members\n- Higher priority\n\nULTIMATE (₹799/month):\n- 1500 messages per day\n- 300 Datta Code requests per day\n- All models\n- Family Account: 5 members\n- Highest priority\n\nPAYMENT: UPI, cards, wallets via Razorpay. Cancel anytime. Visit datta-ai.com/pricing.html to upgrade."
+    var pricingKnowledge = "\n\n=== PRICING ANSWER FORMAT ===\nWhen user asks about plans/pricing/features, you MUST respond with the COMPLETE text below. Write it exactly. Do NOT summarize or say 'I have 5 plans'. Write out every plan with all details:\n\nHere are all Datta AI plans:\n\n**🌱 FREE — ₹0/month**\n- 10 messages per day\n- 3 Datta Code requests per day\n- Models: Datta 2.1, Datta Code, Datta Think\n\n**🚀 STARTER — ₹29/month**\n- 40 messages per day\n- 5 Datta Code requests per day\n- Models: Datta 2.1, Datta 5.4, Datta Code, Datta Think\n\n**⚡ PLUS — ₹299/month**\n- 300 messages per day\n- 30 Datta Code requests per day\n- All models\n- Family Account: 3 members\n- Priority response speed\n\n**🔥 PRO — ₹499/month**\n- 700 messages per day\n- 60 Datta Code requests per day\n- All models\n- Family Account: 4 members\n- Higher priority\n\n**👑 ULTIMATE — ₹799/month**\n- 1500 messages per day\n- 300 Datta Code requests per day\n- All models\n- Family Account: 5 members\n- Highest priority\n\n**💳 Payment:** UPI, cards, wallets via Razorpay. Cancel anytime.\n**🔗 Upgrade:** datta-ai.com/pricing.html\n\n=== END PRICING ===\n\nCOPY THE TEXT ABOVE EXACTLY when asked about plans. Never shortcut to 'I have 5 plans' — that is LAZY. Write EVERY plan with ALL details. The user needs to see the full list to choose."
     
     var isVoiceHomework = req.body.voiceMode === "homework" || req.body.voiceMode === "true"
     if (isVoiceHomework) console.log("[VOICE HOMEWORK] Active")
@@ -3150,7 +3150,30 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
     var isNodeTask = !isExplainQuestion && ["node.js","nodejs","express","npm","require(","server.js","mongodb","mongoose","dotenv","process.env","package.json"].some(k => msgLower.includes(k))
     var isFrontendTask = ["html","css","website","webpage","landing page","portfolio","frontend"].some(k => msgLower.includes(k)) && !isNodeTask
 
-    var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + ". " + ainame + " is your name." + (isVoiceHomework ? "\n\nVOICE HOMEWORK MODE: Student is asking homework via voice. Write a spoken-friendly answer:\n- NO markdown, NO bullet points, NO headings, NO code blocks, NO asterisks\n- Keep it SHORT — 4-6 sentences maximum\n- Use simple words, speak like a friendly tutor\n- If question is in Telugu/Hindi/any Indian language, respond in SAME language naturally\n- Start with direct answer, then brief explanation with ONE example\n- End with: Any more doubts? Ask me anything!" : isExplainQuestion ? "\n\nAnswer every question fully with clear bullet points or paragraphs. Give actual content, not just headings." : isCodeTask ? "\n\nYou are answering a coding question. Write COMPLETE, RUNNABLE code. Never truncate. Never say 'rest remains the same'." : isStepByStep ? "\n\nSTEP-BY-STEP MODE: Give numbered steps ONE action each. End with 'Done? Tell me what you see.' NEVER give multiple steps at once." : "\n\nBe friendly, helpful, and human-like. Give complete clear answers.") + (isPricingQuestion ? pricingKnowledge : "") + (searchContext ? "\n\nLIVE DATA from web search — use this to answer directly:\n" + searchContext + "\n\nEXTRACT specific facts, names, dates, numbers. Never write generic headings with empty content." : "") + langNote + styleNote + hardRules
+    // ── CLEAN SIMPLE PROMPT — one clear instruction, no conflicts ──
+    var coreInstruction = ""
+    
+    if (isVoiceHomework) {
+      coreInstruction = "\n\nThe student is asking by voice. Answer in 4-6 spoken sentences. No markdown, no bullets, no headings. Speak like a friendly tutor. If question is in Telugu/Hindi, respond in same language naturally."
+    } else if (isPricingQuestion) {
+      coreInstruction = pricingKnowledge + "\n\nThe user asked about pricing. Copy the pricing text above EXACTLY into your response. Do not summarize. Write every plan fully with all details."
+    } else if (isExplainQuestion) {
+      coreInstruction = "\n\nWRITE A COMPLETE ANSWER. Do not write intro and then stop. Do not write outro only. Write the actual content in the middle:\n1. Start with direct answer\n2. Give 5-8 bullets or 2-3 paragraphs of real content with facts, examples, specifics\n3. Finish with brief conclusion\n\nNever skip the middle. Never write just summary sentences. If user asks 9 questions, answer ALL 9 with full content each."
+    } else if (isCodeTask || isDattaCode) {
+      coreInstruction = "\n\nWrite complete working code. Never truncate with comments like // rest remains the same. Give full files. After code, ask what to add next."
+    } else if (isStepByStep) {
+      coreInstruction = "\n\nGive numbered steps, one action per step. End with: Done? Tell me what you see."
+    } else {
+      coreInstruction = "\n\nGive a complete clear answer with real content. Not just intro and outro. Include specifics, examples, and actual information in the middle of your response."
+    }
+    
+    // Simple identity rules — no contradicting bloat
+    var identityRules = "\n\nYou are " + ainame + ". Never claim to be ChatGPT, Claude, Gemini or any other AI. You have persistent memory across sessions."
+    
+    // Search context — append clearly
+    var searchRules = searchContext ? "\n\nUse this live web search data to answer:\n" + searchContext + "\n\nExtract specific facts, names, dates from above. Do not write generic placeholder content." : ""
+    
+    var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + "." + coreInstruction + identityRules + searchRules + langNote + (emotionalNote || "")
 
     var isVisionModel = (model === "meta-llama/llama-4-scout-17b-16e-instruct")
     var finalUserContent
