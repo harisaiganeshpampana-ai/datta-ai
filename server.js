@@ -229,6 +229,55 @@ connectMongo(1)
 
 // ── Gemini 2.0 Flash — image solver (exam papers + general images) ──────────────
 // ── Gemini for code generation (text only, no image) ──────────────────────────
+// Gemini streaming variant — writes tokens to res as they arrive (feels instant)
+async function streamGeminiToRes(systemPrompt, userPrompt, maxTokens, res, modelName) {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) throw new Error("GEMINI_API_KEY not set")
+  const model = modelName || "gemini-2.5-pro"
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":streamGenerateContent?alt=sse&key=" + apiKey
+
+  const body = {
+    contents: [{ parts: [{ text: systemPrompt + "\n\n" + userPrompt }] }],
+    generationConfig: { maxOutputTokens: Math.min(maxTokens || 8000, 8000), temperature: 0.4 }
+  }
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  })
+
+  if (!resp.ok) {
+    const errText = await resp.text()
+    throw new Error("Gemini stream HTTP " + resp.status + ": " + errText.slice(0, 200))
+  }
+
+  const reader = resp.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ""
+  let fullText = ""
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split("\n")
+    buffer = lines.pop() || ""
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue
+      try {
+        const data = JSON.parse(line.slice(6))
+        const token = data?.candidates?.[0]?.content?.parts?.[0]?.text
+        if (token) {
+          fullText += token
+          if (!res.writableEnded) res.write(token)
+        }
+      } catch(e) {}
+    }
+  }
+  return fullText
+}
+
 async function generateCodeWithGemini(systemPrompt, userPrompt, maxTokens) {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) throw new Error("GEMINI_API_KEY not set")
@@ -2965,7 +3014,7 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
       "persona-student": `Your name is ${ainame}. You are in Student Helper mode. Help with school and college studies. Use very simple language. NEVER say you are any other AI.`,
       "persona-interview": `Your name is ${ainame}. You are in Interview Coach mode. Help with job interview preparation. Be practical and encouraging. NEVER say you are any other AI.`,
       "persona-business": `Your name is ${ainame}. You are in Business Advisor mode. Help with business ideas, startups, marketing. Give practical Indian business advice. NEVER say you are any other AI.`,
-      "datta-code": "Your name is " + ainame + ". You are Datta Code Agent — India best coding AI.\n\nWhen user asks to build any app:\n1. Give complete HTML file first (self-contained, beautiful dark UI #0a0a0a)\n2. Give complete server.js\n3. Give package.json\n4. After ALL files, ALWAYS end with:\n\nWhat would you like to add next?\n- 🔐 User login & signup\n- 📦 Order tracking\n- 💳 Razorpay payment\n- 📊 Admin dashboard\n- 📱 Make it mobile app\n- Something else?\n\nRULES:\n- NEVER give step by step instructions\n- Just give complete code files directly\n- After code always ask what to add next\n- NEVER say you are any other AI.",
+      "datta-code": "Your name is \" + ainame + \". You are Datta Code Agent — India best coding AI.\n\nCRITICAL RULE FOR ADDING FEATURES:\nWhen user asks to ADD something (settings, login, payment, page, feature) to an app you built earlier in this chat:\n- Look at the LAST COMPLETE CODE you gave in this conversation\n- ADD the new feature to that EXISTING code\n- Give back the UPDATED FULL FILE with new feature integrated\n- Do NOT rewrite a different app from scratch\n- Tell the user what you added and where\n\nWhen user asks to BUILD a new app (different from any existing):\n1. Give complete HTML file first (self-contained, beautiful dark UI #0a0a0a)\n2. Give complete server.js if needed\n3. Give package.json if needed\n\nAfter giving code, ALWAYS end with:\nWhat would you like to add next?\n- User login & signup\n- Order tracking\n- Razorpay payment\n- Admin dashboard\n- Something else?\n\nRULES:\n- REMEMBER code from earlier messages — build on it, never restart\n- If user says 'add X' or 'add settings' or 'include Y' → modify your previous code, don't create new\n- NEVER give step by step instructions\n- Just give complete updated code files directly\n- NEVER say you are any other AI.",
       "datta-think": `Your name is ${ainame}. You are Datta Think — an advanced reasoning AI. Think step by step. Show reasoning. Give the most correct answer. NEVER say you are any other AI.`
     }
 
@@ -3140,25 +3189,25 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
           isLargeTask ? "Large Task" :
           isDeepKnowledge ? "Deep Knowledge" : "Structured Topic"
         )
-        const geminiAnswer = await generateCodeWithGemini(systemWithMemory, safeStr(finalUserContent), maxTok)
+        // Use TRUE streaming — tokens arrive within 1-2 seconds and keep flowing
+        let geminiAnswer = ""
+        try {
+          geminiAnswer = await streamGeminiToRes(systemWithMemory, safeStr(finalUserContent), maxTok, res, "gemini-2.5-pro")
+        } catch(streamErr) {
+          console.warn("[GEMINI STREAM] Failed, trying non-stream:", streamErr.message)
+          geminiAnswer = await generateCodeWithGemini(systemWithMemory, safeStr(finalUserContent), maxTok)
+          if (geminiAnswer && !res.writableEnded) res.write(geminiAnswer)
+        }
+        
         if (geminiAnswer && geminiAnswer.length > 50) {
-          console.log("[GEMINI] First 500 chars:", geminiAnswer.substring(0, 500))
-          console.log("[GEMINI] Last 500 chars:", geminiAnswer.substring(geminiAnswer.length - 500))
           if (!res.writableEnded) {
-            // Simple chunked streaming
-            const chunkSize = 60
-            for (let i = 0; i < geminiAnswer.length; i += chunkSize) {
-              if (res.writableEnded) break
-              res.write(geminiAnswer.substring(i, i + chunkSize))
-              await new Promise(r => setTimeout(r, 8))
-            }
             chat.messages.push({ role: "assistant", content: geminiAnswer })
             await chat.save()
             res.write("CHATID" + chat._id)
             res.end()
           }
           if (typeof cleanupRequest === "function") cleanupRequest()
-          console.log("[GEMINI] Success:", geminiAnswer.length, "chars")
+          console.log("[GEMINI] Streamed:", geminiAnswer.length, "chars")
           return
         }
       } catch(gemErr) {
