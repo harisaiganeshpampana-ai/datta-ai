@@ -3683,6 +3683,55 @@ app.get("/admin/stats", authMiddleware, async (req, res) => {
   } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
+// Alias for admin dashboard verification (used by admin.html)
+app.get("/admin/dashboard", authMiddleware, async (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: "Not authorized" })
+  try {
+    const [totalUsers, totalChats, totalMessages, plans, allSubs] = await Promise.all([
+      User.countDocuments(),
+      Chat.countDocuments(),
+      Chat.aggregate([{ $project: { count: { $size: "$messages" } } }, { $group: { _id: null, total: { $sum: "$count" } } }]),
+      Subscription.aggregate([{ $group: { _id: "$plan", count: { $sum: 1 } } }]),
+      Subscription.find({ active: true, plan: { $ne: "free" } })
+    ])
+    const today = new Date(); today.setHours(0,0,0,0)
+    const newUsersToday = await User.countDocuments({ createdAt: { $gte: today } })
+
+    // Plan distribution
+    const planStats = {}
+    plans.forEach(p => { planStats[p._id || "free"] = p.count })
+
+    // Calculate total revenue
+    let totalRevenue = 0
+    let activePaidUsers = 0
+    allSubs.forEach(s => {
+      const price = PLAN_PRICES[s.plan] || 0
+      if (price > 0) {
+        totalRevenue += price
+        activePaidUsers++
+      }
+    })
+
+    // Recent users
+    const recentUsers = await User.find().sort({ createdAt: -1 }).limit(10).select("username email createdAt")
+
+    res.json({
+      isAdmin: true,
+      totalUsers,
+      totalChats,
+      totalMessages: totalMessages[0]?.total || 0,
+      newUsersToday,
+      activePaidUsers,
+      totalRevenue,
+      planStats,
+      recentUsers
+    })
+  } catch(err) {
+    console.error("[ADMIN DASHBOARD] Error:", err.message)
+    res.status(500).json({ error: sanitizeError(err).userMsg })
+  }
+})
+
 app.get("/admin/users", authMiddleware, async (req, res) => {
   if (!isAdmin(req)) return res.status(403).json({ error: "Not authorized" })
   try {
