@@ -3687,48 +3687,70 @@ app.get("/admin/stats", authMiddleware, async (req, res) => {
 app.get("/admin/dashboard", authMiddleware, async (req, res) => {
   if (!isAdmin(req)) return res.status(403).json({ error: "Not authorized" })
   try {
-    const [totalUsers, totalChats, totalMessages, plans, allSubs] = await Promise.all([
-      User.countDocuments(),
-      Chat.countDocuments(),
-      Chat.aggregate([{ $project: { count: { $size: "$messages" } } }, { $group: { _id: null, total: { $sum: "$count" } } }]),
-      Subscription.aggregate([{ $group: { _id: "$plan", count: { $sum: 1 } } }]),
-      Subscription.find({ active: true, plan: { $ne: "free" } })
-    ])
+    // Get basic counts (fail-safe — use .catch to prevent crashes)
+    const totalUsers = await User.countDocuments().catch(() => 0)
+    const totalChats = await Chat.countDocuments().catch(() => 0)
+
+    // Messages count — use simpler query, fallback to 0
+    let totalMessagesCount = 0
+    try {
+      const msgResult = await Chat.aggregate([
+        { $match: { messages: { $exists: true, $type: "array" } } },
+        { $project: { count: { $size: { $ifNull: ["$messages", []] } } } },
+        { $group: { _id: null, total: { $sum: "$count" } } }
+      ])
+      totalMessagesCount = msgResult[0]?.total || 0
+    } catch(e) { console.warn("[ADMIN] Message count failed:", e.message) }
+
+    // Plan stats
+    let planStats = {}
+    try {
+      const plans = await Subscription.aggregate([
+        { $match: { active: true } },
+        { $group: { _id: "$plan", count: { $sum: 1 } } }
+      ])
+      plans.forEach(p => { planStats[p._id || "free"] = p.count })
+    } catch(e) { console.warn("[ADMIN] Plan stats failed:", e.message) }
+
+    // Users today
     const today = new Date(); today.setHours(0,0,0,0)
-    const newUsersToday = await User.countDocuments({ createdAt: { $gte: today } })
+    const newUsersToday = await User.countDocuments({ createdAt: { $gte: today } }).catch(() => 0)
 
-    // Plan distribution
-    const planStats = {}
-    plans.forEach(p => { planStats[p._id || "free"] = p.count })
-
-    // Calculate total revenue
+    // Revenue
     let totalRevenue = 0
     let activePaidUsers = 0
-    allSubs.forEach(s => {
-      const price = PLAN_PRICES[s.plan] || 0
-      if (price > 0) {
-        totalRevenue += price
-        activePaidUsers++
-      }
-    })
+    try {
+      const allSubs = await Subscription.find({ active: true, plan: { $ne: "free" } })
+      allSubs.forEach(s => {
+        const price = PLAN_PRICES[s.plan] || 0
+        if (price > 0) {
+          totalRevenue += price
+          activePaidUsers++
+        }
+      })
+    } catch(e) { console.warn("[ADMIN] Revenue calc failed:", e.message) }
 
     // Recent users
-    const recentUsers = await User.find().sort({ createdAt: -1 }).limit(10).select("username email createdAt")
+    let recentUsers = []
+    try {
+      recentUsers = await User.find().sort({ createdAt: -1 }).limit(10).select("username email createdAt").lean()
+    } catch(e) { console.warn("[ADMIN] Recent users failed:", e.message) }
 
     res.json({
       isAdmin: true,
+      success: true,
       totalUsers,
       totalChats,
-      totalMessages: totalMessages[0]?.total || 0,
+      totalMessages: totalMessagesCount,
       newUsersToday,
       activePaidUsers,
       totalRevenue,
       planStats,
-      recentUsers
+      recentUsers: recentUsers || []
     })
   } catch(err) {
-    console.error("[ADMIN DASHBOARD] Error:", err.message)
-    res.status(500).json({ error: sanitizeError(err).userMsg })
+    console.error("[ADMIN DASHBOARD] Fatal error:", err.message, err.stack)
+    res.status(500).json({ error: "Dashboard error: " + err.message })
   }
 })
 
