@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>AI Tool to Build Apps, Websites & Business Plans — Datta AI</title>
 <meta name="description" content="Build apps, websites, and business plans instantly with Datta AI. No coding. No confusion. Just describe what you need. Free to start.">
 
@@ -665,10 +668,7 @@
     </div>
 
     <div class="trust-line">
-      <div class="avatars">
-        <span>R</span><span>P</span><span>A</span>
-      </div>
-      <span>Used by <b style="color:var(--text);">1,000+</b> builders across India</span>
+      <span>🇮🇳 Built in India · Free to try</span>
     </div>
   </div>
 
@@ -914,65 +914,33 @@ and young professionals in Hyderabad.
   </div>
 </section>
 
-<!-- TRUST -->
+<!-- FOUNDER STORY (honest, no fake testimonials) -->
 <section>
   <div class="wrap">
     <div class="sec-head">
-      <div class="sec-label">Loved by Users</div>
-      <h2>Fast, simple,<br><em>beginner-friendly.</em></h2>
+      <div class="sec-label">Our Story</div>
+      <h2>Built by a student,<br><em>for students.</em></h2>
     </div>
 
-    <div class="testimonials">
-      <div class="testi">
-        <div class="testi-stars">★ ★ ★ ★ ★</div>
-        <div class="testi-quote">"Built my entire portfolio in 10 minutes. No coding. No headache. Datta AI is a gamechanger."</div>
-        <div class="testi-author">
-          <div class="testi-avatar">R</div>
-          <div>
-            <div class="testi-name">Rahul Kumar</div>
-            <div class="testi-role">Freelance Designer</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="testi">
-        <div class="testi-stars">★ ★ ★ ★ ★</div>
-        <div class="testi-quote">"Made business plan for my startup pitch in 5 minutes. Got funded in 2 weeks. Best tool for founders."</div>
-        <div class="testi-author">
-          <div class="testi-avatar" style="background:linear-gradient(135deg,#ff9955,#ff5580);">P</div>
-          <div>
-            <div class="testi-name">Priya Sharma</div>
-            <div class="testi-role">Startup Founder</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="testi">
-        <div class="testi-stars">★ ★ ★ ★ ★</div>
-        <div class="testi-quote">"Indian AI that actually understands us. Works in Telugu perfectly. Finally something for our market."</div>
-        <div class="testi-author">
-          <div class="testi-avatar" style="background:linear-gradient(135deg,#5588ff,#aa55ff);">A</div>
-          <div>
-            <div class="testi-name">Arjun Reddy</div>
-            <div class="testi-role">Student, IIT Hyderabad</div>
-          </div>
-        </div>
-      </div>
+    <div style="max-width:720px;margin:0 auto;text-align:center;padding:0 20px;">
+      <p style="color:var(--text2);font-size:17px;line-height:1.7;margin-bottom:24px;">
+        Datta AI is built by <strong style="color:var(--text);">LR AI</strong> — a new Indian startup founded by a final-year BSc Agriculture student.
+      </p>
+      <p style="color:var(--text2);font-size:17px;line-height:1.7;margin-bottom:24px;">
+        The name <strong style="color:var(--accent);">LR</strong> comes from the founder's parents — <strong style="color:var(--text);">Lakshmi</strong> and <strong style="color:var(--text);">Ramanjaneyulu</strong>. Legacy and Resilience.
+      </p>
+      <p style="color:var(--text2);font-size:17px;line-height:1.7;">
+        We're just getting started. If you find Datta AI useful, your feedback will shape what we build next.
+      </p>
     </div>
 
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-num">1,000+</div>
-        <div class="stat-label">Active Users</div>
-      </div>
-      <div class="stat">
-        <div class="stat-num">10s</div>
-        <div class="stat-label">Avg Response Time</div>
-      </div>
-      <div class="stat">
-        <div class="stat-num">3</div>
-        <div class="stat-label">Languages Supported</div>
-      </div>
+    <div style="max-width:600px;margin:60px auto 0;padding:32px;background:var(--bg-1);border:1px solid var(--border);border-radius:20px;text-align:center;">
+      <div style="font-size:14px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:12px;">Early Access</div>
+      <h3 style="font-size:22px;margin-bottom:12px;letter-spacing:-0.5px;">Be an early user</h3>
+      <p style="color:var(--text-2);font-size:15px;line-height:1.5;margin-bottom:20px;">
+        We're looking for early users to try Datta AI and tell us what works, what doesn't. Your honest feedback matters.
+      </p>
+      <a href="chat.html" class="btn btn-primary" style="display:inline-flex;">Try It Free</a>
     </div>
   </div>
 </section>
@@ -1087,6 +1055,45 @@ and young professionals in Hyderabad.
 </a>
 
 <script>
+  // ══════ SERVICE WORKER — auto update, no popup ══════
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      console.log('[SW] Registered')
+      // Auto-update silently without showing popup
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // Silently tell the new worker to skip waiting and take over
+              newWorker.postMessage({ type: 'SKIP_WAITING' })
+            }
+          })
+        }
+      })
+    }).catch(e => console.warn('[SW] Registration failed:', e))
+
+    // When new service worker takes over, do NOT reload automatically
+    // (prevents update loop)
+    let refreshing = false
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return
+      refreshing = true
+      // Don't force reload — let user navigate naturally
+    })
+  }
+
+  // ══════ AUTO-REDIRECT LOGGED-IN USERS TO CHAT ══════
+  (function() {
+    try {
+      const token = localStorage.getItem("datta_token")
+      const user = localStorage.getItem("datta_user")
+      if (token && user && token.length > 20) {
+        window.location.replace("chat.html")
+      }
+    } catch(e) {}
+  })()
+
   function switchDemo(name) {
     document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'))
     document.querySelectorAll('.demo-panel').forEach(p => p.classList.remove('active'))
