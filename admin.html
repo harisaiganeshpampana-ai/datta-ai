@@ -1,239 +1,533 @@
 <!DOCTYPE html>
-<html lang="en"> 
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Datta AI — Admin Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap');
-:root{--bg:#070810;--bg2:#0d0f1c;--bg3:#131627;--border:#1e2236;--accent:#4f6ef7;--green:#00e5a0;--red:#ff4d6d;--yellow:#ffd166;--text:#e8eaf6;--text2:#8892b0;--text3:#3d4466;--plus:#f7984f;--pro:#ff4d6d}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:0;z-index:100}
-.topbar-logo{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:3px;color:var(--accent)}
-.topbar-right{display:flex;align-items:center;gap:10px}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-.ts{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace}
-.btn{padding:5px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s}
-.btn:hover{border-color:var(--accent);color:var(--accent)}
-.btn-danger{border-color:#ff4d6d33;color:var(--red)}
-#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh}
-.login-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:36px 28px;width:300px;text-align:center}
-.login-card h2{font-size:18px;margin-bottom:4px}
-.login-card p{font-size:12px;color:var(--text2);margin-bottom:20px}
-input{width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;font-family:inherit;outline:none;margin-bottom:10px;transition:border-color .15s}
-input:focus{border-color:var(--accent)}
-.login-btn{width:100%;padding:11px;background:var(--accent);border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
-.wrap{padding:24px;max-width:1400px;margin:0 auto}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px}
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden;transition:border-color .2s,transform .15s}
-.card:hover{border-color:var(--accent);transform:translateY(-2px)}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ca,var(--accent))}
-.card-lbl{font-size:10px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px;font-family:'JetBrains Mono',monospace}
-.card-val{font-size:28px;font-weight:800;line-height:1}
-.card-sub{font-size:11px;color:var(--text2);margin-top:6px}
-.up{color:var(--green)}.dn{color:var(--red)}
-.charts-row{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:24px}
-.ccrd{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px}
-.ctitle{font-size:12px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
-.ctitle span{font-size:10px;color:var(--text3);font-weight:400}
-.cwrap{position:relative;height:200px}
-.pbars{display:flex;flex-direction:column;gap:11px;margin-top:4px}
-.prow{display:flex;align-items:center;gap:8px}
-.plbl{font-size:11px;color:var(--text2);width:44px;font-family:'JetBrains Mono',monospace}
-.pbar-bg{flex:1;height:5px;background:var(--bg3);border-radius:5px;overflow:hidden}
-.pbar{height:100%;border-radius:5px;transition:width .8s ease}
-.pcnt{font-size:11px;color:var(--text3);width:32px;text-align:right;font-family:'JetBrains Mono',monospace}
-.tcrd{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px}
-.ttitle{font-size:12px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
-table{width:100%;border-collapse:collapse}
-th{text-align:left;font-size:10px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;padding:0 0 10px;font-family:'JetBrains Mono',monospace;font-weight:400;border-bottom:1px solid var(--border)}
-td{padding:11px 0;font-size:12px;color:var(--text2);border-bottom:1px solid var(--border)}
-tr:last-child td{border-bottom:none}
-td:first-child{color:var(--text);font-weight:600}
-.badge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace}
-.bf{background:rgba(78,205,196,.1);color:#4ecdc4}
-.bp{background:rgba(247,152,79,.12);color:var(--plus)}
-.bpro{background:rgba(255,77,109,.12);color:var(--red)}
-.bm{background:rgba(79,110,247,.12);color:var(--accent)}
-.empty{text-align:center;padding:32px;color:var(--text3);font-size:12px}
-.spin{display:flex;align-items:center;justify-content:center;min-height:280px}
-.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-@media(max-width:900px){.charts-row{grid-template-columns:1fr}}
-@media(max-width:600px){.cards{grid-template-columns:1fr 1fr}.card-val{font-size:22px}}
+  :root {
+    --bg: #0a0a0a; --bg2: #141414; --bg3: #1a1a1a;
+    --border: rgba(255,255,255,0.08);
+    --text: #ffffff; --text2: #b8b8b8; --text3: #707070;
+    --accent: #00ff88; --blue: #3b82f6; --purple: #8b5cf6;
+    --orange: #ff9955; --red: #ef4444;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    padding: 20px; min-height: 100vh;
+  }
+  button, input { font-family: inherit; }
+  .wrap { max-width: 1400px; margin: 0 auto; }
+
+  .login-wrap {
+    min-height: 100vh; display: flex;
+    align-items: center; justify-content: center;
+  }
+  .login-box {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 40px;
+    max-width: 420px; width: 100%;
+  }
+  .login-box h1 { font-size: 26px; margin-bottom: 8px; font-weight: 800; }
+  .login-box h1 b { color: var(--accent); }
+  .login-box p { color: var(--text3); margin-bottom: 24px; font-size: 14px; }
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block; font-size: 12px; color: var(--text3);
+    margin-bottom: 6px; letter-spacing: 1px;
+    text-transform: uppercase; font-weight: 600;
+  }
+  .field input {
+    width: 100%; padding: 12px 14px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); font-size: 14px;
+    outline: none;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .btn {
+    width: 100%; padding: 14px;
+    background: var(--accent); color: #000;
+    border: none; border-radius: 10px;
+    font-weight: 800; font-size: 14px; cursor: pointer;
+  }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .error { color: var(--red); font-size: 13px; margin-top: 10px; text-align: center; }
+
+  .dash-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 30px; flex-wrap: wrap; gap: 12px;
+  }
+  .dash-title h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+  .dash-title h1 b { color: var(--accent); }
+  .dash-title p { color: var(--text3); font-size: 13px; margin-top: 4px; }
+
+  .refresh-btn {
+    padding: 10px 20px; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); font-size: 13px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+  }
+  .logout-btn {
+    padding: 8px 16px; background: transparent;
+    border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text3); cursor: pointer; font-size: 12px;
+  }
+
+  .section { margin-bottom: 30px; }
+  .section-title {
+    font-size: 11px; color: var(--text3);
+    letter-spacing: 2px; text-transform: uppercase;
+    font-weight: 800; margin-bottom: 14px;
+  }
+
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .stat-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px;
+  }
+  .stat-label {
+    font-size: 11px; color: var(--text3);
+    letter-spacing: 1.5px; text-transform: uppercase;
+    font-weight: 700; margin-bottom: 8px;
+  }
+  .stat-value {
+    font-size: 32px; font-weight: 800;
+    letter-spacing: -1px; line-height: 1;
+  }
+  .stat-value.accent { color: var(--accent); }
+  .stat-value.blue { color: var(--blue); }
+  .stat-value.purple { color: var(--purple); }
+  .stat-value.orange { color: var(--orange); }
+  .stat-sub { font-size: 12px; color: var(--text3); margin-top: 8px; }
+
+  .revenue-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .rev-card {
+    background: linear-gradient(135deg, var(--bg2) 0%, var(--bg3) 100%);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 24px;
+    position: relative; overflow: hidden;
+  }
+  .rev-card::before {
+    content: ''; position: absolute;
+    top: -20px; right: -20px;
+    width: 80px; height: 80px;
+    background: radial-gradient(circle, rgba(0,255,136,0.15), transparent);
+    border-radius: 50%;
+  }
+  .rev-label { font-size: 12px; color: var(--text3); margin-bottom: 8px; font-weight: 600; }
+  .rev-amount {
+    font-size: 28px; font-weight: 800;
+    color: var(--accent); letter-spacing: -1px;
+    display: flex; align-items: baseline; gap: 4px;
+  }
+  .rev-amount .rupee { font-size: 20px; opacity: 0.7; }
+
+  .plans-breakdown {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+  }
+  .plan-item {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; text-align: center;
+  }
+  .plan-name {
+    font-size: 11px; color: var(--text3);
+    letter-spacing: 1.5px; text-transform: uppercase;
+    font-weight: 700; margin-bottom: 8px;
+  }
+  .plan-count { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+  .plan-count.free { color: var(--text2); }
+  .plan-count.starter { color: var(--blue); }
+  .plan-count.plus { color: var(--accent); }
+  .plan-count.pro { color: var(--orange); }
+  .plan-count.ultimate { color: var(--purple); }
+  .plan-users { font-size: 11px; color: var(--text3); }
+
+  .users-table {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden;
+  }
+  .table-row {
+    display: grid; grid-template-columns: 1fr 2fr 1fr;
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    align-items: center; font-size: 13px;
+  }
+  .table-row:last-child { border-bottom: none; }
+  .table-row.header {
+    background: var(--bg3); font-size: 11px;
+    color: var(--text3); text-transform: uppercase;
+    letter-spacing: 1px; font-weight: 700;
+  }
+  .table-row .email { color: var(--text2); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .table-row .date { color: var(--text3); }
+
+  .chart-wrap {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 24px; height: 250px;
+  }
+  .chart-bars {
+    display: flex; align-items: flex-end;
+    gap: 4px; height: 180px; margin-top: 20px;
+  }
+  .chart-bar {
+    flex: 1;
+    background: linear-gradient(to top, var(--accent), rgba(0,255,136,0.3));
+    border-radius: 4px 4px 0 0; min-height: 4px;
+    position: relative; transition: all 0.2s;
+  }
+  .chart-bar:hover { background: var(--accent); }
+
+  @media (max-width: 600px) {
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .stat-value { font-size: 22px; }
+    .rev-amount { font-size: 22px; }
+    .table-row { grid-template-columns: 1fr 1fr; }
+    .table-row .email { display: none; }
+  }
+
+  .loading {
+    display: flex; align-items: center; justify-content: center;
+    height: 200px; color: var(--text3); font-size: 14px;
+  }
+  .spinner {
+    width: 30px; height: 30px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 1s linear infinite;
+    margin-right: 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 
-<div id="loginScreen">
-  <div class="login-card">
-    <div style="font-size:30px;margin-bottom:14px">📊</div>
-    <h2>Admin Dashboard</h2>
-    <p>Datta AI Analytics</p>
-    <input id="em" type="email" placeholder="Admin email">
-    <input id="pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
-    <button class="login-btn" onclick="login()">Sign In</button>
-    <div id="lerr" style="color:#ff4d6d;font-size:11px;margin-top:8px"></div>
+<div id="loginScreen" class="login-wrap" style="display:none;">
+  <div class="login-box">
+    <h1>Datta <b>AI</b> Admin</h1>
+    <p>Sign in with your admin credentials</p>
+    <div class="field">
+      <label>Email or Username</label>
+      <input type="text" id="loginUser" placeholder="admin@email.com">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="••••••••">
+    </div>
+    <button class="btn" id="loginBtn" onclick="doLogin()">Sign In</button>
+    <div class="error" id="lerr"></div>
   </div>
 </div>
 
-<div id="dashboard" style="display:none">
-  <div class="topbar">
-    <div class="topbar-logo">⚡ DATTA AI ADMIN</div>
-    <div class="topbar-right">
-      <div class="dot"></div>
-      <div class="ts" id="ts">–</div>
-      <button class="btn" onclick="load()">↺ Refresh</button>
-      <button class="btn btn-danger" onclick="logout()">Sign Out</button>
+<div id="dashboard" class="wrap" style="display:none;">
+  <div class="dash-head">
+    <div class="dash-title">
+      <h1>Datta <b>AI</b> · Admin Dashboard</h1>
+      <p id="lastUpdate">Loading...</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="refresh-btn" onclick="loadDashboard()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"/>
+          <polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+        Refresh
+      </button>
+      <button class="logout-btn" onclick="logout()">Logout</button>
     </div>
   </div>
-  <div id="dc" class="wrap"><div class="spin"><div class="spinner"></div></div></div>
+  <div id="dashContent">
+    <div class="loading"><div class="spinner"></div>Loading...</div>
+  </div>
 </div>
 
 <script>
-const S="https://datta-ai-server.onrender.com"
-let tok=localStorage.getItem("adm_tok")||localStorage.getItem("datta_token")||""
-let lc=null
+const S = "https://datta-ai-server.onrender.com"
 
-async function login(){
-  const e=document.getElementById("em").value.trim(),p=document.getElementById("pw").value
-  document.getElementById("lerr").textContent=""
-  if(!e||!p){document.getElementById("lerr").textContent="Enter email and password";return}
-  document.getElementById("lerr").style.color="#8892b0"
-  document.getElementById("lerr").textContent="Signing in..."
-  try{
-    const r=await fetch(S+"/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:e,password:p})})
-    const d=await r.json()
-    if(!r.ok||!d.token){
-      document.getElementById("lerr").style.color="#ff4d6d"
-      document.getElementById("lerr").textContent=d.error||"Login failed"
-      return
-    }
-    // Verify this user is actually admin before entering dashboard
-    const ar=await fetch(S+"/admin/dashboard",{headers:{"Authorization":"Bearer "+d.token}})
-    if(ar.status===403){
-      document.getElementById("lerr").style.color="#ff4d6d"
-      document.getElementById("lerr").textContent="Access denied. This account is not an admin."
-      return
-    }
-    tok=d.token
-    localStorage.setItem("adm_tok",tok)
-    document.getElementById("lerr").textContent=""
-    show()
-  }catch(err){
-    document.getElementById("lerr").style.color="#ff4d6d"
-    document.getElementById("lerr").textContent="Connection failed. Check server."
-  }
-}
+function getToken() { return localStorage.getItem("datta_admin_token") || localStorage.getItem("datta_token") || "" }
+function saveToken(t) { localStorage.setItem("datta_admin_token", t) }
+function logout() { localStorage.removeItem("datta_admin_token"); window.location.reload() }
 
-function logout(){localStorage.removeItem("adm_tok");tok="";document.getElementById("dashboard").style.display="none";document.getElementById("loginScreen").style.display="flex"}
+async function doLogin() {
+  const u = document.getElementById("loginUser").value.trim()
+  const p = document.getElementById("loginPass").value
+  const err = document.getElementById("lerr")
+  const btn = document.getElementById("loginBtn")
+  if (!u || !p) { err.textContent = "Enter email and password"; return }
 
-function show(){document.getElementById("loginScreen").style.display="none";document.getElementById("dashboard").style.display="block";load();setInterval(load,60000)}
+  btn.disabled = true; btn.textContent = "Signing in..."
+  err.textContent = ""
 
-async function load(){
-  document.getElementById("dc").innerHTML='<div class="spin"><div class="spinner"></div></div>'
-  try{
-    const r=await fetch(S+"/admin/dashboard",{headers:{"Authorization":"Bearer "+tok}})
-    if(r.status===401){logout();return}
-    if(r.status===403){
-      document.getElementById("dc").innerHTML='<div class="empty" style="color:#ff4d6d">⛔ Access denied.<br><small>Your email is not in ADMIN_EMAILS on Render.</small></div>'
-      return
-    }
-    if(!r.ok){
-      const err=await r.json().catch(()=>({}))
-      document.getElementById("dc").innerHTML='<div class="empty" style="color:#ff4d6d">⚠️ Server error '+r.status+'<br><small>'+(err.error||"Unknown error")+'</small></div>'
-      return
-    }
-    const d=await r.json()
-    render(d)
-    document.getElementById("ts").textContent="Updated "+new Date().toLocaleTimeString()
-  }catch(err){
-    document.getElementById("dc").innerHTML='<div class="empty" style="color:#ff4d6d">⚠️ Failed: '+err.message+'<br><small>Is the Render server running?</small></div>'
-  }
-}
-
-function fmt(n){return(n||0).toLocaleString()}
-
-function render(d){
-  const paid=(d.planStats.starter||0)+(d.planStats.plus||0)+(d.planStats.pro||0)+(d.planStats.ultimate||0)+(d.planStats.standard||0)+(d.planStats.mini||0)+(d.planStats.max||0)
-  document.getElementById("dc").innerHTML=`
-    <div class="cards">
-      <div class="card" style="--ca:#4f6ef7"><div class="card-lbl">MRR</div><div class="card-val">₹${fmt(d.mrr)}</div><div class="card-sub">${paid} paying users</div></div>
-      <div class="card" style="--ca:#00e5a0"><div class="card-lbl">Total Users</div><div class="card-val">${fmt(d.totalUsers)}</div><div class="card-sub"><span class="up">+${d.newUsersToday||0} today</span> · +${d.newUsers7d||0} this week</div></div>
-      <div class="card" style="--ca:#ffd166"><div class="card-lbl">Active 24h</div><div class="card-val">${fmt(d.activeUsers24h)}</div><div class="card-sub">${d.totalUsers>0?((d.activeUsers24h/d.totalUsers)*100).toFixed(1):0}% of total</div></div>
-      <div class="card" style="--ca:#ff4d6d"><div class="card-lbl">Conversion</div><div class="card-val">${d.conversionRate||0}%</div><div class="card-sub">${paid} paid / ${d.totalUsers} total</div></div>
-      <div class="card" style="--ca:#a78bfa"><div class="card-lbl">Messages</div><div class="card-val">${fmt(d.totalMessages)}</div><div class="card-sub">all time</div></div>
-      <div class="card" style="--ca:#f7984f"><div class="card-lbl">Active Subs</div><div class="card-val">${d.activeSubs||0}</div><div class="card-sub">Plus + Pro</div></div>
-    </div>
-    <div class="charts-row">
-      <div class="ccrd"><div class="ctitle">Daily Messages <span>Last 7 days</span></div><div class="cwrap"><canvas id="lc"></canvas></div></div>
-      <div class="ccrd"><div class="ctitle">Plan Distribution</div><div id="pb" class="pbars"></div></div>
-    </div>
-    <div class="tcrd"><div class="ttitle">Recent Subscriptions <span>${(d.recentSubscriptions||[]).length} shown</span></div>${tbl(d.recentSubscriptions||[])}</div>
-  `
-  drawLine(d.dailyMessages||[])
-  drawBars(d.planStats||{},d.totalUsers||1)
-}
-
-function tbl(subs){
-  if(!subs.length)return'<div class="empty">No subscriptions yet</div>'
-  return'<table><thead><tr><th>User</th><th>Plan</th><th>Amount</th><th>Method</th><th>Date</th></tr></thead><tbody>'
-    +subs.map(s=>`<tr><td>${s.user||"–"}</td><td><span class="badge b${s.plan==="pro"?"pro":s.plan==="plus"?"p":s.plan==="mini"?"m":"f"}">${s.plan}</span></td><td style="font-family:'JetBrains Mono',monospace;color:var(--green)">₹${s.amount||0}</td><td style="color:var(--text3)">${s.method||"web"}</td><td style="color:var(--text3);font-size:10px">${s.startDate?new Date(s.startDate).toLocaleDateString():"–"}</td></tr>`).join("")
-    +"</tbody></table>"
-}
-
-function drawLine(data){
-  const labels=[],vals=[]
-  const now=new Date()
-  for(let i=6;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);const k=d.toISOString().slice(0,10);labels.push(d.toLocaleDateString("en-IN",{weekday:"short",day:"numeric"}));const f=data.find(r=>r._id===k);vals.push(f?f.messages:0)}
-  if(lc)lc.destroy()
-  lc=new Chart(document.getElementById("lc").getContext("2d"),{type:"line",data:{labels,datasets:[{label:"Messages",data:vals,borderColor:"#4f6ef7",backgroundColor:"rgba(79,110,247,0.08)",borderWidth:2,pointBackgroundColor:"#4f6ef7",pointRadius:4,fill:true,tension:0.4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:"#1e2236"},ticks:{color:"#8892b0",font:{size:10}}},y:{grid:{color:"#1e2236"},ticks:{color:"#8892b0",font:{size:10}},beginAtZero:true}}}})
-}
-
-function drawBars(stats,total){
-  const plans=[
-    {k:"free",     l:"Free",     c:"#4ecdc4"},
-    {k:"starter",  l:"Starter",  c:"#00cc6a"},
-    {k:"plus",     l:"Plus",     c:"#f7984f"},
-    {k:"pro",      l:"Pro",      c:"#ff4d6d"},
-    {k:"ultimate", l:"Ultimate", c:"#a78bfa"},
-    {k:"standard", l:"Standard", c:"#4f6ef7"},
-    {k:"mini",     l:"Mini",     c:"#ffd166"},
-    {k:"max",      l:"Max",      c:"#e879f9"}
-  ]
-  const paidTotal=(stats.starter||0)+(stats.plus||0)+(stats.pro||0)+(stats.ultimate||0)+(stats.standard||0)+(stats.mini||0)+(stats.max||0)
-  const fc=Math.max(0,total-paidTotal)
-  const all={...stats,free:fc}
-  const mx=Math.max(1,...plans.map(p=>all[p.k]||0))
-  const el=document.getElementById("pb")
-  if(!el)return
-  el.innerHTML=plans.filter(p=>(all[p.k]||0)>0||p.k==="free").map(p=>{const c=all[p.k]||0;const pct=Math.round((c/mx)*100);return`<div class="prow"><div class="plbl">${p.l}</div><div class="pbar-bg"><div class="pbar" style="width:${pct}%;background:${p.c}"></div></div><div class="pcnt">${c}</div></div>`}).join("")
-}
-
-// Try existing token (adm_tok or datta_token from main app)
-if(tok){
-  // Quick verify the token is still valid and is admin
-  fetch(S+"/admin/dashboard",{headers:{"Authorization":"Bearer "+tok}})
-    .then(r=>{
-      if(r.ok){ show() }
-      else if(r.status===403){
-        // Logged in but not admin
-        document.getElementById("loginScreen").style.display="flex"
-        document.getElementById("lerr").style.color="#ff4d6d"
-        document.getElementById("lerr").textContent="Not an admin account. Use your admin email."
-      } else {
-        // Token expired or invalid — show login
-        tok=""; localStorage.removeItem("adm_tok")
-        document.getElementById("loginScreen").style.display="flex"
-      }
+  try {
+    const r = await fetch(S + "/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifier: u, password: p })
     })
-    .catch(()=>{ document.getElementById("loginScreen").style.display="flex" })
-} else {
-  document.getElementById("loginScreen").style.display="flex"
+    const d = await r.json()
+    if (!r.ok || !d.token) {
+      err.textContent = d.error || "Login failed"
+      btn.disabled = false; btn.textContent = "Sign In"
+      return
+    }
+    const ar = await fetch(S + "/admin/dashboard", {
+      headers: { "Authorization": "Bearer " + d.token }
+    })
+    if (ar.status === 403) {
+      err.textContent = "Not an admin account"
+      btn.disabled = false; btn.textContent = "Sign In"
+      return
+    }
+    if (!ar.ok) {
+      err.textContent = "Dashboard error"
+      btn.disabled = false; btn.textContent = "Sign In"
+      return
+    }
+    saveToken(d.token)
+    showDashboard()
+  } catch(e) {
+    err.textContent = "Network error: " + e.message
+    btn.disabled = false; btn.textContent = "Sign In"
+  }
 }
+
+async function showDashboard() {
+  document.getElementById("loginScreen").style.display = "none"
+  document.getElementById("dashboard").style.display = "block"
+  loadDashboard()
+}
+
+async function loadDashboard() {
+  const tok = getToken()
+  const content = document.getElementById("dashContent")
+  try {
+    const r = await fetch(S + "/admin/dashboard", {
+      headers: { "Authorization": "Bearer " + tok }
+    })
+    if (r.status === 401 || r.status === 403) {
+      localStorage.removeItem("datta_admin_token")
+      window.location.reload()
+      return
+    }
+    const d = await r.json()
+    if (!d.success) {
+      content.innerHTML = '<div class="error">Failed: ' + (d.error || "Unknown") + '</div>'
+      return
+    }
+    document.getElementById("lastUpdate").textContent = "Last updated: " + new Date(d.generatedAt).toLocaleString("en-IN")
+    renderDashboard(d)
+  } catch(e) {
+    content.innerHTML = '<div class="error">Error: ' + e.message + '</div>'
+  }
+}
+
+function fmt(n) {
+  if (typeof n !== "number") return "0"
+  if (n >= 100000) return (n / 100000).toFixed(1) + "L"
+  if (n >= 1000) return (n / 1000).toFixed(1) + "K"
+  return n.toString()
+}
+
+function renderDashboard(d) {
+  const content = document.getElementById("dashContent")
+  const t = d.totals || {}
+  const nu = d.newUsers || {}
+  const ch = d.chats || {}
+  const rev = d.revenue || {}
+  const plans = d.planStats || {}
+
+  const chartData = d.signupChart || []
+  const maxCount = Math.max(...chartData.map(x => x.count), 1)
+  const days = []
+  for (let i = 29; i >= 0; i--) {
+    const dt = new Date()
+    dt.setDate(dt.getDate() - i)
+    const key = dt.toISOString().slice(0, 10)
+    const found = chartData.find(x => x._id === key)
+    days.push({ date: key, count: found ? found.count : 0 })
+  }
+  const chartBars = days.map(day => {
+    const pct = (day.count / maxCount) * 100
+    return '<div class="chart-bar" style="height:' + Math.max(pct, 2) + '%;" title="' + day.date + ': ' + day.count + ' users"></div>'
+  }).join("")
+
+  content.innerHTML = `
+    <div class="section">
+      <div class="section-title">Overview</div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Users</div>
+          <div class="stat-value accent">${fmt(t.users)}</div>
+          <div class="stat-sub">+${nu.today} today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Chats</div>
+          <div class="stat-value blue">${fmt(t.chats)}</div>
+          <div class="stat-sub">+${ch.today} today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Messages</div>
+          <div class="stat-value purple">${fmt(t.messages)}</div>
+          <div class="stat-sub">All time</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Paid Users</div>
+          <div class="stat-value orange">${fmt(t.activePaidUsers)}</div>
+          <div class="stat-sub">Active now</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Revenue</div>
+      <div class="revenue-grid">
+        <div class="rev-card">
+          <div class="rev-label">Today</div>
+          <div class="rev-amount"><span class="rupee">₹</span>${fmt(rev.today)}</div>
+        </div>
+        <div class="rev-card">
+          <div class="rev-label">This Week</div>
+          <div class="rev-amount"><span class="rupee">₹</span>${fmt(rev.week)}</div>
+        </div>
+        <div class="rev-card">
+          <div class="rev-label">This Month</div>
+          <div class="rev-amount"><span class="rupee">₹</span>${fmt(rev.month)}</div>
+        </div>
+        <div class="rev-card">
+          <div class="rev-label">This Year</div>
+          <div class="rev-amount"><span class="rupee">₹</span>${fmt(rev.year)}</div>
+        </div>
+        <div class="rev-card" style="border:1px solid var(--accent);">
+          <div class="rev-label" style="color:var(--accent);">Total Active</div>
+          <div class="rev-amount"><span class="rupee">₹</span>${fmt(rev.total)}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">New Users</div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">Today</div>
+          <div class="stat-value accent">${nu.today}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Yesterday</div>
+          <div class="stat-value">${nu.yesterday}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Last 7 Days</div>
+          <div class="stat-value blue">${nu.week}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Last 30 Days</div>
+          <div class="stat-value purple">${nu.month}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Last 90 Days</div>
+          <div class="stat-value orange">${nu.last90Days}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Last 1 Year</div>
+          <div class="stat-value accent">${fmt(nu.year)}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Signup Growth · Last 30 Days</div>
+      <div class="chart-wrap">
+        <div style="color:var(--text3);font-size:12px;">Hover bars for daily count</div>
+        <div class="chart-bars">${chartBars}</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Active Plans</div>
+      <div class="plans-breakdown">
+        <div class="plan-item">
+          <div class="plan-name">🌱 Free</div>
+          <div class="plan-count free">${plans.free || 0}</div>
+          <div class="plan-users">users</div>
+        </div>
+        <div class="plan-item">
+          <div class="plan-name">🚀 Starter</div>
+          <div class="plan-count starter">${plans.starter || 0}</div>
+          <div class="plan-users">₹29/mo</div>
+        </div>
+        <div class="plan-item">
+          <div class="plan-name">⚡ Plus</div>
+          <div class="plan-count plus">${plans.plus || 0}</div>
+          <div class="plan-users">₹299/mo</div>
+        </div>
+        <div class="plan-item">
+          <div class="plan-name">🔥 Pro</div>
+          <div class="plan-count pro">${plans.pro || 0}</div>
+          <div class="plan-users">₹499/mo</div>
+        </div>
+        <div class="plan-item">
+          <div class="plan-name">👑 Ultimate</div>
+          <div class="plan-count ultimate">${plans.ultimate || 0}</div>
+          <div class="plan-users">₹799/mo</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Recent Signups (Latest 20)</div>
+      <div class="users-table">
+        <div class="table-row header">
+          <div>Username</div>
+          <div>Email</div>
+          <div>Joined</div>
+        </div>
+        ${(d.recentUsers || []).map(u => `
+          <div class="table-row">
+            <div>${u.username || "—"}</div>
+            <div class="email">${u.email || "—"}</div>
+            <div class="date">${new Date(u.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</div>
+          </div>
+        `).join("") || '<div style="padding:30px;text-align:center;color:var(--text3);">No users yet</div>'}
+      </div>
+    </div>
+  `
+}
+
+window.addEventListener("DOMContentLoaded", async () => {
+  const tok = getToken()
+  if (!tok) {
+    document.getElementById("loginScreen").style.display = "flex"
+    return
+  }
+  try {
+    const r = await fetch(S + "/admin/dashboard", {
+      headers: { "Authorization": "Bearer " + tok }
+    })
+    if (r.ok) {
+      showDashboard()
+    } else {
+      localStorage.removeItem("datta_admin_token")
+      document.getElementById("loginScreen").style.display = "flex"
+    }
+  } catch(e) {
+    document.getElementById("loginScreen").style.display = "flex"
+  }
+})
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter" && document.getElementById("loginScreen").style.display !== "none") {
+    doLogin()
+  }
+})
 </script>
 </body>
 </html>
