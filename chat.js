@@ -885,6 +885,21 @@ function newChat() {
 
 
 // ─── SEND MESSAGE ─────────────────────────────────────────────────────────────
+
+// Toggle pasted code visibility
+window.togglePasted = function(id) {
+  const el = document.getElementById(id)
+  const btn = document.getElementById("tg_" + id)
+  if (!el) return
+  if (el.style.display === "none") {
+    el.style.display = "block"
+    if (btn) btn.textContent = "Hide"
+  } else {
+    el.style.display = "none"
+    if (btn) btn.textContent = "Show"
+  }
+}
+
 async function send() {
   // Prevent double-send while AI is generating
   if (isGenerating) return
@@ -949,11 +964,40 @@ async function send() {
     }
   }
 
+  // Escape HTML to prevent rendering injected tags (fixes theme breaking on code paste)
+  function escapeHtml(s) {
+    return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;")
+  }
+
+  // Check if text is long (more than 20 lines OR 2000 chars) — wrap in collapsible box
+  const textLines = (text || "").split("\n").length
+  const isLongText = text && (textLines > 20 || text.length > 2000)
+
+  let textHtml = ""
+  if (text) {
+    if (isLongText) {
+      // Long code/text → collapsible code block
+      const safeText = escapeHtml(text)
+      const preview = text.split("\n").slice(0, 3).join("\n")
+      const msgId = "mp_" + Date.now()
+      textHtml = `
+        <div style="margin-top:${fileBubble ? '8px' : '0'};">
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:8px 8px 0 0;font-size:12px;color:#888;">
+            <span>📄 Code pasted — ${textLines} lines, ${text.length} chars</span>
+            <button onclick="togglePasted('${msgId}')" style="margin-left:auto;background:none;border:none;color:#00ff88;cursor:pointer;font-size:12px;font-weight:600;" id="tg_${msgId}">Show</button>
+          </div>
+          <pre id="${msgId}" style="display:none;background:#0a0a0a;border:1px solid #2a2a2a;border-top:none;border-radius:0 0 8px 8px;padding:12px;margin:0;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:12px;color:#ddd;max-height:400px;overflow-y:auto;white-space:pre-wrap;word-wrap:break-word;">${safeText}</pre>
+        </div>`
+    } else {
+      textHtml = `<div>${escapeHtml(text)}</div>`
+    }
+  }
+
   chatBox.innerHTML += `
     <div class="msg-row user-row">
       <div class="user-bubble">
         ${fileBubble}
-        ${text ? `<div>${text}</div>` : ""}
+        ${textHtml}
       </div>
     </div>
   `
