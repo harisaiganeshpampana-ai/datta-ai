@@ -3840,7 +3840,7 @@ function launchApp(btn) {
         <button onclick="document.getElementById('appPreviewOverlay').remove()" style="padding:4px 12px;background:#1a0a0a;border:1px solid #3a1a1a;border-radius:6px;color:#e55;font-size:12px;cursor:pointer;">✕ Close</button>
       </div>
     </div>
-    <iframe id="appPreviewFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups" style="flex:1;border:none;background:#fff;"></iframe>
+    <iframe id="appPreviewFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-storage-access-by-user-activation" style="flex:1;border:none;background:#fff;"></iframe>
   `
 
   document.body.appendChild(overlay)
@@ -3891,7 +3891,7 @@ function toggleSplitPreview(uid) {
   const iframe = document.createElement("iframe")
   iframe.id = uid + "_iframe"
   iframe.style.cssText = "flex:1;border:none;background:#fff;min-height:350px;"
-  iframe.sandbox = "allow-scripts allow-same-origin allow-forms"
+  iframe.sandbox = "allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox"
 
   // Close button inside preview panel
   const closeWrap = document.createElement("div")
