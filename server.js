@@ -2329,6 +2329,11 @@ function fixMermaidSyntax(text) {
 // Global fallback — prevents "cleanupRequest is not defined" in async callbacks
 var cleanupRequest = function() { /* global no-op fallback */ }
 
+// Memory study_context endpoint - returns empty to prevent 404 spam
+app.get("/memory/study_context", (req, res) => {
+  res.json({ context: "", topics: [] })
+})
+
 app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
   try {
     const message = req.body.message || ""
@@ -2650,7 +2655,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     // Context limit — large page pastes cause 413/context_length errors
     // Reduce history when message itself is long
     var msgLen = (message || "").length
-    var historyContentLimit = _isCode ? 3000 : msgLen > 2000 ? 600 : msgLen > 1000 ? 1000 : 2000
+    var historyContentLimit = _isCode ? 10000 : msgLen > 5000 ? 400 : msgLen > 2000 ? 1000 : msgLen > 1000 ? 1500 : 2000
     // Use plain JS messages (stripped of Mongoose types)
     var rawMessages = (chat._leanMessages || chat.messages || [])
     // Detect if this is the FIRST message in this chat (no prior assistant replies)
