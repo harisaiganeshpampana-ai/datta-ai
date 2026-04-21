@@ -2173,11 +2173,14 @@ async function callOpenRouter(systemPrompt, userMessage, maxTokens) {
 
   // Free/cheap models on OpenRouter (2026) — best quality first
   const modelsToTry = [
+    "deepseek/deepseek-chat-v3.1:free",
+    "deepseek/deepseek-r1:free",
     "meta-llama/llama-3.3-70b-instruct:free",
-    "google/gemini-2.0-flash-exp:free",
-    "mistralai/mistral-7b-instruct:free",
-    "qwen/qwen-2.5-72b-instruct:free",
-    "meta-llama/llama-3.1-8b-instruct:free"
+    "google/gemini-2.5-flash-lite",
+    "qwen/qwen3-235b-a22b:free",
+    "moonshotai/kimi-k2:free",
+    "mistralai/mistral-small-3.2-24b-instruct:free",
+    "tngtech/deepseek-r1t2-chimera:free"
   ]
 
   for (const modelName of modelsToTry) {
@@ -2225,10 +2228,12 @@ async function streamOpenRouterToRes(systemPrompt, userMessage, maxTokens, res) 
   if (!apiKey) throw new Error("OPENROUTER_API_KEY not set")
 
   const modelsToTry = [
+    "deepseek/deepseek-chat-v3.1:free",
+    "deepseek/deepseek-r1:free",
     "meta-llama/llama-3.3-70b-instruct:free",
-    "google/gemini-2.0-flash-exp:free",
-    "qwen/qwen-2.5-72b-instruct:free",
-    "mistralai/mistral-7b-instruct:free"
+    "qwen/qwen3-235b-a22b:free",
+    "moonshotai/kimi-k2:free",
+    "mistralai/mistral-small-3.2-24b-instruct:free"
   ]
 
   for (const modelName of modelsToTry) {
@@ -4272,3 +4277,4 @@ process.on("uncaughtException", (err) => { console.error("[UNCAUGHT EXCEPTION]",
 process.on("unhandledRejection", (reason) => { console.error("[UNHANDLED REJECTION]", typeof reason === "object" ? reason?.message : reason) })
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"))
 process.on("SIGINT",  () => gracefulShutdown("SIGINT"))
+      
