@@ -2171,12 +2171,13 @@ async function callOpenRouter(systemPrompt, userMessage, maxTokens) {
   const apiKey = process.env.OPENROUTER_API_KEY
   if (!apiKey) throw new Error("OPENROUTER_API_KEY not set")
 
-  // Free models on OpenRouter (as of 2026)
+  // Free/cheap models on OpenRouter (2026) — best quality first
   const modelsToTry = [
     "meta-llama/llama-3.3-70b-instruct:free",
     "google/gemini-2.0-flash-exp:free",
     "mistralai/mistral-7b-instruct:free",
-    "qwen/qwen-2-7b-instruct:free"
+    "qwen/qwen-2.5-72b-instruct:free",
+    "meta-llama/llama-3.1-8b-instruct:free"
   ]
 
   for (const modelName of modelsToTry) {
@@ -2196,7 +2197,7 @@ async function callOpenRouter(systemPrompt, userMessage, maxTokens) {
             { role: "system", content: systemPrompt },
             { role: "user", content: userMessage }
           ],
-          max_tokens: Math.min(maxTokens || 4000, 4000),
+          max_tokens: Math.min(maxTokens || 4000, 8000),
           temperature: 0.7
         })
       })
@@ -2217,6 +2218,207 @@ async function callOpenRouter(systemPrompt, userMessage, maxTokens) {
   }
   throw new Error("All OpenRouter models failed")
 }
+
+// Streaming OpenRouter — tokens arrive in real-time (feels fast)
+async function streamOpenRouterToRes(systemPrompt, userMessage, maxTokens, res) {
+  const apiKey = process.env.OPENROUTER_API_KEY
+  if (!apiKey) throw new Error("OPENROUTER_API_KEY not set")
+
+  const modelsToTry = [
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "google/gemini-2.0-flash-exp:free",
+    "qwen/qwen-2.5-72b-instruct:free",
+    "mistralai/mistral-7b-instruct:free"
+  ]
+
+  for (const modelName of modelsToTry) {
+    try {
+      console.log("[OR-STREAM] Trying:", modelName)
+      const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + apiKey,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://datta-ai.com",
+          "X-Title": "Datta AI"
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage }
+          ],
+          max_tokens: Math.min(maxTokens || 4000, 8000),
+          temperature: 0.7,
+          stream: true
+        })
+      })
+
+      if (!resp.ok) {
+        const errText = await resp.text()
+        console.warn("[OR-STREAM]", modelName, "failed:", resp.status, errText.slice(0, 100))
+        continue
+      }
+
+      const reader = resp.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ""
+      let fullText = ""
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split("\n")
+        buffer = lines.pop() || ""
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue
+          const data = line.slice(6).trim()
+          if (data === "[DONE]") continue
+          try {
+            const json = JSON.parse(data)
+            const token = json?.choices?.[0]?.delta?.content
+            if (token) {
+              fullText += token
+              if (!res.writableEnded) res.write(token)
+            }
+          } catch(e) {}
+        }
+      }
+
+      if (fullText.length > 20) {
+        console.log("[OR-STREAM] SUCCESS:", modelName, "chars:", fullText.length)
+        return fullText
+      }
+    } catch(e) {
+      console.warn("[OR-STREAM]", modelName, "error:", e.message?.slice(0, 80))
+    }
+  }
+  throw new Error("All OpenRouter streaming models failed")
+}
+
+// ══════ TOGETHER AI STREAMING — free $25 credits, lots of free models ══════
+async function streamTogetherToRes(systemPrompt, userMessage, maxTokens, res) {
+  const apiKey = process.env.TOGETHER_API_KEY
+  if (!apiKey) throw new Error("TOGETHER_API_KEY not set")
+  
+  const models = [
+    "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+    "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
+    "mistralai/Mixtral-8x7B-Instruct-v0.1"
+  ]
+  
+  let fullText = ""
+  
+  for (const modelName of models) {
+    try {
+      console.log("[TOGETHER] Streaming with:", modelName)
+      const resp = await fetch("https://api.together.xyz/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + apiKey,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage }
+          ],
+          max_tokens: Math.min(maxTokens || 4000, 4000),
+          temperature: 0.7,
+          stream: true
+        })
+      })
+      
+      if (!resp.ok) {
+        console.warn("[TOGETHER]", modelName, "failed:", resp.status)
+        continue
+      }
+      
+      const reader = resp.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ""
+      
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split("\n")
+        buffer = lines.pop() || ""
+        
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue
+          const data = line.slice(6).trim()
+          if (data === "[DONE]") continue
+          
+          try {
+            const parsed = JSON.parse(data)
+            const token = parsed.choices?.[0]?.delta?.content || ""
+            if (token) {
+              fullText += token
+              if (res && !res.writableEnded) res.write(token)
+            }
+          } catch(e) {}
+        }
+      }
+      
+      if (fullText.length > 20) {
+        console.log("[TOGETHER] SUCCESS:", modelName, "chars:", fullText.length)
+        return fullText
+      }
+    } catch(e) {
+      console.warn("[TOGETHER]", modelName, "error:", e.message)
+    }
+  }
+  
+  throw new Error("All Together AI models failed")
+}
+
+// ══════ DEEPINFRA — very cheap, good quality ══════
+async function callDeepInfra(systemPrompt, userMessage, maxTokens) {
+  const apiKey = process.env.DEEPINFRA_API_KEY
+  if (!apiKey) throw new Error("DEEPINFRA_API_KEY not set")
+  
+  const models = [
+    "meta-llama/Meta-Llama-3.1-70B-Instruct",
+    "mistralai/Mixtral-8x7B-Instruct-v0.1"
+  ]
+  
+  for (const modelName of models) {
+    try {
+      const resp = await fetch("https://api.deepinfra.com/v1/openai/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + apiKey,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage }
+          ],
+          max_tokens: Math.min(maxTokens || 4000, 4000),
+          temperature: 0.7
+        })
+      })
+      
+      if (!resp.ok) continue
+      const data = await resp.json()
+      const text = data.choices?.[0]?.message?.content || ""
+      if (text && text.length > 20) {
+        console.log("[DEEPINFRA] SUCCESS:", modelName)
+        return text
+      }
+    } catch(e) {
+      console.warn("[DEEPINFRA]", modelName, "error:", e.message)
+    }
+  }
+  throw new Error("All DeepInfra models failed")
+}
+
 // ── END OPENROUTER FALLBACK ─────────────────────────────────────────────
 
 // ── AUTO-COMPLETE INCOMPLETE LISTS ─────────────────────────────────────
@@ -3164,7 +3366,7 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
     } else if (isStepByStep) {
       coreInstruction = "\n\nGive numbered steps, one action per step. End with: Done? Tell me what you see."
     } else {
-      coreInstruction = "\n\nGive a complete clear answer with real content. Not just intro and outro. Include specifics, examples, and actual information in the middle of your response."
+      coreInstruction = "\n\nANSWER THE USER'S ACTUAL QUESTION FULLY. Rules:\n1. If they ask about food, give the list of foods with details\n2. If they ask about health, give specific health info with examples\n3. If they ask how to do something, give complete steps\n4. Never just say intro like 'here are some foods' and skip to outro — WRITE THE ACTUAL LIST IN THE MIDDLE\n5. DO NOT recommend Datta AI models or mention our plans unless user asked about us — just answer their question\n6. Give 5-8 specific points/items with real detail for every question\n\nExample — if asked 'best foods for hair growth':\nDo NOT write: 'here are some foods... remember healthy diet helps...'\nDo WRITE: 'Best foods for hair growth are:\n- Eggs — rich in biotin and protein which hair follicles need\n- Spinach — packed with iron, folate, vitamin A and C\n- Sweet potatoes — beta-carotene converts to vitamin A\n- Salmon — omega-3 fatty acids strengthen hair shaft\n- Nuts like almonds and walnuts — vitamin E and zinc\n- Greek yogurt — protein and vitamin B5\n- Guava — vitamin C prevents hair breakage\n- Lentils — iron, zinc, biotin\n\nEat these daily for 3-4 months to see results.'"
     }
     
     // Simple identity rules — no contradicting bloat
@@ -3176,7 +3378,14 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
     // ── DATTA AI PRODUCT KNOWLEDGE — always in context so AI can answer follow-ups ──
     var dattaProductInfo = "\n\nYOU ARE DATTA AI. YOU KNOW THIS PRODUCT INSIDE OUT:\n\nPLANS:\n• FREE (₹0/month): 10 messages/day, 3 Datta Code/day, models: Datta 2.1 + Code + Think\n• STARTER (₹29/month): 40 messages/day, 5 Datta Code/day, all standard models + Datta 5.4\n• PLUS (₹299/month): 300 messages/day, 30 Datta Code/day, all models, Family Account 3 members, priority speed\n• PRO (₹499/month): 700 messages/day, 60 Datta Code/day, all models, Family Account 4 members, higher priority\n• ULTIMATE (₹799/month): 1500 messages/day, 300 Datta Code/day, all models, Family Account 5 members, highest priority\n\nMODELS:\n• Datta 2.1 — fast general chat\n• Datta 4.2 — balanced answers\n• Datta 5.4 — smartest general model\n• Datta Code — for building apps, websites, code generation\n• Datta Think — deep reasoning, step-by-step problems\n• Chitra — image generation (paid plans)\n\nFEATURES:\n• Multilingual (Telugu, Hindi, Tamil, Kannada, English and more)\n• Voice homework helper (speak your doubt, get voice answer)\n• Image understanding (upload photo, ask questions)\n• Exam paper solver (upload question paper, get marks-based answers)\n• Offline answer bank (saved answers work offline)\n• Family Account (share plan with family members)\n• Memory across sessions\n• Chat history saved\n\nPAYMENT:\n• UPI, debit/credit cards, wallets — all via Razorpay\n• Cancel anytime from settings\n• Monthly billing\n\nWHEN USER ASKS ABOUT ANY PLAN OR FEATURE:\nRemember this info and give specific details. If user asks about Starter plan, give all Starter details. If they ask what Pro has, give all Pro details. Never give vague answers — use the specific numbers and features above.\n\nBUILT BY:\nLR AI — founded by a BSc Agriculture student. LR stands for Lakshmi and Ramanjaneyulu (founder's parents). Based in India. Built for Indian students and users."
     
-    var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + "." + dattaProductInfo + coreInstruction + identityRules + searchRules + langNote + (emotionalNote || "")
+    // Only inject product info when user is actually asking about Datta AI
+    var isAskingAboutProduct = isPricingQuestion || (message && [
+      "datta ai", "datta.ai", "your plans", "your features", "your pricing",
+      "this app", "your app", "what can you do", "your models",
+      "which model", "upgrade", "subscription", "family account"
+    ].some(k => message.toLowerCase().includes(k)))
+    
+    var systemPrompt = persona + imageNote + locationNote + " Today is " + dateStr + ", " + timeStr + "." + (isAskingAboutProduct ? dattaProductInfo : "") + coreInstruction + identityRules + searchRules + langNote + (emotionalNote || "")
 
     var isVisionModel = (model === "meta-llama/llama-4-scout-17b-16e-instruct")
     var finalUserContent
@@ -3217,18 +3426,13 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
       }
     }, 15000)
 
-    // Use Gemini 2.5 Pro for: Datta Code, explain questions, question papers, large tasks
-    var useGemini = process.env.GEMINI_API_KEY && !isImageFile && (
-      isDattaCode || isExplainQuestion || isLargeTask || isDeepKnowledge || isStructuredTopic
-    )
+    // ── SMART ROUTING ──
+    // Code/apps → Gemini (best quality)
+    // Everything else → OpenRouter (free, reliable, no Groq rate limits)
+    var useGemini = process.env.GEMINI_API_KEY && !isImageFile && isDattaCode
     if (useGemini) {
       try {
-        console.log("[GEMINI PRIMARY] Using Gemini for:", 
-          isDattaCode ? "Datta Code" : 
-          isExplainQuestion ? "Explain Question" : 
-          isLargeTask ? "Large Task" :
-          isDeepKnowledge ? "Deep Knowledge" : "Structured Topic"
-        )
+        console.log("[GEMINI] Using Gemini 2.5 Pro for code")
         // Use TRUE streaming — tokens arrive within 1-2 seconds and keep flowing
         let geminiAnswer = ""
         try {
@@ -3238,7 +3442,7 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
           geminiAnswer = await generateCodeWithGemini(systemWithMemory, safeStr(finalUserContent), maxTok)
           if (geminiAnswer && !res.writableEnded) res.write(geminiAnswer)
         }
-        
+
         if (geminiAnswer && geminiAnswer.length > 50) {
           if (!res.writableEnded) {
             chat.messages.push({ role: "assistant", content: geminiAnswer })
@@ -3251,7 +3455,67 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
           return
         }
       } catch(gemErr) {
-        console.warn("[GEMINI PRIMARY] Failed:", gemErr.message, "— falling back to Groq")
+        console.warn("[GEMINI] Failed:", gemErr.message, "— falling back to OpenRouter")
+      }
+    }
+
+    // NORMAL MESSAGES, EXAM PAPERS, EVERYTHING ELSE → OpenRouter (free, stable)
+    if (!isImageFile && process.env.OPENROUTER_API_KEY) {
+      try {
+        console.log("[OPENROUTER] Using for normal chat / exam question")
+        var orUserContent = safeStr(finalUserContent)
+        var orSystemContent = systemWithMemory
+
+        // Include history for context
+        var historyText = ""
+        if (history && history.length > 0) {
+          historyText = "\n\nConversation so far:\n" + history.map(m =>
+            (m.role === "user" ? "User: " : "Assistant: ") + m.content.substring(0, 600)
+          ).join("\n")
+        }
+
+        var orAnswer = await callOpenRouter(orSystemContent + historyText, orUserContent, maxTok)
+
+        if (orAnswer && orAnswer.length > 30) {
+          if (!res.writableEnded) {
+            // Stream to user in chunks
+            const chunkSize = 50
+            for (let i = 0; i < orAnswer.length; i += chunkSize) {
+              if (res.writableEnded) break
+              res.write(orAnswer.substring(i, i + chunkSize))
+              await new Promise(r => setTimeout(r, 8))
+            }
+            chat.messages.push({ role: "assistant", content: orAnswer })
+            await chat.save()
+            res.write("CHATID" + chat._id)
+            res.end()
+          }
+          if (typeof cleanupRequest === "function") cleanupRequest()
+          console.log("[OPENROUTER] Success:", orAnswer.length, "chars")
+          return
+        }
+      } catch(orErr) {
+        console.warn("[OPENROUTER] Failed:", orErr.message, "— falling back to Gemini")
+      }
+    }
+
+    // LAST RESORT — if OpenRouter failed, use Gemini (paid but reliable)
+    if (!isImageFile && process.env.GEMINI_API_KEY && !useGemini) {
+      try {
+        console.log("[GEMINI FALLBACK] OpenRouter failed, using Gemini as backup")
+        let finalAnswer = await streamGeminiToRes(systemWithMemory, safeStr(finalUserContent), maxTok, res, "gemini-2.5-flash")
+        if (finalAnswer && finalAnswer.length > 30) {
+          if (!res.writableEnded) {
+            chat.messages.push({ role: "assistant", content: finalAnswer })
+            await chat.save()
+            res.write("CHATID" + chat._id)
+            res.end()
+          }
+          if (typeof cleanupRequest === "function") cleanupRequest()
+          return
+        }
+      } catch(gErr) {
+        console.warn("[GEMINI FALLBACK] Failed:", gErr.message)
       }
     }
 
@@ -3296,28 +3560,28 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
             } catch(mErr) { console.warn("[EXAM] Step 1 model", gModel, "error:", mErr.message) }
           }
           if (extractedQuestions && extractedQuestions.length > 50) {
-            // Use Gemini 2.5 Pro to write answers (Groq rate limit issues)
+            // Use OpenRouter for exam answers (free, no rate limits)
             try {
-              const examSystem = "You are India's best exam answer writer. Write answers based on EXACT marks:\n- 1 mark = 2-3 lines\n- 2 marks = 4-5 lines\n- 3 marks = 6-7 lines\n- 4 marks = 8-10 lines\n- 5 marks = 12-15 lines\n- 10 marks = 20-25 lines\n\nFor EVERY question: check marks, write exactly that much. Label with question number. For formulas: formula + symbols + example. For definitions: definition + example. For lists: ALL items with explanation. Complete every list that starts with a colon — never leave items empty. NEVER skip any question."
-              const examUser = "Here are the exam questions:\n\n" + extractedQuestions + "\n\nWrite complete answers for every question now. For lists, write ALL items fully — never stop at just a heading:"
-              imageAnswer = await generateCodeWithGemini(examSystem, examUser, 8000)
-              console.log("[EXAM] Gemini answered:", imageAnswer?.length || 0, "chars")
-            } catch(gemExamErr) {
-              console.warn("[EXAM] Gemini failed, trying Groq:", gemExamErr.message)
-              try {
-                const groqAnswerResp = await groq.chat.completions.create({
-                  model: "llama-3.3-70b-versatile",
-                  max_tokens: 6000,
-                  temperature: 0.3,
-                  messages: [
-                    { role: "system", content: "Write exam answers. 1 mark=2-3 lines, 2 marks=4-5 lines, 4 marks=8-10 lines, 10 marks=20-25 lines. Complete all lists fully." },
-                    { role: "user", content: "Questions:\n" + extractedQuestions + "\n\nWrite full answers:" }
-                  ]
-                })
-                imageAnswer = groqAnswerResp.choices?.[0]?.message?.content || ""
-              } catch(groqErr) {
-                console.warn("[EXAM] Groq also failed:", groqErr.message)
+              const examSystem = "You are India's best exam answer writer. Write answers based on EXACT marks:\n- 1 mark = 2-3 lines\n- 2 marks = 4-5 lines\n- 3 marks = 6-7 lines\n- 4 marks = 8-10 lines\n- 5 marks = 12-15 lines\n- 10 marks = 20-25 lines\n\nFor EVERY question: check marks, write exactly that much. Label with question number. Complete every list fully. Never skip any question."
+              const examUser = "Here are the exam questions:\n\n" + extractedQuestions + "\n\nWrite complete answers for every question now. For lists, write ALL items fully:"
+
+              // Try OpenRouter first (free)
+              if (process.env.OPENROUTER_API_KEY) {
+                try {
+                  imageAnswer = await callOpenRouter(examSystem, examUser, 8000)
+                  console.log("[EXAM] OpenRouter answered:", imageAnswer?.length || 0, "chars")
+                } catch(orErr) {
+                  console.warn("[EXAM] OpenRouter failed, trying Gemini:", orErr.message)
+                }
               }
+
+              // Fallback to Gemini if OpenRouter fails
+              if (!imageAnswer || imageAnswer.length < 100) {
+                imageAnswer = await generateCodeWithGemini(examSystem, examUser, 8000)
+                console.log("[EXAM] Gemini answered:", imageAnswer?.length || 0, "chars")
+              }
+            } catch(examErr) {
+              console.warn("[EXAM] All failed:", examErr.message)
             }
           }
         } catch(twoStepErr) { console.warn("[EXAM] Two-step failed:", twoStepErr.message) }
@@ -3344,7 +3608,68 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
       }
     }
 
-    // Fallback models — only currently alive Groq models
+    // ── PRIMARY LLM ROUTING — Together AI first, then OpenRouter ──
+    // Saves Gemini money (only code uses Gemini)
+    // Only skip for: images (need vision), Datta Code (needs Gemini quality)
+    if (!isImageFile && !isDattaCode) {
+      // Try Together AI first (free $25 credits, fast)
+      if (process.env.TOGETHER_API_KEY) {
+        try {
+          console.log("[TOGETHER] Primary routing — streaming started")
+          var tgMessages = groqMessages.map(m => ({
+            role: m.role,
+            content: typeof m.content === "string" ? m.content : JSON.stringify(m.content)
+          }))
+          var tgSys = tgMessages[0]?.role === "system" ? tgMessages[0].content : ""
+          var tgUser = tgMessages[tgMessages.length - 1]?.content || message || ""
+          var tgFullText = await streamTogetherToRes(tgSys, tgUser, maxTok, res)
+
+          if (tgFullText && tgFullText.length > 20) {
+            if (!res.writableEnded) {
+              chat.messages.push({ role: "assistant", content: tgFullText })
+              await chat.save()
+              res.write("CHATID" + chat._id)
+              res.end()
+            }
+            if (typeof cleanupRequest === "function") cleanupRequest()
+            console.log("[TOGETHER] Success")
+            return
+          }
+        } catch(tgErr) {
+          console.warn("[TOGETHER] Failed, trying OpenRouter:", tgErr.message)
+        }
+      }
+
+      // Fallback: OpenRouter
+      if (process.env.OPENROUTER_API_KEY) {
+        try {
+          console.log("[OPENROUTER] Fallback routing — streaming started")
+          var orMessages = groqMessages.map(m => ({
+            role: m.role,
+            content: typeof m.content === "string" ? m.content : JSON.stringify(m.content)
+          }))
+          var orSys = orMessages[0]?.role === "system" ? orMessages[0].content : ""
+          var orUser = orMessages[orMessages.length - 1]?.content || message || ""
+          var orFullText = await streamOpenRouterToRes(orSys, orUser, maxTok, res)
+
+          if (orFullText && orFullText.length > 20) {
+            if (!res.writableEnded) {
+              chat.messages.push({ role: "assistant", content: orFullText })
+              await chat.save()
+              res.write("CHATID" + chat._id)
+              res.end()
+            }
+            if (typeof cleanupRequest === "function") cleanupRequest()
+            console.log("[OPENROUTER] Success, skipping Groq")
+            return
+          }
+        } catch(orErr) {
+          console.warn("[OPENROUTER] Primary failed, will try Groq:", orErr.message)
+        }
+      }
+    }
+
+    // Fallback to Groq ONLY if Together AI and OpenRouter both fail
     var _codeTok = 8000
     var _chatTok = 8000
     var groqAttempts = isImageFile
