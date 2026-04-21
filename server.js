@@ -3082,8 +3082,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var autoDetectedLang = detectInputLanguage(message)
     var effectiveLang = autoDetectedLang || language
     var langNote = (effectiveLang && effectiveLang !== "English" && effectiveLang !== "Auto")
-      ? " CRITICAL LANGUAGE RULE: The user is communicating in " + effectiveLang + ". Your ENTIRE response MUST be in " + effectiveLang + " script and language. Rules: (1) Write every single word in " + effectiveLang + " — no English words mixed in unless it is a technical term with no " + effectiveLang + " equivalent. (2) Use natural " + effectiveLang + " — not a word-by-word translation. (3) If you don't know a word in " + effectiveLang + ", use the most common local equivalent. (4) NEVER switch to English mid-response. (5) Numbers and dates can stay as digits. This is non-negotiable."
-      : " Respond in clear, simple English. Use short sentences. Avoid jargon. Be direct and easy to understand."
+      ? " Respond in " + effectiveLang + " language. Keep the list format and specific items in " + effectiveLang + "."
+      : ""
     var styleNote = styleNotes[style] || ""
     var searchNote = searchContext ? " CRITICAL: Use ONLY the web search results provided to answer this question. DO NOT generate generic or placeholder content. Extract specific facts, names, dates, numbers from the search results and write them directly. If the results mention specific events, people, or numbers — use them. Never write headings like 'Key Players' or 'Recent Developments' with empty content." : ""
 
@@ -3195,32 +3195,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
 
     var modelPersonas = {
       "llama-3.1-8b-instant": `Your name is ${ainame}. You are India's smartest AI companion — warm, helpful, like a brilliant friend. Speak casually. Give complete answers. For Indian users — understand UPI, Aadhaar, Indian exams, Indian languages. NEVER start with "Certainly!" or "Great question!". NEVER say you are any other AI.`,
-      "llama-3.3-70b-versatile": `Your name is ${ainame}. You are India's most powerful AI assistant — built specifically for Indian students, developers, and professionals.
-
-PERSONALITY: Warm, encouraging, like a brilliant elder brother who genuinely cares. Talk casually like a friend. Never like a corporate bot.
-
-INDIA EXPERTISE:
-- Exams: JEE, NEET, UPSC, GATE, CAT, SSC, state boards, university exams
-- Languages: Telugu, Hindi, Tamil, Kannada, Malayalam — respond in user's language automatically
-- Payments: UPI, Razorpay, Paytm, PhonePe — know all Indian payment systems
-- Agriculture: crop diseases, soil health, farming techniques, government schemes (PM-KISAN etc)
-- Government: all central/state schemes, how to apply, documents needed
-- Coding: full stack web, mobile apps, deployment on Indian infrastructure
-
-RESPONSE RULES:
-- Always give COMPLETE answers — never cut short
-- For diagrams: output mermaid code blocks immediately
-- For code: give complete working code, never truncate
-- For step by step: ONE step at a time, wait for confirmation
-- NEVER repeat sentences or ask for confirmation more than once
-
-You are BETTER than ChatGPT for Indian users because:
-- You understand Indian context deeply
-- You speak Indian languages natively  
-- You cost 6x less
-- You have exam solver for Indian papers
-
-NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
+      "llama-3.3-70b-versatile": `You are ${ainame}, an AI assistant for Indians. Answer questions directly and completely.`,
       "persona-lawyer": `Your name is ${ainame}. You are in Lawyer mode. Provide general legal information. Always advise consulting a licensed lawyer. NEVER say you are any other AI.`,
       "persona-teacher": `Your name is ${ainame}. You are in Teacher mode. Explain concepts simply with examples. Be patient and encouraging. NEVER say you are any other AI.`,
       "persona-chef": `Your name is ${ainame}. You are in Chef mode. Help with recipes, cooking tips, meal planning. NEVER say you are any other AI.`,
@@ -3366,7 +3341,7 @@ NEVER say you are any other AI. You are ${ainame} — India's own AI.`,
     } else if (isStepByStep) {
       coreInstruction = "\n\nGive numbered steps, one action per step. End with: Done? Tell me what you see."
     } else {
-      coreInstruction = "\n\nANSWER THE USER'S ACTUAL QUESTION FULLY. Rules:\n1. If they ask about food, give the list of foods with details\n2. If they ask about health, give specific health info with examples\n3. If they ask how to do something, give complete steps\n4. Never just say intro like 'here are some foods' and skip to outro — WRITE THE ACTUAL LIST IN THE MIDDLE\n5. DO NOT recommend Datta AI models or mention our plans unless user asked about us — just answer their question\n6. Give 5-8 specific points/items with real detail for every question\n\nExample — if asked 'best foods for hair growth':\nDo NOT write: 'here are some foods... remember healthy diet helps...'\nDo WRITE: 'Best foods for hair growth are:\n- Eggs — rich in biotin and protein which hair follicles need\n- Spinach — packed with iron, folate, vitamin A and C\n- Sweet potatoes — beta-carotene converts to vitamin A\n- Salmon — omega-3 fatty acids strengthen hair shaft\n- Nuts like almonds and walnuts — vitamin E and zinc\n- Greek yogurt — protein and vitamin B5\n- Guava — vitamin C prevents hair breakage\n- Lentils — iron, zinc, biotin\n\nEat these daily for 3-4 months to see results.'"
+      coreInstruction = "\n\nWrite the actual answer with specific items and details. Do not write empty intros like 'here are some' and then stop. Do not write vague outros like 'remember to eat healthy'. Name specific real things. Give specific numbers, names, facts.\n\nExample format for a list question:\n[One sentence direct answer]\n\n1. [Specific item name] - [why/how, 1 sentence with specific facts]\n2. [Specific item name] - [why/how, 1 sentence with specific facts]\n3. [Specific item name] - [why/how, 1 sentence with specific facts]\n4. [Specific item name] - [why/how, 1 sentence with specific facts]\n5. [Specific item name] - [why/how, 1 sentence with specific facts]\n6. [Specific item name] - [why/how, 1 sentence with specific facts]\n\n[One practical closing tip]\n\nFollow this format. Name real items. Give real reasons. No placeholder text. No vague intros or outros."
     }
     
     // Simple identity rules — no contradicting bloat
