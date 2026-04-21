@@ -238,7 +238,16 @@ async function streamGeminiToRes(systemPrompt, userPrompt, maxTokens, res, model
 
   const body = {
     contents: [{ parts: [{ text: systemPrompt + "\n\n" + userPrompt }] }],
-    generationConfig: { maxOutputTokens: Math.min(maxTokens || 8000, 8000), temperature: 0.4 }
+    generationConfig: {
+      maxOutputTokens: Math.min(maxTokens || 8000, 8000),
+      temperature: 0.4
+    },
+    safetySettings: [
+      { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+      { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+      { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+      { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+    ]
   }
 
   const resp = await fetch(url, {
@@ -256,27 +265,55 @@ async function streamGeminiToRes(systemPrompt, userPrompt, maxTokens, res, model
   const decoder = new TextDecoder()
   let buffer = ""
   let fullText = ""
+  let finishReason = null
+  let gotAnyToken = false
 
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split("\n")
-    buffer = lines.pop() || ""
-    for (const line of lines) {
-      if (!line.startsWith("data: ")) continue
-      try {
-        const data = JSON.parse(line.slice(6))
-        const token = data?.candidates?.[0]?.content?.parts?.[0]?.text
-        if (token) {
-          fullText += token
-          if (!res.writableEnded) res.write(token)
-        }
-      } catch(e) {}
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split("\n")
+      buffer = lines.pop() || ""
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue
+        try {
+          const data = JSON.parse(line.slice(6))
+          const candidate = data?.candidates?.[0]
+          const token = candidate?.content?.parts?.[0]?.text
+          if (token) {
+            fullText += token
+            gotAnyToken = true
+            if (!res.writableEnded) res.write(token)
+          }
+          // Track why Gemini stopped (if it did)
+          if (candidate?.finishReason) {
+            finishReason = candidate.finishReason
+          }
+        } catch(e) {}
+      }
     }
+  } catch(streamErr) {
+    console.warn("[GEMINI STREAM] Read error mid-stream:", streamErr.message, "— got", fullText.length, "chars so far")
   }
+
+  // Log why the stream ended
+  console.log("[GEMINI STREAM] Done. Length:", fullText.length, "FinishReason:", finishReason)
+
+  // If Gemini stopped due to MAX_TOKENS, tell user answer was cut
+  if (finishReason === "MAX_TOKENS") {
+    const cutMsg = "\n\n_[Answer was cut due to length limit. Ask me to continue or ask a more specific question.]_"
+    fullText += cutMsg
+    if (!res.writableEnded) res.write(cutMsg)
+  }
+  // If stream ended but we got very little, throw so fallback kicks in
+  if (!gotAnyToken) {
+    throw new Error("Gemini returned no tokens (possibly safety block or network issue)")
+  }
+
   return fullText
 }
+
 
 async function generateCodeWithGemini(systemPrompt, userPrompt, maxTokens) {
   const apiKey = process.env.GEMINI_API_KEY
@@ -3148,6 +3185,9 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     ].some(k => message.toLowerCase().includes(k))
     
     var isExplainQuestion = !isProblemSolving && (isNarrativeRequest || isCurrentAffairs || isGKHistory || isStructuredTopic || ["what is","what are","what does","what do","why is","why does","why do","how does","how do","explain","tell me about","define","describe","difference between","vs ","versus","when to use","should i use","pros and cons","advantages","disadvantages","history of","who created","who made","full form","meaning of","importance of","role of","function of","types of","examples of","causes of","effects of","impact of","significance of"].some(k => msgLower.includes(k)))
+
+    // How-to and list questions — user wants specific items/steps, not vague advice
+    var isHowToOrList = !isProblemSolving && ["how to","how can i","how do i","best ","top ","list of","foods for","tips for","ways to","methods to","steps to","benefits of","recipe","cure for","treatment for","exercise for","diet for"].some(k => msgLower.includes(k))
     var isCodeTask = !isExplainQuestion && ["build","create","write","make","code","website","app","script","program","fix","debug","update","improve","implement","develop","generate","show me how to","give me code","example code","sample code","snippet"].some(k => msgLower.includes(k))
 
     var isDatta21 = (resolvedModel === "llama-3.1-8b-instant" || chosenModel === "llama-3.1-8b-instant")
@@ -3339,14 +3379,14 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       coreInstruction = "\n\nThe student is asking by voice. Answer in 4-6 spoken sentences. No markdown, no bullets, no headings. Speak like a friendly tutor. If question is in Telugu/Hindi, respond in same language naturally."
     } else if (isPricingQuestion) {
       coreInstruction = "\n\nThe user is asking about pricing/plans/features. Use the plan details you already know from system context. Give SPECIFIC numbers and features for the plan(s) they asked about. If they ask about Starter, give all Starter details (40 messages/day, 5 Datta Code/day, ₹29). Never respond with vague summaries like 'I have 5 plans'."
-    } else if (isExplainQuestion) {
-      coreInstruction = "\n\nWRITE A COMPLETE ANSWER. Do not write intro and then stop. Do not write outro only. Write the actual content in the middle:\n1. Start with direct answer\n2. Give 5-8 bullets or 2-3 paragraphs of real content with facts, examples, specifics\n3. Finish with brief conclusion\n\nNever skip the middle. Never write just summary sentences. If user asks 9 questions, answer ALL 9 with full content each."
+    } else if (isExplainQuestion || isHowToOrList) {
+      coreInstruction = "\n\nYou MUST answer with specific numbered items. Each item needs a real name and a real reason.\n\nBAD answer (do NOT write like this):\n\"To support hair growth, focus on a nutrient-rich diet, gentle hair care, and scalp stimulation. Be patient and consistent.\"\n\nGOOD answer (write like this):\n\"Here are 8 ways to grow hair faster at 20:\n\n1. Eat eggs daily - they have biotin and protein that hair follicles need to grow\n2. Apply onion juice 2x per week - sulfur boosts keratin production and reduces hair fall\n3. Massage scalp with warm coconut oil - increases blood flow and reduces breakage\n4. Take 5000 mcg biotin supplement - speeds up hair growth within 3 months\n5. Trim tips every 6 weeks - removes split ends so hair grows longer\n6. Drink 3 liters water daily - dehydrated scalp slows growth\n7. Sleep 7-8 hours - growth hormone releases during deep sleep\n8. Avoid heat styling - dryers and straighteners damage the shaft\n\nStick with this for 3 months to see 2-3 inches of growth.\"\n\nNotice: specific item names, specific numbers, specific reasons. Not 'eat healthy food' but 'eat eggs - they have biotin'.\n\nNow answer the user's question in the GOOD format. 6-10 specific numbered items with real names and real reasons. No vague intros. No vague outros."
     } else if (isCodeTask || isDattaCode) {
       coreInstruction = "\n\nWrite complete working code. Never truncate with comments like // rest remains the same. Give full files. After code, ask what to add next."
     } else if (isStepByStep) {
       coreInstruction = "\n\nGive numbered steps, one action per step. End with: Done? Tell me what you see."
     } else {
-      coreInstruction = "\n\nWrite the actual answer with specific items and details. Do not write empty intros like 'here are some' and then stop. Do not write vague outros like 'remember to eat healthy'. Name specific real things. Give specific numbers, names, facts.\n\nExample format for a list question:\n[One sentence direct answer]\n\n1. [Specific item name] - [why/how, 1 sentence with specific facts]\n2. [Specific item name] - [why/how, 1 sentence with specific facts]\n3. [Specific item name] - [why/how, 1 sentence with specific facts]\n4. [Specific item name] - [why/how, 1 sentence with specific facts]\n5. [Specific item name] - [why/how, 1 sentence with specific facts]\n6. [Specific item name] - [why/how, 1 sentence with specific facts]\n\n[One practical closing tip]\n\nFollow this format. Name real items. Give real reasons. No placeholder text. No vague intros or outros."
+      coreInstruction = "\n\nAnswer with specific details. Not vague. Give real names, real numbers, real examples.\n\nBAD: 'focus on healthy habits and be consistent'\nGOOD: 'Eat 3 eggs daily for biotin, drink 3L water, sleep 8 hours'\n\nIf the question asks for a list (foods, tips, ways, methods, steps) — use this format:\n\n[One sentence direct answer]\n\n1. [Real item name] - [specific reason with a real fact/number]\n2. [Real item name] - [specific reason with a real fact/number]\n3. [Real item name] - [specific reason with a real fact/number]\n4. [Real item name] - [specific reason with a real fact/number]\n5. [Real item name] - [specific reason with a real fact/number]\n6. [Real item name] - [specific reason with a real fact/number]\n\n[One practical closing tip]\n\n6-10 numbered items. No vague intros like 'to support X, focus on Y'. No vague outros like 'be consistent and patient'. Name real things with real reasons."
     }
     
     // Simple identity rules — no contradicting bloat
@@ -3407,16 +3447,18 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }, 15000)
 
     // ── SMART ROUTING ──
-    // Code/apps → Gemini (best quality)
-    // Everything else → OpenRouter (free, reliable, no Groq rate limits)
-    var useGemini = process.env.GEMINI_API_KEY && !isImageFile && isDattaCode
+    // Code/apps → Gemini 2.5 Pro (best quality)
+    // Everything else → Gemini 2.5 Flash (cheaper but good quality)
+    // Free OpenRouter models are too weak for detailed answers
+    var useGemini = process.env.GEMINI_API_KEY && !isImageFile
+    var geminiModelToUse = isDattaCode ? "gemini-2.5-pro" : "gemini-2.5-flash"
     if (useGemini) {
       try {
         console.log("[GEMINI] Using Gemini 2.5 Pro for code")
         // Use TRUE streaming — tokens arrive within 1-2 seconds and keep flowing
         let geminiAnswer = ""
         try {
-          geminiAnswer = await streamGeminiToRes(systemWithMemory, safeStr(finalUserContent), maxTok, res, "gemini-2.5-pro")
+          geminiAnswer = await streamGeminiToRes(systemWithMemory, safeStr(finalUserContent), maxTok, res, geminiModelToUse)
         } catch(streamErr) {
           console.warn("[GEMINI STREAM] Failed, trying non-stream:", streamErr.message)
           geminiAnswer = await generateCodeWithGemini(systemWithMemory, safeStr(finalUserContent), maxTok)
@@ -4277,4 +4319,3 @@ process.on("uncaughtException", (err) => { console.error("[UNCAUGHT EXCEPTION]",
 process.on("unhandledRejection", (reason) => { console.error("[UNHANDLED REJECTION]", typeof reason === "object" ? reason?.message : reason) })
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"))
 process.on("SIGINT",  () => gracefulShutdown("SIGINT"))
-      
