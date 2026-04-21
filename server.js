@@ -315,17 +315,19 @@ async function streamGeminiToRes(systemPrompt, userPrompt, maxTokens, res, model
 }
 
 
-async function generateCodeWithGemini(systemPrompt, userPrompt, maxTokens) {
+async function generateCodeWithGemini(systemPrompt, userPrompt, maxTokens, preferredModel) {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) throw new Error("GEMINI_API_KEY not set")
 
-  // Updated April 2026 — use v1beta with currently available models
-  const modelsToTry = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"]
+  // Use preferred model first, then fallbacks
+  const modelsToTry = preferredModel
+    ? [preferredModel, "gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"]
+    : ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"]
 
   for (const modelName of modelsToTry) {
     try {
       const url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + apiKey
-      console.log("[GEMINI CODE] Trying:", url.replace(apiKey, "KEY_HIDDEN"))
+      console.log("[GEMINI CODE] Trying:", modelName)
       const body = {
         contents: [{
           parts: [{ text: systemPrompt + "\n\n" + userPrompt }]
@@ -333,7 +335,13 @@ async function generateCodeWithGemini(systemPrompt, userPrompt, maxTokens) {
         generationConfig: {
           maxOutputTokens: Math.min(maxTokens || 8192, 8192),
           temperature: 0.4
-        }
+        },
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+        ]
       }
       const resp = await fetch(url, {
         method: "POST",
@@ -347,6 +355,8 @@ async function generateCodeWithGemini(systemPrompt, userPrompt, maxTokens) {
       }
       const data = await resp.json()
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || ""
+      const finishReason = data?.candidates?.[0]?.finishReason
+      console.log("[GEMINI CODE]", modelName, "— length:", text.length, "finishReason:", finishReason)
       if (text) {
         console.log("[GEMINI CODE] SUCCESS model:", modelName, "length:", text.length)
         return text
@@ -3454,15 +3464,32 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var geminiModelToUse = isDattaCode ? "gemini-2.5-pro" : "gemini-2.5-flash"
     if (useGemini) {
       try {
-        console.log("[GEMINI] Using Gemini 2.5 Pro for code")
-        // Use TRUE streaming — tokens arrive within 1-2 seconds and keep flowing
+        console.log("[GEMINI] Using", geminiModelToUse, "— isDattaCode:", isDattaCode)
         let geminiAnswer = ""
-        try {
-          geminiAnswer = await streamGeminiToRes(systemWithMemory, safeStr(finalUserContent), maxTok, res, geminiModelToUse)
-        } catch(streamErr) {
-          console.warn("[GEMINI STREAM] Failed, trying non-stream:", streamErr.message)
-          geminiAnswer = await generateCodeWithGemini(systemWithMemory, safeStr(finalUserContent), maxTok)
-          if (geminiAnswer && !res.writableEnded) res.write(geminiAnswer)
+
+        if (isDattaCode) {
+          // Code tasks: use streaming (user needs to see tokens fast)
+          try {
+            geminiAnswer = await streamGeminiToRes(systemWithMemory, safeStr(finalUserContent), maxTok, res, geminiModelToUse)
+          } catch(streamErr) {
+            console.warn("[GEMINI STREAM] Failed, trying non-stream:", streamErr.message)
+            geminiAnswer = await generateCodeWithGemini(systemWithMemory, safeStr(finalUserContent), maxTok)
+            if (geminiAnswer && !res.writableEnded) res.write(geminiAnswer)
+          }
+        } else {
+          // Normal questions: use NON-streaming — get full answer then send
+          // This prevents mid-stream cuts from Render free tier / network issues
+          console.log("[GEMINI] Using non-stream mode (full answer before send)")
+          try {
+            geminiAnswer = await generateCodeWithGemini(systemWithMemory, safeStr(finalUserContent), maxTok, geminiModelToUse)
+            console.log("[GEMINI] Got full answer, length:", geminiAnswer?.length || 0)
+            if (geminiAnswer && !res.writableEnded) {
+              res.write(geminiAnswer)
+            }
+          } catch(nonStreamErr) {
+            console.warn("[GEMINI NON-STREAM] Failed:", nonStreamErr.message)
+            geminiAnswer = ""
+          }
         }
 
         if (geminiAnswer && geminiAnswer.length > 50) {
