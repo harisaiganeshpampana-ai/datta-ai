@@ -3484,7 +3484,16 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
             geminiAnswer = await generateCodeWithGemini(systemWithMemory, safeStr(finalUserContent), maxTok, geminiModelToUse)
             console.log("[GEMINI] Got full answer, length:", geminiAnswer?.length || 0)
             if (geminiAnswer && !res.writableEnded) {
-              res.write(geminiAnswer)
+              // Write in smaller chunks so Render doesn't buffer too much
+              // This ensures client gets ALL content even on free tier
+              const chunkSize = 500
+              for (let i = 0; i < geminiAnswer.length; i += chunkSize) {
+                const piece = geminiAnswer.slice(i, i + chunkSize)
+                res.write(piece)
+                // Small delay between chunks so each flushes properly
+                await new Promise(r => setTimeout(r, 20))
+              }
+              console.log("[GEMINI] All chunks written, total:", geminiAnswer.length)
             }
           } catch(nonStreamErr) {
             console.warn("[GEMINI NON-STREAM] Failed:", nonStreamErr.message)
@@ -3496,7 +3505,10 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
           if (!res.writableEnded) {
             chat.messages.push({ role: "assistant", content: geminiAnswer })
             await chat.save()
-            res.write("CHATID" + chat._id)
+            // Wait 100ms to ensure answer buffer is fully flushed before sending CHATID
+            await new Promise(r => setTimeout(r, 100))
+            // Use separator that will NEVER appear in normal text
+            res.write("\n\n__DATTA_CHAT_ID__" + chat._id)
             res.end()
           }
           if (typeof cleanupRequest === "function") cleanupRequest()
