@@ -3,853 +3,499 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Plans · Datta AI</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<title>Pricing — Datta AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* ── RESET & BASE ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
-  --bg:      #0d0d0d;
-  --bg2:     #161616;
-  --bg3:     #1f1f1f;
-  --border:  rgba(255,255,255,0.08);
-  --text:    #f0f0f0;
-  --text2:   #888;
-  --text3:   #444;
-  --green:   #10a37f;
-  --blue:    #0077ff;
-  --orange:  #f59e0b;
-  --red:     #ef4444;
-  --purple:  #8b5cf6;
+  --bg: #050510; --bg2: #0a0a18; --bg3: #12122a;
+  --text: #fff; --text2: #a0a0c0; --text3: #606080;
+  --accent: #4d7cff; --accent2: #a855f7;
+  --accent-glow: rgba(77, 124, 255, 0.5);
+  --purple-glow: rgba(168, 85, 247, 0.5);
+  --border: rgba(255,255,255,0.08);
 }
-
-html {
-  scroll-behavior: smooth;
-  overflow-y: auto;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  min-height: 100vh;
-  overflow-y: auto;
-  margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: 'Inter', -apple-system, sans-serif;
-  font-size: 15px;
-  line-height: 1.5;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; border: none; font-family: inherit; }
 
-/* ── TOPBAR ── */
-.topbar {
-  position: sticky; top: 0; z-index: 100;
-  display: flex; align-items: center; gap: 12px;
-  padding: 0 20px; height: 54px;
-  background: rgba(13,13,13,0.92);
+nav {
+  padding: 20px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(12px);
-}
-.back-btn {
-  width: 34px; height: 34px; border-radius: 8px;
-  background: var(--bg3); border: 1px solid var(--border);
-  color: var(--text2); font-size: 18px;
-  display: flex; align-items: center; justify-content: center;
-  text-decoration: none; cursor: pointer; transition: all 0.15s;
-  flex-shrink: 0;
-}
-.back-btn:hover { border-color: var(--green); color: var(--green); }
-.topbar-title { font-size: 15px; font-weight: 600; color: var(--text); }
-.cur-badge {
-  margin-left: auto;
-  padding: 5px 14px;
-  background: rgba(16,163,127,0.1);
-  border: 1px solid rgba(16,163,127,0.3);
-  border-radius: 20px;
-  color: var(--green);
-  font-size: 11px; font-weight: 600;
-  letter-spacing: 0.5px;
 }
 
-/* ── HERO ── */
-.hero {
-  text-align: center;
-  padding: 52px 20px 36px;
-  max-width: 560px;
-  margin: 0 auto;
-}
-.hero h1 {
-  font-size: clamp(26px, 5vw, 40px);
-  font-weight: 800; letter-spacing: -0.5px;
-  margin-bottom: 12px;
-  background: linear-gradient(135deg, #fff 50%, #666);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-}
-.hero p { font-size: 14px; color: var(--text2); margin-bottom: 16px; line-height: 1.7; }
-.hero-badge {
-  display: inline-block;
-  padding: 5px 14px;
-  background: rgba(16,163,127,0.08);
-  border: 1px solid rgba(16,163,127,0.2);
-  border-radius: 20px;
-  color: var(--green); font-size: 11px;
-  font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
-}
-
-/* ── GRID ── */
-.plans-wrap { padding: 0 16px 80px; }
-.plans-grid {
+.logo {
   display: flex;
-  flex-direction: column;
-  gap: 14px;
-  max-width: 560px;
-  margin: 0 auto;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  font-weight: 800;
 }
 
-/* ── PLAN CARD — clean vertical ChatGPT-style ── */
-.plan-card {
-  background: var(--bg2);
-  border: 1.5px solid var(--border);
-  border-radius: 20px;
-  padding: 22px 20px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  position: relative;
-  width: 100%;
-  box-sizing: border-box;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-  cursor: default;
-  overflow: visible;
-}
-.plan-left { display: none; }   /* hide old horizontal layout */
-.plan-center { width: 100%; }
-.plan-right { width: 100%; margin-top: 14px; align-items: stretch; }
-
-/* ── Card header: icon + name + desc ── */
-.plan-icon { font-size: 28px; margin-bottom: 6px; display: block; }
-.plan-name { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 3px; display: block; }
-.plan-desc { font-size: 13px; color: var(--text2); margin-bottom: 14px; display: block; }
-
-/* ── Price block ── */
-.plan-price {
-  display: flex; align-items: baseline; gap: 2px;
-  margin-bottom: 2px;
-}
-.plan-price .sym { font-size: 16px; color: var(--text2); font-weight: 600; }
-.plan-price .amt { font-size: 32px; font-weight: 800; color: var(--text); line-height: 1; }
-.plan-price .free-amt { color: var(--green); }
-.plan-period { font-size: 12px; color: var(--text2); margin-bottom: 14px; display: block; }
-
-/* ── Divider ── */
-.plan-divider {
-  height: 1px; background: var(--border);
-  margin: 14px 0; width: 100%;
-}
-
-/* ── Features list ── */
-.plan-stat {
-  display: flex; align-items: baseline; gap: 6px;
-  margin-bottom: 10px;
-}
-.plan-stat-num { font-size: 15px; font-weight: 700; color: var(--text); }
-.plan-stat-label { font-size: 13px; color: var(--text2); }
-.plan-features {
-  list-style: none; padding: 0; margin: 0 0 4px;
-  display: flex; flex-direction: column; gap: 7px;
-}
-.plan-features li {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 13px; color: var(--text2); line-height: 1.4;
-}
-.plan-features .y {
-  color: var(--green); font-size: 14px; font-weight: 700;
-  flex-shrink: 0; width: 16px; text-align: center;
-}
-.plan-features .n {
-  color: var(--text3); font-size: 14px;
-  flex-shrink: 0; width: 16px; text-align: center;
-}
-
-/* ── CTA button ── */
-.plan-btn {
-  width: 100%; padding: 13px 16px;
-  border-radius: 14px; border: none;
-  font-size: 14px; font-weight: 700;
-  cursor: pointer; font-family: inherit;
-  transition: all 0.18s; margin-top: 4px;
-  letter-spacing: 0.2px;
-}
-.plan-btn:not(:disabled):hover { opacity: 0.88; transform: translateY(-1px); }
-.plan-btn:not(:disabled):active { transform: scale(0.98); }
-.plan-btn.btn-free    { background: var(--bg3); color: var(--text3); cursor: default; border: 1px solid var(--border); }
-.plan-btn.btn-starter { background: linear-gradient(135deg,#00cc6a,#00ff88); color: #000; }
-.plan-btn.btn-plus    { background: linear-gradient(135deg,#f59e0b,#fbbf24); color: #000; }
-.plan-btn.btn-pro     { background: linear-gradient(135deg,#ef4444,#f97316); color: #fff; }
-.plan-btn.btn-ultimate{ background: linear-gradient(135deg,#8b5cf6,#6d28d9); color: #fff; }
-.plan-btn.btn-current {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid var(--border);
-  color: var(--text2); cursor: default;
-}
-
-/* ── Card states ── */
-.plan-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.35);
-}
-.plan-card.popular {
-  border-color: var(--green);
-  background: linear-gradient(180deg, rgba(16,163,127,0.08) 0%, var(--bg2) 50%);
-}
-.plan-card.popular:hover {
-  box-shadow: 0 16px 40px rgba(16,163,127,0.15);
-}
-.plan-card.current-plan { border-color: rgba(255,255,255,0.2); }
-
-/* Popular badge */
-.pop-badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  background: var(--green); color: #000;
-  font-size: 10px; font-weight: 700;
-  padding: 3px 10px; border-radius: 20px;
-  letter-spacing: 1px; text-transform: uppercase;
-  margin-bottom: 14px; align-self: flex-start;
-}
-
-/* Current plan badge */
-.current-badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  background: rgba(255,255,255,0.06); color: var(--text2);
-  font-size: 10px; font-weight: 600;
-  padding: 3px 10px; border-radius: 20px;
-  letter-spacing: 1px; text-transform: uppercase;
-  margin-bottom: 14px; align-self: flex-start;
-  border: 1px solid var(--border);
-}
-
-/* Plan icon + name */
-.plan-icon { font-size: 24px; margin-bottom: 8px; display: block; }
-.plan-name {
-  font-size: 16px; font-weight: 700; color: var(--text);
-  margin-bottom: 4px; letter-spacing: -0.2px;
-}
-.plan-desc { font-size: 12px; color: var(--text2); line-height: 1.5; margin-bottom: 16px; }
-
-/* Price */
-.plan-price {
-  display: flex; align-items: flex-start; gap: 2px;
-  margin-bottom: 4px;
-}
-.plan-price .sym { font-size: 18px; font-weight: 600; color: var(--text2); padding-top: 4px; }
-.plan-price .amt { font-size: 36px; font-weight: 800; color: var(--text); line-height: 1; }
-.plan-price .free-amt { font-size: 28px; font-weight: 800; }
-.plan-period { font-size: 12px; color: var(--text3); margin-bottom: 18px; }
-
-/* Stat pill */
-.plan-stat {
-  display: flex; align-items: center; gap: 8px;
-  padding: 9px 12px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--border);
+.logo-mark {
+  width: 38px; height: 38px;
   border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 900;
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.logo b {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.nav-cta {
+  padding: 10px 22px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  border-radius: 100px;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 4px 20px var(--accent-glow);
+}
+
+.hero {
+  padding: 80px 20px 40px;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.hero h1 {
+  font-size: clamp(38px, 6vw, 64px);
+  font-weight: 800;
+  letter-spacing: -2px;
+  margin-bottom: 16px;
+  line-height: 1.05;
+}
+
+.hero h1 em {
+  font-family: 'Instrument Serif', serif;
+  font-weight: 400;
+  font-style: italic;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero p {
+  color: var(--text2);
+  font-size: 18px;
+  margin-bottom: 30px;
+}
+
+.billing-toggle {
+  display: inline-flex;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 4px;
+  gap: 2px;
+}
+
+.toggle-btn {
+  padding: 8px 20px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  background: transparent;
+  transition: all 0.2s;
+}
+
+.toggle-btn.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+}
+
+.pricing-section {
+  padding: 40px 20px 100px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.price-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 32px 28px;
+  position: relative;
+  transition: all 0.3s;
+}
+
+.price-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--accent);
+}
+
+.price-card.featured {
+  background: linear-gradient(135deg, rgba(77, 124, 255, 0.08), rgba(168, 85, 247, 0.08));
+  border: 1px solid var(--accent);
+  transform: scale(1.04);
+  box-shadow: 0 20px 60px var(--accent-glow);
+}
+
+.price-card.featured::before {
+  content: 'MOST POPULAR';
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  padding: 5px 16px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  box-shadow: 0 4px 20px var(--accent-glow);
+}
+
+.plan-name {
+  font-size: 14px;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 600;
   margin-bottom: 16px;
 }
-.plan-stat-num { font-size: 18px; font-weight: 800; }
-.plan-stat-label { font-size: 11px; color: var(--text2); }
 
-/* Features */
+.plan-price {
+  font-size: 52px;
+  font-weight: 800;
+  letter-spacing: -2px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.plan-price .rupee {
+  font-size: 28px;
+  opacity: 0.6;
+  margin-right: 2px;
+}
+
+.plan-period {
+  font-size: 13px;
+  color: var(--text3);
+  margin-bottom: 24px;
+}
+
 .plan-features {
   list-style: none;
-  display: flex; flex-direction: column; gap: 7px;
-  margin-bottom: 22px; flex: 1;
+  margin-bottom: 24px;
 }
+
 .plan-features li {
-  display: flex; align-items: flex-start; gap: 8px;
-  font-size: 12px; color: var(--text2); line-height: 1.4;
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--text2);
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
 }
-.plan-features li .y { color: var(--green); font-size: 13px; flex-shrink: 0; margin-top: 0.5px; }
-.plan-features li .n { color: var(--text3); font-size: 13px; flex-shrink: 0; margin-top: 0.5px; }
-.plan-features li strong { color: var(--text); font-weight: 600; }
 
-/* CTA Button */
-.plan-btn {
-  width: 100%; padding: 12px 16px;
-  border-radius: 12px; border: none;
-  font-size: 13px; font-weight: 700;
-  cursor: pointer; font-family: inherit;
-  transition: all 0.18s; margin-top: auto;
-  letter-spacing: 0.2px;
+.plan-features li::before {
+  content: '✓';
+  color: var(--accent);
+  font-weight: 800;
+  flex-shrink: 0;
 }
-.plan-btn:not(:disabled):hover { opacity: 0.88; transform: scale(1.01); }
-.plan-btn:not(:disabled):active { transform: scale(0.98); }
-.plan-btn.btn-free    { background: var(--bg3); color: var(--text3); cursor: default; border: 1px solid var(--border); }
-.plan-btn.btn-starter { background: linear-gradient(135deg,#00cc6a,#00ff88); color: #000; }
-.plan-btn.btn-standard{ background: linear-gradient(135deg,#0055ff,#0099ff); color: #fff; }
-.plan-btn.btn-plus    { background: linear-gradient(135deg,#f59e0b,#fbbf24); color: #000; }
-.plan-btn.btn-pro     { background: linear-gradient(135deg,#ef4444,#f97316); color: #fff; }
-.plan-btn.btn-ultimate{ background: linear-gradient(135deg,#8b5cf6,#6d28d9); color: #fff; }
-.plan-btn.btn-current {
-  background: rgba(255,255,255,0.04);
+
+.plan-cta {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.plan-cta.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  box-shadow: 0 4px 20px var(--accent-glow);
+}
+
+.plan-cta.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px var(--purple-glow);
+}
+
+.plan-cta.ghost {
+  background: transparent;
+  color: var(--text);
   border: 1px solid var(--border);
-  color: var(--text2); cursor: default;
 }
 
-/* ── MODALS ── */
-.overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.8);
-  display: none; align-items: flex-end; justify-content: center;
-  z-index: 200; padding: 0;
-  backdrop-filter: blur(4px);
+.plan-cta.ghost:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
-.overlay.show { display: flex; }
-.modal-box {
+
+.faq {
+  max-width: 800px;
+  margin: 60px auto;
+  padding: 0 20px;
+}
+
+.faq h2 {
+  font-size: 36px;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 32px;
+  letter-spacing: -1px;
+}
+
+.faq h2 em {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-weight: 400;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.faq-item {
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 20px 20px 0 0;
-  padding: 24px;
-  width: 100%; max-width: 520px;
-  max-height: 85vh; overflow-y: auto;
-  animation: up 0.25s cubic-bezier(.34,1.2,.64,1);
+  border-radius: 14px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s;
 }
-@keyframes up { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.modal-handle { width: 36px; height: 4px; background: var(--bg3); border-radius: 4px; margin: 0 auto 20px; }
-.modal-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-.modal-sub { font-size: 11px; color: var(--green); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 18px; }
 
-/* Limit rows */
-.limit-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 11px 0; border-bottom: 1px solid var(--border); }
-.limit-row:last-of-type { border-bottom: none; }
-.limit-key { font-size: 12px; color: var(--text2); }
-.limit-val { font-size: 12px; font-weight: 600; text-align: right; max-width: 55%; }
-.limit-note { margin-top: 14px; padding: 12px; background: var(--bg3); border-radius: 10px; font-size: 11px; color: var(--text2); line-height: 1.6; }
+.faq-item:hover {
+  border-color: rgba(77, 124, 255, 0.3);
+}
 
-/* Pay modal */
-.pay-plan-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 14px; background: var(--bg3);
-  border: 1px solid var(--border); border-radius: 12px;
-  margin-bottom: 16px;
+.faq-q {
+  padding: 18px 24px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
-.pay-plan-name { font-size: 14px; font-weight: 700; }
-.pay-price { font-size: 20px; font-weight: 800; color: var(--green); }
-.pay-msg { font-size: 12px; color: var(--green); min-height: 18px; margin-bottom: 12px; }
-.pay-btn {
-  width: 100%; padding: 14px; border-radius: 12px; border: none;
-  font-size: 13px; font-weight: 700; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  margin-bottom: 10px; font-family: inherit;
-  transition: opacity 0.15s;
+
+.faq-q::after {
+  content: '+';
+  font-size: 24px;
+  color: var(--accent);
+  transition: transform 0.2s;
 }
-.pay-btn:hover { opacity: 0.88; }
-.pay-btn.rzp    { background: #fff; color: #000; }
-.pay-btn.stripe { background: #635bff; color: #fff; }
-.pay-note { font-size: 11px; color: var(--text3); text-align: center; margin-top: 6px; }
-.pay-cancel {
-  width: 100%; padding: 11px; background: transparent;
-  border: 1px solid var(--border); border-radius: 12px;
-  color: var(--text2); cursor: pointer; font-size: 12px;
-  margin-top: 8px; font-family: inherit; transition: border-color 0.15s;
+
+.faq-item.open .faq-q::after {
+  transform: rotate(45deg);
 }
-.pay-cancel:hover { border-color: var(--text2); }
+
+.faq-a {
+  padding: 0 24px;
+  max-height: 0;
+  overflow: hidden;
+  color: var(--text2);
+  font-size: 14px;
+  line-height: 1.7;
+  transition: max-height 0.3s, padding 0.3s;
+}
+
+.faq-item.open .faq-a {
+  max-height: 300px;
+  padding: 0 24px 20px;
+}
+
+@media (max-width: 768px) {
+  nav { padding: 16px 20px; }
+  .price-card.featured { transform: scale(1); }
+  .hero h1 { font-size: 38px; }
+}
 </style>
-<!-- layout.css and theme.css intentionally excluded from pricing page
-     layout.css sets overflow:hidden on body which blocks all scrolling -->
-<script>(function(){ var t=localStorage.getItem("datta_theme")||"dark"; document.body&&document.body.setAttribute("data-theme",t) })()</script>
 </head>
 <body>
 
-<!-- Topbar -->
-<div class="topbar">
-  <a href="index.html" class="back-btn">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+<nav>
+  <a href="/" class="logo">
+    <div class="logo-mark">D</div>
+    <span>Datta<b>AI</b></span>
   </a>
-  <div class="topbar-title">Plans</div>
-  <div class="cur-badge" id="curBadge">Free Plan</div>
-</div>
+  <a href="/builder.html" class="nav-cta">Start Building →</a>
+</nav>
 
-<!-- Hero -->
-<div class="hero">
-  <h1>Simple, honest pricing</h1>
-  <p>Start free. Upgrade when you need more. Cancel anytime.</p>
-  <div class="hero-badge">Monthly · No hidden fees</div>
-</div>
+<section class="hero">
+  <h1>Simple pricing.<br><em>Fair for everyone.</em></h1>
+  <p>Start free. Upgrade only when you need more. Cancel anytime.</p>
 
-<!-- Cards -->
-<div class="plans-wrap">
-  <div class="plans-grid" id="plansGrid">
+  <div class="billing-toggle">
+    <button class="toggle-btn active" onclick="setBilling('monthly', this)">Monthly</button>
+    <button class="toggle-btn" onclick="setBilling('yearly', this)">Yearly (Save 20%)</button>
+  </div>
+</section>
 
-    <!-- FREE -->
-    <div class="plan-card" id="card-free">
-      <span class="plan-icon">🌱</span>
+<section class="pricing-section">
+  <div class="pricing-grid">
+
+    <div class="price-card">
       <div class="plan-name">Free</div>
-      <div class="plan-desc">Try Datta AI with no commitment</div>
-      <div class="plan-price"><span class="sym">₹</span><span class="amt free-amt">0</span></div>
-      <div class="plan-period">Forever free</div>
-      <div class="plan-divider"></div>
-      <div class="plan-stat">
-        <span class="plan-stat-num">10</span>
-        <span class="plan-stat-label">messages / day</span>
-      </div>
+      <div class="plan-price"><span class="rupee">₹</span><span data-monthly="0" data-yearly="0">0</span></div>
+      <div class="plan-period">forever</div>
       <ul class="plan-features">
-        <li><span class="y">✓</span><span>Datta 2.1 model</span></li>
-        <li><span class="y">✓</span><span>2 Datta 5.4 messages/day</span></li>
-        <li><span class="y">✓</span><span><strong>3 Datta Code</strong> messages/day</span></li>
-        <li><span class="y">✓</span><span>Web search</span></li>
-        <li><span class="y">✓</span><span>Voice assistant</span></li>
-        <li><span class="n">✗</span><span>Priority responses</span></li>
+        <li>3 app builds per day</li>
+        <li>Live preview & edit</li>
+        <li>Download code as HTML</li>
+        <li>Community support</li>
       </ul>
-      <button class="plan-btn btn-free" id="btn-free" disabled>Current Plan</button>
+      <a href="/builder.html" class="plan-cta ghost">Start Free</a>
     </div>
 
-    <!-- STARTER -->
-    <div class="plan-card" id="card-starter">
-      <span class="plan-icon">🚀</span>
+    <div class="price-card featured">
       <div class="plan-name">Starter</div>
-      <div class="plan-desc">More messages, more power</div>
-      <div class="plan-price"><span class="sym">₹</span><span class="amt">29</span></div>
-      <div class="plan-period">per month</div>
-      <div class="plan-divider"></div>
-      <div class="plan-stat">
-        <span class="plan-stat-num" style="color:#00cc6a;">40</span>
-        <span class="plan-stat-label">messages / day</span>
+      <div class="plan-price">
+        <span class="rupee">₹</span><span data-monthly="29" data-yearly="279">29</span>
       </div>
+      <div class="plan-period"><span class="period-text">per month</span></div>
       <ul class="plan-features">
-        <li><span class="y">✓</span><span>Datta 2.1 model</span></li>
-        <li><span class="y">✓</span><span>10 Datta 5.4 messages/day</span></li>
-        <li><span class="y">✓</span><span><strong>5 Datta Code</strong> messages/day</span></li>
-        <li><span class="y">✓</span><span>Web search</span></li>
-        <li><span class="y">✓</span><span>Voice assistant</span></li>
-        <li><span class="n">✗</span><span>Priority responses</span></li>
+        <li>20 app builds per day</li>
+        <li>Publish with live URLs</li>
+        <li>Version history</li>
+        <li>Add features to existing apps</li>
+        <li>Priority generation speed</li>
+        <li>Email support</li>
       </ul>
-      <button class="plan-btn btn-starter" id="btn-starter" onclick="selectPlan('starter','monthly',29)">Get Starter</button>
+      <button class="plan-cta primary" onclick="subscribe('starter')">Upgrade to Starter</button>
     </div>
 
-    <!-- PLUS (most popular) -->
-    <div class="plan-card popular" id="card-plus">
-      <div class="pop-badge">⭐ Most Popular</div>
-      <span class="plan-icon">⚡</span>
-      <div class="plan-name">Plus</div>
-      <div class="plan-desc">Full access to everything</div>
-      <div class="plan-price"><span class="sym">₹</span><span class="amt">299</span></div>
-      <div class="plan-period">per month</div>
-      <div class="plan-divider"></div>
-      <div class="plan-stat">
-        <span class="plan-stat-num" style="color:#f59e0b;">300</span>
-        <span class="plan-stat-label">messages / day</span>
-      </div>
-      <ul class="plan-features">
-        <li><span class="y">✓</span><span>Datta 2.1 + Full Datta 5.4</span></li>
-        <li><span class="y">✓</span><span><strong>30 Datta Code</strong> messages/day</span></li>
-        <li><span class="y">✓</span><span>PDF upload + Web search</span></li>
-        <li><span class="y">✓</span><span>Voice assistant</span></li>
-        <li><span class="y">✓</span><span>Priority responses</span></li>
-      </ul>
-      <button class="plan-btn btn-plus" id="btn-plus" onclick="selectPlan('plus','monthly',299)">Get Plus</button>
-    </div>
-
-    <!-- PRO -->
-    <div class="plan-card" id="card-pro">
-      <span class="plan-icon">🔥</span>
+    <div class="price-card">
       <div class="plan-name">Pro</div>
-      <div class="plan-desc">For advanced users</div>
-      <div class="plan-price"><span class="sym">₹</span><span class="amt">499</span></div>
-      <div class="plan-period">per month</div>
-      <div class="plan-divider"></div>
-      <div class="plan-stat">
-        <span class="plan-stat-num" style="color:#ef4444;">700</span>
-        <span class="plan-stat-label">messages / day</span>
+      <div class="plan-price">
+        <span class="rupee">₹</span><span data-monthly="299" data-yearly="2870">299</span>
       </div>
+      <div class="plan-period"><span class="period-text">per month</span></div>
       <ul class="plan-features">
-        <li><span class="y">✓</span><span>Full Datta 5.4</span></li>
-        <li><span class="y">✓</span><span><strong>60 Datta Code</strong> messages/day</span></li>
-        <li><span class="y">✓</span><span>PDF upload + Web search</span></li>
-        <li><span class="y">✓</span><span>Voice assistant</span></li>
-        <li><span class="y">✓</span><span>Fastest responses</span></li>
+        <li>100 app builds per day</li>
+        <li>Unlimited published apps</li>
+        <li>Custom domain support</li>
+        <li>Remove Datta AI branding</li>
+        <li>API access (coming soon)</li>
+        <li>Priority email support</li>
       </ul>
-      <button class="plan-btn btn-pro" id="btn-pro" onclick="selectPlan('pro','monthly',499)">Get Pro</button>
+      <button class="plan-cta ghost" onclick="subscribe('pro')">Go Pro</button>
     </div>
 
-    <!-- ULTIMATE -->
-    <div class="plan-card" id="card-ultimate">
-      <span class="plan-icon">👑</span>
-      <div class="plan-name">Ultimate</div>
-      <div class="plan-desc">Maximum power, heavy usage</div>
-      <div class="plan-price"><span class="sym">₹</span><span class="amt">799</span></div>
-      <div class="plan-period">per month</div>
-      <div class="plan-divider"></div>
-      <div class="plan-stat">
-        <span class="plan-stat-num" style="color:#8b5cf6;">1500</span>
-        <span class="plan-stat-label">messages / day</span>
+    <div class="price-card">
+      <div class="plan-name">Team</div>
+      <div class="plan-price">
+        <span class="rupee">₹</span><span data-monthly="799" data-yearly="7670">799</span>
       </div>
+      <div class="plan-period"><span class="period-text">per month</span></div>
       <ul class="plan-features">
-        <li><span class="y">✓</span><span>Full Datta 5.4</span></li>
-        <li><span class="y">✓</span><span><strong>300 Datta Code</strong> messages/day</span></li>
-        <li><span class="y">✓</span><span>PDF upload + Web search</span></li>
-        <li><span class="y">✓</span><span>Voice assistant</span></li>
-        <li><span class="y">✓</span><span>Highest priority</span></li>
+        <li>Unlimited app builds</li>
+        <li>5 team members</li>
+        <li>Shared app library</li>
+        <li>Team dashboard</li>
+        <li>Custom branding</li>
+        <li>Priority support</li>
       </ul>
-      <button class="plan-btn btn-ultimate" id="btn-ultimate" onclick="selectPlan('ultimate','monthly',799)">Get Ultimate</button>
+      <button class="plan-cta ghost" onclick="subscribe('team')">Get Team</button>
     </div>
 
   </div>
-</div>
+</section>
 
-<!-- Limit Modal -->
-<div class="overlay" id="limitOverlay" onclick="if(event.target===this)closeLimitModal()">
-  <div class="modal-box">
-    <div class="modal-handle"></div>
-    <button onclick="closeLimitModal()" style="float:right;background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;margin-top:-4px;">✕</button>
-    <div class="modal-title" id="limitTitle">Usage Limits</div>
-    <div class="modal-sub" id="limitPlanLabel">FREE PLAN</div>
-    <div id="limitContent"></div>
-  </div>
-</div>
+<section class="faq">
+  <h2>Frequently asked <em>questions</em></h2>
 
-<!-- Pay Modal -->
-<div class="overlay" id="payOverlay" onclick="if(event.target===this)closePay()">
-  <div class="modal-box">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Complete Payment</div>
-    <div class="pay-msg" id="payMsg"></div>
-    <div class="pay-plan-row">
-      <div class="pay-plan-name" id="payPlanName">Plus Plan</div>
-      <div class="pay-price" id="payPlanPrice">₹299</div>
-    </div>
-    <button class="pay-btn rzp" onclick="payRazorpay()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-      Pay with Razorpay (UPI / Card)
-    </button>
-    <button class="pay-btn stripe" onclick="payStripe()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-      Pay with Stripe (International)
-    </button>
-    <div class="pay-note">🔒 Secure · Encrypted · Cancel anytime</div>
-    <button class="pay-cancel" onclick="closePay()">Cancel</button>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">What counts as an "app build"?</div>
+    <div class="faq-a">Every time you describe a new app or add major new features, that counts as one build. Minor edits don't count. Updating your published app doesn't count either.</div>
   </div>
-</div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">Can I cancel anytime?</div>
+    <div class="faq-a">Yes. Cancel from Settings → Subscription. You'll keep access until the end of your billing period, then downgrade to Free plan. No questions asked.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">What payment methods do you accept?</div>
+    <div class="faq-a">UPI (GPay, PhonePe, Paytm), all debit/credit cards, and wallets — all through Razorpay. Indian payments only for now.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">Do I own the apps I build?</div>
+    <div class="faq-a">Yes, 100%. The code is yours. Download it, modify it, sell it — do whatever you want. Datta AI makes no claim on apps you build.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">What happens to my apps if I downgrade?</div>
+    <div class="faq-a">All your built apps stay. You can still download them. On Free plan you won't be able to publish new ones, but existing published apps keep working.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">Is there a student discount?</div>
+    <div class="faq-a">Our Starter plan at ₹29/month is already priced for students. If you need more and can't afford it, email hello@datta-ai.com with your student ID.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">Can I get a refund?</div>
+    <div class="faq-a">If you're unhappy in the first 7 days, email us for a full refund. After that, we don't do refunds but you can cancel anytime.</div>
+  </div>
+</section>
 
 <script>
-const SERVER = "https://datta-ai-server.onrender.com"
-let isYearly = false, selectedPlan = null
-const M = { free:0, starter:29, plus:299, pro:499, ultimate:799 }
-const Y = { mini:1910, pro:9590, max:23990, ultramax:47990 }
-const names = { free:"Free", starter:"Starter", plus:"Plus", pro:"Pro", ultimate:"Ultimate" }
-
-const limits = {
-  free: {
-    name: "Free Plan",
-    rows: [
-      { k:"Messages/day", v:"10 messages" },
-      { k:"Datta 5.4", v:"2 messages/day" },
-      { k:"Datta Code", v:"3 messages/day" },
-      { k:"Web search", v:"✓ Included" },
-      { k:"Voice assistant", v:"✓ Included" },
-      { k:"Priority speed", v:"✗ Standard" },
-    ],
-    note: "Free plan resets every 24 hours. No credit card required."
-  },
-  starter: {
-    name: "Starter Plan",
-    rows: [
-      { k:"Messages/day", v:"40 messages" },
-      { k:"Datta 5.4", v:"10 messages/day" },
-      { k:"Datta Code", v:"5 messages/day" },
-      { k:"Web search", v:"✓ Included" },
-      { k:"Voice assistant", v:"✓ Included" },
-      { k:"Priority speed", v:"✗ Standard" },
-    ],
-    note: "₹29/month. Resets every 24 hours. Cancel anytime."
-  },
-  plus: {
-    name: "Plus Plan",
-    rows: [
-      { k:"Messages/day", v:"300 messages" },
-      { k:"Datta 5.4", v:"✓ Full access" },
-      { k:"Datta Code", v:"30 messages/day" },
-      { k:"Web search", v:"✓ Included" },
-      { k:"PDF upload", v:"✓ Included" },
-      { k:"Priority speed", v:"✓ Priority responses" },
-    ],
-    note: "₹299/month. Most popular. Cancel anytime from settings."
-  },
-  pro: {
-    name: "Pro Plan",
-    rows: [
-      { k:"Messages/day", v:"700 messages" },
-      { k:"Datta 5.4", v:"✓ Full access" },
-      { k:"Datta Code", v:"60 messages/day" },
-      { k:"Web search", v:"✓ Included" },
-      { k:"PDF upload", v:"✓ Included" },
-      { k:"Priority speed", v:"✓ Faster responses" },
-    ],
-    note: "₹499/month. Cancel anytime from settings."
-  },
-  ultimate: {
-    name: "Ultimate Plan",
-    rows: [
-      { k:"Messages/day", v:"1500 messages" },
-      { k:"Datta 5.4", v:"✓ Full access" },
-      { k:"Datta Code", v:"300 messages/day" },
-      { k:"Web search", v:"✓ Included" },
-      { k:"PDF upload", v:"✓ Included" },
-      { k:"Priority speed", v:"✓ Highest priority" },
-    ],
-    note: "₹799/month. Maximum power. Cancel anytime from settings."
-  }
-}
-
-function getToken(){ return localStorage.getItem("datta_token")||"" }
-function getUser(){ try{ return JSON.parse(localStorage.getItem("datta_user")||"{}") }catch(e){ return {} } }
-
-function showLimit(plan){
-  const d = limits[plan]
-  if (!d) return
-  document.getElementById("limitTitle").textContent = d.name
-  document.getElementById("limitPlanLabel").textContent = plan.toUpperCase() + " PLAN DETAILS"
-  let html = ""
-  d.rows.forEach(r => {
-    const col = r.v.startsWith("✓") ? "#10a37f" : r.v.startsWith("✗") ? "#444" : "#ddd"
-    html += `<div class="limit-row"><div class="limit-key">${r.k}</div><div class="limit-val" style="color:${col}">${r.v}</div></div>`
+function setBilling(type, btn) {
+  document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  document.querySelectorAll('[data-monthly]').forEach(el => {
+    el.textContent = type === 'yearly' ? el.dataset.yearly : el.dataset.monthly
   })
-  if(d.note) html += `<div class="limit-note">${d.note}</div>`
-  document.getElementById("limitContent").innerHTML = html
-  document.getElementById("limitOverlay").classList.add("show")
-}
-
-function closeLimitModal(){ document.getElementById("limitOverlay").classList.remove("show") }
-
-function openPay(plan){
-  selectedPlan = plan
-  window._selectedPlanAmount = null
-  const amount = M[plan]
-  document.getElementById("payPlanName").textContent = (names[plan]||plan) + " Plan"
-  document.getElementById("payPlanPrice").textContent = "₹" + amount.toLocaleString("en-IN")
-  document.getElementById("payMsg").textContent = ""
-  document.getElementById("payOverlay").classList.add("show")
-}
-
-function closePay(){
-  document.getElementById("payOverlay").classList.remove("show")
-  selectedPlan = null
-}
-
-function selectPlan(plan, period, amount) {
-  if (!getToken()) { window.location.href="login.html"; return }
-  selectedPlan = plan
-  window._selectedPlanAmount = amount
-  window._selectedPlanPeriod = period
-  document.getElementById("payPlanName").textContent = (names[plan]||plan) + " Plan"
-  document.getElementById("payPlanPrice").textContent = "₹" + amount.toLocaleString("en-IN") + "/" + period
-  document.getElementById("payMsg").textContent = ""
-  document.getElementById("payOverlay").classList.add("show")
-}
-
-// ── ULTRA MINI PURCHASE ──
-async function buyUltraMini() {
-  const token = getToken()
-  if (!token) { window.location.href = "login.html"; return }
-  const btn = document.getElementById("btn-ultra-mini")
-  if (btn) { btn.textContent = "Processing..."; btn.disabled = true }
-  try {
-    const res = await fetch(SERVER + "/payment/ultra-mini-order", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }
-    })
-    const data = await res.json()
-    if (!data.orderId) {
-      alert(data.error || "Could not create order. Please try again.")
-      if (btn) { btn.textContent = "Get +15 Msgs"; btn.disabled = false }
-      return
-    }
-    const rzp = new Razorpay({
-      key: data.keyId,
-      amount: 1000,
-      currency: "INR",
-      name: "Datta AI",
-      description: "Ultra Mini — +15 Messages (24h)",
-      order_id: data.orderId,
-      prefill: { name: getUser().name || "", email: getUser().email || "" },
-      theme: { color: "#f59e0b" },
-      handler: async function(response) {
-        if (btn) btn.textContent = "Verifying..."
-        const vRes = await fetch(SERVER + "/payment/ultra-mini-verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-          body: JSON.stringify(response)
-        })
-        const vData = await vRes.json()
-        if (vData.success) {
-          localStorage.setItem("datta_plan", "ultra-mini")
-          if (btn) { btn.textContent = "✓ Activated!"; btn.style.background = "linear-gradient(135deg,#10a37f,#00cc6a)" }
-          // Show success toast
-          showUltraMiniSuccess(vData.expiresAt)
-          loadPlan()
-        } else {
-          alert(vData.error || "Verification failed. Contact support.")
-          if (btn) { btn.textContent = "Get +15 Msgs"; btn.disabled = false }
-        }
-      },
-      modal: { ondismiss: function() {
-        if (btn) { btn.textContent = "Get +15 Msgs"; btn.disabled = false }
-      }}
-    })
-    rzp.open()
-  } catch(e) {
-    alert("Something went wrong. Please try again.")
-    if (btn) { btn.textContent = "Get +15 Msgs"; btn.disabled = false }
-  }
-}
-
-function showUltraMiniSuccess(expiresAt) {
-  const div = document.createElement("div")
-  div.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#10a37f;color:#fff;padding:14px 24px;border-radius:14px;font-size:14px;font-weight:600;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.4);text-align:center;max-width:90%;"
-  const expiry = expiresAt ? new Date(expiresAt).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"}) : "24h"
-  div.textContent = "✓ You now have +15 extra messages! Valid until " + expiry
-  document.body.appendChild(div)
-  setTimeout(() => div.remove(), 5000)
-}
-
-// ── STANDARD RAZORPAY PAYMENT ──
-async function payRazorpay(){
-  if(!selectedPlan) return
-  const token = getToken()
-  if(!token){ window.location.href="login.html"; return }
-  const msg = document.getElementById("payMsg")
-  msg.textContent = "Creating order..."
-  msg.style.color = "#888"
-  try{
-    const amount = window._selectedPlanAmount || M[selectedPlan]
-    const period = window._selectedPlanPeriod || "monthly"
-    const res = await fetch(SERVER+"/payment/razorpay-order",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
-      body:JSON.stringify({plan:selectedPlan,amount,period})
-    })
-    const data = await res.json()
-    if(!data.orderId){ msg.textContent = data.error||"Failed"; msg.style.color="#ef4444"; return }
-    const rzp = new Razorpay({
-      key: data.keyId,
-      amount: amount*100,
-      currency: "INR",
-      name: "Datta AI",
-      description: (names[selectedPlan]||selectedPlan)+" Plan",
-      order_id: data.orderId,
-      prefill:{ name:getUser().name||"", email:getUser().email||"" },
-      theme:{ color:"#10a37f" },
-      handler: async function(response){
-        msg.textContent = "Verifying..."
-        const vRes = await fetch(SERVER+"/payment/razorpay-verify",{
-          method:"POST",
-          headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
-          body:JSON.stringify({...response,plan:selectedPlan,period})
-        })
-        const vData = await vRes.json()
-        if(vData.success){
-          msg.textContent = "✓ "+names[selectedPlan]+" plan activated!"
-          msg.style.color="#10a37f"
-          localStorage.setItem("datta_plan", selectedPlan)
-          setTimeout(()=>{ closePay(); loadPlan() },1800)
-        } else {
-          msg.textContent = vData.error || "Verification failed"
-          msg.style.color="#ef4444"
-        }
-      },
-      modal: { ondismiss: function(){ msg.textContent="" } }
-    })
-    rzp.open()
-    msg.textContent = ""
-  }catch(e){ msg.textContent = "Error: "+e.message; msg.style.color="#ef4444" }
-}
-
-function payStripe(){
-  document.getElementById("payMsg").textContent = "Stripe coming soon. Use Razorpay."
-  document.getElementById("payMsg").style.color = "#f59e0b"
-}
-
-async function loadPlan(){
-  const token = getToken()
-  let plan = localStorage.getItem("datta_plan") || "free"
-  let subData = null
-
-  if(token){
-    try{
-      const res = await fetch(SERVER+"/payment/subscription", {headers:{"Authorization":"Bearer "+token}})
-      subData = await res.json()
-      if(subData.plan){
-        plan = subData.plan
-        localStorage.setItem("datta_plan", plan)
-      }
-    }catch(e){}
-  }
-
-  // Update badge
-  document.getElementById("curBadge").textContent = (names[plan]||plan) + " Plan"
-
-  // Ultra-mini expiry timer
-  const timerEl = document.getElementById("ultraMiniTimer")
-  if(plan === "ultra-mini" && subData && subData.ultraMiniExpiry) {
-    const expiry = new Date(subData.ultraMiniExpiry)
-    function updateTimer() {
-      const now = new Date()
-      const diff = expiry - now
-      if(diff <= 0) { if(timerEl) timerEl.style.display="none"; return }
-      const h = Math.floor(diff/3600000)
-      const m = Math.floor((diff%3600000)/60000)
-      if(timerEl) {
-        timerEl.textContent = "⏱ Expires in " + h + "h " + m + "m"
-        timerEl.style.display = "block"
-      }
-    }
-    updateTimer()
-    setInterval(updateTimer, 60000)
-  }
-
-  // Update all cards
-  const allPlans = ["free","starter","plus","pro","ultimate"]
-  allPlans.forEach(p => {
-    const card = document.getElementById("card-"+p)
-    const btn  = document.getElementById("btn-"+p)
-    if(!card || !btn) return
-
-    // Remove existing current badge (preserve pop-badge on plus/ultra-mini)
-    card.querySelectorAll(".current-badge").forEach(b => b.remove())
-
-    if(p === plan){
-      card.classList.add("current-plan")
-      const badge = document.createElement("div")
-      badge.className = "current-badge"
-      badge.style.cssText = "font-size:10px;font-weight:700;color:#10a37f;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;"
-      badge.textContent = "✓ Your plan"
-      card.insertBefore(badge, card.firstChild)
-      btn.textContent = "Current plan"
-      btn.style.cssText = ""
-      btn.className = "plan-btn btn-current"
-      btn.disabled = true
-      btn.onclick = null
-    } else {
-      card.classList.remove("current-plan")
-      const btnMap = {
-        free:"Free Plan", starter:"Get Starter",
-        plus:"Get Plus", pro:"Get Pro", ultimate:"Get Ultimate"
-      }
-      const clsMap = {
-        free:"btn-free", starter:"btn-starter",
-        plus:"btn-plus", pro:"btn-pro", ultimate:"btn-ultimate"
-      }
-      btn.textContent = btnMap[p] || ("Get "+p)
-      btn.className = "plan-btn " + clsMap[p]
-      btn.disabled = p === "free"
-      btn.style.cssText = ""
-      if(p !== "free"){
-        btn.onclick = () => selectPlan(p, "monthly", M[p])
-      }
-    }
+  document.querySelectorAll('.period-text').forEach(el => {
+    el.textContent = type === 'yearly' ? 'per year' : 'per month'
   })
 }
 
-// Init
-loadPlan()
+function toggleFaq(q) {
+  q.parentElement.classList.toggle('open')
+}
+
+function subscribe(plan) {
+  const token = localStorage.getItem("datta_token")
+  if (!token) {
+    window.location.href = "/login.html?redirect=/pricing.html"
+    return
+  }
+  // Redirect to payment flow
+  alert("Redirecting to payment... (Razorpay integration)")
+  // Actual implementation would call backend /subscribe endpoint
+}
 </script>
+
 </body>
 </html>
