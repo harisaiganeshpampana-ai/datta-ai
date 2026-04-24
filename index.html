@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Datta AI — India's Most Powerful AI Assistant</title>
-<meta name="description" content="Build apps, websites, solve exams. India's own AI — free to start.">
+<title>Datta AI — India's AI App Builder. Describe it. Build it. Deploy it.</title>
+<meta name="description" content="Build full websites and web apps in seconds. Describe in English, Telugu, or Hindi. Get working code instantly. Add features anytime. Deploy with one click.">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2300ff88'/><text x='50' y='72' text-anchor='middle' font-size='64' font-weight='800' fill='black'>D</text></svg>">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,42 +16,37 @@
 
 <style>
 :root {
-  --bg: #000000;
+  --bg: #000;
   --bg2: #0a0a0a;
   --bg3: #141414;
-  --text: #ffffff;
+  --bg4: #1a1a1a;
+  --text: #fff;
   --text2: #a0a0a0;
   --text3: #606060;
   --accent: #00ff88;
   --accent2: #00d9ff;
-  --purple: #a855f7;
   --orange: #ff6b35;
   --border: rgba(255, 255, 255, 0.08);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 body {
   background: var(--bg);
   color: var(--text);
   font-family: 'Bricolage Grotesque', -apple-system, sans-serif;
   overflow-x: hidden;
-  font-size: 16px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
 a { color: inherit; text-decoration: none; }
-button { font-family: inherit; border: none; cursor: pointer; }
-
+button { font-family: inherit; border: none; cursor: pointer; color: inherit; background: transparent; }
 ::selection { background: var(--accent); color: #000; }
 
-/* ═══════════════ PAGE LOADER ═══════════════ */
-.page-loader {
+/* ═══ LOADER ═══ */
+.loader {
   position: fixed;
   inset: 0;
   background: var(--bg);
@@ -60,19 +57,14 @@ button { font-family: inherit; border: none; cursor: pointer; }
   justify-content: center;
   transition: opacity 0.5s, visibility 0.5s;
 }
-
-.page-loader.hidden {
-  opacity: 0;
-  visibility: hidden;
-}
+.loader.hidden { opacity: 0; visibility: hidden; }
 
 .loader-orb {
-  width: 80px;
-  height: 80px;
+  width: 70px;
+  height: 70px;
   position: relative;
-  margin-bottom: 30px;
+  margin-bottom: 24px;
 }
-
 .loader-orb::before,
 .loader-orb::after {
   content: '';
@@ -83,127 +75,61 @@ button { font-family: inherit; border: none; cursor: pointer; }
   border-top-color: var(--accent);
   animation: spin 1.5s linear infinite;
 }
-
 .loader-orb::after {
   border-top-color: var(--accent2);
-  animation-duration: 2s;
-  animation-direction: reverse;
   inset: 8px;
+  animation-direction: reverse;
+  animation-duration: 2s;
 }
-
-.loader-orb-inner {
-  position: absolute;
-  inset: 20px;
-  background: radial-gradient(circle, var(--accent), transparent 70%);
-  border-radius: 50%;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.2); }
-}
-
 .loader-text {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--text3);
-  letter-spacing: 8px;
+  letter-spacing: 6px;
   text-transform: uppercase;
   font-weight: 500;
-  animation: fadeText 2s ease-in-out infinite;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-@keyframes fadeText {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 1; }
-}
-
-/* ═══════════════ 3D BACKGROUND CANVAS ═══════════════ */
+/* ═══ 3D BACKGROUND ═══ */
 #bg-canvas {
   position: fixed;
-  top: 0;
-  left: 0;
+  top: 0; left: 0;
   width: 100%;
   height: 100%;
   z-index: -1;
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
-/* ═══════════════ FLOATING PARTICLES ═══════════════ */
-.particles {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: -1;
-  overflow: hidden;
-}
-
-.particle {
-  position: absolute;
-  width: 3px;
-  height: 3px;
-  background: var(--accent);
-  border-radius: 50%;
-  opacity: 0;
-  animation: floatParticle 15s linear infinite;
-  box-shadow: 0 0 10px var(--accent);
-}
-
-@keyframes floatParticle {
-  0% {
-    transform: translate(0, 100vh) scale(0);
-    opacity: 0;
-  }
-  10% {
-    opacity: 0.8;
-  }
-  90% {
-    opacity: 0.8;
-  }
-  100% {
-    transform: translate(20vw, -10vh) scale(1);
-    opacity: 0;
-  }
-}
-
-/* ═══════════════ NAVIGATION ═══════════════ */
+/* ═══ NAV ═══ */
 nav {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  padding: 20px 40px;
+  top: 0; left: 0; right: 0;
+  padding: 18px 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   z-index: 1000;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px);
   background: rgba(0, 0, 0, 0.5);
   border-bottom: 1px solid var(--border);
   transition: all 0.3s;
 }
-
 nav.scrolled {
-  padding: 14px 40px;
-  background: rgba(0, 0, 0, 0.85);
+  padding: 12px 40px;
+  background: rgba(0, 0, 0, 0.88);
 }
 
 .logo {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 800;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
 }
 
 .logo-mark {
-  width: 38px;
-  height: 38px;
+  width: 36px; height: 36px;
   border-radius: 10px;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   display: flex;
@@ -211,49 +137,43 @@ nav.scrolled {
   justify-content: center;
   color: #000;
   font-weight: 900;
-  font-size: 20px;
+  font-size: 18px;
   box-shadow: 0 0 30px rgba(0, 255, 136, 0.4);
-  animation: logoGlow 3s ease-in-out infinite;
   position: relative;
   overflow: hidden;
+  animation: logoGlow 3s ease-in-out infinite;
 }
 
 .logo-mark::before {
   content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%);
   animation: shine 3s linear infinite;
 }
 
 @keyframes logoGlow {
-  0%, 100% { box-shadow: 0 0 30px rgba(0, 255, 136, 0.4); }
-  50% { box-shadow: 0 0 50px rgba(0, 255, 136, 0.8), 0 0 80px rgba(0, 217, 255, 0.3); }
+  0%, 100% { box-shadow: 0 0 30px rgba(0,255,136,0.4); }
+  50% { box-shadow: 0 0 50px rgba(0,255,136,0.7), 0 0 80px rgba(0,217,255,0.3); }
 }
-
 @keyframes shine {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
 
-.logo span b { color: var(--accent); }
+.logo b { color: var(--accent); }
 
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 30px;
+  gap: 28px;
 }
-
 .nav-links a {
   font-size: 14px;
   color: var(--text2);
   transition: color 0.2s;
   font-weight: 500;
 }
-
-.nav-links a:hover {
-  color: var(--accent);
-}
+.nav-links a:hover { color: var(--accent); }
 
 .nav-cta {
   padding: 10px 20px;
@@ -266,42 +186,31 @@ nav.scrolled {
   position: relative;
   overflow: hidden;
 }
-
 .nav-cta::before {
   content: '';
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
+  top: 50%; left: 50%;
+  width: 0; height: 0;
   border-radius: 50%;
   background: var(--accent2);
   transform: translate(-50%, -50%);
   transition: width 0.4s, height 0.4s;
 }
-
-.nav-cta:hover::before {
-  width: 300px;
-  height: 300px;
-}
-
-.nav-cta span {
-  position: relative;
-  z-index: 1;
-}
+.nav-cta:hover::before { width: 400px; height: 400px; }
+.nav-cta span { position: relative; z-index: 1; }
 
 @media (max-width: 768px) {
-  nav { padding: 16px 20px; }
+  nav { padding: 14px 20px; }
   .nav-links > a { display: none; }
 }
 
-/* ═══════════════ HERO ═══════════════ */
+/* ═══ HERO ═══ */
 .hero {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 120px 20px 80px;
+  padding: 120px 20px 60px;
   position: relative;
   overflow: hidden;
 }
@@ -309,12 +218,10 @@ nav.scrolled {
 .hero::before {
   content: '';
   position: absolute;
-  top: 10%;
-  left: 50%;
+  top: 0; left: 50%;
   transform: translateX(-50%);
-  width: 800px;
-  height: 800px;
-  background: radial-gradient(circle, rgba(0, 255, 136, 0.15), transparent 70%);
+  width: 900px; height: 900px;
+  background: radial-gradient(circle, rgba(0, 255, 136, 0.15), transparent 60%);
   animation: heroGlow 8s ease-in-out infinite;
   pointer-events: none;
 }
@@ -325,7 +232,7 @@ nav.scrolled {
 }
 
 .hero-inner {
-  max-width: 1000px;
+  max-width: 1100px;
   text-align: center;
   position: relative;
   z-index: 2;
@@ -335,37 +242,36 @@ nav.scrolled {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
-  background: rgba(0, 255, 136, 0.1);
+  padding: 7px 16px;
+  background: rgba(0, 255, 136, 0.08);
   border: 1px solid rgba(0, 255, 136, 0.3);
   border-radius: 100px;
   font-size: 13px;
   color: var(--accent);
   margin-bottom: 30px;
   font-weight: 500;
-  animation: fadeInUp 0.8s 0.2s both;
+  animation: fadeUp 0.8s 0.2s both;
 }
 
 .badge-pulse {
-  width: 8px;
-  height: 8px;
+  width: 7px; height: 7px;
   background: var(--accent);
   border-radius: 50%;
   animation: badgePulse 2s infinite;
 }
 
 @keyframes badgePulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
-  50% { box-shadow: 0 0 0 8px rgba(0, 255, 136, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0,255,136,0.7); }
+  50% { box-shadow: 0 0 0 8px rgba(0,255,136,0); }
 }
 
 .hero h1 {
-  font-size: clamp(42px, 8vw, 96px);
+  font-size: clamp(44px, 9vw, 104px);
   font-weight: 800;
-  line-height: 1;
-  letter-spacing: -3px;
-  margin-bottom: 24px;
-  animation: fadeInUp 0.8s 0.4s both;
+  line-height: 0.95;
+  letter-spacing: -4px;
+  margin-bottom: 28px;
+  animation: fadeUp 0.8s 0.4s both;
 }
 
 .hero h1 em {
@@ -376,39 +282,32 @@ nav.scrolled {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  position: relative;
-  display: inline-block;
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(40px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .hero p {
   font-size: clamp(16px, 2vw, 20px);
   color: var(--text2);
-  max-width: 600px;
+  max-width: 640px;
   margin: 0 auto 40px;
-  animation: fadeInUp 0.8s 0.6s both;
+  animation: fadeUp 0.8s 0.6s both;
 }
 
 .hero-ctas {
   display: flex;
-  gap: 16px;
+  gap: 14px;
   justify-content: center;
   flex-wrap: wrap;
-  animation: fadeInUp 0.8s 0.8s both;
+  margin-bottom: 48px;
+  animation: fadeUp 0.8s 0.8s both;
 }
 
 .btn {
-  padding: 16px 32px;
+  padding: 15px 30px;
   border-radius: 100px;
   font-weight: 700;
   font-size: 15px;
@@ -423,13 +322,12 @@ nav.scrolled {
 .btn-primary {
   background: var(--accent);
   color: #000;
-  box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 255, 136, 0.35);
 }
 
 .btn-primary::before {
   content: '';
-  position: absolute;
-  inset: 0;
+  position: absolute; inset: 0;
   background: linear-gradient(135deg, var(--accent2), var(--accent));
   opacity: 0;
   transition: opacity 0.3s;
@@ -437,67 +335,162 @@ nav.scrolled {
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 15px 40px rgba(0, 255, 136, 0.5);
+  box-shadow: 0 15px 40px rgba(0, 255, 136, 0.55);
 }
-
-.btn-primary:hover::before {
-  opacity: 1;
-}
-
-.btn-primary span {
-  position: relative;
-  z-index: 1;
-}
+.btn-primary:hover::before { opacity: 1; }
+.btn-primary span { position: relative; z-index: 1; }
 
 .btn-ghost {
   background: transparent;
   color: var(--text);
   border: 1px solid var(--border);
 }
-
 .btn-ghost:hover {
   border-color: var(--accent);
   color: var(--accent);
+  transform: translateY(-2px);
 }
 
-/* ═══════════════ 3D AI ORB (Hero visual) ═══════════════ */
-.hero-visual {
-  margin-top: 60px;
-  height: 400px;
+/* HERO DEMO — animated terminal-style */
+.hero-demo {
+  max-width: 900px;
+  margin: 40px auto 0;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 40px 80px rgba(0, 255, 136, 0.1);
+  animation: fadeUp 1s 1s both;
+}
+
+.demo-bar {
+  padding: 12px 18px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.demo-dots { display: flex; gap: 6px; }
+.demo-dot { width: 11px; height: 11px; border-radius: 50%; }
+.demo-dot.r { background: #ff5f57; }
+.demo-dot.y { background: #ffbd2e; }
+.demo-dot.g { background: #28ca42; }
+
+.demo-url {
+  margin-left: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text3);
+}
+
+.demo-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 320px;
+}
+
+@media (max-width: 700px) {
+  .demo-content { grid-template-columns: 1fr; }
+  .demo-right { display: none; }
+}
+
+.demo-left {
+  padding: 20px;
+  border-right: 1px solid var(--border);
+}
+
+.demo-chat-msg {
+  padding: 10px 14px;
+  background: rgba(0, 255, 136, 0.1);
+  border: 1px solid rgba(0, 255, 136, 0.2);
+  border-radius: 12px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  text-align: left;
+  min-height: 20px;
+}
+
+.demo-typing {
+  text-align: left;
+  font-size: 12px;
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.demo-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  animation: stepIn 0.4s forwards;
+}
+
+.demo-step.s1 { animation-delay: 0.8s; }
+.demo-step.s2 { animation-delay: 1.4s; }
+.demo-step.s3 { animation-delay: 2.0s; }
+.demo-step.s4 { animation-delay: 2.6s; }
+.demo-step.s5 { animation-delay: 3.2s; color: var(--accent); }
+
+@keyframes stepIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.step-check {
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.demo-right {
+  background: white;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #333;
   position: relative;
-  animation: fadeIn 1s 1s both;
+  overflow: hidden;
 }
 
-#ai-orb-canvas {
-  width: 100%;
-  height: 100%;
+.demo-app-preview {
+  font-family: sans-serif;
+  text-align: center;
+  opacity: 0;
+  animation: previewIn 0.6s 3.8s forwards;
 }
 
-.hero-visual::before {
-  content: '';
-  position: absolute;
-  bottom: -30px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 300px;
-  height: 40px;
-  background: radial-gradient(ellipse, var(--accent), transparent 70%);
-  opacity: 0.3;
-  filter: blur(20px);
-  animation: shadowPulse 3s ease-in-out infinite;
+@keyframes previewIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
 }
 
-@keyframes shadowPulse {
-  0%, 100% { transform: translateX(-50%) scaleX(1); opacity: 0.3; }
-  50% { transform: translateX(-50%) scaleX(1.2); opacity: 0.5; }
+.demo-app-preview h3 {
+  color: #111;
+  font-size: 20px;
+  margin-bottom: 12px;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.demo-task-list {
+  list-style: none;
+  text-align: left;
+  font-size: 13px;
 }
 
-/* ═══════════════ SECTION BASE ═══════════════ */
+.demo-task-list li {
+  padding: 6px 10px;
+  margin: 4px 0;
+  background: #f3f4f6;
+  border-radius: 6px;
+  color: #374151;
+}
+
+/* ═══ SECTIONS ═══ */
 section {
   padding: 100px 20px;
   position: relative;
@@ -520,7 +513,7 @@ section {
   letter-spacing: 3px;
   text-transform: uppercase;
   color: var(--accent);
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   font-weight: 600;
 }
 
@@ -529,7 +522,7 @@ section {
   font-weight: 800;
   letter-spacing: -2px;
   line-height: 1.05;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .section-header h2 em {
@@ -542,39 +535,98 @@ section {
 .section-header p {
   color: var(--text2);
   font-size: 17px;
-  line-height: 1.6;
 }
 
-/* ═══════════════ FEATURE CARDS (3D Tilt) ═══════════════ */
+/* ═══ HOW IT WORKS ═══ */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.step-card {
+  background: linear-gradient(135deg, var(--bg2), var(--bg3));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 30px;
+  position: relative;
+  transition: all 0.3s;
+  overflow: hidden;
+}
+
+.step-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(0, 255, 136, 0.08), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.step-card:hover {
+  border-color: rgba(0, 255, 136, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 50px rgba(0, 255, 136, 0.1);
+}
+
+.step-card:hover::before { opacity: 1; }
+
+.step-num {
+  font-size: 42px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -2px;
+  line-height: 1;
+  margin-bottom: 18px;
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+}
+
+.step-card h3 {
+  font-size: 21px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: -0.5px;
+  position: relative;
+}
+
+.step-card p {
+  color: var(--text2);
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+
+/* ═══ FEATURES ═══ */
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
+  gap: 20px;
   perspective: 2000px;
 }
 
 .feature-card {
-  background: linear-gradient(135deg, var(--bg2), var(--bg3));
+  background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 36px;
+  border-radius: 20px;
+  padding: 32px;
+  transition: transform 0.4s ease-out, box-shadow 0.3s, border-color 0.3s;
   position: relative;
   overflow: hidden;
-  transition: transform 0.4s ease-out, box-shadow 0.4s, border-color 0.4s;
   transform-style: preserve-3d;
-  will-change: transform;
 }
 
 .feature-card::before {
   content: '';
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(0, 255, 136, 0.15), transparent 40%);
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(0, 255, 136, 0.12), transparent 40%);
   opacity: 0;
-  transition: opacity 0.4s;
+  transition: opacity 0.3s;
   pointer-events: none;
 }
 
@@ -583,22 +635,19 @@ section {
   box-shadow: 0 20px 60px rgba(0, 255, 136, 0.1);
 }
 
-.feature-card:hover::before {
-  opacity: 1;
-}
+.feature-card:hover::before { opacity: 1; }
 
 .feature-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 217, 255, 0.2));
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 217, 255, 0.15));
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 24px;
-  font-size: 28px;
-  transition: transform 0.4s;
-  position: relative;
+  margin-bottom: 20px;
+  font-size: 26px;
+  transition: transform 0.3s;
 }
 
 .feature-card:hover .feature-icon {
@@ -606,239 +655,102 @@ section {
 }
 
 .feature-card h3 {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   letter-spacing: -0.5px;
 }
 
 .feature-card p {
   color: var(--text2);
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.6;
 }
 
-.feature-card-inner {
+.feature-inner {
   position: relative;
   z-index: 1;
 }
 
-/* ═══════════════ DEMO SECTION ═══════════════ */
-.demo-container {
-  max-width: 900px;
-  margin: 0 auto;
-  border-radius: 24px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  background: var(--bg2);
-  position: relative;
-  box-shadow: 0 40px 100px rgba(0, 255, 136, 0.1);
-}
-
-.demo-header {
-  padding: 16px 24px;
-  background: var(--bg3);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.demo-dots {
-  display: flex;
-  gap: 6px;
-}
-
-.demo-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
-.demo-dot.red { background: #ff5f57; }
-.demo-dot.yellow { background: #ffbd2e; }
-.demo-dot.green { background: #28ca42; }
-
-.demo-title {
-  font-size: 13px;
-  color: var(--text3);
-  margin-left: 12px;
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.demo-body {
-  padding: 32px;
-  min-height: 300px;
-}
-
-.demo-user {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 20px;
-}
-
-.demo-user-bubble {
-  background: rgba(0, 255, 136, 0.1);
-  border: 1px solid rgba(0, 255, 136, 0.3);
-  padding: 12px 18px;
-  border-radius: 20px 20px 4px 20px;
-  max-width: 80%;
-  font-size: 15px;
-}
-
-.demo-ai {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.demo-ai-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #000;
-  font-weight: 800;
-  flex-shrink: 0;
-  box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
-}
-
-.demo-ai-content {
-  background: var(--bg3);
-  padding: 14px 18px;
-  border-radius: 4px 20px 20px 20px;
-  flex: 1;
-  font-size: 15px;
-  line-height: 1.6;
-}
-
-/* Thinking animation */
-.thinking-dots {
-  display: inline-flex;
-  gap: 4px;
-  padding: 4px 0;
-}
-
-.thinking-dots span {
-  width: 8px;
-  height: 8px;
-  background: var(--accent);
-  border-radius: 50%;
-  animation: thinkingBounce 1.4s infinite ease-in-out both;
-}
-
-.thinking-dots span:nth-child(1) { animation-delay: -0.32s; }
-.thinking-dots span:nth-child(2) { animation-delay: -0.16s; }
-
-@keyframes thinkingBounce {
-  0%, 80%, 100% { transform: scale(0); }
-  40% { transform: scale(1); }
-}
-
-/* Typing cursor */
-.typing-cursor {
-  display: inline-block;
-  width: 2px;
-  height: 16px;
-  background: var(--accent);
-  animation: blink 1s infinite;
-  vertical-align: middle;
-  margin-left: 2px;
-}
-
-@keyframes blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
-}
-
-/* ═══════════════ PRICING ═══════════════ */
+/* ═══ PRICING ═══ */
 .pricing-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
 }
 
 .price-card {
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 32px;
+  border-radius: 18px;
+  padding: 28px;
   text-align: center;
   position: relative;
   transition: all 0.3s;
 }
 
 .price-card:hover {
-  transform: translateY(-8px);
+  transform: translateY(-6px);
   border-color: var(--accent);
 }
 
 .price-card.featured {
-  background: linear-gradient(135deg, rgba(0, 255, 136, 0.08), rgba(0, 217, 255, 0.08));
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.08), rgba(0, 217, 255, 0.05));
   border-color: var(--accent);
-  transform: scale(1.05);
+  transform: scale(1.04);
 }
 
 .price-card.featured::before {
   content: 'POPULAR';
   position: absolute;
-  top: -12px;
+  top: -11px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--accent);
   color: #000;
-  padding: 4px 14px;
+  padding: 4px 12px;
   border-radius: 100px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 1px;
 }
 
 .plan-name {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text2);
   text-transform: uppercase;
   letter-spacing: 2px;
   font-weight: 600;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .plan-price {
-  font-size: 48px;
+  font-size: 42px;
   font-weight: 800;
   letter-spacing: -2px;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
-.plan-price .rupee {
-  font-size: 28px;
-  opacity: 0.6;
-}
+.plan-price .r { font-size: 24px; opacity: 0.6; }
 
 .plan-period {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text3);
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
 
 .plan-features {
   list-style: none;
   text-align: left;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
 
 .plan-features li {
-  padding: 8px 0;
-  font-size: 14px;
+  padding: 7px 0;
+  font-size: 13px;
   color: var(--text2);
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: flex-start;
 }
 
@@ -849,15 +761,14 @@ section {
   flex-shrink: 0;
 }
 
-/* ═══════════════ CTA SECTION ═══════════════ */
+/* ═══ CTA SECTION ═══ */
 .cta-section {
   padding: 120px 20px;
   text-align: center;
-  position: relative;
 }
 
 .cta-box {
-  max-width: 700px;
+  max-width: 720px;
   margin: 0 auto;
   padding: 60px 40px;
   background: linear-gradient(135deg, rgba(0, 255, 136, 0.05), rgba(0, 217, 255, 0.05));
@@ -872,18 +783,16 @@ section {
   position: absolute;
   inset: -50%;
   background: radial-gradient(circle at center, rgba(0, 255, 136, 0.1), transparent 50%);
-  animation: rotate 20s linear infinite;
+  animation: rotate 25s linear infinite;
 }
 
-@keyframes rotate {
-  to { transform: rotate(360deg); }
-}
+@keyframes rotate { to { transform: rotate(360deg); } }
 
 .cta-box h2 {
   font-size: clamp(32px, 5vw, 56px);
   font-weight: 800;
   letter-spacing: -2px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   position: relative;
 }
 
@@ -896,14 +805,14 @@ section {
 
 .cta-box p {
   color: var(--text2);
-  font-size: 18px;
-  margin-bottom: 32px;
+  font-size: 17px;
+  margin-bottom: 30px;
   position: relative;
 }
 
-/* ═══════════════ FOOTER ═══════════════ */
+/* ═══ FOOTER ═══ */
 footer {
-  padding: 60px 20px 40px;
+  padding: 50px 20px 30px;
   border-top: 1px solid var(--border);
   text-align: center;
 }
@@ -912,17 +821,17 @@ footer {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 24px;
-  font-size: 20px;
+  margin-bottom: 22px;
+  font-size: 18px;
   font-weight: 800;
 }
 
 .footer-links {
   display: flex;
   justify-content: center;
-  gap: 30px;
+  gap: 28px;
   flex-wrap: wrap;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
 
 .footer-links a {
@@ -931,32 +840,27 @@ footer {
   transition: color 0.2s;
 }
 
-.footer-links a:hover {
-  color: var(--accent);
-}
+.footer-links a:hover { color: var(--accent); }
 
 .footer-copy {
   color: var(--text3);
-  font-size: 13px;
+  font-size: 12px;
 }
 
-/* ═══════════════ SCROLL REVEAL ═══════════════ */
+/* SCROLL REVEAL */
 .reveal {
   opacity: 0;
   transform: translateY(40px);
   transition: all 0.8s ease-out;
 }
-
 .reveal.visible {
   opacity: 1;
   transform: translateY(0);
 }
 
-/* ═══════════════ MOBILE OPTIMIZATIONS ═══════════════ */
 @media (max-width: 768px) {
   section { padding: 60px 20px; }
-  .hero { padding: 100px 20px 60px; }
-  .hero-visual { height: 280px; }
+  .hero { padding: 100px 20px 50px; }
   .price-card.featured { transform: scale(1); }
   .cta-box { padding: 40px 24px; }
 }
@@ -964,19 +868,14 @@ footer {
 </head>
 <body>
 
-<!-- PAGE LOADER -->
-<div class="page-loader" id="pageLoader">
-  <div class="loader-orb">
-    <div class="loader-orb-inner"></div>
-  </div>
+<!-- LOADER -->
+<div class="loader" id="loader">
+  <div class="loader-orb"></div>
   <div class="loader-text">DATTA AI</div>
 </div>
 
 <!-- 3D BACKGROUND -->
 <canvas id="bg-canvas"></canvas>
-
-<!-- FLOATING PARTICLES -->
-<div class="particles" id="particles"></div>
 
 <!-- NAV -->
 <nav id="nav">
@@ -985,10 +884,10 @@ footer {
     <span>Datta<b>AI</b></span>
   </a>
   <div class="nav-links">
+    <a href="#how">How it works</a>
     <a href="#features">Features</a>
     <a href="#pricing">Pricing</a>
-    <a href="/login.html">Login</a>
-    <a href="/chat.html" class="nav-cta"><span>Try Free</span></a>
+    <a href="/builder.html" class="nav-cta"><span>Start Building</span></a>
   </div>
 </nav>
 
@@ -997,31 +896,90 @@ footer {
   <div class="hero-inner">
     <div class="hero-badge">
       <span class="badge-pulse"></span>
-      Built in India 🇮🇳
+      India's AI App Builder · Built in Hyderabad 🇮🇳
     </div>
 
     <h1>
-      Your ideas,<br>
-      <em>instantly alive.</em>
+      Describe it.<br>
+      <em>We build it.</em>
     </h1>
 
     <p>
-      Build apps, solve exams, generate code, understand images — in Telugu, Hindi, or English. India's own AI.
+      Type what you want in English, Telugu, or Hindi. Get a complete working web app in seconds. Edit, preview, deploy — all in one place.
     </p>
 
     <div class="hero-ctas">
-      <a href="/chat.html" class="btn btn-primary">
-        <span>Start Free</span>
+      <a href="/builder.html" class="btn btn-primary">
+        <span>Start Building Free</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <path d="M5 12h14M12 5l7 7-7 7"/>
         </svg>
       </a>
-      <a href="#features" class="btn btn-ghost">See How It Works</a>
+      <a href="#how" class="btn btn-ghost">See How It Works</a>
     </div>
 
-    <!-- 3D AI ORB -->
-    <div class="hero-visual">
-      <canvas id="ai-orb-canvas"></canvas>
+    <!-- Animated demo -->
+    <div class="hero-demo">
+      <div class="demo-bar">
+        <div class="demo-dots">
+          <div class="demo-dot r"></div>
+          <div class="demo-dot y"></div>
+          <div class="demo-dot g"></div>
+        </div>
+        <div class="demo-url">builder.datta-ai.com</div>
+      </div>
+      <div class="demo-content">
+        <div class="demo-left">
+          <div class="demo-chat-msg" id="demoChat"></div>
+          <div class="demo-typing">
+            <div class="demo-step s1"><span class="step-check">✓</span> Understanding request</div>
+            <div class="demo-step s2"><span class="step-check">✓</span> Designing UI layout</div>
+            <div class="demo-step s3"><span class="step-check">✓</span> Writing HTML + CSS</div>
+            <div class="demo-step s4"><span class="step-check">✓</span> Adding interactivity</div>
+            <div class="demo-step s5"><span class="step-check">✓</span> Ready to deploy</div>
+          </div>
+        </div>
+        <div class="demo-right">
+          <div class="demo-app-preview">
+            <h3>My Todo App</h3>
+            <ul class="demo-task-list">
+              <li>✓ Build landing page</li>
+              <li>☐ Design logo</li>
+              <li>☐ Write blog post</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label">How It Works</div>
+      <h2>Three steps.<br><em>Any app you imagine.</em></h2>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step-card reveal">
+        <div class="step-num">01</div>
+        <h3>Describe your app</h3>
+        <p>Type what you want to build. "Todo app with dark theme" or "Portfolio site for my photography business" — in any language.</p>
+      </div>
+
+      <div class="step-card reveal">
+        <div class="step-num">02</div>
+        <h3>Watch it build</h3>
+        <p>See live build steps as Datta AI generates HTML, CSS, and JavaScript. Complete working code, no placeholders.</p>
+      </div>
+
+      <div class="step-card reveal">
+        <div class="step-num">03</div>
+        <h3>Edit, preview, deploy</h3>
+        <p>Change code directly or ask AI to add features. Preview live. Download or deploy with one click.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -1031,86 +989,55 @@ footer {
   <div class="container">
     <div class="section-header reveal">
       <div class="section-label">Features</div>
-      <h2>Everything you need,<br><em>in one AI.</em></h2>
-      <p>Built specifically for Indian students, developers, and professionals.</p>
+      <h2>Everything you need,<br><em>nothing you don't.</em></h2>
     </div>
 
     <div class="features-grid">
       <div class="feature-card reveal">
-        <div class="feature-card-inner">
-          <div class="feature-icon">💻</div>
-          <h3>Build Apps & Websites</h3>
-          <p>Describe your idea — get complete code. HTML, CSS, JavaScript, full-stack apps. Ready to run.</p>
+        <div class="feature-inner">
+          <div class="feature-icon">⚡</div>
+          <h3>Instant Generation</h3>
+          <p>Full working apps in 30 seconds. Not snippets. Complete HTML, CSS, and JavaScript ready to run.</p>
         </div>
       </div>
 
       <div class="feature-card reveal">
-        <div class="feature-card-inner">
-          <div class="feature-icon">📚</div>
-          <h3>Exam Paper Solver</h3>
-          <p>Upload your question paper photo. Get marks-based answers — 1 mark, 2 mark, 5 mark, 10 mark questions solved.</p>
+        <div class="feature-inner">
+          <div class="feature-icon">👁️</div>
+          <h3>Live Preview</h3>
+          <p>See your app run instantly in a preview panel. Every change reflects immediately.</p>
         </div>
       </div>
 
       <div class="feature-card reveal">
-        <div class="feature-card-inner">
-          <div class="feature-icon">🗣️</div>
-          <h3>Speaks Indian Languages</h3>
-          <p>Ask in Telugu, Hindi, Tamil, Kannada. Get answers in your language. Natural, not word-for-word translation.</p>
+        <div class="feature-inner">
+          <div class="feature-icon">✏️</div>
+          <h3>Edit Code Directly</h3>
+          <p>Full code editor built in. Tweak anything manually or ask AI to modify specific parts.</p>
         </div>
       </div>
 
       <div class="feature-card reveal">
-        <div class="feature-card-inner">
-          <div class="feature-icon">🎤</div>
-          <h3>Voice Homework Helper</h3>
-          <p>Speak your doubt, get a spoken answer. Perfect for students studying late at night with parents sleeping.</p>
+        <div class="feature-inner">
+          <div class="feature-icon">🔄</div>
+          <h3>Add Features Anytime</h3>
+          <p>"Add a login page" or "add Razorpay payment" — AI updates your existing app, doesn't restart.</p>
         </div>
       </div>
 
       <div class="feature-card reveal">
-        <div class="feature-card-inner">
-          <div class="feature-icon">📷</div>
-          <h3>Understands Images</h3>
-          <p>Upload any photo — math problem, handwritten notes, diagram, screenshot. Get detailed explanations.</p>
+        <div class="feature-inner">
+          <div class="feature-icon">🚀</div>
+          <h3>One-Click Download</h3>
+          <p>Download as HTML file. Upload to Netlify, Vercel, or any host. Or host yourself — it's just a file.</p>
         </div>
       </div>
 
       <div class="feature-card reveal">
-        <div class="feature-card-inner">
-          <div class="feature-icon">👨‍👩‍👧</div>
-          <h3>Family Accounts</h3>
-          <p>Share one subscription with up to 5 family members. Each person gets their own chat history and preferences.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- LIVE DEMO -->
-<section>
-  <div class="container">
-    <div class="section-header reveal">
-      <div class="section-label">How It Works</div>
-      <h2>Just ask.<br><em>Get the answer.</em></h2>
-    </div>
-
-    <div class="demo-container reveal">
-      <div class="demo-header">
-        <div class="demo-dots">
-          <div class="demo-dot red"></div>
-          <div class="demo-dot yellow"></div>
-          <div class="demo-dot green"></div>
-        </div>
-        <div class="demo-title">datta-ai.com</div>
-      </div>
-      <div class="demo-body" id="demoBody">
-        <div class="demo-user">
-          <div class="demo-user-bubble" id="demoUserMsg"></div>
-        </div>
-        <div class="demo-ai">
-          <div class="demo-ai-avatar">D</div>
-          <div class="demo-ai-content" id="demoAiMsg"></div>
+        <div class="feature-inner">
+          <div class="feature-icon">🇮🇳</div>
+          <h3>Indian Languages</h3>
+          <p>Describe your app in Telugu, Hindi, or English. Get the same quality results in any language.</p>
         </div>
       </div>
     </div>
@@ -1122,61 +1049,61 @@ footer {
   <div class="container">
     <div class="section-header reveal">
       <div class="section-label">Pricing</div>
-      <h2>Simple plans,<br><em>fair prices.</em></h2>
-      <p>Start free. Upgrade when you need more.</p>
+      <h2>Simple plans.<br><em>Fair prices.</em></h2>
+      <p>Start free. Upgrade when you need to build more.</p>
     </div>
 
     <div class="pricing-grid">
       <div class="price-card reveal">
-        <div class="plan-name">🌱 Free</div>
-        <div class="plan-price"><span class="rupee">₹</span>0</div>
+        <div class="plan-name">Free</div>
+        <div class="plan-price"><span class="r">₹</span>0</div>
         <div class="plan-period">forever</div>
         <ul class="plan-features">
-          <li>10 messages / day</li>
-          <li>3 Datta Code / day</li>
-          <li>Datta 2.1, Code, Think</li>
-          <li>All Indian languages</li>
+          <li>3 apps per day</li>
+          <li>Live preview</li>
+          <li>Download as HTML</li>
+          <li>Indian languages</li>
         </ul>
-        <a href="/chat.html" class="btn btn-ghost" style="width:100%;justify-content:center;">Start Free</a>
+        <a href="/builder.html" class="btn btn-ghost" style="width:100%;justify-content:center;padding:12px;">Start Free</a>
       </div>
 
       <div class="price-card featured reveal">
-        <div class="plan-name">🚀 Starter</div>
-        <div class="plan-price"><span class="rupee">₹</span>29</div>
+        <div class="plan-name">Starter</div>
+        <div class="plan-price"><span class="r">₹</span>29</div>
         <div class="plan-period">per month</div>
         <ul class="plan-features">
-          <li>40 messages / day</li>
-          <li>5 Datta Code / day</li>
-          <li>Plus Datta 5.4</li>
-          <li>Priority responses</li>
+          <li>5 apps per day</li>
+          <li>40 AI edits per day</li>
+          <li>Priority generation</li>
+          <li>All features included</li>
         </ul>
-        <a href="/pricing.html" class="btn btn-primary" style="width:100%;justify-content:center;"><span>Upgrade</span></a>
+        <a href="/pricing.html" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;"><span>Upgrade</span></a>
       </div>
 
       <div class="price-card reveal">
-        <div class="plan-name">⚡ Plus</div>
-        <div class="plan-price"><span class="rupee">₹</span>299</div>
+        <div class="plan-name">Plus</div>
+        <div class="plan-price"><span class="r">₹</span>299</div>
         <div class="plan-period">per month</div>
         <ul class="plan-features">
-          <li>300 messages / day</li>
-          <li>30 Datta Code / day</li>
-          <li>All models</li>
+          <li>30 apps per day</li>
+          <li>300 AI edits per day</li>
           <li>Family: 3 members</li>
+          <li>Priority support</li>
         </ul>
-        <a href="/pricing.html" class="btn btn-ghost" style="width:100%;justify-content:center;">Choose Plus</a>
+        <a href="/pricing.html" class="btn btn-ghost" style="width:100%;justify-content:center;padding:12px;">Choose Plus</a>
       </div>
 
       <div class="price-card reveal">
-        <div class="plan-name">👑 Ultimate</div>
-        <div class="plan-price"><span class="rupee">₹</span>799</div>
+        <div class="plan-name">Ultimate</div>
+        <div class="plan-price"><span class="r">₹</span>799</div>
         <div class="plan-period">per month</div>
         <ul class="plan-features">
-          <li>1500 messages / day</li>
-          <li>300 Datta Code / day</li>
+          <li>300 apps per day</li>
+          <li>1500 AI edits per day</li>
           <li>Family: 5 members</li>
           <li>Highest priority</li>
         </ul>
-        <a href="/pricing.html" class="btn btn-ghost" style="width:100%;justify-content:center;">Go Ultimate</a>
+        <a href="/pricing.html" class="btn btn-ghost" style="width:100%;justify-content:center;padding:12px;">Go Ultimate</a>
       </div>
     </div>
   </div>
@@ -1187,14 +1114,14 @@ footer {
   <div class="container">
     <div class="section-header reveal">
       <div class="section-label">Our Story</div>
-      <h2>Built by a student,<br><em>for students.</em></h2>
+      <h2>Built by a student,<br><em>for creators.</em></h2>
     </div>
     <div style="max-width:680px;margin:0 auto;text-align:center;padding:0 20px;" class="reveal">
-      <p style="color:var(--text2);font-size:17px;line-height:1.7;margin-bottom:20px;">
+      <p style="color:var(--text2);font-size:17px;line-height:1.7;margin-bottom:18px;">
         Datta AI is built by <strong style="color:var(--text);">LR AI</strong> — founded by a final-year BSc Agriculture student.
       </p>
-      <p style="color:var(--text2);font-size:17px;line-height:1.7;margin-bottom:20px;">
-        The name <strong style="color:var(--accent);">LR</strong> comes from the founder's parents — <strong style="color:var(--text);">Lakshmi</strong> and <strong style="color:var(--text);">Ramanjaneyulu</strong>.
+      <p style="color:var(--text2);font-size:17px;line-height:1.7;margin-bottom:18px;">
+        <strong style="color:var(--accent);">LR</strong> comes from the founder's parents — <strong style="color:var(--text);">Lakshmi</strong> and <strong style="color:var(--text);">Ramanjaneyulu</strong>.
       </p>
       <p style="color:var(--text2);font-size:17px;line-height:1.7;">
         We're just starting. Your feedback shapes what we build next. 🇮🇳
@@ -1207,9 +1134,9 @@ footer {
 <section class="cta-section">
   <div class="cta-box reveal">
     <h2>Ready to <em>build something?</em></h2>
-    <p>Join early users. No credit card needed.</p>
-    <a href="/chat.html" class="btn btn-primary">
-      <span>Try Datta AI Free</span>
+    <p>Start free. No credit card needed.</p>
+    <a href="/builder.html" class="btn btn-primary">
+      <span>Start Building Free</span>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M5 12h14M12 5l7 7-7 7"/>
       </svg>
@@ -1224,341 +1151,162 @@ footer {
     <span>Datta<b>AI</b></span>
   </div>
   <div class="footer-links">
+    <a href="/builder.html">Builder</a>
     <a href="/pricing.html">Pricing</a>
     <a href="/privacy.html">Privacy</a>
     <a href="/terms.html">Terms</a>
     <a href="/contact.html">Contact</a>
   </div>
-  <div class="footer-copy">© 2026 LR AI — Made with 💚 in India</div>
+  <div class="footer-copy">© 2026 LR AI Technologies — Made with 💚 in India</div>
 </footer>
 
 <script>
-// ═══════════════ PAGE LOADER ═══════════════
+// LOADER
 window.addEventListener('load', () => {
-  setTimeout(() => {
-    document.getElementById('pageLoader').classList.add('hidden')
-  }, 800)
+  setTimeout(() => document.getElementById('loader').classList.add('hidden'), 500)
 })
 
-// ═══════════════ AUTO-REDIRECT LOGGED-IN USERS ═══════════════
-;(function() {
-  try {
-    const token = localStorage.getItem("datta_token")
-    const user = localStorage.getItem("datta_user")
-    if (token && user && token.length > 20) {
-      window.location.replace("/chat.html")
-    }
-  } catch(e) {}
+// AUTH REDIRECT
+(function() {
+  const token = localStorage.getItem("datta_token")
+  const user = localStorage.getItem("datta_user")
+  if (token && user && token.length > 20) {
+    window.location.replace("/builder.html")
+  }
 })()
 
-// ═══════════════ 3D BACKGROUND (Three.js) ═══════════════
+// 3D BACKGROUND (Three.js particles)
 if (typeof THREE !== 'undefined') {
-  const bgScene = new THREE.Scene()
-  const bgCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
-  const bgRenderer = new THREE.WebGLRenderer({
+  const scene = new THREE.Scene()
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
+  const renderer = new THREE.WebGLRenderer({
     canvas: document.getElementById('bg-canvas'),
     alpha: true,
     antialias: true
   })
-  bgRenderer.setSize(window.innerWidth, window.innerHeight)
-  bgRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  renderer.setSize(window.innerWidth, window.innerHeight)
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
-  // Create particles (stars)
-  const particleCount = 800
-  const positions = new Float32Array(particleCount * 3)
-  const colors = new Float32Array(particleCount * 3)
-
-  for (let i = 0; i < particleCount; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 100
-    positions[i * 3 + 1] = (Math.random() - 0.5) * 100
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 100
-
-    const isGreen = Math.random() > 0.5
-    if (isGreen) {
-      colors[i * 3] = 0
-      colors[i * 3 + 1] = 1
-      colors[i * 3 + 2] = 0.53
-    } else {
-      colors[i * 3] = 0
-      colors[i * 3 + 1] = 0.85
-      colors[i * 3 + 2] = 1
-    }
+  // Particles
+  const n = 700
+  const pos = new Float32Array(n * 3)
+  const col = new Float32Array(n * 3)
+  for (let i = 0; i < n; i++) {
+    pos[i * 3] = (Math.random() - 0.5) * 100
+    pos[i * 3 + 1] = (Math.random() - 0.5) * 100
+    pos[i * 3 + 2] = (Math.random() - 0.5) * 100
+    const isGreen = Math.random() > 0.4
+    if (isGreen) { col[i*3] = 0; col[i*3+1] = 1; col[i*3+2] = 0.53 }
+    else { col[i*3] = 0; col[i*3+1] = 0.85; col[i*3+2] = 1 }
   }
 
-  const particleGeometry = new THREE.BufferGeometry()
-  particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-  particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3))
 
-  const particleMaterial = new THREE.PointsMaterial({
-    size: 0.15,
+  const mat = new THREE.PointsMaterial({
+    size: 0.12,
     vertexColors: true,
     transparent: true,
     opacity: 0.8,
     blending: THREE.AdditiveBlending
   })
 
-  const particles = new THREE.Points(particleGeometry, particleMaterial)
-  bgScene.add(particles)
+  const particles = new THREE.Points(geo, mat)
+  scene.add(particles)
 
-  bgCamera.position.z = 30
+  camera.position.z = 30
 
-  // Mouse-based camera movement
-  let mouseX = 0, mouseY = 0
+  let mx = 0, my = 0
   document.addEventListener('mousemove', (e) => {
-    mouseX = (e.clientX / window.innerWidth) * 2 - 1
-    mouseY = -(e.clientY / window.innerHeight) * 2 + 1
+    mx = (e.clientX / window.innerWidth) * 2 - 1
+    my = -(e.clientY / window.innerHeight) * 2 + 1
   })
 
-  function animateBg() {
-    requestAnimationFrame(animateBg)
-    particles.rotation.x += 0.0005
-    particles.rotation.y += 0.0007
-
-    bgCamera.position.x += (mouseX * 5 - bgCamera.position.x) * 0.02
-    bgCamera.position.y += (mouseY * 5 - bgCamera.position.y) * 0.02
-    bgCamera.lookAt(bgScene.position)
-
-    bgRenderer.render(bgScene, bgCamera)
+  function loop() {
+    requestAnimationFrame(loop)
+    particles.rotation.x += 0.0004
+    particles.rotation.y += 0.0006
+    camera.position.x += (mx * 4 - camera.position.x) * 0.02
+    camera.position.y += (my * 4 - camera.position.y) * 0.02
+    camera.lookAt(scene.position)
+    renderer.render(scene, camera)
   }
-  animateBg()
+  loop()
 
   window.addEventListener('resize', () => {
-    bgCamera.aspect = window.innerWidth / window.innerHeight
-    bgCamera.updateProjectionMatrix()
-    bgRenderer.setSize(window.innerWidth, window.innerHeight)
+    camera.aspect = window.innerWidth / window.innerHeight
+    camera.updateProjectionMatrix()
+    renderer.setSize(window.innerWidth, window.innerHeight)
   })
 }
 
-// ═══════════════ AI ORB (Hero visual) ═══════════════
-if (typeof THREE !== 'undefined') {
-  const orbCanvas = document.getElementById('ai-orb-canvas')
-  if (orbCanvas) {
-    const orbScene = new THREE.Scene()
-    const orbCamera = new THREE.PerspectiveCamera(50, orbCanvas.clientWidth / orbCanvas.clientHeight, 0.1, 1000)
-    const orbRenderer = new THREE.WebGLRenderer({ canvas: orbCanvas, alpha: true, antialias: true })
-    orbRenderer.setSize(orbCanvas.clientWidth, orbCanvas.clientHeight)
-    orbRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-
-    // Core orb (glowing sphere)
-    const orbGeometry = new THREE.IcosahedronGeometry(1.5, 4)
-    const orbMaterial = new THREE.MeshStandardMaterial({
-      color: 0x00ff88,
-      emissive: 0x00ff88,
-      emissiveIntensity: 0.5,
-      wireframe: false,
-      metalness: 0.8,
-      roughness: 0.2
-    })
-    const orb = new THREE.Mesh(orbGeometry, orbMaterial)
-    orbScene.add(orb)
-
-    // Wireframe overlay
-    const wireGeometry = new THREE.IcosahedronGeometry(1.8, 2)
-    const wireMaterial = new THREE.MeshBasicMaterial({
-      color: 0x00d9ff,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.4
-    })
-    const wire = new THREE.Mesh(wireGeometry, wireMaterial)
-    orbScene.add(wire)
-
-    // Outer ring
-    const ringGeometry = new THREE.TorusGeometry(2.8, 0.05, 16, 100)
-    const ringMaterial = new THREE.MeshBasicMaterial({
-      color: 0x00ff88,
-      transparent: true,
-      opacity: 0.6
-    })
-    const ring = new THREE.Mesh(ringGeometry, ringMaterial)
-    orbScene.add(ring)
-
-    // Orbit particles
-    const orbitCount = 80
-    const orbitPositions = new Float32Array(orbitCount * 3)
-    for (let i = 0; i < orbitCount; i++) {
-      const angle = (i / orbitCount) * Math.PI * 2
-      const radius = 2.5 + Math.random() * 1.5
-      orbitPositions[i * 3] = Math.cos(angle) * radius
-      orbitPositions[i * 3 + 1] = (Math.random() - 0.5) * 0.5
-      orbitPositions[i * 3 + 2] = Math.sin(angle) * radius
-    }
-    const orbitGeo = new THREE.BufferGeometry()
-    orbitGeo.setAttribute('position', new THREE.BufferAttribute(orbitPositions, 3))
-    const orbitMat = new THREE.PointsMaterial({
-      size: 0.08,
-      color: 0x00ff88,
-      transparent: true,
-      opacity: 0.8,
-      blending: THREE.AdditiveBlending
-    })
-    const orbitParticles = new THREE.Points(orbitGeo, orbitMat)
-    orbScene.add(orbitParticles)
-
-    // Lights
-    const light1 = new THREE.PointLight(0x00ff88, 2, 10)
-    light1.position.set(3, 3, 3)
-    orbScene.add(light1)
-
-    const light2 = new THREE.PointLight(0x00d9ff, 1.5, 10)
-    light2.position.set(-3, -3, 3)
-    orbScene.add(light2)
-
-    orbScene.add(new THREE.AmbientLight(0x333333))
-
-    orbCamera.position.z = 6
-
-    function animateOrb() {
-      requestAnimationFrame(animateOrb)
-      orb.rotation.x += 0.005
-      orb.rotation.y += 0.008
-      wire.rotation.x -= 0.003
-      wire.rotation.y -= 0.005
-      ring.rotation.z += 0.01
-      ring.rotation.x = Math.sin(Date.now() * 0.001) * 0.3
-      orbitParticles.rotation.y += 0.01
-
-      const pulse = 1 + Math.sin(Date.now() * 0.002) * 0.05
-      orb.scale.set(pulse, pulse, pulse)
-
-      orbRenderer.render(orbScene, orbCamera)
-    }
-    animateOrb()
-
-    // Resize
-    window.addEventListener('resize', () => {
-      orbCamera.aspect = orbCanvas.clientWidth / orbCanvas.clientHeight
-      orbCamera.updateProjectionMatrix()
-      orbRenderer.setSize(orbCanvas.clientWidth, orbCanvas.clientHeight)
-    })
-  }
-}
-
-// ═══════════════ FLOATING PARTICLES ═══════════════
-const particlesEl = document.getElementById('particles')
-for (let i = 0; i < 30; i++) {
-  const p = document.createElement('div')
-  p.className = 'particle'
-  p.style.left = Math.random() * 100 + '%'
-  p.style.animationDelay = Math.random() * 15 + 's'
-  p.style.animationDuration = (10 + Math.random() * 15) + 's'
-  particlesEl.appendChild(p)
-}
-
-// ═══════════════ SCROLL REVEAL ═══════════════
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.classList.add('visible')
-    }
-  })
-}, { threshold: 0.1 })
-
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
-
-// ═══════════════ NAVBAR SCROLL EFFECT ═══════════════
+// NAV SCROLL
 const navEl = document.getElementById('nav')
 window.addEventListener('scroll', () => {
   if (window.scrollY > 20) navEl.classList.add('scrolled')
   else navEl.classList.remove('scrolled')
 })
 
-// ═══════════════ 3D TILT ON FEATURE CARDS ═══════════════
+// FEATURE CARD 3D TILT
 document.querySelectorAll('.feature-card').forEach(card => {
   card.addEventListener('mousemove', (e) => {
-    const rect = card.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-    const centerX = rect.width / 2
-    const centerY = rect.height / 2
-    const rotateX = (y - centerY) / 20
-    const rotateY = (centerX - x) / 20
-
-    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(10px)`
-    card.style.setProperty('--mouse-x', (x / rect.width * 100) + '%')
-    card.style.setProperty('--mouse-y', (y / rect.height * 100) + '%')
+    const r = card.getBoundingClientRect()
+    const x = e.clientX - r.left
+    const y = e.clientY - r.top
+    const rx = (y - r.height/2) / 22
+    const ry = (r.width/2 - x) / 22
+    card.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(8px)`
+    card.style.setProperty('--mx', (x / r.width * 100) + '%')
+    card.style.setProperty('--my', (y / r.height * 100) + '%')
   })
-
   card.addEventListener('mouseleave', () => {
-    card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateZ(0)'
+    card.style.transform = ''
   })
 })
 
-// ═══════════════ DEMO TYPING ANIMATION ═══════════════
-const demoQuestions = [
-  { q: "Build me a todo app", a: "Here's your todo app with dark theme, local storage, and smooth animations..." },
-  { q: "Explain photosynthesis in Telugu", a: "ఫోటోసింథసిస్ అంటే మొక్కలు సూర్యరశ్మిని ఉపయోగించి ఆహారం తయారు చేసే ప్రక్రియ..." },
-  { q: "Solve this math problem", a: "Let me work through this step by step. First, we need to identify the variables..." }
+// SCROLL REVEAL
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) e.target.classList.add('visible')
+  })
+}, { threshold: 0.1 })
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el))
+
+// DEMO TYPING
+const demoMessages = [
+  "Build me a todo app with dark theme",
+  "Create a portfolio website",
+  "Make a calculator app",
+  "Build an e-commerce landing page"
 ]
-
 let demoIdx = 0
-const demoUserMsg = document.getElementById('demoUserMsg')
-const demoAiMsg = document.getElementById('demoAiMsg')
+const demoChatEl = document.getElementById('demoChat')
 
-async function typeText(el, text, speed = 30) {
-  el.textContent = ''
+async function typeDemo(text) {
+  demoChatEl.textContent = ''
   for (let i = 0; i < text.length; i++) {
-    el.textContent += text[i]
-    await new Promise(r => setTimeout(r, speed))
+    demoChatEl.textContent += text[i]
+    await new Promise(r => setTimeout(r, 50))
   }
 }
 
-async function runDemoLoop() {
+async function runDemo() {
   while (true) {
-    const current = demoQuestions[demoIdx]
-
-    // Clear
-    demoUserMsg.textContent = ''
-    demoAiMsg.innerHTML = ''
-    await new Promise(r => setTimeout(r, 500))
-
-    // Type user question
-    await typeText(demoUserMsg, current.q, 50)
-    await new Promise(r => setTimeout(r, 600))
-
-    // Show thinking dots
-    demoAiMsg.innerHTML = '<div class="thinking-dots"><span></span><span></span><span></span></div>'
-    await new Promise(r => setTimeout(r, 1500))
-
-    // Type AI response with cursor
-    demoAiMsg.innerHTML = ''
-    const span = document.createElement('span')
-    demoAiMsg.appendChild(span)
-    const cursor = document.createElement('span')
-    cursor.className = 'typing-cursor'
-    demoAiMsg.appendChild(cursor)
-
-    for (let i = 0; i < current.a.length; i++) {
-      span.textContent += current.a[i]
-      await new Promise(r => setTimeout(r, 25))
-    }
-    cursor.remove()
-
-    // Wait before next
-    await new Promise(r => setTimeout(r, 3000))
-    demoIdx = (demoIdx + 1) % demoQuestions.length
+    await typeDemo(demoMessages[demoIdx])
+    await new Promise(r => setTimeout(r, 5000))
+    demoIdx = (demoIdx + 1) % demoMessages.length
   }
 }
+setTimeout(runDemo, 800)
 
-// Start demo when section is visible
-const demoSection = document.querySelector('.demo-container')
-const demoObserver = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      runDemoLoop()
-      demoObserver.disconnect()
-    }
-  })
-})
-if (demoSection) demoObserver.observe(demoSection)
-
-// ═══════════════ SMOOTH SCROLL ═══════════════
+// SMOOTH SCROLL
 document.querySelectorAll('a[href^="#"]').forEach(link => {
   link.addEventListener('click', (e) => {
-    const target = document.querySelector(link.getAttribute('href'))
-    if (target) {
+    const t = document.querySelector(link.getAttribute('href'))
+    if (t) {
       e.preventDefault()
-      target.scrollIntoView({ behavior: 'smooth' })
+      t.scrollIntoView({ behavior: 'smooth' })
     }
   })
 })
