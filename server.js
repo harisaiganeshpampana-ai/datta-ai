@@ -605,6 +605,26 @@ const MemorySchema = new mongoose.Schema({
 MemorySchema.index({ userId: 1, key: 1 }, { unique: true })
 const Memory = mongoose.model("Memory", MemorySchema)
 
+// ══════ PUBLISHED APPS SCHEMA ══════
+const PublishedAppSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  username: { type: String, required: true, index: true },
+  name: { type: String, required: true },
+  slug: { type: String, required: true, index: true },
+  code: { type: String, required: true },
+  description: String,
+  version: { type: Number, default: 1 },
+  views: { type: Number, default: 0 },
+  published: { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+})
+
+// Compound unique index so users can't have 2 apps with same slug
+PublishedAppSchema.index({ userId: 1, slug: 1 }, { unique: true })
+
+const PublishedApp = mongoose.models.PublishedApp || mongoose.model("PublishedApp", PublishedAppSchema)
+
 
 const planLimits = {
   // ── ACTIVE PLANS ────────────────────────────────────────────
@@ -4291,6 +4311,121 @@ app.get("/suggestions", authMiddleware, async (req, res) => {
     }
     res.json(suggestions.sort(() => Math.random() - 0.5).slice(0, 4))
   } catch(err) { res.json(["Build me a portfolio website","Create an image of a sunset","Write a Python script","Explain AI in simple terms"]) }
+})
+
+// ══════ PUBLISHED APPS API ══════
+
+// Publish or update an app
+app.post("/apps/publish", authMiddleware, async (req, res) => {
+  try {
+    const { appId, name, code } = req.body
+    if (!name || !code) return res.status(400).json({ error: "name and code required" })
+
+    // Sanitize slug
+    const slug = name.trim().replace(/[^a-z0-9-]/gi, "-").toLowerCase().slice(0, 50)
+    if (!slug) return res.status(400).json({ error: "Invalid app name" })
+
+    // Validate code size (5 MB max)
+    if (code.length > 5 * 1024 * 1024) return res.status(400).json({ error: "App code too large (max 5MB)" })
+
+    const user = await User.findById(req.user.id)
+    if (!user) return res.status(404).json({ error: "User not found" })
+    const username = (user.username || user.email || "user").replace(/[^a-z0-9-]/gi, "-").toLowerCase().slice(0, 30)
+
+    let app_
+    if (appId) {
+      // Update existing
+      app_ = await PublishedApp.findOne({ _id: appId, userId: req.user.id })
+      if (!app_) return res.status(404).json({ error: "App not found" })
+      app_.code = code
+      app_.name = name
+      app_.slug = slug
+      app_.version = (app_.version || 1) + 1
+      app_.updatedAt = new Date()
+      await app_.save()
+    } else {
+      // Check if slug already exists for this user
+      const existing = await PublishedApp.findOne({ userId: req.user.id, slug })
+      if (existing) {
+        // Update existing slug app
+        existing.code = code
+        existing.name = name
+        existing.version = (existing.version || 1) + 1
+        existing.updatedAt = new Date()
+        await existing.save()
+        app_ = existing
+      } else {
+        // Create new
+        app_ = await PublishedApp.create({
+          userId: req.user.id,
+          username,
+          name,
+          slug,
+          code,
+          version: 1
+        })
+      }
+    }
+
+    const baseUrl = process.env.FRONTEND_URL || "https://datta-ai.com"
+    const url = `${baseUrl}/apps/${username}/${slug}`
+
+    res.json({
+      success: true,
+      appId: app_._id,
+      url,
+      name: app_.name,
+      slug: app_.slug,
+      version: app_.version
+    })
+  } catch(err) {
+    console.error("[PUBLISH] Error:", err.message)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Serve published app as HTML (public, no auth)
+app.get("/apps/:username/:slug", async (req, res) => {
+  try {
+    const { username, slug } = req.params
+    const app_ = await PublishedApp.findOne({ username, slug, published: true })
+    if (!app_) {
+      return res.status(404).type("html").send(`<!DOCTYPE html><html><head><title>App Not Found</title><style>body{background:#050510;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;}a{color:#4d7cff;}</style></head><body><div><h1>App not found</h1><p style="color:#888;">This app may have been unpublished or never existed.</p><p><a href="/">← Back to Datta AI</a></p></div></body></html>`)
+    }
+
+    // Increment view count (fire and forget)
+    PublishedApp.updateOne({ _id: app_._id }, { $inc: { views: 1 } }).catch(() => {})
+
+    // Send the app's HTML
+    res.type("html").send(app_.code)
+  } catch(err) {
+    res.status(500).type("html").send(`<h1>Error loading app</h1><p>${err.message}</p>`)
+  }
+})
+
+// List user's published apps
+app.get("/apps/my", authMiddleware, async (req, res) => {
+  try {
+    const apps = await PublishedApp.find({ userId: req.user.id }).sort({ updatedAt: -1 }).select("name slug version views updatedAt").lean()
+    const baseUrl = process.env.FRONTEND_URL || "https://datta-ai.com"
+    const withUrls = apps.map(a => ({
+      ...a,
+      url: `${baseUrl}/apps/${(req.user.username || "user").toLowerCase()}/${a.slug}`
+    }))
+    res.json({ apps: withUrls })
+  } catch(err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Delete/unpublish app
+app.delete("/apps/:id", authMiddleware, async (req, res) => {
+  try {
+    await PublishedApp.findOneAndDelete({ _id: req.params.id, userId: req.user.id })
+    res.json({ success: true })
+  } catch(err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
 app.get("/version", (req, res) => {
