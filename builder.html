@@ -3,29 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#000000">
-<title>Datta AI Builder — Build Apps with AI in Seconds</title>
-<meta name="description" content="Describe your app. Get working code. Edit, preview, deploy — all in one place. Built for India.">
+<meta name="theme-color" content="#050510">
+<title>Datta AI Builder</title>
 
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2300ff88'/><text x='50' y='72' text-anchor='middle' font-size='64' font-weight='800' fill='black'>D</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%234d7cff'/><stop offset='1' stop-color='%23a855f7'/></linearGradient></defs><rect width='100' height='100' rx='22' fill='url(%23g)'/><text x='50' y='72' text-anchor='middle' font-size='64' font-weight='800' fill='white'>D</text></svg>">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <style>
 :root {
-  --bg: #000000;
-  --bg2: #0a0a0a;
-  --bg3: #141414;
-  --bg4: #1a1a1a;
+  --bg: #050510;
+  --bg2: #0a0a18;
+  --bg3: #12122a;
+  --bg4: #1a1a36;
   --text: #ffffff;
-  --text2: #b0b0b0;
-  --text3: #707070;
-  --accent: #00ff88;
-  --accent2: #00d9ff;
+  --text2: #a0a0c0;
+  --text3: #606080;
+  --accent: #4d7cff;
+  --accent2: #a855f7;
+  --accent-glow: rgba(77, 124, 255, 0.5);
+  --purple-glow: rgba(168, 85, 247, 0.5);
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.15);
 }
@@ -45,7 +45,7 @@ html, body {
 button, input, textarea { font-family: inherit; color: inherit; }
 button { cursor: pointer; border: none; background: transparent; }
 a { color: inherit; text-decoration: none; }
-::selection { background: var(--accent); color: #000; }
+::selection { background: var(--accent); color: #fff; }
 
 /* LOADER */
 .loader {
@@ -59,55 +59,155 @@ a { color: inherit; text-decoration: none; }
   justify-content: center;
   transition: opacity 0.5s, visibility 0.5s;
 }
-
-.loader.hidden {
-  opacity: 0;
-  visibility: hidden;
-}
-
+.loader.hidden { opacity: 0; visibility: hidden; }
 .loader-orb {
-  width: 60px;
-  height: 60px;
+  width: 60px; height: 60px;
   border: 2px solid transparent;
   border-top-color: var(--accent);
+  border-right-color: var(--accent2);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 20px;
 }
-
 @keyframes spin { to { transform: rotate(360deg); } }
-
 .loader-text {
   font-size: 12px;
-  color: var(--text3);
   letter-spacing: 5px;
   text-transform: uppercase;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-/* ═══════════════ LAYOUT ═══════════════ */
+/* APP GRID */
 .app {
   height: 100vh;
   display: grid;
-  grid-template-columns: 320px 1fr;
-  grid-template-rows: 54px 1fr;
+  grid-template-columns: 340px 1fr;
+  grid-template-rows: 56px 1fr;
   grid-template-areas:
     "topbar topbar"
     "chat workspace";
 }
 
+/* MOBILE TAB SWITCHER (hidden by default) */
+.mobile-tabs {
+  display: none;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0;
+  grid-area: mtabs;
+}
+
+.mobile-tab {
+  flex: 1;
+  padding: 11px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text3);
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.mobile-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.mobile-tab svg { width: 13px; height: 13px; }
+
+/* TABLET - simpler 2-column with narrower chat */
+@media (max-width: 1100px) and (min-width: 901px) {
+  .app {
+    grid-template-columns: 280px 1fr;
+  }
+  .welcome h2 { font-size: 16px; }
+  .welcome p { font-size: 11px; }
+  .example { font-size: 11px; padding: 8px 10px; }
+  .app-title { max-width: 180px; font-size: 11px; }
+}
+
+/* MOBILE - Tab switcher instead of side-by-side */
 @media (max-width: 900px) {
   .app {
     grid-template-columns: 1fr;
-    grid-template-rows: 54px auto 1fr;
+    grid-template-rows: 54px 42px 1fr;
     grid-template-areas:
       "topbar"
-      "chat"
-      "workspace";
+      "mtabs"
+      "content";
   }
-  .chat-panel { max-height: 40vh; }
+
+  .mobile-tabs {
+    display: flex;
+  }
+
+  .chat-panel {
+    grid-area: content;
+    display: none;
+    border-right: none;
+  }
+
+  .workspace {
+    grid-area: content;
+    display: none;
+  }
+
+  .chat-panel.mobile-active {
+    display: flex;
+  }
+
+  .workspace.mobile-active {
+    display: flex;
+  }
+
+  .app-title {
+    display: none;
+  }
+
+  .tb-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .tb-btn span, .tb-btn > *:not(svg) {
+    display: none;
+  }
+
+  .tb-btn svg {
+    margin: 0;
+  }
+
+  .tb-btn.primary span, .tb-btn.primary > *:not(svg) {
+    display: inline;
+  }
 }
 
-/* ═══════════════ TOP BAR ═══════════════ */
+/* PHONE - tighten everything */
+@media (max-width: 480px) {
+  .topbar { padding: 0 10px; }
+  .logo { font-size: 14px; gap: 8px; }
+  .logo-mark { width: 28px; height: 28px; font-size: 13px; }
+  .tb-right { gap: 6px; }
+  .welcome-orb { width: 48px; height: 48px; font-size: 24px; }
+  .welcome h2 { font-size: 16px; }
+  .welcome p { font-size: 12px; }
+  .preview-empty { padding: 24px 16px; }
+  .preview-empty-orb { width: 70px; height: 70px; font-size: 32px; }
+  .preview-empty h2 { font-size: 22px; }
+  .preview-empty p { font-size: 13px; }
+  .feature-badges { gap: 6px; }
+  .feature-badge { font-size: 11px; padding: 5px 10px; }
+  .modal { padding: 24px 20px; }
+}
+
+/* TOPBAR */
 .topbar {
   grid-area: topbar;
   background: var(--bg2);
@@ -119,10 +219,10 @@ a { color: inherit; text-decoration: none; }
   z-index: 10;
 }
 
-.topbar-left, .topbar-right {
+.tb-left, .tb-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .logo {
@@ -134,17 +234,16 @@ a { color: inherit; text-decoration: none; }
 }
 
 .logo-mark {
-  width: 28px;
-  height: 28px;
+  width: 30px; height: 30px;
   border-radius: 8px;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #000;
+  color: #fff;
   font-weight: 900;
   font-size: 14px;
-  box-shadow: 0 0 14px rgba(0, 255, 136, 0.3);
+  box-shadow: 0 0 16px var(--accent-glow);
   position: relative;
   overflow: hidden;
 }
@@ -153,7 +252,7 @@ a { color: inherit; text-decoration: none; }
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+  background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%);
   animation: shine 4s linear infinite;
 }
 
@@ -162,22 +261,43 @@ a { color: inherit; text-decoration: none; }
   100% { transform: translateX(100%); }
 }
 
-.logo b { color: var(--accent); }
+.logo b {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 
 .app-title {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text3);
   padding: 5px 12px;
   background: var(--bg4);
-  border-radius: 8px;
+  border-radius: 7px;
   border: 1px solid var(--border);
-  max-width: 300px;
+  max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .app-title b { color: var(--text); }
+
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: statusPulse 2s infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+  50% { box-shadow: 0 0 0 5px rgba(77, 124, 255, 0); }
+}
 
 .tb-btn {
   padding: 7px 14px;
@@ -199,20 +319,20 @@ a { color: inherit; text-decoration: none; }
 }
 
 .tb-btn.primary {
-  background: var(--accent);
-  color: #000;
-  border-color: var(--accent);
-  box-shadow: 0 0 12px rgba(0, 255, 136, 0.3);
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 0 16px var(--accent-glow);
 }
 
 .tb-btn.primary:hover {
-  background: var(--accent2);
-  border-color: var(--accent2);
-  box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
   transform: translateY(-1px);
+  box-shadow: 0 0 24px var(--purple-glow);
 }
 
-/* ═══════════════ CHAT PANEL (Left) ═══════════════ */
+.tb-btn svg { width: 13px; height: 13px; }
+
+/* CHAT PANEL */
 .chat-panel {
   grid-area: chat;
   background: var(--bg2);
@@ -231,26 +351,41 @@ a { color: inherit; text-decoration: none; }
 .chat-messages::-webkit-scrollbar { width: 6px; }
 .chat-messages::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 3px; }
 
-.chat-welcome {
+.welcome {
   text-align: center;
   padding: 20px 10px;
   color: var(--text2);
+  animation: fadeInUp 0.6s ease-out;
 }
 
-.chat-welcome-orb {
-  width: 52px;
-  height: 52px;
-  margin: 0 auto 14px;
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.welcome-orb {
+  width: 56px; height: 56px;
+  margin: 0 auto 16px;
   border-radius: 16px;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #000;
+  color: #fff;
   font-weight: 900;
-  font-size: 26px;
-  box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+  font-size: 28px;
+  box-shadow: 0 10px 30px var(--accent-glow);
   animation: orbFloat 3s ease-in-out infinite;
+  position: relative;
+}
+
+.welcome-orb::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border: 1px solid rgba(77, 124, 255, 0.3);
+  border-radius: 24px;
+  animation: ringPulse 3s ease-in-out infinite;
 }
 
 @keyframes orbFloat {
@@ -258,30 +393,34 @@ a { color: inherit; text-decoration: none; }
   50% { transform: translateY(-6px); }
 }
 
-.chat-welcome h2 {
-  font-size: 17px;
+@keyframes ringPulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.1); opacity: 0.1; }
+}
+
+.welcome h2 {
+  font-size: 18px;
   font-weight: 700;
   margin-bottom: 6px;
   letter-spacing: -0.3px;
   color: var(--text);
 }
 
-.chat-welcome p {
+.welcome p {
   font-size: 12px;
   line-height: 1.6;
-  max-width: 260px;
+  max-width: 280px;
   margin: 0 auto 16px;
 }
 
-.example-prompts {
+.examples {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-top: 12px;
 }
 
 .example {
-  padding: 9px 12px;
+  padding: 10px 12px;
   background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: 9px;
@@ -295,7 +434,7 @@ a { color: inherit; text-decoration: none; }
 .example:hover {
   border-color: var(--accent);
   color: var(--text);
-  background: rgba(0, 255, 136, 0.05);
+  background: rgba(77, 124, 255, 0.05);
   transform: translateX(2px);
 }
 
@@ -309,14 +448,11 @@ a { color: inherit; text-decoration: none; }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.msg-user {
-  display: flex;
-  justify-content: flex-end;
-}
+.msg-user { display: flex; justify-content: flex-end; }
 
 .msg-user .bubble {
-  background: linear-gradient(135deg, rgba(0, 255, 136, 0.15), rgba(0, 217, 255, 0.1));
-  border: 1px solid rgba(0, 255, 136, 0.3);
+  background: linear-gradient(135deg, rgba(77, 124, 255, 0.15), rgba(168, 85, 247, 0.1));
+  border: 1px solid rgba(77, 124, 255, 0.3);
   padding: 10px 14px;
   border-radius: 16px 16px 4px 16px;
   max-width: 85%;
@@ -332,18 +468,17 @@ a { color: inherit; text-decoration: none; }
 }
 
 .msg-ai .avatar {
-  width: 26px;
-  height: 26px;
+  width: 26px; height: 26px;
   border-radius: 8px;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #000;
+  color: #fff;
   font-weight: 800;
   font-size: 11px;
   flex-shrink: 0;
-  box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .msg-ai .bubble {
@@ -357,12 +492,15 @@ a { color: inherit; text-decoration: none; }
   word-wrap: break-word;
 }
 
-.msg-ai .bubble p { margin-bottom: 8px; }
-.msg-ai .bubble p:last-child { margin-bottom: 0; }
-.msg-ai .bubble strong { color: var(--text); }
-.msg-ai .bubble code { background: var(--bg); padding: 1px 5px; border-radius: 3px; font-size: 11px; color: #ff9955; font-family: 'JetBrains Mono', monospace; }
+.msg-ai .bubble code {
+  background: var(--bg);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+  color: #ff9955;
+  font-family: 'JetBrains Mono', monospace;
+}
 
-/* THINKING */
 .thinking {
   display: inline-flex;
   align-items: center;
@@ -370,8 +508,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .thinking-orb {
-  width: 10px;
-  height: 10px;
+  width: 10px; height: 10px;
   border-radius: 50%;
   background: var(--accent);
   animation: thinkPulse 1.2s ease-in-out infinite;
@@ -384,7 +521,7 @@ a { color: inherit; text-decoration: none; }
 
 .thinking-text {
   font-size: 12px;
-  background: linear-gradient(90deg, var(--text3), var(--accent), var(--text3));
+  background: linear-gradient(90deg, var(--text3), var(--accent), var(--accent2), var(--text3));
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
@@ -396,7 +533,6 @@ a { color: inherit; text-decoration: none; }
   to { background-position: 200% center; }
 }
 
-/* BUILD STEPS */
 .build-steps {
   margin-top: 8px;
   padding: 8px 12px;
@@ -418,11 +554,11 @@ a { color: inherit; text-decoration: none; }
 .build-step.done { color: var(--text2); }
 
 .step-icon {
-  width: 12px;
-  height: 12px;
+  width: 12px; height: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .step-icon.spin {
@@ -452,7 +588,7 @@ a { color: inherit; text-decoration: none; }
 
 .chat-input:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.08);
+  box-shadow: 0 0 0 3px rgba(77, 124, 255, 0.08);
 }
 
 #promptInput {
@@ -487,21 +623,20 @@ a { color: inherit; text-decoration: none; }
 }
 
 .send-btn {
-  width: 32px;
-  height: 32px;
+  width: 32px; height: 32px;
   border-radius: 9px;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #000;
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-  box-shadow: 0 3px 12px rgba(0, 255, 136, 0.3);
+  box-shadow: 0 3px 12px var(--accent-glow);
 }
 
 .send-btn:hover {
-  transform: scale(1.05) translateY(-1px);
-  box-shadow: 0 5px 16px rgba(0, 255, 136, 0.5);
+  transform: scale(1.05);
+  box-shadow: 0 5px 16px var(--purple-glow);
 }
 
 .send-btn svg { width: 15px; height: 15px; }
@@ -510,7 +645,7 @@ a { color: inherit; text-decoration: none; }
   background: linear-gradient(135deg, #ff5555, #ff3333);
 }
 
-/* ═══════════════ WORKSPACE (Right) ═══════════════ */
+/* WORKSPACE */
 .workspace {
   grid-area: workspace;
   display: flex;
@@ -534,7 +669,7 @@ a { color: inherit; text-decoration: none; }
 .ws-tabs::-webkit-scrollbar { display: none; }
 
 .ws-tab {
-  padding: 10px 14px;
+  padding: 10px 16px;
   font-size: 12px;
   color: var(--text3);
   border-bottom: 2px solid transparent;
@@ -547,9 +682,7 @@ a { color: inherit; text-decoration: none; }
   font-weight: 500;
 }
 
-.ws-tab:hover {
-  color: var(--text);
-}
+.ws-tab:hover { color: var(--text); }
 
 .ws-tab.active {
   color: var(--accent);
@@ -558,13 +691,8 @@ a { color: inherit; text-decoration: none; }
 
 .ws-tab svg { width: 13px; height: 13px; }
 
-.ws-content {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-}
+.ws-content { flex: 1; position: relative; overflow: hidden; }
 
-/* PREVIEW TAB */
 .ws-panel {
   position: absolute;
   inset: 0;
@@ -592,18 +720,17 @@ a { color: inherit; text-decoration: none; }
 }
 
 .preview-empty-orb {
-  width: 90px;
-  height: 90px;
+  width: 90px; height: 90px;
   margin-bottom: 24px;
   border-radius: 24px;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #000;
+  color: #fff;
   font-weight: 900;
   font-size: 44px;
-  box-shadow: 0 20px 60px rgba(0, 255, 136, 0.3);
+  box-shadow: 0 20px 60px var(--accent-glow);
   animation: orbFloat 3s ease-in-out infinite;
   position: relative;
 }
@@ -611,19 +738,14 @@ a { color: inherit; text-decoration: none; }
 .preview-empty-orb::before {
   content: '';
   position: absolute;
-  inset: -15px;
-  border: 1px solid rgba(0, 255, 136, 0.3);
-  border-radius: 32px;
+  inset: -18px;
+  border: 1px solid rgba(77, 124, 255, 0.3);
+  border-radius: 36px;
   animation: ringPulse 3s ease-in-out infinite;
 }
 
-@keyframes ringPulse {
-  0%, 100% { transform: scale(1); opacity: 0.4; }
-  50% { transform: scale(1.1); opacity: 0.2; }
-}
-
 .preview-empty h2 {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 800;
   margin-bottom: 10px;
   letter-spacing: -0.5px;
@@ -639,7 +761,7 @@ a { color: inherit; text-decoration: none; }
 .preview-empty p {
   color: var(--text2);
   font-size: 14px;
-  max-width: 480px;
+  max-width: 500px;
   margin-bottom: 30px;
   line-height: 1.6;
 }
@@ -658,9 +780,6 @@ a { color: inherit; text-decoration: none; }
   border-radius: 100px;
   font-size: 12px;
   color: var(--text2);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
   transition: all 0.2s;
 }
 
@@ -669,7 +788,7 @@ a { color: inherit; text-decoration: none; }
   color: var(--accent);
 }
 
-/* CODE TAB */
+/* CODE VIEW */
 .code-view {
   flex: 1;
   display: flex;
@@ -684,7 +803,6 @@ a { color: inherit; text-decoration: none; }
   padding: 8px 14px;
   background: var(--bg3);
   border-bottom: 1px solid var(--border);
-  font-size: 11px;
 }
 
 .code-lang {
@@ -692,6 +810,7 @@ a { color: inherit; text-decoration: none; }
   color: var(--text3);
   letter-spacing: 1px;
   text-transform: uppercase;
+  font-size: 11px;
 }
 
 .code-actions {
@@ -709,7 +828,6 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   gap: 4px;
   transition: all 0.15s;
-  background: transparent;
 }
 
 .code-btn:hover {
@@ -719,13 +837,13 @@ a { color: inherit; text-decoration: none; }
 }
 
 .code-btn.primary {
-  background: rgba(0, 255, 136, 0.1);
-  border-color: rgba(0, 255, 136, 0.3);
+  background: rgba(77, 124, 255, 0.15);
+  border-color: rgba(77, 124, 255, 0.4);
   color: var(--accent);
 }
 
 .code-btn.primary:hover {
-  background: rgba(0, 255, 136, 0.2);
+  background: rgba(77, 124, 255, 0.25);
 }
 
 .code-btn svg { width: 11px; height: 11px; }
@@ -733,14 +851,13 @@ a { color: inherit; text-decoration: none; }
 .code-editor-wrap {
   flex: 1;
   overflow: hidden;
-  position: relative;
 }
 
 #codeEditor {
   width: 100%;
   height: 100%;
   background: var(--bg);
-  color: #d0d0d0;
+  color: #d0d0ff;
   font-family: 'JetBrains Mono', monospace;
   font-size: 12.5px;
   line-height: 1.6;
@@ -755,6 +872,57 @@ a { color: inherit; text-decoration: none; }
 
 #codeEditor::-webkit-scrollbar { width: 8px; height: 8px; }
 #codeEditor::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 4px; }
+
+/* PUBLISHED URL BAR */
+.published-bar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: linear-gradient(90deg, rgba(77, 124, 255, 0.1), rgba(168, 85, 247, 0.1));
+  border-bottom: 1px solid rgba(77, 124, 255, 0.3);
+  font-size: 12px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.published-bar.show { display: flex; }
+
+.published-bar .label {
+  color: var(--text2);
+  font-weight: 600;
+}
+
+.published-bar .url {
+  flex: 1;
+  padding: 6px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--accent);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.published-bar .copy-url-btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 
 /* TOAST */
 .toast {
@@ -780,100 +948,156 @@ a { color: inherit; text-decoration: none; }
 }
 
 .toast.success {
-  border-color: rgba(0, 255, 136, 0.4);
+  border-color: rgba(77, 124, 255, 0.4);
 }
 
-/* Status indicator */
-.status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
-  display: inline-block;
-  box-shadow: 0 0 6px var(--accent);
-  animation: statusPulse 2s infinite;
+/* PUBLISH MODAL */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  z-index: 99999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s;
 }
 
-@keyframes statusPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.6); }
-  50% { box-shadow: 0 0 0 6px rgba(0, 255, 136, 0); }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal-overlay.show { display: flex; }
+
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border-strong);
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 440px;
+  width: 90%;
+  animation: modalIn 0.3s ease-out;
+  position: relative;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal h3 {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.modal p {
+  color: var(--text2);
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.modal-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  margin-bottom: 16px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.modal-input:focus { border-color: var(--accent); }
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.modal-actions .tb-btn { flex: 1; justify-content: center; }
+
+.url-preview {
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: 16px;
+  word-break: break-all;
 }
 </style>
 </head>
 <body>
 
-<!-- LOADER -->
 <div class="loader" id="loader">
   <div class="loader-orb"></div>
   <div class="loader-text">Datta AI Builder</div>
 </div>
 
 <div class="app">
-
-  <!-- TOPBAR -->
   <header class="topbar">
-    <div class="topbar-left">
+    <div class="tb-left">
       <a href="/" class="logo">
         <div class="logo-mark">D</div>
-        <span>Datta<b>AI</b> Builder</span>
+        <span>Datta<b>AI</b></span>
       </a>
       <div class="app-title" id="appTitle">
         <span class="status-dot"></span>
-        Ready to build
+        <span>Ready to build</span>
       </div>
     </div>
-    <div class="topbar-right">
-      <button class="tb-btn" onclick="downloadCode()" title="Download code">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <div class="tb-right">
+      <button class="tb-btn" onclick="downloadCode()" title="Download">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="7 10 12 15 17 10"/>
           <line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
         Download
       </button>
-      <button class="tb-btn" onclick="openFullPreview()" title="Open preview">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-          <polyline points="15 3 21 3 21 9"/>
-          <line x1="10" y1="14" x2="21" y2="3"/>
+      <button class="tb-btn primary" onclick="openPublishModal()" title="Publish">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="5 12 10 17 20 7"/>
         </svg>
-        Open
-      </button>
-      <button class="tb-btn primary" onclick="deployApp()" title="Deploy">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
-          <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
-          <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
-          <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
-        </svg>
-        Deploy
+        Publish
       </button>
     </div>
   </header>
 
-  <!-- CHAT PANEL -->
-  <aside class="chat-panel">
+  <!-- MOBILE TAB SWITCHER -->
+  <div class="mobile-tabs" id="mobileTabs">
+    <button class="mobile-tab active" onclick="switchMobileTab('chat')" id="mTabChat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      Chat
+    </button>
+    <button class="mobile-tab" onclick="switchMobileTab('workspace')" id="mTabWork">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="3" width="20" height="14" rx="2"/>
+        <line x1="8" y1="21" x2="16" y2="21"/>
+        <line x1="12" y1="17" x2="12" y2="21"/>
+      </svg>
+      Preview
+    </button>
+  </div>
+
+  <aside class="chat-panel mobile-active" id="chatPanel">
     <div class="chat-messages" id="chatMessages">
-      <div class="chat-welcome" id="welcomeScreen">
-        <div class="chat-welcome-orb">D</div>
+      <div class="welcome" id="welcomeScreen">
+        <div class="welcome-orb">D</div>
         <h2>What should we build?</h2>
-        <p>Describe your app in English, Telugu, or Hindi. I'll build it in seconds.</p>
-        <div class="example-prompts">
-          <div class="example" onclick="useExample('Build a modern todo app with dark theme, add/delete tasks, save to localStorage')">
-            💡 Todo app with dark theme
-          </div>
-          <div class="example" onclick="useExample('Create a portfolio website for a photographer with hero, gallery, contact form')">
-            🎨 Photographer portfolio
-          </div>
-          <div class="example" onclick="useExample('Build a calculator with scientific functions and beautiful UI')">
-            🔢 Scientific calculator
-          </div>
-          <div class="example" onclick="useExample('Create a weather dashboard that shows current weather and 5-day forecast')">
-            🌦️ Weather dashboard
-          </div>
-          <div class="example" onclick="useExample('Build a pomodoro timer with task list and sound notifications')">
-            🍅 Pomodoro timer
-          </div>
+        <p>Describe your app. I'll build it instantly with live preview.</p>
+        <div class="examples">
+          <div class="example" onclick="useExample('Build a todo app with dark theme, add/delete tasks, save to localStorage')">💡 Todo app with dark theme</div>
+          <div class="example" onclick="useExample('Create a portfolio website for photographer with hero, gallery, contact form')">🎨 Photographer portfolio</div>
+          <div class="example" onclick="useExample('Build a calculator with scientific functions and beautiful UI')">🔢 Scientific calculator</div>
+          <div class="example" onclick="useExample('Create a pomodoro timer with task list')">🍅 Pomodoro timer</div>
+          <div class="example" onclick="useExample('Build a quiz app with 10 questions and score tracking')">📝 Quiz app</div>
         </div>
       </div>
     </div>
@@ -882,7 +1106,7 @@ a { color: inherit; text-decoration: none; }
       <div class="chat-input">
         <textarea id="promptInput" placeholder="Describe your app..." rows="2" onkeydown="handleKeydown(event)" oninput="autoGrow(this)"></textarea>
         <div class="chat-input-actions">
-          <div class="model-tag">Datta Code · Gemini 2.5</div>
+          <div class="model-tag">Gemini 2.5 Pro</div>
           <button class="send-btn" id="sendBtn" onclick="sendPrompt()">
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M3 11.5L21 3l-7 18-2-9-9-2z"/>
@@ -893,12 +1117,24 @@ a { color: inherit; text-decoration: none; }
     </div>
   </aside>
 
-  <!-- WORKSPACE -->
-  <main class="workspace">
+  <main class="workspace" id="workspace">
+    <!-- PUBLISHED URL BAR -->
+    <div class="published-bar" id="publishedBar">
+      <span class="label">🌐 Live:</span>
+      <div class="url" id="publishedUrl" onclick="copyPublishedUrl()"></div>
+      <button class="copy-url-btn" onclick="copyPublishedUrl()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        Copy
+      </button>
+    </div>
+
     <div class="ws-tabs">
       <div class="ws-tab active" data-tab="preview" onclick="switchTab('preview')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
           <line x1="8" y1="21" x2="16" y2="21"/>
           <line x1="12" y1="17" x2="12" y2="21"/>
         </svg>
@@ -914,24 +1150,22 @@ a { color: inherit; text-decoration: none; }
     </div>
 
     <div class="ws-content">
-      <!-- PREVIEW PANEL -->
       <div class="ws-panel active" id="previewPanel">
         <div class="preview-empty" id="previewEmpty">
           <div class="preview-empty-orb">D</div>
-          <h2>Let's build <span>something amazing</span></h2>
-          <p>Type what you want to build in the chat panel. I'll generate complete working code with a live preview.</p>
+          <h2>Build <span>something amazing</span></h2>
+          <p>Type what you want in the chat. I'll generate complete working code and show it here.</p>
           <div class="feature-badges">
             <div class="feature-badge">⚡ Gemini 2.5 Pro</div>
-            <div class="feature-badge">🇮🇳 Indian Languages</div>
             <div class="feature-badge">👁️ Live Preview</div>
-            <div class="feature-badge">✏️ Editable Code</div>
-            <div class="feature-badge">⬇️ Download</div>
+            <div class="feature-badge">✏️ Editable</div>
+            <div class="feature-badge">🌐 Publish</div>
+            <div class="feature-badge">🇮🇳 Indian Languages</div>
           </div>
         </div>
-        <iframe id="previewFrame" class="preview-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups" style="display:none;"></iframe>
+        <iframe id="previewFrame" class="preview-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox" style="display:none;"></iframe>
       </div>
 
-      <!-- CODE PANEL -->
       <div class="ws-panel" id="codePanel">
         <div class="code-view">
           <div class="code-toolbar">
@@ -954,7 +1188,7 @@ a { color: inherit; text-decoration: none; }
             </div>
           </div>
           <div class="code-editor-wrap">
-            <textarea id="codeEditor" placeholder="Code will appear here..." spellcheck="false" oninput="onCodeEdit()"></textarea>
+            <textarea id="codeEditor" placeholder="Code will appear here..." spellcheck="false"></textarea>
           </div>
         </div>
       </div>
@@ -962,30 +1196,62 @@ a { color: inherit; text-decoration: none; }
   </main>
 </div>
 
+<!-- PUBLISH MODAL -->
+<div class="modal-overlay" id="publishModal">
+  <div class="modal">
+    <h3>🚀 Publish Your App</h3>
+    <p>Your app will get a live URL anyone can visit.</p>
+    <label style="font-size:11px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;">App Name</label>
+    <input type="text" class="modal-input" id="appName" placeholder="my-awesome-app" value="">
+    <div class="url-preview" id="urlPreview">datta-ai.com/apps/your-username/my-awesome-app</div>
+    <div class="modal-actions">
+      <button class="tb-btn" onclick="closePublishModal()">Cancel</button>
+      <button class="tb-btn primary" onclick="publishApp()" id="publishBtn">Publish</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 const S = "https://datta-ai-server.onrender.com"
 
-// ══════ LOADER ══════
 window.addEventListener('load', () => {
-  setTimeout(() => {
-    document.getElementById('loader').classList.add('hidden')
-  }, 400)
+  setTimeout(() => document.getElementById('loader').classList.add('hidden'), 400)
 })
 
-// ══════ STATE ══════
 let currentCode = ""
 let currentChatId = null
+let currentAppId = null
+let publishedUrl = null
 let isGenerating = false
 let controller = null
 
-// ══════ HELPERS ══════
 function showToast(msg, type = "") {
   const t = document.getElementById("toast")
   t.textContent = msg
   t.className = "toast show " + type
-  setTimeout(() => t.classList.remove("show"), 2000)
+  setTimeout(() => t.classList.remove("show"), 2200)
+}
+
+// MOBILE TAB SWITCH
+function switchMobileTab(tab) {
+  const chatP = document.getElementById("chatPanel")
+  const workP = document.getElementById("workspace")
+  const tChat = document.getElementById("mTabChat")
+  const tWork = document.getElementById("mTabWork")
+
+  if (tab === "chat") {
+    chatP.classList.add("mobile-active")
+    workP.classList.remove("mobile-active")
+    tChat.classList.add("active")
+    tWork.classList.remove("active")
+  } else {
+    chatP.classList.remove("mobile-active")
+    workP.classList.add("mobile-active")
+    tChat.classList.remove("active")
+    tWork.classList.add("active")
+  }
 }
 
 function autoGrow(el) {
@@ -1012,87 +1278,54 @@ function escapeHtml(s) {
   return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
 }
 
-function getToken() {
-  return localStorage.getItem("datta_token") || ""
-}
+function getToken() { return localStorage.getItem("datta_token") || "" }
 
-// ══════ TABS ══════
 function switchTab(tab) {
   document.querySelectorAll(".ws-tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab))
   document.querySelectorAll(".ws-panel").forEach(p => p.classList.remove("active"))
   document.getElementById(tab + "Panel").classList.add("active")
 }
 
-// ══════ EXTRACT CODE FROM AI RESPONSE ══════
 function extractCode(text) {
-  // Look for fenced code blocks
   const htmlMatch = text.match(/```(?:html|HTML)\n([\s\S]*?)```/)
   if (htmlMatch) return htmlMatch[1].trim()
-
   const anyFence = text.match(/```[\w]*\n([\s\S]*?)```/)
   if (anyFence) {
     const content = anyFence[1].trim()
     if (content.includes("<!DOCTYPE") || content.includes("<html")) return content
   }
-
-  // Check if whole response is HTML
-  if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
-    return text.trim()
-  }
-
+  if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) return text.trim()
   return null
 }
 
-// ══════ UPDATE PREVIEW ══════
 function updatePreview() {
   const code = document.getElementById("codeEditor").value
   if (!code) return
   currentCode = code
-
   const frame = document.getElementById("previewFrame")
-  const empty = document.getElementById("previewEmpty")
-  empty.style.display = "none"
+  document.getElementById("previewEmpty").style.display = "none"
   frame.style.display = "block"
-
-  // Write to iframe
   const doc = frame.contentDocument || frame.contentWindow.document
   doc.open()
   doc.write(code)
   doc.close()
-
   showToast("Preview updated", "success")
 }
 
-function onCodeEdit() {
-  // Debounced auto-update could go here if wanted
-}
-
-// ══════ SEND PROMPT ══════
 async function sendPrompt() {
-  if (isGenerating) {
-    stopGeneration()
-    return
-  }
-
+  if (isGenerating) { stopGeneration(); return }
   const input = document.getElementById("promptInput")
   const text = input.value.trim()
   if (!text) return
 
-  // Hide welcome
   const welcome = document.getElementById("welcomeScreen")
   if (welcome) welcome.style.display = "none"
 
-  // Add user message
   const messages = document.getElementById("chatMessages")
-  messages.innerHTML += `
-    <div class="msg-row msg-user">
-      <div class="bubble">${escapeHtml(text)}</div>
-    </div>
-  `
+  messages.innerHTML += `<div class="msg-row msg-user"><div class="bubble">${escapeHtml(text)}</div></div>`
   input.value = ""
   autoGrow(input)
 
-  // Add AI thinking
   const aiDiv = document.createElement("div")
   aiDiv.className = "msg-row"
   aiDiv.innerHTML = `
@@ -1105,38 +1338,35 @@ async function sendPrompt() {
         </div>
         <div class="build-steps" id="buildSteps" style="display:none;"></div>
       </div>
-    </div>
-  `
+    </div>`
   messages.appendChild(aiDiv)
   messages.scrollTop = messages.scrollHeight
 
-  // Update app title
-  document.getElementById("appTitle").innerHTML = `<span class="status-dot"></span> <b>${escapeHtml(text.slice(0, 40))}${text.length > 40 ? '...' : ''}</b>`
+  document.getElementById("appTitle").innerHTML = `<span class="status-dot"></span><span><b>${escapeHtml(text.slice(0, 35))}${text.length > 35 ? '...' : ''}</b></span>`
 
-  // Show build steps animation
   showBuildSteps()
 
-  // Send to backend
   isGenerating = true
   updateSendBtn()
   controller = new AbortController()
 
   try {
     const formData = new FormData()
-    formData.append("message", text)
+    // Include existing code in prompt so AI adds to it instead of creating new
+    let promptWithContext = text
+    if (currentCode) {
+      promptWithContext = `Here is the current app code:\n\`\`\`html\n${currentCode}\n\`\`\`\n\nUser request: ${text}\n\nUpdate the existing code above to fulfill the request. Return the COMPLETE updated HTML file.`
+    }
+
+    formData.append("message", promptWithContext)
     formData.append("chatId", currentChatId || "")
     formData.append("token", getToken())
     formData.append("language", "English")
     formData.append("model", "llama-3.3-70b-versatile")
-    formData.append("modelKey", "dcode")  // Force Datta Code
+    formData.append("modelKey", "dcode")
     formData.append("ainame", "Datta AI")
 
-    const res = await fetch(S + "/chat", {
-      method: "POST",
-      body: formData,
-      signal: controller.signal
-    })
-
+    const res = await fetch(S + "/chat", { method: "POST", body: formData, signal: controller.signal })
     if (!res.ok) throw new Error("Server error: " + res.status)
 
     const reader = res.body.getReader()
@@ -1148,7 +1378,6 @@ async function sendPrompt() {
       const { done, value } = await reader.read()
       if (done) break
       const chunk = decoder.decode(value)
-
       if (chunk.includes("__DATTA_CHAT_ID__") || chunk.includes("CHATID")) {
         const marker = chunk.includes("__DATTA_CHAT_ID__") ? "__DATTA_CHAT_ID__" : "CHATID"
         const parts = chunk.split(marker)
@@ -1157,20 +1386,12 @@ async function sendPrompt() {
       } else {
         fullText += chunk
       }
-
-      // Live update - show shortened progress message
-      updateBuildProgress(fullText.length)
     }
 
-    // Extract code
     const code = extractCode(fullText)
-
     if (code) {
-      // Successfully got code
       currentCode = code
       document.getElementById("codeEditor").value = code
-
-      // Update preview
       const frame = document.getElementById("previewFrame")
       document.getElementById("previewEmpty").style.display = "none"
       frame.style.display = "block"
@@ -1179,24 +1400,29 @@ async function sendPrompt() {
       doc.write(code)
       doc.close()
 
-      // Update message
-      const msgText = fullText.replace(/```[\s\S]*?```/g, "").trim() || "App built successfully! Check the preview."
+      const msgText = fullText.replace(/```[\s\S]*?```/g, "").trim() || "Your app is ready! Check the preview."
       bubble.innerHTML = `
-        <div style="color:var(--accent);font-size:12px;margin-bottom:6px;">✓ App generated (${Math.round(code.length/1024)}KB)</div>
+        <div style="color:var(--accent);font-size:12px;margin-bottom:6px;font-weight:600;">✓ App ready (${Math.round(code.length/1024)}KB)</div>
         <div style="font-size:13px;line-height:1.5;">${escapeHtml(msgText.slice(0, 300))}${msgText.length > 300 ? '...' : ''}</div>
       `
-
       showToast("App built! 🎉", "success")
-      document.getElementById("appTitle").innerHTML = `<span class="status-dot"></span> <b>App ready</b> · ${Math.round(code.length/1024)}KB`
+      document.getElementById("appTitle").innerHTML = `<span class="status-dot"></span><span><b>App ready</b> · ${Math.round(code.length/1024)}KB</span>`
+
+      // On mobile, auto-switch to preview
+      if (window.innerWidth <= 900) {
+        switchMobileTab("workspace")
+      }
+
+      // If this was an update to published app, offer to republish
+      if (publishedUrl) {
+        showToast("Click Publish to update live version")
+      }
     } else {
-      // No code extracted — show text response
       bubble.innerHTML = `<div style="font-size:13px;line-height:1.5;">${marked.parse(fullText)}</div>`
     }
 
     messages.scrollTop = messages.scrollHeight
-
   } catch(e) {
-    console.error(e)
     const bubble = aiDiv.querySelector(".bubble")
     if (e.name === "AbortError") {
       bubble.innerHTML = `<span style="color:var(--text3);font-size:12px;">Generation stopped</span>`
@@ -1212,35 +1438,26 @@ async function sendPrompt() {
 
 function showBuildSteps() {
   const steps = [
-    { icon: "spin", text: "Understanding your request..." },
-    { icon: "done", text: "Designing UI layout" },
-    { icon: "done", text: "Writing HTML structure" },
-    { icon: "done", text: "Adding styles" },
-    { icon: "done", text: "Adding interactivity" }
+    "Understanding your request...",
+    "Designing UI layout",
+    "Writing HTML structure",
+    "Adding styles & animations",
+    "Adding interactivity"
   ]
-
   const stepsEl = document.getElementById("buildSteps")
   if (!stepsEl) return
   stepsEl.style.display = "block"
-
-  let currentStep = 0
-  const interval = setInterval(() => {
-    if (!isGenerating || currentStep >= steps.length) {
-      clearInterval(interval)
-      return
-    }
-    const html = steps.slice(0, currentStep + 1).map((s, i) => {
-      const isLast = i === currentStep
-      const icon = isLast ? '<span class="step-icon spin"></span>' : '<span class="step-icon">✓</span>'
-      return `<div class="build-step ${isLast ? 'active' : 'done'}">${icon} ${s.text}</div>`
+  let i = 0
+  const iv = setInterval(() => {
+    if (!isGenerating || i >= steps.length) { clearInterval(iv); return }
+    const html = steps.slice(0, i + 1).map((s, idx) => {
+      const last = idx === i
+      const icon = last ? '<span class="step-icon spin"></span>' : '<span class="step-icon">✓</span>'
+      return `<div class="build-step ${last ? 'active' : 'done'}">${icon} ${s}</div>`
     }).join("")
     stepsEl.innerHTML = html
-    currentStep++
+    i++
   }, 1200)
-}
-
-function updateBuildProgress(charCount) {
-  // Just a visual feedback — could update percentage
 }
 
 function updateSendBtn() {
@@ -1260,23 +1477,16 @@ function stopGeneration() {
   updateSendBtn()
 }
 
-// ══════ ACTIONS ══════
 function copyCode() {
   const code = document.getElementById("codeEditor").value
-  if (!code) {
-    showToast("No code yet")
-    return
-  }
+  if (!code) { showToast("No code yet"); return }
   navigator.clipboard.writeText(code)
   showToast("Code copied!", "success")
 }
 
 function downloadCode() {
   const code = document.getElementById("codeEditor").value || currentCode
-  if (!code) {
-    showToast("Build something first")
-    return
-  }
+  if (!code) { showToast("Build something first"); return }
   const blob = new Blob([code], { type: "text/html" })
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
@@ -1289,37 +1499,81 @@ function downloadCode() {
   showToast("Downloaded!", "success")
 }
 
-function openFullPreview() {
+// PUBLISH FLOW
+function openPublishModal() {
   const code = document.getElementById("codeEditor").value || currentCode
-  if (!code) {
-    showToast("Build something first")
-    return
+  if (!code) { showToast("Build something first"); return }
+  const modal = document.getElementById("publishModal")
+  const name = document.getElementById("appName")
+  // Generate default name if empty
+  if (!name.value) {
+    name.value = "my-app-" + Date.now().toString(36)
   }
-  const blob = new Blob([code], { type: "text/html" })
-  const url = URL.createObjectURL(blob)
-  window.open(url, "_blank")
+  updateUrlPreview()
+  modal.classList.add("show")
+  name.focus()
+  name.select()
 }
 
-function deployApp() {
-  const code = document.getElementById("codeEditor").value || currentCode
-  if (!code) {
-    showToast("Build something first")
-    return
-  }
-  // For now show deploy instructions
-  showToast("Deploy: Download file → upload to Netlify/Vercel")
-
-  // Auto-download
-  setTimeout(downloadCode, 500)
+function closePublishModal() {
+  document.getElementById("publishModal").classList.remove("show")
 }
 
-// ══════ AUTH CHECK ══════
-(function() {
-  const token = getToken()
-  if (!token) {
-    // Allow guest usage for now
+function updateUrlPreview() {
+  const name = document.getElementById("appName").value.replace(/[^a-z0-9-]/gi, "-").toLowerCase() || "untitled"
+  const username = (JSON.parse(localStorage.getItem("datta_user") || "{}").username || "guest").replace(/[^a-z0-9-]/gi, "-").toLowerCase()
+  document.getElementById("urlPreview").textContent = `datta-ai.com/apps/${username}/${name}`
+}
+
+document.getElementById("appName").addEventListener("input", updateUrlPreview)
+
+async function publishApp() {
+  const code = document.getElementById("codeEditor").value || currentCode
+  const name = document.getElementById("appName").value.trim().replace(/[^a-z0-9-]/gi, "-").toLowerCase()
+  if (!name) { showToast("Enter app name"); return }
+
+  const btn = document.getElementById("publishBtn")
+  btn.disabled = true
+  btn.textContent = "Publishing..."
+
+  try {
+    const res = await fetch(S + "/apps/publish", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + getToken()
+      },
+      body: JSON.stringify({
+        appId: currentAppId,
+        name: name,
+        code: code
+      })
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || "Publish failed")
+
+    currentAppId = data.appId
+    publishedUrl = data.url
+
+    // Show URL bar
+    document.getElementById("publishedUrl").textContent = data.url
+    document.getElementById("publishedBar").classList.add("show")
+
+    closePublishModal()
+    showToast("🎉 Published!", "success")
+  } catch(e) {
+    showToast("Publish failed: " + e.message)
+  } finally {
+    btn.disabled = false
+    btn.textContent = "Publish"
   }
-})()
+}
+
+function copyPublishedUrl() {
+  if (!publishedUrl) return
+  navigator.clipboard.writeText(publishedUrl)
+  showToast("URL copied!", "success")
+}
 </script>
 
 </body>
