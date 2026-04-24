@@ -1539,11 +1539,12 @@ async function send() {
         console.warn("[CHUNK DEBUG] [object Object] in chunk")
       }
 
-      if (chunk.includes("CHATID")) {
-        const parts = chunk.split("CHATID")
+      if (chunk.includes("__DATTA_CHAT_ID__") || chunk.includes("CHATID")) {
+        const marker = chunk.includes("__DATTA_CHAT_ID__") ? "__DATTA_CHAT_ID__" : "CHATID"
+        const parts = chunk.split(marker)
         if (parts[0]) fullText += safeContent(parts[0])
         currentChatId = (parts[1] || "").trim()
-        console.log("[STREAM] CHATID received, fullText length:", fullText.length)
+        console.log("[STREAM] Chat ID received, fullText length:", fullText.length)
         typingDone = true
       } else {
         const cleanChunk = safeContent(chunk)
