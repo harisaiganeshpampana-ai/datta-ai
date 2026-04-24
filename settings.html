@@ -1,803 +1,517 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Settings – Datta AI</title>
-<link rel="icon" href="logo.png" type="image/png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — Datta AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-[data-theme="dark"] {
-  --bg:     #0d0d0d;
-  --bg2:    #1a1a1a;
-  --bg3:    #242424;
-  --text:   #ececec;
-  --text2:  #a0a0a0;
-  --text3:  #555;
+:root {
+  --bg: #050510; --bg2: #0a0a18; --bg3: #12122a; --bg4: #1a1a36;
+  --text: #fff; --text2: #a0a0c0; --text3: #606080;
+  --accent: #4d7cff; --accent2: #a855f7;
+  --accent-glow: rgba(77, 124, 255, 0.5);
   --border: rgba(255,255,255,0.08);
-  --card:   #1a1a1a;
-  --accent: #10a37f;
-  --shadow: rgba(0,0,0,0.4);
 }
-[data-theme="light"] {
-  --bg:     #f7f7f8;
-  --bg2:    #ffffff;
-  --bg3:    #f0f0f0;
-  --text:   #0d0d0d;
-  --text2:  #555;
-  --text3:  #999;
-  --border: #e5e5e5;
-  --card:   #ffffff;
-  --accent: #10a37f;
-  --shadow: rgba(0,0,0,0.08);
-}
-[data-theme="eye"] {
-  --bg:     #1a1f17;
-  --bg2:    #222b1d;
-  --bg3:    #2a3524;
-  --text:   #d4e6c3;
-  --text2:  #94b87a;
-  --text3:  #5a7a45;
-  --border: rgba(148,184,122,0.2);
-  --card:   #222b1d;
-  --accent: #10a37f;
-  --shadow: rgba(0,0,0,0.25);
-}
-
-html, body {
-  min-height: 100%;
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Inter', -apple-system, sans-serif;
-  font-size: 15px;
-  line-height: 1.5;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+button, input, select { font-family: inherit; color: inherit; }
+button { cursor: pointer; border: none; background: transparent; }
+a { color: var(--accent); text-decoration: none; }
+
+nav {
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
 }
 
-/* ── TOPBAR ── */
-.topbar {
-  position: sticky; top: 0;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  z-index: 100;
-  display: flex; align-items: center; gap: 12px;
-  padding: 0 16px;
-  height: 52px;
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 800;
 }
+
+.logo-mark {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 900;
+  box-shadow: 0 0 14px var(--accent-glow);
+}
+
+.logo b {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 .back-btn {
-  width: 34px; height: 34px;
-  border-radius: 8px; border: none;
-  background: var(--bg3); color: var(--text2);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; text-decoration: none;
-  transition: background 0.15s;
+  padding: 8px 16px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text2);
+  font-weight: 600;
+}
+
+.back-btn:hover { border-color: var(--accent); color: var(--text); }
+
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+h1 {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-bottom: 32px;
+}
+
+h1 span {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.section {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.section-head {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(77, 124, 255, 0.15), rgba(168, 85, 247, 0.15));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.section-head h2 {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.section-head p {
+  font-size: 12px;
+  color: var(--text3);
+}
+
+.row {
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+}
+
+.row:last-child { border-bottom: none; }
+
+.row-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.row-desc {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.row input[type="text"],
+.row input[type="email"],
+.row select {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  min-width: 180px;
+}
+
+.row input:focus, .row select:focus { border-color: var(--accent); }
+
+.toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  background: var(--bg4);
+  border-radius: 100px;
+  cursor: pointer;
+  transition: background 0.2s;
   flex-shrink: 0;
 }
-.back-btn:hover { background: var(--border); }
-.topbar-title { font-size: 16px; font-weight: 600; color: var(--text); }
 
-/* ── LAYOUT ── */
-.page { max-width: 640px; margin: 0 auto; padding: 16px 16px 100px; }
+.toggle.on { background: linear-gradient(135deg, var(--accent), var(--accent2)); }
 
-/* ── PROFILE CARD ── */
-.profile-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 20px;
-  display: flex; align-items: center; gap: 16px;
-  margin-bottom: 10px;
-  position: relative;
-  overflow: hidden;
-}
-.profile-card::before {
+.toggle::after {
   content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, var(--accent), #0077ff);
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
 }
-.avatar-wrap { position: relative; flex-shrink: 0; cursor: pointer; }
+
+.toggle.on::after { transform: translateX(18px); }
+
+.btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text2);
+  border: 1px solid var(--border);
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
 .avatar {
-  width: 64px; height: 64px; border-radius: 50%;
-  background: linear-gradient(135deg, #10a37f, #0077ff);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 26px; font-weight: 700; color: #fff;
-  transition: filter 0.15s;
-}
-.avatar-wrap:hover .avatar { filter: brightness(1.1); }
-.avatar-edit {
-  position: absolute; bottom: 0; right: 0;
-  width: 20px; height: 20px;
-  background: var(--accent); border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  border: 2px solid var(--card);
-}
-.profile-info { flex: 1; min-width: 0; }
-.profile-name  { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
-.profile-email {
-  font-size: 12px; color: var(--text3);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  margin-bottom: 8px;
-}
-.profile-plan  {
-  display: inline-flex; align-items: center; gap: 4px;
-  background: rgba(16,163,127,0.12);
-  border: 1px solid rgba(16,163,127,0.25);
-  border-radius: 20px; padding: 3px 10px;
-  font-size: 11px; font-weight: 600; color: #10a37f;
+  width: 48px; height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 20px;
+  box-shadow: 0 0 16px var(--accent-glow);
 }
 
-/* ── SECTION GROUP ── */
-.section { margin-bottom: 8px; }
-.section-label {
-  font-size: 11px; font-weight: 600;
-  color: var(--text3); text-transform: uppercase; letter-spacing: 0.7px;
-  padding: 14px 4px 8px;
-}
-.card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  overflow: hidden;
+.profile-info .name { font-weight: 700; font-size: 15px; }
+.profile-info .email { color: var(--text3); font-size: 12px; }
+
+.plan-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 6px;
 }
 
-/* ── SETTING ROW ── */
-.row {
-  display: flex; align-items: center;
-  padding: 0 16px; gap: 14px;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.12s;
-  cursor: default;
-  min-height: 56px;
-}
-.row:last-child { border-bottom: none; }
-.row.clickable { cursor: pointer; }
-.row.clickable:active { background: rgba(255,255,255,0.04); }
-@media(hover:hover){.row.clickable:hover{background:rgba(255,255,255,0.03)}}
-
-.row-icon {
-  width: 32px; height: 32px; border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; font-size: 16px;
-}
-.row-content { flex: 1; min-width: 0; padding: 14px 0; }
-.row-label { font-size: 14px; font-weight: 500; color: var(--text); }
-.row-sub   { font-size: 12px; color: var(--text3); margin-top: 1px; }
-.row-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.row-value { font-size: 13px; color: var(--text3); }
-.row-arrow { color: var(--text3); font-size: 20px; line-height: 1; opacity: 0.5; }
-
-/* ── TOGGLE SWITCH ── */
-.toggle { position: relative; width: 48px; height: 28px; flex-shrink: 0; }
-.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
-.toggle-track {
-  position: absolute; inset: 0;
-  background: var(--bg3); border-radius: 28px;
-  cursor: pointer; transition: background 0.2s;
-  border: 1.5px solid var(--border);
-}
-.toggle-track::before {
-  content: ''; position: absolute;
-  width: 20px; height: 20px;
-  top: 2px; left: 2px;
-  background: #fff; border-radius: 50%;
-  transition: transform 0.22s cubic-bezier(.34,1.56,.64,1);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-}
-.toggle input:checked + .toggle-track { background: var(--accent); border-color: var(--accent); }
-.toggle input:checked + .toggle-track::before { transform: translateX(20px); }
-
-/* ── THEME PILLS ── */
-.theme-pills { display: flex; gap: 5px; }
-.theme-pill {
-  padding: 5px 12px; border-radius: 20px;
-  border: 1px solid var(--border);
-  background: var(--bg3); color: var(--text2);
-  font-size: 12px; font-weight: 500;
-  cursor: pointer; font-family: inherit;
-  transition: all 0.15s;
-}
-.theme-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-/* ── SEGMENT CONTROL ── */
-.segment {
-  display: flex; gap: 3px;
-  background: var(--bg3);
-  border-radius: 10px; padding: 3px;
-}
-.seg-btn {
-  flex: 1; padding: 5px 10px; border-radius: 7px;
-  border: none; background: transparent;
-  color: var(--text3); font-size: 12px; font-weight: 500;
-  cursor: pointer; font-family: inherit;
-  transition: all 0.15s; white-space: nowrap;
-}
-.seg-btn.active { background: var(--bg2); color: var(--text); box-shadow: 0 1px 3px var(--shadow); }
-
-/* ── SELECT ── */
-.s-select {
-  background: var(--bg3); border: 1px solid var(--border);
-  color: var(--text); border-radius: 8px;
-  padding: 6px 10px; font-size: 13px;
-  font-family: inherit; outline: none; cursor: pointer;
-}
-.s-select:focus { border-color: var(--accent); }
-
-/* ── PLAN CARD ── */
-.plan-card {
-  border-radius: 16px; padding: 16px;
-  margin-bottom: 8px;
-  display: flex; flex-direction: column; gap: 12px;
-}
-.plan-header { display: flex; align-items: center; justify-content: space-between; }
-.plan-name { font-size: 16px; font-weight: 700; }
-.plan-msgs { font-size: 12px; color: var(--text3); margin-top: 2px; }
-.plan-features { display: flex; flex-direction: column; gap: 6px; }
-.plan-feat { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-.plan-feat .y { color: #10a37f; }
-.plan-feat .n { color: var(--text3); }
-.plan-upgrade-btn {
-  display: block; text-align: center;
-  padding: 11px; border-radius: 10px;
-  font-size: 13px; font-weight: 600;
-  text-decoration: none;
-  transition: opacity 0.15s;
-}
-.plan-upgrade-btn:hover { opacity: 0.85; }
-
-/* ── ACCENT COLORS ── */
-.accent-dots { display: flex; gap: 8px; align-items: center; }
-.accent-dot {
-  width: 24px; height: 24px; border-radius: 50%;
-  cursor: pointer; border: 2px solid transparent;
-  transition: transform 0.15s, border-color 0.15s;
-}
-.accent-dot:hover { transform: scale(1.15); }
-.accent-dot.active { border-color: #fff; transform: scale(1.15); }
-
-/* ── MODALS ── */
-.modal-overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.7);
-  z-index: 999;
-  align-items: flex-end; justify-content: center;
-  backdrop-filter: blur(4px);
-}
-.modal-overlay.show { display: flex; }
-.modal-box {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 20px 20px 0 0;
-  padding: 24px; width: 100%; max-width: 560px;
-  box-shadow: 0 -16px 48px rgba(0,0,0,0.5);
-  animation: slideUp 0.25s cubic-bezier(.34,1.2,.64,1);
-}
-@keyframes slideUp { from { transform: translateY(100%); opacity:0; } to { transform: translateY(0); opacity:1; } }
-.modal-handle { width: 36px; height: 4px; background: var(--bg3); border-radius: 4px; margin: 0 auto 20px; }
-.modal-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 16px; }
-.m-input {
-  width: 100%; padding: 12px 14px;
-  border-radius: 12px; border: 1px solid var(--border);
-  background: var(--bg3); color: var(--text);
-  font-size: 14px; font-family: inherit; outline: none;
-  margin-bottom: 10px; transition: border-color 0.15s;
-}
-.m-input:focus { border-color: var(--accent); }
-.m-btns { display: flex; gap: 8px; margin-top: 4px; }
-.m-btn {
-  flex: 1; padding: 12px; border-radius: 12px;
-  border: 1px solid var(--border); font-size: 14px;
-  font-weight: 500; cursor: pointer; font-family: inherit;
-  transition: all 0.15s;
-}
-.m-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-.m-btn.primary:hover { filter: brightness(1.1); }
-.m-btn.secondary { background: var(--bg3); color: var(--text2); }
-.m-btn.secondary:hover { background: var(--border); }
-.m-msg { font-size: 13px; min-height: 18px; padding: 4px 0; }
-.m-msg.ok  { color: var(--accent); }
-.m-msg.err { color: #e55; }
-
-/* ── LOGOUT BUTTON ── */
-.logout-btn {
-  width: 100%; padding: 15px;
-  border-radius: 16px;
-  border: 1px solid rgba(220,60,60,0.2);
-  background: rgba(220,60,60,0.06);
-  color: #e55; font-size: 15px; font-weight: 500;
-  cursor: pointer; font-family: inherit;
-  margin-top: 8px;
-  transition: all 0.15s;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-}
-.logout-btn:hover { background: rgba(220,60,60,0.12); }
-
-/* ── DANGER ROW ── */
-.row.danger .row-label { color: #e55; }
-.row.danger .row-icon  { background: rgba(220,60,60,0.1); }
-
-/* ── TOAST ── */
 .toast {
-  position: fixed; bottom: 90px; left: 50%;
-  transform: translateX(-50%);
-  background: var(--bg2); border: 1px solid var(--border);
-  color: var(--text); padding: 10px 20px;
-  border-radius: 20px; font-size: 13px;
-  z-index: 9999; opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none; white-space: nowrap;
-  box-shadow: 0 4px 20px var(--shadow);
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  padding: 10px 20px;
+  background: var(--bg4);
+  border: 1px solid rgba(77, 124, 255, 0.4);
+  border-radius: 100px;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s;
+  z-index: 10000;
 }
 
-@media (max-width: 480px) {
-  .profile-card { padding: 16px; gap: 12px; }
-  .avatar { width: 54px; height: 54px; font-size: 22px; }
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (max-width: 600px) {
+  .row { flex-direction: column; align-items: flex-start; }
+  .row input, .row select { width: 100%; }
 }
 </style>
 </head>
 <body>
 
-<!-- Topbar -->
-<div class="topbar">
-  <a href="index.html" class="back-btn">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+<nav>
+  <a href="/builder.html" class="logo">
+    <div class="logo-mark">D</div>
+    <span>Datta<b>AI</b></span>
   </a>
-  <div class="topbar-title">Settings</div>
-</div>
+  <a href="/builder.html" class="back-btn">← Back to Builder</a>
+</nav>
 
-<div class="page">
+<div class="wrap">
+  <h1><span>Settings</span></h1>
 
-  <!-- Profile -->
-  <div class="profile-card" onclick="openEditName()" style="cursor:pointer;">
-    <div class="avatar-wrap">
-      <div class="avatar" id="avatar">G</div>
-      <div class="avatar-edit">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      </div>
-    </div>
-    <div class="profile-info">
-      <div class="profile-name" id="profileName">Loading...</div>
-      <div class="profile-email" id="profileEmail">–</div>
-      <div class="profile-plan" id="profilePlan">🌱 Free Plan</div>
-    </div>
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
-  </div>
-
-  <!-- Plan Details Card -->
-  <div id="planDetailsCard" style="display:none;margin-bottom:8px;"></div>
-
-  <!-- Subscription -->
+  <!-- PROFILE -->
   <div class="section">
-    <div class="section-label">Subscription</div>
-    <div class="card">
-      <div class="row clickable" onclick="window.location.href='pricing.html'">
-        <div class="row-icon" style="background:rgba(245,158,11,0.12);">⭐</div>
-        <div class="row-content">
-          <div class="row-label">Upgrade Plan</div>
-          <div class="row-sub">Starter ₹29 · Plus ₹299 · Pro ₹499 · Ultimate ₹799</div>
-        </div>
-        <div class="row-right"><span class="row-arrow">›</span></div>
+    <div class="section-head">
+      <div class="section-icon">👤</div>
+      <div>
+        <h2>Profile</h2>
+        <p>Your account details</p>
       </div>
-      <div class="row clickable" onclick="openFamilyModal()">
-        <div class="row-icon" style="background:rgba(139,92,246,0.12);">👨‍👩‍👧‍👦</div>
-        <div class="row-content">
-          <div class="row-label">Family Account</div>
-          <div class="row-sub" id="familyStatus">Share your plan with family members</div>
+    </div>
+    <div class="row">
+      <div class="user-profile">
+        <div class="avatar" id="avatar">U</div>
+        <div class="profile-info">
+          <div class="name" id="userName">User</div>
+          <div class="email" id="userEmail">user@email.com</div>
+          <div class="plan-badge" id="planBadge">Free</div>
         </div>
-        <div class="row-right"><span class="row-arrow">›</span></div>
       </div>
+      <button class="btn btn-primary" onclick="editProfile()">Edit</button>
+    </div>
+    <div class="row">
+      <div>
+        <div class="row-label">Username</div>
+        <div class="row-desc">Used in your app URLs</div>
+      </div>
+      <input type="text" id="usernameInput" placeholder="username">
+    </div>
+    <div class="row">
+      <div>
+        <div class="row-label">Email</div>
+        <div class="row-desc">For login and notifications</div>
+      </div>
+      <input type="email" id="emailInput" placeholder="you@email.com" readonly>
     </div>
   </div>
 
-  <!-- Family Account Modal -->
-  <div id="familyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center;padding:20px;">
-    <div style="background:var(--bg2,#1a1a1a);border:1px solid var(--border,#333);border-radius:16px;padding:24px;max-width:420px;width:100%;max-height:90vh;overflow-y:auto;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <h3 style="margin:0;color:var(--text,#fff);font-size:18px;">👨‍👩‍👧‍👦 Family Account</h3>
-        <button onclick="closeFamilyModal()" style="background:none;border:none;color:var(--text2,#888);font-size:20px;cursor:pointer;">✕</button>
-      </div>
-      <div id="familyContent" style="color:var(--text2,#bbb);font-size:14px;line-height:1.6;">
-        Loading...
-      </div>
-    </div>
-  </div>
-
-  <script>
-  async function openFamilyModal() {
-    document.getElementById("familyModal").style.display = "flex"
-    document.getElementById("familyContent").innerHTML = "Loading..."
-    try {
-      const token = localStorage.getItem("datta_token")
-      const res = await fetch("https://datta-ai-server.onrender.com/family/members", {
-        headers: { "Authorization": "Bearer " + token }
-      })
-      const data = await res.json()
-      renderFamily(data)
-    } catch(e) {
-      document.getElementById("familyContent").innerHTML = "Error loading family data"
-    }
-  }
-
-  function renderFamily(data) {
-    const el = document.getElementById("familyContent")
-    if (!data.familyAllowed) {
-      el.innerHTML = `
-        <div style="padding:16px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:10px;text-align:center;">
-          <div style="font-size:28px;margin-bottom:8px;">🔒</div>
-          <div style="color:var(--text,#fff);font-weight:600;margin-bottom:6px;">Family Account requires Plus, Pro, or Ultimate plan</div>
-          <div style="font-size:12px;color:var(--text3,#888);margin-bottom:16px;">Share your subscription with up to 5 family members</div>
-          <a href="pricing.html" style="display:inline-block;padding:10px 20px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;border-radius:10px;text-decoration:none;font-weight:600;font-size:13px;">Upgrade Now</a>
-        </div>`
-      return
-    }
-
-    const members = data.members || []
-    const slotsLeft = data.maxMembers - members.length
-    el.innerHTML = `
-      <div style="margin-bottom:14px;padding:10px 14px;background:rgba(16,163,127,0.08);border:1px solid rgba(16,163,127,0.25);border-radius:10px;font-size:12px;color:#10a37f;">
-        ✓ Your ${data.plan.toUpperCase()} plan — ${members.length}/${data.maxMembers} members added
-      </div>
-
-      <div style="margin-bottom:16px;">
-        ${members.length === 0 ? '<div style="padding:14px;text-align:center;color:var(--text3,#888);font-size:13px;">No family members yet</div>' : members.map(m => `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg3,#222);border-radius:8px;margin-bottom:6px;">
-            <div>
-              <div style="color:var(--text,#fff);font-size:13px;font-weight:500;">${m.name || m.email}</div>
-              <div style="color:var(--text3,#888);font-size:11px;">${m.email}</div>
-            </div>
-            <button onclick="removeMember('${m.userId}')" style="padding:4px 10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;color:#ef4444;font-size:11px;cursor:pointer;">Remove</button>
-          </div>
-        `).join('')}
-      </div>
-
-      ${slotsLeft > 0 ? `
-        <div style="border-top:1px solid var(--border,#333);padding-top:14px;">
-          <div style="font-size:12px;color:var(--text2,#bbb);margin-bottom:8px;">Add family member by email:</div>
-          <div style="display:flex;gap:8px;">
-            <input id="newMemberEmail" type="email" placeholder="family@email.com" style="flex:1;padding:10px 12px;background:var(--bg3,#222);border:1px solid var(--border,#333);border-radius:8px;color:var(--text,#fff);font-size:13px;" />
-            <button onclick="addMember()" style="padding:10px 16px;background:#10a37f;border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer;font-size:13px;">Add</button>
-          </div>
-          <div style="margin-top:8px;font-size:11px;color:var(--text3,#888);">They must already have a Datta AI account (free)</div>
-        </div>
-      ` : '<div style="padding:10px;text-align:center;color:var(--text3,#888);font-size:12px;">Maximum members reached</div>'}
-    `
-  }
-
-  async function addMember() {
-    const email = document.getElementById("newMemberEmail").value.trim()
-    if (!email) return
-    try {
-      const token = localStorage.getItem("datta_token")
-      const res = await fetch("https://datta-ai-server.onrender.com/family/add-member", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-        body: JSON.stringify({ email })
-      })
-      const data = await res.json()
-      if (data.success) {
-        openFamilyModal()  // refresh
-      } else {
-        alert(data.error || "Could not add member")
-      }
-    } catch(e) { alert("Error: " + e.message) }
-  }
-
-  async function removeMember(memberId) {
-    if (!confirm("Remove this family member?")) return
-    try {
-      const token = localStorage.getItem("datta_token")
-      await fetch("https://datta-ai-server.onrender.com/family/remove-member", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-        body: JSON.stringify({ memberId })
-      })
-      openFamilyModal()
-    } catch(e) { alert("Error: " + e.message) }
-  }
-
-  function closeFamilyModal() {
-    document.getElementById("familyModal").style.display = "none"
-  }
-  </script>
-
-  <!-- Appearance -->
+  <!-- APPEARANCE -->
   <div class="section">
-    <div class="section-label">Appearance</div>
-    <div class="card">
-      <div class="row">
-        <div class="row-icon" style="background:rgba(99,102,241,0.12);">🌗</div>
-        <div class="row-content">
-          <div class="row-label">Theme</div>
-        </div>
-        <div class="row-right">
-          <div class="theme-pills">
-            <button class="theme-pill" id="t-dark"  onclick="setTheme('dark')">Dark</button>
-            <button class="theme-pill" id="t-light" onclick="setTheme('light')">Light</button>
-            <button class="theme-pill" id="t-eye"   onclick="setTheme('eye')">Eye</button>
-          </div>
-        </div>
+    <div class="section-head">
+      <div class="section-icon">🎨</div>
+      <div>
+        <h2>Appearance</h2>
+        <p>How Datta AI looks</p>
       </div>
-      <div class="row">
-        <div class="row-icon" style="background:rgba(245,158,11,0.12);">🔤</div>
-        <div class="row-content">
-          <div class="row-label">Font Size</div>
-        </div>
-        <div class="row-right">
-          <div class="segment">
-            <button class="seg-btn" id="fs-small"  onclick="setFontSize('small')">S</button>
-            <button class="seg-btn active" id="fs-medium" onclick="setFontSize('medium')">M</button>
-            <button class="seg-btn" id="fs-large"  onclick="setFontSize('large')">L</button>
-          </div>
-        </div>
+    </div>
+    <div class="row">
+      <div>
+        <div class="row-label">Theme</div>
+        <div class="row-desc">Dark mode is easier on the eyes</div>
       </div>
-      <div class="row">
-        <div class="row-icon" style="background:rgba(16,163,127,0.12);">🎨</div>
-        <div class="row-content">
-          <div class="row-label">Accent Color</div>
-        </div>
-        <div class="row-right">
-          <div class="accent-dots" id="accentDots">
-            <div class="accent-dot active" data-color="#10a37f" style="background:#10a37f;" onclick="setAccent('#10a37f')"></div>
-            <div class="accent-dot" data-color="#0077ff" style="background:#0077ff;" onclick="setAccent('#0077ff')"></div>
-            <div class="accent-dot" data-color="#8b5cf6" style="background:#8b5cf6;" onclick="setAccent('#8b5cf6')"></div>
-            <div class="accent-dot" data-color="#f59e0b" style="background:#f59e0b;" onclick="setAccent('#f59e0b')"></div>
-            <div class="accent-dot" data-color="#ef4444" style="background:#ef4444;" onclick="setAccent('#ef4444')"></div>
-            <div class="accent-dot" data-color="#ec4899" style="background:#ec4899;" onclick="setAccent('#ec4899')"></div>
-          </div>
-        </div>
+      <select id="theme">
+        <option value="dark">Dark</option>
+        <option value="light">Light (coming soon)</option>
+      </select>
+    </div>
+    <div class="row">
+      <div>
+        <div class="row-label">Interface Language</div>
+        <div class="row-desc">Language for Datta AI's interface (you can still describe apps in any Indian language)</div>
       </div>
+      <select id="interfaceLang">
+        <option value="english">English</option>
+        <option value="hindi">हिंदी (Hindi)</option>
+        <option value="telugu">తెలుగు (Telugu)</option>
+      </select>
     </div>
   </div>
 
-  <!-- Personalization -->
+  <!-- BUILDER PREFERENCES -->
   <div class="section">
-    <div class="section-label">Personalization</div>
-    <div class="card">
-      <div class="row">
-        <div class="row-icon" style="background:rgba(16,163,127,0.12);">🌐</div>
-        <div class="row-content">
-          <div class="row-label">Language</div>
-          <div class="row-sub">AI response language</div>
-        </div>
-        <div class="row-right">
-          <select class="s-select" id="langSelect" onchange="saveLanguage(this.value)">
-            <option value="English">English</option>
-            <option value="Hindi">Hindi</option>
-            <option value="Telugu">Telugu</option>
-            <option value="Tamil">Tamil</option>
-            <option value="Spanish">Spanish</option>
-            <option value="French">French</option>
-            <option value="Arabic">Arabic</option>
-            <option value="Chinese">Chinese</option>
-            <option value="Japanese">Japanese</option>
-            <option value="German">German</option>
-          </select>
-        </div>
+    <div class="section-head">
+      <div class="section-icon">⚙️</div>
+      <div>
+        <h2>Builder</h2>
+        <p>How AI builds your apps</p>
       </div>
-      <div class="row">
-        <div class="row-icon" style="background:rgba(59,130,246,0.12);">⚡</div>
-        <div class="row-content">
-          <div class="row-label">Response Style</div>
-        </div>
-        <div class="row-right">
-          <div class="segment">
-            <button class="seg-btn" id="rs-short"    onclick="setStyle('Short')">Short</button>
-            <button class="seg-btn active" id="rs-balanced" onclick="setStyle('Balanced')">Balanced</button>
-            <button class="seg-btn" id="rs-detailed" onclick="setStyle('Detailed')">Detailed</button>
-          </div>
-        </div>
+    </div>
+    <div class="row">
+      <div>
+        <div class="row-label">Auto-preview code</div>
+        <div class="row-desc">Automatically update preview when you edit code</div>
       </div>
-      <div class="row">
-        <div class="row-icon" style="background:rgba(168,85,247,0.12);">🎙️</div>
-        <div class="row-content">
-          <div class="row-label">Voice</div>
-          <div class="row-sub">For voice responses</div>
-        </div>
-        <div class="row-right">
-          <select class="s-select" id="voiceSelect" onchange="saveVoice(this.value)">
-            <option value="aria">Aria (Female)</option>
-            <option value="ryan">Ryan (Male)</option>
-            <option value="sonia">Sonia (Neutral)</option>
-          </select>
-        </div>
+      <div class="toggle on" onclick="toggle(this, 'autoPreview')" id="autoPreview"></div>
+    </div>
+    <div class="row">
+      <div>
+        <div class="row-label">Show build steps</div>
+        <div class="row-desc">Show animated steps while AI builds</div>
       </div>
+      <div class="toggle on" onclick="toggle(this, 'showSteps')" id="showSteps"></div>
+    </div>
+    <div class="row">
+      <div>
+        <div class="row-label">Default theme for generated apps</div>
+        <div class="row-desc">Default style for new apps you build</div>
+      </div>
+      <select id="defaultTheme">
+        <option value="dark">Dark</option>
+        <option value="light">Light</option>
+        <option value="auto">Let AI decide</option>
+      </select>
     </div>
   </div>
 
-  <!-- AI Mode -->
+  <!-- SUBSCRIPTION -->
   <div class="section">
-    <div class="section-label">AI Mode</div>
-    <div class="card">
-      <div class="row clickable" id="mode-normal" onclick="setAIMode('normal')">
-        <div class="row-icon" style="background:rgba(16,163,127,0.12);">💬</div>
-        <div class="row-content">
-          <div class="row-label">Normal</div>
-          <div class="row-sub">Everyday conversations</div>
-        </div>
-        <div class="row-right" id="mode-check-normal"><span style="color:var(--accent);font-size:18px;">✓</span></div>
+    <div class="section-head">
+      <div class="section-icon">💳</div>
+      <div>
+        <h2>Subscription</h2>
+        <p>Your plan and billing</p>
       </div>
-      <div class="row clickable" id="mode-expert" onclick="setAIMode('expert')">
-        <div class="row-icon" style="background:rgba(245,158,11,0.12);">🧠</div>
-        <div class="row-content">
-          <div class="row-label">Expert</div>
-          <div class="row-sub">Deep research &amp; analysis</div>
-        </div>
-        <div class="row-right" id="mode-check-expert"></div>
+    </div>
+    <div class="row">
+      <div>
+        <div class="row-label">Current Plan</div>
+        <div class="row-desc" id="planDesc">Free — 3 app builds per day</div>
       </div>
-      <div class="row clickable" id="mode-coding" onclick="setAIMode('coding')">
-        <div class="row-icon" style="background:rgba(59,130,246,0.12);">💻</div>
-        <div class="row-content">
-          <div class="row-label">Coding</div>
-          <div class="row-sub">Code, debug, build</div>
-        </div>
-        <div class="row-right" id="mode-check-coding"></div>
-      </div>
-      <div class="row clickable" id="mode-creative" onclick="setAIMode('creative')">
-        <div class="row-icon" style="background:rgba(236,72,153,0.12);">✨</div>
-        <div class="row-content">
-          <div class="row-label">Creative</div>
-          <div class="row-sub">Writing, storytelling, ideas</div>
-        </div>
-        <div class="row-right" id="mode-check-creative"></div>
+      <a href="/pricing.html" class="btn btn-primary">Upgrade</a>
+    </div>
+    <div class="row">
+      <div>
+        <div class="row-label">Usage today</div>
+        <div class="row-desc" id="usageText">Loading...</div>
       </div>
     </div>
   </div>
 
-  <!-- Notifications -->
+  <!-- PUBLISHED APPS -->
   <div class="section">
-    <div class="section-label">Notifications</div>
-    <div class="card">
-      <div class="row">
-        <div class="row-icon" style="background:rgba(251,146,60,0.12);">🔔</div>
-        <div class="row-content"><div class="row-label">Browser Notifications</div></div>
-        <div class="row-right">
-          <label class="toggle">
-            <input type="checkbox" id="notifToggle" onchange="saveNotif()">
-            <span class="toggle-track"></span>
-          </label>
-        </div>
+    <div class="section-head">
+      <div class="section-icon">🌐</div>
+      <div>
+        <h2>Published Apps</h2>
+        <p>Apps you've published publicly</p>
       </div>
-      <div class="row">
-        <div class="row-icon" style="background:rgba(251,146,60,0.12);">🔊</div>
-        <div class="row-content"><div class="row-label">Sound Effects</div></div>
-        <div class="row-right">
-          <label class="toggle">
-            <input type="checkbox" id="soundToggle" onchange="saveNotif()">
-            <span class="toggle-track"></span>
-          </label>
-        </div>
+    </div>
+    <div class="row">
+      <div>
+        <div class="row-label" id="appCount">Loading...</div>
+        <div class="row-desc">Manage your live apps</div>
       </div>
-      <div class="row">
-        <div class="row-icon" style="background:rgba(99,102,241,0.12);">📝</div>
-        <div class="row-content">
-          <div class="row-label">Streaming Text</div>
-          <div class="row-sub">Type-as-you-go effect</div>
-        </div>
-        <div class="row-right">
-          <label class="toggle">
-            <input type="checkbox" id="streamToggle" checked onchange="saveNotif()">
-            <span class="toggle-track"></span>
-          </label>
-        </div>
-      </div>
+      <a href="/my-apps.html" class="btn btn-ghost">View All</a>
     </div>
   </div>
 
-  <!-- Security -->
+  <!-- DATA & PRIVACY -->
   <div class="section">
-    <div class="section-label">Security</div>
-    <div class="card">
-      <div class="row clickable" onclick="openChangePassword()">
-        <div class="row-icon" style="background:rgba(99,102,241,0.12);">🔑</div>
-        <div class="row-content"><div class="row-label">Change Password</div></div>
-        <div class="row-right"><span class="row-arrow">›</span></div>
+    <div class="section-head">
+      <div class="section-icon">🔒</div>
+      <div>
+        <h2>Data & Privacy</h2>
+        <p>Your data, your control</p>
       </div>
+    </div>
+    <div class="row">
+      <div>
+        <div class="row-label">Export all data</div>
+        <div class="row-desc">Download all your apps and chats as JSON</div>
+      </div>
+      <button class="btn btn-ghost" onclick="exportData()">Export</button>
+    </div>
+    <div class="row">
+      <div>
+        <div class="row-label">Clear chat history</div>
+        <div class="row-desc">Delete all your builder conversations</div>
+      </div>
+      <button class="btn btn-ghost" onclick="clearChats()">Clear</button>
+    </div>
+    <div class="row">
+      <div>
+        <div class="row-label" style="color: #ef4444;">Delete account</div>
+        <div class="row-desc">Permanently delete your account and all data</div>
+      </div>
+      <button class="btn btn-danger" onclick="deleteAccount()">Delete</button>
     </div>
   </div>
 
-  <!-- Data & Privacy -->
+  <!-- ABOUT -->
   <div class="section">
-    <div class="section-label">Data &amp; Privacy</div>
-    <div class="card">
-      <div class="row clickable danger" onclick="clearAllChats()">
-        <div class="row-icon">🗑️</div>
-        <div class="row-content">
-          <div class="row-label">Clear All Chats</div>
-          <div class="row-sub">Permanently deletes history</div>
-        </div>
-        <div class="row-right"><span class="row-arrow">›</span></div>
-      </div>
-      <div class="row clickable danger" onclick="confirmDeleteAccount()">
-        <div class="row-icon">❌</div>
-        <div class="row-content">
-          <div class="row-label">Delete Account</div>
-          <div class="row-sub">Cannot be undone</div>
-        </div>
-        <div class="row-right"><span class="row-arrow">›</span></div>
+    <div class="section-head">
+      <div class="section-icon">ℹ️</div>
+      <div>
+        <h2>About</h2>
+        <p>Datta AI information</p>
       </div>
     </div>
-  </div>
-
-  <!-- About -->
-  <div class="section">
-    <div class="section-label">About</div>
-    <div class="card">
-      <div class="row">
-        <div class="row-icon" style="background:rgba(16,163,127,0.12);">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path d="M9 2L15 6V12L9 16L3 12V6L9 2Z" fill="#10a37f"/>
-            <path d="M9 6L12 8V12L9 14L6 12V8L9 6Z" fill="rgba(0,0,0,0.4)"/>
-          </svg>
-        </div>
-        <div class="row-content">
-          <div class="row-label">Datta AI</div>
-          <div class="row-sub" id="versionTag">Version 3.5 · Datta AI</div>
-        </div>
-        <div class="row-right"><span class="row-value">v3.5</span></div>
+    <div class="row">
+      <div>
+        <div class="row-label">Version</div>
+        <div class="row-desc">Datta AI Builder v1.0</div>
       </div>
-      <div class="row clickable" onclick="window.open('https://datta-ai.com','_blank')">
-        <div class="row-icon" style="background:rgba(59,130,246,0.12);">🌐</div>
-        <div class="row-content"><div class="row-label">Website</div></div>
-        <div class="row-right"><span class="row-arrow">›</span></div>
+      <span style="color: var(--text3); font-size: 12px;">Latest</span>
+    </div>
+    <div class="row">
+      <div>
+        <div class="row-label">Privacy Policy</div>
       </div>
-      <div class="row clickable" onclick="window.open('privacy.html','_blank')">
-        <div class="row-icon" style="background:rgba(99,102,241,0.12);">🔒</div>
-        <div class="row-content"><div class="row-label">Privacy Policy</div></div>
-        <div class="row-right"><span class="row-arrow">›</span></div>
+      <a href="/privacy.html" class="btn btn-ghost">View</a>
+    </div>
+    <div class="row">
+      <div>
+        <div class="row-label">Terms of Service</div>
       </div>
+      <a href="/terms.html" class="btn btn-ghost">View</a>
     </div>
-  </div>
-
-  <!-- Logout -->
-  <button class="logout-btn" onclick="logout()">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-    Log Out
-  </button>
-
-</div><!-- /.page -->
-
-<!-- Edit Name Modal -->
-<div class="modal-overlay" id="editNameModal" onclick="if(event.target===this)closeModal('editNameModal')">
-  <div class="modal-box">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Edit Profile</div>
-    <input type="text" class="m-input" id="newUsername" placeholder="Username">
-    <div id="editNameMsg" class="m-msg"></div>
-    <div class="m-btns">
-      <button class="m-btn secondary" onclick="closeModal('editNameModal')">Cancel</button>
-      <button class="m-btn primary" onclick="saveUsername()">Save</button>
+    <div class="row">
+      <div>
+        <div class="row-label">Contact Support</div>
+      </div>
+      <a href="mailto:hello@datta-ai.com" class="btn btn-ghost">Email</a>
     </div>
-  </div>
-</div>
-
-<!-- Change Password Modal -->
-<div class="modal-overlay" id="pwModal" onclick="if(event.target===this)closeModal('pwModal')">
-  <div class="modal-box">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Change Password</div>
-    <input type="password" class="m-input" id="curPw"  placeholder="Current password">
-    <input type="password" class="m-input" id="newPw"  placeholder="New password (min 6 chars)">
-    <input type="password" class="m-input" id="conPw"  placeholder="Confirm new password">
-    <div id="pwMsg" class="m-msg"></div>
-    <div class="m-btns">
-      <button class="m-btn secondary" onclick="closeModal('pwModal')">Cancel</button>
-      <button class="m-btn primary" onclick="changePassword()">Update</button>
-    </div>
-  </div>
-</div>
-
-<!-- Delete Account Modal -->
-<div class="modal-overlay" id="delAccModal" onclick="if(event.target===this)closeModal('delAccModal')">
-  <div class="modal-box">
-    <div class="modal-handle"></div>
-    <div class="modal-title" style="color:#e55;">Delete Account</div>
-    <p style="font-size:13px;color:var(--text2);margin-bottom:14px;">This will permanently delete your account and all data. This cannot be undone.</p>
-    <input type="password" class="m-input" id="delAccPw" placeholder="Enter password to confirm">
-    <div id="delAccMsg" class="m-msg"></div>
-    <div class="m-btns">
-      <button class="m-btn secondary" onclick="closeModal('delAccModal')">Cancel</button>
-      <button class="m-btn" style="background:rgba(220,60,60,0.15);color:#e55;border-color:rgba(220,60,60,0.3);" onclick="deleteAccount()">Delete</button>
+    <div class="row">
+      <div>
+        <div class="row-label" style="color: #ef4444;">Logout</div>
+      </div>
+      <button class="btn btn-danger" onclick="logout()">Logout</button>
     </div>
   </div>
 </div>
@@ -805,332 +519,165 @@ html, body {
 <div class="toast" id="toast"></div>
 
 <script>
-const SERVER = "https://datta-ai-server.onrender.com"
-function getToken() { return localStorage.getItem("datta_token") || "" }
-function getUser()  { try { return JSON.parse(localStorage.getItem("datta_user") || "{}") } catch(e) { return {} } }
+const S = "https://datta-ai-server.onrender.com"
 
-window.addEventListener("DOMContentLoaded", function() {
-  // Theme
-  const theme = localStorage.getItem("datta_theme") || "dark"
-  applyTheme(theme)
+function showToast(msg) {
+  const t = document.getElementById("toast")
+  t.textContent = msg
+  t.classList.add("show")
+  setTimeout(() => t.classList.remove("show"), 2000)
+}
 
-  // Accent color
-  const savedAccent = localStorage.getItem("datta_accent") || "#10a37f"
-  applyAccent(savedAccent)
+function toggle(el, key) {
+  el.classList.toggle("on")
+  localStorage.setItem("pref_" + key, el.classList.contains("on") ? "1" : "0")
+  showToast("Saved")
+}
 
-  // User info
-  const user = getUser()
-  document.getElementById("avatar").textContent      = (user.username || user.email || "U")[0].toUpperCase()
-  document.getElementById("profileName").textContent = user.username || "User"
-  document.getElementById("profileEmail").textContent = user.email || "–"
+function getToken() {
+  return localStorage.getItem("datta_token") || ""
+}
 
-  // Plan from localStorage + backend fetch
-  const plan = localStorage.getItem("datta_plan") || user.plan || user.subscription || "free"
-  renderPlanInfo(plan)
+// Load user data
+async function loadUser() {
+  try {
+    const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
+    const name = user.username || user.email || "User"
+    document.getElementById("userName").textContent = name
+    document.getElementById("userEmail").textContent = user.email || "—"
+    document.getElementById("avatar").textContent = name[0].toUpperCase()
+    document.getElementById("usernameInput").value = user.username || ""
+    document.getElementById("emailInput").value = user.email || ""
 
-  // Fetch real plan from backend
-  if (getToken()) {
-    fetch(SERVER + "/payment/subscription", { headers: { "Authorization": "Bearer " + getToken() } })
-      .then(r => r.json())
-      .then(d => {
-        if (d.plan) {
-          localStorage.setItem("datta_plan", d.plan)
-          renderPlanInfo(d.plan)
-        }
-      }).catch(() => {})
+    // Fetch current plan + usage
+    const res = await fetch(S + "/user/usage", { headers: { "Authorization": "Bearer " + getToken() } })
+    if (res.ok) {
+      const d = await res.json()
+      const plan = d.plan || "free"
+      document.getElementById("planBadge").textContent = plan.toUpperCase()
+      const planLimits = { free: 3, starter: 20, pro: 100, team: "∞" }
+      const limit = planLimits[plan] || 3
+      document.getElementById("planDesc").textContent = `${plan.charAt(0).toUpperCase() + plan.slice(1)} — ${limit === "∞" ? "Unlimited" : limit} app builds per day`
+      document.getElementById("usageText").textContent = `${d.used || 0} / ${limit === "∞" ? "∞" : limit} builds used today`
+    }
+
+    // Fetch app count
+    const appsRes = await fetch(S + "/apps/my", { headers: { "Authorization": "Bearer " + getToken() } })
+    if (appsRes.ok) {
+      const appsData = await appsRes.json()
+      const count = appsData.apps?.length || 0
+      document.getElementById("appCount").textContent = count + " " + (count === 1 ? "app" : "apps") + " published"
+    }
+  } catch(e) {
+    console.warn("Load user failed:", e)
   }
+}
 
-  // Font size
-  const fs = localStorage.getItem("datta_font_size_label") || "medium"
-  document.querySelectorAll(".seg-btn[id^='fs-']").forEach(b => b.classList.remove("active"))
-  const fsBtn = document.getElementById("fs-" + fs)
-  if (fsBtn) fsBtn.classList.add("active")
+function editProfile() {
+  const newName = document.getElementById("usernameInput").value.trim()
+  if (!newName) return
+  // Save to server
+  fetch(S + "/user/update", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + getToken()
+    },
+    body: JSON.stringify({ username: newName })
+  }).then(r => r.json()).then(d => {
+    if (d.success) {
+      const user = JSON.parse(localStorage.getItem("datta_user") || "{}")
+      user.username = newName
+      localStorage.setItem("datta_user", JSON.stringify(user))
+      showToast("Profile updated!")
+      loadUser()
+    } else {
+      showToast("Update failed")
+    }
+  }).catch(() => showToast("Update failed"))
+}
 
-  // Response style
-  const style = localStorage.getItem("datta_ai_style") || "Balanced"
-  document.querySelectorAll(".seg-btn[id^='rs-']").forEach(b => b.classList.remove("active"))
-  const rsBtn = document.getElementById("rs-" + style.toLowerCase())
-  if (rsBtn) rsBtn.classList.add("active")
-
-  // Language
-  const lang = localStorage.getItem("datta_language") || "English"
-  document.getElementById("langSelect").value = lang
-
-  // Voice
-  const voice = localStorage.getItem("datta_voice") || "aria"
-  document.getElementById("voiceSelect").value = voice
-
-  // AI Mode
-  const mode = localStorage.getItem("datta_ai_mode") || "normal"
-  setAIModeUI(mode)
-
-  // Toggles
-  document.getElementById("notifToggle").checked  = localStorage.getItem("datta_notif_enabled") === "true"
-  document.getElementById("soundToggle").checked  = localStorage.getItem("datta_sound_enabled") === "true"
-  document.getElementById("streamToggle").checked = localStorage.getItem("datta_stream_enabled") !== "false"
-})
-
-// ── PLAN DISPLAY ──────────────────────────────────────────────────────────────
-function renderPlanInfo(plan) {
-  const planMap = {
-    free:"🌱 Free Plan", starter:"🚀 Starter Plan", standard:"⭐ Standard Plan",
-    plus:"⚡ Plus Plan", pro:"🔥 Pro Plan", ultimate:"👑 Ultimate Plan",
-    "ultra-mini":"⚡ Ultra Mini", mini:"⚡ Mini Plan",
-    max:"💎 Max Plan", ultramax:"👑 Ultra Max", basic:"🔥 Basic Plan", enterprise:"👑 Enterprise"
+async function exportData() {
+  try {
+    const [chats, apps] = await Promise.all([
+      fetch(S + "/chats", { headers: { "Authorization": "Bearer " + getToken() } }).then(r => r.json()),
+      fetch(S + "/apps/my", { headers: { "Authorization": "Bearer " + getToken() } }).then(r => r.json())
+    ])
+    const data = {
+      exportedAt: new Date().toISOString(),
+      user: JSON.parse(localStorage.getItem("datta_user") || "{}"),
+      chats: chats || [],
+      apps: apps.apps || []
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "datta-ai-export-" + Date.now() + ".json"
+    a.click()
+    URL.revokeObjectURL(url)
+    showToast("Data exported!")
+  } catch(e) {
+    showToast("Export failed")
   }
-  document.getElementById("profilePlan").textContent = planMap[plan] || "🌱 Free Plan"
-
-  const planDetails = {
-    free: {
-      color:"#10a37f", msgs:"10 msgs/day", models:"Datta 2.1",
-      features:["Datta 2.1 model","2 Datta 5.4 msgs/day","Web search","Voice assistant"],
-      locked:["Full Datta 5.4","PDF upload","Priority responses"],
-      upgrade:"pricing.html", upgradeLabel:"Upgrade to Starter — ₹29/mo"
-    },
-    "ultra-mini": {
-      color:"#f59e0b", msgs:"+15 bonus msgs (24h)", models:"Datta 2.1",
-      features:["15 bonus messages","Valid 24 hours","Web search","Voice assistant"],
-      locked:["Full Datta 5.4","PDF upload","Priority responses"],
-      upgrade:"pricing.html", upgradeLabel:"Upgrade to Starter — ₹29/mo"
-    },
-    starter: {
-      color:"#00cc6a", msgs:"40 msgs/day", models:"Datta 2.1",
-      features:["Datta 2.1 model","10 Datta 5.4 msgs/day","Web search","Voice assistant"],
-      locked:["Full Datta 5.4","PDF upload","Priority responses"],
-      upgrade:"pricing.html", upgradeLabel:"Upgrade to Plus — ₹299/mo"
-    },
-    standard: {
-      color:"#0099ff", msgs:"120 msgs/day", models:"Datta 2.1 + Datta 5.4 (limited)",
-      features:["Datta 2.1 + 5.4 limited","PDF upload","Web search","Voice assistant"],
-      locked:["Full Datta 5.4","Priority responses"],
-      upgrade:"pricing.html", upgradeLabel:"Upgrade to Plus — ₹299/mo"
-    },
-    plus: {
-      color:"#f59e0b", msgs:"300 msgs/day", models:"Datta 2.1 + Full Datta 5.4",
-      features:["Full Datta 5.4","PDF upload","Priority responses","Web search","Voice assistant"],
-      locked:[],
-      upgrade:"pricing.html", upgradeLabel:"Upgrade to Pro — ₹499/mo"
-    },
-    pro: {
-      color:"#ef4444", msgs:"700 msgs/day", models:"Datta 2.1 + Full Datta 5.4",
-      features:["Full Datta 5.4","PDF upload","Fastest responses","Priority access","Web search"],
-      locked:[],
-      upgrade:"pricing.html", upgradeLabel:"Upgrade to Ultimate — ₹799/mo"
-    },
-    ultimate: {
-      color:"#8b5cf6", msgs:"1500 msgs/day", models:"Datta 2.1 + Full Datta 5.4",
-      features:["Full Datta 5.4","PDF upload","Highest priority","1500 msgs/day","Web search"],
-      locked:[],
-      upgrade:null, upgradeLabel:null
-    },
-    mini:       { color:"#f59e0b", msgs:"200 msgs/day", models:"Datta 2.1 + 5.4", features:["200 msgs/day","Datta 5.4","Web search"], locked:[], upgrade:"pricing.html", upgradeLabel:"Upgrade to Plus — ₹299/mo" },
-    max:        { color:"#8b5cf6", msgs:"2000 msgs/day", models:"Datta 2.1 + 5.4", features:["2000 msgs/day","All models","Web search"], locked:[], upgrade:null, upgradeLabel:null },
-    ultramax:   { color:"#ec4899", msgs:"Unlimited", models:"All models", features:["Unlimited messages","All models","Top priority"], locked:[], upgrade:null, upgradeLabel:null },
-    enterprise: { color:"#ec4899", msgs:"Unlimited", models:"All models", features:["Unlimited messages","All models","Enterprise support"], locked:[], upgrade:null, upgradeLabel:null }
-  }
-
-  const pd = planDetails[plan] || planDetails.free
-  const card = document.getElementById("planDetailsCard")
-  if (!card) return
-
-  const feats = pd.features.map(f => `<div class="plan-feat"><span class="y">✓</span> ${f}</div>`).join("")
-  const locks = pd.locked.map(l => `<div class="plan-feat"><span class="n">✗</span> <span style="color:var(--text3);">${l}</span></div>`).join("")
-  const upgradeBtn = pd.upgrade
-    ? `<a href="${pd.upgrade}" class="plan-upgrade-btn" style="background:${pd.color}22;border:1px solid ${pd.color}44;color:${pd.color};">${pd.upgradeLabel}</a>`
-    : `<div style="text-align:center;font-size:12px;color:var(--text3);padding:4px;">✓ You're on the highest plan</div>`
-
-  card.innerHTML = `
-    <div class="plan-card" style="background:${pd.color}0d;border:1px solid ${pd.color}33;">
-      <div class="plan-header">
-        <div>
-          <div class="plan-name" style="color:${pd.color};">${planMap[plan] || "Free Plan"}</div>
-          <div class="plan-msgs">${pd.msgs} · ${pd.models}</div>
-        </div>
-      </div>
-      <div class="plan-features">${feats}${locks}</div>
-      ${upgradeBtn}
-    </div>`
-  card.style.display = "block"
 }
 
-// ── THEME ─────────────────────────────────────────────────────────────────────
-function applyTheme(t) {
-  if (!["dark","light","eye"].includes(t)) t = "dark"
-  document.documentElement.setAttribute("data-theme", t)
-  document.body.setAttribute("data-theme", t)
-  document.querySelectorAll(".theme-pill").forEach(b => b.classList.remove("active"))
-  const btn = document.getElementById("t-" + t)
-  if (btn) btn.classList.add("active")
-}
-function setTheme(t) {
-  localStorage.setItem("datta_theme", t)
-  applyTheme(t)
-  toast("Theme: " + t)
-}
-
-// ── ACCENT COLOR ──────────────────────────────────────────────────────────────
-function applyAccent(color) {
-  document.documentElement.style.setProperty("--accent", color)
-  document.querySelectorAll(".accent-dot").forEach(d => {
-    d.classList.toggle("active", d.dataset.color === color)
-  })
-}
-function setAccent(color) {
-  localStorage.setItem("datta_accent", color)
-  applyAccent(color)
-  toast("Accent color updated")
-}
-
-// ── FONT SIZE ─────────────────────────────────────────────────────────────────
-function setFontSize(size) {
-  localStorage.setItem("datta_font_size_label", size)
-  const sizes = { small:"14px", medium:"16px", large:"18px" }
-  localStorage.setItem("datta_font_size", sizes[size] || "16px")
-  document.querySelectorAll(".seg-btn[id^='fs-']").forEach(b => b.classList.remove("active"))
-  const btn = document.getElementById("fs-" + size)
-  if (btn) btn.classList.add("active")
-  toast("Font: " + size)
-}
-
-// ── STYLE ─────────────────────────────────────────────────────────────────────
-function setStyle(style) {
-  localStorage.setItem("datta_ai_style", style)
-  document.querySelectorAll(".seg-btn[id^='rs-']").forEach(b => b.classList.remove("active"))
-  const btn = document.getElementById("rs-" + style.toLowerCase())
-  if (btn) btn.classList.add("active")
-  toast("Style: " + style)
-}
-
-// ── LANGUAGE ──────────────────────────────────────────────────────────────────
-function saveLanguage(val) { localStorage.setItem("datta_language", val); toast("Language saved") }
-
-// ── VOICE ─────────────────────────────────────────────────────────────────────
-function saveVoice(val) { localStorage.setItem("datta_voice", val); toast("Voice updated") }
-
-// ── AI MODE ───────────────────────────────────────────────────────────────────
-function setAIMode(mode) {
-  localStorage.setItem("datta_ai_mode", mode)
-  setAIModeUI(mode)
-  toast("Mode: " + mode)
-}
-function setAIModeUI(mode) {
-  ["normal","expert","coding","creative"].forEach(m => {
-    const el = document.getElementById("mode-check-" + m)
-    if (el) el.innerHTML = m === mode ? '<span style="color:var(--accent);font-size:18px;">✓</span>' : ""
-  })
-}
-
-// ── NOTIFICATIONS ─────────────────────────────────────────────────────────────
-function saveNotif() {
-  localStorage.setItem("datta_notif_enabled",  document.getElementById("notifToggle").checked)
-  localStorage.setItem("datta_sound_enabled",  document.getElementById("soundToggle").checked)
-  localStorage.setItem("datta_stream_enabled", document.getElementById("streamToggle").checked)
-}
-
-// ── EDIT NAME ─────────────────────────────────────────────────────────────────
-function openEditName() {
-  const user = getUser()
-  document.getElementById("newUsername").value = user.username || ""
-  document.getElementById("editNameMsg").textContent = ""
-  document.getElementById("editNameModal").classList.add("show")
-}
-async function saveUsername() {
-  const val = document.getElementById("newUsername").value.trim()
-  const msg = document.getElementById("editNameMsg")
-  if (!val) { msg.textContent = "Enter a username"; msg.className = "m-msg err"; return }
+async function clearChats() {
+  if (!confirm("Delete ALL your chat history? This cannot be undone.")) return
   try {
-    const res = await fetch(SERVER + "/auth/update-username", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + getToken() },
-      body: JSON.stringify({ username: val, token: getToken() })
-    })
-    const data = await res.json()
-    if (!res.ok) { msg.textContent = data.error || "Failed"; msg.className = "m-msg err"; return }
-    const user = getUser()
-    user.username = val
-    localStorage.setItem("datta_user", JSON.stringify(user))
-    document.getElementById("profileName").textContent = val
-    document.getElementById("avatar").textContent = val[0].toUpperCase()
-    msg.textContent = "Saved!"; msg.className = "m-msg ok"
-    setTimeout(() => closeModal("editNameModal"), 800)
-  } catch(e) { msg.textContent = "Network error"; msg.className = "m-msg err" }
-}
-
-// ── CHANGE PASSWORD ───────────────────────────────────────────────────────────
-function openChangePassword() {
-  ["curPw","newPw","conPw"].forEach(id => document.getElementById(id).value = "")
-  document.getElementById("pwMsg").textContent = ""
-  document.getElementById("pwModal").classList.add("show")
-}
-async function changePassword() {
-  const cur = document.getElementById("curPw").value
-  const nw  = document.getElementById("newPw").value
-  const con = document.getElementById("conPw").value
-  const msg = document.getElementById("pwMsg")
-  if (!cur || !nw) { msg.textContent = "Fill all fields"; msg.className = "m-msg err"; return }
-  if (nw !== con)  { msg.textContent = "Passwords don't match"; msg.className = "m-msg err"; return }
-  if (nw.length < 6) { msg.textContent = "Min 6 characters"; msg.className = "m-msg err"; return }
-  try {
-    const res = await fetch(SERVER + "/auth/change-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + getToken() },
-      body: JSON.stringify({ currentPassword: cur, newPassword: nw, token: getToken() })
-    })
-    const data = await res.json()
-    if (!res.ok) { msg.textContent = data.error || "Failed"; msg.className = "m-msg err"; return }
-    msg.textContent = "Password updated!"; msg.className = "m-msg ok"
-    setTimeout(() => closeModal("pwModal"), 900)
-  } catch(e) { msg.textContent = "Network error"; msg.className = "m-msg err" }
-}
-
-// ── CLEAR CHATS ───────────────────────────────────────────────────────────────
-async function clearAllChats() {
-  if (!confirm("Delete all chats? This cannot be undone.")) return
-  try {
-    await fetch(SERVER + "/chats/all", { method: "DELETE", headers: { "Authorization": "Bearer " + getToken() } })
-    localStorage.removeItem("datta_last_chat")
-    toast("All chats deleted")
-  } catch(e) { toast("Failed to delete chats") }
-}
-
-// ── DELETE ACCOUNT ────────────────────────────────────────────────────────────
-function confirmDeleteAccount() {
-  document.getElementById("delAccPw").value = ""
-  document.getElementById("delAccMsg").textContent = ""
-  document.getElementById("delAccModal").classList.add("show")
-}
-async function deleteAccount() {
-  const pw  = document.getElementById("delAccPw").value
-  const msg = document.getElementById("delAccMsg")
-  if (!pw) { msg.textContent = "Enter your password"; msg.className = "m-msg err"; return }
-  try {
-    const res = await fetch(SERVER + "/auth/delete-account", {
+    await fetch(S + "/chats/all", {
       method: "DELETE",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + getToken() },
-      body: JSON.stringify({ password: pw, token: getToken() })
+      headers: { "Authorization": "Bearer " + getToken() }
     })
-    const data = await res.json()
-    if (!res.ok) { msg.textContent = data.error || "Failed"; msg.className = "m-msg err"; return }
-    logout()
-  } catch(e) { msg.textContent = "Network error"; msg.className = "m-msg err" }
+    showToast("Chats cleared")
+  } catch(e) { showToast("Failed to clear") }
 }
 
-// ── LOGOUT ────────────────────────────────────────────────────────────────────
+async function deleteAccount() {
+  const confirm1 = confirm("This will PERMANENTLY delete your account and all data. Are you sure?")
+  if (!confirm1) return
+  const confirm2 = prompt("Type DELETE to confirm")
+  if (confirm2 !== "DELETE") return
+  try {
+    await fetch(S + "/user/delete", {
+      method: "DELETE",
+      headers: { "Authorization": "Bearer " + getToken() }
+    })
+    localStorage.clear()
+    window.location.href = "/"
+  } catch(e) { showToast("Delete failed") }
+}
+
 function logout() {
-  localStorage.removeItem("datta_token")
-  localStorage.removeItem("datta_user")
-  localStorage.removeItem("datta_last_chat")
-  window.location.href = "login.html"
+  localStorage.clear()
+  window.location.href = "/"
 }
 
-// ── UTILS ─────────────────────────────────────────────────────────────────────
-function closeModal(id) { document.getElementById(id).classList.remove("show") }
-function toast(msg) {
-  const el = document.getElementById("toast")
-  el.textContent = msg; el.style.opacity = "1"
-  clearTimeout(el._t)
-  el._t = setTimeout(() => { el.style.opacity = "0" }, 2200)
-}
+// Load settings
+window.addEventListener("load", () => {
+  loadUser()
+
+  // Load toggles
+  ;["autoPreview", "showSteps"].forEach(key => {
+    const saved = localStorage.getItem("pref_" + key)
+    if (saved === "0") document.getElementById(key).classList.remove("on")
+  })
+
+  // Load interface language
+  const lang = localStorage.getItem("pref_interfaceLang") || "english"
+  document.getElementById("interfaceLang").value = lang
+
+  document.getElementById("interfaceLang").addEventListener("change", (e) => {
+    localStorage.setItem("pref_interfaceLang", e.target.value)
+    showToast("Interface language saved")
+  })
+
+  document.getElementById("defaultTheme").addEventListener("change", (e) => {
+    localStorage.setItem("pref_defaultTheme", e.target.value)
+    showToast("Default theme saved")
+  })
+})
 </script>
+
 </body>
 </html>
