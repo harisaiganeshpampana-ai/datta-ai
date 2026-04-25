@@ -1093,6 +1093,22 @@ body.dashboard .builder-view { display: none; }
   flex: 1;
   background: white;
   border: none;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+#previewFrame {
+  display: none;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  background: white;
+  border: none;
+}
+
+#previewFrame.active {
+  display: block !important;
 }
 
 /* BUILDING ANIMATION (shown while AI generates) */
@@ -2122,8 +2138,13 @@ function goToBuilder() {
     const frame = document.getElementById("previewFrame")
     document.getElementById("buildingOverlay").style.display = "none"
     frame.style.display = "block"
-    const doc = frame.contentDocument || frame.contentWindow.document
-    doc.open(); doc.write(currentCode); doc.close()
+    frame.classList.add("active")
+    try {
+      const doc = frame.contentDocument || frame.contentWindow.document
+      doc.open(); doc.write(currentCode); doc.close()
+    } catch(e) {
+      frame.srcdoc = currentCode
+    }
   } else {
     document.getElementById("previewFrame").style.display = "none"
     document.getElementById("buildingOverlay").style.display = "flex"
@@ -2269,8 +2290,13 @@ function updatePreview() {
   const frame = document.getElementById("previewFrame")
   document.getElementById("buildingOverlay").style.display = "none"
   frame.style.display = "block"
-  const doc = frame.contentDocument || frame.contentWindow.document
-  doc.open(); doc.write(code); doc.close()
+  frame.classList.add("active")
+  try {
+    const doc = frame.contentDocument || frame.contentWindow.document
+    doc.open(); doc.write(code); doc.close()
+  } catch(e) {
+    frame.srcdoc = code
+  }
   showToast("Preview updated", "success")
 }
 
@@ -2278,6 +2304,7 @@ function updatePreview() {
 function showBuildingAnimation() {
   const overlay = document.getElementById("buildingOverlay")
   const frame = document.getElementById("previewFrame")
+  frame.classList.remove("active")
   frame.style.display = "none"
   overlay.style.display = "flex"
   document.getElementById("buildingText").textContent = "Building your app..."
@@ -2429,12 +2456,22 @@ Return ONLY the HTML in a \`\`\`html code block.`
       currentCode = code
       document.getElementById("codeEditor").value = code
 
-      // Show preview
-      hideBuildingAnimation()
+      // Show preview - hide building animation, show iframe
+      document.getElementById("buildingOverlay").style.display = "none"
       const frame = document.getElementById("previewFrame")
       frame.style.display = "block"
-      const doc = frame.contentDocument || frame.contentWindow.document
-      doc.open(); doc.write(code); doc.close()
+      frame.classList.add("active")
+
+      // Write code to iframe
+      try {
+        const doc = frame.contentDocument || frame.contentWindow.document
+        doc.open()
+        doc.write(code)
+        doc.close()
+      } catch(writeErr) {
+        // Fallback: use srcdoc
+        frame.srcdoc = code
+      }
 
       const msgText = fullText.replace(/```[\s\S]*?```/g, "").trim() || "Your app is ready! Check the preview."
       const codeKB = Math.round(code.length/1024)
