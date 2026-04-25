@@ -1,8 +1,13 @@
 {
-  "routes": [
+  "version": 2,
+  "buildCommand": "",
+  "outputDirectory": ".",
+  "installCommand": "",
+  "framework": null,
+  "rewrites": [
     {
-      "src": "/.well-known/(.*)",
-      "dest": "/public/.well-known/$1"
+      "source": "/apps/:username/:slug",
+      "destination": "https://datta-ai-server.onrender.com/apps/:username/:slug"
     }
   ]
 }
