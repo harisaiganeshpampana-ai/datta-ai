@@ -500,6 +500,94 @@ body.dashboard .builder-view { display: none; }
   transform: none;
 }
 
+/* TEMPLATES SECTION */
+.templates-section {
+  margin: 40px 0 30px;
+}
+
+.templates-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.templates-header h2 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.template-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 16px;
+  cursor: pointer;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+}
+
+.template-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--gradient-from, #4d7cff) 0%, var(--gradient-to, #a855f7) 100%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 0;
+}
+
+.template-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: 0 12px 30px rgba(77, 124, 255, 0.2);
+}
+
+.template-card:hover::before { opacity: 0.08; }
+
+.template-icon {
+  font-size: 32px;
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+.template-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.template-desc {
+  font-size: 11px;
+  color: var(--text3);
+  line-height: 1.4;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 480px) {
+  .templates-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .template-card { padding: 14px 12px; }
+  .template-icon { font-size: 26px; }
+  .template-name { font-size: 12px; }
+  .template-desc { font-size: 10px; }
+}
+
 /* PROJECTS SECTION */
 .projects-section {
   margin-top: 50px;
@@ -733,10 +821,12 @@ body.dashboard .builder-view { display: none; }
 
 /* MOBILE LAYOUT */
 @media (max-width: 900px) {
-  .topbar { padding: 0 12px; }
+  .topbar { padding: 0 10px; gap: 6px; }
   .app-title { display: none; }
   .tb-btn span:not(.tb-btn-keep) { display: none; }
   .tb-btn { padding: 8px 10px; }
+  .credits-display { font-size: 11px; padding: 5px 9px; }
+  .credits-display svg { width: 11px; height: 11px; }
 
   .builder-view {
     grid-template-columns: 1fr;
@@ -753,24 +843,146 @@ body.dashboard .builder-view { display: none; }
     display: flex;
   }
 
-  .dash-hero h1 { font-size: 28px; }
-  .main-prompt textarea { font-size: 15px; padding: 14px 14px 6px; }
+  /* Settings menu — fixed position on mobile */
+  .settings-menu {
+    right: 8px;
+    top: 56px;
+    min-width: 180px;
+  }
+
+  /* Model dropdown - keep within screen */
+  .model-dropdown {
+    min-width: 220px;
+    max-width: calc(100vw - 30px);
+    left: auto;
+    right: 0;
+  }
+
+  /* Modal - fix sizing */
+  .modal {
+    padding: 24px 18px;
+    max-width: calc(100vw - 24px);
+    width: calc(100vw - 24px);
+    margin: 12px;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+  }
+
+  .modal h3 { font-size: 17px; }
+  .modal p { font-size: 12px; }
+  .modal-input { padding: 10px 12px; font-size: 13px; }
+
+  .url-preview {
+    font-size: 10px;
+    padding: 8px 10px;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+  }
+
+  /* Building animation - smaller on mobile */
+  .building-orb { width: 90px; height: 90px; font-size: 42px; border-radius: 24px; margin-bottom: 20px; }
+  .building-orb::before { inset: -16px; }
+  .building-orb::after { inset: -32px; }
+  .building-text { font-size: 16px; }
+  .building-subtext { font-size: 12px; }
+  .file-progress { max-width: 100%; padding: 0 12px; }
+  .file-row { padding: 7px 11px; font-size: 11px; }
+
+  /* Dashboard mobile */
+  .dashboard-view { padding: 24px 14px 60px; }
+  .dash-hero h1 { font-size: 26px; letter-spacing: -1px; }
+  .dash-hero p { font-size: 14px; }
+  .main-prompt textarea { font-size: 15px; padding: 14px 14px 6px; min-height: 70px; }
+  .main-prompt-bottom { padding: 8px; }
+  .main-create-btn { padding: 9px 16px; font-size: 13px; }
   .projects-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
   .project-card { padding: 14px; }
   .search-bar { width: 100%; }
   .projects-header { flex-direction: column; align-items: stretch; }
+
+  /* Code editor smaller font */
+  #codeEditor { font-size: 11.5px; padding: 12px; }
+
+  /* Code toolbar */
+  .code-toolbar { padding: 6px 10px; }
+  .code-btn { padding: 4px 8px; font-size: 10px; }
+
+  /* Toast */
+  .toast { font-size: 12px; padding: 8px 16px; max-width: calc(100vw - 32px); }
+
+  /* Published bar */
+  .published-bar { padding: 8px 12px; font-size: 11px; flex-wrap: wrap; }
+  .published-bar .url { font-size: 10px; padding: 5px 10px; min-width: 60%; }
+  .copy-url-btn { font-size: 10px; padding: 5px 8px; }
+}
+
+@media (max-width: 600px) {
+  .projects-grid { grid-template-columns: 1fr !important; }
 }
 
 @media (max-width: 480px) {
-  .dashboard-view { padding: 20px 16px 60px; }
-  .dash-hero { margin-bottom: 30px; }
-  .dash-hero h1 { font-size: 24px; }
-  .main-prompt { margin-bottom: 30px; }
-  .projects-grid { grid-template-columns: 1fr; }
-  .topbar { padding: 0 10px; }
-  .logo { font-size: 14px; gap: 8px; }
+  .dashboard-view { padding: 18px 12px 50px; }
+  .dash-hero { margin-bottom: 24px; }
+  .dash-hero h1 { font-size: 22px; line-height: 1.15; }
+  .dash-hero p { font-size: 13px; margin-bottom: 22px; }
+  .main-prompt { margin-bottom: 24px; border-radius: 16px; padding: 6px; }
+  .main-prompt textarea { padding: 12px 12px 4px; font-size: 14px; }
+
+  .topbar { padding: 0 8px; }
+  .logo { font-size: 13px; gap: 7px; }
+  .logo span { display: none; }
   .logo-mark { width: 28px; height: 28px; font-size: 13px; }
-  .tb-right { gap: 6px; }
+  .tb-right { gap: 4px; }
+  .tb-btn { padding: 7px 8px; }
+  .tb-icon { width: 32px; height: 32px; }
+  .tb-icon svg { width: 14px; height: 14px; }
+
+  /* Mobile tabs slimmer */
+  .mobile-tab { padding: 9px 8px; font-size: 11px; }
+  .mobile-tab svg { width: 12px; height: 12px; }
+
+  /* Chat panel mobile */
+  .chat-messages { padding: 12px 10px; }
+  .msg-user .bubble, .msg-ai .bubble { font-size: 12px; padding: 8px 12px; }
+  .msg-ai .avatar { width: 24px; height: 24px; font-size: 10px; }
+  .chat-input-wrap { padding: 8px; }
+  .chat-input { padding: 8px; }
+  #promptInput { font-size: 12px; }
+  .send-btn { width: 30px; height: 30px; }
+  .send-btn svg { width: 13px; height: 13px; }
+
+  /* Welcome orb */
+  .welcome-orb { width: 48px; height: 48px; font-size: 24px; }
+  .welcome h2 { font-size: 16px; }
+  .welcome p { font-size: 11px; max-width: 240px; }
+  .example { padding: 8px 10px; font-size: 11px; }
+
+  /* Modal - smaller */
+  .modal { padding: 20px 16px; }
+  .modal h3 { font-size: 16px; margin-bottom: 6px; }
+  .modal p { font-size: 11px; margin-bottom: 14px; }
+  .modal-actions { gap: 6px; }
+  .modal-actions .tb-btn { font-size: 12px; padding: 9px; }
+
+  /* Building animation - even smaller */
+  .building-orb { width: 70px; height: 70px; font-size: 32px; border-radius: 20px; }
+  .building-text { font-size: 14px; }
+
+  /* Project cards */
+  .project-card { padding: 12px; }
+  .project-name { font-size: 13px; }
+  .project-meta { font-size: 10px; }
+  .project-icon { width: 32px; height: 32px; font-size: 14px; }
+
+  /* Toast */
+  .toast { font-size: 11px; padding: 8px 14px; }
+}
+
+/* Very small phones */
+@media (max-width: 360px) {
+  .dash-hero h1 { font-size: 20px; }
+  .modal { padding: 16px 12px; }
+  .building-orb { width: 60px; height: 60px; font-size: 28px; }
 }
 
 /* CHAT PANEL */
@@ -1714,6 +1926,17 @@ body.dashboard .builder-view { display: none; }
       </div>
     </div>
 
+    <!-- TEMPLATES SECTION -->
+    <div class="templates-section">
+      <div class="templates-header">
+        <h2>Start from a template</h2>
+        <span style="font-size:12px;color:var(--text3);">Click any to instantly build</span>
+      </div>
+      <div class="templates-grid" id="templatesGrid">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
     <!-- PROJECTS SECTION -->
     <div class="projects-section">
       <div class="projects-header">
@@ -1920,6 +2143,7 @@ window.addEventListener('load', () => {
   loadDashboard()
   loadCredits()
   updateModelLabels()
+  renderTemplates()
 })
 
 // ══════ STATE ══════
@@ -1950,7 +2174,8 @@ const PLAN_MODELS = {
   starter: ["fast", "balanced", "smart"],
   plus:    ["fast", "balanced", "smart", "pro"],
   pro:     ["fast", "balanced", "smart", "pro", "ultra"],
-  team:    ["fast", "balanced", "smart", "pro", "ultra"]
+  team:    ["fast", "balanced", "smart", "pro", "ultra"],
+  admin:   ["fast", "balanced", "smart", "pro", "ultra"]
 }
 
 // ══════ HELPERS ══════
@@ -2055,16 +2280,31 @@ async function loadCredits() {
     const data = await res.json()
 
     userPlan = data.plan || "free"
-    const planConfig = {
-      free: 5, starter: 50, plus: 200, pro: 500, team: 1500
+    const isAdmin = !!data.isAdmin
+
+    // Admin bypass — unlimited everything
+    if (isAdmin) {
+      userPlan = "admin"
+      userCredits = "∞"
+    } else {
+      const planConfig = {
+        free: 5, starter: 50, plus: 200, pro: 500, team: 1500
+      }
+      const dailyLimit = planConfig[userPlan] || 5
+      const used = data.used || 0
+      userCredits = Math.max(0, dailyLimit - used)
     }
-    const dailyLimit = planConfig[userPlan] || 5
-    const used = data.used || 0
-    userCredits = Math.max(0, dailyLimit - used)
 
     const display = document.getElementById("creditsDisplay")
     const count = document.getElementById("creditsCount")
-    if (count) count.textContent = userCredits + " / " + dailyLimit
+    if (count) {
+      if (isAdmin) {
+        count.textContent = "∞ Admin"
+      } else {
+        const planConfig = { free: 5, starter: 50, plus: 200, pro: 500, team: 1500 }
+        count.textContent = userCredits + " / " + (planConfig[userPlan] || 5)
+      }
+    }
     if (display && document.body.classList.contains("builder")) {
       display.style.display = "inline-flex"
     }
@@ -2092,6 +2332,52 @@ function logout() {
     localStorage.removeItem("datta_user")
     window.location.href = "/"
   }
+}
+
+// ══════ TEMPLATES ══════
+const TEMPLATES = [
+  { icon: "✅", name: "Todo App", desc: "Tasks with localStorage", prompt: "Build a beautiful todo app with dark theme, add/delete/complete tasks, save to localStorage, smooth animations, drag to reorder", from: "#4d7cff", to: "#a855f7" },
+  { icon: "🧮", name: "Calculator", desc: "Scientific calculator", prompt: "Build a stunning calculator with scientific functions, beautiful animations, dark theme, history of calculations, keyboard support", from: "#06b6d4", to: "#3b82f6" },
+  { icon: "🎨", name: "Portfolio", desc: "Personal portfolio site", prompt: "Build a modern portfolio website with hero section, about, projects grid, skills, contact form, smooth scroll, dark theme with gradients", from: "#a855f7", to: "#ec4899" },
+  { icon: "📝", name: "Blog Site", desc: "Modern blog layout", prompt: "Build a beautiful blog website with article cards, hero post, categories, search, dark theme, modern typography", from: "#10b981", to: "#06b6d4" },
+  { icon: "🛒", name: "E-commerce", desc: "Product showcase", prompt: "Build a modern e-commerce product page with hero image, gallery, add to cart, related products, reviews section, dark elegant theme", from: "#f59e0b", to: "#ef4444" },
+  { icon: "💬", name: "Chat UI", desc: "Messaging interface", prompt: "Build a beautiful chat interface like WhatsApp/Telegram with conversation list sidebar, message bubbles, typing indicator, dark theme", from: "#8b5cf6", to: "#3b82f6" },
+  { icon: "🍽️", name: "Restaurant", desc: "Restaurant menu site", prompt: "Build a restaurant website with hero, menu sections with photos, about, reservations form, contact, beautiful food photography layout", from: "#f97316", to: "#dc2626" },
+  { icon: "📊", name: "Dashboard", desc: "Analytics dashboard", prompt: "Build a modern SaaS analytics dashboard with sidebar, stats cards, charts using SVG, recent activity, user table, dark theme with gradients", from: "#3b82f6", to: "#8b5cf6" },
+  { icon: "🎮", name: "Snake Game", desc: "Classic snake game", prompt: "Build a classic snake game with smooth animations, score tracking, high score in localStorage, beautiful retro style, mobile swipe controls", from: "#10b981", to: "#84cc16" },
+  { icon: "⏱️", name: "Pomodoro Timer", desc: "Focus timer", prompt: "Build a pomodoro timer with 25/5 minute cycles, task list, sound notifications, beautiful circular progress animation, dark theme", from: "#dc2626", to: "#f97316" },
+  { icon: "🌐", name: "Landing Page", desc: "SaaS landing page", prompt: "Build a stunning SaaS landing page with hero, features grid, pricing table, testimonials, footer, smooth animations, dark theme with electric blue accents", from: "#4d7cff", to: "#06b6d4" },
+  { icon: "🎵", name: "Music Player", desc: "Audio player UI", prompt: "Build a beautiful music player UI with playlist sidebar, now playing area with album art, controls, progress bar, equalizer animation, dark theme", from: "#ec4899", to: "#a855f7" },
+  { icon: "🌦️", name: "Weather App", desc: "Weather forecast UI", prompt: "Build a beautiful weather app UI with current weather hero, hourly forecast, 7-day forecast, animated weather icons, gradient background that changes with weather", from: "#06b6d4", to: "#0ea5e9" },
+  { icon: "📅", name: "Calendar", desc: "Event calendar", prompt: "Build a beautiful calendar app with month view, add events with colors, today highlighted, smooth navigation, modal for event details, dark theme", from: "#8b5cf6", to: "#ec4899" },
+  { icon: "📓", name: "Notes App", desc: "Note-taking app", prompt: "Build a beautiful notes app with sidebar list, rich text editing, tags, search, save to localStorage, markdown support, dark theme", from: "#84cc16", to: "#10b981" },
+  { icon: "🚀", name: "3D Showcase", desc: "Three.js 3D scene", prompt: "Build a stunning 3D website using Three.js with floating animated geometric shapes, particles, mouse-follow camera, gradient lighting, dark futuristic theme", from: "#4d7cff", to: "#a855f7" },
+]
+
+function renderTemplates() {
+  const grid = document.getElementById("templatesGrid")
+  if (!grid) return
+  grid.innerHTML = TEMPLATES.map((t, i) => `
+    <button class="template-card" style="--gradient-from:${t.from};--gradient-to:${t.to};" onclick="useTemplate(${i})">
+      <span class="template-icon">${t.icon}</span>
+      <div class="template-name">${t.name}</div>
+      <div class="template-desc">${t.desc}</div>
+    </button>
+  `).join("")
+}
+
+function useTemplate(index) {
+  const t = TEMPLATES[index]
+  if (!t) return
+
+  // Auto-fill the main prompt and trigger creation
+  document.getElementById("mainPrompt").value = t.prompt
+  pendingPrompt = t.prompt
+
+  // Pre-fill name
+  document.getElementById("projectNameInput").value = t.name
+  document.getElementById("nameModal").classList.add("show")
+  setTimeout(() => document.getElementById("projectNameInput").select(), 100)
 }
 
 // ══════ DASHBOARD ══════
