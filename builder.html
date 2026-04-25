@@ -2271,14 +2271,42 @@ function renderChatHistory() {
 
 // ══════ EXTRACT CODE ══════
 function extractCode(text) {
-  const htmlMatch = text.match(/```(?:html|HTML)\n([\s\S]*?)```/)
-  if (htmlMatch) return htmlMatch[1].trim()
-  const anyFence = text.match(/```[\w]*\n([\s\S]*?)```/)
-  if (anyFence) {
-    const content = anyFence[1].trim()
-    if (content.includes("<!DOCTYPE") || content.includes("<html")) return content
+  if (!text) return null
+
+  // Method 1: Look for ```html block (with or without newline)
+  let m = text.match(/```\s*html\s*\n?([\s\S]*?)```/i)
+  if (m && m[1].trim()) return m[1].trim()
+
+  // Method 2: Any code fence with HTML content
+  m = text.match(/```[\w]*\s*\n?([\s\S]*?)```/)
+  if (m && m[1].trim()) {
+    const content = m[1].trim()
+    if (content.includes("<!DOCTYPE") || content.includes("<html") || content.includes("<head") || content.includes("<body")) {
+      return content
+    }
   }
-  if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) return text.trim()
+
+  // Method 3: Find <!DOCTYPE or <html anywhere in text - extract from there
+  const doctypeMatch = text.match(/<!DOCTYPE[\s\S]+<\/html>/i)
+  if (doctypeMatch) return doctypeMatch[0]
+
+  const htmlMatch = text.match(/<html[\s\S]+<\/html>/i)
+  if (htmlMatch) return htmlMatch[0]
+
+  // Method 4: If text starts with HTML tag, use whole thing
+  const trimmed = text.trim()
+  if (trimmed.startsWith("<!DOCTYPE") || trimmed.startsWith("<html") || trimmed.startsWith("<head")) {
+    return trimmed
+  }
+
+  // Method 5: Find ANY <body> tag - wrap it as full HTML
+  const bodyMatch = text.match(/<body[\s\S]+<\/body>/i)
+  if (bodyMatch) {
+    const styleMatch = text.match(/<style[\s\S]+<\/style>/i)
+    const scriptMatch = text.match(/<script[\s\S]+<\/script>/i)
+    return `<!DOCTYPE html>\n<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">${styleMatch ? styleMatch[0] : ""}</head>${bodyMatch[0]}${scriptMatch && !bodyMatch[0].includes(scriptMatch[0]) ? scriptMatch[0] : ""}</html>`
+  }
+
   return null
 }
 
@@ -2433,25 +2461,32 @@ Return ONLY the HTML in a \`\`\`html code block.`
     if (!res.ok) throw new Error("Server error: " + res.status)
 
     const reader = res.body.getReader()
-    const decoder = new TextDecoder()
+    const decoder = new TextDecoder("utf-8", { stream: true })
     let fullText = ""
     const bubble = aiDiv.querySelector(".bubble")
 
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
-      const chunk = decoder.decode(value)
-      if (chunk.includes("__DATTA_CHAT_ID__") || chunk.includes("CHATID")) {
-        const marker = chunk.includes("__DATTA_CHAT_ID__") ? "__DATTA_CHAT_ID__" : "CHATID"
-        const parts = chunk.split(marker)
-        if (parts[0]) fullText += parts[0]
-        currentChatId = (parts[1] || "").trim()
-      } else {
-        fullText += chunk
-      }
+      // stream:true keeps multi-byte chars whole across chunks
+      const chunk = decoder.decode(value, { stream: true })
+      fullText += chunk
+    }
+    // Final flush
+    fullText += decoder.decode()
+
+    // Extract chat ID from end of stream (CHATID marker is appended at very end by server)
+    const chatIdMatch = fullText.match(/CHATID([a-f0-9]{20,})\s*$/i)
+    if (chatIdMatch) {
+      currentChatId = chatIdMatch[1]
+      fullText = fullText.slice(0, fullText.lastIndexOf("CHATID"))
     }
 
+    console.log("[BUILDER] Got", fullText.length, "chars total")
+
     const code = extractCode(fullText)
+    console.log("[BUILDER] Extracted code:", code ? code.length + " chars" : "NULL")
+
     if (code) {
       currentCode = code
       document.getElementById("codeEditor").value = code
@@ -2489,7 +2524,11 @@ Return ONLY the HTML in a \`\`\`html code block.`
       // Refresh credits
       loadCredits()
     } else {
-      bubble.innerHTML = `<div style="font-size:13px;line-height:1.5;">${marked.parse(fullText)}</div>`
+      // No code extracted - show full response and ALSO put it in code editor
+      // so user can see what was returned
+      bubble.innerHTML = `<div style="font-size:13px;line-height:1.5;">${marked.parse(fullText.slice(0, 2000))}</div>
+        <div style="margin-top:8px;font-size:11px;color:#ff9955;">⚠️ Could not extract HTML. See Code tab for raw response.</div>`
+      document.getElementById("codeEditor").value = fullText
       chatHistory.push({ role: "assistant", content: fullText.slice(0, 500) })
       saveProject()
       hideBuildingAnimation()
