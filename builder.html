@@ -2524,11 +2524,32 @@ Return ONLY the HTML in a \`\`\`html code block.`
       // Refresh credits
       loadCredits()
     } else {
-      // No code extracted - show full response and ALSO put it in code editor
-      // so user can see what was returned
-      bubble.innerHTML = `<div style="font-size:13px;line-height:1.5;">${marked.parse(fullText.slice(0, 2000))}</div>
-        <div style="margin-top:8px;font-size:11px;color:#ff9955;">⚠️ Could not extract HTML. See Code tab for raw response.</div>`
-      document.getElementById("codeEditor").value = fullText
+      // No code extracted - but still try to save SOMETHING if response has HTML
+      // so user can see what was returned and Publish/Download work
+      if (fullText && fullText.length > 200 && (fullText.includes("<") || fullText.includes("```"))) {
+        // Last resort: stuff full response into currentCode wrapped in HTML
+        currentCode = fullText.includes("<!DOCTYPE") || fullText.includes("<html")
+          ? fullText
+          : `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Output</title><style>body{font-family:system-ui;padding:20px;background:#0a0a18;color:#fff;}pre{background:#1a1a2e;padding:16px;border-radius:8px;overflow:auto;}</style></head><body><pre>${fullText.replace(/</g,'&lt;')}</pre></body></html>`
+        document.getElementById("codeEditor").value = currentCode
+
+        const frame = document.getElementById("previewFrame")
+        document.getElementById("buildingOverlay").style.display = "none"
+        frame.style.display = "block"
+        frame.classList.add("active")
+        try {
+          const doc = frame.contentDocument || frame.contentWindow.document
+          doc.open(); doc.write(currentCode); doc.close()
+        } catch(e) { frame.srcdoc = currentCode }
+
+        bubble.innerHTML = `<div style="font-size:13px;line-height:1.5;">${marked.parse(fullText.slice(0, 2000))}</div>
+          <div style="margin-top:8px;font-size:11px;color:#ff9955;">⚠️ Couldn't auto-extract HTML. Raw response shown in preview & code tab. You can edit it.</div>`
+      } else {
+        bubble.innerHTML = `<div style="font-size:13px;line-height:1.5;">${marked.parse(fullText.slice(0, 2000))}</div>
+          <div style="margin-top:8px;font-size:11px;color:#ff9955;">⚠️ AI didn't return code. Try rephrasing or use Pro model.</div>`
+        document.getElementById("codeEditor").value = fullText
+      }
+
       chatHistory.push({ role: "assistant", content: fullText.slice(0, 500) })
       saveProject()
       hideBuildingAnimation()
