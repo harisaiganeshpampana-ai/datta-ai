@@ -531,7 +531,11 @@ const SubscriptionSchema = new mongoose.Schema({
   ultraMiniExpiry: Date,
   extraMessages: { type: Number, default: 0 },
   active: { type: Boolean, default: true },
-  // FAMILY ACCOUNT — owner shares plan with up to 4 family members
+  // CREDIT SYSTEM (for app builder)
+  credits: { type: Number, default: 50 },              // Current available credits
+  creditsTotal: { type: Number, default: 50 },         // Total credits granted this period
+  creditsRefillAt: { type: Date, default: Date.now },  // When credits last refilled
+  // FAMILY ACCOUNT
   familyMembers: [{
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     name: String,
@@ -539,7 +543,7 @@ const SubscriptionSchema = new mongoose.Schema({
     addedAt: { type: Date, default: Date.now }
   }],
   isFamilyPlan: { type: Boolean, default: false },
-  familyOwnerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" }  // if this user is a member, not owner
+  familyOwnerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
 })
 const Subscription = mongoose.model("Subscription", SubscriptionSchema)
 
@@ -626,22 +630,46 @@ PublishedAppSchema.index({ userId: 1, slug: 1 }, { unique: true })
 const PublishedApp = mongoose.models.PublishedApp || mongoose.model("PublishedApp", PublishedAppSchema)
 
 
+// ══════ CREDIT-BASED PRICING ══════
+// 1 credit = 1 app build OR 1 feature add. Different LLMs cost different amounts.
 const planLimits = {
-  // ── ACTIVE PLANS ────────────────────────────────────────────
-  free:        { messages: 10,     resetHours: 24, models: ["d21","dcode","dthink"],       price: 0,   priority: 0, dcodeLimit: 3   },
-  starter:     { messages: 40,     resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 29,  priority: 1, dcodeLimit: 5   },
-  plus:        { messages: 300,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 299, priority: 2, dcodeLimit: 30  },
-  pro:         { messages: 700,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 499, priority: 3, dcodeLimit: 60  },
-  ultimate:    { messages: 1500,   resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 799, priority: 4, dcodeLimit: 300 },
+  // ── ACTIVE PLANS (credit-based) ──────────────────────────────
+  free:        { credits: 5,    resetHours: 24, models: ["fast","balanced"],          price: 0,    priority: 0 },
+  starter:     { credits: 50,   resetHours: 24, models: ["fast","balanced","smart"],  price: 49,   priority: 1 },
+  plus:        { credits: 200,  resetHours: 24, models: ["fast","balanced","smart","pro"], price: 299, priority: 2 },
+  pro:         { credits: 500,  resetHours: 24, models: ["fast","balanced","smart","pro","ultra"], price: 599, priority: 3 },
+  team:        { credits: 1500, resetHours: 24, models: ["all"], price: 1499, priority: 4, teamSize: 5 },
+
   // ── LEGACY (keep for existing subscribers) ──────────────────
-  "ultra-mini":{ messages: 20,     resetHours: 24, models: ["d21","dcode","dthink"],       price: 10,  priority: 1, extraMessages: 15, expiresHours: 24 },
-  standard:    { messages: 120,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 149, priority: 2 },
-  mini:        { messages: 200,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 199, priority: 2 },
-  max:         { messages: 2000,   resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 1999,priority: 5 },
-  ultramax:    { messages: 999999, resetHours: 0,  models: ["all"],       price: 0,   priority: 6 },
-  basic:       { messages: 500,    resetHours: 24, models: ["d21","d54","dcode","dthink"], price: 499, priority: 3 },
-  enterprise:  { messages: 999999, resetHours: 0,  models: ["all"],       price: 0,   priority: 6 }
+  "ultra-mini":{ credits: 20,   resetHours: 24, models: ["fast","balanced"], price: 10,  priority: 1, expiresHours: 24 },
+  standard:    { credits: 120,  resetHours: 24, models: ["fast","balanced","smart"], price: 149, priority: 2 },
+  mini:        { credits: 200,  resetHours: 24, models: ["fast","balanced","smart"], price: 199, priority: 2 },
+  max:         { credits: 2000, resetHours: 24, models: ["all"], price: 1999, priority: 5 },
+  ultramax:    { credits: 999999, resetHours: 0, models: ["all"], price: 0, priority: 6 },
+  basic:       { credits: 500,  resetHours: 24, models: ["fast","balanced","smart"], price: 499, priority: 3 },
+  enterprise:  { credits: 999999, resetHours: 0, models: ["all"], price: 0, priority: 6 },
+  ultimate:    { credits: 1500, resetHours: 24, models: ["all"], price: 799, priority: 4 },
+
+  // Legacy 'messages' key for old code references (alias)
+  messages: 0
 }
+
+// Credit cost per model per request
+const MODEL_CREDIT_COST = {
+  "fast":     1,   // Llama 3.3 70B (free tier)
+  "balanced": 2,   // Gemini 2.5 Flash
+  "smart":    3,   // Claude / GPT
+  "pro":      5,   // Gemini 2.5 Pro
+  "ultra":    8    // Top-tier paid model
+}
+
+// Backward compat — older code uses .messages
+Object.values(planLimits).forEach(p => {
+  if (typeof p === "object" && p.credits !== undefined && p.messages === undefined) {
+    p.messages = p.credits  // alias so existing checks work
+    p.dcodeLimit = p.credits  // alias
+  }
+})
 const rateLimitStore = {}
 
 // ── ABUSE PROTECTION ─────────────────────────────────────────────────────────
@@ -3234,6 +3262,39 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }
 
     var isDattaCode = (resolvedModel === "llama-3.3-70b-versatile" && (chosenModel === "datta-code" || modelKey === "dcode"))
+
+    // ══════ CREDIT SYSTEM FOR APP BUILDER ══════
+    // Credit cost depends on which LLM the user chose
+    // Tier names map to specific models:
+    //  fast     = Llama 3.3 70B (free, fastest)        → 1 credit
+    //  balanced = Gemini 2.5 Flash (default, good)     → 2 credits
+    //  smart    = Claude 3.5 Sonnet (high quality)     → 3 credits
+    //  pro      = Gemini 2.5 Pro (best for code)       → 5 credits
+    //  ultra    = GPT-4o or top-tier (best overall)    → 8 credits
+
+    var selectedLLM = req.body.selectedLLM || "pro"  // default to Gemini Pro
+
+    var creditCost = 1
+    if (selectedLLM === "fast" || selectedLLM === "llama-3.3") creditCost = 1
+    else if (selectedLLM === "balanced" || selectedLLM === "gemini-2.5-flash") creditCost = 2
+    else if (selectedLLM === "smart" || selectedLLM === "claude-sonnet") creditCost = 3
+    else if (selectedLLM === "pro" || selectedLLM === "gemini-2.5-pro") creditCost = 5
+    else if (selectedLLM === "ultra" || selectedLLM === "gpt-4o") creditCost = 8
+    else creditCost = 5  // default
+
+    if (isDattaCode && creditCost > 0) {
+      const creditCheck = await deductCredits(req.user.id, creditCost)
+      if (!creditCheck.ok) {
+        if (!res.writableEnded) {
+          res.write(`⚠️ Out of credits! You have ${creditCheck.credits} credits left. [Upgrade your plan](https://datta-ai.com/pricing.html) or wait for daily refill.`)
+          res.end()
+        }
+        cleanupRequest()
+        return
+      }
+      console.log("[CREDITS] User", req.user.id, "used", creditCost, "credits. Remaining:", creditCheck.credits)
+    }
+
     var isDattaThink = (resolvedModel === "llama-3.3-70b-versatile")
     var nonCodingModels = ["llama-3.3-70b-versatile"]
     if (isCodeTask && !isImageFile && nonCodingModels.includes(resolvedModel) && !chosenModel.startsWith("persona-")) {
@@ -3477,11 +3538,221 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }, 15000)
 
     // ── SMART ROUTING ──
-    // Code/apps → Gemini 2.5 Pro (best quality)
-    // Everything else → Gemini 2.5 Flash (cheaper but good quality)
-    // Free OpenRouter models are too weak for detailed answers
-    var useGemini = process.env.GEMINI_API_KEY && !isImageFile
-    var geminiModelToUse = isDattaCode ? "gemini-2.5-pro" : "gemini-2.5-flash"
+    // Route based on user's LLM selection (tier-based or model-name based)
+    var geminiModelToUse = "gemini-2.5-pro"
+    if (selectedLLM === "balanced" || selectedLLM === "gemini-2.5-flash") geminiModelToUse = "gemini-2.5-flash"
+    else if (selectedLLM === "pro" || selectedLLM === "gemini-2.5-pro") geminiModelToUse = "gemini-2.5-pro"
+    else if (!isDattaCode) geminiModelToUse = "gemini-2.5-flash"
+
+    var useGemini = process.env.GEMINI_API_KEY && !isImageFile && (
+      selectedLLM === "pro" || selectedLLM === "gemini-2.5-pro" ||
+      selectedLLM === "balanced" || selectedLLM === "gemini-2.5-flash" ||
+      !selectedLLM
+    )
+    var useClaudeViaOpenRouter = (selectedLLM === "smart" || selectedLLM === "claude-sonnet") && process.env.OPENROUTER_API_KEY
+    var useGPT4ViaOpenRouter = (selectedLLM === "ultra" || selectedLLM === "gpt-4o") && process.env.OPENROUTER_API_KEY
+    var useLlama = (selectedLLM === "fast" || selectedLLM === "llama-3.3")
+    var useDeepSeek = selectedLLM === "deepseek-v3" && process.env.OPENROUTER_API_KEY
+
+    // CLAUDE via OpenRouter
+    if (useClaudeViaOpenRouter && isDattaCode) {
+      try {
+        console.log("[CLAUDE] Using anthropic/claude-3.5-sonnet via OpenRouter")
+        const orResp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + process.env.OPENROUTER_API_KEY,
+            "Content-Type": "application/json",
+            "HTTP-Referer": process.env.FRONTEND_URL || "https://datta-ai.com",
+            "X-Title": "Datta AI"
+          },
+          body: JSON.stringify({
+            model: "anthropic/claude-3.5-sonnet",
+            messages: [
+              { role: "system", content: systemWithMemory },
+              { role: "user", content: safeStr(finalUserContent) }
+            ],
+            max_tokens: 16000,
+            stream: true
+          })
+        })
+
+        if (orResp.ok) {
+          const reader = orResp.body.getReader()
+          const decoder = new TextDecoder()
+          let claudeText = ""
+          let buffer = ""
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            buffer += decoder.decode(value, { stream: true })
+            const lines = buffer.split("\n")
+            buffer = lines.pop() || ""
+            for (const line of lines) {
+              if (!line.startsWith("data: ")) continue
+              const data = line.slice(6).trim()
+              if (data === "[DONE]") continue
+              try {
+                const j = JSON.parse(data)
+                const token = j.choices?.[0]?.delta?.content || ""
+                if (token) {
+                  claudeText += token
+                  if (!res.writableEnded) res.write(token)
+                }
+              } catch(e) {}
+            }
+          }
+
+          if (claudeText && claudeText.length > 50 && !res.writableEnded) {
+            chat.messages.push({ role: "assistant", content: claudeText })
+            await chat.save()
+            await new Promise(r => setTimeout(r, 100))
+            res.write("\n\n__DATTA_CHAT_ID__" + chat._id)
+            res.end()
+            cleanupRequest()
+            console.log("[CLAUDE] Success - length:", claudeText.length)
+            return
+          }
+        } else {
+          console.warn("[CLAUDE] HTTP", orResp.status)
+        }
+      } catch(e) {
+        console.warn("[CLAUDE] Failed:", e.message, "— falling back to Gemini")
+      }
+    }
+
+    // DeepSeek / Llama via OpenRouter (free)
+    // GPT-4o via OpenRouter (ULTRA tier — 8 credits)
+    if (useGPT4ViaOpenRouter && isDattaCode) {
+      try {
+        console.log("[GPT-4o] Using openai/gpt-4o via OpenRouter")
+        const orResp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + process.env.OPENROUTER_API_KEY,
+            "Content-Type": "application/json",
+            "HTTP-Referer": process.env.FRONTEND_URL || "https://datta-ai.com",
+            "X-Title": "Datta AI"
+          },
+          body: JSON.stringify({
+            model: "openai/gpt-4o",
+            messages: [
+              { role: "system", content: systemWithMemory },
+              { role: "user", content: safeStr(finalUserContent) }
+            ],
+            max_tokens: 16000,
+            stream: true
+          })
+        })
+
+        if (orResp.ok) {
+          const reader = orResp.body.getReader()
+          const decoder = new TextDecoder()
+          let gptText = ""
+          let buffer = ""
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            buffer += decoder.decode(value, { stream: true })
+            const lines = buffer.split("\n")
+            buffer = lines.pop() || ""
+            for (const line of lines) {
+              if (!line.startsWith("data: ")) continue
+              const data = line.slice(6).trim()
+              if (data === "[DONE]") continue
+              try {
+                const j = JSON.parse(data)
+                const token = j.choices?.[0]?.delta?.content || ""
+                if (token) {
+                  gptText += token
+                  if (!res.writableEnded) res.write(token)
+                }
+              } catch(e) {}
+            }
+          }
+
+          if (gptText && gptText.length > 50 && !res.writableEnded) {
+            chat.messages.push({ role: "assistant", content: gptText })
+            await chat.save()
+            await new Promise(r => setTimeout(r, 100))
+            res.write("\n\n__DATTA_CHAT_ID__" + chat._id)
+            res.end()
+            cleanupRequest()
+            return
+          }
+        } else {
+          console.warn("[GPT-4o] Failed, falling back to Gemini Pro:", orResp.status)
+        }
+      } catch(e) {
+        console.warn("[GPT-4o] Error, falling back:", e.message)
+      }
+    }
+
+    if ((useDeepSeek || useLlama) && isDattaCode) {
+      const orModel = useDeepSeek ? "deepseek/deepseek-chat-v3.1:free" : "meta-llama/llama-3.3-70b-instruct:free"
+      try {
+        console.log("[OR FREE] Using", orModel)
+        const orResp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + process.env.OPENROUTER_API_KEY,
+            "Content-Type": "application/json",
+            "HTTP-Referer": process.env.FRONTEND_URL || "https://datta-ai.com",
+            "X-Title": "Datta AI"
+          },
+          body: JSON.stringify({
+            model: orModel,
+            messages: [
+              { role: "system", content: systemWithMemory },
+              { role: "user", content: safeStr(finalUserContent) }
+            ],
+            max_tokens: 8000,
+            stream: true
+          })
+        })
+
+        if (orResp.ok) {
+          const reader = orResp.body.getReader()
+          const decoder = new TextDecoder()
+          let orText = ""
+          let buffer = ""
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            buffer += decoder.decode(value, { stream: true })
+            const lines = buffer.split("\n")
+            buffer = lines.pop() || ""
+            for (const line of lines) {
+              if (!line.startsWith("data: ")) continue
+              const data = line.slice(6).trim()
+              if (data === "[DONE]") continue
+              try {
+                const j = JSON.parse(data)
+                const token = j.choices?.[0]?.delta?.content || ""
+                if (token) {
+                  orText += token
+                  if (!res.writableEnded) res.write(token)
+                }
+              } catch(e) {}
+            }
+          }
+
+          if (orText && orText.length > 50 && !res.writableEnded) {
+            chat.messages.push({ role: "assistant", content: orText })
+            await chat.save()
+            await new Promise(r => setTimeout(r, 100))
+            res.write("\n\n__DATTA_CHAT_ID__" + chat._id)
+            res.end()
+            cleanupRequest()
+            console.log("[OR FREE] Success")
+            return
+          }
+        }
+      } catch(e) {
+        console.warn("[OR FREE] Failed:", e.message)
+      }
+    }
+
     if (useGemini) {
       try {
         console.log("[GEMINI] Using", geminiModelToUse, "— isDattaCode:", isDattaCode)
@@ -4075,7 +4346,69 @@ app.get("/analytics", authMiddleware, async (req, res) => {
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "harisaiganeshpampana@gmail.com").split(",")
 function isAdmin(req) { return req.user && (ADMIN_EMAILS.includes(req.user.email) || req.user.isAdmin) }
-const PLAN_PRICES = { free:0, starter:29, standard:149, plus:299, pro:499, ultimate:799, "ultra-mini":10, mini:199, max:1999, ultramax:0, basic:499, enterprise:0 }
+// ══════ CREDIT-BASED PLANS ══════
+// Each app build = 1 credit (uses Gemini 2.5 Pro for quality)
+// Add features = 1 credit each
+// Credits refill monthly
+const PLAN_PRICES = {
+  free: 0,
+  starter: 49,
+  plus: 299,
+  pro: 599,
+  team: 1499
+}
+
+const PLAN_CREDITS = {
+  free: 5,            // 5 free credits per day (refill daily)
+  starter: 50,        // 50 credits per day
+  plus: 200,          // 200 credits per day
+  pro: 500,           // 500 credits per day
+  team: 1500          // 1500 credits per day, 5 team members
+}
+
+const PLAN_NAMES = {
+  free: "Free",
+  starter: "Starter",
+  plus: "Plus",
+  pro: "Pro",
+  team: "Team"
+}
+
+// Helper: Refill credits if month passed
+async function checkAndRefillCredits(subscription) {
+  if (!subscription) return
+  const now = new Date()
+  const lastRefill = new Date(subscription.creditsRefillAt || subscription.startDate)
+  const daysSinceRefill = (now - lastRefill) / (1000 * 60 * 60 * 24)
+
+  if (daysSinceRefill >= 30) {
+    const planCredits = PLAN_CREDITS[subscription.plan] || PLAN_CREDITS.free
+    subscription.credits = planCredits
+    subscription.creditsTotal = planCredits
+    subscription.creditsRefillAt = now
+    await subscription.save()
+    console.log("[CREDITS] Refilled for user", subscription.userId, "- new credits:", planCredits)
+  }
+}
+
+// Helper: Deduct credits for app build
+async function deductCredits(userId, amount = 1) {
+  let sub = await Subscription.findOne({ userId, active: true })
+  if (!sub) {
+    sub = await Subscription.create({
+      userId,
+      plan: "free",
+      credits: PLAN_CREDITS.free,
+      creditsTotal: PLAN_CREDITS.free,
+      creditsRefillAt: new Date()
+    })
+  }
+  await checkAndRefillCredits(sub)
+  if (sub.credits < amount) return { ok: false, credits: sub.credits, plan: sub.plan }
+  sub.credits -= amount
+  await sub.save()
+  return { ok: true, credits: sub.credits, plan: sub.plan }
+}
 
 app.get("/admin/stats", authMiddleware, async (req, res) => {
   if (!isAdmin(req)) return res.status(403).json({ error: "Not authorized" })
@@ -4426,6 +4759,45 @@ app.delete("/apps/:id", authMiddleware, async (req, res) => {
   } catch(err) {
     res.status(500).json({ error: err.message })
   }
+})
+
+// ══════ CREDITS API ══════
+app.get("/credits", authMiddleware, async (req, res) => {
+  try {
+    let sub = await Subscription.findOne({ userId: req.user.id, active: true })
+    if (!sub) {
+      sub = await Subscription.create({
+        userId: req.user.id,
+        plan: "free",
+        credits: PLAN_CREDITS.free,
+        creditsTotal: PLAN_CREDITS.free,
+        creditsRefillAt: new Date()
+      })
+    }
+    await checkAndRefillCredits(sub)
+    const planCredits = PLAN_CREDITS[sub.plan] || PLAN_CREDITS.free
+    res.json({
+      credits: sub.credits,
+      total: planCredits,
+      plan: sub.plan,
+      planName: PLAN_NAMES[sub.plan] || "Free",
+      refillsAt: new Date(new Date(sub.creditsRefillAt).getTime() + 30 * 24 * 60 * 60 * 1000)
+    })
+  } catch(err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// LLM selection — list available models
+app.get("/llm/models", authMiddleware, async (req, res) => {
+  const models = [
+    { id: "gemini-2.5-pro", name: "Datta Pro (Gemini 2.5)", provider: "Google", description: "Best quality, slowest", credits: 1, default: true },
+    { id: "gemini-2.5-flash", name: "Datta Fast (Gemini Flash)", provider: "Google", description: "Fast, good quality", credits: 1 },
+    { id: "claude-sonnet", name: "Datta Genius (Claude Sonnet)", provider: "Anthropic", description: "Most creative", credits: 2, premium: true },
+    { id: "deepseek-v3", name: "Datta Lite (DeepSeek)", provider: "DeepSeek", description: "Free, basic quality", credits: 0 },
+    { id: "llama-3.3", name: "Datta Open (Llama 3.3)", provider: "Meta", description: "Open-source", credits: 0 }
+  ]
+  res.json({ models })
 })
 
 app.get("/version", (req, res) => {
