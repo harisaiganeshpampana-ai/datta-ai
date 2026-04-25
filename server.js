@@ -2886,6 +2886,10 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     res.setHeader("Connection", "keep-alive")
     res.flushHeaders()  // send headers immediately, open the stream
 
+    // Send a single space to confirm connection is alive
+    // This prevents "0 chars" on frontend if upstream takes time
+    res.write(" ")
+
 
 
     // BROWSE URL - if message contains a URL
@@ -3563,6 +3567,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var useGemini = process.env.GEMINI_API_KEY && !isImageFile && (
       selectedLLM === "pro" || selectedLLM === "gemini-2.5-pro" ||
       selectedLLM === "balanced" || selectedLLM === "gemini-2.5-flash" ||
+      selectedLLM === "fast" || selectedLLM === "llama-3.3" ||  // fallback for fast tier too
       !selectedLLM
     )
     var useClaudeViaOpenRouter = (selectedLLM === "smart" || selectedLLM === "claude-sonnet") && process.env.OPENROUTER_API_KEY
@@ -4310,7 +4315,16 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     _heartbeatActive = false
     clearInterval(heartbeatTimer)
     cleanupRequest()
-    if (!res.writableEnded) { res.write("CHATID" + chat._id); res.end() }
+
+    // SAFETY NET — if response never wrote anything, send error message
+    // Otherwise frontend gets "0 chars" with no explanation
+    if (!res.writableEnded && (!full || full.length < 50)) {
+      console.error("[SAFETY NET] Response empty after all paths! Writing fallback error.")
+      const fallbackErr = "⚠️ All AI providers failed or returned empty. Please:\n\n1. Check that GEMINI_API_KEY is set on Render\n2. Try a simpler prompt\n3. Use Balanced model instead of Pro\n\nIf this keeps happening, the API keys may need verification."
+      res.write(fallbackErr)
+    }
+
+    if (!res.writableEnded) { res.write("\n\n__DATTA_CHAT_ID__" + chat._id); res.end() }
   } catch(err) {
     _heartbeatActive = false
     clearInterval(heartbeatTimer)
