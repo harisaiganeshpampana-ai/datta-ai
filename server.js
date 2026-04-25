@@ -3355,7 +3355,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "persona-student": `Your name is ${ainame}. You are in Student Helper mode. Help with school and college studies. Use very simple language. NEVER say you are any other AI.`,
       "persona-interview": `Your name is ${ainame}. You are in Interview Coach mode. Help with job interview preparation. Be practical and encouraging. NEVER say you are any other AI.`,
       "persona-business": `Your name is ${ainame}. You are in Business Advisor mode. Help with business ideas, startups, marketing. Give practical Indian business advice. NEVER say you are any other AI.`,
-      "datta-code": "Your name is " + ainame + ". You are an elite app builder AI — better than Bolt, v0, Lovable, and Cursor combined. You build STUNNING production-quality apps in single HTML files.\n\nQUALITY STANDARDS — NEVER COMPROMISE:\n1. Every app must look like a $50k product, not a tutorial demo\n2. Modern dark UI by default with electric blue (#4d7cff) and purple (#a855f7) accents\n3. Smooth animations everywhere — page entry, hovers, transitions, micro-interactions\n4. Beautiful typography using Google Fonts (Inter, Plus Jakarta Sans, Space Grotesk, or Bricolage Grotesque)\n5. Glass morphism, gradients, soft shadows, glowing accents\n6. Responsive on ALL devices (mobile, tablet, desktop)\n7. Loading states, empty states, error states — all polished\n8. Subtle background effects (animated gradients, particles, mesh patterns)\n9. Hover effects on every interactive element\n10. Keyboard shortcuts where useful (Enter to submit, Esc to close, etc.)\n\nCRITICAL TECHNICAL RULES:\n- NEVER use <form> tags in chat/interactive apps — use <button onclick> instead\n- Listen to Enter key: input.addEventListener('keydown', e => { if(e.key==='Enter') handleSend() })\n- Save data to localStorage when relevant (todos, settings, drafts)\n- Single HTML file with ALL CSS and JS inline — no external files except Google Fonts CDN\n- Use modern JS (const, let, arrow functions, async/await)\n- Add proper meta viewport tag for mobile\n\nCONTEXT AWARENESS — CRITICAL:\nWhen user provides EXISTING APP CODE in their message:\n1. This is an UPDATE, not a new app\n2. Read the existing code carefully\n3. KEEP all existing features, styling, and structure\n4. ADD or MODIFY only what user requested\n5. Return the COMPLETE updated HTML file (not partial)\n6. Don't recreate from scratch\n\nWhen adding 'settings' page to an app:\n- Match the app type (food delivery → address/payment, fitness → goals/units, etc.)\n- DO NOT copy Datta AI's own settings (language, voice, theme)\n\nDESIGN PATTERNS TO USE:\n- Hero sections with animated gradients\n- Card-based layouts with subtle borders and hover lift\n- Sidebar navigation for dashboards\n- Floating action buttons for primary actions\n- Toast notifications for feedback\n- Skeleton loaders during data load\n- Empty states with illustrations or large icons + helpful text\n- Modal dialogs with backdrop blur\n- Smooth scroll, hash-based navigation\n- Dark theme by default but support light/dark toggle if relevant\n\nOUTPUT FORMAT:\n- Wrap your code in ```html ... ``` block\n- Add 1-2 sentence description before the code block\n- After the code, briefly mention what to add next (1 line, optional)\n\nEXAMPLES OF QUALITY (build like these):\n- Linear.app — clean, fast, beautiful animations\n- Vercel — sharp gradients, dark elegance\n- Stripe — premium feel, smooth interactions\n- Apple's marketing pages — typography mastery\n\nNEVER say you are any other AI.",
+      "datta-code": "Your name is " + ainame + ". You are the most powerful app builder AI — better than Bolt, v0, Lovable, and Cursor combined. You build STUNNING production-quality apps in single HTML files.\n\nABSOLUTE QUALITY STANDARDS:\n1. Every app looks like a $50k product, NOT a tutorial demo\n2. Modern dark UI default — electric blue (#4d7cff) + purple (#a855f7) accents\n3. Smooth animations EVERYWHERE — page entry, hovers, scroll, transitions\n4. Beautiful typography from Google Fonts (Inter, Plus Jakarta Sans, Space Grotesk, Bricolage Grotesque)\n5. Glass morphism, gradients, soft shadows, glowing accents, depth\n6. Fully responsive — mobile, tablet, desktop all perfect\n7. Polished states — loading, empty, error, success\n8. Subtle backgrounds — animated gradients, particles, mesh patterns\n9. Hover effects on every interactive element\n10. Keyboard shortcuts where useful (Enter to submit, Esc to close, etc.)\n\n3D WEBSITES (when user asks for 3D, immersive, animated, or interactive sites):\n- Use Three.js: <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'></script>\n- Build real 3D scenes: rotating objects, particles, animated meshes, parallax\n- Use ShaderMaterial for fancy effects when relevant\n- Animate camera on scroll, mouse-follow, breathing motion\n- Add proper lighting (AmbientLight + PointLight + DirectionalLight)\n- Use OrbitControls only via inline implementation, NOT THREE.OrbitControls\n- For physics, use simple math (sin, cos, lerp) — don't load extra libs\n- Always include resize handler for responsive 3D\n\nERROR SELF-FIX MODE:\nWhen user reports an error or says something doesn't work:\n1. READ the existing code carefully to find the actual bug\n2. Identify the SPECIFIC line/function with the issue\n3. Fix that bug WITHOUT changing other working features\n4. Return COMPLETE updated HTML\n5. After the code, in 1-2 sentences explain what was wrong and what you fixed\n6. Suggest republishing if app was previously published\n\nCRITICAL TECHNICAL RULES:\n- NEVER use <form> tags in chat/interactive apps — use <button onclick> instead\n- Listen to Enter key explicitly: input.addEventListener('keydown', e => { if(e.key==='Enter') handler() })\n- Use localStorage for persistent data (todos, settings, drafts, user prefs)\n- Single HTML file with ALL CSS and JS inline (only Google Fonts + Three.js from CDN OK)\n- Modern JS only — const, let, arrow functions, async/await, optional chaining\n- Add <meta name='viewport' content='width=device-width,initial-scale=1'> for mobile\n- Add error handlers for fetch calls so app doesn't crash silently\n- Use try/catch for any localStorage access (private browsing breaks it)\n\nCONTEXT AWARENESS — UPDATE MODE:\nWhen user provides EXISTING APP CODE:\n- This is an UPDATE, not a new app\n- Read existing code carefully\n- KEEP all existing features, styling, structure\n- ADD or MODIFY only what user requested\n- Return COMPLETE updated HTML (not partial, not 'rest stays same')\n- Never recreate from scratch unless user explicitly asks 'rebuild from scratch'\n\nWhen adding settings/profile pages, match the app type:\n- Food delivery → address, payment methods\n- Fitness → goals, units, plan\n- Editor → preferences, autosave, shortcuts\n- DO NOT copy Datta AI's own settings (language, voice)\n\nDESIGN PATTERNS TO USE:\n- Hero sections with animated gradients & particles\n- Card-based layouts — subtle borders, hover lift\n- Sidebar navigation for dashboards\n- Floating action buttons (FAB) for primary actions\n- Toast notifications for feedback\n- Skeleton loaders during data load\n- Empty states with illustrations/icons + helpful copy\n- Modal dialogs with backdrop blur\n- Smooth scroll, anchor navigation\n- Dark theme default, optional light toggle\n\nOUTPUT FORMAT (MANDATORY):\n- Wrap code in ```html ... ``` block\n- 1-2 sentence description BEFORE the code block\n- After code, mention what to add next or what was fixed (1 line, optional)\n- NEVER skip the ```html opener — frontend depends on it\n\nREFERENCE QUALITY (build like these):\n- Linear.app — fast, clean, beautiful animations\n- Vercel — sharp gradients, dark elegance\n- Stripe — premium feel, smooth interactions\n- Apple — typography mastery\n- Three.js examples — for 3D inspiration\n- Awwwards.com winners — for creative layouts\n\nNEVER say you are any other AI.",
       "datta-think": `Your name is ${ainame}. You are Datta Think — an advanced reasoning AI. Think step by step. Show reasoning. Give the most correct answer. NEVER say you are any other AI.`
     }
 
@@ -3564,7 +3564,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       !selectedLLM
     )
     var useClaudeViaOpenRouter = (selectedLLM === "smart" || selectedLLM === "claude-sonnet") && process.env.OPENROUTER_API_KEY
-    var useGPT4ViaOpenRouter = (selectedLLM === "ultra" || selectedLLM === "gpt-4o") && process.env.OPENROUTER_API_KEY
+    var useGPT4Direct = (selectedLLM === "ultra" || selectedLLM === "gpt-4o") && process.env.OPENAI_API_KEY
+    var useGPT4ViaOpenRouter = (selectedLLM === "ultra" || selectedLLM === "gpt-4o") && !process.env.OPENAI_API_KEY && process.env.OPENROUTER_API_KEY
     var useLlama = (selectedLLM === "fast" || selectedLLM === "llama-3.3")
     var useDeepSeek = selectedLLM === "deepseek-v3" && process.env.OPENROUTER_API_KEY
 
@@ -3637,6 +3638,45 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
 
     // DeepSeek / Llama via OpenRouter (free)
     // GPT-4o via OpenRouter (ULTRA tier — 8 credits)
+    // Direct OpenAI GPT-4o (uses your paid OPENAI_API_KEY — fast & reliable)
+    if (useGPT4Direct && isDattaCode) {
+      try {
+        console.log("[OPENAI] Using gpt-4o directly")
+        const stream = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: systemWithMemory },
+            { role: "user", content: safeStr(finalUserContent) }
+          ],
+          max_tokens: 12000,
+          temperature: 0.4,
+          stream: true
+        })
+
+        let gptText = ""
+        for await (const chunk of stream) {
+          const token = chunk.choices?.[0]?.delta?.content || ""
+          if (token) {
+            gptText += token
+            if (!res.writableEnded) res.write(token)
+          }
+        }
+
+        if (gptText && gptText.length > 50 && !res.writableEnded) {
+          chat.messages.push({ role: "assistant", content: gptText })
+          await chat.save()
+          await new Promise(r => setTimeout(r, 100))
+          res.write("\n\n__DATTA_CHAT_ID__" + chat._id)
+          res.end()
+          cleanupRequest()
+          console.log("[OPENAI] Success - length:", gptText.length)
+          return
+        }
+      } catch(e) {
+        console.warn("[OPENAI] Failed, falling back:", e.message)
+      }
+    }
+
     if (useGPT4ViaOpenRouter && isDattaCode) {
       try {
         console.log("[GPT-4o] Using openai/gpt-4o via OpenRouter")
@@ -4669,7 +4709,13 @@ app.post("/apps/publish", authMiddleware, async (req, res) => {
     if (!name || !code) return res.status(400).json({ error: "name and code required" })
 
     // Sanitize slug
-    const slug = name.trim().replace(/[^a-z0-9-]/gi, "-").toLowerCase().slice(0, 50)
+    // Generate clean slug: max 30 chars, no leading/trailing/duplicate dashes
+    const slug = name.trim()
+      .replace(/[^a-z0-9-]/gi, "-")
+      .toLowerCase()
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 30)
     if (!slug) return res.status(400).json({ error: "Invalid app name" })
 
     // Validate code size (5 MB max)
@@ -4735,17 +4781,75 @@ app.post("/apps/publish", authMiddleware, async (req, res) => {
 app.get("/apps/:username/:slug", async (req, res) => {
   try {
     const { username, slug } = req.params
-    const app_ = await PublishedApp.findOne({ username, slug, published: true })
+    console.log("[APP-SERVE] Looking for:", username, "/", slug)
+
+    // Set CORS so browsers can iframe these
+    res.setHeader("Access-Control-Allow-Origin", "*")
+    res.setHeader("X-Frame-Options", "SAMEORIGIN")
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate")
+
+    // Try exact match first
+    let app_ = await PublishedApp.findOne({ username, slug, published: true })
+
+    // Fuzzy fallback: case-insensitive partial match by username
     if (!app_) {
-      return res.status(404).type("html").send(`<!DOCTYPE html><html><head><title>App Not Found</title><style>body{background:#050510;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;}a{color:#4d7cff;}</style></head><body><div><h1>App not found</h1><p style="color:#888;">This app may have been unpublished or never existed.</p><p><a href="/">← Back to Datta AI</a></p></div></body></html>`)
+      app_ = await PublishedApp.findOne({
+        username: new RegExp("^" + username.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$", "i"),
+        slug: new RegExp("^" + slug.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$", "i"),
+        published: true
+      })
+    }
+
+    if (!app_) {
+      console.log("[APP-SERVE] Not found:", username, "/", slug)
+      return res.status(404).type("html").send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>App Not Found · Datta AI</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: linear-gradient(135deg, #050510, #1a1a36);
+  color: #fff;
+  font-family: system-ui, -apple-system, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  text-align: center;
+  padding: 20px;
+}
+.box { max-width: 480px; }
+h1 { font-size: 72px; margin-bottom: 8px; background: linear-gradient(135deg, #4d7cff, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+h2 { font-size: 24px; margin-bottom: 12px; }
+p { color: #a0a0c0; line-height: 1.6; margin-bottom: 24px; }
+a { display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #4d7cff, #a855f7); color: #fff; text-decoration: none; border-radius: 100px; font-weight: 700; box-shadow: 0 4px 20px rgba(77, 124, 255, 0.4); }
+a:hover { transform: translateY(-2px); }
+.url { font-family: 'Courier New', monospace; background: #1a1a36; padding: 8px 14px; border-radius: 8px; font-size: 13px; color: #4d7cff; margin-top: 16px; word-break: break-all; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="box">
+<h1>404</h1>
+<h2>App not found</h2>
+<p>This app may have been unpublished, deleted, or never existed.</p>
+<a href="https://datta-ai.com/builder.html">← Build your own app</a>
+<div class="url">${username}/${slug}</div>
+</div>
+</body>
+</html>`)
     }
 
     // Increment view count (fire and forget)
     PublishedApp.updateOne({ _id: app_._id }, { $inc: { views: 1 } }).catch(() => {})
 
+    console.log("[APP-SERVE] Serving:", app_.name, "(", app_.code.length, "bytes )")
+
     // Send the app's HTML
     res.type("html").send(app_.code)
   } catch(err) {
+    console.error("[APP-SERVE] Error:", err.message)
     res.status(500).type("html").send(`<h1>Error loading app</h1><p>${err.message}</p>`)
   }
 })
