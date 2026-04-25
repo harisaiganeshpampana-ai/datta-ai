@@ -6,8 +6,27 @@
   "framework": null,
   "rewrites": [
     {
-      "source": "/apps/:username/:slug",
-      "destination": "https://datta-ai-server.onrender.com/apps/:username/:slug"
+      "source": "/apps/:username/:slug*",
+      "destination": "https://datta-ai-server.onrender.com/apps/:username/:slug*"
+    },
+    {
+      "source": "/apps/:path*",
+      "destination": "https://datta-ai-server.onrender.com/apps/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/apps/:path*",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
     }
   ]
 }
