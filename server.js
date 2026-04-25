@@ -3275,6 +3275,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
 
     var isDattaCode = (resolvedModel === "llama-3.3-70b-versatile" && (chosenModel === "datta-code" || modelKey === "dcode"))
 
+    console.log("[ROUTE DEBUG] modelKey:", modelKey, "chosenModel:", chosenModel, "resolvedModel:", resolvedModel, "isDattaCode:", isDattaCode, "selectedLLM:", req.body.selectedLLM, "GEMINI_KEY_SET:", !!process.env.GEMINI_API_KEY)
+
     // ══════ CREDIT SYSTEM FOR APP BUILDER ══════
     // Credit cost depends on which LLM the user chose
     // Tier names map to specific models:
