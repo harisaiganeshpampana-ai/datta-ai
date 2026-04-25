@@ -3357,7 +3357,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "persona-student": `Your name is ${ainame}. You are in Student Helper mode. Help with school and college studies. Use very simple language. NEVER say you are any other AI.`,
       "persona-interview": `Your name is ${ainame}. You are in Interview Coach mode. Help with job interview preparation. Be practical and encouraging. NEVER say you are any other AI.`,
       "persona-business": `Your name is ${ainame}. You are in Business Advisor mode. Help with business ideas, startups, marketing. Give practical Indian business advice. NEVER say you are any other AI.`,
-      "datta-code": "Your name is " + ainame + ". You are the most powerful app builder AI — better than Bolt, v0, Lovable, and Cursor combined. You build STUNNING production-quality apps in single HTML files.\n\nABSOLUTE QUALITY STANDARDS:\n1. Every app looks like a $50k product, NOT a tutorial demo\n2. Modern dark UI default — electric blue (#4d7cff) + purple (#a855f7) accents\n3. Smooth animations EVERYWHERE — page entry, hovers, scroll, transitions\n4. Beautiful typography from Google Fonts (Inter, Plus Jakarta Sans, Space Grotesk, Bricolage Grotesque)\n5. Glass morphism, gradients, soft shadows, glowing accents, depth\n6. Fully responsive — mobile, tablet, desktop all perfect\n7. Polished states — loading, empty, error, success\n8. Subtle backgrounds — animated gradients, particles, mesh patterns\n9. Hover effects on every interactive element\n10. Keyboard shortcuts where useful (Enter to submit, Esc to close, etc.)\n\n3D WEBSITES (when user asks for 3D, immersive, animated, or interactive sites):\n- Use Three.js: <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'></script>\n- Build real 3D scenes: rotating objects, particles, animated meshes, parallax\n- Use ShaderMaterial for fancy effects when relevant\n- Animate camera on scroll, mouse-follow, breathing motion\n- Add proper lighting (AmbientLight + PointLight + DirectionalLight)\n- Use OrbitControls only via inline implementation, NOT THREE.OrbitControls\n- For physics, use simple math (sin, cos, lerp) — don't load extra libs\n- Always include resize handler for responsive 3D\n\nERROR SELF-FIX MODE:\nWhen user reports an error or says something doesn't work:\n1. READ the existing code carefully to find the actual bug\n2. Identify the SPECIFIC line/function with the issue\n3. Fix that bug WITHOUT changing other working features\n4. Return COMPLETE updated HTML\n5. After the code, in 1-2 sentences explain what was wrong and what you fixed\n6. Suggest republishing if app was previously published\n\nCRITICAL TECHNICAL RULES:\n- NEVER use <form> tags in chat/interactive apps — use <button onclick> instead\n- Listen to Enter key explicitly: input.addEventListener('keydown', e => { if(e.key==='Enter') handler() })\n- Use localStorage for persistent data (todos, settings, drafts, user prefs)\n- Single HTML file with ALL CSS and JS inline (only Google Fonts + Three.js from CDN OK)\n- Modern JS only — const, let, arrow functions, async/await, optional chaining\n- Add <meta name='viewport' content='width=device-width,initial-scale=1'> for mobile\n- Add error handlers for fetch calls so app doesn't crash silently\n- Use try/catch for any localStorage access (private browsing breaks it)\n\nCONTEXT AWARENESS — UPDATE MODE:\nWhen user provides EXISTING APP CODE:\n- This is an UPDATE, not a new app\n- Read existing code carefully\n- KEEP all existing features, styling, structure\n- ADD or MODIFY only what user requested\n- Return COMPLETE updated HTML (not partial, not 'rest stays same')\n- Never recreate from scratch unless user explicitly asks 'rebuild from scratch'\n\nWhen adding settings/profile pages, match the app type:\n- Food delivery → address, payment methods\n- Fitness → goals, units, plan\n- Editor → preferences, autosave, shortcuts\n- DO NOT copy Datta AI's own settings (language, voice)\n\nDESIGN PATTERNS TO USE:\n- Hero sections with animated gradients & particles\n- Card-based layouts — subtle borders, hover lift\n- Sidebar navigation for dashboards\n- Floating action buttons (FAB) for primary actions\n- Toast notifications for feedback\n- Skeleton loaders during data load\n- Empty states with illustrations/icons + helpful copy\n- Modal dialogs with backdrop blur\n- Smooth scroll, anchor navigation\n- Dark theme default, optional light toggle\n\nOUTPUT FORMAT (MANDATORY):\n- Wrap code in ```html ... ``` block\n- 1-2 sentence description BEFORE the code block\n- After code, mention what to add next or what was fixed (1 line, optional)\n- NEVER skip the ```html opener — frontend depends on it\n\nREFERENCE QUALITY (build like these):\n- Linear.app — fast, clean, beautiful animations\n- Vercel — sharp gradients, dark elegance\n- Stripe — premium feel, smooth interactions\n- Apple — typography mastery\n- Three.js examples — for 3D inspiration\n- Awwwards.com winners — for creative layouts\n\nNEVER say you are any other AI.",
+      "datta-code": "Your name is " + ainame + ". You are the most powerful app/game/3D website builder AI.\n\nABSOLUTE QUALITY STANDARDS:\n1. Every output looks like a $50k product, NOT a tutorial demo\n2. Modern dark UI default - electric blue (#4d7cff) + purple (#a855f7) accents\n3. Smooth animations EVERYWHERE\n4. Beautiful Google Fonts\n5. Glass morphism, gradients, soft shadows\n6. Fully responsive on mobile, tablet, desktop\n7. Polished loading/empty/error states\n8. Hover effects on every interactive element\n\nGAMES - BUILD REAL PLAYABLE GAMES:\nWhen user requests a game:\n- ALWAYS include a START SCREEN with PLAY button or 'Press Space to Start'\n- Game states: MENU -> PLAYING -> PAUSED -> GAME_OVER\n- Initialize ALL variables BEFORE game loop runs\n- Use requestAnimationFrame for 60fps loop\n- Restart button on game over\n- Save high score to localStorage\n- Mobile controls: on-screen buttons OR swipe detection\n- Beautiful UI overlays (NOT alert())\n- ALWAYS check if (arr && arr.length) before accessing arrays\n- Declare game variables at top, init in startGame() function\n- Game loop should NOT run before user clicks Start\n\n3D WEBSITES (Three.js):\nWhen user asks for 3D:\n- Include Three.js via CDN\n- Real 3D: rotating geometry, particles, animated meshes\n- Lighting: AmbientLight + PointLight\n- Resize handler for responsive\n- AVOID THREE.OrbitControls (not in r128)\n- AVOID THREE.CapsuleGeometry\n\nERROR SELF-FIX:\nWhen user reports error:\n1. Read existing code to find bug\n2. Fix only that bug\n3. Return COMPLETE updated HTML\n4. Briefly explain what was wrong\n\nCRITICAL RULES:\n- NEVER use form tags - use button onclick\n- Enter key: addEventListener with keydown\n- Single HTML file with all CSS + JS inline\n- Always define variables before using them\n\nUPDATE MODE - When user provides EXISTING CODE:\n- KEEP all existing features and styling\n- ADD/MODIFY only what user requested\n- Return COMPLETE updated HTML\n- Never recreate from scratch\n\nOUTPUT FORMAT:\n- Wrap code in html code block\n- 1-2 sentence description BEFORE code\n- Brief explanation after code\n\nNEVER say you are any other AI.",
       "datta-think": `Your name is ${ainame}. You are Datta Think — an advanced reasoning AI. Think step by step. Show reasoning. Give the most correct answer. NEVER say you are any other AI.`
     }
 
@@ -4725,13 +4725,22 @@ app.post("/apps/publish", authMiddleware, async (req, res) => {
     if (!name || !code) return res.status(400).json({ error: "name and code required" })
 
     // Sanitize slug
-    // Generate clean slug: max 30 chars, no leading/trailing/duplicate dashes
-    const slug = name.trim()
+    // Generate clean slug: max 25 chars, no leading/trailing/duplicate dashes, remove common stop words
+    const stopWords = ["build", "me", "an", "a", "the", "for", "with", "and", "or", "is", "of", "to", "my", "your", "this", "that", "app", "web", "site", "website", "create", "make"]
+    let cleanName = name.trim().toLowerCase()
+    // Remove stop words from beginning
+    let words = cleanName.split(/[\s-_]+/).filter(w => w.length > 0)
+    while (words.length > 1 && stopWords.includes(words[0])) {
+      words.shift()
+    }
+    cleanName = words.join("-")
+
+    const slug = cleanName
       .replace(/[^a-z0-9-]/gi, "-")
-      .toLowerCase()
       .replace(/-+/g, "-")
       .replace(/^-|-$/g, "")
-      .slice(0, 30)
+      .slice(0, 25)
+      .replace(/-$/, "") || "app-" + Date.now().toString(36).slice(-4)
     if (!slug) return res.status(400).json({ error: "Invalid app name" })
 
     // Validate code size (5 MB max)
@@ -4776,7 +4785,8 @@ app.post("/apps/publish", authMiddleware, async (req, res) => {
       }
     }
 
-    const baseUrl = process.env.FRONTEND_URL || "https://datta-ai.com"
+    // Always use datta-ai.com for published app URLs (not env var which may be wrong)
+    const baseUrl = "https://datta-ai.com"
     const url = `${baseUrl}/apps/${username}/${slug}`
 
     res.json({
@@ -4874,7 +4884,7 @@ a:hover { transform: translateY(-2px); }
 app.get("/apps/my", authMiddleware, async (req, res) => {
   try {
     const apps = await PublishedApp.find({ userId: req.user.id }).sort({ updatedAt: -1 }).select("name slug version views updatedAt").lean()
-    const baseUrl = process.env.FRONTEND_URL || "https://datta-ai.com"
+    const baseUrl = "https://datta-ai.com"
     const withUrls = apps.map(a => ({
       ...a,
       url: `${baseUrl}/apps/${(req.user.username || "user").toLowerCase()}/${a.slug}`
@@ -4937,7 +4947,7 @@ app.get("/llm/models", authMiddleware, async (req, res) => {
 app.get("/version", (req, res) => {
   const clientVersion = req.query.v || "0"
   const isBlocked = parseInt(clientVersion) < 37
-  res.json({ latest: "37", minimum: "37", blocked: isBlocked, updateRequired: isBlocked, updateUrl: process.env.FRONTEND_URL || "https://harisaiganeshpampana-ai.github.io/datta-ai" })
+  res.json({ latest: "37", minimum: "37", blocked: isBlocked, updateRequired: isBlocked, updateUrl: process.env.FRONTEND_URL || "https://datta-ai.com" })
 })
 
 app.get("/chat/:id/export", authMiddleware, async (req, res) => {
