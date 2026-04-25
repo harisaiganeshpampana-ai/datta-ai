@@ -1519,6 +1519,120 @@ body.dashboard .builder-view { display: none; }
   color: var(--accent2);
 }
 
+/* VISUAL STAGE CARDS (CineGen-style) */
+.stage-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 480px;
+  margin: 24px auto 0;
+  padding: 0 16px;
+  z-index: 1;
+  width: 100%;
+}
+
+.stage-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  opacity: 0.35;
+  transform: translateX(-15px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stage-card.shown {
+  opacity: 0.6;
+  transform: translateX(0);
+}
+
+.stage-card.active {
+  opacity: 1;
+  transform: translateX(0);
+  border-color: var(--accent);
+  background: linear-gradient(135deg, rgba(77, 124, 255, 0.1), rgba(168, 85, 247, 0.06));
+  box-shadow: 0 8px 24px rgba(77, 124, 255, 0.2);
+}
+
+.stage-card.done {
+  opacity: 1;
+  transform: translateX(0);
+  border-color: rgba(77, 124, 255, 0.3);
+  background: rgba(77, 124, 255, 0.04);
+}
+
+.stage-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: var(--bg3);
+  flex-shrink: 0;
+}
+
+.stage-card.active .stage-card-icon {
+  background: linear-gradient(135deg, rgba(77, 124, 255, 0.2), rgba(168, 85, 247, 0.2));
+  animation: iconPulse 1.5s ease-in-out infinite;
+}
+
+.stage-card.done .stage-card-icon {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+}
+
+@keyframes iconPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(77, 124, 255, 0.4); }
+  50% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(77, 124, 255, 0); }
+}
+
+.stage-card-info { flex: 1; min-width: 0; }
+
+.stage-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.stage-card-desc {
+  font-size: 11px;
+  color: var(--text3);
+  line-height: 1.4;
+}
+
+.stage-card.active .stage-card-desc { color: var(--accent); }
+
+.stage-card-status {
+  font-size: 11px;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.stage-card.active .stage-card-status { color: var(--accent); }
+.stage-card.done .stage-card-status { color: var(--accent2); }
+
+.stage-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid transparent;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@media (max-width: 600px) {
+  .stage-card { padding: 10px 14px; gap: 10px; }
+  .stage-card-icon { width: 32px; height: 32px; font-size: 18px; }
+  .stage-card-title { font-size: 12px; }
+  .stage-card-desc { font-size: 10px; }
+  .stage-cards { padding: 0 10px; }
+}
+
 .building-stage {
   display: flex;
   align-items: center;
@@ -2071,7 +2185,8 @@ body.dashboard .builder-view { display: none; }
           <div class="building-orb">D</div>
           <div class="building-text" id="buildingText">Building your app...</div>
           <div class="building-subtext" id="buildingSubtext">This will take a few seconds</div>
-          <div class="building-stages" id="buildingStages"></div>
+          <div class="stage-cards" id="stageCards"></div>
+          <div class="building-stages" id="buildingStages" style="display:none;"></div>
           <div class="file-progress" id="fileProgress"></div>
         </div>
         <iframe id="previewFrame" class="preview-frame" sandbox="allow-scripts allow-forms allow-modals allow-popups" style="display:none;"></iframe>
@@ -2639,6 +2754,76 @@ function renderChatHistory() {
 // ══════ FILE PROGRESS (detects what AI is generating in real-time) ══════
 let fileProgressState = {}  // { 'index.html': 'active' | 'done', ... }
 
+// ══════ VISUAL STAGE CARDS (CineGen-style) ══════
+const STAGES = [
+  { id: "plan",   icon: "📋", title: "Planning", desc: "Analyzing your idea..." },
+  { id: "design", icon: "🎨", title: "Design",   desc: "Choosing colors & fonts..." },
+  { id: "html",   icon: "📄", title: "HTML",     desc: "Building structure..." },
+  { id: "css",    icon: "✨", title: "Styling",  desc: "Adding beautiful design..." },
+  { id: "js",     icon: "⚡", title: "Logic",    desc: "Making it interactive..." },
+  { id: "done",   icon: "✅", title: "Ready",    desc: "Your app is complete!" }
+]
+
+let currentStageIndex = -1
+
+function initStages() {
+  currentStageIndex = -1
+  const container = document.getElementById("stageCards")
+  if (!container) return
+  container.innerHTML = STAGES.map((s, i) => `
+    <div class="stage-card" data-stage="${s.id}" id="stage-${s.id}">
+      <div class="stage-card-icon">${s.icon}</div>
+      <div class="stage-card-info">
+        <div class="stage-card-title">${s.title}</div>
+        <div class="stage-card-desc">${s.desc}</div>
+      </div>
+      <div class="stage-card-status">queued</div>
+    </div>
+  `).join("")
+
+  // Show first 2 cards initially
+  setTimeout(() => {
+    const cards = container.querySelectorAll(".stage-card")
+    cards.forEach((c, i) => {
+      if (i < 2) c.classList.add("shown")
+    })
+  }, 50)
+}
+
+function setStage(stageId) {
+  const idx = STAGES.findIndex(s => s.id === stageId)
+  if (idx <= currentStageIndex) return  // can't go backwards
+
+  // Mark all previous as done
+  for (let i = 0; i <= idx; i++) {
+    const card = document.getElementById("stage-" + STAGES[i].id)
+    if (!card) continue
+    card.classList.add("shown")
+    if (i < idx) {
+      card.classList.remove("active")
+      card.classList.add("done")
+      const status = card.querySelector(".stage-card-status")
+      if (status) status.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>'
+    } else {
+      card.classList.add("active")
+      const status = card.querySelector(".stage-card-status")
+      if (status) status.innerHTML = stageId === "done" ? "✓ done" : '<div class="stage-spinner"></div>'
+    }
+  }
+
+  // Show next 2 upcoming cards
+  for (let i = idx + 1; i < Math.min(idx + 3, STAGES.length); i++) {
+    const card = document.getElementById("stage-" + STAGES[i].id)
+    if (card) card.classList.add("shown")
+  }
+
+  currentStageIndex = idx
+}
+
+function finishStages() {
+  setStage("done")
+}
+
 function initFileProgress() {
   fileProgressState = {}
   document.getElementById("fileProgress").innerHTML = ""
@@ -2740,26 +2925,31 @@ function updateFileProgressFromStream(streamText) {
   })
 
   // Logic: as more text comes, progress files
-  // If we've seen the file's section (e.g. <style>...</style>), mark done
   if (streamText.includes("<!DOCTYPE")) {
     if (fileProgressState["index.html"] === "queued") {
       fileProgressState["index.html"] = "active"
     }
+    setStage("html")  // HTML stage
   }
   if (streamText.match(/<\/style>/)) {
     if (fileProgressState["styles.css"]) fileProgressState["styles.css"] = "done"
+    setStage("css")  // CSS done, move to JS
   } else if (streamText.includes("<style")) {
     if (fileProgressState["styles.css"] === "queued") fileProgressState["styles.css"] = "active"
+    setStage("design")  // Design stage
   }
   if (streamText.match(/<\/script>\s*<\/body>/)) {
     if (fileProgressState["app.js"]) fileProgressState["app.js"] = "done"
     if (fileProgressState["3d-scene.js"]) fileProgressState["3d-scene.js"] = "done"
+    setStage("js")
   } else if (streamText.match(/<script[^>]*>[\s\S]{100,}/)) {
     if (fileProgressState["app.js"] === "queued") fileProgressState["app.js"] = "active"
     if (fileProgressState["3d-scene.js"] === "queued") fileProgressState["3d-scene.js"] = "active"
+    setStage("js")
   }
   if (streamText.includes("</html>")) {
     Object.keys(fileProgressState).forEach(f => fileProgressState[f] = "done")
+    setStage("done")
   }
 
   renderFileProgress()
@@ -2922,6 +3112,7 @@ function showBuildingAnimation() {
   document.getElementById("buildingSubtext").textContent = "AI is crafting your design"
 
   initFileProgress()
+  initStages()
 
   // Reset error tracking on new build
   lastErrorTime = 0
@@ -2930,34 +3121,25 @@ function showBuildingAnimation() {
   const banner = document.getElementById("autoFixBanner")
   if (banner) banner.remove()
 
-  const stagesEl = document.getElementById("buildingStages")
-  const stages = [
-    "Analyzing your idea",
-    "Designing the layout",
-    "Writing HTML structure",
-    "Crafting beautiful styles",
-    "Adding interactivity",
-    "Finalizing details"
-  ]
+  // Auto-progress stages on timer (so even if stream detection misses, user sees progress)
+  // Each stage advances every ~3 seconds
+  setTimeout(() => setStage("plan"), 200)
+  setTimeout(() => { if (isGenerating) setStage("design") }, 3000)
+  setTimeout(() => { if (isGenerating) setStage("html") }, 7000)
+  setTimeout(() => { if (isGenerating) setStage("css") }, 14000)
+  setTimeout(() => { if (isGenerating) setStage("js") }, 22000)
 
-  stagesEl.innerHTML = ""
-  let i = 0
-  const renderStages = () => {
-    if (!isGenerating) return
-    stagesEl.innerHTML = stages.slice(0, i + 1).map((s, idx) => {
-      const last = idx === i
-      return `<div class="building-stage ${last ? 'active' : 'done'}"><span class="stage-dot"></span> ${s}</div>`
-    }).join("")
-    if (i < stages.length - 1) {
-      i++
-      setTimeout(renderStages, 1400)
-    }
-  }
-  renderStages()
+  // Hide old stage list (we use cards now)
+  const stagesEl = document.getElementById("buildingStages")
+  if (stagesEl) stagesEl.style.display = "none"
 }
 
 function hideBuildingAnimation() {
-  document.getElementById("buildingOverlay").style.display = "none"
+  // Mark all stages done first for satisfying completion
+  setStage("done")
+  setTimeout(() => {
+    document.getElementById("buildingOverlay").style.display = "none"
+  }, 600)
 }
 
 // ══════ SEND PROMPT ══════
