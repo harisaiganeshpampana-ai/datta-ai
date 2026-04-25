@@ -239,7 +239,7 @@ async function streamGeminiToRes(systemPrompt, userPrompt, maxTokens, res, model
   const body = {
     contents: [{ parts: [{ text: systemPrompt + "\n\n" + userPrompt }] }],
     generationConfig: {
-      maxOutputTokens: Math.min(maxTokens || 16000, 16000),
+      maxOutputTokens: Math.min(maxTokens || 12000, 12000),
       temperature: 0.4
     },
     safetySettings: [
@@ -333,7 +333,7 @@ async function generateCodeWithGemini(systemPrompt, userPrompt, maxTokens, prefe
           parts: [{ text: systemPrompt + "\n\n" + userPrompt }]
         }],
         generationConfig: {
-          maxOutputTokens: Math.min(maxTokens || 16000, 16000),
+          maxOutputTokens: Math.min(maxTokens || 12000, 12000),
           temperature: 0.4
         },
         safetySettings: [
@@ -816,6 +816,11 @@ function authMiddleware(req, res, next) {
   }
   try {
     req.user = jwt.verify(token, JWT_SECRET)
+    // Auto-mark as admin if email matches ADMIN_EMAILS
+    const adminList = (process.env.ADMIN_EMAILS || "harisaiganeshpampana@gmail.com").split(",").map(e => e.trim().toLowerCase())
+    if (req.user.email && adminList.includes(req.user.email.toLowerCase())) {
+      req.user.isAdmin = true
+    }
     next()
   } catch (e) {
     return res.status(401).json({ error: "Invalid token" })
@@ -2866,6 +2871,13 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     }
     chat.messages.push({ role: "user", content: userMsgContent || "Hello" })
     await chat.save()
+
+    // EXPLICIT CORS headers for streaming response (critical — some proxies strip these)
+    const origin = req.headers.origin || "*"
+    res.setHeader("Access-Control-Allow-Origin", origin)
+    res.setHeader("Access-Control-Allow-Credentials", "true")
+    res.setHeader("Access-Control-Expose-Headers", "x-chat-id,Content-Type")
+
     res.setHeader("x-chat-id", chat._id.toString())
     res.setHeader("Content-Type", "text/plain; charset=utf-8")
     res.setHeader("Transfer-Encoding", "chunked")
@@ -3282,7 +3294,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     else if (selectedLLM === "ultra" || selectedLLM === "gpt-4o") creditCost = 8
     else creditCost = 5  // default
 
-    if (isDattaCode && creditCost > 0) {
+    if (isDattaCode && creditCost > 0 && !req.user.isAdmin) {
       const creditCheck = await deductCredits(req.user.id, creditCost)
       if (!creditCheck.ok) {
         if (!res.writableEnded) {
@@ -3293,6 +3305,8 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
         return
       }
       console.log("[CREDITS] User", req.user.id, "used", creditCost, "credits. Remaining:", creditCheck.credits)
+    } else if (req.user.isAdmin) {
+      console.log("[ADMIN] Free unlimited usage for admin:", req.user.email)
     }
 
     var isDattaThink = (resolvedModel === "llama-3.3-70b-versatile")
@@ -3318,7 +3332,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
     var isDeepKnowledge = isCurrentAffairs || isGKHistory || isNarrativeRequest
     // Maximum tokens for ALL request types — no artificial limits
     var maxCodingTok = 8000
-    var maxTok = isDattaCode ? 16000 : 8000  // 16K for code (build complete apps)
+    var maxTok = isDattaCode ? 12000 : 8000  // 12K for code (avoid Render free tier timeout)
 
     var timeStr = req.body.userTime || new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })
     var dateStr = req.body.userDate || new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Kolkata" })
