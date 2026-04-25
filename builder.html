@@ -1051,6 +1051,18 @@ a { color: inherit; text-decoration: none; }
       </div>
     </div>
     <div class="tb-right">
+      <button class="tb-btn" onclick="showProjects()" title="My Projects">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        </svg>
+        Projects
+      </button>
+      <button class="tb-btn" onclick="newSession()" title="New Project">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        New
+      </button>
       <button class="tb-btn" onclick="downloadCode()" title="Download">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -1196,6 +1208,19 @@ a { color: inherit; text-decoration: none; }
   </main>
 </div>
 
+<!-- PROJECTS MODAL -->
+<div class="modal-overlay" id="projectsModal">
+  <div class="modal" style="max-width: 500px;">
+    <h3>📁 My Projects</h3>
+    <p>All your apps saved automatically. Click to open.</p>
+    <div id="projectsList" style="max-height: 400px; overflow-y: auto; margin-bottom: 16px;"></div>
+    <div class="modal-actions">
+      <button class="tb-btn" onclick="closeProjects()">Close</button>
+      <button class="tb-btn primary" onclick="closeProjects(); newSession();">+ New Project</button>
+    </div>
+  </div>
+</div>
+
 <!-- PUBLISH MODAL -->
 <div class="modal-overlay" id="publishModal">
   <div class="modal">
@@ -1226,6 +1251,109 @@ let currentAppId = null
 let publishedUrl = null
 let isGenerating = false
 let controller = null
+
+// SESSION SYSTEM — each "project" persists in localStorage
+let currentSessionId = localStorage.getItem("datta_active_session") || null
+let chatHistory = []  // {role: 'user'|'assistant', content: '...'}
+
+function loadSession() {
+  if (!currentSessionId) {
+    currentSessionId = "sess_" + Date.now().toString(36)
+    localStorage.setItem("datta_active_session", currentSessionId)
+  }
+  try {
+    const saved = JSON.parse(localStorage.getItem("datta_session_" + currentSessionId) || "{}")
+    if (saved.code) {
+      currentCode = saved.code
+      document.getElementById("codeEditor").value = saved.code
+      // Show preview
+      const frame = document.getElementById("previewFrame")
+      document.getElementById("previewEmpty").style.display = "none"
+      frame.style.display = "block"
+      const doc = frame.contentDocument || frame.contentWindow.document
+      doc.open(); doc.write(saved.code); doc.close()
+    }
+    if (saved.chatHistory && Array.isArray(saved.chatHistory)) {
+      chatHistory = saved.chatHistory
+      renderChatHistory()
+    }
+    if (saved.publishedUrl) {
+      publishedUrl = saved.publishedUrl
+      currentAppId = saved.appId
+      document.getElementById("publishedUrl").textContent = publishedUrl
+      document.getElementById("publishedBar").classList.add("show")
+    }
+    if (saved.title) {
+      document.getElementById("appTitle").innerHTML = `<span class="status-dot"></span><span><b>${escapeHtml(saved.title)}</b></span>`
+    }
+  } catch(e) { console.warn("Load session failed:", e) }
+}
+
+function saveSession() {
+  if (!currentSessionId) return
+  try {
+    const userTitle = chatHistory.find(m => m.role === "user")?.content?.slice(0, 40) || "App"
+    const data = {
+      code: currentCode,
+      chatHistory,
+      publishedUrl,
+      appId: currentAppId,
+      title: userTitle,
+      updatedAt: Date.now()
+    }
+    localStorage.setItem("datta_session_" + currentSessionId, JSON.stringify(data))
+    // Also save to sessions list
+    const list = JSON.parse(localStorage.getItem("datta_sessions_list") || "[]")
+    const idx = list.findIndex(s => s.id === currentSessionId)
+    const item = { id: currentSessionId, title: userTitle, updatedAt: Date.now() }
+    if (idx >= 0) list[idx] = item
+    else list.unshift(item)
+    localStorage.setItem("datta_sessions_list", JSON.stringify(list.slice(0, 50)))
+  } catch(e) { console.warn("Save session failed:", e) }
+}
+
+function renderChatHistory() {
+  const messages = document.getElementById("chatMessages")
+  const welcome = document.getElementById("welcomeScreen")
+  if (chatHistory.length > 0 && welcome) welcome.style.display = "none"
+
+  // Clear existing messages (except welcome)
+  Array.from(messages.querySelectorAll(".msg-row")).forEach(el => el.remove())
+
+  chatHistory.forEach(msg => {
+    if (msg.role === "user") {
+      messages.innerHTML += `<div class="msg-row msg-user"><div class="bubble">${escapeHtml(msg.content)}</div></div>`
+    } else {
+      const display = msg.codeKB
+        ? `<div style="color:var(--accent);font-size:12px;margin-bottom:6px;font-weight:600;">✓ App ready (${msg.codeKB}KB)</div><div style="font-size:13px;line-height:1.5;">${escapeHtml(msg.content.slice(0, 250))}</div>`
+        : `<div style="font-size:13px;line-height:1.5;">${escapeHtml(msg.content)}</div>`
+      messages.innerHTML += `<div class="msg-row"><div class="msg-ai"><div class="avatar">D</div><div class="bubble">${display}</div></div></div>`
+    }
+  })
+  messages.scrollTop = messages.scrollHeight
+}
+
+function newSession() {
+  // Save current and start new
+  saveSession()
+  currentSessionId = "sess_" + Date.now().toString(36)
+  localStorage.setItem("datta_active_session", currentSessionId)
+  currentCode = ""
+  chatHistory = []
+  currentAppId = null
+  publishedUrl = null
+  document.getElementById("codeEditor").value = ""
+  document.getElementById("previewFrame").style.display = "none"
+  document.getElementById("previewEmpty").style.display = "flex"
+  document.getElementById("publishedBar").classList.remove("show")
+  document.getElementById("appTitle").innerHTML = `<span class="status-dot"></span><span>Ready to build</span>`
+  // Show welcome
+  const messages = document.getElementById("chatMessages")
+  Array.from(messages.querySelectorAll(".msg-row")).forEach(el => el.remove())
+  const welcome = document.getElementById("welcomeScreen")
+  if (welcome) welcome.style.display = "block"
+  showToast("New project started", "success")
+}
 
 function showToast(msg, type = "") {
   const t = document.getElementById("toast")
@@ -1321,6 +1449,9 @@ async function sendPrompt() {
   const welcome = document.getElementById("welcomeScreen")
   if (welcome) welcome.style.display = "none"
 
+  // Save to history
+  chatHistory.push({ role: "user", content: text })
+
   const messages = document.getElementById("chatMessages")
   messages.innerHTML += `<div class="msg-row msg-user"><div class="bubble">${escapeHtml(text)}</div></div>`
   input.value = ""
@@ -1352,10 +1483,48 @@ async function sendPrompt() {
 
   try {
     const formData = new FormData()
-    // Include existing code in prompt so AI adds to it instead of creating new
-    let promptWithContext = text
+    // Build full context with chat history + current code
+    let promptWithContext = ""
+
     if (currentCode) {
-      promptWithContext = `Here is the current app code:\n\`\`\`html\n${currentCode}\n\`\`\`\n\nUser request: ${text}\n\nUpdate the existing code above to fulfill the request. Return the COMPLETE updated HTML file.`
+      // We have existing app — building on it
+      promptWithContext = `EXISTING APP CODE (current state):
+\`\`\`html
+${currentCode}
+\`\`\`
+
+PREVIOUS CONVERSATION:
+${chatHistory.slice(-6, -1).map(m => `${m.role === "user" ? "User" : "AI"}: ${m.content.slice(0, 200)}`).join("\n")}
+
+NEW REQUEST FROM USER: ${text}
+
+INSTRUCTIONS:
+- This is an UPDATE to the existing app above
+- Do NOT create a new different app from scratch
+- Keep ALL existing features and styling
+- Only ADD or MODIFY what the user requested
+- Return the COMPLETE updated HTML file (single file, all CSS and JS inline)
+- Make it production-quality, beautiful, and polished
+- Include smooth animations, modern UI, and great UX`
+    } else {
+      // New app — make it amazing
+      promptWithContext = `Build a STUNNING, production-quality web app: ${text}
+
+REQUIREMENTS:
+- Single HTML file with all CSS and JS inline
+- Modern, beautiful design (gradients, smooth animations, glass effects)
+- Dark theme by default with electric blue/purple accents
+- Fully responsive (mobile, tablet, desktop)
+- Smooth micro-interactions and hover effects
+- Use modern fonts (Inter, Plus Jakarta Sans, or Space Grotesk from Google Fonts)
+- Loading states, transitions, polished UX
+- Save data to localStorage if relevant
+- Should look like a professional SaaS product, not a basic demo
+- Include subtle background effects (particles, gradients, mesh)
+- Beautiful empty states with illustrations or icons
+- Keyboard shortcuts where useful (Enter to submit, etc.)
+
+Return ONLY the complete HTML code in a single \`\`\`html code block.`
     }
 
     formData.append("message", promptWithContext)
@@ -1401,24 +1570,36 @@ async function sendPrompt() {
       doc.close()
 
       const msgText = fullText.replace(/```[\s\S]*?```/g, "").trim() || "Your app is ready! Check the preview."
+      const codeKB = Math.round(code.length/1024)
       bubble.innerHTML = `
-        <div style="color:var(--accent);font-size:12px;margin-bottom:6px;font-weight:600;">✓ App ready (${Math.round(code.length/1024)}KB)</div>
+        <div style="color:var(--accent);font-size:12px;margin-bottom:6px;font-weight:600;">✓ App ready (${codeKB}KB)</div>
         <div style="font-size:13px;line-height:1.5;">${escapeHtml(msgText.slice(0, 300))}${msgText.length > 300 ? '...' : ''}</div>
       `
+
+      // Save to chat history
+      chatHistory.push({
+        role: "assistant",
+        content: msgText.slice(0, 500),
+        codeKB
+      })
+
+      saveSession()
+
       showToast("App built! 🎉", "success")
-      document.getElementById("appTitle").innerHTML = `<span class="status-dot"></span><span><b>App ready</b> · ${Math.round(code.length/1024)}KB</span>`
+      document.getElementById("appTitle").innerHTML = `<span class="status-dot"></span><span><b>App ready</b> · ${codeKB}KB</span>`
 
       // On mobile, auto-switch to preview
       if (window.innerWidth <= 900) {
         switchMobileTab("workspace")
       }
 
-      // If this was an update to published app, offer to republish
       if (publishedUrl) {
         showToast("Click Publish to update live version")
       }
     } else {
       bubble.innerHTML = `<div style="font-size:13px;line-height:1.5;">${marked.parse(fullText)}</div>`
+      chatHistory.push({ role: "assistant", content: fullText.slice(0, 500) })
+      saveSession()
     }
 
     messages.scrollTop = messages.scrollHeight
@@ -1574,6 +1755,64 @@ function copyPublishedUrl() {
   navigator.clipboard.writeText(publishedUrl)
   showToast("URL copied!", "success")
 }
+
+// PROJECTS
+function showProjects() {
+  saveSession()
+  const list = JSON.parse(localStorage.getItem("datta_sessions_list") || "[]")
+  const container = document.getElementById("projectsList")
+  if (list.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text3);font-size:13px;">No projects yet. Build something!</div>`
+  } else {
+    container.innerHTML = list.map(s => `
+      <div style="padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.2s;" onclick="openProject('${s.id}')" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(s.title || 'Untitled')}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">${new Date(s.updatedAt).toLocaleDateString('en-IN', {day:'numeric',month:'short'})} · ${new Date(s.updatedAt).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'})}</div>
+        </div>
+        ${s.id === currentSessionId ? '<span style="font-size:10px;color:var(--accent);font-weight:700;">CURRENT</span>' : `<button onclick="event.stopPropagation();deleteProject('${s.id}')" style="background:none;border:none;color:#ff6666;padding:4px 8px;cursor:pointer;font-size:11px;">✕</button>`}
+      </div>
+    `).join("")
+  }
+  document.getElementById("projectsModal").classList.add("show")
+}
+
+function closeProjects() {
+  document.getElementById("projectsModal").classList.remove("show")
+}
+
+function openProject(sessionId) {
+  saveSession() // save current first
+  currentSessionId = sessionId
+  localStorage.setItem("datta_active_session", sessionId)
+  // Reset state then load
+  currentCode = ""
+  chatHistory = []
+  currentAppId = null
+  publishedUrl = null
+  document.getElementById("publishedBar").classList.remove("show")
+  loadSession()
+  closeProjects()
+  showToast("Project loaded", "success")
+}
+
+function deleteProject(sessionId) {
+  if (!confirm("Delete this project?")) return
+  localStorage.removeItem("datta_session_" + sessionId)
+  const list = JSON.parse(localStorage.getItem("datta_sessions_list") || "[]")
+  const filtered = list.filter(s => s.id !== sessionId)
+  localStorage.setItem("datta_sessions_list", JSON.stringify(filtered))
+  if (sessionId === currentSessionId) {
+    newSession()
+  } else {
+    showProjects()
+  }
+}
+
+// INIT - load session on page load
+window.addEventListener("load", () => {
+  loadSession()
+})
 </script>
 
 </body>
