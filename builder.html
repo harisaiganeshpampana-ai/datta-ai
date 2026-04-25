@@ -1219,6 +1219,94 @@ body.dashboard .builder-view { display: none; }
   z-index: 1;
 }
 
+/* FILE PROGRESS LIST (Bolt-style) */
+.file-progress {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 1;
+  width: 100%;
+  max-width: 360px;
+  padding: 0 20px;
+}
+
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  animation: fileSlide 0.35s ease-out both;
+  transition: all 0.25s;
+}
+
+.file-row.active {
+  border-color: var(--accent);
+  background: rgba(77, 124, 255, 0.08);
+}
+
+.file-row.done {
+  border-color: rgba(77, 124, 255, 0.25);
+  background: rgba(77, 124, 255, 0.04);
+}
+
+@keyframes fileSlide {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.file-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text3);
+}
+
+.file-row.active .file-icon {
+  color: var(--accent);
+}
+
+.file-row.done .file-icon {
+  color: var(--accent2);
+}
+
+.file-icon.spin {
+  border: 1.5px solid transparent;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.file-name {
+  flex: 1;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.file-row.active .file-name {
+  color: var(--accent);
+}
+
+.file-status {
+  font-size: 10px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.file-row.done .file-status {
+  color: var(--accent2);
+}
+
 .building-stage {
   display: flex;
   align-items: center;
@@ -1761,6 +1849,7 @@ body.dashboard .builder-view { display: none; }
           <div class="building-text" id="buildingText">Building your app...</div>
           <div class="building-subtext" id="buildingSubtext">This will take a few seconds</div>
           <div class="building-stages" id="buildingStages"></div>
+          <div class="file-progress" id="fileProgress"></div>
         </div>
         <iframe id="previewFrame" class="preview-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox" style="display:none;"></iframe>
       </div>
@@ -2135,16 +2224,7 @@ function goToBuilder() {
 
   // Show preview if code exists
   if (currentCode) {
-    const frame = document.getElementById("previewFrame")
-    document.getElementById("buildingOverlay").style.display = "none"
-    frame.style.display = "block"
-    frame.classList.add("active")
-    try {
-      const doc = frame.contentDocument || frame.contentWindow.document
-      doc.open(); doc.write(currentCode); doc.close()
-    } catch(e) {
-      frame.srcdoc = currentCode
-    }
+    setPreviewCode(currentCode)
   } else {
     document.getElementById("previewFrame").style.display = "none"
     document.getElementById("buildingOverlay").style.display = "flex"
@@ -2270,6 +2350,197 @@ function renderChatHistory() {
 }
 
 // ══════ EXTRACT CODE ══════
+// ══════ FILE PROGRESS (detects what AI is generating in real-time) ══════
+let fileProgressState = {}  // { 'index.html': 'active' | 'done', ... }
+
+function initFileProgress() {
+  fileProgressState = {}
+  document.getElementById("fileProgress").innerHTML = ""
+}
+
+function setFileStatus(filename, status) {
+  fileProgressState[filename] = status
+  renderFileProgress()
+}
+
+function renderFileProgress() {
+  const container = document.getElementById("fileProgress")
+  const files = Object.keys(fileProgressState)
+  if (files.length === 0) {
+    container.innerHTML = ""
+    return
+  }
+  const fileRows = files.map(f => {
+    const status = fileProgressState[f]
+    const isActive = status === "active"
+    const isDone = status === "done"
+    const icon = isActive
+      ? '<span class="file-icon spin"></span>'
+      : isDone
+        ? '<span class="file-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg></span>'
+        : '<span class="file-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/></svg></span>'
+
+    const ext = f.split(".").pop()
+    const fileEmoji = {
+      html: "📄", css: "🎨", js: "⚡", json: "📋",
+      jsx: "⚛️", ts: "🔷", py: "🐍", md: "📝"
+    }[ext] || "📄"
+
+    return `
+      <div class="file-row ${status}">
+        ${icon}
+        <span style="margin-right:4px;">${fileEmoji}</span>
+        <span class="file-name">${f}</span>
+        <span class="file-status">${isDone ? "✓ done" : isActive ? "writing" : "queued"}</span>
+      </div>
+    `
+  }).join("")
+  container.innerHTML = fileRows
+
+  // Also show in chat bubble
+  const chatProg = document.getElementById("chatFileProgress")
+  if (chatProg) {
+    chatProg.style.display = "block"
+    chatProg.innerHTML = files.map(f => {
+      const status = fileProgressState[f]
+      const ico = status === "done" ? "✅" : status === "active" ? "⏳" : "⚪"
+      return `<div style="padding:2px 0;color:${status === 'done' ? 'var(--accent2)' : status === 'active' ? 'var(--accent)' : 'var(--text3)'};">${ico} ${f}</div>`
+    }).join("")
+  }
+}
+
+// Detects file mentions in the streaming text
+function detectFiles(streamText) {
+  // Look for typical file patterns AI generates
+  const patterns = [
+    // ```html, ```css blocks with filename hints
+    /```html\b/gi,
+    /```css\b/gi,
+    /```javascript\b|```js\b/gi,
+    // Comments mentioning files
+    /\/\*\s*(\w+\.\w+)\s*\*\//gi,
+    /\/\/\s*(\w+\.\w+)/gi,
+    // <!-- file.html -->
+    /<!--\s*([\w-]+\.\w+)\s*-->/gi
+  ]
+
+  const detectedFiles = new Set()
+
+  // Standard single-file build always has these sections
+  if (streamText.includes("<!DOCTYPE") || streamText.includes("<html")) detectedFiles.add("index.html")
+  if (/<style[^>]*>/.test(streamText)) detectedFiles.add("styles.css")
+  if (/<script[^>]*>/.test(streamText) && streamText.match(/<script[^>]*>[\s\S]{50,}/)) detectedFiles.add("app.js")
+  if (streamText.includes("THREE.") || streamText.includes("three.min.js")) detectedFiles.add("3d-scene.js")
+
+  // For multi-file outputs (rare with current setup)
+  patterns.forEach(p => {
+    let m
+    while ((m = p.exec(streamText)) !== null) {
+      if (m[1] && m[1].includes(".")) detectedFiles.add(m[1])
+    }
+  })
+
+  return Array.from(detectedFiles)
+}
+
+function updateFileProgressFromStream(streamText) {
+  const detected = detectFiles(streamText)
+
+  // Add new files as queued
+  detected.forEach(f => {
+    if (!fileProgressState[f]) {
+      fileProgressState[f] = "queued"
+    }
+  })
+
+  // Logic: as more text comes, progress files
+  // If we've seen the file's section (e.g. <style>...</style>), mark done
+  if (streamText.includes("<!DOCTYPE")) {
+    if (fileProgressState["index.html"] === "queued") {
+      fileProgressState["index.html"] = "active"
+    }
+  }
+  if (streamText.match(/<\/style>/)) {
+    if (fileProgressState["styles.css"]) fileProgressState["styles.css"] = "done"
+  } else if (streamText.includes("<style")) {
+    if (fileProgressState["styles.css"] === "queued") fileProgressState["styles.css"] = "active"
+  }
+  if (streamText.match(/<\/script>\s*<\/body>/)) {
+    if (fileProgressState["app.js"]) fileProgressState["app.js"] = "done"
+    if (fileProgressState["3d-scene.js"]) fileProgressState["3d-scene.js"] = "done"
+  } else if (streamText.match(/<script[^>]*>[\s\S]{100,}/)) {
+    if (fileProgressState["app.js"] === "queued") fileProgressState["app.js"] = "active"
+    if (fileProgressState["3d-scene.js"] === "queued") fileProgressState["3d-scene.js"] = "active"
+  }
+  if (streamText.includes("</html>")) {
+    Object.keys(fileProgressState).forEach(f => fileProgressState[f] = "done")
+  }
+
+  renderFileProgress()
+}
+
+function setPreviewCode(code) {
+  if (!code) return
+  const frame = document.getElementById("previewFrame")
+  document.getElementById("buildingOverlay").style.display = "none"
+  frame.style.display = "block"
+  frame.classList.add("active")
+
+  // Use srcdoc — safer than document.write, handles all chars correctly
+  // Need to clear first to force reload
+  frame.srcdoc = ""
+  setTimeout(() => {
+    frame.srcdoc = code
+
+    // Listen for errors in the preview iframe
+    frame.onload = () => {
+      try {
+        const w = frame.contentWindow
+        if (w) {
+          w.addEventListener("error", (e) => {
+            const errMsg = e.message || "Unknown error"
+            console.warn("[PREVIEW ERROR]", errMsg)
+            showAutoFixBanner(errMsg)
+          })
+          w.addEventListener("unhandledrejection", (e) => {
+            const errMsg = (e.reason && e.reason.message) || String(e.reason) || "Promise rejection"
+            console.warn("[PREVIEW REJECTION]", errMsg)
+            showAutoFixBanner(errMsg)
+          })
+        }
+      } catch(e) { /* cross-origin */ }
+    }
+  }, 10)
+}
+
+// Show banner when preview has error - one-click auto-fix
+function showAutoFixBanner(errMsg) {
+  // Don't spam - only show once per generation
+  if (document.getElementById("autoFixBanner")) return
+
+  const messages = document.getElementById("chatMessages")
+  const banner = document.createElement("div")
+  banner.id = "autoFixBanner"
+  banner.className = "msg-row"
+  banner.innerHTML = `
+    <div style="display:flex;gap:8px;align-items:center;padding:10px 12px;background:rgba(239, 68, 68, 0.1);border:1px solid rgba(239, 68, 68, 0.4);border-radius:10px;font-size:12px;">
+      <span>⚠️ Preview error: <code style="font-size:11px;background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;">${escapeHtml(errMsg.slice(0, 80))}</code></span>
+      <button onclick="autoFixError('${encodeURIComponent(errMsg)}')" style="margin-left:auto;padding:5px 12px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">Auto-Fix</button>
+    </div>
+  `
+  messages.appendChild(banner)
+  messages.scrollTop = messages.scrollHeight
+}
+
+function autoFixError(encodedErr) {
+  const errMsg = decodeURIComponent(encodedErr)
+  const banner = document.getElementById("autoFixBanner")
+  if (banner) banner.remove()
+
+  document.getElementById("promptInput").value = `Fix this error in the app: "${errMsg}". Find and fix only the broken part. Don't change other features.`
+  sendPrompt()
+}
+
 function extractCode(text) {
   if (!text) return null
 
@@ -2315,16 +2586,7 @@ function updatePreview() {
   if (!code) return
   currentCode = code
   saveProject()
-  const frame = document.getElementById("previewFrame")
-  document.getElementById("buildingOverlay").style.display = "none"
-  frame.style.display = "block"
-  frame.classList.add("active")
-  try {
-    const doc = frame.contentDocument || frame.contentWindow.document
-    doc.open(); doc.write(code); doc.close()
-  } catch(e) {
-    frame.srcdoc = code
-  }
+  setPreviewCode(code)
   showToast("Preview updated", "success")
 }
 
@@ -2337,6 +2599,8 @@ function showBuildingAnimation() {
   overlay.style.display = "flex"
   document.getElementById("buildingText").textContent = "Building your app..."
   document.getElementById("buildingSubtext").textContent = "AI is crafting your design"
+
+  initFileProgress()
 
   const stagesEl = document.getElementById("buildingStages")
   const stages = [
@@ -2393,6 +2657,7 @@ async function sendPrompt() {
           <div class="thinking-orb"></div>
           <span class="thinking-text">Building your app...</span>
         </div>
+        <div id="chatFileProgress" style="margin-top:8px;display:none;font-family:'JetBrains Mono',monospace;font-size:11px;"></div>
       </div>
     </div>`
   messages.appendChild(aiDiv)
@@ -2412,7 +2677,18 @@ async function sendPrompt() {
 
   try {
     let promptWithContext = ""
+
+    // Detect intent
+    const lowerText = text.toLowerCase()
+    const isError = /\b(error|bug|broken|not work|doesn'?t work|fix|wrong|fails?|issue|problem)\b/i.test(text)
+    const is3D = /\b(3d|three\.?js|webgl|3 dimensional|immersive|interactive scene)\b/i.test(text)
+
     if (currentCode) {
+      const intentNote = isError
+        ? "\n\nUSER REPORTED AN ERROR/BUG. Find and fix the specific bug in the existing code. Don't rebuild — just fix the broken part. After the code, briefly explain what you fixed."
+        : ""
+      const threeDNote = is3D ? "\n\nUSE THREE.JS for 3D rendering. Add it via CDN: <" + "script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'></scr" + "ipt>" : ""
+
       promptWithContext = `EXISTING APP CODE:
 \`\`\`html
 ${currentCode}
@@ -2429,19 +2705,22 @@ INSTRUCTIONS:
 - Keep ALL existing features and styling
 - Only ADD or MODIFY what user requested
 - Return COMPLETE updated HTML (single file)
-- Production-quality, beautiful, polished`
+- Production-quality, beautiful, polished${intentNote}${threeDNote}`
     } else {
+      const threeDNote = is3D
+        ? "\n- Use Three.js (CDN: https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js) for real 3D effects: rotating objects, particles, animated meshes, lighting"
+        : "\n- Subtle background effects (gradients, particles)"
+
       promptWithContext = `Build a STUNNING production-quality web app: ${text}
 
 REQUIREMENTS:
 - Single HTML file with all CSS and JS inline
 - Modern, beautiful design (gradients, smooth animations, glass effects)
-- Dark theme with electric blue/purple accents
+- Dark theme with electric blue (#4d7cff) and purple (#a855f7) accents
 - Fully responsive (mobile, tablet, desktop)
 - Smooth micro-interactions
 - Modern Google Fonts (Inter, Plus Jakarta Sans, or Space Grotesk)
-- Loading/empty states, polished UX
-- Subtle background effects (gradients, particles)
+- Loading/empty states, polished UX${threeDNote}
 - Production SaaS quality, not basic demo
 
 Return ONLY the HTML in a \`\`\`html code block.`
@@ -2471,6 +2750,9 @@ Return ONLY the HTML in a \`\`\`html code block.`
       // stream:true keeps multi-byte chars whole across chunks
       const chunk = decoder.decode(value, { stream: true })
       fullText += chunk
+
+      // Update file progress in real-time as code arrives
+      updateFileProgressFromStream(fullText)
     }
     // Final flush
     fullText += decoder.decode()
@@ -2491,22 +2773,8 @@ Return ONLY the HTML in a \`\`\`html code block.`
       currentCode = code
       document.getElementById("codeEditor").value = code
 
-      // Show preview - hide building animation, show iframe
-      document.getElementById("buildingOverlay").style.display = "none"
-      const frame = document.getElementById("previewFrame")
-      frame.style.display = "block"
-      frame.classList.add("active")
-
-      // Write code to iframe
-      try {
-        const doc = frame.contentDocument || frame.contentWindow.document
-        doc.open()
-        doc.write(code)
-        doc.close()
-      } catch(writeErr) {
-        // Fallback: use srcdoc
-        frame.srcdoc = code
-      }
+      // Show preview safely via srcdoc
+      setPreviewCode(code)
 
       const msgText = fullText.replace(/```[\s\S]*?```/g, "").trim() || "Your app is ready! Check the preview."
       const codeKB = Math.round(code.length/1024)
@@ -2523,6 +2791,23 @@ Return ONLY the HTML in a \`\`\`html code block.`
 
       // Refresh credits
       loadCredits()
+
+      // If this app is already published, show one-click republish
+      if (publishedUrl && currentAppId) {
+        setTimeout(() => {
+          const messages = document.getElementById("chatMessages")
+          const republishDiv = document.createElement("div")
+          republishDiv.className = "msg-row"
+          republishDiv.innerHTML = `
+            <div style="display:flex;gap:8px;align-items:center;padding:10px 12px;background:linear-gradient(135deg,rgba(77,124,255,0.12),rgba(168,85,247,0.12));border:1px solid rgba(77,124,255,0.4);border-radius:10px;font-size:12px;">
+              <span>🌐 Live version is outdated</span>
+              <button onclick="quickRepublish()" style="margin-left:auto;padding:5px 12px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Republish</button>
+            </div>
+          `
+          messages.appendChild(republishDiv)
+          messages.scrollTop = messages.scrollHeight
+        }, 800)
+      }
     } else {
       // No code extracted - but still try to save SOMETHING if response has HTML
       // so user can see what was returned and Publish/Download work
@@ -2533,14 +2818,7 @@ Return ONLY the HTML in a \`\`\`html code block.`
           : `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Output</title><style>body{font-family:system-ui;padding:20px;background:#0a0a18;color:#fff;}pre{background:#1a1a2e;padding:16px;border-radius:8px;overflow:auto;}</style></head><body><pre>${fullText.replace(/</g,'&lt;')}</pre></body></html>`
         document.getElementById("codeEditor").value = currentCode
 
-        const frame = document.getElementById("previewFrame")
-        document.getElementById("buildingOverlay").style.display = "none"
-        frame.style.display = "block"
-        frame.classList.add("active")
-        try {
-          const doc = frame.contentDocument || frame.contentWindow.document
-          doc.open(); doc.write(currentCode); doc.close()
-        } catch(e) { frame.srcdoc = currentCode }
+        setPreviewCode(currentCode)
 
         bubble.innerHTML = `<div style="font-size:13px;line-height:1.5;">${marked.parse(fullText.slice(0, 2000))}</div>
           <div style="margin-top:8px;font-size:11px;color:#ff9955;">⚠️ Couldn't auto-extract HTML. Raw response shown in preview & code tab. You can edit it.</div>`
@@ -2690,6 +2968,44 @@ function copyPublishedUrl() {
   if (!publishedUrl) return
   navigator.clipboard.writeText(publishedUrl)
   showToast("URL copied!", "success")
+}
+
+// One-click republish (uses existing app name)
+async function quickRepublish() {
+  if (!currentAppId) { showToast("Click Publish to set up first"); return }
+  const code = document.getElementById("codeEditor").value || currentCode
+  if (!code) { showToast("No code yet"); return }
+
+  showToast("Republishing...", "")
+
+  try {
+    // Extract slug from existing URL
+    const urlParts = publishedUrl.split("/")
+    const oldSlug = urlParts[urlParts.length - 1]
+
+    const res = await fetch(S + "/apps/publish", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + getToken()
+      },
+      body: JSON.stringify({
+        appId: currentAppId,
+        name: oldSlug,
+        code: code
+      })
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || "Republish failed")
+
+    publishedUrl = data.url
+    saveProject()
+
+    document.getElementById("publishedUrl").textContent = data.url
+    showToast("✅ Live version updated!", "success")
+  } catch(e) {
+    showToast("Republish failed: " + e.message)
+  }
 }
 </script>
 
