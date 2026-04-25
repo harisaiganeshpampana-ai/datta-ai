@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#050510">
 <title>Datta AI Builder</title>
 
@@ -10,7 +10,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <style>
@@ -33,14 +33,16 @@
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 html, body {
-  height: 100vh;
+  height: 100%;
   background: var(--bg);
   color: var(--text);
   font-family: 'Plus Jakarta Sans', sans-serif;
-  overflow: hidden;
   -webkit-font-smoothing: antialiased;
   font-size: 14px;
 }
+
+body { overflow: hidden; }
+body.dashboard { overflow: auto; }
 
 button, input, textarea { font-family: inherit; color: inherit; }
 button { cursor: pointer; border: none; background: transparent; }
@@ -80,149 +82,24 @@ a { color: inherit; text-decoration: none; }
   -webkit-text-fill-color: transparent;
 }
 
-/* APP GRID */
-.app {
-  height: 100vh;
-  display: grid;
-  grid-template-columns: 340px 1fr;
-  grid-template-rows: 56px 1fr;
-  grid-template-areas:
-    "topbar topbar"
-    "chat workspace";
-}
-
-/* MOBILE TAB SWITCHER (hidden by default) */
-.mobile-tabs {
-  display: none;
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-  padding: 0;
-  grid-area: mtabs;
-}
-
-.mobile-tab {
-  flex: 1;
-  padding: 11px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text3);
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.mobile-tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
-
-.mobile-tab svg { width: 13px; height: 13px; }
-
-/* TABLET - simpler 2-column with narrower chat */
-@media (max-width: 1100px) and (min-width: 901px) {
-  .app {
-    grid-template-columns: 280px 1fr;
-  }
-  .welcome h2 { font-size: 16px; }
-  .welcome p { font-size: 11px; }
-  .example { font-size: 11px; padding: 8px 10px; }
-  .app-title { max-width: 180px; font-size: 11px; }
-}
-
-/* MOBILE - Tab switcher instead of side-by-side */
-@media (max-width: 900px) {
-  .app {
-    grid-template-columns: 1fr;
-    grid-template-rows: 54px 42px 1fr;
-    grid-template-areas:
-      "topbar"
-      "mtabs"
-      "content";
-  }
-
-  .mobile-tabs {
-    display: flex;
-  }
-
-  .chat-panel {
-    grid-area: content;
-    display: none;
-    border-right: none;
-  }
-
-  .workspace {
-    grid-area: content;
-    display: none;
-  }
-
-  .chat-panel.mobile-active {
-    display: flex;
-  }
-
-  .workspace.mobile-active {
-    display: flex;
-  }
-
-  .app-title {
-    display: none;
-  }
-
-  .tb-btn {
-    padding: 6px 10px;
-    font-size: 12px;
-  }
-
-  .tb-btn span, .tb-btn > *:not(svg) {
-    display: none;
-  }
-
-  .tb-btn svg {
-    margin: 0;
-  }
-
-  .tb-btn.primary span, .tb-btn.primary > *:not(svg) {
-    display: inline;
-  }
-}
-
-/* PHONE - tighten everything */
-@media (max-width: 480px) {
-  .topbar { padding: 0 10px; }
-  .logo { font-size: 14px; gap: 8px; }
-  .logo-mark { width: 28px; height: 28px; font-size: 13px; }
-  .tb-right { gap: 6px; }
-  .welcome-orb { width: 48px; height: 48px; font-size: 24px; }
-  .welcome h2 { font-size: 16px; }
-  .welcome p { font-size: 12px; }
-  .preview-empty { padding: 24px 16px; }
-  .preview-empty-orb { width: 70px; height: 70px; font-size: 32px; }
-  .preview-empty h2 { font-size: 22px; }
-  .preview-empty p { font-size: 13px; }
-  .feature-badges { gap: 6px; }
-  .feature-badge { font-size: 11px; padding: 5px 10px; }
-  .modal { padding: 24px 20px; }
-}
-
-/* TOPBAR */
+/* ════════════ TOPBAR (always visible) ════════════ */
 .topbar {
-  grid-area: topbar;
+  position: sticky;
+  top: 0;
   background: var(--bg2);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  z-index: 10;
+  height: 56px;
+  z-index: 100;
 }
 
 .tb-left, .tb-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .logo {
@@ -246,6 +123,7 @@ a { color: inherit; text-decoration: none; }
   box-shadow: 0 0 16px var(--accent-glow);
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .logo-mark::before {
@@ -275,7 +153,7 @@ a { color: inherit; text-decoration: none; }
   background: var(--bg4);
   border-radius: 7px;
   border: 1px solid var(--border);
-  max-width: 280px;
+  max-width: 250px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -292,6 +170,7 @@ a { color: inherit; text-decoration: none; }
   background: var(--accent);
   box-shadow: 0 0 8px var(--accent);
   animation: statusPulse 2s infinite;
+  flex-shrink: 0;
 }
 
 @keyframes statusPulse {
@@ -310,6 +189,7 @@ a { color: inherit; text-decoration: none; }
   transition: all 0.2s;
   color: var(--text2);
   border: 1px solid var(--border);
+  white-space: nowrap;
 }
 
 .tb-btn:hover {
@@ -330,11 +210,443 @@ a { color: inherit; text-decoration: none; }
   box-shadow: 0 0 24px var(--purple-glow);
 }
 
-.tb-btn svg { width: 13px; height: 13px; }
+.tb-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+.tb-icon {
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text2);
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+}
+
+.tb-icon:hover {
+  background: var(--bg4);
+  color: var(--text);
+}
+
+.tb-icon svg { width: 16px; height: 16px; }
+
+/* ════════════ DASHBOARD ════════════ */
+.dashboard-view {
+  display: none;
+  min-height: calc(100vh - 56px);
+  padding: 32px 24px 80px;
+}
+
+body.dashboard .dashboard-view { display: block; }
+body.dashboard .builder-view { display: none; }
+
+.dash-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.dash-hero {
+  text-align: center;
+  margin-bottom: 50px;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dash-hero h1 {
+  font-size: clamp(28px, 5vw, 44px);
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  margin-bottom: 10px;
+  line-height: 1.1;
+}
+
+.dash-hero h1 em {
+  font-family: 'Instrument Serif', serif;
+  font-weight: 400;
+  font-style: italic;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dash-hero p {
+  color: var(--text2);
+  font-size: 16px;
+  margin-bottom: 30px;
+}
+
+/* MAIN PROMPT BOX (the "create" interface) */
+.main-prompt {
+  max-width: 700px;
+  margin: 0 auto 50px;
+  background: linear-gradient(135deg, rgba(77, 124, 255, 0.04), rgba(168, 85, 247, 0.04));
+  border: 1px solid var(--border-strong);
+  border-radius: 20px;
+  padding: 8px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s;
+}
+
+.main-prompt::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 20px;
+  opacity: 0;
+  z-index: -1;
+  filter: blur(8px);
+  transition: opacity 0.3s;
+}
+
+.main-prompt:focus-within::before {
+  opacity: 0.3;
+}
+
+.main-prompt:focus-within {
+  border-color: var(--accent);
+}
+
+.main-prompt textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.5;
+  padding: 18px 18px 8px;
+  resize: none;
+  min-height: 80px;
+  max-height: 200px;
+  font-family: inherit;
+}
+
+.main-prompt textarea::placeholder { color: var(--text3); }
+
+.main-prompt-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+}
+
+.main-prompt-tag {
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  background: var(--bg2);
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.main-create-btn {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+.main-create-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px var(--purple-glow);
+}
+
+.main-create-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* PROJECTS SECTION */
+.projects-section {
+  margin-top: 50px;
+}
+
+.projects-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.projects-header h2 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.search-bar {
+  position: relative;
+  width: 280px;
+  max-width: 100%;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 9px 14px 9px 38px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.search-bar input:focus {
+  border-color: var(--accent);
+  background: var(--bg3);
+  box-shadow: 0 0 0 3px rgba(77, 124, 255, 0.08);
+}
+
+.search-bar input::placeholder { color: var(--text3); }
+
+.search-bar svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: var(--text3);
+  pointer-events: none;
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.project-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+
+.project-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s;
+}
+
+.project-card:hover {
+  border-color: rgba(77, 124, 255, 0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+.project-card:hover::before { transform: scaleX(1); }
+
+.project-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(77, 124, 255, 0.2), rgba(168, 85, 247, 0.2));
+  border: 1px solid rgba(77, 124, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.project-name {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-meta {
+  font-size: 11px;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.project-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.project-published {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(77, 124, 255, 0.15);
+  border-radius: 100px;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.project-actions {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.proj-btn {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 11px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text2);
+  font-weight: 600;
+  transition: all 0.15s;
+}
+
+.proj-btn:hover {
+  background: var(--bg4);
+  color: var(--text);
+}
+
+.proj-btn.danger:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.empty-projects {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text3);
+}
+
+.empty-projects-icon {
+  font-size: 50px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.empty-projects p {
+  font-size: 14px;
+}
+
+/* ════════════ BUILDER VIEW ════════════ */
+.builder-view {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  grid-template-rows: 1fr;
+  height: calc(100vh - 56px);
+}
+
+/* MOBILE TAB SWITCHER */
+.mobile-tabs {
+  display: none;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+}
+
+.mobile-tab {
+  flex: 1;
+  padding: 11px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text3);
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.mobile-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.mobile-tab svg { width: 13px; height: 13px; }
+
+@media (max-width: 1100px) and (min-width: 901px) {
+  .builder-view { grid-template-columns: 280px 1fr; }
+}
+
+/* MOBILE LAYOUT */
+@media (max-width: 900px) {
+  .topbar { padding: 0 12px; }
+  .app-title { display: none; }
+  .tb-btn span:not(.tb-btn-keep) { display: none; }
+  .tb-btn { padding: 8px 10px; }
+
+  .builder-view {
+    grid-template-columns: 1fr;
+    grid-template-rows: 42px 1fr;
+  }
+
+  .mobile-tabs { display: flex; }
+
+  .chat-panel, .workspace {
+    display: none;
+  }
+
+  .chat-panel.mobile-active, .workspace.mobile-active {
+    display: flex;
+  }
+
+  .dash-hero h1 { font-size: 28px; }
+  .main-prompt textarea { font-size: 15px; padding: 14px 14px 6px; }
+  .projects-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .project-card { padding: 14px; }
+  .search-bar { width: 100%; }
+  .projects-header { flex-direction: column; align-items: stretch; }
+}
+
+@media (max-width: 480px) {
+  .dashboard-view { padding: 20px 16px 60px; }
+  .dash-hero { margin-bottom: 30px; }
+  .dash-hero h1 { font-size: 24px; }
+  .main-prompt { margin-bottom: 30px; }
+  .projects-grid { grid-template-columns: 1fr; }
+  .topbar { padding: 0 10px; }
+  .logo { font-size: 14px; gap: 8px; }
+  .logo-mark { width: 28px; height: 28px; font-size: 13px; }
+  .tb-right { gap: 6px; }
+}
 
 /* CHAT PANEL */
 .chat-panel {
-  grid-area: chat;
   background: var(--bg2);
   border-right: 1px solid var(--border);
   display: flex;
@@ -350,93 +662,6 @@ a { color: inherit; text-decoration: none; }
 
 .chat-messages::-webkit-scrollbar { width: 6px; }
 .chat-messages::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 3px; }
-
-.welcome {
-  text-align: center;
-  padding: 20px 10px;
-  color: var(--text2);
-  animation: fadeInUp 0.6s ease-out;
-}
-
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.welcome-orb {
-  width: 56px; height: 56px;
-  margin: 0 auto 16px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-weight: 900;
-  font-size: 28px;
-  box-shadow: 0 10px 30px var(--accent-glow);
-  animation: orbFloat 3s ease-in-out infinite;
-  position: relative;
-}
-
-.welcome-orb::before {
-  content: '';
-  position: absolute;
-  inset: -12px;
-  border: 1px solid rgba(77, 124, 255, 0.3);
-  border-radius: 24px;
-  animation: ringPulse 3s ease-in-out infinite;
-}
-
-@keyframes orbFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-
-@keyframes ringPulse {
-  0%, 100% { transform: scale(1); opacity: 0.4; }
-  50% { transform: scale(1.1); opacity: 0.1; }
-}
-
-.welcome h2 {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 6px;
-  letter-spacing: -0.3px;
-  color: var(--text);
-}
-
-.welcome p {
-  font-size: 12px;
-  line-height: 1.6;
-  max-width: 280px;
-  margin: 0 auto 16px;
-}
-
-.examples {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.example {
-  padding: 10px 12px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  font-size: 12px;
-  color: var(--text2);
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.2s;
-}
-
-.example:hover {
-  border-color: var(--accent);
-  color: var(--text);
-  background: rgba(77, 124, 255, 0.05);
-  transform: translateX(2px);
-}
 
 .msg-row {
   margin-bottom: 12px;
@@ -488,17 +713,7 @@ a { color: inherit; text-decoration: none; }
   max-width: calc(100% - 34px);
   font-size: 13px;
   line-height: 1.55;
-  color: var(--text);
   word-wrap: break-word;
-}
-
-.msg-ai .bubble code {
-  background: var(--bg);
-  padding: 1px 5px;
-  border-radius: 3px;
-  font-size: 11px;
-  color: #ff9955;
-  font-family: 'JetBrains Mono', monospace;
 }
 
 .thinking {
@@ -568,7 +783,6 @@ a { color: inherit; text-decoration: none; }
   animation: spin 0.8s linear infinite;
 }
 
-/* CHAT INPUT */
 .chat-input-wrap {
   padding: 12px;
   border-top: 1px solid var(--border);
@@ -588,7 +802,6 @@ a { color: inherit; text-decoration: none; }
 
 .chat-input:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(77, 124, 255, 0.08);
 }
 
 #promptInput {
@@ -602,6 +815,7 @@ a { color: inherit; text-decoration: none; }
   resize: none;
   max-height: 120px;
   min-height: 40px;
+  font-family: inherit;
 }
 
 #promptInput::placeholder { color: var(--text3); }
@@ -636,24 +850,72 @@ a { color: inherit; text-decoration: none; }
 
 .send-btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 5px 16px var(--purple-glow);
 }
 
 .send-btn svg { width: 15px; height: 15px; }
-
-.send-btn.stop {
-  background: linear-gradient(135deg, #ff5555, #ff3333);
-}
+.send-btn.stop { background: linear-gradient(135deg, #ff5555, #ff3333); }
 
 /* WORKSPACE */
 .workspace {
-  grid-area: workspace;
   display: flex;
   flex-direction: column;
   background: var(--bg);
   overflow: hidden;
   min-width: 0;
 }
+
+.published-bar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: linear-gradient(90deg, rgba(77, 124, 255, 0.1), rgba(168, 85, 247, 0.1));
+  border-bottom: 1px solid rgba(77, 124, 255, 0.3);
+  font-size: 12px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.published-bar.show { display: flex; }
+
+.published-bar .label {
+  color: var(--text2);
+  font-weight: 600;
+}
+
+.published-bar .url {
+  flex: 1;
+  padding: 6px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--accent);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copy-url-btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+}
+
+.copy-url-btn svg { width: 11px; height: 11px; }
 
 .ws-tabs {
   display: flex;
@@ -663,10 +925,7 @@ a { color: inherit; text-decoration: none; }
   padding: 0 10px;
   gap: 2px;
   flex-shrink: 0;
-  overflow-x: auto;
 }
-
-.ws-tabs::-webkit-scrollbar { display: none; }
 
 .ws-tab {
   padding: 10px 16px;
@@ -708,87 +967,159 @@ a { color: inherit; text-decoration: none; }
   border: none;
 }
 
-.preview-empty {
+/* BUILDING ANIMATION (shown while AI generates) */
+.building-overlay {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px;
-  text-align: center;
+  padding: 40px 20px;
   background: var(--bg);
+  position: relative;
+  overflow: hidden;
 }
 
-.preview-empty-orb {
-  width: 90px; height: 90px;
-  margin-bottom: 24px;
-  border-radius: 24px;
+.building-overlay::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, var(--accent-glow), transparent 60%);
+  animation: glowPulse 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes glowPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.4; }
+  50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.7; }
+}
+
+.building-orb {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 30px;
+  border-radius: 30px;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   font-weight: 900;
-  font-size: 44px;
-  box-shadow: 0 20px 60px var(--accent-glow);
-  animation: orbFloat 3s ease-in-out infinite;
+  font-size: 56px;
   position: relative;
+  animation: orbBuild 2s ease-in-out infinite;
+  box-shadow: 0 0 80px var(--accent-glow), 0 0 120px var(--purple-glow);
+  z-index: 1;
 }
 
-.preview-empty-orb::before {
+@keyframes orbBuild {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  25% { transform: translateY(-10px) rotate(2deg); }
+  75% { transform: translateY(-5px) rotate(-2deg); }
+}
+
+.building-orb::before,
+.building-orb::after {
   content: '';
   position: absolute;
-  inset: -18px;
-  border: 1px solid rgba(77, 124, 255, 0.3);
-  border-radius: 36px;
-  animation: ringPulse 3s ease-in-out infinite;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  pointer-events: none;
 }
 
-.preview-empty h2 {
-  font-size: 28px;
-  font-weight: 800;
-  margin-bottom: 10px;
-  letter-spacing: -0.5px;
+.building-orb::before {
+  inset: -20px;
+  border-color: rgba(77, 124, 255, 0.3);
+  animation: ringExpand 2s ease-out infinite;
 }
 
-.preview-empty h2 span {
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
+.building-orb::after {
+  inset: -40px;
+  border-color: rgba(168, 85, 247, 0.2);
+  animation: ringExpand 2s ease-out 0.4s infinite;
+}
+
+@keyframes ringExpand {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+.building-text {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  z-index: 1;
 }
 
-.preview-empty p {
-  color: var(--text2);
-  font-size: 14px;
-  max-width: 500px;
-  margin-bottom: 30px;
-  line-height: 1.6;
+.building-subtext {
+  font-size: 13px;
+  color: var(--text3);
+  text-align: center;
+  z-index: 1;
 }
 
-.feature-badges {
+.building-stages {
+  margin-top: 30px;
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
+  align-items: center;
+  z-index: 1;
 }
 
-.feature-badge {
-  padding: 6px 14px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 100px;
+.building-stage {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 12px;
-  color: var(--text2);
-  transition: all 0.2s;
+  color: var(--text3);
+  opacity: 0;
+  animation: stageIn 0.4s ease-out forwards;
 }
 
-.feature-badge:hover {
-  border-color: var(--accent);
+.building-stage.active {
   color: var(--accent);
+  font-weight: 600;
 }
 
-/* CODE VIEW */
+.building-stage.done {
+  color: var(--text2);
+}
+
+@keyframes stageIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.stage-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--bg4);
+  flex-shrink: 0;
+}
+
+.building-stage.active .stage-dot {
+  background: var(--accent);
+  animation: dotPulse 1s infinite;
+}
+
+.building-stage.done .stage-dot {
+  background: var(--accent2);
+}
+
+@keyframes dotPulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+  50% { box-shadow: 0 0 0 6px rgba(77, 124, 255, 0); }
+}
+
 .code-view {
   flex: 1;
   display: flex;
@@ -813,10 +1144,7 @@ a { color: inherit; text-decoration: none; }
   font-size: 11px;
 }
 
-.code-actions {
-  display: flex;
-  gap: 4px;
-}
+.code-actions { display: flex; gap: 4px; }
 
 .code-btn {
   padding: 5px 10px;
@@ -842,20 +1170,11 @@ a { color: inherit; text-decoration: none; }
   color: var(--accent);
 }
 
-.code-btn.primary:hover {
-  background: rgba(77, 124, 255, 0.25);
-}
-
 .code-btn svg { width: 11px; height: 11px; }
 
-.code-editor-wrap {
-  flex: 1;
-  overflow: hidden;
-}
-
 #codeEditor {
+  flex: 1;
   width: 100%;
-  height: 100%;
   background: var(--bg);
   color: #d0d0ff;
   font-family: 'JetBrains Mono', monospace;
@@ -872,57 +1191,6 @@ a { color: inherit; text-decoration: none; }
 
 #codeEditor::-webkit-scrollbar { width: 8px; height: 8px; }
 #codeEditor::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 4px; }
-
-/* PUBLISHED URL BAR */
-.published-bar {
-  display: none;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  background: linear-gradient(90deg, rgba(77, 124, 255, 0.1), rgba(168, 85, 247, 0.1));
-  border-bottom: 1px solid rgba(77, 124, 255, 0.3);
-  font-size: 12px;
-  animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.published-bar.show { display: flex; }
-
-.published-bar .label {
-  color: var(--text2);
-  font-weight: 600;
-}
-
-.published-bar .url {
-  flex: 1;
-  padding: 6px 12px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: var(--accent);
-  cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.published-bar .copy-url-btn {
-  padding: 6px 10px;
-  border-radius: 6px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
 
 /* TOAST */
 .toast {
@@ -951,7 +1219,7 @@ a { color: inherit; text-decoration: none; }
   border-color: rgba(77, 124, 255, 0.4);
 }
 
-/* PUBLISH MODAL */
+/* MODALS */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -961,12 +1229,11 @@ a { color: inherit; text-decoration: none; }
   display: none;
   align-items: center;
   justify-content: center;
-  animation: fadeIn 0.2s;
 }
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal-overlay.show { display: flex; animation: fadeIn 0.2s; }
 
-.modal-overlay.show { display: flex; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .modal {
   background: var(--bg2);
@@ -976,7 +1243,6 @@ a { color: inherit; text-decoration: none; }
   max-width: 440px;
   width: 90%;
   animation: modalIn 0.3s ease-out;
-  position: relative;
 }
 
 @keyframes modalIn {
@@ -1029,59 +1295,205 @@ a { color: inherit; text-decoration: none; }
   margin-bottom: 16px;
   word-break: break-all;
 }
+
+/* Settings menu dropdown */
+.settings-menu {
+  position: absolute;
+  top: 60px;
+  right: 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  padding: 8px;
+  min-width: 200px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: none;
+  animation: menuIn 0.2s ease-out;
+}
+
+.settings-menu.show { display: block; }
+
+@keyframes menuIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text2);
+  transition: all 0.15s;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.menu-item:hover {
+  background: var(--bg4);
+  color: var(--text);
+}
+
+.menu-item svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.menu-item.danger:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
 </style>
 </head>
-<body>
+<body class="dashboard">
 
 <div class="loader" id="loader">
   <div class="loader-orb"></div>
-  <div class="loader-text">Datta AI Builder</div>
+  <div class="loader-text">Datta AI</div>
 </div>
 
-<div class="app">
-  <header class="topbar">
-    <div class="tb-left">
-      <a href="/" class="logo">
-        <div class="logo-mark">D</div>
-        <span>Datta<b>AI</b></span>
-      </a>
-      <div class="app-title" id="appTitle">
-        <span class="status-dot"></span>
-        <span>Ready to build</span>
+<header class="topbar">
+  <div class="tb-left">
+    <a href="/" class="logo">
+      <div class="logo-mark">D</div>
+      <span>Datta<b>AI</b></span>
+    </a>
+    <div class="app-title" id="appTitle" style="display:none;">
+      <span class="status-dot"></span>
+      <span id="appTitleText">Ready</span>
+    </div>
+  </div>
+  <div class="tb-right">
+    <!-- BUILDER VIEW BUTTONS (hidden in dashboard) -->
+    <button class="tb-btn" id="downloadBtn" onclick="downloadCode()" style="display:none;" title="Download">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      <span>Download</span>
+    </button>
+    <button class="tb-btn primary" id="publishBtn" onclick="openPublishModal()" style="display:none;" title="Publish">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="5 12 10 17 20 7"/>
+      </svg>
+      <span class="tb-btn-keep">Publish</span>
+    </button>
+    <button class="tb-btn" id="dashboardBtn" onclick="goToDashboard()" style="display:none;" title="My Projects">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/>
+        <rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      <span>Dashboard</span>
+    </button>
+
+    <!-- SETTINGS BUTTON (always visible) -->
+    <button class="tb-icon" onclick="toggleSettingsMenu()" title="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<!-- SETTINGS DROPDOWN MENU -->
+<div class="settings-menu" id="settingsMenu">
+  <button class="menu-item" onclick="window.location.href='/settings.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
+    </svg>
+    Settings
+  </button>
+  <button class="menu-item" onclick="window.location.href='/pricing.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>
+    Upgrade Plan
+  </button>
+  <button class="menu-item" onclick="window.location.href='/privacy.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+    Privacy Policy
+  </button>
+  <button class="menu-item" onclick="window.location.href='/contact.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+      <polyline points="22,6 12,13 2,6"/>
+    </svg>
+    Contact
+  </button>
+  <div class="menu-divider"></div>
+  <button class="menu-item danger" onclick="logout()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+      <polyline points="16 17 21 12 16 7"/>
+      <line x1="21" y1="12" x2="9" y2="12"/>
+    </svg>
+    Logout
+  </button>
+</div>
+
+<!-- ════════════ DASHBOARD VIEW ════════════ -->
+<div class="dashboard-view">
+  <div class="dash-wrap">
+    <div class="dash-hero">
+      <h1>What will you <em>build today?</em></h1>
+      <p>Describe your app. Watch it come alive in seconds.</p>
+    </div>
+
+    <!-- MAIN PROMPT (the create interface) -->
+    <div class="main-prompt">
+      <textarea id="mainPrompt" placeholder="A modern todo app with dark theme, drag-to-reorder, and beautiful animations..." rows="3" onkeydown="handleMainPromptKey(event)" oninput="autoGrowMain(this)"></textarea>
+      <div class="main-prompt-bottom">
+        <div class="main-prompt-tag">⚡ Gemini 2.5 Pro</div>
+        <button class="main-create-btn" id="mainCreateBtn" onclick="createNewApp()">
+          <span>Create App</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
       </div>
     </div>
-    <div class="tb-right">
-      <button class="tb-btn" onclick="showProjects()" title="My Projects">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-        </svg>
-        Projects
-      </button>
-      <button class="tb-btn" onclick="newSession()" title="New Project">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        New
-      </button>
-      <button class="tb-btn" onclick="downloadCode()" title="Download">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        Download
-      </button>
-      <button class="tb-btn primary" onclick="openPublishModal()" title="Publish">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="5 12 10 17 20 7"/>
-        </svg>
-        Publish
-      </button>
-    </div>
-  </header>
 
-  <!-- MOBILE TAB SWITCHER -->
-  <div class="mobile-tabs" id="mobileTabs">
+    <!-- PROJECTS SECTION -->
+    <div class="projects-section">
+      <div class="projects-header">
+        <h2>Your Apps</h2>
+        <div class="search-bar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="text" id="searchInput" placeholder="Search your apps..." oninput="filterProjects()">
+        </div>
+      </div>
+      <div class="projects-grid" id="projectsGrid">
+        <!-- Projects rendered by JS -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ BUILDER VIEW ════════════ -->
+<div class="builder-view">
+  <!-- MOBILE TABS -->
+  <div class="mobile-tabs">
     <button class="mobile-tab active" onclick="switchMobileTab('chat')" id="mTabChat">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -1091,32 +1503,16 @@ a { color: inherit; text-decoration: none; }
     <button class="mobile-tab" onclick="switchMobileTab('workspace')" id="mTabWork">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="2" y="3" width="20" height="14" rx="2"/>
-        <line x1="8" y1="21" x2="16" y2="21"/>
-        <line x1="12" y1="17" x2="12" y2="21"/>
       </svg>
       Preview
     </button>
   </div>
 
   <aside class="chat-panel mobile-active" id="chatPanel">
-    <div class="chat-messages" id="chatMessages">
-      <div class="welcome" id="welcomeScreen">
-        <div class="welcome-orb">D</div>
-        <h2>What should we build?</h2>
-        <p>Describe your app. I'll build it instantly with live preview.</p>
-        <div class="examples">
-          <div class="example" onclick="useExample('Build a todo app with dark theme, add/delete tasks, save to localStorage')">💡 Todo app with dark theme</div>
-          <div class="example" onclick="useExample('Create a portfolio website for photographer with hero, gallery, contact form')">🎨 Photographer portfolio</div>
-          <div class="example" onclick="useExample('Build a calculator with scientific functions and beautiful UI')">🔢 Scientific calculator</div>
-          <div class="example" onclick="useExample('Create a pomodoro timer with task list')">🍅 Pomodoro timer</div>
-          <div class="example" onclick="useExample('Build a quiz app with 10 questions and score tracking')">📝 Quiz app</div>
-        </div>
-      </div>
-    </div>
-
+    <div class="chat-messages" id="chatMessages"></div>
     <div class="chat-input-wrap">
       <div class="chat-input">
-        <textarea id="promptInput" placeholder="Describe your app..." rows="2" onkeydown="handleKeydown(event)" oninput="autoGrow(this)"></textarea>
+        <textarea id="promptInput" placeholder="Add features or describe changes..." rows="2" onkeydown="handleKeydown(event)" oninput="autoGrow(this)"></textarea>
         <div class="chat-input-actions">
           <div class="model-tag">Gemini 2.5 Pro</div>
           <button class="send-btn" id="sendBtn" onclick="sendPrompt()">
@@ -1130,12 +1526,11 @@ a { color: inherit; text-decoration: none; }
   </aside>
 
   <main class="workspace" id="workspace">
-    <!-- PUBLISHED URL BAR -->
     <div class="published-bar" id="publishedBar">
       <span class="label">🌐 Live:</span>
       <div class="url" id="publishedUrl" onclick="copyPublishedUrl()"></div>
       <button class="copy-url-btn" onclick="copyPublishedUrl()">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="9" y="9" width="13" height="13" rx="2"/>
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
         </svg>
@@ -1147,8 +1542,6 @@ a { color: inherit; text-decoration: none; }
       <div class="ws-tab active" data-tab="preview" onclick="switchTab('preview')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="2" y="3" width="20" height="14" rx="2"/>
-          <line x1="8" y1="21" x2="16" y2="21"/>
-          <line x1="12" y1="17" x2="12" y2="21"/>
         </svg>
         Preview
       </div>
@@ -1163,17 +1556,12 @@ a { color: inherit; text-decoration: none; }
 
     <div class="ws-content">
       <div class="ws-panel active" id="previewPanel">
-        <div class="preview-empty" id="previewEmpty">
-          <div class="preview-empty-orb">D</div>
-          <h2>Build <span>something amazing</span></h2>
-          <p>Type what you want in the chat. I'll generate complete working code and show it here.</p>
-          <div class="feature-badges">
-            <div class="feature-badge">⚡ Gemini 2.5 Pro</div>
-            <div class="feature-badge">👁️ Live Preview</div>
-            <div class="feature-badge">✏️ Editable</div>
-            <div class="feature-badge">🌐 Publish</div>
-            <div class="feature-badge">🇮🇳 Indian Languages</div>
-          </div>
+        <!-- Building animation (shows during generation) -->
+        <div class="building-overlay" id="buildingOverlay" style="display:none;">
+          <div class="building-orb">D</div>
+          <div class="building-text" id="buildingText">Building your app...</div>
+          <div class="building-subtext" id="buildingSubtext">This will take a few seconds</div>
+          <div class="building-stages" id="buildingStages"></div>
         </div>
         <iframe id="previewFrame" class="preview-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox" style="display:none;"></iframe>
       </div>
@@ -1181,7 +1569,7 @@ a { color: inherit; text-decoration: none; }
       <div class="ws-panel" id="codePanel">
         <div class="code-view">
           <div class="code-toolbar">
-            <div class="code-lang" id="codeLang">HTML</div>
+            <div class="code-lang">HTML</div>
             <div class="code-actions">
               <button class="code-btn" onclick="copyCode()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1199,39 +1587,37 @@ a { color: inherit; text-decoration: none; }
               </button>
             </div>
           </div>
-          <div class="code-editor-wrap">
-            <textarea id="codeEditor" placeholder="Code will appear here..." spellcheck="false"></textarea>
-          </div>
+          <textarea id="codeEditor" placeholder="Code will appear here..." spellcheck="false"></textarea>
         </div>
       </div>
     </div>
   </main>
 </div>
 
-<!-- PROJECTS MODAL -->
-<div class="modal-overlay" id="projectsModal">
-  <div class="modal" style="max-width: 500px;">
-    <h3>📁 My Projects</h3>
-    <p>All your apps saved automatically. Click to open.</p>
-    <div id="projectsList" style="max-height: 400px; overflow-y: auto; margin-bottom: 16px;"></div>
-    <div class="modal-actions">
-      <button class="tb-btn" onclick="closeProjects()">Close</button>
-      <button class="tb-btn primary" onclick="closeProjects(); newSession();">+ New Project</button>
-    </div>
-  </div>
-</div>
-
 <!-- PUBLISH MODAL -->
 <div class="modal-overlay" id="publishModal">
   <div class="modal">
     <h3>🚀 Publish Your App</h3>
-    <p>Your app will get a live URL anyone can visit.</p>
+    <p>Get a live URL anyone can visit.</p>
     <label style="font-size:11px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;">App Name</label>
-    <input type="text" class="modal-input" id="appName" placeholder="my-awesome-app" value="">
+    <input type="text" class="modal-input" id="appName" placeholder="my-awesome-app" oninput="updateUrlPreview()">
     <div class="url-preview" id="urlPreview">datta-ai.com/apps/your-username/my-awesome-app</div>
     <div class="modal-actions">
       <button class="tb-btn" onclick="closePublishModal()">Cancel</button>
-      <button class="tb-btn primary" onclick="publishApp()" id="publishBtn">Publish</button>
+      <button class="tb-btn primary" onclick="publishApp()" id="publishBtnConfirm">Publish</button>
+    </div>
+  </div>
+</div>
+
+<!-- NAME PROJECT MODAL (when starting first build) -->
+<div class="modal-overlay" id="nameModal">
+  <div class="modal">
+    <h3>📝 Name Your Project</h3>
+    <p>Give your project a name so you can find it later.</p>
+    <input type="text" class="modal-input" id="projectNameInput" placeholder="My awesome app">
+    <div class="modal-actions">
+      <button class="tb-btn" onclick="closeNameModal()">Skip</button>
+      <button class="tb-btn primary" onclick="confirmProjectName()">Save & Continue</button>
     </div>
   </div>
 </div>
@@ -1243,118 +1629,22 @@ const S = "https://datta-ai-server.onrender.com"
 
 window.addEventListener('load', () => {
   setTimeout(() => document.getElementById('loader').classList.add('hidden'), 400)
+  loadDashboard()
 })
 
+// ══════ STATE ══════
 let currentCode = ""
 let currentChatId = null
 let currentAppId = null
+let currentProjectId = null
+let currentProjectName = ""
 let publishedUrl = null
 let isGenerating = false
 let controller = null
+let chatHistory = []
+let pendingPrompt = ""
 
-// SESSION SYSTEM — each "project" persists in localStorage
-let currentSessionId = localStorage.getItem("datta_active_session") || null
-let chatHistory = []  // {role: 'user'|'assistant', content: '...'}
-
-function loadSession() {
-  if (!currentSessionId) {
-    currentSessionId = "sess_" + Date.now().toString(36)
-    localStorage.setItem("datta_active_session", currentSessionId)
-  }
-  try {
-    const saved = JSON.parse(localStorage.getItem("datta_session_" + currentSessionId) || "{}")
-    if (saved.code) {
-      currentCode = saved.code
-      document.getElementById("codeEditor").value = saved.code
-      // Show preview
-      const frame = document.getElementById("previewFrame")
-      document.getElementById("previewEmpty").style.display = "none"
-      frame.style.display = "block"
-      const doc = frame.contentDocument || frame.contentWindow.document
-      doc.open(); doc.write(saved.code); doc.close()
-    }
-    if (saved.chatHistory && Array.isArray(saved.chatHistory)) {
-      chatHistory = saved.chatHistory
-      renderChatHistory()
-    }
-    if (saved.publishedUrl) {
-      publishedUrl = saved.publishedUrl
-      currentAppId = saved.appId
-      document.getElementById("publishedUrl").textContent = publishedUrl
-      document.getElementById("publishedBar").classList.add("show")
-    }
-    if (saved.title) {
-      document.getElementById("appTitle").innerHTML = `<span class="status-dot"></span><span><b>${escapeHtml(saved.title)}</b></span>`
-    }
-  } catch(e) { console.warn("Load session failed:", e) }
-}
-
-function saveSession() {
-  if (!currentSessionId) return
-  try {
-    const userTitle = chatHistory.find(m => m.role === "user")?.content?.slice(0, 40) || "App"
-    const data = {
-      code: currentCode,
-      chatHistory,
-      publishedUrl,
-      appId: currentAppId,
-      title: userTitle,
-      updatedAt: Date.now()
-    }
-    localStorage.setItem("datta_session_" + currentSessionId, JSON.stringify(data))
-    // Also save to sessions list
-    const list = JSON.parse(localStorage.getItem("datta_sessions_list") || "[]")
-    const idx = list.findIndex(s => s.id === currentSessionId)
-    const item = { id: currentSessionId, title: userTitle, updatedAt: Date.now() }
-    if (idx >= 0) list[idx] = item
-    else list.unshift(item)
-    localStorage.setItem("datta_sessions_list", JSON.stringify(list.slice(0, 50)))
-  } catch(e) { console.warn("Save session failed:", e) }
-}
-
-function renderChatHistory() {
-  const messages = document.getElementById("chatMessages")
-  const welcome = document.getElementById("welcomeScreen")
-  if (chatHistory.length > 0 && welcome) welcome.style.display = "none"
-
-  // Clear existing messages (except welcome)
-  Array.from(messages.querySelectorAll(".msg-row")).forEach(el => el.remove())
-
-  chatHistory.forEach(msg => {
-    if (msg.role === "user") {
-      messages.innerHTML += `<div class="msg-row msg-user"><div class="bubble">${escapeHtml(msg.content)}</div></div>`
-    } else {
-      const display = msg.codeKB
-        ? `<div style="color:var(--accent);font-size:12px;margin-bottom:6px;font-weight:600;">✓ App ready (${msg.codeKB}KB)</div><div style="font-size:13px;line-height:1.5;">${escapeHtml(msg.content.slice(0, 250))}</div>`
-        : `<div style="font-size:13px;line-height:1.5;">${escapeHtml(msg.content)}</div>`
-      messages.innerHTML += `<div class="msg-row"><div class="msg-ai"><div class="avatar">D</div><div class="bubble">${display}</div></div></div>`
-    }
-  })
-  messages.scrollTop = messages.scrollHeight
-}
-
-function newSession() {
-  // Save current and start new
-  saveSession()
-  currentSessionId = "sess_" + Date.now().toString(36)
-  localStorage.setItem("datta_active_session", currentSessionId)
-  currentCode = ""
-  chatHistory = []
-  currentAppId = null
-  publishedUrl = null
-  document.getElementById("codeEditor").value = ""
-  document.getElementById("previewFrame").style.display = "none"
-  document.getElementById("previewEmpty").style.display = "flex"
-  document.getElementById("publishedBar").classList.remove("show")
-  document.getElementById("appTitle").innerHTML = `<span class="status-dot"></span><span>Ready to build</span>`
-  // Show welcome
-  const messages = document.getElementById("chatMessages")
-  Array.from(messages.querySelectorAll(".msg-row")).forEach(el => el.remove())
-  const welcome = document.getElementById("welcomeScreen")
-  if (welcome) welcome.style.display = "block"
-  showToast("New project started", "success")
-}
-
+// ══════ HELPERS ══════
 function showToast(msg, type = "") {
   const t = document.getElementById("toast")
   t.textContent = msg
@@ -1362,7 +1652,265 @@ function showToast(msg, type = "") {
   setTimeout(() => t.classList.remove("show"), 2200)
 }
 
-// MOBILE TAB SWITCH
+function autoGrow(el) {
+  el.style.height = "auto"
+  el.style.height = Math.min(el.scrollHeight, 120) + "px"
+}
+
+function autoGrowMain(el) {
+  el.style.height = "auto"
+  el.style.height = Math.min(el.scrollHeight, 200) + "px"
+}
+
+function handleKeydown(e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault()
+    sendPrompt()
+  }
+}
+
+function handleMainPromptKey(e) {
+  if (e.key === "Enter" && !e.shiftKey && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault()
+    createNewApp()
+  }
+}
+
+function escapeHtml(s) {
+  return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+}
+
+function getToken() { return localStorage.getItem("datta_token") || "" }
+
+// ══════ SETTINGS MENU ══════
+function toggleSettingsMenu() {
+  document.getElementById("settingsMenu").classList.toggle("show")
+}
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".settings-menu") && !e.target.closest('[onclick*="toggleSettingsMenu"]')) {
+    document.getElementById("settingsMenu").classList.remove("show")
+  }
+})
+
+function logout() {
+  if (confirm("Logout from Datta AI?")) {
+    localStorage.removeItem("datta_token")
+    localStorage.removeItem("datta_user")
+    window.location.href = "/"
+  }
+}
+
+// ══════ DASHBOARD ══════
+function loadDashboard() {
+  const projects = JSON.parse(localStorage.getItem("datta_projects") || "[]")
+  const grid = document.getElementById("projectsGrid")
+
+  if (projects.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-projects" style="grid-column: 1/-1;">
+        <div class="empty-projects-icon">📦</div>
+        <p>No apps yet. Build your first one!</p>
+      </div>`
+    return
+  }
+
+  grid.innerHTML = projects.map(p => {
+    const date = new Date(p.updatedAt)
+    const dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+    const sizeKB = p.code ? Math.round(p.code.length / 1024) : 0
+    return `
+      <div class="project-card" onclick="openProject('${p.id}')">
+        <div class="project-icon">${p.icon || '✨'}</div>
+        <div class="project-name">${escapeHtml(p.name || 'Untitled App')}</div>
+        <div class="project-meta">
+          <span>📅 ${dateStr}</span>
+          <span>${sizeKB}KB</span>
+        </div>
+        ${p.publishedUrl ? `<div class="project-published">🌐 Published</div>` : ''}
+        <div class="project-actions">
+          <button class="proj-btn" onclick="event.stopPropagation();openProject('${p.id}')">Open</button>
+          <button class="proj-btn danger" onclick="event.stopPropagation();deleteProject('${p.id}')">Delete</button>
+        </div>
+      </div>
+    `
+  }).join("")
+}
+
+function filterProjects() {
+  const q = document.getElementById("searchInput").value.toLowerCase().trim()
+  const cards = document.querySelectorAll(".project-card")
+  cards.forEach(card => {
+    const name = card.querySelector(".project-name").textContent.toLowerCase()
+    card.style.display = name.includes(q) ? "" : "none"
+  })
+}
+
+// ══════ NEW APP CREATION ══════
+function createNewApp() {
+  const text = document.getElementById("mainPrompt").value.trim()
+  if (!text) {
+    document.getElementById("mainPrompt").focus()
+    showToast("Describe your app first")
+    return
+  }
+
+  // Save the prompt and ask for project name
+  pendingPrompt = text
+
+  // Auto-generate a default name from prompt
+  const defaultName = text.split(/[.,!?\n]/)[0].slice(0, 40).trim() || "My App"
+  document.getElementById("projectNameInput").value = defaultName
+  document.getElementById("nameModal").classList.add("show")
+  setTimeout(() => document.getElementById("projectNameInput").select(), 100)
+}
+
+function closeNameModal() {
+  document.getElementById("nameModal").classList.remove("show")
+  pendingPrompt = ""
+}
+
+function confirmProjectName() {
+  const name = document.getElementById("projectNameInput").value.trim() || "Untitled App"
+  document.getElementById("nameModal").classList.remove("show")
+
+  // Create new project
+  currentProjectId = "proj_" + Date.now().toString(36)
+  currentProjectName = name
+  currentCode = ""
+  chatHistory = []
+  currentAppId = null
+  publishedUrl = null
+
+  // Switch to builder view
+  goToBuilder()
+
+  // Set the prompt and send
+  document.getElementById("promptInput").value = pendingPrompt
+  pendingPrompt = ""
+
+  // Build the app
+  setTimeout(() => sendPrompt(), 300)
+}
+
+// ══════ VIEW SWITCHING ══════
+function goToDashboard() {
+  saveProject()
+  document.body.classList.add("dashboard")
+  document.body.classList.remove("builder")
+  document.getElementById("appTitle").style.display = "none"
+  document.getElementById("downloadBtn").style.display = "none"
+  document.getElementById("publishBtn").style.display = "none"
+  document.getElementById("dashboardBtn").style.display = "none"
+  loadDashboard()
+}
+
+function goToBuilder() {
+  document.body.classList.remove("dashboard")
+  document.body.classList.add("builder")
+  document.getElementById("appTitle").style.display = window.innerWidth > 900 ? "flex" : "none"
+  document.getElementById("appTitleText").textContent = currentProjectName || "New Project"
+  document.getElementById("downloadBtn").style.display = "inline-flex"
+  document.getElementById("publishBtn").style.display = "inline-flex"
+  document.getElementById("dashboardBtn").style.display = "inline-flex"
+
+  // Reset UI
+  document.getElementById("chatMessages").innerHTML = ""
+  document.getElementById("codeEditor").value = currentCode || ""
+  document.getElementById("publishedBar").classList.remove("show")
+
+  // Load chat history if any
+  renderChatHistory()
+
+  // Show preview if code exists
+  if (currentCode) {
+    const frame = document.getElementById("previewFrame")
+    document.getElementById("buildingOverlay").style.display = "none"
+    frame.style.display = "block"
+    const doc = frame.contentDocument || frame.contentWindow.document
+    doc.open(); doc.write(currentCode); doc.close()
+  } else {
+    document.getElementById("previewFrame").style.display = "none"
+    document.getElementById("buildingOverlay").style.display = "flex"
+    document.getElementById("buildingText").textContent = "Ready to build"
+    document.getElementById("buildingSubtext").textContent = "Describe your app in the chat"
+    document.getElementById("buildingStages").innerHTML = ""
+  }
+
+  if (publishedUrl) {
+    document.getElementById("publishedUrl").textContent = publishedUrl
+    document.getElementById("publishedBar").classList.add("show")
+  }
+}
+
+function openProject(projectId) {
+  const projects = JSON.parse(localStorage.getItem("datta_projects") || "[]")
+  const project = projects.find(p => p.id === projectId)
+  if (!project) { showToast("Project not found"); return }
+
+  currentProjectId = project.id
+  currentProjectName = project.name || "Untitled"
+  currentCode = project.code || ""
+  chatHistory = project.chatHistory || []
+  currentAppId = project.appId || null
+  publishedUrl = project.publishedUrl || null
+
+  goToBuilder()
+  showToast("Project loaded", "success")
+}
+
+function deleteProject(projectId) {
+  if (!confirm("Delete this app permanently?")) return
+  let projects = JSON.parse(localStorage.getItem("datta_projects") || "[]")
+  projects = projects.filter(p => p.id !== projectId)
+  localStorage.setItem("datta_projects", JSON.stringify(projects))
+  loadDashboard()
+  showToast("Project deleted")
+}
+
+function saveProject() {
+  if (!currentProjectId) return
+  let projects = JSON.parse(localStorage.getItem("datta_projects") || "[]")
+  const existing = projects.findIndex(p => p.id === currentProjectId)
+
+  // Pick an icon based on app keywords
+  const lowerName = (currentProjectName || "").toLowerCase()
+  let icon = "✨"
+  if (lowerName.includes("todo") || lowerName.includes("task")) icon = "✅"
+  else if (lowerName.includes("calc")) icon = "🔢"
+  else if (lowerName.includes("photo") || lowerName.includes("portfolio")) icon = "🎨"
+  else if (lowerName.includes("shop") || lowerName.includes("store") || lowerName.includes("ecom")) icon = "🛒"
+  else if (lowerName.includes("chat") || lowerName.includes("message")) icon = "💬"
+  else if (lowerName.includes("game")) icon = "🎮"
+  else if (lowerName.includes("blog") || lowerName.includes("article")) icon = "📝"
+  else if (lowerName.includes("dashboard")) icon = "📊"
+  else if (lowerName.includes("timer") || lowerName.includes("clock")) icon = "⏱️"
+  else if (lowerName.includes("food") || lowerName.includes("recipe")) icon = "🍔"
+  else if (lowerName.includes("music")) icon = "🎵"
+  else if (lowerName.includes("weather")) icon = "🌦️"
+
+  const data = {
+    id: currentProjectId,
+    name: currentProjectName,
+    icon,
+    code: currentCode,
+    chatHistory,
+    appId: currentAppId,
+    publishedUrl,
+    updatedAt: Date.now()
+  }
+
+  if (existing >= 0) projects[existing] = data
+  else projects.unshift(data)
+
+  // Sort by recent
+  projects.sort((a, b) => b.updatedAt - a.updatedAt)
+  // Keep only last 50
+  projects = projects.slice(0, 50)
+  localStorage.setItem("datta_projects", JSON.stringify(projects))
+}
+
+// ══════ MOBILE TABS ══════
 function switchMobileTab(tab) {
   const chatP = document.getElementById("chatPanel")
   const workP = document.getElementById("workspace")
@@ -1382,38 +1930,30 @@ function switchMobileTab(tab) {
   }
 }
 
-function autoGrow(el) {
-  el.style.height = "auto"
-  el.style.height = Math.min(el.scrollHeight, 120) + "px"
-}
-
-function handleKeydown(e) {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault()
-    sendPrompt()
-  }
-}
-
-function useExample(text) {
-  const input = document.getElementById("promptInput")
-  input.value = text
-  input.focus()
-  autoGrow(input)
-  sendPrompt()
-}
-
-function escapeHtml(s) {
-  return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-}
-
-function getToken() { return localStorage.getItem("datta_token") || "" }
-
 function switchTab(tab) {
   document.querySelectorAll(".ws-tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab))
   document.querySelectorAll(".ws-panel").forEach(p => p.classList.remove("active"))
   document.getElementById(tab + "Panel").classList.add("active")
 }
 
+// ══════ CHAT HISTORY ══════
+function renderChatHistory() {
+  const messages = document.getElementById("chatMessages")
+  messages.innerHTML = ""
+  chatHistory.forEach(msg => {
+    if (msg.role === "user") {
+      messages.innerHTML += `<div class="msg-row msg-user"><div class="bubble">${escapeHtml(msg.content)}</div></div>`
+    } else {
+      const display = msg.codeKB
+        ? `<div style="color:var(--accent);font-size:12px;margin-bottom:6px;font-weight:600;">✓ App ready (${msg.codeKB}KB)</div><div style="font-size:13px;line-height:1.5;">${escapeHtml(msg.content.slice(0, 250))}</div>`
+        : `<div style="font-size:13px;line-height:1.5;">${escapeHtml(msg.content)}</div>`
+      messages.innerHTML += `<div class="msg-row"><div class="msg-ai"><div class="avatar">D</div><div class="bubble">${display}</div></div></div>`
+    }
+  })
+  messages.scrollTop = messages.scrollHeight
+}
+
+// ══════ EXTRACT CODE ══════
 function extractCode(text) {
   const htmlMatch = text.match(/```(?:html|HTML)\n([\s\S]*?)```/)
   if (htmlMatch) return htmlMatch[1].trim()
@@ -1430,26 +1970,62 @@ function updatePreview() {
   const code = document.getElementById("codeEditor").value
   if (!code) return
   currentCode = code
+  saveProject()
   const frame = document.getElementById("previewFrame")
-  document.getElementById("previewEmpty").style.display = "none"
+  document.getElementById("buildingOverlay").style.display = "none"
   frame.style.display = "block"
   const doc = frame.contentDocument || frame.contentWindow.document
-  doc.open()
-  doc.write(code)
-  doc.close()
+  doc.open(); doc.write(code); doc.close()
   showToast("Preview updated", "success")
 }
 
+// ══════ BUILDING ANIMATION ══════
+function showBuildingAnimation() {
+  const overlay = document.getElementById("buildingOverlay")
+  const frame = document.getElementById("previewFrame")
+  frame.style.display = "none"
+  overlay.style.display = "flex"
+  document.getElementById("buildingText").textContent = "Building your app..."
+  document.getElementById("buildingSubtext").textContent = "AI is crafting your design"
+
+  const stagesEl = document.getElementById("buildingStages")
+  const stages = [
+    "Analyzing your idea",
+    "Designing the layout",
+    "Writing HTML structure",
+    "Crafting beautiful styles",
+    "Adding interactivity",
+    "Finalizing details"
+  ]
+
+  stagesEl.innerHTML = ""
+  let i = 0
+  const renderStages = () => {
+    if (!isGenerating) return
+    stagesEl.innerHTML = stages.slice(0, i + 1).map((s, idx) => {
+      const last = idx === i
+      return `<div class="building-stage ${last ? 'active' : 'done'}"><span class="stage-dot"></span> ${s}</div>`
+    }).join("")
+    if (i < stages.length - 1) {
+      i++
+      setTimeout(renderStages, 1400)
+    }
+  }
+  renderStages()
+}
+
+function hideBuildingAnimation() {
+  document.getElementById("buildingOverlay").style.display = "none"
+}
+
+// ══════ SEND PROMPT ══════
 async function sendPrompt() {
   if (isGenerating) { stopGeneration(); return }
   const input = document.getElementById("promptInput")
   const text = input.value.trim()
   if (!text) return
 
-  const welcome = document.getElementById("welcomeScreen")
-  if (welcome) welcome.style.display = "none"
-
-  // Save to history
+  // Save user message
   chatHistory.push({ role: "user", content: text })
 
   const messages = document.getElementById("chatMessages")
@@ -1465,30 +2041,29 @@ async function sendPrompt() {
       <div class="bubble">
         <div class="thinking">
           <div class="thinking-orb"></div>
-          <span class="thinking-text">Planning your app...</span>
+          <span class="thinking-text">Building your app...</span>
         </div>
-        <div class="build-steps" id="buildSteps" style="display:none;"></div>
       </div>
     </div>`
   messages.appendChild(aiDiv)
   messages.scrollTop = messages.scrollHeight
 
-  document.getElementById("appTitle").innerHTML = `<span class="status-dot"></span><span><b>${escapeHtml(text.slice(0, 35))}${text.length > 35 ? '...' : ''}</b></span>`
+  // Show building animation in workspace
+  showBuildingAnimation()
 
-  showBuildSteps()
+  // On mobile, switch to preview to show animation
+  if (window.innerWidth <= 900) {
+    switchMobileTab("workspace")
+  }
 
   isGenerating = true
   updateSendBtn()
   controller = new AbortController()
 
   try {
-    const formData = new FormData()
-    // Build full context with chat history + current code
     let promptWithContext = ""
-
     if (currentCode) {
-      // We have existing app — building on it
-      promptWithContext = `EXISTING APP CODE (current state):
+      promptWithContext = `EXISTING APP CODE:
 \`\`\`html
 ${currentCode}
 \`\`\`
@@ -1496,37 +2071,33 @@ ${currentCode}
 PREVIOUS CONVERSATION:
 ${chatHistory.slice(-6, -1).map(m => `${m.role === "user" ? "User" : "AI"}: ${m.content.slice(0, 200)}`).join("\n")}
 
-NEW REQUEST FROM USER: ${text}
+NEW REQUEST: ${text}
 
 INSTRUCTIONS:
 - This is an UPDATE to the existing app above
-- Do NOT create a new different app from scratch
+- Do NOT create a different app from scratch
 - Keep ALL existing features and styling
-- Only ADD or MODIFY what the user requested
-- Return the COMPLETE updated HTML file (single file, all CSS and JS inline)
-- Make it production-quality, beautiful, and polished
-- Include smooth animations, modern UI, and great UX`
+- Only ADD or MODIFY what user requested
+- Return COMPLETE updated HTML (single file)
+- Production-quality, beautiful, polished`
     } else {
-      // New app — make it amazing
-      promptWithContext = `Build a STUNNING, production-quality web app: ${text}
+      promptWithContext = `Build a STUNNING production-quality web app: ${text}
 
 REQUIREMENTS:
 - Single HTML file with all CSS and JS inline
 - Modern, beautiful design (gradients, smooth animations, glass effects)
-- Dark theme by default with electric blue/purple accents
+- Dark theme with electric blue/purple accents
 - Fully responsive (mobile, tablet, desktop)
-- Smooth micro-interactions and hover effects
-- Use modern fonts (Inter, Plus Jakarta Sans, or Space Grotesk from Google Fonts)
-- Loading states, transitions, polished UX
-- Save data to localStorage if relevant
-- Should look like a professional SaaS product, not a basic demo
-- Include subtle background effects (particles, gradients, mesh)
-- Beautiful empty states with illustrations or icons
-- Keyboard shortcuts where useful (Enter to submit, etc.)
+- Smooth micro-interactions
+- Modern Google Fonts (Inter, Plus Jakarta Sans, or Space Grotesk)
+- Loading/empty states, polished UX
+- Subtle background effects (gradients, particles)
+- Production SaaS quality, not basic demo
 
-Return ONLY the complete HTML code in a single \`\`\`html code block.`
+Return ONLY the HTML in a \`\`\`html code block.`
     }
 
+    const formData = new FormData()
     formData.append("message", promptWithContext)
     formData.append("chatId", currentChatId || "")
     formData.append("token", getToken())
@@ -1561,13 +2132,13 @@ Return ONLY the complete HTML code in a single \`\`\`html code block.`
     if (code) {
       currentCode = code
       document.getElementById("codeEditor").value = code
+
+      // Show preview
+      hideBuildingAnimation()
       const frame = document.getElementById("previewFrame")
-      document.getElementById("previewEmpty").style.display = "none"
       frame.style.display = "block"
       const doc = frame.contentDocument || frame.contentWindow.document
-      doc.open()
-      doc.write(code)
-      doc.close()
+      doc.open(); doc.write(code); doc.close()
 
       const msgText = fullText.replace(/```[\s\S]*?```/g, "").trim() || "Your app is ready! Check the preview."
       const codeKB = Math.round(code.length/1024)
@@ -1576,69 +2147,32 @@ Return ONLY the complete HTML code in a single \`\`\`html code block.`
         <div style="font-size:13px;line-height:1.5;">${escapeHtml(msgText.slice(0, 300))}${msgText.length > 300 ? '...' : ''}</div>
       `
 
-      // Save to chat history
-      chatHistory.push({
-        role: "assistant",
-        content: msgText.slice(0, 500),
-        codeKB
-      })
+      chatHistory.push({ role: "assistant", content: msgText.slice(0, 500), codeKB })
+      saveProject()
 
-      saveSession()
-
-      showToast("App built! 🎉", "success")
-      document.getElementById("appTitle").innerHTML = `<span class="status-dot"></span><span><b>App ready</b> · ${codeKB}KB</span>`
-
-      // On mobile, auto-switch to preview
-      if (window.innerWidth <= 900) {
-        switchMobileTab("workspace")
-      }
-
-      if (publishedUrl) {
-        showToast("Click Publish to update live version")
-      }
+      showToast("App ready! 🎉", "success")
+      document.getElementById("appTitleText").textContent = currentProjectName + " · " + codeKB + "KB"
     } else {
       bubble.innerHTML = `<div style="font-size:13px;line-height:1.5;">${marked.parse(fullText)}</div>`
       chatHistory.push({ role: "assistant", content: fullText.slice(0, 500) })
-      saveSession()
+      saveProject()
+      hideBuildingAnimation()
     }
 
     messages.scrollTop = messages.scrollHeight
   } catch(e) {
     const bubble = aiDiv.querySelector(".bubble")
     if (e.name === "AbortError") {
-      bubble.innerHTML = `<span style="color:var(--text3);font-size:12px;">Generation stopped</span>`
+      bubble.innerHTML = `<span style="color:var(--text3);font-size:12px;">Stopped</span>`
     } else {
       bubble.innerHTML = `<span style="color:#ff6666;font-size:12px;">⚠️ ${e.message}. Please try again.</span>`
     }
+    hideBuildingAnimation()
   } finally {
     isGenerating = false
     updateSendBtn()
     controller = null
   }
-}
-
-function showBuildSteps() {
-  const steps = [
-    "Understanding your request...",
-    "Designing UI layout",
-    "Writing HTML structure",
-    "Adding styles & animations",
-    "Adding interactivity"
-  ]
-  const stepsEl = document.getElementById("buildSteps")
-  if (!stepsEl) return
-  stepsEl.style.display = "block"
-  let i = 0
-  const iv = setInterval(() => {
-    if (!isGenerating || i >= steps.length) { clearInterval(iv); return }
-    const html = steps.slice(0, i + 1).map((s, idx) => {
-      const last = idx === i
-      const icon = last ? '<span class="step-icon spin"></span>' : '<span class="step-icon">✓</span>'
-      return `<div class="build-step ${last ? 'active' : 'done'}">${icon} ${s}</div>`
-    }).join("")
-    stepsEl.innerHTML = html
-    i++
-  }, 1200)
 }
 
 function updateSendBtn() {
@@ -1656,6 +2190,7 @@ function stopGeneration() {
   if (controller) { try { controller.abort() } catch(e) {} }
   isGenerating = false
   updateSendBtn()
+  hideBuildingAnimation()
 }
 
 function copyCode() {
@@ -1672,7 +2207,7 @@ function downloadCode() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
-  a.download = "datta-ai-app-" + Date.now() + ".html"
+  a.download = (currentProjectName || "datta-ai-app").replace(/[^a-z0-9]/gi, "-").toLowerCase() + ".html"
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
@@ -1680,20 +2215,18 @@ function downloadCode() {
   showToast("Downloaded!", "success")
 }
 
-// PUBLISH FLOW
+// ══════ PUBLISH ══════
 function openPublishModal() {
   const code = document.getElementById("codeEditor").value || currentCode
   if (!code) { showToast("Build something first"); return }
   const modal = document.getElementById("publishModal")
   const name = document.getElementById("appName")
-  // Generate default name if empty
   if (!name.value) {
-    name.value = "my-app-" + Date.now().toString(36)
+    name.value = (currentProjectName || "my-app").toLowerCase().replace(/[^a-z0-9-]/gi, "-")
   }
   updateUrlPreview()
   modal.classList.add("show")
-  name.focus()
-  name.select()
+  setTimeout(() => name.focus(), 100)
 }
 
 function closePublishModal() {
@@ -1706,14 +2239,12 @@ function updateUrlPreview() {
   document.getElementById("urlPreview").textContent = `datta-ai.com/apps/${username}/${name}`
 }
 
-document.getElementById("appName").addEventListener("input", updateUrlPreview)
-
 async function publishApp() {
   const code = document.getElementById("codeEditor").value || currentCode
   const name = document.getElementById("appName").value.trim().replace(/[^a-z0-9-]/gi, "-").toLowerCase()
   if (!name) { showToast("Enter app name"); return }
 
-  const btn = document.getElementById("publishBtn")
+  const btn = document.getElementById("publishBtnConfirm")
   btn.disabled = true
   btn.textContent = "Publishing..."
 
@@ -1735,8 +2266,8 @@ async function publishApp() {
 
     currentAppId = data.appId
     publishedUrl = data.url
+    saveProject()
 
-    // Show URL bar
     document.getElementById("publishedUrl").textContent = data.url
     document.getElementById("publishedBar").classList.add("show")
 
@@ -1755,64 +2286,6 @@ function copyPublishedUrl() {
   navigator.clipboard.writeText(publishedUrl)
   showToast("URL copied!", "success")
 }
-
-// PROJECTS
-function showProjects() {
-  saveSession()
-  const list = JSON.parse(localStorage.getItem("datta_sessions_list") || "[]")
-  const container = document.getElementById("projectsList")
-  if (list.length === 0) {
-    container.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text3);font-size:13px;">No projects yet. Build something!</div>`
-  } else {
-    container.innerHTML = list.map(s => `
-      <div style="padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.2s;" onclick="openProject('${s.id}')" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(s.title || 'Untitled')}</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px;">${new Date(s.updatedAt).toLocaleDateString('en-IN', {day:'numeric',month:'short'})} · ${new Date(s.updatedAt).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'})}</div>
-        </div>
-        ${s.id === currentSessionId ? '<span style="font-size:10px;color:var(--accent);font-weight:700;">CURRENT</span>' : `<button onclick="event.stopPropagation();deleteProject('${s.id}')" style="background:none;border:none;color:#ff6666;padding:4px 8px;cursor:pointer;font-size:11px;">✕</button>`}
-      </div>
-    `).join("")
-  }
-  document.getElementById("projectsModal").classList.add("show")
-}
-
-function closeProjects() {
-  document.getElementById("projectsModal").classList.remove("show")
-}
-
-function openProject(sessionId) {
-  saveSession() // save current first
-  currentSessionId = sessionId
-  localStorage.setItem("datta_active_session", sessionId)
-  // Reset state then load
-  currentCode = ""
-  chatHistory = []
-  currentAppId = null
-  publishedUrl = null
-  document.getElementById("publishedBar").classList.remove("show")
-  loadSession()
-  closeProjects()
-  showToast("Project loaded", "success")
-}
-
-function deleteProject(sessionId) {
-  if (!confirm("Delete this project?")) return
-  localStorage.removeItem("datta_session_" + sessionId)
-  const list = JSON.parse(localStorage.getItem("datta_sessions_list") || "[]")
-  const filtered = list.filter(s => s.id !== sessionId)
-  localStorage.setItem("datta_sessions_list", JSON.stringify(filtered))
-  if (sessionId === currentSessionId) {
-    newSession()
-  } else {
-    showProjects()
-  }
-}
-
-// INIT - load session on page load
-window.addEventListener("load", () => {
-  loadSession()
-})
 </script>
 
 </body>
