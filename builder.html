@@ -2464,7 +2464,16 @@ Return ONLY the HTML in a \`\`\`html code block.`
     if (e.name === "AbortError") {
       bubble.innerHTML = `<span style="color:var(--text3);font-size:12px;">Stopped</span>`
     } else {
-      bubble.innerHTML = `<span style="color:#ff6666;font-size:12px;">⚠️ ${e.message}. Please try again.</span>`
+      // Try to recover any partial code from what we received
+      let recoveryMsg = `⚠️ Connection error. `
+      if (e.message && e.message.includes("CORS")) {
+        recoveryMsg += "Server timed out (free tier limit). Try a smaller change or use Balanced model."
+      } else if (e.message && e.message.includes("fetch")) {
+        recoveryMsg += "Server may be sleeping. Try again in 30 seconds."
+      } else {
+        recoveryMsg += e.message || "Please try again."
+      }
+      bubble.innerHTML = `<span style="color:#ff6666;font-size:12px;">${recoveryMsg}</span>`
     }
     hideBuildingAnimation()
   } finally {
