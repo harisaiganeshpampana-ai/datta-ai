@@ -4,17 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pricing — Datta AI</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%234d7cff'/><stop offset='1' stop-color='%23a855f7'/></linearGradient></defs><rect width='100' height='100' rx='22' fill='url(%23g)'/><text x='50' y='72' text-anchor='middle' font-size='64' font-weight='800' fill='white'>D</text></svg>">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
 <style>
 :root {
-  --bg: #050510; --bg2: #0a0a18; --bg3: #12122a;
+  --bg: #050510; --bg2: #0a0a18; --bg3: #12122a; --bg4: #1a1a36;
   --text: #fff; --text2: #a0a0c0; --text3: #606080;
   --accent: #4d7cff; --accent2: #a855f7;
   --accent-glow: rgba(77, 124, 255, 0.5);
   --purple-glow: rgba(168, 85, 247, 0.5);
   --border: rgba(255,255,255,0.08);
+  --border-strong: rgba(255,255,255,0.15);
 }
-* { margin: 0; padding: 0; box-sizing: border-box; }
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -22,36 +30,43 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  min-height: 100vh;
 }
+
 a { color: inherit; text-decoration: none; }
-button { cursor: pointer; border: none; font-family: inherit; }
+button { cursor: pointer; border: none; font-family: inherit; color: inherit; }
 
 nav {
-  padding: 20px 40px;
+  padding: 18px 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border);
+  background: rgba(5, 5, 16, 0.7);
+  backdrop-filter: blur(20px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 20px;
+  gap: 10px;
+  font-size: 18px;
   font-weight: 800;
 }
 
 .logo-mark {
-  width: 38px; height: 38px;
-  border-radius: 10px;
+  width: 34px; height: 34px;
+  border-radius: 9px;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   font-weight: 900;
-  box-shadow: 0 0 20px var(--accent-glow);
+  box-shadow: 0 0 18px var(--accent-glow);
 }
 
 .logo b {
@@ -62,24 +77,31 @@ nav {
 }
 
 .nav-cta {
-  padding: 10px 22px;
+  padding: 9px 20px;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   color: #fff;
   border-radius: 100px;
   font-weight: 700;
-  font-size: 14px;
-  box-shadow: 0 4px 20px var(--accent-glow);
+  font-size: 13px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 16px var(--accent-glow);
 }
 
+.nav-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px var(--purple-glow);
+}
+
+/* HERO */
 .hero {
-  padding: 80px 20px 40px;
+  padding: 70px 20px 40px;
   text-align: center;
   max-width: 800px;
   margin: 0 auto;
 }
 
 .hero h1 {
-  font-size: clamp(38px, 6vw, 64px);
+  font-size: clamp(36px, 6vw, 60px);
   font-weight: 800;
   letter-spacing: -2px;
   margin-bottom: 16px;
@@ -98,7 +120,7 @@ nav {
 
 .hero p {
   color: var(--text2);
-  font-size: 18px;
+  font-size: 17px;
   margin-bottom: 30px;
 }
 
@@ -119,6 +141,7 @@ nav {
   color: var(--text2);
   background: transparent;
   transition: all 0.2s;
+  font-family: inherit;
 }
 
 .toggle-btn.active {
@@ -126,37 +149,124 @@ nav {
   color: #fff;
 }
 
+/* ════════════ HOW CREDITS WORK SECTION ════════════ */
+.credits-explainer {
+  max-width: 1100px;
+  margin: 30px auto 50px;
+  padding: 0 20px;
+}
+
+.credits-card {
+  background: linear-gradient(135deg, rgba(77, 124, 255, 0.06), rgba(168, 85, 247, 0.06));
+  border: 1px solid var(--border-strong);
+  border-radius: 20px;
+  padding: 32px;
+}
+
+.credits-card h2 {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.credits-card > p {
+  color: var(--text2);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.models-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.model-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.model-card:hover {
+  border-color: rgba(77, 124, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.model-tier {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 4px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+}
+
+.model-name {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.model-name span {
+  font-size: 11px;
+  color: var(--text3);
+  font-weight: 500;
+  display: block;
+  margin-top: 2px;
+}
+
+.model-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  background: linear-gradient(135deg, rgba(77, 124, 255, 0.15), rgba(168, 85, 247, 0.15));
+  border: 1px solid rgba(77, 124, 255, 0.3);
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* PRICING */
 .pricing-section {
-  padding: 40px 20px 100px;
-  max-width: 1200px;
+  padding: 30px 20px 60px;
+  max-width: 1300px;
   margin: 0 auto;
 }
 
 .pricing-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
 }
 
 .price-card {
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 32px 28px;
+  border-radius: 18px;
+  padding: 28px 24px;
   position: relative;
   transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
 }
 
 .price-card:hover {
-  transform: translateY(-6px);
+  transform: translateY(-4px);
   border-color: var(--accent);
 }
 
 .price-card.featured {
   background: linear-gradient(135deg, rgba(77, 124, 255, 0.08), rgba(168, 85, 247, 0.08));
   border: 1px solid var(--accent);
-  transform: scale(1.04);
-  box-shadow: 0 20px 60px var(--accent-glow);
+  transform: scale(1.03);
+  box-shadow: 0 20px 50px var(--accent-glow);
 }
 
 .price-card.featured::before {
@@ -167,56 +277,92 @@ nav {
   transform: translateX(-50%);
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   color: #fff;
-  padding: 5px 16px;
+  padding: 5px 14px;
   border-radius: 100px;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 1.5px;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  box-shadow: 0 4px 20px var(--accent-glow);
+  box-shadow: 0 4px 16px var(--accent-glow);
 }
 
 .plan-name {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text2);
   text-transform: uppercase;
   letter-spacing: 2px;
   font-weight: 600;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+}
+
+.plan-emoji {
+  font-size: 22px;
+  margin-right: 4px;
 }
 
 .plan-price {
-  font-size: 52px;
+  font-size: 44px;
   font-weight: 800;
   letter-spacing: -2px;
   line-height: 1;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .plan-price .rupee {
-  font-size: 28px;
+  font-size: 24px;
   opacity: 0.6;
   margin-right: 2px;
 }
 
 .plan-period {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text3);
-  margin-bottom: 24px;
+  margin-bottom: 18px;
+}
+
+.credit-amount {
+  background: linear-gradient(135deg, rgba(77, 124, 255, 0.1), rgba(168, 85, 247, 0.1));
+  border: 1px solid rgba(77, 124, 255, 0.3);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.credit-num {
+  font-size: 24px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1;
+}
+
+.credit-label {
+  font-size: 10px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  margin-top: 4px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .plan-features {
   list-style: none;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
+  flex: 1;
 }
 
 .plan-features li {
-  padding: 8px 0;
-  font-size: 14px;
+  padding: 6px 0;
+  font-size: 13px;
   color: var(--text2);
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: flex-start;
+  line-height: 1.5;
 }
 
 .plan-features li::before {
@@ -224,13 +370,24 @@ nav {
   color: var(--accent);
   font-weight: 800;
   flex-shrink: 0;
+  font-size: 14px;
+}
+
+.plan-features li.muted {
+  color: var(--text3);
+  opacity: 0.7;
+}
+
+.plan-features li.muted::before {
+  content: '×';
+  color: var(--text3);
 }
 
 .plan-cta {
   display: block;
   width: 100%;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: 10px;
   text-align: center;
   font-weight: 700;
   font-size: 14px;
@@ -241,18 +398,18 @@ nav {
 .plan-cta.primary {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   color: #fff;
-  box-shadow: 0 4px 20px var(--accent-glow);
+  box-shadow: 0 4px 16px var(--accent-glow);
 }
 
 .plan-cta.primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px var(--purple-glow);
+  box-shadow: 0 8px 24px var(--purple-glow);
 }
 
 .plan-cta.ghost {
   background: transparent;
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
 }
 
 .plan-cta.ghost:hover {
@@ -260,9 +417,10 @@ nav {
   color: var(--accent);
 }
 
+/* FAQ */
 .faq {
   max-width: 800px;
-  margin: 60px auto;
+  margin: 50px auto;
   padding: 0 20px;
 }
 
@@ -270,7 +428,7 @@ nav {
   font-size: 36px;
   font-weight: 800;
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 30px;
   letter-spacing: -1px;
 }
 
@@ -287,8 +445,8 @@ nav {
 .faq-item {
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  margin-bottom: 12px;
+  border-radius: 12px;
+  margin-bottom: 10px;
   overflow: hidden;
   transition: border-color 0.2s;
 }
@@ -298,9 +456,9 @@ nav {
 }
 
 .faq-q {
-  padding: 18px 24px;
+  padding: 16px 22px;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14px;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
@@ -309,7 +467,7 @@ nav {
 
 .faq-q::after {
   content: '+';
-  font-size: 24px;
+  font-size: 22px;
   color: var(--accent);
   transition: transform 0.2s;
 }
@@ -319,24 +477,33 @@ nav {
 }
 
 .faq-a {
-  padding: 0 24px;
+  padding: 0 22px;
   max-height: 0;
   overflow: hidden;
   color: var(--text2);
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.7;
   transition: max-height 0.3s, padding 0.3s;
 }
 
 .faq-item.open .faq-a {
-  max-height: 300px;
-  padding: 0 24px 20px;
+  max-height: 400px;
+  padding: 0 22px 18px;
+}
+
+footer {
+  padding: 40px 20px;
+  text-align: center;
+  border-top: 1px solid var(--border);
+  color: var(--text3);
+  font-size: 13px;
 }
 
 @media (max-width: 768px) {
-  nav { padding: 16px 20px; }
+  nav { padding: 14px 20px; }
   .price-card.featured { transform: scale(1); }
-  .hero h1 { font-size: 38px; }
+  .hero h1 { font-size: 36px; }
+  .credits-card { padding: 22px 20px; }
 }
 </style>
 </head>
@@ -351,78 +518,141 @@ nav {
 </nav>
 
 <section class="hero">
-  <h1>Simple pricing.<br><em>Fair for everyone.</em></h1>
-  <p>Start free. Upgrade only when you need more. Cancel anytime.</p>
+  <h1>Simple credits.<br><em>Every model.</em></h1>
+  <p>Use credits across all AI models — from fast Llama to powerful GPT-4o. You choose what fits each task.</p>
 
   <div class="billing-toggle">
     <button class="toggle-btn active" onclick="setBilling('monthly', this)">Monthly</button>
-    <button class="toggle-btn" onclick="setBilling('yearly', this)">Yearly (Save 20%)</button>
+    <button class="toggle-btn" onclick="setBilling('yearly', this)">Yearly · Save 20%</button>
   </div>
 </section>
 
+<!-- HOW CREDITS WORK -->
+<div class="credits-explainer">
+  <div class="credits-card">
+    <h2>How credits work</h2>
+    <p>1 credit ≈ 1 simple message. Heavier models use more. Build what you need with the model you want.</p>
+
+    <div class="models-grid">
+      <div class="model-card">
+        <div class="model-tier">⚡ Fast</div>
+        <div class="model-name">Llama 3.3 70B<span>Quick simple tasks</span></div>
+        <div class="model-cost">1 credit</div>
+      </div>
+      <div class="model-card">
+        <div class="model-tier">⚖️ Balanced</div>
+        <div class="model-name">Gemini 2.5 Flash<span>Daily building</span></div>
+        <div class="model-cost">2 credits</div>
+      </div>
+      <div class="model-card">
+        <div class="model-tier">🧠 Smart</div>
+        <div class="model-name">Claude 3.5 Sonnet<span>Complex apps</span></div>
+        <div class="model-cost">3 credits</div>
+      </div>
+      <div class="model-card">
+        <div class="model-tier">🚀 Pro</div>
+        <div class="model-name">Gemini 2.5 Pro<span>Production quality</span></div>
+        <div class="model-cost">5 credits</div>
+      </div>
+      <div class="model-card">
+        <div class="model-tier">👑 Ultra</div>
+        <div class="model-name">GPT-4o<span>Hardest problems</span></div>
+        <div class="model-cost">8 credits</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRICING -->
 <section class="pricing-section">
   <div class="pricing-grid">
 
     <div class="price-card">
-      <div class="plan-name">Free</div>
+      <div class="plan-name"><span class="plan-emoji">🌱</span>Free</div>
       <div class="plan-price"><span class="rupee">₹</span><span data-monthly="0" data-yearly="0">0</span></div>
       <div class="plan-period">forever</div>
+      <div class="credit-amount">
+        <div class="credit-num">5</div>
+        <div class="credit-label">credits / day</div>
+      </div>
       <ul class="plan-features">
-        <li>3 app builds per day</li>
-        <li>Live preview & edit</li>
-        <li>Download code as HTML</li>
-        <li>Community support</li>
+        <li>Fast & Balanced models</li>
+        <li>Live preview & code editing</li>
+        <li>Download as HTML</li>
+        <li class="muted">No publishing</li>
+        <li class="muted">No Smart/Pro/Ultra models</li>
       </ul>
       <a href="/builder.html" class="plan-cta ghost">Start Free</a>
     </div>
 
-    <div class="price-card featured">
-      <div class="plan-name">Starter</div>
-      <div class="plan-price">
-        <span class="rupee">₹</span><span data-monthly="29" data-yearly="279">29</span>
-      </div>
+    <div class="price-card">
+      <div class="plan-name"><span class="plan-emoji">🚀</span>Starter</div>
+      <div class="plan-price"><span class="rupee">₹</span><span data-monthly="49" data-yearly="470">49</span></div>
       <div class="plan-period"><span class="period-text">per month</span></div>
+      <div class="credit-amount">
+        <div class="credit-num">50</div>
+        <div class="credit-label">credits / day</div>
+      </div>
       <ul class="plan-features">
-        <li>20 app builds per day</li>
-        <li>Publish with live URLs</li>
+        <li>Fast, Balanced & Smart models</li>
+        <li>Publish apps with live URLs</li>
         <li>Version history</li>
-        <li>Add features to existing apps</li>
-        <li>Priority generation speed</li>
         <li>Email support</li>
+        <li class="muted">Pro & Ultra models</li>
       </ul>
-      <button class="plan-cta primary" onclick="subscribe('starter')">Upgrade to Starter</button>
+      <button class="plan-cta ghost" onclick="subscribe('starter')">Choose Starter</button>
+    </div>
+
+    <div class="price-card featured">
+      <div class="plan-name"><span class="plan-emoji">⚡</span>Plus</div>
+      <div class="plan-price"><span class="rupee">₹</span><span data-monthly="299" data-yearly="2870">299</span></div>
+      <div class="plan-period"><span class="period-text">per month</span></div>
+      <div class="credit-amount">
+        <div class="credit-num">200</div>
+        <div class="credit-label">credits / day</div>
+      </div>
+      <ul class="plan-features">
+        <li>Fast, Balanced, Smart & Pro models</li>
+        <li>Unlimited published apps</li>
+        <li>Priority generation speed</li>
+        <li>Custom domain support</li>
+        <li>Priority email support</li>
+      </ul>
+      <button class="plan-cta primary" onclick="subscribe('plus')">Choose Plus</button>
     </div>
 
     <div class="price-card">
-      <div class="plan-name">Pro</div>
-      <div class="plan-price">
-        <span class="rupee">₹</span><span data-monthly="299" data-yearly="2870">299</span>
-      </div>
+      <div class="plan-name"><span class="plan-emoji">🚀</span>Pro</div>
+      <div class="plan-price"><span class="rupee">₹</span><span data-monthly="599" data-yearly="5750">599</span></div>
       <div class="plan-period"><span class="period-text">per month</span></div>
+      <div class="credit-amount">
+        <div class="credit-num">500</div>
+        <div class="credit-label">credits / day</div>
+      </div>
       <ul class="plan-features">
-        <li>100 app builds per day</li>
-        <li>Unlimited published apps</li>
-        <li>Custom domain support</li>
+        <li>ALL models including GPT-4o</li>
+        <li>Highest priority queue</li>
         <li>Remove Datta AI branding</li>
         <li>API access (coming soon)</li>
-        <li>Priority email support</li>
+        <li>Direct Slack/email support</li>
       </ul>
       <button class="plan-cta ghost" onclick="subscribe('pro')">Go Pro</button>
     </div>
 
     <div class="price-card">
-      <div class="plan-name">Team</div>
-      <div class="plan-price">
-        <span class="rupee">₹</span><span data-monthly="799" data-yearly="7670">799</span>
-      </div>
+      <div class="plan-name"><span class="plan-emoji">👑</span>Team</div>
+      <div class="plan-price"><span class="rupee">₹</span><span data-monthly="1499" data-yearly="14390">1499</span></div>
       <div class="plan-period"><span class="period-text">per month</span></div>
+      <div class="credit-amount">
+        <div class="credit-num">1500</div>
+        <div class="credit-label">credits / day</div>
+      </div>
       <ul class="plan-features">
-        <li>Unlimited app builds</li>
+        <li>Everything in Pro</li>
         <li>5 team members</li>
         <li>Shared app library</li>
-        <li>Team dashboard</li>
+        <li>Team dashboard & roles</li>
         <li>Custom branding</li>
-        <li>Priority support</li>
       </ul>
       <button class="plan-cta ghost" onclick="subscribe('team')">Get Team</button>
     </div>
@@ -430,44 +660,54 @@ nav {
   </div>
 </section>
 
+<!-- FAQ -->
 <section class="faq">
-  <h2>Frequently asked <em>questions</em></h2>
+  <h2>Common <em>questions</em></h2>
 
   <div class="faq-item">
-    <div class="faq-q" onclick="toggleFaq(this)">What counts as an "app build"?</div>
-    <div class="faq-a">Every time you describe a new app or add major new features, that counts as one build. Minor edits don't count. Updating your published app doesn't count either.</div>
+    <div class="faq-q" onclick="toggleFaq(this)">How do credits actually work?</div>
+    <div class="faq-a">Every message you send to AI uses credits based on the model. Llama 3.3 (Fast) costs 1 credit. Gemini 2.5 Pro costs 5. GPT-4o costs 8. Pick the model that fits your task — use Fast for quick tweaks, Pro for production apps. Credits reset every 24 hours.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">Why multiple AI models?</div>
+    <div class="faq-a">Different models excel at different things. Llama is fast & cheap for simple changes. Gemini Flash is great for general work. Claude Sonnet writes beautiful UI. Gemini Pro builds complete production apps. GPT-4o handles the hardest problems. You get them all in one place.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">Do unused credits roll over?</div>
+    <div class="faq-a">No, credits reset every 24 hours so you get a fresh allowance daily. This keeps pricing predictable and lets you build consistently every day.</div>
   </div>
 
   <div class="faq-item">
     <div class="faq-q" onclick="toggleFaq(this)">Can I cancel anytime?</div>
-    <div class="faq-a">Yes. Cancel from Settings → Subscription. You'll keep access until the end of your billing period, then downgrade to Free plan. No questions asked.</div>
+    <div class="faq-a">Yes. Cancel from Settings → Subscription. You'll keep access until the end of your billing period, then auto-downgrade to Free plan. Built apps stay yours forever.</div>
   </div>
 
   <div class="faq-item">
-    <div class="faq-q" onclick="toggleFaq(this)">What payment methods do you accept?</div>
-    <div class="faq-a">UPI (GPay, PhonePe, Paytm), all debit/credit cards, and wallets — all through Razorpay. Indian payments only for now.</div>
+    <div class="faq-q" onclick="toggleFaq(this)">What payment methods?</div>
+    <div class="faq-a">UPI (GPay, PhonePe, Paytm), all debit/credit cards, and wallets — all through Razorpay. Secure & instant.</div>
   </div>
 
   <div class="faq-item">
     <div class="faq-q" onclick="toggleFaq(this)">Do I own the apps I build?</div>
-    <div class="faq-a">Yes, 100%. The code is yours. Download it, modify it, sell it — do whatever you want. Datta AI makes no claim on apps you build.</div>
-  </div>
-
-  <div class="faq-item">
-    <div class="faq-q" onclick="toggleFaq(this)">What happens to my apps if I downgrade?</div>
-    <div class="faq-a">All your built apps stay. You can still download them. On Free plan you won't be able to publish new ones, but existing published apps keep working.</div>
+    <div class="faq-a">100% yes. The code is yours forever. Download it, modify it, sell it, deploy anywhere. Datta AI makes no claim on what you build.</div>
   </div>
 
   <div class="faq-item">
     <div class="faq-q" onclick="toggleFaq(this)">Is there a student discount?</div>
-    <div class="faq-a">Our Starter plan at ₹29/month is already priced for students. If you need more and can't afford it, email hello@datta-ai.com with your student ID.</div>
+    <div class="faq-a">Our Starter plan at ₹49/month is already priced for students. If you can't afford it, email hello@datta-ai.com with your student ID for special pricing.</div>
   </div>
 
   <div class="faq-item">
-    <div class="faq-q" onclick="toggleFaq(this)">Can I get a refund?</div>
-    <div class="faq-a">If you're unhappy in the first 7 days, email us for a full refund. After that, we don't do refunds but you can cancel anytime.</div>
+    <div class="faq-q" onclick="toggleFaq(this)">7-day money-back guarantee?</div>
+    <div class="faq-a">Yes. If unhappy in the first 7 days, email us for a full refund. After that, you can cancel anytime but no refunds for partial months.</div>
   </div>
 </section>
+
+<footer>
+  © 2026 LR AI Technologies — Made with 💙 in India
+</footer>
 
 <script>
 function setBilling(type, btn) {
@@ -491,9 +731,8 @@ function subscribe(plan) {
     window.location.href = "/login.html?redirect=/pricing.html"
     return
   }
-  // Redirect to payment flow
-  alert("Redirecting to payment... (Razorpay integration)")
-  // Actual implementation would call backend /subscribe endpoint
+  // TODO: Razorpay integration
+  alert("Subscribing to " + plan + "... (Razorpay payment flow)")
 }
 </script>
 
