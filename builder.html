@@ -230,6 +230,134 @@ a { color: inherit; text-decoration: none; }
 
 .tb-icon svg { width: 16px; height: 16px; }
 
+/* CREDITS DISPLAY */
+.credits-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, rgba(77, 124, 255, 0.1), rgba(168, 85, 247, 0.1));
+  border: 1px solid rgba(77, 124, 255, 0.3);
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.credits-display:hover {
+  background: linear-gradient(135deg, rgba(77, 124, 255, 0.2), rgba(168, 85, 247, 0.2));
+  transform: translateY(-1px);
+}
+
+.credits-display svg { width: 14px; height: 14px; }
+
+/* MODEL SELECTOR (LLM dropdown) */
+.model-selector {
+  position: relative;
+  display: inline-block;
+}
+
+.model-selector-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.model-selector-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.model-selector-btn svg {
+  width: 10px;
+  height: 10px;
+}
+
+.model-dropdown {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  background: var(--bg2);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 4px;
+  min-width: 240px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  z-index: 100;
+  display: none;
+}
+
+.model-dropdown.show { display: block; animation: menuIn 0.2s ease-out; }
+
+.model-option {
+  padding: 9px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  transition: all 0.15s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.model-option:hover {
+  background: var(--bg4);
+}
+
+.model-option.active {
+  background: rgba(77, 124, 255, 0.1);
+  border: 1px solid rgba(77, 124, 255, 0.3);
+}
+
+.model-option-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.model-option-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.model-option-desc {
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 1px;
+}
+
+.model-option-cost {
+  padding: 2px 8px;
+  background: rgba(77, 124, 255, 0.15);
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.model-option.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.model-option.locked .model-option-cost {
+  background: var(--bg4);
+  color: var(--text3);
+}
+
 /* ════════════ DASHBOARD ════════════ */
 .dashboard-view {
   display: none;
@@ -1375,6 +1503,15 @@ body.dashboard .builder-view { display: none; }
     </div>
   </div>
   <div class="tb-right">
+    <!-- CREDITS DISPLAY (always visible when in builder) -->
+    <div class="credits-display" id="creditsDisplay" style="display:none;" onclick="window.location.href='/pricing.html'" title="Click to upgrade">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 6v6l4 2"/>
+      </svg>
+      <span id="creditsCount">--</span>
+    </div>
+
     <!-- BUILDER VIEW BUTTONS (hidden in dashboard) -->
     <button class="tb-btn" id="downloadBtn" onclick="downloadCode()" style="display:none;" title="Download">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1461,7 +1598,9 @@ body.dashboard .builder-view { display: none; }
     <div class="main-prompt">
       <textarea id="mainPrompt" placeholder="A modern todo app with dark theme, drag-to-reorder, and beautiful animations..." rows="3" onkeydown="handleMainPromptKey(event)" oninput="autoGrowMain(this)"></textarea>
       <div class="main-prompt-bottom">
-        <div class="main-prompt-tag">⚡ Gemini 2.5 Pro</div>
+        <button class="main-prompt-tag" onclick="window.location.href='/pricing.html'" style="cursor:pointer;border:none;" title="See all models">
+          <span id="dashModelLabel">⚖️ Balanced · 2 credits</span>
+        </button>
         <button class="main-create-btn" id="mainCreateBtn" onclick="createNewApp()">
           <span>Create App</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -1514,7 +1653,51 @@ body.dashboard .builder-view { display: none; }
       <div class="chat-input">
         <textarea id="promptInput" placeholder="Add features or describe changes..." rows="2" onkeydown="handleKeydown(event)" oninput="autoGrow(this)"></textarea>
         <div class="chat-input-actions">
-          <div class="model-tag">Gemini 2.5 Pro</div>
+          <div class="model-selector">
+            <button class="model-selector-btn" onclick="toggleModelDropdown(event)">
+              <span id="currentModelLabel">⚖️ Balanced · 2cr</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            <div class="model-dropdown" id="modelDropdown">
+              <div class="model-option" data-model="fast" onclick="selectModel('fast')">
+                <div class="model-option-info">
+                  <div class="model-option-name">⚡ Fast</div>
+                  <div class="model-option-desc">Llama 3.3 · Quick simple tasks</div>
+                </div>
+                <span class="model-option-cost">1 cr</span>
+              </div>
+              <div class="model-option active" data-model="balanced" onclick="selectModel('balanced')">
+                <div class="model-option-info">
+                  <div class="model-option-name">⚖️ Balanced</div>
+                  <div class="model-option-desc">Gemini 2.5 Flash · Daily building</div>
+                </div>
+                <span class="model-option-cost">2 cr</span>
+              </div>
+              <div class="model-option" data-model="smart" onclick="selectModel('smart')">
+                <div class="model-option-info">
+                  <div class="model-option-name">🧠 Smart</div>
+                  <div class="model-option-desc">Claude 3.5 Sonnet · Complex apps</div>
+                </div>
+                <span class="model-option-cost">3 cr</span>
+              </div>
+              <div class="model-option" data-model="pro" onclick="selectModel('pro')">
+                <div class="model-option-info">
+                  <div class="model-option-name">🚀 Pro</div>
+                  <div class="model-option-desc">Gemini 2.5 Pro · Production</div>
+                </div>
+                <span class="model-option-cost">5 cr</span>
+              </div>
+              <div class="model-option" data-model="ultra" onclick="selectModel('ultra')">
+                <div class="model-option-info">
+                  <div class="model-option-name">👑 Ultra</div>
+                  <div class="model-option-desc">GPT-4o · Hardest problems</div>
+                </div>
+                <span class="model-option-cost">8 cr</span>
+              </div>
+            </div>
+          </div>
           <button class="send-btn" id="sendBtn" onclick="sendPrompt()">
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M3 11.5L21 3l-7 18-2-9-9-2z"/>
@@ -1630,6 +1813,8 @@ const S = "https://datta-ai-server.onrender.com"
 window.addEventListener('load', () => {
   setTimeout(() => document.getElementById('loader').classList.add('hidden'), 400)
   loadDashboard()
+  loadCredits()
+  updateModelLabels()
 })
 
 // ══════ STATE ══════
@@ -1643,6 +1828,25 @@ let isGenerating = false
 let controller = null
 let chatHistory = []
 let pendingPrompt = ""
+let selectedModel = localStorage.getItem("datta_model") || "balanced"  // fast | balanced | smart | pro | ultra
+let userCredits = null
+let userPlan = "free"
+
+const MODELS = {
+  fast:     { name: "⚡ Fast",     cost: 1, desc: "Llama 3.3" },
+  balanced: { name: "⚖️ Balanced", cost: 2, desc: "Gemini Flash" },
+  smart:    { name: "🧠 Smart",    cost: 3, desc: "Claude Sonnet" },
+  pro:      { name: "🚀 Pro",      cost: 5, desc: "Gemini Pro" },
+  ultra:    { name: "👑 Ultra",    cost: 8, desc: "GPT-4o" }
+}
+
+const PLAN_MODELS = {
+  free:    ["fast", "balanced"],
+  starter: ["fast", "balanced", "smart"],
+  plus:    ["fast", "balanced", "smart", "pro"],
+  pro:     ["fast", "balanced", "smart", "pro", "ultra"],
+  team:    ["fast", "balanced", "smart", "pro", "ultra"]
+}
 
 // ══════ HELPERS ══════
 function showToast(msg, type = "") {
@@ -1681,6 +1885,90 @@ function escapeHtml(s) {
 }
 
 function getToken() { return localStorage.getItem("datta_token") || "" }
+
+// ══════ MODEL SELECTOR ══════
+function toggleModelDropdown(e) {
+  e.stopPropagation()
+  document.getElementById("modelDropdown").classList.toggle("show")
+}
+
+function selectModel(model) {
+  // Check if user can use this model
+  const allowed = PLAN_MODELS[userPlan] || PLAN_MODELS.free
+  if (!allowed.includes(model)) {
+    showToast("Upgrade plan to use " + MODELS[model].name)
+    setTimeout(() => window.location.href = "/pricing.html", 1500)
+    return
+  }
+
+  selectedModel = model
+  localStorage.setItem("datta_model", model)
+  updateModelLabels()
+  document.getElementById("modelDropdown").classList.remove("show")
+  showToast("Switched to " + MODELS[model].name, "success")
+}
+
+function updateModelLabels() {
+  const m = MODELS[selectedModel]
+  if (!m) return
+  const label = m.name + " · " + m.cost + "cr"
+  document.getElementById("currentModelLabel").textContent = label
+
+  const dashLabel = document.getElementById("dashModelLabel")
+  if (dashLabel) dashLabel.textContent = m.name + " · " + m.cost + " credits"
+
+  // Highlight selected option
+  document.querySelectorAll(".model-option").forEach(opt => {
+    opt.classList.toggle("active", opt.dataset.model === selectedModel)
+  })
+
+  // Mark locked models for current plan
+  const allowed = PLAN_MODELS[userPlan] || PLAN_MODELS.free
+  document.querySelectorAll(".model-option").forEach(opt => {
+    opt.classList.toggle("locked", !allowed.includes(opt.dataset.model))
+  })
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".model-selector")) {
+    const dd = document.getElementById("modelDropdown")
+    if (dd) dd.classList.remove("show")
+  }
+})
+
+// ══════ CREDITS ══════
+async function loadCredits() {
+  const token = getToken()
+  if (!token) return
+
+  try {
+    const res = await fetch(S + "/user/usage", {
+      headers: { "Authorization": "Bearer " + token }
+    })
+    if (!res.ok) return
+    const data = await res.json()
+
+    userPlan = data.plan || "free"
+    const planConfig = {
+      free: 5, starter: 50, plus: 200, pro: 500, team: 1500
+    }
+    const dailyLimit = planConfig[userPlan] || 5
+    const used = data.used || 0
+    userCredits = Math.max(0, dailyLimit - used)
+
+    const display = document.getElementById("creditsDisplay")
+    const count = document.getElementById("creditsCount")
+    if (count) count.textContent = userCredits + " / " + dailyLimit
+    if (display && document.body.classList.contains("builder")) {
+      display.style.display = "inline-flex"
+    }
+
+    updateModelLabels()
+  } catch(e) {
+    console.warn("Load credits failed:", e)
+  }
+}
 
 // ══════ SETTINGS MENU ══════
 function toggleSettingsMenu() {
@@ -1802,7 +2090,9 @@ function goToDashboard() {
   document.getElementById("downloadBtn").style.display = "none"
   document.getElementById("publishBtn").style.display = "none"
   document.getElementById("dashboardBtn").style.display = "none"
+  document.getElementById("creditsDisplay").style.display = "none"
   loadDashboard()
+  loadCredits()  // refresh
 }
 
 function goToBuilder() {
@@ -1813,6 +2103,11 @@ function goToBuilder() {
   document.getElementById("downloadBtn").style.display = "inline-flex"
   document.getElementById("publishBtn").style.display = "inline-flex"
   document.getElementById("dashboardBtn").style.display = "inline-flex"
+
+  // Show credits display
+  if (userCredits !== null) {
+    document.getElementById("creditsDisplay").style.display = "inline-flex"
+  }
 
   // Reset UI
   document.getElementById("chatMessages").innerHTML = ""
@@ -2102,6 +2397,7 @@ Return ONLY the HTML in a \`\`\`html code block.`
     formData.append("chatId", currentChatId || "")
     formData.append("token", getToken())
     formData.append("language", "English")
+    formData.append("selectedLLM", selectedModel)  // fast | balanced | smart | pro | ultra
     formData.append("model", "llama-3.3-70b-versatile")
     formData.append("modelKey", "dcode")
     formData.append("ainame", "Datta AI")
@@ -2152,6 +2448,9 @@ Return ONLY the HTML in a \`\`\`html code block.`
 
       showToast("App ready! 🎉", "success")
       document.getElementById("appTitleText").textContent = currentProjectName + " · " + codeKB + "KB"
+
+      // Refresh credits
+      loadCredits()
     } else {
       bubble.innerHTML = `<div style="font-size:13px;line-height:1.5;">${marked.parse(fullText)}</div>`
       chatHistory.push({ role: "assistant", content: fullText.slice(0, 500) })
