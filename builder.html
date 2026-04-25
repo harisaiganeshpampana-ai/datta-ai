@@ -2074,7 +2074,7 @@ body.dashboard .builder-view { display: none; }
           <div class="building-stages" id="buildingStages"></div>
           <div class="file-progress" id="fileProgress"></div>
         </div>
-        <iframe id="previewFrame" class="preview-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox" style="display:none;"></iframe>
+        <iframe id="previewFrame" class="preview-frame" sandbox="allow-scripts allow-forms allow-modals allow-popups" style="display:none;"></iframe>
       </div>
 
       <div class="ws-panel" id="codePanel">
@@ -2772,58 +2772,93 @@ function setPreviewCode(code) {
   frame.style.display = "block"
   frame.classList.add("active")
 
-  // Use srcdoc — safer than document.write, handles all chars correctly
-  // Need to clear first to force reload
+  // Inject error reporter into the code so iframe can postMessage errors back
+  // (We can't read iframe contents from outside due to sandbox)
+  const errorReporter = `<script>
+(function(){
+  function report(msg, src, line){
+    try { window.parent.postMessage({ __dattaError: true, msg: String(msg).slice(0,200), src: src || '', line: line || 0 }, '*') } catch(e) {}
+  }
+  window.addEventListener('error', function(e){
+    report(e.message, e.filename, e.lineno);
+  });
+  window.addEventListener('unhandledrejection', function(e){
+    var msg = (e.reason && e.reason.message) ? e.reason.message : String(e.reason);
+    report(msg, '', 0);
+  });
+})();
+` + '<' + '/script>'
+
+  // Insert the error reporter right after <head> or at start of body
+  let codeWithReporter = code
+  if (code.includes('<head>')) {
+    codeWithReporter = code.replace('<head>', '<head>' + errorReporter)
+  } else if (code.includes('<body>')) {
+    codeWithReporter = code.replace('<body>', '<body>' + errorReporter)
+  } else {
+    codeWithReporter = errorReporter + code
+  }
+
+  // Use srcdoc — safer than document.write
   frame.srcdoc = ""
   setTimeout(() => {
-    frame.srcdoc = code
-
-    // Listen for errors in the preview iframe
-    frame.onload = () => {
-      try {
-        const w = frame.contentWindow
-        if (w) {
-          w.addEventListener("error", (e) => {
-            const errMsg = e.message || "Unknown error"
-            console.warn("[PREVIEW ERROR]", errMsg)
-            showAutoFixBanner(errMsg)
-          })
-          w.addEventListener("unhandledrejection", (e) => {
-            const errMsg = (e.reason && e.reason.message) || String(e.reason) || "Promise rejection"
-            console.warn("[PREVIEW REJECTION]", errMsg)
-            showAutoFixBanner(errMsg)
-          })
-        }
-      } catch(e) { /* cross-origin */ }
-    }
+    frame.srcdoc = codeWithReporter
   }, 10)
 }
 
+// Listen for errors from preview iframe via postMessage
+let lastErrorTime = 0
+let lastErrorMsg = ""
+window.addEventListener("message", (event) => {
+  if (!event.data || !event.data.__dattaError) return
+  const errMsg = event.data.msg || "Unknown error"
+
+  // Debounce: ignore if same error fired within 2 seconds
+  const now = Date.now()
+  if (errMsg === lastErrorMsg && now - lastErrorTime < 3000) return
+  lastErrorMsg = errMsg
+  lastErrorTime = now
+
+  console.warn("[PREVIEW ERROR]", errMsg)
+  showAutoFixBanner(errMsg)
+})
+
 // Show banner when preview has error - one-click auto-fix
+let pendingErrorMsg = ""
+
 function showAutoFixBanner(errMsg) {
   // Don't spam - only show once per generation
   if (document.getElementById("autoFixBanner")) return
+
+  // Store the error so the button can use it (avoids inline string injection bugs)
+  pendingErrorMsg = errMsg
 
   const messages = document.getElementById("chatMessages")
   const banner = document.createElement("div")
   banner.id = "autoFixBanner"
   banner.className = "msg-row"
   banner.innerHTML = `
-    <div style="display:flex;gap:8px;align-items:center;padding:10px 12px;background:rgba(239, 68, 68, 0.1);border:1px solid rgba(239, 68, 68, 0.4);border-radius:10px;font-size:12px;">
-      <span>⚠️ Preview error: <code style="font-size:11px;background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;">${escapeHtml(errMsg.slice(0, 80))}</code></span>
-      <button onclick="autoFixError('${encodeURIComponent(errMsg)}')" style="margin-left:auto;padding:5px 12px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">Auto-Fix</button>
+    <div style="display:flex;gap:8px;align-items:center;padding:10px 12px;background:rgba(239, 68, 68, 0.1);border:1px solid rgba(239, 68, 68, 0.4);border-radius:10px;font-size:12px;flex-wrap:wrap;">
+      <span style="flex:1;min-width:120px;">⚠️ Preview error: <code style="font-size:11px;background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;word-break:break-word;">${escapeHtml(errMsg.slice(0, 80))}</code></span>
+      <button id="autoFixBtn" style="padding:5px 12px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">Auto-Fix</button>
     </div>
   `
   messages.appendChild(banner)
+
+  // Attach handler via JS (not inline, to avoid quote escaping issues)
+  document.getElementById("autoFixBtn").addEventListener("click", autoFixError)
+
   messages.scrollTop = messages.scrollHeight
 }
 
-function autoFixError(encodedErr) {
-  const errMsg = decodeURIComponent(encodedErr)
+function autoFixError() {
+  const errMsg = pendingErrorMsg
+  if (!errMsg) return
   const banner = document.getElementById("autoFixBanner")
   if (banner) banner.remove()
 
-  document.getElementById("promptInput").value = `Fix this error in the app: "${errMsg}". Find and fix only the broken part. Don't change other features.`
+  document.getElementById("promptInput").value = `Fix this error in the app: ${errMsg.slice(0, 200)}. Find and fix only the broken part. Don't change other features.`
+  pendingErrorMsg = ""
   sendPrompt()
 }
 
@@ -2887,6 +2922,13 @@ function showBuildingAnimation() {
   document.getElementById("buildingSubtext").textContent = "AI is crafting your design"
 
   initFileProgress()
+
+  // Reset error tracking on new build
+  lastErrorTime = 0
+  lastErrorMsg = ""
+  pendingErrorMsg = ""
+  const banner = document.getElementById("autoFixBanner")
+  if (banner) banner.remove()
 
   const stagesEl = document.getElementById("buildingStages")
   const stages = [
