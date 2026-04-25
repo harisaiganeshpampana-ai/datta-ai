@@ -797,7 +797,7 @@ function checkAndUpdateLimit(userId, plan, type) {
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || "datta-ai-secret-2024"
-const FRONTEND_URL = process.env.FRONTEND_URL || "https://harisaiganeshpampana-ai.github.io/datta-ai"
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://datta-ai.com"
 
 function generateToken(user) {
   return jwt.sign({ id: user._id, username: user.username, email: user.email }, JWT_SECRET, { expiresIn: "30d" })
@@ -4377,7 +4377,21 @@ app.get("/user/usage", authMiddleware, async (req, res) => {
     const resetMs = limits.resetHours * 60 * 60 * 1000
     const resetIn = (plan === "free" || resetMs <= 0) ? 0 : Math.max(0, resetMs - (now - usage.windowStart))
     const waitMins = resetIn > 0 ? Math.ceil(resetIn / 60000) : 0
-    res.json({ plan, messagesUsed: usage.messagesUsed || 0, imagesUsed: usage.imagesUsed || 0, totalMessages: usage.totalMessages || 0, totalImages: usage.totalImages || 0, limit: limits.messages, imageLimit: limits.images, resetHours: limits.resetHours, waitMins, resetIn })
+
+    res.json({
+      plan,
+      isAdmin: !!req.user.isAdmin,
+      used: usage.messagesUsed || 0,
+      messagesUsed: usage.messagesUsed || 0,
+      imagesUsed: usage.imagesUsed || 0,
+      totalMessages: usage.totalMessages || 0,
+      totalImages: usage.totalImages || 0,
+      limit: limits.messages,
+      imageLimit: limits.images,
+      resetHours: limits.resetHours,
+      waitMins,
+      resetIn
+    })
   } catch(err) { res.status(500).json({ error: sanitizeError(err).userMsg }) }
 })
 
