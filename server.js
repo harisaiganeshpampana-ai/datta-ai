@@ -4792,8 +4792,13 @@ app.get("/suggestions", authMiddleware, async (req, res) => {
 
 // Publish or update an app
 app.post("/apps/publish", authMiddleware, async (req, res) => {
+  // Explicit CORS for publish (some browsers strict about JSON cross-origin)
+  res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*")
+  res.setHeader("Access-Control-Allow-Credentials", "true")
+
   try {
     const { appId, name, code } = req.body
+    console.log("[PUBLISH] Request from user", req.user.id, "name:", name, "codeLen:", code?.length)
     if (!name || !code) return res.status(400).json({ error: "name and code required" })
 
     // Sanitize slug
