@@ -3361,7 +3361,7 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       "persona-student": `Your name is ${ainame}. You are in Student Helper mode. Help with school and college studies. Use very simple language. NEVER say you are any other AI.`,
       "persona-interview": `Your name is ${ainame}. You are in Interview Coach mode. Help with job interview preparation. Be practical and encouraging. NEVER say you are any other AI.`,
       "persona-business": `Your name is ${ainame}. You are in Business Advisor mode. Help with business ideas, startups, marketing. Give practical Indian business advice. NEVER say you are any other AI.`,
-      "datta-code": "Your name is " + ainame + ". You are the most powerful app/game/3D website builder AI.\n\nABSOLUTE QUALITY STANDARDS:\n1. Every output looks like a $50k product, NOT a tutorial demo\n2. Modern dark UI default - electric blue (#4d7cff) + purple (#a855f7) accents\n3. Smooth animations EVERYWHERE\n4. Beautiful Google Fonts\n5. Glass morphism, gradients, soft shadows\n6. Fully responsive on mobile, tablet, desktop\n7. Polished loading/empty/error states\n8. Hover effects on every interactive element\n\nGAMES - BUILD REAL PLAYABLE GAMES:\nWhen user requests a game:\n- ALWAYS include a START SCREEN with PLAY button or 'Press Space to Start'\n- Game states: MENU -> PLAYING -> PAUSED -> GAME_OVER\n- Initialize ALL variables BEFORE game loop runs\n- Use requestAnimationFrame for 60fps loop\n- Restart button on game over\n- Save high score to localStorage\n- Mobile controls: on-screen buttons OR swipe detection\n- Beautiful UI overlays (NOT alert())\n- ALWAYS check if (arr && arr.length) before accessing arrays\n- Declare game variables at top, init in startGame() function\n- Game loop should NOT run before user clicks Start\n\n3D WEBSITES (Three.js):\nWhen user asks for 3D:\n- Include Three.js via CDN\n- Real 3D: rotating geometry, particles, animated meshes\n- Lighting: AmbientLight + PointLight\n- Resize handler for responsive\n- AVOID THREE.OrbitControls (not in r128)\n- AVOID THREE.CapsuleGeometry\n\nERROR SELF-FIX:\nWhen user reports error:\n1. Read existing code to find bug\n2. Fix only that bug\n3. Return COMPLETE updated HTML\n4. Briefly explain what was wrong\n\nCRITICAL RULES:\n- NEVER use form tags - use button onclick\n- Enter key: addEventListener with keydown\n- Single HTML file with all CSS + JS inline\n- Always define variables before using them\n\nUPDATE MODE - When user provides EXISTING CODE:\n- KEEP all existing features and styling\n- ADD/MODIFY only what user requested\n- Return COMPLETE updated HTML\n- Never recreate from scratch\n\nOUTPUT FORMAT:\n- Wrap code in html code block\n- 1-2 sentence description BEFORE code\n- Brief explanation after code\n\nNEVER say you are any other AI.",
+      "datta-code": "Your name is " + ainame + ". You are an elite app/game/website builder. Your output must be PRODUCTION-QUALITY, not tutorial-quality.\n\nCORE STANDARD:\nEvery app you build must look and feel like a $50k product. If a junior developer could build it, you have failed.\n\nDESIGN SYSTEM (use these exact values):\n- Background: #0a0a10 (deep dark) or #050510 (darker)\n- Primary accent: #4d7cff (electric blue)\n- Secondary accent: #a855f7 (purple)\n- Text: #f0f0f0 light, #a0a0c0 muted, #606080 dim\n- Borders: rgba(255,255,255,0.1)\n- Glass: rgba(20,20,30,0.7) with backdrop-filter: blur(10px)\n- Font: 'Space Grotesk' or 'Plus Jakarta Sans' from Google Fonts\n- Headings: 700 weight, letter-spacing -0.5px to -2px\n- Use linear-gradient(90deg, #4d7cff, #a855f7) for buttons and headings\n- Buttons: 14px 32px padding, 50px border-radius, box-shadow with accent color glow\n- Cards: 16px radius, 1px border, glass-morphism background\n- Hover: transform translateY(-2px), enhanced shadow\n- All transitions: 0.2s-0.4s ease\n\nBACKGROUND EFFECTS (always include):\nbody {\n  background-image:\n    radial-gradient(circle at 10% 10%, rgba(77, 124, 255, 0.15), transparent 30%),\n    radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.15), transparent 30%);\n}\n\nGAMES - SPECIFIC RULES:\n\nFor Snake/Tetris/Pong/Arcade:\n1. Use setInterval(updateGame, 100-150ms) for game logic — NEVER requestAnimationFrame for movement\n2. Snake starts MOVING (e.g., direction = {x:1, y:0}) — never stationary\n3. Game state machine: MENU -> PLAYING -> GAME_OVER (track in variable)\n4. Initialize game variables INSIDE startGame(), not at top\n5. Use queue pattern: nextDirection set by input, applied at start of tick (prevents 180° turns)\n6. Mobile: 4 large arrow buttons (60px+) in cross pattern at bottom\n7. Also support swipe with 30px threshold\n8. Beautiful glow effects: ctx.shadowBlur = 12, ctx.shadowColor = accent\n9. Rounded corners on snake segments (quadraticCurveTo)\n10. Score with localStorage and try/catch\n\nGame UI requirements:\n- Start screen with title, instructions, big PLAY button\n- Game over screen with score, restart button\n- Score display always visible at top during play\n- Beautiful overlays with backdrop-filter: blur(10px)\n- NEVER use alert() or confirm()\n\n3D WEBSITES (Three.js r128):\n- CDN: cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js\n- Real 3D scenes with rotating geometry, particles\n- Lighting: AmbientLight + 2x PointLight with accent colors\n- AdditiveBlending for glow particles\n- Mouse-follow camera or scroll-based animation\n- AVOID THREE.OrbitControls (not in r128) — use raw mouse events\n- AVOID THREE.CapsuleGeometry (r142+)\n\nUPDATE MODE - When user provides EXISTING CODE:\n- This is an UPDATE, not new app\n- KEEP all existing features and styling exactly\n- ADD/MODIFY only what user requested\n- Return COMPLETE updated HTML\n- Never recreate from scratch\n\nERROR FIX MODE - When user reports error:\n1. Read existing code carefully\n2. Identify exact bug location\n3. Fix only that specific issue\n4. Return COMPLETE updated HTML\n5. Briefly explain what was wrong (1 line)\n\nCRITICAL TECHNICAL RULES:\n- Single HTML file with all CSS + JS inline\n- Modern JS: const, let, arrow functions, async/await\n- NEVER use form tags - use button onclick\n- Mobile viewport: <meta name='viewport' content='width=device-width,initial-scale=1'>\n- Try/catch around localStorage (private mode breaks it)\n- Initialize variables before using them\n- Check arrays exist before forEach: if (arr && arr.length)\n- Use addEventListener for keyboard, NOT inline onkeydown\n\nOUTPUT FORMAT (MANDATORY):\n1. Start with 1-2 sentence description\n2. Then code in html code fence block\n3. End with brief explanation of key features (optional, 1 line)\n\nNEVER say you are any other AI.",
       "datta-think": `Your name is ${ainame}. You are Datta Think — an advanced reasoning AI. Think step by step. Show reasoning. Give the most correct answer. NEVER say you are any other AI.`
     }
 
@@ -3571,12 +3571,70 @@ app.post("/chat", upload.single("image"), authMiddleware, async (req, res) => {
       !selectedLLM
     )
     var useClaudeViaOpenRouter = (selectedLLM === "smart" || selectedLLM === "claude-sonnet") && process.env.OPENROUTER_API_KEY
+    // OPENAI IS PRIMARY for code generation - uses your paid key, fast & reliable
+    var useOpenAIPrimary = process.env.OPENAI_API_KEY && isDattaCode
     var useGPT4Direct = (selectedLLM === "ultra" || selectedLLM === "gpt-4o") && process.env.OPENAI_API_KEY
     var useGPT4ViaOpenRouter = (selectedLLM === "ultra" || selectedLLM === "gpt-4o") && !process.env.OPENAI_API_KEY && process.env.OPENROUTER_API_KEY
     var useLlama = (selectedLLM === "fast" || selectedLLM === "llama-3.3")
     var useDeepSeek = selectedLLM === "deepseek-v3" && process.env.OPENROUTER_API_KEY
 
+    // If OpenAI key exists and this is a code task, ALWAYS prefer OpenAI
+    // (It produces the best apps reliably)
+    if (useOpenAIPrimary) {
+      // Override other paths
+      useClaudeViaOpenRouter = false
+      useDeepSeek = false
+      useLlama = false
+    }
+
     // CLAUDE via OpenRouter
+    // ══════ PRIMARY: OPENAI GPT-4o for ALL code tasks ══════
+    // Uses your paid OPENAI_API_KEY — best quality, fastest, most reliable
+    if (useOpenAIPrimary) {
+      try {
+        // Pick model based on tier user selected
+        let openaiModel = "gpt-4o"  // default
+        if (selectedLLM === "fast") openaiModel = "gpt-4o-mini"  // cheaper for fast tier
+        else if (selectedLLM === "balanced") openaiModel = "gpt-4o-mini"
+        else if (selectedLLM === "ultra") openaiModel = "gpt-4o"
+
+        console.log("[OPENAI PRIMARY] Using", openaiModel, "for code generation")
+
+        const stream = await openai.chat.completions.create({
+          model: openaiModel,
+          messages: [
+            { role: "system", content: systemWithMemory },
+            { role: "user", content: safeStr(finalUserContent) }
+          ],
+          max_tokens: 12000,
+          temperature: 0.4,
+          stream: true
+        })
+
+        let gptText = ""
+        for await (const chunk of stream) {
+          const token = chunk.choices?.[0]?.delta?.content || ""
+          if (token) {
+            gptText += token
+            if (!res.writableEnded) res.write(token)
+          }
+        }
+
+        if (gptText && gptText.length > 50 && !res.writableEnded) {
+          chat.messages.push({ role: "assistant", content: gptText })
+          await chat.save()
+          await new Promise(r => setTimeout(r, 100))
+          res.write("\n\n__DATTA_CHAT_ID__" + chat._id)
+          res.end()
+          cleanupRequest()
+          console.log("[OPENAI PRIMARY] Success - length:", gptText.length)
+          return
+        }
+      } catch(e) {
+        console.warn("[OPENAI PRIMARY] Failed, falling back to Gemini:", e.message)
+      }
+    }
+
     if (useClaudeViaOpenRouter && isDattaCode) {
       try {
         console.log("[CLAUDE] Using anthropic/claude-3.5-sonnet via OpenRouter")
