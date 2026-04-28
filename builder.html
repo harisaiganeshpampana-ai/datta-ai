@@ -212,6 +212,37 @@ a { color: inherit; text-decoration: none; }
 
 .tb-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
 
+/* USER AVATAR */
+.user-avatar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 4px 10px 4px 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+.user-avatar-btn:hover { border-color: var(--accent); background: var(--bg3); }
+.user-avatar {
+  width: 26px; height: 26px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; color: #fff;
+  flex-shrink: 0;
+}
+.user-name-short {
+  max-width: 80px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+@media (max-width: 600px) { .user-name-short { display: none; } }
+
 .tb-icon {
   width: 36px; height: 36px;
   border-radius: 9px;
@@ -1933,50 +1964,52 @@ body.dashboard .builder-view { display: none; }
     </div>
   </div>
   <div class="tb-right">
-    <!-- CREDITS DISPLAY (always visible when in builder) -->
     <div class="credits-display" id="creditsDisplay" style="display:none;" onclick="window.location.href='/pricing.html'" title="Click to upgrade">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"/>
-        <path d="M12 6v6l4 2"/>
-      </svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
       <span id="creditsCount">--</span>
     </div>
-
-    <!-- BUILDER VIEW BUTTONS (hidden in dashboard) -->
-    <button class="tb-btn" id="downloadBtn" onclick="downloadCode()" style="display:none;" title="Download">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="7 10 12 15 17 10"/>
-        <line x1="12" y1="15" x2="12" y2="3"/>
-      </svg>
+    <button class="tb-btn" id="downloadBtn" onclick="downloadCode()" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       <span>Download</span>
     </button>
-    <button class="tb-btn primary" id="publishBtn" onclick="openPublishModal()" style="display:none;" title="Publish">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="5 12 10 17 20 7"/>
-      </svg>
+    <button class="tb-btn primary" id="publishBtn" onclick="openPublishModal()" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 12 10 17 20 7"/></svg>
       <span class="tb-btn-keep">Publish</span>
     </button>
-    <button class="tb-btn" id="dashboardBtn" onclick="goToDashboard()" style="display:none;" title="My Projects">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="3" width="7" height="7" rx="1"/>
-        <rect x="14" y="3" width="7" height="7" rx="1"/>
-        <rect x="3" y="14" width="7" height="7" rx="1"/>
-        <rect x="14" y="14" width="7" height="7" rx="1"/>
-      </svg>
+    <button class="tb-btn" id="dashboardBtn" onclick="goToDashboard()" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       <span>Dashboard</span>
     </button>
-
-    <!-- SETTINGS BUTTON (always visible) -->
+    <!-- LOGIN/USER BUTTON -->
+    <a href="/login.html?redirect=/builder.html" class="tb-btn primary" id="loginBtn" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+      <span class="tb-btn-keep">Login</span>
+    </a>
+    <button class="user-avatar-btn" id="userAvatarBtn" onclick="toggleUserMenu()" style="display:none;" title="Account">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <span class="user-name-short" id="userNameShort"></span>
+    </button>
     <button class="tb-icon" onclick="toggleSettingsMenu()" title="Settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-      </svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
   </div>
 </header>
 
+<!-- USER DROPDOWN -->
+<div class="settings-menu" id="userDropdown" style="right:48px;">
+  <div style="padding:12px 14px;border-bottom:1px solid var(--border);margin-bottom:4px;">
+    <div id="userDropdownName" style="font-weight:700;font-size:14px;color:var(--text);">Loading...</div>
+    <div id="userDropdownEmail" style="font-size:11px;color:var(--text3);margin-top:2px;"></div>
+    <div id="userDropdownPlan" style="font-size:10px;color:var(--accent);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:1px;"></div>
+  </div>
+  <button class="menu-item" onclick="window.location.href='/pricing.html'">⬆️ Upgrade Plan</button>
+  <button class="menu-item" onclick="window.location.href='/settings.html'">⚙️ Settings</button>
+  <button class="menu-item" id="adminMenuBtn" onclick="window.location.href='/admin.html'" style="display:none;">🛡️ Admin Dashboard</button>
+  <div class="menu-divider"></div>
+  <button class="menu-item danger" onclick="logout()">🚪 Logout</button>
+</div>
+
+<!-- SETTINGS DROPDOWN MENU -->
 <!-- SETTINGS DROPDOWN MENU -->
 <div class="settings-menu" id="settingsMenu">
   <button class="menu-item" onclick="window.location.href='/settings.html'">
@@ -2254,6 +2287,16 @@ body.dashboard .builder-view { display: none; }
 const S = "https://datta-ai-server.onrender.com"
 
 window.addEventListener('load', () => {
+  // Show login/user UI immediately from localStorage (before API call)
+  initUserUI()
+
+  // Check login - redirect if not logged in
+  const token = localStorage.getItem("datta_token")
+  if (!token) {
+    window.location.href = "/login.html?redirect=/builder.html"
+    return
+  }
+
   setTimeout(() => document.getElementById('loader').classList.add('hidden'), 400)
   loadDashboard()
   loadCredits()
@@ -2391,6 +2434,14 @@ async function loadCredits() {
     const res = await fetch(S + "/user/usage", {
       headers: { "Authorization": "Bearer " + token }
     })
+
+    // 401 means token expired or invalid - redirect to login
+    if (res.status === 401) {
+      localStorage.removeItem("datta_token")
+      window.location.href = "/login.html?redirect=/builder.html&reason=expired"
+      return
+    }
+
     if (!res.ok) return
     const data = await res.json()
 
@@ -2424,6 +2475,14 @@ async function loadCredits() {
       display.style.display = "inline-flex"
     }
 
+    // Show plan in user dropdown
+    const planEl = document.getElementById("userDropdownPlan")
+    if (planEl) planEl.textContent = isAdmin ? "👑 Admin" : "✦ " + userPlan.toUpperCase() + " Plan"
+
+    // Show admin button
+    const adminBtn = document.getElementById("adminMenuBtn")
+    if (adminBtn && isAdmin) adminBtn.style.display = "block"
+
     updateModelLabels()
   } catch(e) {
     console.warn("Load credits failed:", e)
@@ -2434,6 +2493,53 @@ async function loadCredits() {
 function toggleSettingsMenu() {
   document.getElementById("settingsMenu").classList.toggle("show")
 }
+
+function toggleUserMenu() {
+  document.getElementById("userDropdown").classList.toggle("show")
+}
+
+// Show correct UI based on login state
+function initUserUI() {
+  const token = localStorage.getItem("datta_token")
+  const userStr = localStorage.getItem("datta_user")
+
+  if (!token) {
+    // Not logged in - show Login button
+    document.getElementById("loginBtn").style.display = "inline-flex"
+    document.getElementById("userAvatarBtn").style.display = "none"
+    return
+  }
+
+  // Logged in - show avatar
+  document.getElementById("loginBtn").style.display = "none"
+  document.getElementById("userAvatarBtn").style.display = "inline-flex"
+
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr)
+      const name = user.name || user.username || user.email || "User"
+      const email = user.email || ""
+      const initials = name.slice(0, 2).toUpperCase()
+
+      document.getElementById("userAvatar").textContent = initials
+      document.getElementById("userNameShort").textContent = name.split(" ")[0]
+      document.getElementById("userDropdownName").textContent = name
+      document.getElementById("userDropdownEmail").textContent = email
+    } catch(e) {}
+  }
+}
+
+// Close user dropdown when clicking outside
+document.addEventListener("click", (e) => {
+  if (!e.target.closest("#userDropdown") && !e.target.closest("#userAvatarBtn")) {
+    const dd = document.getElementById("userDropdown")
+    if (dd) dd.classList.remove("show")
+  }
+  if (!e.target.closest("#settingsMenu") && !e.target.closest('[onclick*="toggleSettingsMenu"]')) {
+    const sm = document.getElementById("settingsMenu")
+    if (sm) sm.classList.remove("show")
+  }
+})
 
 document.addEventListener("click", (e) => {
   if (!e.target.closest(".settings-menu") && !e.target.closest('[onclick*="toggleSettingsMenu"]')) {
@@ -2451,22 +2557,53 @@ function logout() {
 
 // ══════ TEMPLATES ══════
 const TEMPLATES = [
-  { icon: "✅", name: "Todo App", desc: "Tasks with localStorage", prompt: "Build a beautiful todo app with dark theme, add/delete/complete tasks, save to localStorage, smooth animations, drag to reorder", from: "#4d7cff", to: "#a855f7" },
-  { icon: "🧮", name: "Calculator", desc: "Scientific calculator", prompt: "Build a stunning calculator with scientific functions, beautiful animations, dark theme, history of calculations, keyboard support", from: "#06b6d4", to: "#3b82f6" },
-  { icon: "🎨", name: "Portfolio", desc: "Personal portfolio site", prompt: "Build a modern portfolio website with hero section, about, projects grid, skills, contact form, smooth scroll, dark theme with gradients", from: "#a855f7", to: "#ec4899" },
-  { icon: "📝", name: "Blog Site", desc: "Modern blog layout", prompt: "Build a beautiful blog website with article cards, hero post, categories, search, dark theme, modern typography", from: "#10b981", to: "#06b6d4" },
-  { icon: "🛒", name: "E-commerce", desc: "Product showcase", prompt: "Build a modern e-commerce product page with hero image, gallery, add to cart, related products, reviews section, dark elegant theme", from: "#f59e0b", to: "#ef4444" },
-  { icon: "💬", name: "Chat UI", desc: "Messaging interface", prompt: "Build a beautiful chat interface like WhatsApp/Telegram with conversation list sidebar, message bubbles, typing indicator, dark theme", from: "#8b5cf6", to: "#3b82f6" },
-  { icon: "🍽️", name: "Restaurant", desc: "Restaurant menu site", prompt: "Build a restaurant website with hero, menu sections with photos, about, reservations form, contact, beautiful food photography layout", from: "#f97316", to: "#dc2626" },
-  { icon: "📊", name: "Dashboard", desc: "Analytics dashboard", prompt: "Build a modern SaaS analytics dashboard with sidebar, stats cards, charts using SVG, recent activity, user table, dark theme with gradients", from: "#3b82f6", to: "#8b5cf6" },
-  { icon: "🎮", name: "Snake Game", desc: "Classic snake game", prompt: "Build a classic snake game with smooth animations, score tracking, high score in localStorage, beautiful retro style, mobile swipe controls", from: "#10b981", to: "#84cc16" },
-  { icon: "⏱️", name: "Pomodoro Timer", desc: "Focus timer", prompt: "Build a pomodoro timer with 25/5 minute cycles, task list, sound notifications, beautiful circular progress animation, dark theme", from: "#dc2626", to: "#f97316" },
-  { icon: "🌐", name: "Landing Page", desc: "SaaS landing page", prompt: "Build a stunning SaaS landing page with hero, features grid, pricing table, testimonials, footer, smooth animations, dark theme with electric blue accents", from: "#4d7cff", to: "#06b6d4" },
-  { icon: "🎵", name: "Music Player", desc: "Audio player UI", prompt: "Build a beautiful music player UI with playlist sidebar, now playing area with album art, controls, progress bar, equalizer animation, dark theme", from: "#ec4899", to: "#a855f7" },
-  { icon: "🌦️", name: "Weather App", desc: "Weather forecast UI", prompt: "Build a beautiful weather app UI with current weather hero, hourly forecast, 7-day forecast, animated weather icons, gradient background that changes with weather", from: "#06b6d4", to: "#0ea5e9" },
-  { icon: "📅", name: "Calendar", desc: "Event calendar", prompt: "Build a beautiful calendar app with month view, add events with colors, today highlighted, smooth navigation, modal for event details, dark theme", from: "#8b5cf6", to: "#ec4899" },
-  { icon: "📓", name: "Notes App", desc: "Note-taking app", prompt: "Build a beautiful notes app with sidebar list, rich text editing, tags, search, save to localStorage, markdown support, dark theme", from: "#84cc16", to: "#10b981" },
-  { icon: "🚀", name: "3D Showcase", desc: "Three.js 3D scene", prompt: "Build a stunning 3D website using Three.js with floating animated geometric shapes, particles, mouse-follow camera, gradient lighting, dark futuristic theme", from: "#4d7cff", to: "#a855f7" },
+  { icon: "✅", name: "Todo App", desc: "Tasks with localStorage", from: "#4d7cff", to: "#a855f7",
+    prompt: "Build a beautiful todo app with: dark theme (#0a0a10 background, #4d7cff and #a855f7 accents), Space Grotesk Google font, glass-morphism cards, gradient header 'My Tasks', input field with rounded corners and gradient border on focus, Add button with glow effect. Each task has: checkbox (animated check), task text, delete button (red on hover), strike-through when complete, smooth slide-in animation when added, slide-out when deleted. Filter buttons: All / Active / Completed. Counter showing 'X tasks remaining'. Save all tasks to localStorage with try/catch. Empty state with friendly message and emoji. Mobile-responsive with proper touch targets (44px min). Subtle particle background gradients." },
+
+  { icon: "🧮", name: "Calculator", desc: "Scientific calculator", from: "#06b6d4", to: "#3b82f6",
+    prompt: "Build a stunning calculator with: dark theme #0a0a10, electric blue (#4d7cff) and cyan (#06b6d4) accents, Space Grotesk font, glass-morphism display panel showing current calculation in muted text and result in large gradient text, button grid (4 columns) with: numbers 0-9, operators (+, -, *, /, =), clear (AC), backspace, decimal, percent, parentheses, square root, x squared, plus/minus toggle. Buttons have subtle gradient backgrounds, hover lift effect, press animation (scale 0.95), color-coded (numbers gray, operators blue, equals purple-blue gradient). History panel showing last 5 calculations on the right side (collapsible on mobile). Full keyboard support with visual feedback when key pressed. Smooth font scaling for long results. Mobile-first responsive layout." },
+
+  { icon: "🎨", name: "Portfolio", desc: "Personal portfolio site", from: "#a855f7", to: "#ec4899",
+    prompt: "Build a stunning personal portfolio website with: 5 sections (Hero, About, Skills, Projects, Contact), dark theme #050510, purple (#a855f7) to pink (#ec4899) gradients throughout, smooth scroll between sections, sticky nav with active section highlight. HERO: Full screen with massive name (120px Bricolage Grotesque), animated tagline that types itself, animated gradient mesh background, floating geometric shapes. ABOUT: Photo placeholder with glowing border, bio text, key stats (years experience, projects done, clients). SKILLS: Grid of skill cards with progress bars animating on scroll, tech stack icons. PROJECTS: 6 project cards in grid, each with image placeholder, title, description, tech tags, hover lift with gradient overlay, click opens modal with details. CONTACT: Email, social links with hover animations, copy email button. Footer with copyright. Reveal animations on scroll using IntersectionObserver. Mobile menu hamburger that slides from right." },
+
+  { icon: "📝", name: "Blog Site", desc: "Modern blog layout", from: "#10b981", to: "#06b6d4",
+    prompt: "Build a beautiful modern blog website with: dark theme, emerald (#10b981) to cyan (#06b6d4) accents, Plus Jakarta Sans font. Sticky header with logo, search bar, dark/light toggle. Hero section with featured post (large image, title, excerpt, author, read time, gradient overlay). Categories filter chips below hero (All, Tech, Design, Business, Lifestyle). Grid of 9 article cards (responsive: 3 columns desktop, 2 tablet, 1 mobile) with image, category tag, title, excerpt, author avatar, date, read time, hover effect (lift + shadow). Newsletter signup section with gradient background. Footer with links and social. Pagination at bottom. Each card clickable with smooth modal showing full article. Reading progress bar at top of modal." },
+
+  { icon: "🛒", name: "Shop Page", desc: "E-commerce product page", from: "#f59e0b", to: "#ef4444",
+    prompt: "Build a premium e-commerce product page like Apple/Nike with: dark theme #0a0a10, amber (#f59e0b) to red (#ef4444) accents, Plus Jakarta Sans. Top: minimal nav with logo, search, cart icon (with count badge), profile. Product section: large product image with thumbnail gallery (4 thumbnails clickable), zoom on hover. Right side: product title, star rating with reviews count, price (large), color selector (4 colors as circles), size selector (S/M/L/XL pills), quantity selector with +/- buttons, big 'Add to Cart' button with gradient and glow, 'Buy Now' secondary button, wishlist heart icon, share button. Tabs below: Description / Specs / Reviews. Reviews tab shows 3 sample reviews with avatars, ratings, dates. Related products carousel with 6 items, smooth horizontal scroll. Trust badges at bottom (free shipping, 30-day returns, secure checkout). Sticky 'Add to Cart' bar on mobile when scrolled past." },
+
+  { icon: "💬", name: "Chat UI", desc: "Messaging interface", from: "#8b5cf6", to: "#3b82f6",
+    prompt: "Build a beautiful chat interface like Telegram/Discord with: dark theme #0a0a10, violet (#8b5cf6) to blue (#3b82f6) accents. Two-pane layout: LEFT sidebar (320px wide on desktop, full screen on mobile) with: search bar at top, list of 8 conversations each showing avatar (gradient circles), name, last message preview, time, unread count badge. Active chat highlighted. RIGHT panel: chat header with selected user's avatar, name, online status (green dot), call/video icons. Message area with: messages aligned left (received) and right (sent), bubbles with rounded corners and gradient for sent messages, timestamps, read receipts (double check), typing indicator (3 animated dots) when someone is typing. Bottom: emoji picker button, attachment button, message input with rounded border, send button with gradient and rocket icon. Pre-fill 12 sample messages showing realistic conversation. Mobile: chat list and conversation are separate views with back button. Smooth animations when sending messages." },
+
+  { icon: "🍽️", name: "Restaurant", desc: "Restaurant website", from: "#f97316", to: "#dc2626",
+    prompt: "Build a stunning restaurant website with: dark theme but warm (#1a0a0a background), orange (#f97316) to red (#dc2626) accents, elegant Cormorant Garamond serif for headings + Inter for body. Hero: full-screen with restaurant name in massive italic serif, tagline 'A Culinary Journey', 'Reserve Table' CTA button, scrolling food image gallery as background (parallax), scroll indicator at bottom. About section with chef photo placeholder and story. Menu section with 4 categories (Starters / Mains / Desserts / Drinks) as tabs, each showing 6 items with: dish name, italic description, price, image placeholder, hover effect with golden glow. Featured dish card highlighted. Reservations section with form (name, date, time, guests, special requests), submit button. Gallery: 9-photo grid with lightbox on click. Hours and location with map placeholder. Footer with social, contact, opening hours. Smooth scroll between sections, reveal animations." },
+
+  { icon: "📊", name: "Dashboard", desc: "Analytics dashboard", from: "#3b82f6", to: "#8b5cf6",
+    prompt: "Build a modern SaaS analytics dashboard like Linear/Vercel with: dark theme #050510, blue (#3b82f6) to violet (#8b5cf6) accents, Plus Jakarta Sans. Layout: sidebar nav (240px) with logo, 6 menu items with icons (Dashboard, Analytics, Users, Revenue, Settings, Help), active item highlighted with gradient bar. Top bar: search, notifications bell with badge, dark/light toggle, user profile dropdown. Main content: 'Welcome back, Ganesh' heading, date range selector. Stats cards row: 4 cards showing Total Users (12,438, +12%), Revenue ($48,290, +8%), Active Sessions (892, -3%), Conversion (4.2%, +0.8%) — each with icon, big number, change indicator (green/red), mini sparkline. Big chart below: revenue line chart drawn with SVG (12 months data points, smooth curve, gradient fill below line, hover tooltips). Two columns below: bar chart of top products + activity feed list with avatars. Recent transactions table with sortable columns. All charts hand-drawn with SVG, no Chart.js needed. Responsive: sidebar collapses on mobile, cards stack." },
+
+  { icon: "🐍", name: "Snake Game", desc: "Working snake with start screen", from: "#10b981", to: "#84cc16",
+    prompt: "Build a beautiful playable Snake game. CRITICAL TECHNICAL RULES: Use setInterval(tick, 110) for game loop NOT requestAnimationFrame. Snake starts at center moving RIGHT (direction = {x:1, y:0}). Use queue pattern: nextDirection set by input, applied at start of each tick to prevent 180° turns. UI: dark theme #0a0a10, electric blue (#4d7cff) snake head + lighter blue body with glow (ctx.shadowBlur=12), purple (#a855f7) food with pulsing glow. Canvas centered, 20x20 grid. START SCREEN overlay with title 'RETRO SNAKE' in gradient text, instructions, big PLAY button with gradient. Score display top-left, high score top-right, both with glass-morphism background. Game over screen with final score and RESTART button. Mobile: 4 large arrow buttons (60px) in cross pattern at bottom of screen, also support swipe with 30px threshold. Save high score to localStorage with try/catch. Snake segments have rounded corners (4px). Subtle grid pattern visible behind snake. Background has radial gradients in blue/purple corners." },
+
+  { icon: "⏱️", name: "Pomodoro Timer", desc: "25/5 focus timer", from: "#dc2626", to: "#f97316",
+    prompt: "Build a beautiful Pomodoro timer with: dark theme, red (#dc2626) for work mode, orange (#f97316) for break mode, smooth color transitions between modes, Space Grotesk font. Layout: Big circular progress indicator (SVG with stroke-dasharray animation) showing time remaining, time display in center (huge 96px), mode label below ('Focus Time' or 'Break Time'), 3 buttons: Start/Pause (gradient), Reset, Skip. Below timer: session count (e.g., 'Pomodoro 2 of 4'), task input field where user types current task. Task list on the right showing today's completed tasks with strikethrough and checkmark. Settings button (gear icon) opens modal with: work duration, short break duration, long break duration, sessions until long break, sound on/off, all customizable. Cycle: 4 work sessions of 25min, with 5min breaks between, then 15min long break. Beep sound on transitions (Web Audio API generated, no external files). Browser notification on session end if permitted. Save settings and history to localStorage. Background changes subtle hue based on mode." },
+
+  { icon: "🌐", name: "Landing Page", desc: "SaaS landing page", from: "#4d7cff", to: "#06b6d4",
+    prompt: "Build a stunning SaaS landing page like Linear/Vercel with: dark theme #050510, electric blue (#4d7cff) to cyan (#06b6d4) gradient throughout, Plus Jakarta Sans + Bricolage Grotesque for headings. Sticky nav: logo (gradient mark + brand), 4 menu items (Features, Pricing, Docs, Blog), Sign In, gradient 'Get Started' button. HERO: massive headline (96px) with one word in italic serif, subheadline, 2 CTAs (gradient primary + ghost secondary), animated mesh gradient background, floating UI mockup card. SOCIAL PROOF: 'Trusted by 1000+ teams' with 6 fake company logos. FEATURES: 6 feature cards in 3-column grid, each with icon (gradient background circle), title, description, hover lift. PRODUCT DEMO: large screenshot with browser frame, gradient glow border. PRICING: 3 tier cards (Free $0, Pro $29, Team $99), middle one featured/highlighted, feature checklists, CTA buttons. TESTIMONIALS: 3 testimonial cards with avatar, name, role, quote. CTA SECTION: gradient box with 'Ready to start?' and signup form. FOOTER: 4 columns of links, copyright, social icons. Smooth scroll, reveal animations on scroll, all with stagger effects." },
+
+  { icon: "🎵", name: "Music Player", desc: "Spotify-style player", from: "#ec4899", to: "#a855f7",
+    prompt: "Build a beautiful music player UI like Spotify with: dark theme #0a0a10, pink (#ec4899) to purple (#a855f7) accents, Plus Jakarta Sans. Three-pane layout: LEFT sidebar with logo, navigation (Home, Search, Library), then 'Your Library' showing 6 playlists. CENTER: 'Made for You' heading, horizontal scroll of playlist cards (album art, title, artist count), 'Recently Played' section with similar cards, 'Top Songs' list view with rank, art, title, artist, album, duration, hover row highlight. RIGHT: now playing panel with large album art (with glow), song title, artist name, like button (heart fills with gradient when clicked), share. BOTTOM PLAYER BAR (fixed): mini album art + song info on left, center has shuffle/prev/play-pause/next/repeat buttons (play button is gradient circle, larger), progress bar with current/total time, drag to seek, right side has volume slider, queue button. Equalizer animation (5 bars) when playing. Hover effects on all interactive elements. Mobile: simplified single-column with swipeable bottom player. Use 6 sample tracks with placeholder art." },
+
+  { icon: "🌦️", name: "Weather App", desc: "Forecast UI", from: "#06b6d4", to: "#0ea5e9",
+    prompt: "Build a stunning weather app with: dynamic gradient background that changes based on weather (sunny=warm orange/yellow, rainy=blue/gray, night=deep purple, cloudy=light gray-blue), Plus Jakarta Sans. Top: location with city name + 'Current Location' icon, search bar to change city. HERO section: huge temperature (120px), weather icon (animated SVG: sun rotating with rays, rain falling drops, snow falling flakes, clouds drifting), weather description, feels-like temp, high/low for today. Stats row: 4 cards (Humidity, Wind, UV Index, Visibility) with icons and values. HOURLY forecast: horizontal scroll of next 24 hours each showing time, icon, temp. WEEKLY forecast: 7-day list with day name, weather icon, high/low temps, precipitation %. AIR QUALITY index card with colored bar (Good/Moderate/Unhealthy). Sunrise/sunset with animated sun arc visualization. All cards use glass-morphism. Smooth transitions when changing cities. Use mock data for 3 cities (Mumbai, Delhi, Bangalore) - user can switch between them. Animate weather icon based on current condition." },
+
+  { icon: "📅", name: "Calendar", desc: "Event calendar", from: "#8b5cf6", to: "#ec4899",
+    prompt: "Build a beautiful calendar app like Google Calendar with: dark theme #0a0a10, violet (#8b5cf6) to pink (#ec4899) accents. Top bar: month/year title (large), prev/next buttons, 'Today' button, view switcher (Month/Week/Day). MONTH view: 7-column grid (Sun-Sat headers), 6 rows of dates, today's date highlighted with gradient circle, weekend days slightly muted, days with events show colored dots below number (different colors for different categories: work=blue, personal=purple, health=green, social=pink). Click day to see events list with time + title in popup. Hover day shows + button to add event. Add event modal with: title, date, start/end time, category dropdown, notes textarea, save/cancel buttons. Mini sidebar (collapsible) with: today's events list, upcoming events for next 7 days, mini month picker, calendars filter checkboxes. Pre-fill 8 sample events across the month. Smooth transitions when changing months. Save all events to localStorage with try/catch. Mobile: month view becomes list view, sidebar slides in." },
+
+  { icon: "📓", name: "Notes App", desc: "Bear-style notes", from: "#84cc16", to: "#10b981",
+    prompt: "Build a beautiful notes app like Bear/Notion with: dark theme #0a0a10, lime (#84cc16) to emerald (#10b981) accents, Plus Jakarta Sans + JetBrains Mono for code blocks. Three-pane layout: LEFT sidebar (260px) with: search bar, '+ New Note' gradient button, tag list (#work, #personal, #ideas, #todo with counts), Trash. MIDDLE pane (320px): note list showing title (first line bold), preview (next 2 lines), date, tags, hover highlight, active note highlighted. RIGHT pane: note editor with title input, divider, content area with markdown support (visual rendering of #headings, **bold**, *italic*, lists, > quotes, `code`, ```code blocks```, [links], - tasks), live word count and reading time at bottom, last edited timestamp, delete button. Pre-fill 5 sample notes with rich content showing all formatting. All notes saved to localStorage. Tag highlighting in editor (e.g., #work shows in green). Auto-save while typing (debounced 500ms). Mobile: single pane with back navigation. Smooth animations between notes." },
+
+  { icon: "🚀", name: "3D Showcase", desc: "Three.js scene", from: "#4d7cff", to: "#a855f7",
+    prompt: "Build a stunning 3D landing page using Three.js (CDN: cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js). Full-screen Three.js scene as background: 1500 particles in blue/purple, floating wireframe icosahedron (sphere) rotating slowly, floating wireframe torus rotating opposite direction, both with breathing position animation. Camera follows mouse position smoothly, slight scroll parallax. Lighting: AmbientLight + 2 PointLights (one blue, one purple). Fog (THREE.FogExp2) for depth. UI Layer on top: dark theme transparent background, sticky nav with gradient logo, hero section with massive headline (96px Bricolage Grotesque) in white with one italic serif word, gradient subhead, 2 CTA buttons (gradient primary + ghost). Below scroll: 3 feature cards with hover-tilt effect (3D transform on mouseover). Footer with social links. AVOID THREE.OrbitControls (not in r128). AVOID THREE.CapsuleGeometry. Resize handler for window resize. Use AdditiveBlending for particle glow. Performance: limit pixel ratio to 2." },
 ]
 
 function renderTemplates() {
@@ -2481,6 +2618,9 @@ function renderTemplates() {
   `).join("")
 }
 
+// ══════ AUTO-ENHANCE PROMPTS ══════
+// Detects keywords in user's short prompt and adds specific requirements
+// so AI produces high-quality output even when user types just "snake game"
 function useTemplate(index) {
   const t = TEMPLATES[index]
   if (!t) return
@@ -3181,9 +3321,80 @@ async function sendPrompt() {
     switchMobileTab("workspace")
   }
 
-  isGenerating = true
-  updateSendBtn()
-  controller = new AbortController()
+// ══════ PROMPT AUTO-ENHANCE ══════
+// Detects what user wants and adds quality requirements automatically
+function enhanceUserPrompt(text) {
+  if (!text) return text
+  const lower = text.toLowerCase()
+  let enhancements = []
+
+  // Detect game type
+  const gameKeywords = {
+    'snake': "PLAY button start screen, setInterval(110ms) game loop NOT requestAnimationFrame, snake starts moving right, queue pattern for direction (prevents 180° turns), mobile arrow buttons in cross pattern + swipe support, glowing snake segments with shadowBlur, rounded corners, score + high score with localStorage try/catch, beautiful game over screen with restart",
+    'tetris': "PLAY button, setInterval game loop, all 7 tetrominos (I,O,T,L,J,S,Z) with distinct colors, line clear animation, score, level, next piece preview, mobile touch controls, hold piece feature",
+    'pong': "two paddles, white ball, score for both players, mobile touch controls, AI opponent on hard mode, retro arcade aesthetic with glow",
+    'flappy': "bird with gravity physics, pipes spawning at intervals, tap/space to flap, score counter, beautiful parallax background, game over with restart, high score",
+    'breakout': "paddle at bottom, multi-row colored bricks, ball physics with angle on paddle hit, power-ups, lives system, level progression",
+    'memory': "card flip animation with smooth 3D rotation, match pairs, timer, move counter, win celebration animation, multiple difficulty levels",
+    '2048': "4x4 grid, smooth tile slide animations, merge animations with scale effect, score, best score, undo button, mobile swipe controls",
+    'tic tac toe': "3x3 grid with X and O, smooth animations on move, win line animation, score tracking, AI opponent option, reset button",
+    'racing': "player car with road, AI traffic cars in random lanes, lane switch with arrows/swipe, increasing speed, score per car overtaken, collision game over, beautiful neon city background, parallax road lines",
+    'car game': "player car with road, AI traffic cars in random lanes, lane switch with arrows/swipe, increasing speed, score per car overtaken, collision game over, beautiful neon city background, parallax road lines",
+  }
+
+  // Detect website type
+  const siteKeywords = {
+    'portfolio': "5 sections (Hero, About, Skills, Projects, Contact), sticky nav with smooth scroll, animated mesh gradient hero, project cards with hover lift and modal details, skill bars animating on scroll, contact form with validation",
+    'landing page': "sticky nav, hero with massive headline + 2 CTAs + product mockup, social proof with logos, 6-card features grid, pricing table with 3 tiers, testimonials, CTA section, footer with 4 columns of links",
+    'blog': "sticky header with search and dark/light toggle, hero featured post, category filter chips, 9-card article grid, newsletter signup section, footer, pagination",
+    'restaurant': "warm dark theme, hero with restaurant name in italic serif, menu in 4 tabs (Starters/Mains/Desserts/Drinks), reservations form, gallery, hours, contact",
+    'ecommerce': "product page with image gallery, price, color/size selectors, quantity, add to cart with cart count badge, related products carousel, reviews tab, trust badges",
+    'shop': "product page with image gallery, price, color/size selectors, quantity, add to cart with cart count badge, related products carousel, reviews tab, trust badges",
+  }
+
+  // App keywords
+  const appKeywords = {
+    'todo': "input with Add button, task list with checkboxes, complete strikethrough, delete button, filter (All/Active/Completed), counter, drag to reorder, save to localStorage with try/catch, empty state, smooth slide animations",
+    'calculator': "scientific calculator with +,-,*,/,=,%,sqrt,square,parentheses, history panel of last 5 calculations, full keyboard support with visual feedback, button press animations, color-coded buttons",
+    'pomodoro': "circular SVG progress timer, 25/5 cycles with long break every 4, big time display, start/pause/reset/skip buttons, task list, customizable durations in settings, sound notifications via Web Audio API",
+    'weather': "dynamic gradient based on weather, big temp display, animated weather icon, 4-stat row (humidity/wind/UV/visibility), 24h scroll forecast, 7-day forecast, air quality, sunrise/sunset arc, search city",
+    'music player': "three-pane layout, sidebar with library, center with playlists/songs grid, right with now playing + album art, fixed bottom player bar with controls + progress + volume, equalizer animation when playing",
+    'chat': "two-pane: left sidebar with 8 conversations + search, right panel with chat header + messages (bubbles aligned left/right) + input + send. Pre-fill 12 sample messages, typing indicator, online status, read receipts",
+    'calendar': "month grid view with today highlighted, event dots colored by category, click day to see events, add event modal with title/time/category/notes, mini sidebar with today's events, save to localStorage",
+    'notes': "three-pane: sidebar with tags + new note button, middle list showing notes with preview, right editor with markdown rendering (bold/italic/headings/lists/code), live word count, auto-save, tag highlighting",
+    'dashboard': "sidebar nav, top bar with search + notifications + profile, 4-stat cards row with sparklines, big SVG line chart of revenue, bar chart of products, activity feed, transactions table",
+  }
+
+  // Find best match
+  let detected = null
+  for (const [key, requirements] of Object.entries({...gameKeywords, ...siteKeywords, ...appKeywords})) {
+    if (lower.includes(key)) {
+      detected = { key, requirements }
+      break
+    }
+  }
+
+  // Build enhanced prompt
+  let enhanced = text
+
+  if (detected) {
+    enhanced += `\n\nSPECIFIC REQUIREMENTS for ${detected.key}: ${detected.requirements}`
+  }
+
+  // Universal quality requirements (always added if user prompt is short)
+  if (text.length < 100 && !text.includes("Build") && !text.includes("Create")) {
+    enhanced = `Build a beautiful ${enhanced}`
+  }
+
+  // Always add design system requirements if not specified
+  if (!lower.includes("color") && !lower.includes("theme")) {
+    enhanced += "\n\nDESIGN: Dark theme #0a0a10 background, electric blue (#4d7cff) + purple (#a855f7) gradient accents, Plus Jakarta Sans or Space Grotesk Google font, glass-morphism cards (backdrop-filter:blur), smooth animations, hover effects with lift, fully mobile-responsive."
+  }
+
+  return enhanced
+}
+
+// ══════ PROMPT AUTO-ENHANCE END ══════
 
   try {
     let promptWithContext = ""
@@ -3217,11 +3428,15 @@ INSTRUCTIONS:
 - Return COMPLETE updated HTML (single file)
 - Production-quality, beautiful, polished${intentNote}${threeDNote}`
     } else {
+      // NEW APP: auto-enhance user's prompt with detected keywords
+      const enhancedText = enhanceUserPrompt(text)
+      console.log("[BUILDER] Enhanced prompt:", enhancedText.length, "chars (original:", text.length, ")")
+
       const threeDNote = is3D
         ? "\n- Use Three.js (CDN: https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js) for real 3D effects: rotating objects, particles, animated meshes, lighting"
         : "\n- Subtle background effects (gradients, particles)"
 
-      promptWithContext = `Build a STUNNING production-quality web app: ${text}
+      promptWithContext = `Build a STUNNING production-quality web app: ${enhancedText}
 
 REQUIREMENTS:
 - Single HTML file with all CSS and JS inline
@@ -3247,6 +3462,15 @@ Return ONLY the HTML in a \`\`\`html code block.`
     formData.append("ainame", "Datta AI")
 
     const res = await fetch(S + "/chat", { method: "POST", body: formData, signal: controller.signal })
+
+    // 401 = login expired
+    if (res.status === 401) {
+      localStorage.removeItem("datta_token")
+      showToast("Session expired - please login again")
+      setTimeout(() => window.location.href = "/login.html?redirect=/builder.html", 1500)
+      return
+    }
+
     if (!res.ok) throw new Error("Server error: " + res.status)
 
     const reader = res.body.getReader()
