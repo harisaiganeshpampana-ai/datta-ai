@@ -809,21 +809,24 @@ function authMiddleware(req, res, next) {
   if (header) token = header.replace("Bearer ", "").trim()
   if (!token && req.body && req.body.token) token = req.body.token
   if (!token && req.query && req.query.token) token = req.query.token
-  if (!token) return res.status(401).json({ error: "No token" })
+  if (!token) return res.status(401).json({ error: "Please login to continue", code: "NO_TOKEN" })
   if (token.startsWith("guest_")) {
     req.user = { id: token, username: "Guest", isGuest: true }
     return next()
   }
   try {
     req.user = jwt.verify(token, JWT_SECRET)
-    // Auto-mark as admin if email matches ADMIN_EMAILS
+    // Auto-mark as admin if email matches
     const adminList = (process.env.ADMIN_EMAILS || "harisaiganeshpampana@gmail.com").split(",").map(e => e.trim().toLowerCase())
     if (req.user.email && adminList.includes(req.user.email.toLowerCase())) {
       req.user.isAdmin = true
     }
     next()
   } catch (e) {
-    return res.status(401).json({ error: "Invalid token" })
+    if (e.name === "TokenExpiredError") {
+      return res.status(401).json({ error: "Session expired, please login again", code: "TOKEN_EXPIRED" })
+    }
+    return res.status(401).json({ error: "Invalid session, please login again", code: "INVALID_TOKEN" })
   }
 }
 
