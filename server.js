@@ -20,9 +20,9 @@ const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat
 // Tried in order. Gemini writes longer, better apps; Groq is the fast backup.
 // Groq's free plan allows only ~8,000 tokens per minute, so its answers are kept short.
 const PROVIDERS = [
-  { name: "gemini", url: GEMINI_URL, key: GEMINI_API_KEY, model: process.env.GEMINI_MODEL || "gemini-3.8-flash", maxTokens: 32000 },
-  { name: "gemini", url: GEMINI_URL, key: GEMINI_API_KEY, model: "gemini-flash-latest", maxTokens: 32000 },
-  { name: "gemini", url: GEMINI_URL, key: GEMINI_API_KEY, model: "gemini-3.6-flash", maxTokens: 32000 },
+  { name: "gemini", url: GEMINI_URL, key: GEMINI_API_KEY, model: process.env.GEMINI_MODEL || "gemini-3.8-flash", maxTokens: 32000, vision: true },
+  { name: "gemini", url: GEMINI_URL, key: GEMINI_API_KEY, model: "gemini-flash-latest", maxTokens: 32000, vision: true },
+  { name: "gemini", url: GEMINI_URL, key: GEMINI_API_KEY, model: "gemini-3.6-flash", maxTokens: 32000, vision: true },
   { name: "groq", url: GROQ_URL, key: GROQ_API_KEY, model: process.env.GROQ_MODEL || "openai/gpt-oss-120b", maxTokens: 3000, small: true },
   { name: "groq", url: GROQ_URL, key: GROQ_API_KEY, model: "llama-3.3-70b-versatile", maxTokens: 3000, small: true },
 ].filter((p) => p.key)
@@ -72,6 +72,11 @@ When you ask, ALWAYS give clickable options using an options block, exactly like
 - Write one short sentence before the block. Write nothing after it — wait for the answer.
 - Use "multi": true when several options can be picked together (e.g. features to include).
 - The user can also type their own answer, so don't add an "Other" option.
+
+# Files and photos the user attaches
+- Attached documents arrive inside the message between "--- File: name ---" lines. Read them carefully and refer to them by name.
+- You can see attached photos. Describe, read text from, solve, or use them as the user asks (e.g. turn a screenshot of a design into code, explain an error screenshot, read handwritten notes, identify a plant disease).
+- If the user attaches an error screenshot, explain the cause simply and give the exact fix.
 
 # Changing something you already built
 When the user asks to change, add to, or fix something you made earlier in this chat (for example "add a settings option" after you built a snake game):
@@ -153,7 +158,7 @@ app.use((req, res, next) => {
   next()
 })
 
-app.use(express.json({ limit: "2mb" }))
+app.use(express.json({ limit: "30mb" })) // photos and documents can be large
 app.use(express.static(path.join(__dirname, "public")))
 
 // ── Simple limit: 30 requests per minute per person ──────────────────────────
@@ -180,16 +185,24 @@ function cleanMemories(list) {
     .map((m) => m.trim().slice(0, 300))
 }
 
+// Only accept real image data (photos the user attached), max 4 per message, ~8 MB each
+function cleanImages(list) {
+  if (!Array.isArray(list)) return []
+  return list
+    .filter((u) => typeof u === "string" && /^data:image\/(png|jpe?g|webp|gif|heic|heif);base64,[A-Za-z0-9+/=]+$/.test(u) && u.length < 11_000_000)
+    .slice(0, 4)
+}
+
 // Keep as much recent conversation as fits (newest messages win)
 function trimConversation(incoming) {
   const msgs = (Array.isArray(incoming) ? incoming : [])
     .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
-    .map((m) => ({ role: m.role, content: m.content.slice(0, 60_000) }))
+    .map((m) => ({ role: m.role, content: m.content.slice(0, 200_000), images: m.role === "user" ? cleanImages(m.images) : [] }))
   const kept = []
   let total = 0
   for (let i = msgs.length - 1; i >= 0; i--) {
     total += msgs[i].content.length
-    if (total > 160_000 && kept.length > 0) break
+    if (total > 400_000 && kept.length > 0) break
     kept.unshift(msgs[i])
   }
   while (kept.length && kept[0].role !== "user") kept.shift()
@@ -204,10 +217,39 @@ function shortHistory(messages, maxChars) {
     const content = messages[i].content.slice(-maxChars)
     total += content.length
     if (total > maxChars && kept.length > 0) break
-    kept.unshift({ role: messages[i].role, content })
+    kept.unshift({ role: messages[i].role, content, images: messages[i].images })
   }
   while (kept.length && kept[0].role !== "user") kept.shift()
   return kept
+}
+
+// Turn our simple messages into the format the AI expects (photos only for models that can see)
+function toProviderMessages(history, vision) {
+  return history.map((m) => {
+    if (!m.images?.length) return { role: m.role, content: m.content }
+    if (!vision) return { role: m.role, content: m.content + `\n\n[The user attached ${m.images.length} photo(s), but this backup model can't see images. Say so briefly.]` }
+    return {
+      role: m.role,
+      content: [{ type: "text", text: m.content || "What is in this photo?" }, ...m.images.map((url) => ({ type: "image_url", image_url: { url } }))],
+    }
+  })
+}
+
+// Extra instructions from the user's Settings page
+function settingsPrompt(settings, voice) {
+  const s = settings && typeof settings === "object" ? settings : {}
+  const parts = []
+  const name = String(s.name || "").trim().slice(0, 60)
+  const instructions = String(s.instructions || "").trim().slice(0, 1500)
+  const language = String(s.language || "").trim().slice(0, 40)
+  if (name) parts.push(`The user's name is ${name}. Use it occasionally, naturally.`)
+  if (language && language !== "auto") parts.push(`Reply in ${language} unless the user writes in another language.`)
+  if (instructions) parts.push(`The user's own instructions for how you should respond (follow them unless they conflict with safety):\n${instructions}`)
+  if (voice)
+    parts.push(
+      "VOICE MODE: your reply will be read aloud. Answer in 1–4 short spoken sentences, friendly and natural. No markdown, lists, tables, emojis or code. If the user asks for code or an app, say you'll put it in the chat and give a one-line summary instead."
+    )
+  return parts.length ? "\n\n# User settings\n" + parts.join("\n") : ""
 }
 
 app.get("/health", (req, res) =>
@@ -238,6 +280,8 @@ app.post("/api/chat", rateLimit, async (req, res) => {
       memories.map((m) => "- " + m).join("\n") +
       "\nUse these naturally when they help (their name, projects, tools, preferences). Don't list them back unless asked."
   }
+  const voice = req.body.voice === true
+  system += settingsPrompt(req.body.settings, voice)
 
   // Stop calling the AI if the user presses Stop or closes the page
   const controller = new AbortController()
@@ -255,8 +299,8 @@ app.post("/api/chat", rateLimit, async (req, res) => {
           model: p.model,
           stream: true,
           temperature: 0.7,
-          max_tokens: p.maxTokens,
-          messages: [{ role: "system", content: system }, ...history],
+          max_tokens: voice ? Math.min(p.maxTokens, 1200) : p.maxTokens,
+          messages: [{ role: "system", content: system }, ...toProviderMessages(history, p.vision)],
         }),
       })
 
@@ -349,6 +393,9 @@ app.post("/api/memory", rateLimit, async (req, res) => {
     res.json({ add: [], remove: [] })
   }
 })
+
+// Settings page
+app.get("/settings", (req, res) => res.sendFile(path.join(__dirname, "public", "settings.html")))
 
 // Any other address shows the chat page
 app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")))
