@@ -5,6 +5,8 @@
 import express from "express"
 import dotenv from "dotenv"
 import path from "path"
+import crypto from "crypto"
+import mongoose from "mongoose"
 import { fileURLToPath } from "url"
 
 dotenv.config()
@@ -26,6 +28,11 @@ const PROVIDERS = [
   { name: "groq", url: GROQ_URL, key: GROQ_API_KEY, model: process.env.GROQ_MODEL || "openai/gpt-oss-120b", maxTokens: 3000, small: true },
   { name: "groq", url: GROQ_URL, key: GROQ_API_KEY, model: "llama-3.3-70b-versatile", maxTokens: 3000, small: true },
 ].filter((p) => p.key)
+
+// ── Accounts & database (optional: chat works without them) ──
+const MONGO_URI = process.env.MONGO_URI
+const JWT_SECRET = process.env.JWT_SECRET || ""
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ""
 
 // Small fast model used only to pick out memories
 const MEMORY_PROVIDER = GROQ_API_KEY
@@ -152,8 +159,8 @@ Common errors: "bad auth" → wrong password; "Could not connect / IP not whitel
 app.use((req, res, next) => {
   // Allow the page on datta-ai.com (Vercel) to talk to this server (Render)
   res.setHeader("Access-Control-Allow-Origin", "*")
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization")
   if (req.method === "OPTIONS") return res.status(204).end()
   next()
 })
@@ -258,6 +265,9 @@ app.get("/health", (req, res) =>
     keySet: PROVIDERS.length > 0,
     gemini: Boolean(GEMINI_API_KEY),
     groq: Boolean(GROQ_API_KEY),
+    database: MONGO_URI ? (dbReady ? "connected" : "connecting") : "not set",
+    login: Boolean(MONGO_URI && JWT_SECRET),
+    google: Boolean(GOOGLE_CLIENT_ID),
   })
 )
 
@@ -394,11 +404,205 @@ app.post("/api/memory", rateLimit, async (req, res) => {
   }
 })
 
-// Settings page
+// ─────────────────────────────────────────────────────────────────────────────
+// Accounts: email/password and Google sign-in, plus syncing chats to MongoDB
+// ─────────────────────────────────────────────────────────────────────────────
+let dbReady = false
+if (MONGO_URI) {
+  mongoose
+    .connect(MONGO_URI, { serverSelectionTimeoutMS: 10_000 })
+    .then(() => { dbReady = true; console.log("MongoDB connected") })
+    .catch((err) => console.error("[MongoDB error]", err.message))
+} else {
+  console.warn("⚠ MONGO_URI is not set — login and sync are turned off.")
+}
+
+const User = mongoose.model("DattaUser", new mongoose.Schema({
+  email: { type: String, unique: true, sparse: true, lowercase: true, trim: true },
+  name: String,
+  picture: String,
+  passwordHash: String,
+  googleId: { type: String, unique: true, sparse: true },
+  createdAt: { type: Date, default: Date.now },
+}))
+const UserData = mongoose.model("DattaUserData", new mongoose.Schema({
+  userId: { type: String, unique: true, index: true },
+  memory: { type: [String], default: [] },
+  settings: { type: mongoose.Schema.Types.Mixed, default: {} },
+  updatedAt: { type: Date, default: Date.now },
+}, { minimize: false }))
+const ChatDoc = mongoose.model("DattaChat", new mongoose.Schema({
+  userId: { type: String, index: true },
+  chatId: String,
+  data: mongoose.Schema.Types.Mixed,
+  updatedAt: { type: Date, default: Date.now },
+}, { minimize: false }).index({ userId: 1, chatId: 1 }, { unique: true }))
+
+// Passwords are stored as salt:hash using scrypt (never the real password)
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString("hex")
+  return salt + ":" + crypto.scryptSync(password, salt, 64).toString("hex")
+}
+function checkPassword(password, stored) {
+  const [salt, hash] = String(stored || "").split(":")
+  if (!salt || !hash) return false
+  const test = crypto.scryptSync(password, salt, 64)
+  return crypto.timingSafeEqual(test, Buffer.from(hash, "hex"))
+}
+
+// Login tokens: a signed note saying "this is user X", valid for 60 days
+const b64url = (buf) => Buffer.from(buf).toString("base64url")
+function makeToken(userId) {
+  const body = b64url(JSON.stringify({ uid: String(userId), exp: Date.now() + 60 * 24 * 3600 * 1000 }))
+  return body + "." + crypto.createHmac("sha256", JWT_SECRET).update(body).digest("base64url")
+}
+function readToken(token) {
+  const [body, sig] = String(token || "").split(".")
+  if (!body || !sig || !JWT_SECRET) return null
+  const good = crypto.createHmac("sha256", JWT_SECRET).update(body).digest("base64url")
+  if (sig.length !== good.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(good))) return null
+  try {
+    const data = JSON.parse(Buffer.from(body, "base64url").toString())
+    return data.exp > Date.now() ? data.uid : null
+  } catch { return null }
+}
+
+function needDb(req, res, next) {
+  if (!MONGO_URI || !JWT_SECRET) return res.status(503).json({ error: "Login isn't set up on the server yet (needs MONGO_URI and JWT_SECRET)." })
+  if (!dbReady) return res.status(503).json({ error: "The database is starting up. Try again in a few seconds." })
+  next()
+}
+async function needUser(req, res, next) {
+  const uid = readToken((req.headers.authorization || "").replace(/^Bearer\s+/i, ""))
+  if (!uid) return res.status(401).json({ error: "Please log in again." })
+  try {
+    req.user = await User.findById(uid)
+  } catch { req.user = null }
+  if (!req.user) return res.status(401).json({ error: "Please log in again." })
+  next()
+}
+const publicUser = (u) => ({ id: String(u._id), name: u.name || "", email: u.email || "", picture: u.picture || "" })
+const validEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e)
+
+app.get("/api/config", (req, res) => res.json({ googleClientId: GOOGLE_CLIENT_ID, loginEnabled: Boolean(MONGO_URI && JWT_SECRET) }))
+
+app.post("/api/auth/signup", rateLimit, needDb, async (req, res) => {
+  const email = String(req.body.email || "").trim().toLowerCase()
+  const password = String(req.body.password || "")
+  const name = String(req.body.name || "").trim().slice(0, 60)
+  if (!validEmail(email)) return res.status(400).json({ error: "Please enter a valid email address." })
+  if (password.length < 8) return res.status(400).json({ error: "Password must be at least 8 characters." })
+  try {
+    const existing = await User.findOne({ email })
+    if (existing?.passwordHash) return res.status(409).json({ error: "An account with this email already exists. Log in instead." })
+    if (existing && !existing.passwordHash) return res.status(409).json({ error: "This email is linked to Google. Use “Continue with Google”." })
+    const user = await User.create({ email, name: name || email.split("@")[0], passwordHash: hashPassword(password) })
+    res.json({ token: makeToken(user._id), user: publicUser(user) })
+  } catch (err) {
+    console.error("[signup]", err.message)
+    res.status(500).json({ error: "Couldn't create your account. Please try again." })
+  }
+})
+
+app.post("/api/auth/login", rateLimit, needDb, async (req, res) => {
+  const email = String(req.body.email || "").trim().toLowerCase()
+  const password = String(req.body.password || "")
+  try {
+    const user = await User.findOne({ email })
+    if (user && !user.passwordHash) return res.status(400).json({ error: "This account uses Google. Use “Continue with Google”." })
+    if (!user || !checkPassword(password, user.passwordHash)) return res.status(401).json({ error: "Wrong email or password." })
+    res.json({ token: makeToken(user._id), user: publicUser(user) })
+  } catch (err) {
+    console.error("[login]", err.message)
+    res.status(500).json({ error: "Couldn't log you in. Please try again." })
+  }
+})
+
+// Google sends the browser a signed "ID token"; we ask Google to confirm it's real
+app.post("/api/auth/google", rateLimit, needDb, async (req, res) => {
+  if (!GOOGLE_CLIENT_ID) return res.status(503).json({ error: "Google sign-in isn't set up yet (needs GOOGLE_CLIENT_ID)." })
+  try {
+    const check = await fetch("https://oauth2.googleapis.com/tokeninfo?id_token=" + encodeURIComponent(String(req.body.credential || "")))
+    const info = await check.json()
+    if (!check.ok || info.aud !== GOOGLE_CLIENT_ID || info.email_verified !== "true" && info.email_verified !== true) {
+      return res.status(401).json({ error: "Google sign-in failed. Please try again." })
+    }
+    const email = String(info.email || "").toLowerCase()
+    let user = await User.findOne({ $or: [{ googleId: info.sub }, { email }] })
+    if (!user) user = await User.create({ email, name: info.name || email.split("@")[0], picture: info.picture, googleId: info.sub })
+    else {
+      if (!user.googleId) user.googleId = info.sub
+      if (info.picture) user.picture = info.picture
+      if (!user.name && info.name) user.name = info.name
+      await user.save()
+    }
+    res.json({ token: makeToken(user._id), user: publicUser(user) })
+  } catch (err) {
+    console.error("[google]", err.message)
+    res.status(500).json({ error: "Google sign-in failed. Please try again." })
+  }
+})
+
+app.get("/api/auth/me", needDb, needUser, (req, res) => res.json({ user: publicUser(req.user) }))
+
+app.delete("/api/auth/account", needDb, needUser, async (req, res) => {
+  const uid = String(req.user._id)
+  try {
+    await Promise.all([ChatDoc.deleteMany({ userId: uid }), UserData.deleteOne({ userId: uid }), User.deleteOne({ _id: req.user._id })])
+    res.json({ ok: true })
+  } catch (err) {
+    console.error("[delete account]", err.message)
+    res.status(500).json({ error: "Couldn't delete your account. Please try again." })
+  }
+})
+
+// Everything saved for this user: chats, memory, settings
+app.get("/api/data", needDb, needUser, async (req, res) => {
+  const uid = String(req.user._id)
+  try {
+    const [chats, data] = await Promise.all([
+      ChatDoc.find({ userId: uid }).sort({ updatedAt: -1 }).limit(200).lean(),
+      UserData.findOne({ userId: uid }).lean(),
+    ])
+    res.json({ chats: chats.map((c) => c.data), memory: data?.memory || [], settings: data?.settings || {} })
+  } catch (err) {
+    console.error("[load data]", err.message)
+    res.status(500).json({ error: "Couldn't load your account data." })
+  }
+})
+
+// Save changes: only the chats that changed, plus deleted chat ids
+app.put("/api/data", needDb, needUser, async (req, res) => {
+  const uid = String(req.user._id)
+  try {
+    const chats = Array.isArray(req.body.chats) ? req.body.chats.slice(0, 200) : []
+    const ops = chats
+      .filter((c) => c && typeof c.id === "string" && Array.isArray(c.messages))
+      .filter((c) => JSON.stringify(c).length < 12_000_000)
+      .map((c) => ({ updateOne: { filter: { userId: uid, chatId: c.id }, update: { $set: { data: c, updatedAt: new Date() } }, upsert: true } }))
+    if (ops.length) await ChatDoc.bulkWrite(ops)
+    const deleted = (Array.isArray(req.body.deleted) ? req.body.deleted : []).filter((id) => typeof id === "string").slice(0, 500)
+    if (deleted.length) await ChatDoc.deleteMany({ userId: uid, chatId: { $in: deleted } })
+    const set = { updatedAt: new Date() }
+    if (Array.isArray(req.body.memory)) set.memory = cleanMemories(req.body.memory)
+    if (req.body.settings && typeof req.body.settings === "object") set.settings = req.body.settings
+    await UserData.updateOne({ userId: uid }, { $set: set }, { upsert: true })
+    res.json({ ok: true })
+  } catch (err) {
+    console.error("[sync]", err.message)
+    res.status(500).json({ error: "Couldn't save to your account." })
+  }
+})
+
+// Pages
+app.get("/chat", (req, res) => res.sendFile(path.join(__dirname, "public", "chat.html")))
+app.get("/login", (req, res) => res.sendFile(path.join(__dirname, "public", "login.html")))
 app.get("/settings", (req, res) => res.sendFile(path.join(__dirname, "public", "settings.html")))
 
-// Any other address shows the chat page
+// Any other address shows the landing page
 app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")))
+
+process.on("unhandledRejection", (err) => console.error("[unhandled]", err?.message || err))
 
 app.listen(PORT, () => {
   console.log(`Datta AI running at http://localhost:${PORT}`)

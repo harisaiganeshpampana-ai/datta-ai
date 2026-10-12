@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Log in — Datta AI</title>
+<meta name="description" content="Log in to Datta AI to keep your chats, memory and settings on every device.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='32' fill='%230d0d0d'/><path d='M24 20h8c7 0 12 5 12 12s-5 12-12 12h-8z' fill='none' stroke='white' stroke-width='5' stroke-linejoin='round'/></svg>">
+<script>
+  (function () { try { var s = JSON.parse(localStorage.getItem("datta-settings-v1")) || {}
+    if (s.theme && s.theme !== "system") document.documentElement.dataset.theme = s.theme } catch (e) {} })()
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff; --surface: #f4f4f4; --hover: #ececec; --border: #e5e5e5;
+    --text: #0d0d0d; --muted: #6b6b6b; --faint: #9b9b9b;
+    --btn: #0d0d0d; --btn-text: #ffffff; --danger: #c62828;
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #212121; --surface: #2f2f2f; --hover: #2a2a2a; --border: #383838; --text: #ececec; --muted: #b4b4b4; --faint: #8e8e8e; --btn: #ececec; --btn-text: #0d0d0d; --danger: #ff8a80; }
+  }
+  :root[data-theme="dark"] { --bg: #212121; --surface: #2f2f2f; --hover: #2a2a2a; --border: #383838; --text: #ececec; --muted: #b4b4b4; --faint: #8e8e8e; --btn: #ececec; --btn-text: #0d0d0d; --danger: #ff8a80; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15.5px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  button, input { font: inherit; color: inherit; }
+  button { background: none; border: none; cursor: pointer; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--text); outline-offset: 2px; border-radius: 6px; }
+
+  .page { min-height: 100%; display: flex; flex-direction: column; }
+  header { padding: 18px 22px; }
+  .brand { display: inline-flex; align-items: center; gap: 9px; font-weight: 600; font-size: 16px; text-decoration: none; }
+  .brand svg { width: 26px; height: 26px; }
+  main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px 20px 60px; }
+  .card { width: 100%; max-width: 380px; }
+  h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.015em; text-align: center; margin-bottom: 6px; }
+  .sub { text-align: center; color: var(--muted); margin-bottom: 26px; }
+
+  #googleBox { display: flex; justify-content: center; min-height: 44px; }
+  #googleBox.hidden, .divider.hidden { display: none; }
+  .divider { display: flex; align-items: center; gap: 12px; color: var(--faint); font-size: 13px; margin: 18px 0; }
+  .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+  form { display: flex; flex-direction: column; gap: 12px; }
+  .field label { display: block; font-size: 13.5px; font-weight: 500; margin-bottom: 6px; }
+  .field input { width: 100%; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); outline: none; }
+  .field input:focus { border-color: var(--text); }
+  .pw { position: relative; }
+  .pw input { padding-right: 64px; }
+  .pw button { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--muted); padding: 6px 8px; border-radius: 8px; }
+  .pw button:hover { color: var(--text); background: var(--hover); }
+  .hint { font-size: 12.5px; color: var(--faint); margin-top: 5px; }
+  .submit { margin-top: 6px; padding: 12px; border-radius: 12px; background: var(--btn); color: var(--btn-text); font-weight: 600; }
+  .submit:hover { opacity: .9; }
+  .submit:disabled { opacity: .5; cursor: default; }
+  .error { color: var(--danger); font-size: 14px; text-align: center; min-height: 20px; margin-top: 12px; }
+  .switch { text-align: center; margin-top: 18px; font-size: 14px; color: var(--muted); }
+  .switch button { font-weight: 600; color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+  .guest { display: block; text-align: center; margin-top: 26px; font-size: 14px; color: var(--muted); text-decoration: none; }
+  .guest:hover { color: var(--text); }
+  .why { margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--border); font-size: 13px; color: var(--faint); text-align: center; }
+  .notice { background: var(--surface); border-radius: 12px; padding: 12px 14px; font-size: 14px; color: var(--muted); text-align: center; margin-bottom: 18px; display: none; }
+  .notice.show { display: block; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <a class="brand" href="/">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" stroke-width="4"/><path d="M24 20h8c7 0 12 5 12 12s-5 12-12 12h-8z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg>
+      Datta AI
+    </a>
+  </header>
+  <main>
+    <div class="card">
+      <h1 id="title">Welcome back</h1>
+      <p class="sub" id="subtitle">Log in to pick up where you left off.</p>
+      <div class="notice" id="notice"></div>
+
+      <div id="googleBox" class="hidden"></div>
+      <div class="divider hidden" id="divider">or</div>
+
+      <form id="form" novalidate>
+        <div class="field" id="nameField" hidden>
+          <label for="name">Your name</label>
+          <input id="name" type="text" autocomplete="name" maxlength="60" placeholder="Hari">
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="email" required placeholder="you@example.com">
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="pw">
+            <input id="password" type="password" autocomplete="current-password" required minlength="8">
+            <button type="button" id="showPw" aria-label="Show password">Show</button>
+          </div>
+          <p class="hint" id="pwHint" hidden>At least 8 characters.</p>
+        </div>
+        <button class="submit" id="submit" type="submit">Log in</button>
+      </form>
+      <p class="error" id="error" role="alert"></p>
+
+      <p class="switch" id="switchText">New to Datta? <button type="button" id="switchBtn">Create an account</button></p>
+      <a class="guest" href="/chat">Continue without an account</a>
+      <p class="why">With an account, your chats, memory and settings are saved and show up on every device.</p>
+    </div>
+  </main>
+</div>
+
+<script src="/account.js"></script>
+<script>
+const $ = id => document.getElementById(id)
+const params = new URLSearchParams(location.search)
+const next = /^\/[a-z/?=&0-9-]*$/i.test(params.get("next") || "") ? params.get("next") : "/chat"
+let mode = params.get("mode") === "signup" ? "signup" : "login"
+
+if (Account.isLoggedIn()) location.replace(next)
+
+function setMode(m) {
+  mode = m
+  const signup = mode === "signup"
+  $("title").textContent = signup ? "Create your account" : "Welcome back"
+  $("subtitle").textContent = signup ? "Free. Your chats will be saved on every device." : "Log in to pick up where you left off."
+  $("nameField").hidden = !signup
+  $("pwHint").hidden = !signup
+  $("password").autocomplete = signup ? "new-password" : "current-password"
+  $("submit").textContent = signup ? "Create account" : "Log in"
+  $("switchText").firstChild.textContent = signup ? "Already have an account? " : "New to Datta? "
+  $("switchBtn").textContent = signup ? "Log in" : "Create an account"
+  $("error").textContent = ""
+  document.title = (signup ? "Sign up" : "Log in") + " — Datta AI"
+}
+setMode(mode)
+$("switchBtn").onclick = () => setMode(mode === "signup" ? "login" : "signup")
+$("showPw").onclick = () => {
+  const show = $("password").type === "password"
+  $("password").type = show ? "text" : "password"
+  $("showPw").textContent = show ? "Hide" : "Show"
+  $("showPw").setAttribute("aria-label", show ? "Hide password" : "Show password")
+}
+
+async function finish(data) {
+  Account.saveLogin(data.token, data.user)
+  $("submit").textContent = "Loading your chats…"
+  try { await Account.pull(); await Account.push() } catch {}
+  location.replace(next)
+}
+
+$("form").onsubmit = async e => {
+  e.preventDefault()
+  const email = $("email").value.trim(), password = $("password").value
+  if (!email || !password) { $("error").textContent = "Enter your email and password."; return }
+  if (mode === "signup" && password.length < 8) { $("error").textContent = "Password must be at least 8 characters."; return }
+  $("submit").disabled = true; $("error").textContent = ""
+  try {
+    const body = mode === "signup" ? { email, password, name: $("name").value.trim() } : { email, password }
+    await finish(await Account.api(mode === "signup" ? "/api/auth/signup" : "/api/auth/login", { method: "POST", body }))
+  } catch (err) {
+    $("error").textContent = err.message
+    $("submit").disabled = false
+    setMode(mode)
+  }
+}
+
+// Google sign-in (shown only when the server has a Google Client ID)
+async function setupGoogle() {
+  let config
+  try { config = await Account.api("/api/config") } catch { return }
+  if (!config.loginEnabled) {
+    $("notice").textContent = "Login is being set up. You can still use Datta without an account."
+    $("notice").classList.add("show")
+  }
+  if (!config.googleClientId) return
+  const s = document.createElement("script")
+  s.src = "https://accounts.google.com/gsi/client"
+  s.async = true
+  s.onload = () => {
+    const dark = getComputedStyle(document.body).backgroundColor !== "rgb(255, 255, 255)"
+    google.accounts.id.initialize({
+      client_id: config.googleClientId,
+      callback: async ({ credential }) => {
+        $("error").textContent = ""
+        try { await finish(await Account.api("/api/auth/google", { method: "POST", body: { credential } })) }
+        catch (err) { $("error").textContent = err.message }
+      },
+    })
+    $("googleBox").classList.remove("hidden"); $("divider").classList.remove("hidden")
+    google.accounts.id.renderButton($("googleBox"), {
+      theme: dark ? "filled_black" : "outline", size: "large", shape: "pill", text: "continue_with",
+      width: Math.min(380, $("googleBox").clientWidth || 380),
+    })
+  }
+  document.head.appendChild(s)
+}
+setupGoogle()
+</script>
+</body>
+</html>

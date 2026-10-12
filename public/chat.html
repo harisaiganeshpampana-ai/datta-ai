@@ -1,0 +1,1337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Datta AI</title>
+<meta name="description" content="Datta AI is a free AI assistant that's great at coding. Describe an app, get the code, and watch it run instantly.">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='32' fill='%230d0d0d'/><path d='M24 20h8c7 0 12 5 12 12s-5 12-12 12h-8z' fill='none' stroke='white' stroke-width='5' stroke-linejoin='round'/></svg>">
+<script>
+  // Apply saved theme and text size before the page paints (no flash)
+  (function () { try { var s = JSON.parse(localStorage.getItem("datta-settings-v1")) || {}
+    if (s.theme && s.theme !== "system") document.documentElement.dataset.theme = s.theme
+    if (s.fontSize) document.documentElement.style.setProperty("--fs", s.fontSize + "px") } catch (e) {} })()
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link id="hljsLight" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/styles/github.min.css" media="(prefers-color-scheme: light)">
+<link id="hljsDark" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/styles/github-dark.min.css" media="(prefers-color-scheme: dark)">
+<script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/highlight.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --sidebar: #f9f9f9;
+    --surface: #f4f4f4;
+    --hover: #ececec;
+    --border: #e5e5e5;
+    --text: #0d0d0d;
+    --muted: #6b6b6b;
+    --faint: #9b9b9b;
+    --btn: #0d0d0d;
+    --btn-text: #ffffff;
+    --code-bg: #f7f7f8;
+    --danger: #c62828;
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #212121;
+      --sidebar: #171717;
+      --surface: #2f2f2f;
+      --hover: #2a2a2a;
+      --border: #383838;
+      --text: #ececec;
+      --muted: #b4b4b4;
+      --faint: #8e8e8e;
+      --btn: #ececec;
+      --btn-text: #0d0d0d;
+      --code-bg: #171717;
+      --danger: #ff8a80;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #212121;
+    --sidebar: #171717;
+    --surface: #2f2f2f;
+    --hover: #2a2a2a;
+    --border: #383838;
+    --text: #ececec;
+    --muted: #b4b4b4;
+    --faint: #8e8e8e;
+    --btn: #ececec;
+    --btn-text: #0d0d0d;
+    --code-bg: #171717;
+    --danger: #ff8a80;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: var(--fs, 15.5px); line-height: 1.65; overflow: hidden; -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--text); outline-offset: 2px; border-radius: 6px; }
+  .app { display: flex; height: 100dvh; }
+
+  .mark { width: 26px; height: 26px; flex-shrink: 0; color: var(--text); }
+  .brand { display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 16px; }
+
+  /* Sidebar */
+  .sidebar { width: 260px; flex-shrink: 0; background: var(--sidebar); display: flex; flex-direction: column; transition: margin-left .22s ease, transform .25s ease; }
+  .side-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 8px 6px 16px; }
+  .side-head .brand { text-decoration: none; color: inherit; }
+  .side-closed .sidebar { margin-left: -260px; }
+  .mini-bar { display: none; position: absolute; top: 10px; left: 10px; z-index: 5; gap: 2px; }
+  .side-closed .mini-bar { display: flex; }
+  .main { position: relative; }
+
+  /* Account area at the bottom of the sidebar */
+  .account { position: relative; padding: 8px 10px 12px; border-top: 1px solid var(--border); margin-top: 6px; }
+  .acct-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px; border-radius: 10px; text-align: left; }
+  .acct-btn:hover { background: var(--hover); }
+  .acct-btn .who { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .acct-btn .who small { display: block; font-weight: 400; color: var(--faint); font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+  .avatar { border-radius: 50%; background: var(--btn); color: var(--btn-text); display: inline-grid; place-items: center; font-size: 13px; font-weight: 600; object-fit: cover; flex-shrink: 0; }
+  .acct-menu { position: absolute; bottom: 62px; left: 10px; right: 10px; z-index: 15; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 6px; box-shadow: 0 10px 30px rgba(0,0,0,.15); display: none; }
+  .acct-menu.show { display: block; }
+  .acct-menu a, .acct-menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border-radius: 9px; font-size: 14px; text-align: left; text-decoration: none; color: inherit; }
+  .acct-menu a:hover, .acct-menu button:hover { background: var(--hover); }
+  .guest-box { padding: 4px 6px 2px; }
+  .guest-box p { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+  .guest-box .row { display: flex; gap: 8px; }
+  .guest-box a { flex: 1; text-align: center; padding: 8px 10px; border-radius: 10px; font-size: 14px; font-weight: 500; text-decoration: none; border: 1px solid var(--border); color: inherit; }
+  .guest-box a.dark { background: var(--btn); color: var(--btn-text); border-color: var(--btn); }
+  .new-chat { margin: 4px 10px 10px; padding: 9px 10px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; }
+  .new-chat:hover { background: var(--hover); }
+  .chat-list { flex: 1; overflow-y: auto; padding: 0 10px 12px; }
+  .chat-list .label { font-size: 12px; color: var(--faint); padding: 12px 10px 6px; font-weight: 500; }
+  .chat-item { display: flex; align-items: center; gap: 6px; width: 100%; padding: 8px 10px; border-radius: 9px; text-align: left; font-size: 14px; }
+  .chat-item span { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .chat-item:hover, .chat-item.active { background: var(--hover); }
+  .chat-item .del { opacity: 0; padding: 0 6px; color: var(--faint); font-weight: 400; }
+  .chat-item:hover .del, .chat-item:focus-visible .del { opacity: 1; }
+  .chat-item .del:hover { color: var(--text); }
+  .sidebar-foot { padding: 0 16px 10px; font-size: 12px; color: var(--faint); }
+
+  /* Main */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .topbar { display: none; align-items: center; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  .icon-btn { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; }
+  .icon-btn:hover { background: var(--hover); }
+  .messages { flex: 1; overflow-y: auto; }
+  .messages-inner { max-width: 768px; margin: 0 auto; padding: 28px 24px 12px; }
+
+  /* Empty state */
+  .welcome { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding-top: 22vh; }
+  .welcome h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 22px; }
+  .suggestions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .suggestion { padding: 8px 14px; border: 1px solid var(--border); border-radius: 99px; font-size: 14px; color: var(--muted); }
+  .suggestion:hover { background: var(--hover); color: var(--text); }
+
+  /* Messages */
+  .msg { margin-bottom: 26px; }
+  .msg.user { display: flex; justify-content: flex-end; }
+  .msg.user .bubble { background: var(--surface); padding: 10px 18px; border-radius: 20px; max-width: 75%; white-space: pre-wrap; word-wrap: break-word; }
+  .msg.ai { display: flex; gap: 14px; }
+  .msg.ai .mark { margin-top: 2px; }
+  .msg.ai .content { flex: 1; min-width: 0; }
+  .content p { margin: 0 0 12px; }
+  .content h1, .content h2, .content h3 { margin: 20px 0 10px; line-height: 1.3; font-weight: 600; }
+  .content h1 { font-size: 22px; } .content h2 { font-size: 19px; } .content h3 { font-size: 16.5px; }
+  .content ul, .content ol { margin: 0 0 12px 22px; }
+  .content li { margin: 4px 0; }
+  .content a { color: var(--text); text-decoration: underline; }
+  .content blockquote { border-left: 3px solid var(--border); padding-left: 12px; color: var(--muted); margin: 0 0 12px; }
+  .content hr { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+  .content table { border-collapse: collapse; margin: 0 0 14px; display: block; overflow-x: auto; }
+  .content th, .content td { border: 1px solid var(--border); padding: 7px 12px; text-align: left; }
+  .content th { background: var(--surface); font-weight: 600; }
+  .content :not(pre) > code { background: var(--surface); padding: 2px 6px; border-radius: 5px; font-family: var(--mono); font-size: 13px; }
+  .code-block { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 0 0 14px; background: var(--code-bg); }
+  .code-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px 6px 14px; border-bottom: 1px solid var(--border); font-size: 12.5px; color: var(--muted); }
+  .code-actions { display: flex; gap: 4px; }
+  .code-actions button { padding: 3px 10px; border-radius: 7px; font-size: 12.5px; color: var(--muted); }
+  .code-actions button:hover { background: var(--hover); color: var(--text); }
+  .code-actions .run { border: 1px solid var(--border); color: var(--text); }
+  .code-block pre { margin: 0; overflow-x: auto; }
+  .code-block code { font-family: var(--mono); font-size: 13px; line-height: 1.6; padding: 14px 16px !important; display: block; background: transparent !important; }
+  .msg-tools { display: flex; gap: 2px; margin-top: 2px; }
+  .msg-tools button { font-size: 12.5px; color: var(--faint); padding: 4px 8px; border-radius: 7px; }
+  .msg-tools button:hover { background: var(--hover); color: var(--text); }
+  .error { color: var(--danger); border: 1px solid var(--border); padding: 10px 14px; border-radius: 12px; }
+  .thinking { width: 10px; height: 10px; margin-top: 8px; border-radius: 50%; background: var(--text); animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform: scale(.6); opacity: .5 } }
+
+  /* Composer */
+  .composer-wrap { padding: 8px 24px calc(14px + env(safe-area-inset-bottom)); }
+  .composer { max-width: 768px; margin: 0 auto; background: var(--surface); border-radius: 26px; padding: 8px; }
+  .composer-main { display: flex; align-items: flex-end; gap: 4px; }
+  .round { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); flex-shrink: 0; }
+  .round:hover { background: var(--hover); color: var(--text); }
+  .round.on { background: var(--btn); color: var(--btn-text); }
+  .round.rec { background: var(--danger); color: #fff; animation: pulse-ring 1.2s infinite; }
+  @keyframes pulse-ring { 50% { box-shadow: 0 0 0 6px rgba(198, 40, 40, .2) } }
+  .plus-wrap { position: relative; }
+  .menu { position: absolute; bottom: 44px; left: 0; z-index: 15; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 6px; min-width: 200px; box-shadow: 0 10px 30px rgba(0,0,0,.15); display: none; }
+  .menu.show { display: block; }
+  .menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border-radius: 9px; font-size: 14px; text-align: left; }
+  .menu button:hover { background: var(--hover); }
+  .attach-row { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 6px 8px; }
+  .attach-row:empty { display: none; }
+  .chip { position: relative; display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 6px 28px 6px 6px; font-size: 13px; max-width: 220px; }
+  .chip img { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; display: block; }
+  .chip.img { padding: 0; }
+  .chip.img img { width: 60px; height: 60px; border-radius: 11px; }
+  .chip .ficon { width: 36px; height: 36px; border-radius: 8px; background: var(--surface); display: grid; place-items: center; font-size: 11px; font-weight: 600; color: var(--muted); flex-shrink: 0; text-transform: uppercase; }
+  .chip .fname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip .fname small { display: block; color: var(--faint); }
+  .chip .x { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%; background: var(--btn); color: var(--btn-text); font-size: 11px; display: grid; place-items: center; }
+  .msg-files { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: flex-end; gap: 6px; margin-bottom: 6px; }
+  .msg-files img { width: 140px; height: 140px; object-fit: cover; border-radius: 14px; border: 1px solid var(--border); cursor: zoom-in; }
+  .msg-files .chip { padding-right: 10px; }
+  .msg.user { flex-direction: column; align-items: flex-end; }
+  .composer textarea { flex: 1; min-width: 0; background: none; border: none; outline: none; resize: none; color: var(--text); font: inherit; font-size: 16px; max-height: 220px; padding: 6px 4px; }
+  .composer textarea::placeholder { color: var(--faint); }
+  .send { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; background: var(--btn); color: var(--btn-text); display: grid; place-items: center; }
+  .send:disabled { opacity: .3; cursor: default; }
+  .hint { max-width: 768px; margin: 8px auto 0; text-align: center; font-size: 12px; color: var(--faint); }
+
+  /* Preview panel */
+  .preview { width: 0; flex-shrink: 0; background: var(--bg); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transition: width .25s ease; }
+  .preview.open { width: 46%; }
+  .preview-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px 8px 16px; border-bottom: 1px solid var(--border); white-space: nowrap; font-weight: 600; font-size: 14px; }
+  .preview-head .tools { display: flex; gap: 2px; }
+  .preview-head button { padding: 6px 10px; border-radius: 8px; font-size: 13px; font-weight: 400; color: var(--muted); }
+  .preview-head button:hover { background: var(--hover); color: var(--text); }
+  .preview iframe { flex: 1; border: none; background: #fff; width: 100%; }
+
+  .file-bar { display: flex; align-items: center; gap: 10px; margin: -2px 0 12px; font-size: 13px; color: var(--muted); }
+  .file-bar button { padding: 5px 12px; border: 1px solid var(--border); border-radius: 99px; font-size: 13px; color: var(--text); }
+  .file-bar button:hover { background: var(--hover); }
+  .mem-note { font-size: 12px; color: var(--faint); padding: 4px 8px; }
+
+  /* Question cards with options */
+  .ask-card { border: 1px solid var(--border); border-radius: 14px; padding: 6px 16px 14px; margin: 0 0 12px; }
+  .ask-q { padding-top: 12px; }
+  .ask-q > p { font-weight: 600; margin: 0 0 8px; }
+  .ask-q > p small { font-weight: 400; color: var(--faint); margin-left: 6px; }
+  .ask-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ask-opt { padding: 7px 14px; border: 1px solid var(--border); border-radius: 99px; font-size: 14px; text-align: left; }
+  .ask-opt:hover { background: var(--hover); }
+  .ask-opt.on { background: var(--btn); color: var(--btn-text); border-color: var(--btn); }
+  .ask-foot { display: flex; gap: 8px; margin-top: 14px; }
+  .ask-foot input { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; color: var(--text); font: inherit; font-size: 14px; }
+  .ask-card.answered { opacity: .6; }
+  .ask-card.answered button, .ask-card.answered input { pointer-events: none; }
+  .ask-card.answered .ask-foot { display: none; }
+  .ask-wait { color: var(--faint); font-size: 14px; padding: 8px 0; }
+
+  .side-btn { margin: 0 10px; padding: 9px 10px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  .side-btn:hover { background: var(--hover); }
+
+  /* Memory window */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 50; display: none; align-items: center; justify-content: center; padding: 16px; }
+  .modal-bg.show { display: flex; }
+  .modal { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 16px; width: 100%; max-width: 520px; max-height: 80vh; display: flex; flex-direction: column; }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px 8px; }
+  .modal-head h2 { font-size: 17px; font-weight: 600; }
+  .modal p.sub { padding: 0 18px 12px; color: var(--muted); font-size: 14px; }
+  .switch { display: flex; align-items: center; justify-content: space-between; margin: 0 18px 10px; padding: 10px 12px; background: var(--surface); border-radius: 10px; font-size: 14px; }
+  .switch input { width: 18px; height: 18px; accent-color: var(--text); }
+  .mem-list { overflow-y: auto; padding: 0 18px; flex: 1; }
+  .mem-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .mem-item span { flex: 1; }
+  .mem-item button { color: var(--faint); padding: 0 4px; }
+  .mem-item button:hover { color: var(--text); }
+  .mem-empty { color: var(--faint); font-size: 14px; padding: 12px 0; }
+  .add-mem { display: flex; gap: 8px; padding: 12px 18px 0; }
+  .add-mem input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; color: var(--text); font: inherit; font-size: 14px; }
+  .modal-foot { display: flex; justify-content: space-between; padding: 14px 18px 16px; }
+  .btn { padding: 8px 14px; border-radius: 10px; font-size: 14px; border: 1px solid var(--border); }
+  .btn:hover { background: var(--hover); }
+  .btn.dark { background: var(--btn); color: var(--btn-text); border-color: var(--btn); }
+  .btn.dark:hover { opacity: .9; background: var(--btn); }
+
+  /* Camera window */
+  .cam video { width: 100%; max-height: 60vh; background: #000; border-radius: 12px; display: block; }
+  .cam .modal { max-width: 640px; }
+  .cam .cam-body { padding: 0 18px; }
+
+  /* Voice mode */
+  .voice { position: fixed; inset: 0; z-index: 60; background: var(--bg); display: none; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 24px; text-align: center; }
+  .voice.show { display: flex; }
+  .orb { width: 150px; height: 150px; border-radius: 50%; background: var(--text); transition: transform .2s ease; cursor: pointer; }
+  .voice[data-state="listening"] .orb { animation: breathe 1.6s ease-in-out infinite; }
+  .voice[data-state="thinking"] .orb { animation: think 1s ease-in-out infinite; opacity: .5; }
+  .voice[data-state="speaking"] .orb { animation: talk .5s ease-in-out infinite alternate; }
+  @keyframes breathe { 50% { transform: scale(1.08) } }
+  @keyframes think { 50% { transform: scale(.9) } }
+  @keyframes talk { from { transform: scale(.96) } to { transform: scale(1.12) } }
+  .voice-state { font-size: 18px; font-weight: 600; }
+  .voice-heard { color: var(--muted); max-width: 520px; min-height: 48px; font-size: 15px; }
+  .voice-btns { display: flex; gap: 12px; }
+  .voice-btns .btn { padding: 10px 20px; border-radius: 99px; }
+
+  .toast { position: fixed; left: 50%; bottom: 110px; transform: translateX(-50%); background: var(--btn); color: var(--btn-text); padding: 8px 16px; border-radius: 10px; font-size: 14px; z-index: 70; display: none; }
+  .toast.show { display: block; }
+
+  .overlay { display: none; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+  @media (max-width: 860px) {
+    .sidebar { position: fixed; inset: 0 auto 0 0; z-index: 30; transform: translateX(-100%); }
+    .sidebar.open { transform: none; }
+    .side-closed .sidebar { margin-left: 0; }
+    .side-closed .mini-bar { display: none; }
+    .overlay.show { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 20; }
+    .topbar { display: flex; }
+    .preview { position: fixed; inset: 0; z-index: 40; width: 100% !important; transform: translateY(100%); transition: transform .25s ease; }
+    .preview.open { transform: none; }
+    .welcome { padding-top: 16vh; }
+    .welcome h1 { font-size: 24px; }
+    .msg.user .bubble { max-width: 88%; }
+    .messages-inner { padding: 20px 16px 8px; }
+    .composer-wrap { padding: 8px 12px calc(10px + env(safe-area-inset-bottom)); }
+    .msg-files img { width: 110px; height: 110px; }
+  }
+</style>
+</head>
+<body>
+<!-- Brand mark, reused everywhere with <use href="#mark"> -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="mark" viewBox="0 0 64 64">
+    <circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" stroke-width="4"/>
+    <path d="M24 20h8c7 0 12 5 12 12s-5 12-12 12h-8z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/>
+  </symbol>
+</svg>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="side-head">
+      <a class="brand" href="/"><svg class="mark"><use href="#mark"/></svg>Datta AI</a>
+      <button class="icon-btn" id="closeSide" aria-label="Close sidebar" title="Close sidebar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>
+      </button>
+    </div>
+    <button class="new-chat" id="newChat">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+      New chat
+    </button>
+    <div class="chat-list" id="chatList"></div>
+    <button class="side-btn" id="memoryBtn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2zM9 21h6"/></svg>
+      Memory
+    </button>
+    <a class="side-btn" href="/settings" style="color:inherit;text-decoration:none">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      Settings
+    </a>
+    <div class="account" id="account"></div>
+    <div class="sidebar-foot">Made by LR AgroSense</div>
+  </aside>
+  <div class="overlay" id="overlay"></div>
+
+  <main class="main">
+    <div class="mini-bar">
+      <button class="icon-btn" id="openSide" aria-label="Open sidebar" title="Open sidebar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>
+      </button>
+      <button class="icon-btn" id="newChatMini" aria-label="New chat" title="New chat">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+      </button>
+    </div>
+    <div class="topbar">
+      <button class="icon-btn" id="menuBtn" aria-label="Open chats">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="brand"><svg class="mark"><use href="#mark"/></svg>Datta AI</div>
+      <button class="icon-btn" id="newChatTop" aria-label="New chat">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>
+
+    <div class="messages" id="messages"><div class="messages-inner" id="messagesInner"></div></div>
+
+    <div class="composer-wrap">
+      <div class="composer" id="composer">
+        <div class="attach-row" id="attachRow"></div>
+        <div class="composer-main">
+          <div class="plus-wrap">
+            <button class="round" id="plusBtn" aria-label="Add files and photos" aria-haspopup="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <div class="menu" id="plusMenu" role="menu">
+              <button data-pick="file" role="menuitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>Upload files</button>
+              <button data-pick="photo" role="menuitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>Upload photos</button>
+              <button data-pick="camera" role="menuitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Take photo</button>
+            </div>
+          </div>
+          <textarea id="input" rows="1" placeholder="Message Datta" aria-label="Message Datta"></textarea>
+          <button class="round" id="micBtn" aria-label="Speak your message" title="Speak your message">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5"/></svg>
+          </button>
+          <button class="round" id="voiceBtn" aria-label="Voice assistant" title="Talk with Datta (voice mode)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 10v4M8 6v12M12 9v6M16 4v16M20 10v4"/></svg>
+          </button>
+          <button class="send" id="sendBtn" disabled aria-label="Send">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+          </button>
+        </div>
+      </div>
+      <input type="file" id="fileInput" multiple hidden accept=".pdf,.docx,.txt,.md,.csv,.tsv,.json,.xml,.html,.htm,.css,.js,.jsx,.ts,.tsx,.py,.java,.kt,.dart,.c,.cpp,.h,.cs,.go,.php,.rb,.rs,.swift,.sql,.sh,.yml,.yaml,.toml,.ini,.env,.log,.srt,image/*">
+      <input type="file" id="photoInput" multiple hidden accept="image/*">
+      <input type="file" id="cameraInput" hidden accept="image/*" capture="environment">
+      <div class="hint">Datta can make mistakes. Check important info.</div>
+    </div>
+  </main>
+
+  <section class="preview" id="preview" aria-label="Live preview">
+    <div class="preview-head">
+      <span>Preview</span>
+      <div class="tools">
+        <button id="reloadPreview">Reload</button>
+        <button id="openTab">Open in new tab</button>
+        <button id="closePreview">Close</button>
+      </div>
+    </div>
+    <iframe id="frame" sandbox="allow-scripts allow-modals allow-forms allow-popups" title="Preview"></iframe>
+  </section>
+</div>
+
+<div class="modal-bg" id="memoryModal" role="dialog" aria-modal="true" aria-labelledby="memTitle">
+  <div class="modal">
+    <div class="modal-head"><h2 id="memTitle">Memory</h2><button class="icon-btn" id="memClose" aria-label="Close">✕</button></div>
+    <p class="sub">Datta remembers useful things about you across chats, like your name and projects. It's saved only in this browser.</p>
+    <label class="switch">Remember things from my chats <input type="checkbox" id="memToggle"></label>
+    <div class="mem-list" id="memList"></div>
+    <form class="add-mem" id="memForm"><input id="memInput" placeholder="Add something for Datta to remember" maxlength="300"><button class="btn" type="submit">Add</button></form>
+    <div class="modal-foot"><button class="btn" id="memClear">Clear all</button><button class="btn dark" id="memDone">Done</button></div>
+  </div>
+</div>
+
+<div class="modal-bg cam" id="camModal" role="dialog" aria-modal="true" aria-labelledby="camTitle">
+  <div class="modal">
+    <div class="modal-head"><h2 id="camTitle">Take a photo</h2><button class="icon-btn" id="camClose" aria-label="Close">✕</button></div>
+    <div class="cam-body"><video id="camVideo" autoplay playsinline muted></video></div>
+    <div class="modal-foot"><button class="btn" id="camFlip">Switch camera</button><button class="btn dark" id="camShot">Capture</button></div>
+  </div>
+</div>
+
+<div class="voice" id="voiceMode" data-state="idle" role="dialog" aria-modal="true" aria-label="Voice assistant">
+  <div class="orb" id="orb" title="Tap to interrupt"></div>
+  <div class="voice-state" id="voiceState">Starting…</div>
+  <div class="voice-heard" id="voiceHeard"></div>
+  <div class="voice-btns"><button class="btn" id="voicePause">Pause</button><button class="btn dark" id="voiceEnd">End</button></div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="/account.js"></script>
+<script>
+// ───────────────────────── Settings ─────────────────────────
+// Where the AI server lives. On datta-ai.com (Vercel) the page talks to the Render server.
+const API_BASE = window.Account ? Account.API_BASE
+  : /onrender\.com$|localhost|127\.0\.0\.1/.test(location.hostname) ? "" : "https://datta-ai-server.onrender.com"
+const sync = () => window.Account?.schedulePush()
+
+// ───────────────────────── Saved chats (stored in this browser) ─────────────────────────
+const STORE_KEY = "datta-chats-v2"
+let chats = loadChats()
+let currentId = null
+let streaming = null // AbortController while the AI is answering
+let previewCode = ""
+
+function loadChats() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || [] } catch { return [] }
+}
+function saveChats() {
+  sync()
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(chats.slice(0, 100))); return } catch {}
+  // Browser storage is full: shrink old attachments, then old chats, and try again
+  for (const c of chats) for (const m of c.messages.slice(0, -2)) { if (m.files) m.files.forEach(f => (f.text = (f.text || "").slice(0, 2000))); if (m.thumbs) m.thumbs = m.thumbs.slice(0, 1) }
+  for (let keep = 60; keep >= 5; keep -= 15) {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(chats.slice(0, keep))); return } catch {}
+  }
+}
+function currentChat() { return chats.find(c => c.id === currentId) }
+
+// ───────────────────────── Memory (remembered across chats, stored in this browser) ─────────────────────────
+const MEM_KEY = "datta-memory-v1"
+let memory = loadMemory()
+function loadMemory() {
+  try { return Object.assign({ on: true, items: [] }, JSON.parse(localStorage.getItem(MEM_KEY))) } catch { return { on: true, items: [] } }
+}
+function saveMemory() {
+  try { localStorage.setItem(MEM_KEY, JSON.stringify(memory)) } catch {}
+  sync()
+}
+
+// Ask the server what (if anything) to remember from the latest exchange
+async function updateMemory(userText, aiText, msgEl) {
+  if (!memory.on) return
+  try {
+    const res = await fetch(API_BASE + "/api/memory", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ memories: memory.items, user: userText, assistant: aiText.slice(0, 1500) }),
+    })
+    const { add = [], remove = [] } = await res.json()
+    const fresh = add.filter(m => !memory.items.includes(m))
+    if (!fresh.length && !remove.length) return
+    memory.items = memory.items.filter(m => !remove.includes(m))
+    memory.items.push(...fresh)
+    memory.items = memory.items.slice(-60)
+    saveMemory()
+    const tools = msgEl?.querySelector(".msg-tools")
+    if (tools && fresh.length) tools.insertAdjacentHTML("beforeend", '<span class="mem-note">Memory updated</span>')
+  } catch {}
+}
+
+function renderMemory() {
+  $("memToggle").checked = memory.on
+  $("memList").innerHTML = memory.items.length
+    ? memory.items.map((m, i) => `<div class="mem-item"><span>${escapeHtml(m)}</span><button data-i="${i}" aria-label="Forget this">✕</button></div>`).join("")
+    : '<div class="mem-empty">Nothing yet. Tell Datta about yourself and your projects, and it will remember.</div>'
+  $("memList").querySelectorAll("button").forEach(b => b.onclick = () => { memory.items.splice(+b.dataset.i, 1); saveMemory(); renderMemory() })
+}
+function openMemory() { renderMemory(); $("memoryModal").classList.add("show"); closeSidebar() }
+function closeMemory() { $("memoryModal").classList.remove("show") }
+
+// ───────────────────────── Settings (from the Settings page) ─────────────────────────
+const SET_KEY = "datta-settings-v1"
+const SETTING_DEFAULTS = { name: "", instructions: "", language: "auto", theme: "system", fontSize: 15.5, voiceLang: "en-IN", readAloud: false, voiceRate: 1 }
+let settings = loadSettings()
+function loadSettings() {
+  try { return Object.assign({}, SETTING_DEFAULTS, JSON.parse(localStorage.getItem(SET_KEY))) } catch { return { ...SETTING_DEFAULTS } }
+}
+function applyTheme() {
+  const root = document.documentElement
+  if (settings.theme === "light" || settings.theme === "dark") root.dataset.theme = settings.theme
+  else delete root.dataset.theme
+  root.style.setProperty("--fs", (+settings.fontSize || 15.5) + "px")
+  const light = document.getElementById("hljsLight"), dark = document.getElementById("hljsDark")
+  if (settings.theme === "dark") { light.media = "not all"; dark.media = "all" }
+  else if (settings.theme === "light") { light.media = "all"; dark.media = "not all" }
+  else { light.media = "(prefers-color-scheme: light)"; dark.media = "(prefers-color-scheme: dark)" }
+}
+applyTheme()
+// If settings or memory change in another tab (e.g. the Settings page), pick them up
+window.addEventListener("storage", e => {
+  if (e.key === SET_KEY) { settings = loadSettings(); applyTheme() }
+  if (e.key === MEM_KEY) memory = loadMemory()
+})
+
+function toast(msg, ms = 2600) {
+  const t = document.getElementById("toast")
+  t.textContent = msg; t.classList.add("show")
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.remove("show"), ms)
+}
+
+// Wake the Render server early so the first answer is faster
+fetch(API_BASE + "/health").catch(() => {})
+
+// ───────────────────────── Page elements ─────────────────────────
+const $ = id => document.getElementById(id)
+const inner = $("messagesInner"), scroller = $("messages"), input = $("input"), sendBtn = $("sendBtn")
+const MARK = '<svg class="mark"><use href="#mark"/></svg>'
+
+const SEND_ICON = sendBtn.innerHTML
+const STOP_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>'
+
+const SUGGESTIONS = [
+  ["Build a to-do app", "Build a beautiful to-do list app in one HTML file with dark mode, and save tasks in the browser."],
+  ["Make a snake game", "Make a classic snake game in one HTML file with a score counter and smooth controls, including touch controls for phones."],
+  ["Make a portfolio page", "Design a modern one-page portfolio website for a student, in one HTML file, with sections for about, projects and contact."],
+  ["Fix my code", "I'll paste some code. Find the bugs, explain them simply, and give me the fixed full code."],
+  ["Explain a concept", "Explain how APIs work in simple words with a real-life example."],
+]
+
+// ───────────────────────── Markdown + code blocks ─────────────────────────
+const PREVIEWABLE = ["html", "svg", "xml"]
+const EXT = { html: "html", xml: "xml", svg: "svg", css: "css", js: "js", javascript: "js", jsx: "jsx", ts: "ts", typescript: "ts", tsx: "tsx",
+  json: "json", python: "py", py: "py", java: "java", kotlin: "kt", kt: "kt", dart: "dart", c: "c", cpp: "cpp", "c++": "cpp", csharp: "cs", cs: "cs",
+  go: "go", php: "php", ruby: "rb", rust: "rs", swift: "swift", sql: "sql", bash: "sh", sh: "sh", shell: "sh", powershell: "ps1", yaml: "yml", yml: "yml",
+  toml: "toml", markdown: "md", md: "md", text: "txt", plaintext: "txt", env: "env", dockerfile: "Dockerfile", ini: "ini" }
+
+if (window.marked) {
+  marked.setOptions({ gfm: true, breaks: true })
+  marked.use({
+    renderer: {
+      code({ text, lang }) {
+        const info = (lang || "").trim().split(/\s+/)
+        const language = (info[0] || "").toLowerCase()
+        if (language === "options") return `<div class="ask" data-json="${escapeHtml(text)}"></div>`
+        // the file name is the second word, e.g. ```js server.js  (also accepts title="server.js")
+        const file = (info.slice(1).join(" ").match(/^(?:title=)?["']?([\w.\/@-]+)/) || [])[1] || ""
+        return `<pre data-lang="${escapeHtml(language)}" data-file="${escapeHtml(file)}"><code class="language-${escapeHtml(language)}">${escapeHtml(text)}</code></pre>`
+      },
+    },
+  })
+}
+
+function guessFileName(lang, n) {
+  if (lang === "html" || lang === "xml") return n ? `page${n + 1}.html` : "index.html"
+  const ext = EXT[lang] || "txt"
+  if (ext === "Dockerfile") return "Dockerfile"
+  return `file${n ? n + 1 : ""}.${ext}`
+}
+
+function renderMarkdown(text) {
+  // If the markdown tools failed to load, show plain text instead of breaking the page
+  const html = window.marked && window.DOMPurify
+    ? DOMPurify.sanitize(marked.parse(text))
+    : "<p>" + escapeHtml(text).replace(/\n/g, "<br>") + "</p>"
+  const box = document.createElement("div")
+  box.innerHTML = html
+  let unnamed = 0
+  box.querySelectorAll("pre > code").forEach(code => {
+    const pre0 = code.parentElement
+    const lang = pre0.dataset.lang || (code.className.match(/language-([\w+-]+)/) || [])[1] || ""
+    const file = pre0.dataset.file || guessFileName(lang.toLowerCase(), unnamed++)
+    const raw = code.textContent
+    if (window.hljs) try {
+      if (lang && hljs.getLanguage(lang)) code.innerHTML = hljs.highlight(raw, { language: lang }).value
+      else code.innerHTML = hljs.highlightAuto(raw).value
+    } catch {}
+    const pre = code.parentElement
+    const wrap = document.createElement("div")
+    wrap.className = "code-block"
+    const canRun = PREVIEWABLE.includes(lang.toLowerCase()) || /^\s*<(!doctype|html|svg)/i.test(raw)
+    wrap.innerHTML = `<div class="code-head"><span>${escapeHtml(file)}</span><div class="code-actions">
+      <button data-act="copy">Copy</button>
+      <button data-act="download">Download</button>
+      ${canRun ? '<button class="run" data-act="run">Preview</button>' : ""}</div></div>`
+    pre.replaceWith(wrap)
+    wrap.appendChild(pre)
+    wrap.dataset.code = raw
+    wrap.dataset.file = file
+  })
+  // Question cards
+  box.querySelectorAll(".ask").forEach(el => el.replaceWith(buildAskCard(el.dataset.json)))
+  // Several files in one answer → offer them all as a .zip
+  const blocks = box.querySelectorAll(".code-block")
+  if (blocks.length >= 2) {
+    box.insertAdjacentHTML("beforeend", `<div class="file-bar">${blocks.length} files<button data-act="zip">Download all (.zip)</button></div>`)
+  }
+  return box.innerHTML
+}
+
+// Buttons inside the chat
+inner.addEventListener("click", e => {
+  const btn = e.target.closest("button[data-act]")
+  if (!btn) return
+  const code = btn.closest(".code-block")?.dataset.code ?? ""
+  if (btn.dataset.act === "copy") {
+    navigator.clipboard.writeText(code).then(() => {
+      btn.textContent = "Copied"
+      setTimeout(() => (btn.textContent = "Copy"), 1500)
+    })
+  }
+  if (btn.dataset.act === "run") openPreview(withLinkedFiles(code, btn.closest(".content")))
+  if (btn.dataset.act === "download") {
+    const block = btn.closest(".code-block")
+    downloadBlob(new Blob([block.dataset.code], { type: "text/plain" }), block.dataset.file.split("/").pop())
+  }
+  if (btn.dataset.act === "zip") downloadZip(btn.closest(".content"))
+  if (btn.dataset.act === "opt") {
+    const q = btn.closest(".ask-q"), card = btn.closest(".ask-card")
+    if (q.dataset.multi === "1") btn.classList.toggle("on")
+    else { q.querySelectorAll(".ask-opt").forEach(b => b.classList.toggle("on", b === btn)) }
+    // One simple question → send right away
+    if (card.querySelectorAll(".ask-q").length === 1 && q.dataset.multi !== "1") answerCard(card)
+  }
+  if (btn.dataset.act === "ask-send") answerCard(btn.closest(".ask-card"))
+  if (btn.dataset.act === "copyMsg") {
+    const i = +btn.dataset.index
+    navigator.clipboard.writeText(currentChat()?.messages[i]?.content || "")
+    btn.textContent = "Copied"
+    setTimeout(() => (btn.textContent = "Copy"), 1500)
+  }
+  if (btn.dataset.act === "retry") retryLast()
+  if (btn.dataset.act === "listen") {
+    if (speakingBtn === btn) { stopSpeaking(); return }
+    speak(currentChat()?.messages[+btn.dataset.index]?.content || "", null, btn)
+  }
+})
+// Tap a photo in the chat to open it full size
+inner.addEventListener("click", e => {
+  const img = e.target.closest(".msg-files img")
+  if (img) window.open(URL.createObjectURL(dataUrlToBlob(img.src)), "_blank")
+})
+function dataUrlToBlob(u) {
+  const [head, b64] = u.split(","); const bin = atob(b64); const arr = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i)
+  return new Blob([arr], { type: head.match(/data:([^;]+)/)[1] })
+}
+
+// ───────────────────────── Question cards ─────────────────────────
+function buildAskCard(json) {
+  const card = document.createElement("div")
+  let data
+  try { data = JSON.parse(json) } catch { card.className = "ask-wait"; card.textContent = "Preparing options…"; return card }
+  const questions = (Array.isArray(data) ? data : data.questions || [data]).filter(q => q && q.question && Array.isArray(q.options)).slice(0, 4)
+  card.className = "ask-card"
+  card.innerHTML = questions.map((q, qi) => `
+    <div class="ask-q" data-q="${qi}" data-multi="${q.multi ? 1 : 0}" data-text="${escapeHtml(q.question)}">
+      <p>${escapeHtml(q.question)}${q.multi ? "<small>Choose any</small>" : ""}</p>
+      <div class="ask-opts">${q.options.slice(0, 6).map(o =>
+        `<button class="ask-opt" data-act="opt" data-val="${escapeHtml(String(o))}">${escapeHtml(String(o))}</button>`).join("")}</div>
+    </div>`).join("") + `
+    <div class="ask-foot"><input placeholder="Or type your own answer" aria-label="Your own answer"><button class="btn dark" data-act="ask-send">Send</button></div>`
+  return card
+}
+
+function answerCard(card) {
+  const qs = [...card.querySelectorAll(".ask-q")]
+  const own = card.querySelector(".ask-foot input").value.trim()
+  const clean = v => v.replace(/\s*\(Recommended\)\s*$/i, "")
+  const lines = qs.map(q => {
+    const picked = [...q.querySelectorAll(".ask-opt.on")].map(b => clean(b.dataset.val))
+    return picked.length ? (qs.length > 1 ? `${q.dataset.text} → ${picked.join(", ")}` : picked.join(", ")) : ""
+  }).filter(Boolean)
+  if (own) lines.push(own)
+  if (!lines.length) return
+  send(lines.join("\n"))
+}
+
+// ───────────────────────── Files ─────────────────────────
+function downloadBlob(blob, name) {
+  const a = document.createElement("a")
+  a.href = URL.createObjectURL(blob)
+  a.download = name
+  document.body.appendChild(a); a.click(); a.remove()
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000)
+}
+
+async function downloadZip(content) {
+  const blocks = [...content.querySelectorAll(".code-block")]
+  if (!window.JSZip) { blocks.forEach(b => downloadBlob(new Blob([b.dataset.code]), b.dataset.file.split("/").pop())); return }
+  const zip = new JSZip()
+  for (const b of blocks) zip.file(b.dataset.file, b.dataset.code) // later versions of the same file win
+  downloadBlob(await zip.generateAsync({ type: "blob" }), "datta-project.zip")
+}
+
+// If index.html links style.css / script.js from the same answer, put them inside so the preview works
+function withLinkedFiles(html, content) {
+  if (!content) return html
+  const files = {}
+  content.querySelectorAll(".code-block").forEach(b => { files[b.dataset.file] = b.dataset.code; files[b.dataset.file.split("/").pop()] = b.dataset.code })
+  const clean = src => src.replace(/^\.?\//, "")
+  html = html.replace(/<link[^>]+href=["']([^"']+\.css)["'][^>]*>/gi, (tag, href) =>
+    files[clean(href)] != null ? `<style>\n${files[clean(href)]}\n</style>` : tag)
+  html = html.replace(/<script([^>]*)\ssrc=["']([^"']+\.js)["']([^>]*)><\/script>/gi, (tag, a, src, b) =>
+    files[clean(src)] != null ? `<script${a}${b}>\n${files[clean(src)].replace(/<\/script/gi, "<\\/script")}\n<\/script>` : tag)
+  return html
+}
+
+inner.addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.matches(".ask-foot input")) { e.preventDefault(); answerCard(e.target.closest(".ask-card")) }
+})
+
+// ───────────────────────── Attachments: files, photos, camera ─────────────────────────
+let pending = []                 // attachments waiting to be sent
+const imageStore = new Map()     // full-size photos for this session (too big to save in the browser)
+const TEXT_EXT = /\.(txt|md|csv|tsv|json|xml|html?|css|jsx?|tsx?|py|java|kt|dart|c|cpp|h|cs|go|php|rb|rs|swift|sql|sh|ya?ml|toml|ini|env|log|srt)$/i
+const MAX_FILE_CHARS = 120_000
+
+function loadScript(src) {
+  return new Promise((ok, fail) => { const el = document.createElement("script"); el.src = src; el.onload = ok; el.onerror = fail; document.head.appendChild(el) })
+}
+
+// Shrink a photo so it uploads fast (max 1600px) and make a small thumbnail to keep in the chat
+function readImage(file, max = 1600, quality = 0.85) {
+  return new Promise((ok, fail) => {
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      const scale = Math.min(1, max / Math.max(img.width, img.height))
+      const c = document.createElement("canvas")
+      c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale)
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height)
+      URL.revokeObjectURL(url)
+      ok(c.toDataURL("image/jpeg", quality))
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); fail(new Error("Couldn't open this photo.")) }
+    img.src = url
+  })
+}
+async function shrinkDataUrl(dataUrl, max) {
+  const blob = await (await fetch(dataUrl)).blob()
+  return readImage(blob, max, 0.7)
+}
+
+async function readPdf(file) {
+  const pdfjs = await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4/build/pdf.min.mjs")
+  pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4/build/pdf.worker.min.mjs"
+  const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise
+  let text = ""
+  for (let i = 1; i <= pdf.numPages && text.length < MAX_FILE_CHARS; i++) {
+    const page = await pdf.getPage(i)
+    const content = await page.getTextContent()
+    text += `\n[Page ${i}]\n` + content.items.map(it => it.str).join(" ")
+  }
+  // Scanned PDF (no text inside): send pictures of the first pages instead
+  const images = []
+  if (text.replace(/\[Page \d+\]|\s/g, "").length < 50) {
+    for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
+      const page = await pdf.getPage(i)
+      const vp = page.getViewport({ scale: 1.6 })
+      const c = document.createElement("canvas"); c.width = vp.width; c.height = vp.height
+      await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise
+      images.push(c.toDataURL("image/jpeg", 0.8))
+    }
+    text = `(Scanned PDF with ${pdf.numPages} pages — the first ${images.length} pages are attached as images.)`
+  }
+  return { text, images }
+}
+
+async function readDocx(file) {
+  if (!window.mammoth) await loadScript("https://cdn.jsdelivr.net/npm/mammoth@1/mammoth.browser.min.js")
+  const out = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() })
+  return out.value
+}
+
+async function addFiles(fileList) {
+  for (const file of [...fileList]) {
+    if (pending.length >= 8) { toast("You can attach up to 8 items at once."); break }
+    if (file.size > 25 * 1024 * 1024) { toast(`${file.name} is too big (max 25 MB).`); continue }
+    const item = { id: Math.random().toString(36).slice(2), name: file.name || "photo.jpg", loading: true }
+    pending.push(item); renderAttachRow()
+    try {
+      if (file.type.startsWith("image/")) {
+        item.kind = "image"
+        item.dataUrl = await readImage(file)
+        item.thumb = await shrinkDataUrl(item.dataUrl, 360)
+      } else if (/\.pdf$/i.test(file.name) || file.type === "application/pdf") {
+        item.kind = "file"
+        const { text, images } = await readPdf(file)
+        item.text = text.slice(0, MAX_FILE_CHARS)
+        item.pageImages = images
+      } else if (/\.docx$/i.test(file.name)) {
+        item.kind = "file"; item.text = (await readDocx(file)).slice(0, MAX_FILE_CHARS)
+      } else if (TEXT_EXT.test(file.name) || file.type.startsWith("text/") || file.type === "application/json") {
+        item.kind = "file"; item.text = (await file.text()).slice(0, MAX_FILE_CHARS)
+      } else {
+        throw new Error(`Datta can't read ${file.name} yet. Try PDF, Word (.docx), text, code or a photo.`)
+      }
+      item.loading = false
+    } catch (err) {
+      pending = pending.filter(p => p !== item)
+      toast(err.message || `Couldn't read ${file.name}.`, 4000)
+    }
+    renderAttachRow()
+  }
+}
+
+function fileExt(name) { return (name.split(".").pop() || "file").slice(0, 4) }
+
+function renderAttachRow() {
+  $("attachRow").innerHTML = pending.map(p => p.kind === "image" && !p.loading
+    ? `<div class="chip img"><img src="${p.thumb}" alt="${escapeHtml(p.name)}"><button class="x" data-rm="${p.id}" aria-label="Remove">✕</button></div>`
+    : `<div class="chip"><span class="ficon">${p.loading ? "…" : escapeHtml(fileExt(p.name))}</span><span class="fname">${escapeHtml(p.name)}<small>${p.loading ? "Reading…" : (p.text || "").length.toLocaleString() + " characters"}</small></span><button class="x" data-rm="${p.id}" aria-label="Remove">✕</button></div>`
+  ).join("")
+  $("attachRow").querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { pending = pending.filter(p => p.id !== b.dataset.rm); renderAttachRow() })
+  if (!streaming) sendBtn.disabled = !canSend()
+}
+function canSend() { return (input.value.trim() || pending.length) && !pending.some(p => p.loading) }
+
+// The + menu
+$("plusBtn").onclick = e => { e.stopPropagation(); $("plusMenu").classList.toggle("show") }
+document.addEventListener("click", e => { if (!e.target.closest(".plus-wrap")) $("plusMenu").classList.remove("show") })
+$("plusMenu").querySelectorAll("[data-pick]").forEach(b => b.onclick = () => {
+  $("plusMenu").classList.remove("show")
+  const pick = b.dataset.pick
+  if (pick === "file") $("fileInput").click()
+  if (pick === "photo") $("photoInput").click()
+  if (pick === "camera") openCamera()
+})
+for (const id of ["fileInput", "photoInput", "cameraInput"]) $(id).onchange = e => { addFiles(e.target.files); e.target.value = "" }
+
+// Drag & drop and paste
+const composerEl = $("composer")
+document.addEventListener("dragover", e => { if (e.dataTransfer?.types?.includes("Files")) e.preventDefault() })
+document.addEventListener("drop", e => { if (e.dataTransfer?.files?.length) { e.preventDefault(); addFiles(e.dataTransfer.files) } })
+input.addEventListener("paste", e => {
+  const files = [...(e.clipboardData?.files || [])]
+  if (files.length) { e.preventDefault(); addFiles(files) }
+})
+
+// Camera: phones use the built-in camera app; computers use the webcam window
+let camStream = null, camFacing = "environment"
+async function openCamera() {
+  if (matchMedia("(pointer: coarse)").matches || !navigator.mediaDevices?.getUserMedia) { $("cameraInput").click(); return }
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: camFacing }, audio: false })
+    $("camVideo").srcObject = camStream
+    $("camModal").classList.add("show")
+  } catch {
+    toast("Couldn't open the camera. Allow camera access in your browser, or use Upload photos.", 4500)
+  }
+}
+function closeCamera() {
+  camStream?.getTracks().forEach(t => t.stop()); camStream = null
+  $("camModal").classList.remove("show")
+}
+$("camClose").onclick = closeCamera
+$("camFlip").onclick = async () => { camFacing = camFacing === "environment" ? "user" : "environment"; closeCamera(); openCamera() }
+$("camShot").onclick = () => {
+  const v = $("camVideo"), c = document.createElement("canvas")
+  c.width = v.videoWidth; c.height = v.videoHeight
+  c.getContext("2d").drawImage(v, 0, 0)
+  c.toBlob(blob => { addFiles([new File([blob], `camera-${Date.now()}.jpg`, { type: "image/jpeg" })]); closeCamera() }, "image/jpeg", 0.9)
+}
+
+// ───────────────────────── Voice: speak to type, read answers aloud ─────────────────────────
+const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition
+let dictation = null
+
+$("micBtn").onclick = () => {
+  if (!Recognition) { toast("Voice typing works in Chrome or Edge.", 3500); return }
+  if (dictation) { dictation.stop(); return }
+  stopSpeaking()
+  const base = input.value ? input.value.replace(/\s*$/, " ") : ""
+  dictation = new Recognition()
+  dictation.lang = settings.voiceLang || "en-IN"
+  dictation.interimResults = true
+  dictation.continuous = true
+  dictation.onresult = e => {
+    let text = ""
+    for (const r of e.results) text += r[0].transcript
+    input.value = base + text; autoGrow()
+  }
+  dictation.onerror = e => { if (e.error === "not-allowed") toast("Allow microphone access to use voice typing.", 3500) }
+  dictation.onend = () => { dictation = null; $("micBtn").classList.remove("rec"); input.focus() }
+  dictation.start()
+  $("micBtn").classList.add("rec")
+}
+
+// Turn an answer into something nice to hear (no code, no markdown symbols)
+function speakableText(md) {
+  let t = md
+  const hadCode = /```(?!options)/.test(t)
+  t = t.replace(/```options[\s\S]*?(```|$)/g, " ")
+  t = t.replace(/```[\s\S]*?(```|$)/g, " ")
+  t = t.replace(/`([^`]*)`/g, "$1").replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+  t = t.replace(/^#+\s*/gm, "").replace(/[*_~>|#]/g, "").replace(/^\s*[-•]\s+/gm, "").replace(/\n{2,}/g, ". ").replace(/\s+/g, " ").trim()
+  if (hadCode) t += " I've put the code in the chat for you."
+  return t
+}
+
+let speakingBtn = null
+function pickVoice(lang) {
+  const voices = speechSynthesis.getVoices()
+  return voices.find(v => v.lang === lang) || voices.find(v => v.lang.startsWith(lang.split("-")[0])) || null
+}
+function speak(md, onDone, btn) {
+  if (!("speechSynthesis" in window)) { onDone?.(); return }
+  stopSpeaking()
+  const text = speakableText(md)
+  if (!text) { onDone?.(); return }
+  // Speak sentence by sentence (long single utterances get cut off in some browsers)
+  const parts = text.match(/[^.!?।]+[.!?।]*/g) || [text]
+  const lang = settings.voiceLang || "en-IN"
+  const voice = pickVoice(lang)
+  speakingBtn = btn || null
+  if (btn) btn.textContent = "Stop"
+  parts.forEach((part, i) => {
+    const u = new SpeechSynthesisUtterance(part.trim())
+    u.lang = lang; if (voice) u.voice = voice
+    u.rate = +settings.voiceRate || 1
+    if (i === parts.length - 1) u.onend = () => { resetSpeakBtn(); onDone?.() }
+    speechSynthesis.speak(u)
+  })
+}
+function resetSpeakBtn() { if (speakingBtn) speakingBtn.textContent = "Listen"; speakingBtn = null }
+function stopSpeaking() { if ("speechSynthesis" in window) speechSynthesis.cancel(); resetSpeakBtn() }
+if ("speechSynthesis" in window) speechSynthesis.getVoices() // load voice list early
+
+// ───────────────────────── Voice assistant mode (hands-free conversation) ─────────────────────────
+let voiceOn = false, voicePaused = false, voiceRec = null
+function setVoiceState(state, label) {
+  $("voiceMode").dataset.state = state
+  $("voiceState").textContent = label
+}
+function startVoiceMode() {
+  if (!Recognition) { toast("Voice mode works in Chrome or Edge.", 3500); return }
+  voiceOn = true; voicePaused = false
+  $("voicePause").textContent = "Pause"
+  $("voiceHeard").textContent = ""
+  $("voiceMode").classList.add("show")
+  voiceListen()
+}
+function endVoiceMode() {
+  voiceOn = false
+  voiceRec?.abort(); voiceRec = null
+  stopSpeaking()
+  $("voiceMode").classList.remove("show")
+}
+function voiceListen() {
+  if (!voiceOn || voicePaused) return
+  stopSpeaking()
+  voiceRec = new Recognition()
+  voiceRec.lang = settings.voiceLang || "en-IN"
+  voiceRec.interimResults = true
+  voiceRec.continuous = false
+  let finalText = ""
+  setVoiceState("listening", "Listening…")
+  voiceRec.onresult = e => {
+    let text = ""
+    for (const r of e.results) { text += r[0].transcript; if (r.isFinal) finalText = text }
+    $("voiceHeard").textContent = text
+  }
+  voiceRec.onerror = e => {
+    if (e.error === "not-allowed") { toast("Allow microphone access to talk with Datta.", 4000); endVoiceMode() }
+  }
+  voiceRec.onend = async () => {
+    voiceRec = null
+    if (!voiceOn || voicePaused) return
+    const said = (finalText || $("voiceHeard").textContent).trim()
+    if (!said) { voiceListen(); return } // heard nothing — keep listening
+    setVoiceState("thinking", "Thinking…")
+    const reply = await send(said, { voice: true })
+    if (!voiceOn) return
+    if (!reply) { setVoiceState("idle", "Something went wrong. Tap the circle to try again."); return }
+    setVoiceState("speaking", "Speaking…")
+    $("voiceHeard").textContent = speakableText(reply).slice(0, 220)
+    speak(reply, () => { if (voiceOn && !voicePaused) voiceListen() })
+  }
+  voiceRec.start()
+}
+$("voiceBtn").onclick = startVoiceMode
+$("voiceEnd").onclick = endVoiceMode
+$("voicePause").onclick = () => {
+  voicePaused = !voicePaused
+  $("voicePause").textContent = voicePaused ? "Resume" : "Pause"
+  if (voicePaused) { voiceRec?.abort(); stopSpeaking(); setVoiceState("idle", "Paused") }
+  else voiceListen()
+}
+$("orb").onclick = () => { if (voiceOn) { voicePaused = false; $("voicePause").textContent = "Pause"; voiceRec?.abort(); voiceListen() } }
+
+// ───────────────────────── Live preview ─────────────────────────
+function openPreview(code) {
+  previewCode = code
+  $("frame").srcdoc = code
+  $("preview").classList.add("open")
+}
+$("closePreview").onclick = () => $("preview").classList.remove("open")
+$("reloadPreview").onclick = () => { $("frame").srcdoc = ""; setTimeout(() => ($("frame").srcdoc = previewCode), 30) }
+$("openTab").onclick = () => {
+  const url = URL.createObjectURL(new Blob([previewCode], { type: "text/html" }))
+  window.open(url, "_blank")
+}
+
+// Find the last runnable code block in an answer (for auto-preview)
+function lastRunnableCode(text) {
+  const blocks = [...text.matchAll(/```(\w*)[^\n]*\n([\s\S]*?)```/g)]
+  for (let i = blocks.length - 1; i >= 0; i--) {
+    const [, lang, code] = blocks[i]
+    if (PREVIEWABLE.includes(lang.toLowerCase()) || /^\s*<(!doctype|html)/i.test(code)) return code
+  }
+  return null
+}
+
+// ───────────────────────── Drawing the chat ─────────────────────────
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]))
+}
+
+function renderAll() {
+  const chat = currentChat()
+  if (!chat || chat.messages.length === 0) return renderWelcome()
+  inner.innerHTML = chat.messages.map((m, i) => messageHtml(m, i, i === chat.messages.length - 1)).join("")
+  scrollDown(true)
+}
+
+function messageHtml(m, i, isLast) {
+  if (m.role === "user") {
+    const pics = (m.thumbs || []).map(t => `<img src="${t}" alt="Attached photo">`).join("")
+    const files = (m.files || []).map(f => `<div class="chip"><span class="ficon">${escapeHtml(fileExt(f.name))}</span><span class="fname">${escapeHtml(f.name)}</span></div>`).join("")
+    const attach = pics || files ? `<div class="msg-files">${pics}${files}</div>` : ""
+    return `<div class="msg user">${attach}${m.content ? `<div class="bubble">${escapeHtml(m.content)}</div>` : ""}</div>`
+  }
+  let body = m.error ? `<div class="error">${escapeHtml(m.error)}</div>` : renderMarkdown(m.content)
+  if (!isLast) body = body.replace(/class="ask-card"/g, 'class="ask-card answered"')
+  const tools = `<div class="msg-tools">
+      ${m.error ? "" : `<button data-act="copyMsg" data-index="${i}">Copy</button><button data-act="listen" data-index="${i}">Listen</button>`}
+      ${isLast ? '<button data-act="retry">Retry</button>' : ""}</div>`
+  return `<div class="msg ai">${MARK}<div class="content">${body}${tools}</div></div>`
+}
+
+function renderWelcome() {
+  inner.innerHTML = `<div class="welcome">
+    <h1>What can I help with?</h1>
+    <div class="suggestions">${SUGGESTIONS.map((s, i) =>
+      `<button class="suggestion" data-s="${i}">${s[0]}</button>`).join("")}
+    </div></div>`
+  inner.querySelectorAll(".suggestion").forEach(b => b.onclick = () => send(SUGGESTIONS[b.dataset.s][1]))
+}
+
+function renderChatList() {
+  const list = $("chatList")
+  if (chats.length === 0) { list.innerHTML = ""; return }
+  list.innerHTML = '<div class="label">Your chats</div>' + chats.map(c =>
+    `<button class="chat-item ${c.id === currentId ? "active" : ""}" data-id="${c.id}">
+      <span>${escapeHtml(c.title)}</span><b class="del" data-del="${c.id}" title="Delete chat">✕</b></button>`).join("")
+  list.querySelectorAll(".chat-item").forEach(item => item.onclick = e => {
+    const del = e.target.dataset.del
+    if (del) {
+      if (!confirm("Delete this chat?")) return
+      chats = chats.filter(c => c.id !== del)
+      saveChats()
+      if (del === currentId) newChat(); else renderChatList()
+      return
+    }
+    openChat(item.dataset.id)
+  })
+}
+
+function openChat(id) {
+  if (streaming) streaming.abort()
+  currentId = id
+  renderChatList(); renderAll(); closeSidebar()
+}
+
+function newChat() {
+  if (streaming) streaming.abort()
+  currentId = null
+  renderChatList(); renderWelcome(); closeSidebar()
+  $("preview").classList.remove("open")
+  input.focus()
+}
+
+function scrollDown(force) {
+  const nearBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 160
+  if (force || nearBottom) scroller.scrollTop = scroller.scrollHeight
+}
+
+// ───────────────────────── Sending a message ─────────────────────────
+async function send(text, opts = {}) {
+  const typed = text == null
+  text = (text ?? input.value).trim()
+  const attachments = typed || opts.voice ? pending.filter(p => !p.loading) : []
+  if ((!text && !attachments.length) || streaming) return
+  if (pending.some(p => p.loading) && typed) { toast("Still reading your file…"); return }
+
+  let chat = currentChat()
+  if (!chat) {
+    chat = { id: Date.now().toString(36), title: (text || attachments[0]?.name || "New chat").slice(0, 40), messages: [] }
+    chats.unshift(chat)
+    currentId = chat.id
+  } else {
+    chats = [chat, ...chats.filter(c => c !== chat)] // move to top
+  }
+  $("plusMenu").classList.remove("show")
+  const msg = { id: Math.random().toString(36).slice(2), role: "user", content: text }
+  const photos = attachments.filter(a => a.kind === "image")
+  const docs = attachments.filter(a => a.kind === "file")
+  if (photos.length) { msg.thumbs = photos.map(p => p.thumb); imageStore.set(msg.id, photos.map(p => p.dataUrl)) }
+  if (docs.length) {
+    msg.files = docs.map(d => ({ name: d.name, text: d.text }))
+    const pageImgs = docs.flatMap(d => d.pageImages || [])
+    if (pageImgs.length) imageStore.set(msg.id, [...(imageStore.get(msg.id) || []), ...pageImgs].slice(0, 4))
+  }
+  chat.messages.push(msg)
+  chat.updatedAt = Date.now()
+  if (attachments.length) { pending = []; renderAttachRow() }
+  if (typed) { input.value = ""; autoGrow() }
+  saveChats(); renderChatList(); renderAll()
+  return getAnswer(chat, opts)
+}
+
+// What the server receives: documents go inside the text, photos as images (only the latest few)
+function apiMessages(chat) {
+  const msgs = chat.messages.slice(0, -1).filter(m => !m.error)
+  const withPics = msgs.filter(m => m.role === "user" && (imageStore.has(m.id) || m.thumbs?.length)).slice(-3)
+  return msgs.map(m => {
+    if (m.role !== "user") return { role: m.role, content: m.content }
+    let content = m.content || ""
+    for (const f of m.files || []) content += `\n\n--- File: ${f.name} ---\n${f.text || "(empty)"}\n--- End of ${f.name} ---`
+    const images = withPics.includes(m) ? (imageStore.get(m.id) || m.thumbs || []) : []
+    if (!content.trim() && images.length) content = "Look at this photo."
+    return { role: "user", content, images }
+  })
+}
+
+async function getAnswer(chat, opts = {}) {
+  const reply = { role: "assistant", content: "" }
+  chat.messages.push(reply)
+
+  inner.insertAdjacentHTML("beforeend",
+    `<div class="msg ai" id="live">${MARK}<div class="content"><div class="thinking"></div></div></div>`)
+  scrollDown(true)
+  const live = $("live").querySelector(".content")
+
+  streaming = new AbortController()
+  setSending(true)
+  let drawTimer = null
+  const draw = () => { live.innerHTML = renderMarkdown(reply.content); scrollDown(); drawTimer = null }
+
+  try {
+    const res = await fetch(API_BASE + "/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: apiMessages(chat),
+        memories: memory.on ? memory.items : [],
+        settings: { name: settings.name, instructions: settings.instructions, language: settings.language },
+        voice: Boolean(opts.voice),
+      }),
+      signal: streaming.signal,
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new Error(data.error || "Datta couldn't answer that. Press Retry.")
+    }
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      reply.content += decoder.decode(value, { stream: true })
+      if (!drawTimer) drawTimer = setTimeout(draw, 60)
+    }
+    if (!reply.content) throw new Error("Datta sent an empty answer. Press Retry.")
+  } catch (err) {
+    if (err.name !== "AbortError") {
+      if (!reply.content) reply.error = err.message === "Failed to fetch" ? "Can't reach Datta's server. It may be waking up — wait 30 seconds and press Try again." : err.message
+    }
+  } finally {
+    clearTimeout(drawTimer)
+    streaming = null
+    setSending(false)
+    if (!reply.content && !reply.error) chat.messages.pop() // stopped before any text
+    chat.updatedAt = Date.now()
+    saveChats()
+    renderAll()
+    const lastAi = [...inner.querySelectorAll(".msg.ai")].pop()
+    const code = reply.content && lastRunnableCode(reply.content)
+    if (code && window.innerWidth > 860 && !opts.voice) openPreview(withLinkedFiles(code, lastAi?.querySelector(".content")))
+    if (reply.content) {
+      const userText = chat.messages[chat.messages.length - 2]?.content || ""
+      updateMemory(userText, reply.content, lastAi)
+      if (settings.readAloud && !opts.voice) speak(reply.content, null, lastAi?.querySelector('[data-act="listen"]'))
+    }
+  }
+  return reply.content || null
+}
+
+function retryLast() {
+  const chat = currentChat()
+  if (!chat || streaming) return
+  if (chat.messages.at(-1)?.role === "assistant") chat.messages.pop()
+  renderAll()
+  getAnswer(chat)
+}
+
+function setSending(on) {
+  sendBtn.classList.toggle("stop", on)
+  sendBtn.innerHTML = on ? STOP_ICON : SEND_ICON
+  sendBtn.disabled = !on && !canSend()
+  sendBtn.setAttribute("aria-label", on ? "Stop" : "Send")
+}
+
+// ───────────────────────── Input box behaviour ─────────────────────────
+function autoGrow() {
+  input.style.height = "auto"
+  input.style.height = Math.min(input.scrollHeight, 220) + "px"
+  if (!streaming) sendBtn.disabled = !canSend()
+}
+input.addEventListener("input", autoGrow)
+input.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey && window.innerWidth > 860) { e.preventDefault(); send() }
+})
+sendBtn.onclick = () => streaming ? streaming.abort() : send()
+
+// ───────────────────────── Sidebar (phones) ─────────────────────────
+function closeSidebar() { $("sidebar").classList.remove("open"); $("overlay").classList.remove("show") }
+$("menuBtn").onclick = () => { $("sidebar").classList.add("open"); $("overlay").classList.add("show") }
+$("overlay").onclick = closeSidebar
+$("newChat").onclick = newChat
+$("newChatTop").onclick = newChat
+$("memoryBtn").onclick = openMemory
+$("memClose").onclick = closeMemory
+$("memDone").onclick = closeMemory
+$("memoryModal").onclick = e => { if (e.target.id === "memoryModal") closeMemory() }
+$("memToggle").onchange = e => { memory.on = e.target.checked; saveMemory() }
+$("memClear").onclick = () => { if (confirm("Forget everything Datta remembers about you?")) { memory.items = []; saveMemory(); renderMemory() } }
+$("memForm").onsubmit = e => {
+  e.preventDefault()
+  const v = $("memInput").value.trim()
+  if (v && !memory.items.includes(v)) { memory.items.push(v); saveMemory(); renderMemory() }
+  $("memInput").value = ""
+}
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return
+  closeMemory(); closeCamera(); $("plusMenu").classList.remove("show"); $("acctMenu")?.classList.remove("show")
+  if (voiceOn) endVoiceMode()
+})
+
+// ───────────────────────── Sidebar open / close ─────────────────────────
+const UI_KEY = "datta-ui-v1"
+function isPhone() { return matchMedia("(max-width: 860px)").matches }
+function setSideClosed(closed) {
+  document.body.classList.toggle("side-closed", closed)
+  try { localStorage.setItem(UI_KEY, JSON.stringify({ sideClosed: closed })) } catch {}
+}
+try { if (JSON.parse(localStorage.getItem(UI_KEY))?.sideClosed) document.body.classList.add("side-closed") } catch {}
+$("closeSide").onclick = () => (isPhone() ? closeSidebar() : setSideClosed(true))
+$("openSide").onclick = () => setSideClosed(false)
+$("newChatMini").onclick = newChat
+document.addEventListener("keydown", e => {
+  // Ctrl/Cmd + Shift + S toggles the sidebar
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "s") { e.preventDefault(); setSideClosed(!document.body.classList.contains("side-closed")) }
+})
+
+// ───────────────────────── Account (login, sync) ─────────────────────────
+function renderAccount() {
+  const box = $("account")
+  const user = window.Account?.user
+  if (!user) {
+    box.innerHTML = `<div class="guest-box"><p>Log in to save your chats on every device.</p>
+      <div class="row"><a href="/login?mode=signup" class="dark">Sign up</a><a href="/login">Log in</a></div></div>`
+    return
+  }
+  box.innerHTML = `<button class="acct-btn" id="acctBtn" aria-haspopup="true">${Account.avatarHtml(user)}
+      <span class="who">${escapeHtml(user.name || "Account")}<small>${escapeHtml(user.email || "")}</small></span></button>
+    <div class="acct-menu" id="acctMenu" role="menu">
+      <a href="/settings" role="menuitem">Settings</a>
+      <button id="memMenu" role="menuitem">Memory</button>
+      <button id="logout" role="menuitem">Log out</button>
+    </div>`
+  $("acctBtn").onclick = e => { e.stopPropagation(); $("acctMenu").classList.toggle("show") }
+  $("memMenu").onclick = () => { $("acctMenu").classList.remove("show"); openMemory() }
+  $("logout").onclick = async () => {
+    if (!confirm("Log out? Your chats stay saved in your account.")) return
+    try { await Account.push() } catch {}
+    Account.logout()
+    location.href = "/"
+  }
+}
+document.addEventListener("click", e => { if (!e.target.closest(".account")) $("acctMenu")?.classList.remove("show") })
+
+// Bring in chats saved on other devices
+async function pullAccount() {
+  if (!window.Account?.isLoggedIn() || streaming) return
+  try {
+    const changed = await Account.pull()
+    if (!changed || streaming) return
+    chats = loadChats(); memory = loadMemory(); settings = loadSettings(); applyTheme()
+    if (currentId && !currentChat()) currentId = null
+    renderChatList(); renderAll()
+  } catch (err) { console.warn("[sync]", err.message) }
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") pullAccount() })
+
+// ───────────────────────── Start ─────────────────────────
+renderChatList()
+renderWelcome()
+renderAccount()
+pullAccount()
+input.focus()
+if (new URLSearchParams(location.search).get("memory") === "1") { openMemory(); history.replaceState(null, "", "/chat") }
+</script>
+</body>
+</html>
