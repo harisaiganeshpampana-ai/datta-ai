@@ -245,6 +245,10 @@
 
 <script>
 // ───────────────────────── Saved chats (stored in this browser) ─────────────────────────
+// Where the AI server lives. On datta-ai.com (Vercel) the page talks to the Render server.
+const RENDER_URL = "https://datta-ai.onrender.com"
+const API_BASE = /onrender\.com$|localhost|127\.0\.0\.1/.test(location.hostname) ? "" : RENDER_URL
+
 const STORE_KEY = "datta-chats-v2"
 let chats = loadChats()
 let currentId = null
@@ -451,7 +455,7 @@ async function getAnswer(chat) {
   const draw = () => { live.innerHTML = renderMarkdown(reply.content); scrollDown(); drawTimer = null }
 
   try {
-    const res = await fetch("/api/chat", {
+    const res = await fetch(API_BASE + "/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messages: chat.messages.slice(0, -1).filter(m => !m.error) }),
@@ -472,7 +476,7 @@ async function getAnswer(chat) {
     if (!reply.content) throw new Error("The AI sent an empty answer. Please try again.")
   } catch (err) {
     if (err.name !== "AbortError") {
-      if (!reply.content) reply.error = err.message === "Failed to fetch" ? "Can't reach the server. Check your internet and try again." : err.message
+      if (!reply.content) reply.error = err.message === "Failed to fetch" ? "Can't reach the server. It may be waking up — wait 30 seconds and press Retry." : err.message
     }
   } finally {
     clearTimeout(drawTimer)
