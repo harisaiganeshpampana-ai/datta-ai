@@ -146,6 +146,22 @@
   .file-bar button:hover { background: var(--hover); }
   .mem-note { font-size: 12px; color: var(--faint); padding: 4px 8px; }
 
+  /* Question cards with options */
+  .ask-card { border: 1px solid var(--border); border-radius: 14px; padding: 6px 16px 14px; margin: 0 0 12px; }
+  .ask-q { padding-top: 12px; }
+  .ask-q > p { font-weight: 600; margin: 0 0 8px; }
+  .ask-q > p small { font-weight: 400; color: var(--faint); margin-left: 6px; }
+  .ask-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ask-opt { padding: 7px 14px; border: 1px solid var(--border); border-radius: 99px; font-size: 14px; text-align: left; }
+  .ask-opt:hover { background: var(--hover); }
+  .ask-opt.on { background: var(--btn); color: var(--btn-text); border-color: var(--btn); }
+  .ask-foot { display: flex; gap: 8px; margin-top: 14px; }
+  .ask-foot input { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; color: var(--text); font: inherit; font-size: 14px; }
+  .ask-card.answered { opacity: .6; }
+  .ask-card.answered button, .ask-card.answered input { pointer-events: none; }
+  .ask-card.answered .ask-foot { display: none; }
+  .ask-wait { color: var(--faint); font-size: 14px; padding: 8px 0; }
+
   .side-btn { margin: 0 10px; padding: 9px 10px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-size: 14px; }
   .side-btn:hover { background: var(--hover); }
 
@@ -358,6 +374,7 @@ if (window.marked) {
       code({ text, lang }) {
         const info = (lang || "").trim().split(/\s+/)
         const language = (info[0] || "").toLowerCase()
+        if (language === "options") return `<div class="ask" data-json="${escapeHtml(text)}"></div>`
         // the file name is the second word, e.g. ```js server.js  (also accepts title="server.js")
         const file = (info.slice(1).join(" ").match(/^(?:title=)?["']?([\w.\/@-]+)/) || [])[1] || ""
         return `<pre data-lang="${escapeHtml(language)}" data-file="${escapeHtml(file)}"><code class="language-${escapeHtml(language)}">${escapeHtml(text)}</code></pre>`
@@ -403,6 +420,8 @@ function renderMarkdown(text) {
     wrap.dataset.code = raw
     wrap.dataset.file = file
   })
+  // Question cards
+  box.querySelectorAll(".ask").forEach(el => el.replaceWith(buildAskCard(el.dataset.json)))
   // Several files in one answer → offer them all as a .zip
   const blocks = box.querySelectorAll(".code-block")
   if (blocks.length >= 2) {
@@ -428,6 +447,14 @@ inner.addEventListener("click", e => {
     downloadBlob(new Blob([block.dataset.code], { type: "text/plain" }), block.dataset.file.split("/").pop())
   }
   if (btn.dataset.act === "zip") downloadZip(btn.closest(".content"))
+  if (btn.dataset.act === "opt") {
+    const q = btn.closest(".ask-q"), card = btn.closest(".ask-card")
+    if (q.dataset.multi === "1") btn.classList.toggle("on")
+    else { q.querySelectorAll(".ask-opt").forEach(b => b.classList.toggle("on", b === btn)) }
+    // One simple question → send right away
+    if (card.querySelectorAll(".ask-q").length === 1 && q.dataset.multi !== "1") answerCard(card)
+  }
+  if (btn.dataset.act === "ask-send") answerCard(btn.closest(".ask-card"))
   if (btn.dataset.act === "copyMsg") {
     const i = +btn.dataset.index
     navigator.clipboard.writeText(currentChat()?.messages[i]?.content || "")
@@ -436,6 +463,36 @@ inner.addEventListener("click", e => {
   }
   if (btn.dataset.act === "retry") retryLast()
 })
+
+// ───────────────────────── Question cards ─────────────────────────
+function buildAskCard(json) {
+  const card = document.createElement("div")
+  let data
+  try { data = JSON.parse(json) } catch { card.className = "ask-wait"; card.textContent = "Preparing options…"; return card }
+  const questions = (Array.isArray(data) ? data : data.questions || [data]).filter(q => q && q.question && Array.isArray(q.options)).slice(0, 4)
+  card.className = "ask-card"
+  card.innerHTML = questions.map((q, qi) => `
+    <div class="ask-q" data-q="${qi}" data-multi="${q.multi ? 1 : 0}" data-text="${escapeHtml(q.question)}">
+      <p>${escapeHtml(q.question)}${q.multi ? "<small>Choose any</small>" : ""}</p>
+      <div class="ask-opts">${q.options.slice(0, 6).map(o =>
+        `<button class="ask-opt" data-act="opt" data-val="${escapeHtml(String(o))}">${escapeHtml(String(o))}</button>`).join("")}</div>
+    </div>`).join("") + `
+    <div class="ask-foot"><input placeholder="Or type your own answer" aria-label="Your own answer"><button class="btn dark" data-act="ask-send">Send</button></div>`
+  return card
+}
+
+function answerCard(card) {
+  const qs = [...card.querySelectorAll(".ask-q")]
+  const own = card.querySelector(".ask-foot input").value.trim()
+  const clean = v => v.replace(/\s*\(Recommended\)\s*$/i, "")
+  const lines = qs.map(q => {
+    const picked = [...q.querySelectorAll(".ask-opt.on")].map(b => clean(b.dataset.val))
+    return picked.length ? (qs.length > 1 ? `${q.dataset.text} → ${picked.join(", ")}` : picked.join(", ")) : ""
+  }).filter(Boolean)
+  if (own) lines.push(own)
+  if (!lines.length) return
+  send(lines.join("\n"))
+}
 
 // ───────────────────────── Files ─────────────────────────
 function downloadBlob(blob, name) {
@@ -466,6 +523,10 @@ function withLinkedFiles(html, content) {
     files[clean(src)] != null ? `<script${a}${b}>\n${files[clean(src)].replace(/<\/script/gi, "<\\/script")}\n<\/script>` : tag)
   return html
 }
+
+inner.addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.matches(".ask-foot input")) { e.preventDefault(); answerCard(e.target.closest(".ask-card")) }
+})
 
 // ───────────────────────── Live preview ─────────────────────────
 function openPreview(code) {
@@ -504,7 +565,8 @@ function renderAll() {
 
 function messageHtml(m, i, isLast) {
   if (m.role === "user") return `<div class="msg user"><div class="bubble">${escapeHtml(m.content)}</div></div>`
-  const body = m.error ? `<div class="error">${escapeHtml(m.error)}</div>` : renderMarkdown(m.content)
+  let body = m.error ? `<div class="error">${escapeHtml(m.error)}</div>` : renderMarkdown(m.content)
+  if (!isLast) body = body.replace(/class="ask-card"/g, 'class="ask-card answered"')
   const tools = `<div class="msg-tools">
       ${m.error ? "" : `<button data-act="copyMsg" data-index="${i}">Copy</button>`}
       ${isLast ? '<button data-act="retry">Retry</button>' : ""}</div>`

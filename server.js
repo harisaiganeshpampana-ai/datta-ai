@@ -13,15 +13,24 @@ const app = express()
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PORT = process.env.PORT || 3000
 const GROQ_API_KEY = process.env.GROQ_API_KEY
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 
-// Main model first; if it fails, the next one is tried.
-const MODELS = [
-  process.env.MAIN_MODEL || "openai/gpt-oss-120b",
-  process.env.BACKUP_MODEL || "llama-3.3-70b-versatile",
-]
+// Tried in order. Gemini writes longer, better apps; Groq is the fast backup.
+// Groq's free plan allows only ~8,000 tokens per minute, so its answers are kept short.
+const PROVIDERS = [
+  { name: "gemini", url: GEMINI_URL, key: GEMINI_API_KEY, model: process.env.GEMINI_MODEL || "gemini-3.8-flash", maxTokens: 32000 },
+  { name: "gemini", url: GEMINI_URL, key: GEMINI_API_KEY, model: "gemini-flash-latest", maxTokens: 32000 },
+  { name: "gemini", url: GEMINI_URL, key: GEMINI_API_KEY, model: "gemini-3.6-flash", maxTokens: 32000 },
+  { name: "groq", url: GROQ_URL, key: GROQ_API_KEY, model: process.env.GROQ_MODEL || "openai/gpt-oss-120b", maxTokens: 3000, small: true },
+  { name: "groq", url: GROQ_URL, key: GROQ_API_KEY, model: "llama-3.3-70b-versatile", maxTokens: 3000, small: true },
+].filter((p) => p.key)
+
 // Small fast model used only to pick out memories
-const MEMORY_MODEL = process.env.MEMORY_MODEL || "llama-3.1-8b-instant"
+const MEMORY_PROVIDER = GROQ_API_KEY
+  ? { url: GROQ_URL, key: GROQ_API_KEY, model: process.env.MEMORY_MODEL || "llama-3.1-8b-instant" }
+  : { url: GEMINI_URL, key: GEMINI_API_KEY, model: "gemini-3.5-flash-lite" }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Datta's instructions and knowledge
@@ -43,6 +52,26 @@ Many users are complete beginners with zero coding knowledge. Treat them like a 
 - For bigger projects (backend + frontend, Node/Express, React, Python, Flutter, etc.), give every file the project needs — including package.json / requirements.txt, .env.example and a short README — and show the folder structure first.
 - You can write any language or file type: HTML, CSS, JavaScript, TypeScript, React, Node.js, Python, Java, Kotlin, Dart/Flutter, C, C++, C#, Go, PHP, SQL, JSON, YAML, Markdown, shell scripts, config files, etc.
 - Never put real secret keys in code. Use environment variables (process.env.NAME) and tell the user where to paste the real value.
+
+# Make apps that look and work great
+Every app, game or website you build should feel like a real, polished product — never a bare demo.
+- Modern, clean design: a clear colour palette, good fonts (system fonts or Google Fonts), generous spacing, rounded corners, soft shadows, smooth hover and click feedback, subtle animations.
+- Fully responsive: works on phones first (touch controls, big tap targets, no horizontal scrolling) and looks great on desktop.
+- Complete features: everything the user asked for actually works, plus the obvious extras a real app has (e.g. a game has start screen, score, high score saved in localStorage, pause, restart, game-over screen; a to-do app has add, edit, delete, complete, filter, saving).
+- Real content, never "Lorem ipsum". No broken image links — use emoji, inline SVG, CSS shapes or gradients instead of external images.
+- Save the user's data/settings in localStorage when it makes sense.
+- Clean, well-organised code with short comments, so beginners can follow it.
+- Test the logic in your head before answering: no undefined variables, no missing elements, no console errors.
+
+# Asking the user questions
+If a request is genuinely unclear or big (e.g. "make me a website" without saying what it's for, or a choice that changes the whole build), ask before building. For small or clear requests, just build it — don't ask.
+When you ask, ALWAYS give clickable options using an options block, exactly like this (valid JSON, 1–3 questions, 2–4 options each, put the best choice first and add " (Recommended)" to it):
+\`\`\`options
+{"questions":[{"question":"What is the website for?","options":["My business (Recommended)","Personal portfolio","Online store","College project"]},{"question":"Which look do you like?","options":["Clean and minimal","Bold and colourful","Dark and modern"],"multi":false}]}
+\`\`\`
+- Write one short sentence before the block. Write nothing after it — wait for the answer.
+- Use "multi": true when several options can be picked together (e.g. features to include).
+- The user can also type their own answer, so don't add an "Other" option.
 
 # Changing something you already built
 When the user asks to change, add to, or fix something you made earlier in this chat (for example "add a settings option" after you built a snake game):
@@ -167,12 +196,33 @@ function trimConversation(incoming) {
   return kept
 }
 
-app.get("/health", (req, res) => res.json({ status: "ok", keySet: Boolean(GROQ_API_KEY) }))
+// Last few messages only, up to a character budget (for providers with small limits)
+function shortHistory(messages, maxChars) {
+  const kept = []
+  let total = 0
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const content = messages[i].content.slice(-maxChars)
+    total += content.length
+    if (total > maxChars && kept.length > 0) break
+    kept.unshift({ role: messages[i].role, content })
+  }
+  while (kept.length && kept[0].role !== "user") kept.shift()
+  return kept
+}
+
+app.get("/health", (req, res) =>
+  res.json({
+    status: "ok",
+    keySet: PROVIDERS.length > 0,
+    gemini: Boolean(GEMINI_API_KEY),
+    groq: Boolean(GROQ_API_KEY),
+  })
+)
 
 // ── Chat: receives the conversation, streams the answer back as plain text ──
 app.post("/api/chat", rateLimit, async (req, res) => {
-  if (!GROQ_API_KEY) {
-    return res.status(500).json({ error: "Server is missing GROQ_API_KEY. Add it in Render → Environment." })
+  if (PROVIDERS.length === 0) {
+    return res.status(500).json({ error: "Server has no AI key. Add GEMINI_API_KEY or GROQ_API_KEY in Render → Environment." })
   }
 
   const messages = trimConversation(req.body.messages)
@@ -193,29 +243,31 @@ app.post("/api/chat", rateLimit, async (req, res) => {
   const controller = new AbortController()
   res.on("close", () => controller.abort())
 
-  for (const model of MODELS) {
+  for (const p of PROVIDERS) {
     try {
-      const aiRes = await fetch(GROQ_URL, {
+      // Small providers get a shorter history so the request fits their limit
+      const history = p.small ? shortHistory(messages, 6000) : messages
+      const aiRes = await fetch(p.url, {
         method: "POST",
         signal: controller.signal,
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${GROQ_API_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${p.key}` },
         body: JSON.stringify({
-          model,
+          model: p.model,
           stream: true,
-          temperature: 0.6,
-          max_tokens: 16000,
-          messages: [{ role: "system", content: system }, ...messages],
+          temperature: 0.7,
+          max_tokens: p.maxTokens,
+          messages: [{ role: "system", content: system }, ...history],
         }),
       })
 
       if (!aiRes.ok) {
-        console.error("[AI error]", model, aiRes.status, (await aiRes.text()).slice(0, 300))
-        continue // try the backup model
+        console.error("[AI error]", p.name, p.model, aiRes.status, (await aiRes.text()).slice(0, 300))
+        continue // try the next model
       }
 
       res.setHeader("Content-Type", "text/plain; charset=utf-8")
       res.setHeader("Cache-Control", "no-cache")
-      res.setHeader("X-Model", model)
+      res.setHeader("X-Model", p.model)
 
       // Read Groq's stream and pass just the text to the browser
       const decoder = new TextDecoder()
@@ -239,7 +291,7 @@ app.post("/api/chat", rateLimit, async (req, res) => {
       return res.end()
     } catch (err) {
       if (controller.signal.aborted) return res.end()
-      console.error("[AI error]", model, err.message)
+      console.error("[AI error]", p.name, p.model, err.message)
       if (res.headersSent) return res.end()
     }
   }
@@ -262,18 +314,18 @@ Rules:
 Reply with JSON only: {"add": ["..."], "remove": ["..."]}`
 
 app.post("/api/memory", rateLimit, async (req, res) => {
-  if (!GROQ_API_KEY) return res.json({ add: [], remove: [] })
+  if (!MEMORY_PROVIDER.key) return res.json({ add: [], remove: [] })
   const existing = cleanMemories(req.body.memories)
   const user = String(req.body.user || "").slice(0, 4000)
   const assistant = String(req.body.assistant || "").slice(0, 1500)
   if (!user.trim()) return res.json({ add: [], remove: [] })
 
   try {
-    const aiRes = await fetch(GROQ_URL, {
+    const aiRes = await fetch(MEMORY_PROVIDER.url, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${GROQ_API_KEY}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${MEMORY_PROVIDER.key}` },
       body: JSON.stringify({
-        model: MEMORY_MODEL,
+        model: MEMORY_PROVIDER.model,
         temperature: 0,
         max_tokens: 400,
         response_format: { type: "json_object" },
@@ -303,5 +355,5 @@ app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.ht
 
 app.listen(PORT, () => {
   console.log(`Datta AI running at http://localhost:${PORT}`)
-  if (!GROQ_API_KEY) console.warn("⚠ GROQ_API_KEY is not set — chat will not work yet.")
+  console.log("AI models in order:", PROVIDERS.map((p) => p.model).join(" → ") || "NONE (add GEMINI_API_KEY or GROQ_API_KEY)")
 })
