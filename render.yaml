@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: datta-ai
+    name: datta-ai-server
     runtime: node
     plan: free
     buildCommand: npm install
