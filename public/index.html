@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Datta AI — Your AI Coding Assistant</title>
+<meta name="description" content="Datta AI is a free AI assistant that's great at coding. Write, fix and preview code instantly.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='16' fill='%23f97316'/><text x='50%25' y='56%25' font-size='38' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='middle'>D</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/highlight.min.js"></script>
+<style>
+  :root {
+    --bg: #0f0f10;
+    --panel: #161618;
+    --panel-2: #1e1e21;
+    --border: #2a2a2e;
+    --text: #ececee;
+    --muted: #9a9aa3;
+    --accent: #f97316;
+    --accent-soft: rgba(249, 115, 22, 0.14);
+    --user-bubble: #26262a;
+    --danger: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    overflow: hidden;
+  }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  .app { display: flex; height: 100dvh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 260px; flex-shrink: 0;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    transition: transform .25s ease;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 18px 16px 12px; font-weight: 700; font-size: 17px; }
+  .logo {
+    width: 30px; height: 30px; border-radius: 9px;
+    background: var(--accent); color: #fff;
+    display: grid; place-items: center; font-weight: 800;
+  }
+  .new-chat {
+    margin: 4px 12px 12px; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: 10px;
+    display: flex; align-items: center; gap: 8px; font-weight: 500;
+  }
+  .new-chat:hover { background: var(--panel-2); }
+  .chat-list { flex: 1; overflow-y: auto; padding: 0 8px 12px; }
+  .chat-list .label { font-size: 12px; color: var(--muted); padding: 10px 8px 6px; }
+  .chat-item {
+    display: flex; align-items: center; gap: 6px;
+    width: 100%; padding: 8px 10px; border-radius: 8px;
+    text-align: left; color: var(--muted); font-size: 14px;
+  }
+  .chat-item span { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .chat-item:hover, .chat-item.active { background: var(--panel-2); color: var(--text); }
+  .chat-item .del { opacity: 0; padding: 2px 6px; border-radius: 6px; color: var(--muted); }
+  .chat-item:hover .del { opacity: 1; }
+  .chat-item .del:hover { color: var(--danger); }
+  .sidebar-foot { padding: 12px 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+
+  /* ── Main chat ── */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .topbar {
+    display: none; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+  }
+  .icon-btn { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; }
+  .icon-btn:hover { background: var(--panel-2); }
+  .messages { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
+  .messages-inner { max-width: 780px; margin: 0 auto; padding: 28px 20px 12px; }
+
+  .welcome { text-align: center; padding-top: 12vh; }
+  .welcome .logo { width: 56px; height: 56px; border-radius: 16px; font-size: 28px; margin: 0 auto 18px; }
+  .welcome h1 { font-size: 30px; font-weight: 700; margin-bottom: 6px; }
+  .welcome p { color: var(--muted); margin-bottom: 28px; }
+  .suggestions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; }
+  .suggestion {
+    padding: 14px; border: 1px solid var(--border); border-radius: 12px;
+    background: var(--panel); font-size: 14px;
+  }
+  .suggestion:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .suggestion b { display: block; margin-bottom: 2px; }
+  .suggestion small { color: var(--muted); }
+
+  .msg { margin-bottom: 26px; }
+  .msg.user { display: flex; justify-content: flex-end; }
+  .msg.user .bubble {
+    background: var(--user-bubble); padding: 10px 16px; border-radius: 18px;
+    max-width: 85%; white-space: pre-wrap; word-wrap: break-word;
+  }
+  .msg.ai { display: flex; gap: 12px; }
+  .msg.ai .logo { width: 28px; height: 28px; font-size: 14px; flex-shrink: 0; margin-top: 2px; }
+  .msg.ai .content { flex: 1; min-width: 0; }
+  .content p { margin: 0 0 12px; }
+  .content h1, .content h2, .content h3 { margin: 18px 0 10px; line-height: 1.3; }
+  .content h1 { font-size: 22px; } .content h2 { font-size: 19px; } .content h3 { font-size: 16px; }
+  .content ul, .content ol { margin: 0 0 12px 22px; }
+  .content li { margin: 4px 0; }
+  .content a { color: var(--accent); }
+  .content blockquote { border-left: 3px solid var(--border); padding-left: 12px; color: var(--muted); margin: 0 0 12px; }
+  .content table { border-collapse: collapse; margin: 0 0 14px; display: block; overflow-x: auto; }
+  .content th, .content td { border: 1px solid var(--border); padding: 6px 12px; text-align: left; }
+  .content th { background: var(--panel-2); }
+  .content :not(pre) > code {
+    background: var(--panel-2); padding: 2px 6px; border-radius: 5px;
+    font-family: "JetBrains Mono", monospace; font-size: 13px;
+  }
+  .code-block { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 0 0 14px; background: #0d1117; }
+  .code-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 8px 6px 14px; background: var(--panel-2);
+    font-size: 12px; color: var(--muted);
+  }
+  .code-actions { display: flex; gap: 4px; }
+  .code-actions button { padding: 4px 10px; border-radius: 6px; font-size: 12px; }
+  .code-actions button:hover { background: var(--border); color: var(--text); }
+  .code-actions .run { color: var(--accent); font-weight: 600; }
+  .code-block pre { margin: 0; overflow-x: auto; }
+  .code-block code { font-family: "JetBrains Mono", monospace; font-size: 13px; line-height: 1.55; padding: 14px !important; display: block; background: transparent !important; }
+  .msg-tools { display: flex; gap: 4px; margin-top: 2px; }
+  .msg-tools button { font-size: 12px; color: var(--muted); padding: 4px 8px; border-radius: 6px; }
+  .msg-tools button:hover { background: var(--panel-2); color: var(--text); }
+  .error { color: var(--danger); background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.3); padding: 10px 14px; border-radius: 10px; }
+  .typing span { display: inline-block; width: 7px; height: 7px; margin-right: 4px; border-radius: 50%; background: var(--muted); animation: blink 1.2s infinite; }
+  .typing span:nth-child(2) { animation-delay: .2s; } .typing span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: .25 } 40% { opacity: 1 } }
+
+  /* ── Input box ── */
+  .composer-wrap { padding: 8px 20px calc(16px + env(safe-area-inset-bottom)); }
+  .composer {
+    max-width: 780px; margin: 0 auto;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 18px;
+    display: flex; align-items: flex-end; gap: 8px; padding: 10px 10px 10px 16px;
+  }
+  .composer:focus-within { border-color: #44444a; }
+  .composer textarea {
+    flex: 1; background: none; border: none; outline: none; resize: none;
+    color: var(--text); font: inherit; max-height: 200px; padding: 6px 0;
+  }
+  .send {
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+    background: var(--accent); color: #fff; display: grid; place-items: center;
+  }
+  .send:disabled { background: var(--border); color: var(--muted); cursor: default; }
+  .send.stop { background: var(--text); color: var(--bg); }
+  .hint { max-width: 780px; margin: 8px auto 0; text-align: center; font-size: 12px; color: var(--muted); }
+
+  /* ── Live preview panel ── */
+  .preview {
+    width: 0; flex-shrink: 0; background: var(--panel);
+    border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow: hidden;
+    transition: width .25s ease;
+  }
+  .preview.open { width: 46%; }
+  .preview-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px 10px 16px; border-bottom: 1px solid var(--border); font-weight: 600; white-space: nowrap;
+  }
+  .preview-head .tools { display: flex; gap: 4px; }
+  .preview-head button { padding: 6px 10px; border-radius: 8px; font-size: 13px; color: var(--muted); }
+  .preview-head button:hover { background: var(--panel-2); color: var(--text); }
+  .preview iframe { flex: 1; border: none; background: #fff; width: 100%; }
+
+  .overlay { display: none; }
+
+  /* ── Phones ── */
+  @media (max-width: 860px) {
+    .sidebar { position: fixed; inset: 0 auto 0 0; z-index: 30; transform: translateX(-100%); }
+    .sidebar.open { transform: none; }
+    .overlay.show { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 20; }
+    .topbar { display: flex; }
+    .preview { position: fixed; inset: 0; z-index: 40; width: 100% !important; transform: translateY(100%); transition: transform .25s ease; }
+    .preview.open { transform: none; }
+    .suggestions { grid-template-columns: 1fr; }
+    .welcome { padding-top: 6vh; }
+    .messages-inner { padding: 20px 16px 8px; }
+    .composer-wrap { padding: 8px 12px calc(12px + env(safe-area-inset-bottom)); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><div class="logo">D</div>Datta AI</div>
+    <button class="new-chat" id="newChat">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      New chat
+    </button>
+    <div class="chat-list" id="chatList"></div>
+    <div class="sidebar-foot">Made by LR AgroSense</div>
+  </aside>
+  <div class="overlay" id="overlay"></div>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="icon-btn" id="menuBtn" aria-label="Menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="brand" style="padding:0"><div class="logo">D</div>Datta AI</div>
+      <button class="icon-btn" id="newChatTop" aria-label="New chat">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>
+
+    <div class="messages" id="messages"><div class="messages-inner" id="messagesInner"></div></div>
+
+    <div class="composer-wrap">
+      <div class="composer">
+        <textarea id="input" rows="1" placeholder="Ask anything, or describe the app you want to build…"></textarea>
+        <button class="send" id="sendBtn" disabled aria-label="Send">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        </button>
+      </div>
+      <div class="hint">Datta AI can make mistakes. Check important code before using it.</div>
+    </div>
+  </main>
+
+  <section class="preview" id="preview">
+    <div class="preview-head">
+      <span>Live preview</span>
+      <div class="tools">
+        <button id="reloadPreview">Reload</button>
+        <button id="openTab">Open in new tab</button>
+        <button id="closePreview">Close</button>
+      </div>
+    </div>
+    <iframe id="frame" sandbox="allow-scripts allow-modals allow-forms allow-popups" title="Preview"></iframe>
+  </section>
+</div>
+
+<script>
+// ───────────────────────── Saved chats (stored in this browser) ─────────────────────────
+const STORE_KEY = "datta-chats-v2"
+let chats = loadChats()
+let currentId = null
+let streaming = null // AbortController while the AI is answering
+let previewCode = ""
+
+function loadChats() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || [] } catch { return [] }
+}
+function saveChats() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(chats.slice(0, 100))) } catch {}
+}
+function currentChat() { return chats.find(c => c.id === currentId) }
+
+// ───────────────────────── Page elements ─────────────────────────
+const $ = id => document.getElementById(id)
+const inner = $("messagesInner"), scroller = $("messages"), input = $("input"), sendBtn = $("sendBtn")
+
+const SEND_ICON = sendBtn.innerHTML
+const STOP_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>'
+
+const SUGGESTIONS = [
+  ["Build a to-do app", "with dark mode and saving", "Build a beautiful to-do list app in one HTML file with dark mode, and save tasks in the browser."],
+  ["Make a snake game", "playable in the browser", "Make a classic snake game in one HTML file with a score counter and smooth controls, including touch controls for phones."],
+  ["Fix my code", "find and explain bugs", "I'll paste some code. Find the bugs, explain them simply, and give me the fixed full code."],
+  ["Explain a concept", "in simple words", "Explain how APIs work in simple words with a real-life example."],
+]
+
+// ───────────────────────── Markdown + code blocks ─────────────────────────
+marked.setOptions({ gfm: true, breaks: true })
+const PREVIEWABLE = ["html", "svg", "xml"]
+
+function renderMarkdown(text) {
+  const html = DOMPurify.sanitize(marked.parse(text))
+  const box = document.createElement("div")
+  box.innerHTML = html
+  box.querySelectorAll("pre > code").forEach(code => {
+    const lang = (code.className.match(/language-([\w-]+)/) || [])[1] || ""
+    const raw = code.textContent
+    try {
+      if (lang && hljs.getLanguage(lang)) code.innerHTML = hljs.highlight(raw, { language: lang }).value
+      else code.innerHTML = hljs.highlightAuto(raw).value
+    } catch {}
+    const pre = code.parentElement
+    const wrap = document.createElement("div")
+    wrap.className = "code-block"
+    const canRun = PREVIEWABLE.includes(lang.toLowerCase()) || /^\s*<(!doctype|html|svg)/i.test(raw)
+    wrap.innerHTML = `<div class="code-head"><span>${lang || "code"}</span><div class="code-actions">
+      ${canRun ? '<button class="run" data-act="run">▶ Preview</button>' : ""}
+      <button data-act="copy">Copy</button></div></div>`
+    pre.replaceWith(wrap)
+    wrap.appendChild(pre)
+    wrap.dataset.code = raw
+  })
+  return box.innerHTML
+}
+
+// Copy / Preview buttons on code blocks
+inner.addEventListener("click", e => {
+  const btn = e.target.closest("button[data-act]")
+  if (!btn) return
+  const code = btn.closest(".code-block")?.dataset.code ?? ""
+  if (btn.dataset.act === "copy") {
+    navigator.clipboard.writeText(code).then(() => {
+      btn.textContent = "Copied!"
+      setTimeout(() => (btn.textContent = "Copy"), 1500)
+    })
+  }
+  if (btn.dataset.act === "run") openPreview(code)
+  if (btn.dataset.act === "copyMsg") {
+    const i = +btn.dataset.index
+    navigator.clipboard.writeText(currentChat()?.messages[i]?.content || "")
+    btn.textContent = "Copied!"
+    setTimeout(() => (btn.textContent = "Copy"), 1500)
+  }
+  if (btn.dataset.act === "retry") retryLast()
+})
+
+// ───────────────────────── Live preview ─────────────────────────
+function openPreview(code) {
+  previewCode = code
+  $("frame").srcdoc = code
+  $("preview").classList.add("open")
+}
+$("closePreview").onclick = () => $("preview").classList.remove("open")
+$("reloadPreview").onclick = () => { $("frame").srcdoc = ""; setTimeout(() => ($("frame").srcdoc = previewCode), 30) }
+$("openTab").onclick = () => {
+  const url = URL.createObjectURL(new Blob([previewCode], { type: "text/html" }))
+  window.open(url, "_blank")
+}
+
+// Find the last runnable code block in an answer (for auto-preview)
+function lastRunnableCode(text) {
+  const blocks = [...text.matchAll(/```(\w*)\n([\s\S]*?)```/g)]
+  for (let i = blocks.length - 1; i >= 0; i--) {
+    const [, lang, code] = blocks[i]
+    if (PREVIEWABLE.includes(lang.toLowerCase()) || /^\s*<(!doctype|html)/i.test(code)) return code
+  }
+  return null
+}
+
+// ───────────────────────── Drawing the chat ─────────────────────────
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]))
+}
+
+function renderAll() {
+  const chat = currentChat()
+  if (!chat || chat.messages.length === 0) return renderWelcome()
+  inner.innerHTML = chat.messages.map((m, i) => messageHtml(m, i, i === chat.messages.length - 1)).join("")
+  scrollDown(true)
+}
+
+function messageHtml(m, i, isLast) {
+  if (m.role === "user") return `<div class="msg user"><div class="bubble">${escapeHtml(m.content)}</div></div>`
+  const body = m.error ? `<div class="error">${escapeHtml(m.error)}</div>` : renderMarkdown(m.content)
+  const tools = `<div class="msg-tools">
+      ${m.error ? "" : `<button data-act="copyMsg" data-index="${i}">Copy</button>`}
+      ${isLast ? '<button data-act="retry">↻ Retry</button>' : ""}</div>`
+  return `<div class="msg ai"><div class="logo">D</div><div class="content">${body}${tools}</div></div>`
+}
+
+function renderWelcome() {
+  inner.innerHTML = `<div class="welcome">
+    <div class="logo">D</div>
+    <h1>What shall we build today?</h1>
+    <p>Ask me anything — I'm especially good at writing, fixing and previewing code.</p>
+    <div class="suggestions">${SUGGESTIONS.map((s, i) =>
+      `<button class="suggestion" data-s="${i}"><b>${s[0]}</b><small>${s[1]}</small></button>`).join("")}
+    </div></div>`
+  inner.querySelectorAll(".suggestion").forEach(b => b.onclick = () => send(SUGGESTIONS[b.dataset.s][2]))
+}
+
+function renderChatList() {
+  const list = $("chatList")
+  if (chats.length === 0) { list.innerHTML = ""; return }
+  list.innerHTML = '<div class="label">Recent</div>' + chats.map(c =>
+    `<button class="chat-item ${c.id === currentId ? "active" : ""}" data-id="${c.id}">
+      <span>${escapeHtml(c.title)}</span><b class="del" data-del="${c.id}" title="Delete">✕</b></button>`).join("")
+  list.querySelectorAll(".chat-item").forEach(item => item.onclick = e => {
+    const del = e.target.dataset.del
+    if (del) {
+      if (!confirm("Delete this chat?")) return
+      chats = chats.filter(c => c.id !== del)
+      saveChats()
+      if (del === currentId) newChat(); else renderChatList()
+      return
+    }
+    openChat(item.dataset.id)
+  })
+}
+
+function openChat(id) {
+  if (streaming) streaming.abort()
+  currentId = id
+  renderChatList(); renderAll(); closeSidebar()
+}
+
+function newChat() {
+  if (streaming) streaming.abort()
+  currentId = null
+  renderChatList(); renderWelcome(); closeSidebar()
+  $("preview").classList.remove("open")
+  input.focus()
+}
+
+function scrollDown(force) {
+  const nearBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 160
+  if (force || nearBottom) scroller.scrollTop = scroller.scrollHeight
+}
+
+// ───────────────────────── Sending a message ─────────────────────────
+async function send(text) {
+  text = (text ?? input.value).trim()
+  if (!text || streaming) return
+
+  let chat = currentChat()
+  if (!chat) {
+    chat = { id: Date.now().toString(36), title: text.slice(0, 40), messages: [] }
+    chats.unshift(chat)
+    currentId = chat.id
+  } else {
+    chats = [chat, ...chats.filter(c => c !== chat)] // move to top
+  }
+  chat.messages.push({ role: "user", content: text })
+  input.value = ""; autoGrow()
+  saveChats(); renderChatList(); renderAll()
+  await getAnswer(chat)
+}
+
+async function getAnswer(chat) {
+  const reply = { role: "assistant", content: "" }
+  chat.messages.push(reply)
+
+  // Show the "typing" dots
+  inner.insertAdjacentHTML("beforeend",
+    '<div class="msg ai" id="live"><div class="logo">D</div><div class="content"><div class="typing"><span></span><span></span><span></span></div></div></div>')
+  scrollDown(true)
+  const live = $("live").querySelector(".content")
+
+  streaming = new AbortController()
+  setSending(true)
+  let drawTimer = null
+  const draw = () => { live.innerHTML = renderMarkdown(reply.content); scrollDown(); drawTimer = null }
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: chat.messages.slice(0, -1).filter(m => !m.error) }),
+      signal: streaming.signal,
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new Error(data.error || "Something went wrong. Please try again.")
+    }
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      reply.content += decoder.decode(value, { stream: true })
+      if (!drawTimer) drawTimer = setTimeout(draw, 60)
+    }
+    if (!reply.content) throw new Error("The AI sent an empty answer. Please try again.")
+  } catch (err) {
+    if (err.name !== "AbortError") {
+      if (!reply.content) reply.error = err.message === "Failed to fetch" ? "Can't reach the server. Check your internet and try again." : err.message
+    }
+  } finally {
+    clearTimeout(drawTimer)
+    streaming = null
+    setSending(false)
+    if (!reply.content && !reply.error) chat.messages.pop() // stopped before any text
+    saveChats()
+    renderAll()
+    const code = reply.content && lastRunnableCode(reply.content)
+    if (code && window.innerWidth > 860) openPreview(code)
+  }
+}
+
+function retryLast() {
+  const chat = currentChat()
+  if (!chat || streaming) return
+  if (chat.messages.at(-1)?.role === "assistant") chat.messages.pop()
+  renderAll()
+  getAnswer(chat)
+}
+
+function setSending(on) {
+  sendBtn.classList.toggle("stop", on)
+  sendBtn.innerHTML = on ? STOP_ICON : SEND_ICON
+  sendBtn.disabled = !on && !input.value.trim()
+  sendBtn.setAttribute("aria-label", on ? "Stop" : "Send")
+}
+
+// ───────────────────────── Input box behaviour ─────────────────────────
+function autoGrow() {
+  input.style.height = "auto"
+  input.style.height = Math.min(input.scrollHeight, 200) + "px"
+  if (!streaming) sendBtn.disabled = !input.value.trim()
+}
+input.addEventListener("input", autoGrow)
+input.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey && window.innerWidth > 860) { e.preventDefault(); send() }
+})
+sendBtn.onclick = () => streaming ? streaming.abort() : send()
+
+// ───────────────────────── Sidebar (phones) ─────────────────────────
+function closeSidebar() { $("sidebar").classList.remove("open"); $("overlay").classList.remove("show") }
+$("menuBtn").onclick = () => { $("sidebar").classList.add("open"); $("overlay").classList.add("show") }
+$("overlay").onclick = closeSidebar
+$("newChat").onclick = newChat
+$("newChatTop").onclick = newChat
+
+// ───────────────────────── Start ─────────────────────────
+renderChatList()
+renderWelcome()
+input.focus()
+</script>
+</body>
+</html>

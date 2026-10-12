@@ -1,9 +1,0 @@
-User-agent: *
-Allow: /
-
-# Block private pages
-Disallow: /admin.html
-Disallow: /settings.html
-
-# Sitemap
-Sitemap: https://datta-ai.com/sitemap.xml
