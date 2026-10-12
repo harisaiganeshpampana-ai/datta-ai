@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Settings — Datta AI</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='32' fill='%230d0d0d'/><path d='M24 20h8c7 0 12 5 12 12s-5 12-12 12h-8z' fill='none' stroke='white' stroke-width='5' stroke-linejoin='round'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='16' fill='%230d0d0d'/><path fill='white' fill-rule='evenodd' d='M20 15h12c10.5 0 18 7 18 17s-7.5 17-18 17H20z M28.5 23v18H32c5.6 0 9.5-3.8 9.5-9s-3.9-9-9.5-9z'/></svg>">
 <script>
   // Apply saved theme and text size before the page paints (no flash)
   (function () { try { var s = JSON.parse(localStorage.getItem("datta-settings-v1")) || {}
@@ -92,15 +92,23 @@
     .seg { align-self: flex-start; }
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  /* Brand / logo: D badge + Datta AI wordmark + blue full stop (sibling of LR AgriPrep) */
+  .brand { display: inline-flex; align-items: center; gap: 8px; color: var(--text); line-height: 1; text-decoration: none; user-select: none; }
+  .logo-badge { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--text); color: var(--bg); font-weight: 800; font-size: 14px; letter-spacing: -.02em; flex: none; }
+  .logo-word { font-weight: 700; font-size: 19px; letter-spacing: -.03em; }
+  .logo-dot { color: #2563eb; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .logo-dot { color: #60a5fa; } }
+  :root[data-theme="dark"] .logo-dot { color: #60a5fa; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top">
+  <div class="top" style="justify-content:space-between">
     <a class="back" href="/chat">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
       Back to chat
     </a>
+    <a class="brand" href="/" aria-label="Datta AI home"><span class="logo-badge">D</span><span class="logo-word">Datta AI<span class="logo-dot">.</span></span></a>
   </div>
   <h1>Settings</h1>
   <p class="lead" id="lead">Changes save automatically.</p>

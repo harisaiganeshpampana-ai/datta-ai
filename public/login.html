@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Log in — Datta AI</title>
 <meta name="description" content="Log in to Datta AI to keep your chats, memory and settings on every device.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='32' fill='%230d0d0d'/><path d='M24 20h8c7 0 12 5 12 12s-5 12-12 12h-8z' fill='none' stroke='white' stroke-width='5' stroke-linejoin='round'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='16' fill='%230d0d0d'/><path fill='white' fill-rule='evenodd' d='M20 15h12c10.5 0 18 7 18 17s-7.5 17-18 17H20z M28.5 23v18H32c5.6 0 9.5-3.8 9.5-9s-3.9-9-9.5-9z'/></svg>">
 <script>
   (function () { try { var s = JSON.parse(localStorage.getItem("datta-settings-v1")) || {}
     if (s.theme && s.theme !== "system") document.documentElement.dataset.theme = s.theme } catch (e) {} })()
@@ -34,8 +34,6 @@
 
   .page { min-height: 100%; display: flex; flex-direction: column; }
   header { padding: 18px 22px; }
-  .brand { display: inline-flex; align-items: center; gap: 9px; font-weight: 600; font-size: 16px; text-decoration: none; }
-  .brand svg { width: 26px; height: 26px; }
   main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px 20px 60px; }
   .card { width: 100%; max-width: 380px; }
   h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.015em; text-align: center; margin-bottom: 6px; }
@@ -66,15 +64,19 @@
   .why { margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--border); font-size: 13px; color: var(--faint); text-align: center; }
   .notice { background: var(--surface); border-radius: 12px; padding: 12px 14px; font-size: 14px; color: var(--muted); text-align: center; margin-bottom: 18px; display: none; }
   .notice.show { display: block; }
+  /* Brand / logo: D badge + Datta AI wordmark + blue full stop (sibling of LR AgriPrep) */
+  .brand { display: inline-flex; align-items: center; gap: 8px; color: var(--text); line-height: 1; text-decoration: none; user-select: none; }
+  .logo-badge { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--text); color: var(--bg); font-weight: 800; font-size: 14px; letter-spacing: -.02em; flex: none; }
+  .logo-word { font-weight: 700; font-size: 19px; letter-spacing: -.03em; }
+  .logo-dot { color: #2563eb; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .logo-dot { color: #60a5fa; } }
+  :root[data-theme="dark"] .logo-dot { color: #60a5fa; }
 </style>
 </head>
 <body>
 <div class="page">
   <header>
-    <a class="brand" href="/">
-      <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" stroke-width="4"/><path d="M24 20h8c7 0 12 5 12 12s-5 12-12 12h-8z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg>
-      Datta AI
-    </a>
+    <a class="brand" href="/" aria-label="Datta AI home"><span class="logo-badge">D</span><span class="logo-word">Datta AI<span class="logo-dot">.</span></span></a>
   </header>
   <main>
     <div class="card">

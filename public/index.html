@@ -8,7 +8,7 @@
 <meta property="og:title" content="Datta AI — AI assistant for code, study and everyday work">
 <meta property="og:description" content="Describe an app and watch it run. Upload files and photos. Talk with Datta in your language.">
 <meta property="og:type" content="website">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='32' fill='%230d0d0d'/><path d='M24 20h8c7 0 12 5 12 12s-5 12-12 12h-8z' fill='none' stroke='white' stroke-width='5' stroke-linejoin='round'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='16' fill='%230d0d0d'/><path fill='white' fill-rule='evenodd' d='M20 15h12c10.5 0 18 7 18 17s-7.5 17-18 17H20z M28.5 23v18H32c5.6 0 9.5-3.8 9.5-9s-3.9-9-9.5-9z'/></svg>">
 <script>
   // Logged-in users go straight to their chats
   try { if (JSON.parse(localStorage.getItem("datta-auth-v1"))?.token) location.replace("/chat") } catch (e) {}
@@ -48,8 +48,6 @@
   nav { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid transparent; }
   nav.scrolled { border-bottom-color: var(--border); }
   .nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
-  .brand { display: inline-flex; align-items: center; gap: 9px; font-weight: 600; font-size: 17px; text-decoration: none; }
-  .brand svg { width: 28px; height: 28px; }
   .links { display: flex; gap: 28px; font-size: 15px; color: var(--muted); }
   .links a { text-decoration: none; }
   .links a:hover { color: var(--text); }
@@ -169,15 +167,19 @@
     .nav-cta .btn.login { display: none; }
     .lang-row { font-size: 19px; }
   }
+  /* Brand / logo: D badge + Datta AI wordmark + blue full stop (sibling of LR AgriPrep) */
+  .brand { display: inline-flex; align-items: center; gap: 8px; color: var(--text); line-height: 1; text-decoration: none; user-select: none; }
+  .logo-badge { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--text); color: var(--bg); font-weight: 800; font-size: 14px; letter-spacing: -.02em; flex: none; }
+  .logo-word { font-weight: 700; font-size: 19px; letter-spacing: -.03em; }
+  .logo-dot { color: #2563eb; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .logo-dot { color: #60a5fa; } }
+  :root[data-theme="dark"] .logo-dot { color: #60a5fa; }
 </style>
 </head>
 <body>
 <nav id="nav">
   <div class="wrap nav">
-    <a class="brand" href="/">
-      <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" stroke-width="4"/><path d="M24 20h8c7 0 12 5 12 12s-5 12-12 12h-8z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg>
-      Datta AI
-    </a>
+    <a class="brand" href="/" aria-label="Datta AI home"><span class="logo-badge">D</span><span class="logo-word">Datta AI<span class="logo-dot">.</span></span></a>
     <div class="links"><a href="#features">Features</a><a href="#launch">Launch your site</a><a href="#faq">FAQ</a></div>
     <div class="nav-cta">
       <a class="btn login" href="/login">Log in</a>
@@ -203,7 +205,7 @@
     <div class="shot-bar"><i></i><i></i><i></i><span>datta-ai.com/chat</span></div>
     <div class="shot-body">
       <div class="s-side">
-        <b><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" stroke-width="4"/><path d="M24 20h8c7 0 12 5 12 12s-5 12-12 12h-8z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg>Datta AI</b>
+        <b><span class="logo-badge" style="width:20px;height:20px;font-size:11px;border-radius:6px">D</span><span>Datta AI<span class="logo-dot">.</span></span></b>
         <small>Your chats</small>
         <div class="on">Snake game with settings</div>
         <div>Put my site on Render</div>
@@ -214,7 +216,7 @@
       <div class="s-chat">
         <div class="s-user">Make a snake game. Add a settings menu for speed.</div>
         <div class="s-ai">
-          <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" stroke-width="4"/><path d="M24 20h8c7 0 12 5 12 12s-5 12-12 12h-8z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg>
+          <span class="logo-badge" style="width:20px;height:20px;font-size:11px;border-radius:6px">D</span>
           <div style="flex:1;min-width:0">
             <p style="margin-bottom:9px">Here's your game. Speed, grid size and sound are in Settings, and your high score is saved.</p>
             <div class="s-code">

@@ -6,7 +6,7 @@
 <title>Datta AI</title>
 <meta name="description" content="Datta AI is a free AI assistant that's great at coding. Describe an app, get the code, and watch it run instantly.">
 
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='32' fill='%230d0d0d'/><path d='M24 20h8c7 0 12 5 12 12s-5 12-12 12h-8z' fill='none' stroke='white' stroke-width='5' stroke-linejoin='round'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='16' fill='%230d0d0d'/><path fill='white' fill-rule='evenodd' d='M20 15h12c10.5 0 18 7 18 17s-7.5 17-18 17H20z M28.5 23v18H32c5.6 0 9.5-3.8 9.5-9s-3.9-9-9.5-9z'/></svg>">
 <script>
   // Apply saved theme and text size before the page paints (no flash)
   (function () { try { var s = JSON.parse(localStorage.getItem("datta-settings-v1")) || {}
@@ -77,7 +77,6 @@
   .app { display: flex; height: 100dvh; }
 
   .mark { width: 26px; height: 26px; flex-shrink: 0; color: var(--text); }
-  .brand { display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 16px; }
 
   /* Sidebar */
   .sidebar { width: 260px; flex-shrink: 0; background: var(--sidebar); display: flex; flex-direction: column; transition: margin-left .22s ease, transform .25s ease; }
@@ -136,7 +135,7 @@
   .msg.user { display: flex; justify-content: flex-end; }
   .msg.user .bubble { background: var(--surface); padding: 10px 18px; border-radius: 20px; max-width: 75%; white-space: pre-wrap; word-wrap: break-word; }
   .msg.ai { display: flex; gap: 14px; }
-  .msg.ai .mark { margin-top: 2px; }
+  .msg.ai .ai-av { margin-top: 1px; width: 26px; height: 26px; font-size: 13px; border-radius: 7px; }
   .msg.ai .content { flex: 1; min-width: 0; }
   .content p { margin: 0 0 12px; }
   .content h1, .content h2, .content h3 { margin: 20px 0 10px; line-height: 1.3; font-weight: 600; }
@@ -297,21 +296,21 @@
     .composer-wrap { padding: 8px 12px calc(10px + env(safe-area-inset-bottom)); }
     .msg-files img { width: 110px; height: 110px; }
   }
+  /* Brand / logo: D badge + Datta AI wordmark + blue full stop (sibling of LR AgriPrep) */
+  .brand { display: inline-flex; align-items: center; gap: 8px; color: var(--text); line-height: 1; text-decoration: none; user-select: none; }
+  .logo-badge { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--text); color: var(--bg); font-weight: 800; font-size: 14px; letter-spacing: -.02em; flex: none; }
+  .logo-word { font-weight: 700; font-size: 19px; letter-spacing: -.03em; }
+  .logo-dot { color: #2563eb; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .logo-dot { color: #60a5fa; } }
+  :root[data-theme="dark"] .logo-dot { color: #60a5fa; }
 </style>
 </head>
 <body>
-<!-- Brand mark, reused everywhere with <use href="#mark"> -->
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="mark" viewBox="0 0 64 64">
-    <circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" stroke-width="4"/>
-    <path d="M24 20h8c7 0 12 5 12 12s-5 12-12 12h-8z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/>
-  </symbol>
-</svg>
 
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <div class="side-head">
-      <a class="brand" href="/"><svg class="mark"><use href="#mark"/></svg>Datta AI</a>
+      <a class="brand" href="/"><span class="logo-badge">D</span><span class="logo-word">Datta AI<span class="logo-dot">.</span></span></a>
       <button class="icon-btn" id="closeSide" aria-label="Close sidebar" title="Close sidebar">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>
       </button>
@@ -347,7 +346,7 @@
       <button class="icon-btn" id="menuBtn" aria-label="Open chats">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
-      <div class="brand"><svg class="mark"><use href="#mark"/></svg>Datta AI</div>
+      <a class="brand" href="/"><span class="logo-badge">D</span><span class="logo-word">Datta AI<span class="logo-dot">.</span></span></a>
       <button class="icon-btn" id="newChatTop" aria-label="New chat">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
       </button>
@@ -536,7 +535,7 @@ fetch(API_BASE + "/health").catch(() => {})
 // ───────────────────────── Page elements ─────────────────────────
 const $ = id => document.getElementById(id)
 const inner = $("messagesInner"), scroller = $("messages"), input = $("input"), sendBtn = $("sendBtn")
-const MARK = '<svg class="mark"><use href="#mark"/></svg>'
+const MARK = '<span class="logo-badge ai-av" aria-hidden="true">D</span>'
 
 const SEND_ICON = sendBtn.innerHTML
 const STOP_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>'
