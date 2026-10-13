@@ -21,13 +21,34 @@ const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat
 
 // Tried in order. Gemini writes longer, better apps; Groq is the fast backup.
 // Groq's free plan allows only ~8,000 tokens per minute, so its answers are kept short.
-const PROVIDERS = [
-  { name: "gemini", url: GEMINI_URL, key: GEMINI_API_KEY, model: process.env.GEMINI_MODEL || "gemini-3.8-flash", maxTokens: 32000, vision: true },
-  { name: "gemini", url: GEMINI_URL, key: GEMINI_API_KEY, model: "gemini-flash-latest", maxTokens: 32000, vision: true },
-  { name: "gemini", url: GEMINI_URL, key: GEMINI_API_KEY, model: "gemini-3.6-flash", maxTokens: 32000, vision: true },
-  { name: "groq", url: GROQ_URL, key: GROQ_API_KEY, model: process.env.GROQ_MODEL || "openai/gpt-oss-120b", maxTokens: 3000, small: true },
-  { name: "groq", url: GROQ_URL, key: GROQ_API_KEY, model: "llama-3.3-70b-versatile", maxTokens: 3000, small: true },
-].filter((p) => p.key)
+const gemini = (model, extra = {}) => ({ name: "gemini", url: GEMINI_URL, key: GEMINI_API_KEY, model, maxTokens: 32000, vision: true, ...extra })
+const groq = (model) => ({ name: "groq", url: GROQ_URL, key: GROQ_API_KEY, model, maxTokens: 3000, small: true })
+
+// Datta's models — named after Indian poem forms, from short to long (like Haiku → Sonnet → Opus).
+// Each one tries its AI providers in order; if one fails, the next is used.
+const DATTA_MODELS = {
+  doha: {
+    name: "Datta Doha",
+    about: "Fastest, for quick answers",
+    plans: ["guest", "free", "plus", "pro", "max"],
+    chain: [gemini("gemini-3.5-flash-lite"), gemini("gemini-3.1-flash-lite"), groq("openai/gpt-oss-20b"), groq("llama-3.1-8b-instant")],
+  },
+  kavya: {
+    name: "Datta Kavya",
+    about: "Smart everyday model, great at code",
+    plans: ["guest", "free", "plus", "pro", "max"],
+    chain: [gemini(process.env.GEMINI_MODEL || "gemini-3.8-flash"), gemini("gemini-flash-latest"), gemini("gemini-3.6-flash"), groq(process.env.GROQ_MODEL || "openai/gpt-oss-120b"), groq("llama-3.3-70b-versatile")],
+  },
+  mahakavya: {
+    name: "Datta Mahakavya",
+    about: "Most powerful, for big projects and hard problems",
+    plans: ["pro", "max"],
+    chain: [gemini(process.env.GEMINI_PRO_MODEL || "gemini-3.1-pro-preview"), gemini("gemini-3.8-flash"), groq("openai/gpt-oss-120b")],
+  },
+}
+const DEFAULT_MODEL = "kavya"
+const providersFor = (id) => (DATTA_MODELS[id] || DATTA_MODELS[DEFAULT_MODEL]).chain.filter((p) => p.key)
+const PROVIDERS = providersFor(DEFAULT_MODEL)
 
 // ── Accounts & database (optional: chat works without them) ──
 const MONGO_URI = process.env.MONGO_URI
@@ -308,8 +329,15 @@ app.post("/api/chat", rateLimit, async (req, res) => {
     return res.status(429).json({ code: "LIMIT", plan: who.plan, error: limitMessage(who.plan, "uploads") })
   }
 
+  // Which Datta model, and is it included in this person's plan?
+  const modelId = DATTA_MODELS[req.body.model] ? req.body.model : DEFAULT_MODEL
+  const dattaModel = DATTA_MODELS[modelId]
+  if (!dattaModel.plans.includes(who.plan)) {
+    return res.status(403).json({ code: "MODEL", plan: who.plan, error: `${dattaModel.name} is included in the Pro and Max plans. Upgrade to use it, or switch to Datta Kavya.` })
+  }
+
   const memories = cleanMemories(req.body.memories)
-  let system = SYSTEM_PROMPT
+  let system = SYSTEM_PROMPT + `\n\nRight now you are running as ${dattaModel.name} (${dattaModel.about.toLowerCase()}). Datta's models are Datta Doha (fastest), Datta Kavya (everyday) and Datta Mahakavya (most powerful). If asked which model you are, say ${dattaModel.name}, made by LR AgroSense — never name the underlying AI provider.`
   if (memories.length) {
     system +=
       "\n\n# What you remember about this user (from earlier chats)\n" +
@@ -323,7 +351,7 @@ app.post("/api/chat", rateLimit, async (req, res) => {
   const controller = new AbortController()
   res.on("close", () => controller.abort())
 
-  for (const p of PROVIDERS) {
+  for (const p of providersFor(modelId)) {
     try {
       // Small providers get a shorter history so the request fits their limit
       const history = p.small ? shortHistory(messages, 6000) : messages
@@ -347,7 +375,7 @@ app.post("/api/chat", rateLimit, async (req, res) => {
 
       res.setHeader("Content-Type", "text/plain; charset=utf-8")
       res.setHeader("Cache-Control", "no-cache")
-      res.setHeader("X-Model", p.model)
+      res.setHeader("X-Model", modelId)
       addUsage(who.key, uploads).catch(() => {})
 
       // Read Groq's stream and pass just the text to the browser
@@ -693,6 +721,7 @@ app.get("/api/plans", async (req, res) => {
   res.json({
     plans: Object.fromEntries(["free", ...PAID].map((k) => [k, PLANS[k]])),
     guest: PLANS.guest,
+    models: Object.entries(DATTA_MODELS).map(([id, m]) => ({ id, name: m.name, about: m.about, plans: m.plans })),
     paymentsEnabled: Boolean(RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET && dbReady),
     current: {
       plan: who.plan,
@@ -792,5 +821,6 @@ process.on("unhandledRejection", (err) => console.error("[unhandled]", err?.mess
 
 app.listen(PORT, () => {
   console.log(`Datta AI running at http://localhost:${PORT}`)
-  console.log("AI models in order:", PROVIDERS.map((p) => p.model).join(" → ") || "NONE (add GEMINI_API_KEY or GROQ_API_KEY)")
+  for (const [id, m] of Object.entries(DATTA_MODELS))
+    console.log(`${m.name}:`, providersFor(id).map((p) => p.model).join(" → ") || "NONE (add GEMINI_API_KEY or GROQ_API_KEY)")
 })

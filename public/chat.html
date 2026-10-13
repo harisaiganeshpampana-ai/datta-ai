@@ -178,6 +178,18 @@
   .round.rec { background: var(--danger); color: #fff; animation: pulse-ring 1.2s infinite; }
   @keyframes pulse-ring { 50% { box-shadow: 0 0 0 6px rgba(198, 40, 40, .2) } }
   .plus-wrap { position: relative; }
+  .model-wrap { position: relative; flex-shrink: 0; }
+  .model-btn { height: 36px; padding: 0 8px 0 12px; border-radius: 99px; display: flex; align-items: center; gap: 4px; font-size: 13.5px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+  .model-btn:hover { background: var(--hover); color: var(--text); }
+  .model-menu { position: absolute; bottom: 44px; right: 0; z-index: 15; width: 290px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 6px; box-shadow: 0 10px 30px rgba(0,0,0,.15); display: none; }
+  .model-menu.show { display: block; }
+  .model-opt { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; width: 100%; padding: 9px 10px; border-radius: 9px; text-align: left; }
+  .model-opt:hover { background: var(--hover); }
+  .model-opt b { display: block; font-size: 14px; font-weight: 600; }
+  .model-opt small { display: block; font-size: 12.5px; color: var(--faint); }
+  .model-opt .tick { width: 16px; height: 16px; }
+  .model-opt .lock { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--border); color: var(--muted); }
+  .model-opt.locked b { color: var(--muted); }
   .menu { position: absolute; bottom: 44px; left: 0; z-index: 15; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 6px; min-width: 200px; box-shadow: 0 10px 30px rgba(0,0,0,.15); display: none; }
   .menu.show { display: block; }
   .menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border-radius: 9px; font-size: 14px; text-align: left; }
@@ -299,6 +311,8 @@
     .messages-inner { padding: 20px 16px 8px; }
     .composer-wrap { padding: 8px 12px calc(10px + env(safe-area-inset-bottom)); }
     .msg-files img { width: 110px; height: 110px; }
+    .model-btn { padding: 0 4px 0 8px; font-size: 13px; }
+    .model-menu { right: -84px; width: min(290px, calc(100vw - 32px)); }
   }
   /* Brand / logo: D badge + Datta AI wordmark + blue full stop (sibling of LR AgriPrep) */
   .brand { display: inline-flex; align-items: center; gap: 8px; color: var(--text); line-height: 1; text-decoration: none; user-select: none; }
@@ -377,6 +391,11 @@
             </div>
           </div>
           <textarea id="input" rows="1" placeholder="Message Datta" aria-label="Message Datta"></textarea>
+          <div class="model-wrap">
+            <button class="model-btn" id="modelBtn" aria-haspopup="true" aria-label="Choose model"><span id="modelName">Kavya</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="model-menu" id="modelMenu" role="menu"></div>
+          </div>
           <button class="round" id="micBtn" aria-label="Speak your message" title="Speak your message">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5"/></svg>
           </button>
@@ -527,7 +546,7 @@ function applyTheme() {
 applyTheme()
 // If settings or memory change in another tab (e.g. the Settings page), pick them up
 window.addEventListener("storage", e => {
-  if (e.key === SET_KEY) { settings = loadSettings(); applyTheme() }
+  if (e.key === SET_KEY) { settings = loadSettings(); applyTheme(); renderModelPicker() }
   if (e.key === MEM_KEY) memory = loadMemory()
 })
 
@@ -1017,6 +1036,40 @@ $("voicePause").onclick = () => {
 }
 $("orb").onclick = () => { if (voiceOn) { voicePaused = false; $("voicePause").textContent = "Pause"; voiceRec?.abort(); voiceListen() } }
 
+// ───────────────────────── Model picker ─────────────────────────
+const MODELS = [
+  { id: "doha", name: "Datta Doha", short: "Doha", about: "Fastest, for quick answers", paid: false },
+  { id: "kavya", name: "Datta Kavya", short: "Kavya", about: "Smart everyday model, great at code", paid: false },
+  { id: "mahakavya", name: "Datta Mahakavya", short: "Mahakavya", about: "Most powerful, for big projects and hard problems", paid: true },
+]
+const myPlan = () => window.Account?.user?.plan || (window.Account?.isLoggedIn() ? "free" : "guest")
+const canUse = m => !m.paid || ["pro", "max"].includes(myPlan())
+function currentModel() {
+  const m = MODELS.find(x => x.id === settings.model) || MODELS[1]
+  return canUse(m) ? m : MODELS[1]
+}
+function renderModelPicker() {
+  const cur = currentModel()
+  $("modelName").textContent = cur.short
+  $("modelMenu").innerHTML = MODELS.map(m => `
+    <button class="model-opt${canUse(m) ? "" : " locked"}" data-model="${m.id}" role="menuitemradio" aria-checked="${m.id === cur.id}">
+      <span><b>${m.name}</b><small>${m.about}</small></span>
+      ${!canUse(m) ? '<span class="lock">Pro</span>' : m.id === cur.id ? '<svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12l5 5 9-10"/></svg>' : "<span></span>"}
+    </button>`).join("")
+  $("modelMenu").querySelectorAll("[data-model]").forEach(b => b.onclick = () => {
+    const m = MODELS.find(x => x.id === b.dataset.model)
+    $("modelMenu").classList.remove("show")
+    if (!canUse(m)) { location.href = "/pricing"; return }
+    settings.model = m.id
+    try { localStorage.setItem(SET_KEY, JSON.stringify(settings)) } catch {}
+    sync()
+    renderModelPicker()
+    toast(`Switched to ${m.name}`)
+  })
+}
+$("modelBtn").onclick = e => { e.stopPropagation(); $("plusMenu").classList.remove("show"); $("modelMenu").classList.toggle("show") }
+document.addEventListener("click", e => { if (!e.target.closest(".model-wrap")) $("modelMenu").classList.remove("show") })
+
 // ───────────────────────── Live preview ─────────────────────────
 function openPreview(code) {
   previewCode = code
@@ -1190,12 +1243,13 @@ async function getAnswer(chat, opts = {}) {
         memories: memory.on ? memory.items : [],
         settings: { name: settings.name, instructions: settings.instructions, language: settings.language },
         voice: Boolean(opts.voice),
+        model: currentModel().id,
       }),
       signal: streaming.signal,
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      if (data.code === "LIMIT") reply.limit = data.plan
+      if (data.code === "LIMIT" || data.code === "MODEL") reply.limit = data.plan
       throw new Error(data.error || "Datta couldn't answer that. Press Retry.")
     }
     const reader = res.body.getReader()
@@ -1278,7 +1332,7 @@ $("memForm").onsubmit = e => {
 }
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape") return
-  closeMemory(); closeCamera(); $("plusMenu").classList.remove("show"); $("acctMenu")?.classList.remove("show")
+  closeMemory(); closeCamera(); $("plusMenu").classList.remove("show"); $("modelMenu").classList.remove("show"); $("acctMenu")?.classList.remove("show")
   if (voiceOn) endVoiceMode()
 })
 
@@ -1334,7 +1388,7 @@ async function pullAccount() {
   try {
     const changed = await Account.pull()
     if (!changed || streaming) return
-    chats = loadChats(); memory = loadMemory(); settings = loadSettings(); applyTheme()
+    chats = loadChats(); memory = loadMemory(); settings = loadSettings(); applyTheme(); renderModelPicker()
     if (currentId && !currentChat()) currentId = null
     renderChatList(); renderAll()
   } catch (err) { console.warn("[sync]", err.message) }
@@ -1346,7 +1400,8 @@ renderChatList()
 renderWelcome()
 renderAccount()
 pullAccount()
-window.Account?.refreshUser().then(renderAccount).catch(() => {})
+renderModelPicker()
+window.Account?.refreshUser().then(() => { renderAccount(); renderModelPicker() }).catch(() => {})
 input.focus()
 if (new URLSearchParams(location.search).get("memory") === "1") { openMemory(); history.replaceState(null, "", "/chat") }
 </script>

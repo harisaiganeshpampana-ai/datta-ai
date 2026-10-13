@@ -132,6 +132,7 @@
   <section class="faq">
     <h2>Questions</h2>
     <details><summary>What counts as a message?</summary><p>Every time you send something to Datta — typed, spoken or a tapped option — that's one message. Limits reset every night at 12:00 AM (India time).</p></details>
+    <details><summary>What are Doha, Kavya and Mahakavya?</summary><p>Datta's three models, named after Indian poem forms from short to long. Doha is the fastest, Kavya is the smart everyday model and great at code, and Mahakavya is the most powerful — best for big projects and hard problems. Mahakavya is included in Pro and Max.</p></details>
     <details><summary>What are uploads?</summary><p>Each photo, camera picture or file (PDF, Word, code and so on) you attach counts as one upload.</p></details>
     <details><summary>Does my plan renew automatically?</summary><p>No. You pay once for a month or a year, and the plan simply ends after that. You'll never be charged without choosing to pay again.</p></details>
     <details><summary>Can I change plans?</summary><p>Yes. Buying the same plan again adds time to it. Buying a different plan switches you to it straight away, starting from today.</p></details>
@@ -153,9 +154,9 @@ document.getElementById("year").textContent = new Date().getFullYear()
 
 const ORDER = ["free", "plus", "pro", "max"]
 const COPY = {
-  free: { for: "Try Datta and use it for small daily tasks.", extras: ["Voice typing and voice mode", "Live preview of apps", "Memory across chats"] },
+  free: { for: "Try Datta and use it for small daily tasks.", extras: ["Datta Doha and Datta Kavya models", "Voice typing and voice mode", "Live preview of apps", "Memory across chats"] },
   plus: { for: "For students and everyday building.", extras: ["Everything in Free", "Longer, more complete answers"] },
-  pro: { for: "For people who build and study with Datta every day.", extras: ["Everything in Plus", "Room for big multi-file projects"], popular: true },
+  pro: { for: "For people who build and study with Datta every day.", extras: ["Everything in Plus", "Datta Mahakavya, our most powerful model", "Room for big multi-file projects"], popular: true },
   max: { for: "For heavy use, teams and businesses.", extras: ["Everything in Pro", "Priority email support"] },
 }
 let data = null
