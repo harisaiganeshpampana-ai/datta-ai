@@ -24,29 +24,29 @@ const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat
 const gemini = (model, extra = {}) => ({ name: "gemini", url: GEMINI_URL, key: GEMINI_API_KEY, model, maxTokens: 32000, vision: true, ...extra })
 const groq = (model) => ({ name: "groq", url: GROQ_URL, key: GROQ_API_KEY, model, maxTokens: 3000, small: true })
 
-// Datta's models — named after Indian poem forms, from short to long (like Haiku → Sonnet → Opus).
+// Datta's models, from fastest to most powerful: Swift → Core → Prime.
 // Each one tries its AI providers in order; if one fails, the next is used.
 const DATTA_MODELS = {
-  doha: {
-    name: "Datta Doha",
+  swift: {
+    name: "Datta Swift",
     about: "Fastest, for quick answers",
-    plans: ["guest", "free", "plus", "pro", "max"],
+    plans: ["guest", "free", "go", "plus", "ultra"],
     chain: [gemini("gemini-3.5-flash-lite"), gemini("gemini-3.1-flash-lite"), groq("openai/gpt-oss-20b"), groq("llama-3.1-8b-instant")],
   },
-  kavya: {
-    name: "Datta Kavya",
+  core: {
+    name: "Datta Core",
     about: "Smart everyday model, great at code",
-    plans: ["guest", "free", "plus", "pro", "max"],
+    plans: ["guest", "free", "go", "plus", "ultra"],
     chain: [gemini(process.env.GEMINI_MODEL || "gemini-3.8-flash"), gemini("gemini-flash-latest"), gemini("gemini-3.6-flash"), groq(process.env.GROQ_MODEL || "openai/gpt-oss-120b"), groq("llama-3.3-70b-versatile")],
   },
-  mahakavya: {
-    name: "Datta Mahakavya",
+  prime: {
+    name: "Datta Prime",
     about: "Most powerful, for big projects and hard problems",
-    plans: ["pro", "max"],
+    plans: ["plus", "ultra"],
     chain: [gemini(process.env.GEMINI_PRO_MODEL || "gemini-3.1-pro-preview"), gemini("gemini-3.8-flash"), groq("openai/gpt-oss-120b")],
   },
 }
-const DEFAULT_MODEL = "kavya"
+const DEFAULT_MODEL = "core"
 const providersFor = (id) => (DATTA_MODELS[id] || DATTA_MODELS[DEFAULT_MODEL]).chain.filter((p) => p.key)
 const PROVIDERS = providersFor(DEFAULT_MODEL)
 
@@ -59,11 +59,11 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ""
 const PLANS = {
   guest: { name: "Guest", monthly: 0, yearly: 0, messages: 10, uploads: 2 },
   free: { name: "Free", monthly: 0, yearly: 0, messages: 25, uploads: 5 },
-  plus: { name: "Plus", monthly: 399, yearly: 3990, messages: 300, uploads: 50 },
-  pro: { name: "Pro", monthly: 699, yearly: 6990, messages: 1000, uploads: 200 },
-  max: { name: "Max", monthly: 1899, yearly: 18990, messages: 3000, uploads: 1000 },
+  go: { name: "Go", monthly: 399, yearly: 3990, messages: 300, uploads: 50 },
+  plus: { name: "Plus", monthly: 699, yearly: 6990, messages: 1000, uploads: 200 },
+  ultra: { name: "Ultra", monthly: 1899, yearly: 18990, messages: 3000, uploads: 1000 },
 }
-const PAID = ["plus", "pro", "max"]
+const PAID = ["go", "plus", "ultra"]
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || ""
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || ""
 
@@ -333,11 +333,11 @@ app.post("/api/chat", rateLimit, async (req, res) => {
   const modelId = DATTA_MODELS[req.body.model] ? req.body.model : DEFAULT_MODEL
   const dattaModel = DATTA_MODELS[modelId]
   if (!dattaModel.plans.includes(who.plan)) {
-    return res.status(403).json({ code: "MODEL", plan: who.plan, error: `${dattaModel.name} is included in the Pro and Max plans. Upgrade to use it, or switch to Datta Kavya.` })
+    return res.status(403).json({ code: "MODEL", plan: who.plan, error: `${dattaModel.name} is included in the Plus and Ultra plans. Upgrade to use it, or switch to Datta Core.` })
   }
 
   const memories = cleanMemories(req.body.memories)
-  let system = SYSTEM_PROMPT + `\n\nRight now you are running as ${dattaModel.name} (${dattaModel.about.toLowerCase()}). Datta's models are Datta Doha (fastest), Datta Kavya (everyday) and Datta Mahakavya (most powerful). If asked which model you are, say ${dattaModel.name}, made by LR AgroSense — never name the underlying AI provider.`
+  let system = SYSTEM_PROMPT + `\n\nRight now you are running as ${dattaModel.name} (${dattaModel.about.toLowerCase()}). Datta's models are Datta Swift (fastest), Datta Core (everyday) and Datta Prime (most powerful). If asked which model you are, say ${dattaModel.name}, made by LR AgroSense — never name the underlying AI provider.`
   if (memories.length) {
     system +=
       "\n\n# What you remember about this user (from earlier chats)\n" +
@@ -599,7 +599,7 @@ function limitMessage(plan, what) {
   const l = PLANS[plan]
   const thing = what === "messages" ? `${l.messages} messages` : `${l.uploads} file and photo uploads`
   if (plan === "guest") return `You've used today's ${thing} as a guest. Log in for more free messages every day, or upgrade.`
-  if (plan === "max") return `You've reached today's limit of ${thing}. It resets at midnight.`
+  if (plan === "ultra") return `You've reached today's limit of ${thing}. It resets at midnight.`
   return `You've used all ${thing} on the ${l.name} plan today. Upgrade for more, or come back after midnight.`
 }
 const validEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e)

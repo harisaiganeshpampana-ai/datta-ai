@@ -392,7 +392,7 @@
           </div>
           <textarea id="input" rows="1" placeholder="Message Datta" aria-label="Message Datta"></textarea>
           <div class="model-wrap">
-            <button class="model-btn" id="modelBtn" aria-haspopup="true" aria-label="Choose model"><span id="modelName">Kavya</span>
+            <button class="model-btn" id="modelBtn" aria-haspopup="true" aria-label="Choose model"><span id="modelName">Core</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></button>
             <div class="model-menu" id="modelMenu" role="menu"></div>
           </div>
@@ -1038,12 +1038,12 @@ $("orb").onclick = () => { if (voiceOn) { voicePaused = false; $("voicePause").t
 
 // ───────────────────────── Model picker ─────────────────────────
 const MODELS = [
-  { id: "doha", name: "Datta Doha", short: "Doha", about: "Fastest, for quick answers", paid: false },
-  { id: "kavya", name: "Datta Kavya", short: "Kavya", about: "Smart everyday model, great at code", paid: false },
-  { id: "mahakavya", name: "Datta Mahakavya", short: "Mahakavya", about: "Most powerful, for big projects and hard problems", paid: true },
+  { id: "swift", name: "Datta Swift", short: "Swift", about: "Fastest, for quick answers", paid: false },
+  { id: "core", name: "Datta Core", short: "Core", about: "Smart everyday model, great at code", paid: false },
+  { id: "prime", name: "Datta Prime", short: "Prime", about: "Most powerful, for big projects and hard problems", paid: true },
 ]
 const myPlan = () => window.Account?.user?.plan || (window.Account?.isLoggedIn() ? "free" : "guest")
-const canUse = m => !m.paid || ["pro", "max"].includes(myPlan())
+const canUse = m => !m.paid || ["plus", "ultra"].includes(myPlan())
 function currentModel() {
   const m = MODELS.find(x => x.id === settings.model) || MODELS[1]
   return canUse(m) ? m : MODELS[1]
@@ -1054,7 +1054,7 @@ function renderModelPicker() {
   $("modelMenu").innerHTML = MODELS.map(m => `
     <button class="model-opt${canUse(m) ? "" : " locked"}" data-model="${m.id}" role="menuitemradio" aria-checked="${m.id === cur.id}">
       <span><b>${m.name}</b><small>${m.about}</small></span>
-      ${!canUse(m) ? '<span class="lock">Pro</span>' : m.id === cur.id ? '<svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12l5 5 9-10"/></svg>' : "<span></span>"}
+      ${!canUse(m) ? '<span class="lock">Plus</span>' : m.id === cur.id ? '<svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12l5 5 9-10"/></svg>' : "<span></span>"}
     </button>`).join("")
   $("modelMenu").querySelectorAll("[data-model]").forEach(b => b.onclick = () => {
     const m = MODELS.find(x => x.id === b.dataset.model)
@@ -1122,7 +1122,7 @@ function messageHtml(m, i, isLast) {
 
 function limitButtons(plan) {
   const login = plan === "guest" ? '<a class="btn" href="/login?mode=signup&next=/chat">Log in free</a>' : ""
-  return `<div class="limit-btns">${plan === "max" ? "" : '<a class="btn dark" href="/pricing">See plans</a>'}${login}</div>`
+  return `<div class="limit-btns">${plan === "ultra" ? "" : '<a class="btn dark" href="/pricing">See plans</a>'}${login}</div>`
 }
 
 function renderWelcome() {

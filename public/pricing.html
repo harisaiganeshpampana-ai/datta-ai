@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Plans — Datta AI</title>
-<meta name="description" content="Datta AI plans: start free, or upgrade to Plus, Pro or Max for more messages and uploads every day. Pay monthly or yearly with UPI, cards or net banking.">
+<meta name="description" content="Datta AI plans: start free, or upgrade to Go, Plus or Ultra for more messages and uploads every day. Pay monthly or yearly with UPI, cards or net banking.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
 <script>
   (function () { try { var s = JSON.parse(localStorage.getItem("datta-settings-v1")) || {}
@@ -132,7 +132,7 @@
   <section class="faq">
     <h2>Questions</h2>
     <details><summary>What counts as a message?</summary><p>Every time you send something to Datta — typed, spoken or a tapped option — that's one message. Limits reset every night at 12:00 AM (India time).</p></details>
-    <details><summary>What are Doha, Kavya and Mahakavya?</summary><p>Datta's three models, named after Indian poem forms from short to long. Doha is the fastest, Kavya is the smart everyday model and great at code, and Mahakavya is the most powerful — best for big projects and hard problems. Mahakavya is included in Pro and Max.</p></details>
+    <details><summary>What are Swift, Core and Prime?</summary><p>Datta's three models. Swift is the fastest, Core is the smart everyday model and great at code, and Prime is the most powerful — best for big projects and hard problems. Prime is included in Plus and Ultra.</p></details>
     <details><summary>What are uploads?</summary><p>Each photo, camera picture or file (PDF, Word, code and so on) you attach counts as one upload.</p></details>
     <details><summary>Does my plan renew automatically?</summary><p>No. You pay once for a month or a year, and the plan simply ends after that. You'll never be charged without choosing to pay again.</p></details>
     <details><summary>Can I change plans?</summary><p>Yes. Buying the same plan again adds time to it. Buying a different plan switches you to it straight away, starting from today.</p></details>
@@ -152,12 +152,12 @@
 const $ = id => document.getElementById(id)
 document.getElementById("year").textContent = new Date().getFullYear()
 
-const ORDER = ["free", "plus", "pro", "max"]
+const ORDER = ["free", "go", "plus", "ultra"]
 const COPY = {
-  free: { for: "Try Datta and use it for small daily tasks.", extras: ["Datta Doha and Datta Kavya models", "Voice typing and voice mode", "Live preview of apps", "Memory across chats"] },
-  plus: { for: "For students and everyday building.", extras: ["Everything in Free", "Longer, more complete answers"] },
-  pro: { for: "For people who build and study with Datta every day.", extras: ["Everything in Plus", "Datta Mahakavya, our most powerful model", "Room for big multi-file projects"], popular: true },
-  max: { for: "For heavy use, teams and businesses.", extras: ["Everything in Pro", "Priority email support"] },
+  free: { for: "Try Datta and use it for small daily tasks.", extras: ["Datta Swift and Datta Core models", "Voice typing and voice mode", "Live preview of apps", "Memory across chats"] },
+  go: { for: "For students and everyday building.", extras: ["Everything in Free", "Longer, more complete answers"] },
+  plus: { for: "For people who build and study with Datta every day.", extras: ["Everything in Go", "Datta Prime, our most powerful model", "Room for big multi-file projects"], popular: true },
+  ultra: { for: "For heavy use, teams and businesses.", extras: ["Everything in Plus", "Priority email support"] },
 }
 let data = null
 let cycle = "monthly"

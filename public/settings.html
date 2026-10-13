@@ -341,7 +341,7 @@ renderAccount()
 
 // ── Plan & usage ──
 Account.api("/api/plans").then(d => {
-  const c = d.current, names = { guest: "Guest", free: "Free", plus: "Plus", pro: "Pro", max: "Max" }
+  const c = d.current, names = { guest: "Guest", free: "Free", go: "Go", plus: "Plus", ultra: "Ultra" }
   $("planName").firstChild.textContent = names[c.plan] + " plan"
   $("planInfo").textContent = c.planUntil
     ? `Active until ${new Date(c.planUntil).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })} · billed ${c.billing}`
