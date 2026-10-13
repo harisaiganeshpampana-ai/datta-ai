@@ -118,6 +118,12 @@
     <div id="accountBox"></div>
   </section>
 
+  <section aria-labelledby="h-plan">
+    <h2 id="h-plan">Plan</h2>
+    <div class="row"><span class="label" id="planName">Loading…<small id="planInfo"></small></span><a class="btn" id="planBtn" href="/pricing">See plans</a></div>
+    <div class="row"><span class="label">Used today<small>Resets every night at 12:00 AM.</small></span><span id="planUsage" style="font-size:14px;color:var(--muted)"></span></div>
+  </section>
+
   <section aria-labelledby="h-personal">
     <h2 id="h-personal">Personalisation</h2>
     <div class="row stack">
@@ -332,6 +338,17 @@ function renderAccount() {
   }
 }
 renderAccount()
+
+// ── Plan & usage ──
+Account.api("/api/plans").then(d => {
+  const c = d.current, names = { guest: "Guest", free: "Free", plus: "Plus", pro: "Pro", max: "Max" }
+  $("planName").firstChild.textContent = names[c.plan] + " plan"
+  $("planInfo").textContent = c.planUntil
+    ? `Active until ${new Date(c.planUntil).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })} · billed ${c.billing}`
+    : c.plan === "guest" ? "Log in for more free messages every day." : "Upgrade for more messages and uploads."
+  $("planBtn").textContent = c.plan === "free" || c.plan === "guest" ? "Upgrade" : "Manage plan"
+  $("planUsage").textContent = `${c.usage.messages} / ${c.limits.messages} messages · ${c.usage.uploads} / ${c.limits.uploads} uploads`
+}).catch(() => { $("planName").firstChild.textContent = "Plan"; $("planInfo").textContent = "Couldn't load your plan right now." })
 </script>
 </body>
 </html>

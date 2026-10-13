@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Plans — Datta AI</title>
+<meta name="description" content="Datta AI plans: start free, or upgrade to Plus, Pro or Max for more messages and uploads every day. Pay monthly or yearly with UPI, cards or net banking.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
+<script>
+  (function () { try { var s = JSON.parse(localStorage.getItem("datta-settings-v1")) || {}
+    if (s.theme && s.theme !== "system") document.documentElement.dataset.theme = s.theme } catch (e) {} })()
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff; --soft: #f7f7f7; --surface: #f0f0f0; --hover: #ececec; --border: #e5e5e5;
+    --text: #0d0d0d; --muted: #5f5f5f; --faint: #9b9b9b;
+    --btn: #0d0d0d; --btn-text: #ffffff; --danger: #c62828; --good: #15803d;
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #171717; --soft: #1e1e1e; --surface: #2a2a2a; --hover: #2a2a2a; --border: #323232; --text: #ececec; --muted: #a8a8a8; --faint: #7a7a7a; --btn: #ececec; --btn-text: #0d0d0d; --danger: #ff8a80; --good: #4ade80; }
+  }
+  :root[data-theme="dark"] { --bg: #171717; --soft: #1e1e1e; --surface: #2a2a2a; --hover: #2a2a2a; --border: #323232; --text: #ececec; --muted: #a8a8a8; --faint: #7a7a7a; --btn: #ececec; --btn-text: #0d0d0d; --danger: #ff8a80; --good: #4ade80; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15.5px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--text); outline-offset: 2px; border-radius: 6px; }
+
+  /* Brand / logo */
+  .brand { display: inline-flex; align-items: center; gap: 8px; color: var(--text); line-height: 1; text-decoration: none; user-select: none; }
+  .logo-badge { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--text); color: var(--bg); font-weight: 800; font-size: 14px; letter-spacing: -.02em; flex: none; }
+  .logo-word { font-weight: 700; font-size: 19px; letter-spacing: -.03em; }
+  .logo-dot { color: #2563eb; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .logo-dot { color: #60a5fa; } }
+  :root[data-theme="dark"] .logo-dot { color: #60a5fa; }
+
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+  header .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .top-links { display: flex; gap: 8px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 18px; border-radius: 99px; font-weight: 500; font-size: 14.5px; text-decoration: none; border: 1px solid var(--border); white-space: nowrap; }
+  .btn:hover { background: var(--hover); }
+  .btn.dark { background: var(--btn); color: var(--btn-text); border-color: var(--btn); }
+  .btn.dark:hover { opacity: .88; background: var(--btn); }
+  .btn:disabled { opacity: .5; cursor: default; }
+
+  .head { text-align: center; padding: 48px 0 28px; }
+  h1 { font-size: clamp(32px, 5vw, 48px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.08; }
+  .head p { color: var(--muted); font-size: 18px; margin-top: 12px; }
+
+  .cycle { display: inline-flex; background: var(--surface); border-radius: 99px; padding: 4px; margin-top: 26px; }
+  .cycle button { padding: 8px 18px; border-radius: 99px; font-size: 14.5px; font-weight: 500; color: var(--muted); }
+  .cycle button.on { background: var(--bg); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.14); }
+  .cycle small { font-weight: 600; color: var(--good); margin-left: 4px; }
+
+  .notice { max-width: 640px; margin: 0 auto 22px; background: var(--surface); border-radius: 12px; padding: 12px 16px; text-align: center; font-size: 14.5px; color: var(--muted); display: none; }
+  .notice.show { display: block; }
+  .notice.good { color: var(--good); }
+  .notice.bad { color: var(--danger); }
+
+  .plans { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding-bottom: 20px; }
+  .plan { border: 1px solid var(--border); border-radius: 18px; padding: 24px 22px; display: flex; flex-direction: column; position: relative; background: var(--bg); }
+  .plan.popular { border: 2px solid var(--text); padding: 23px 21px; }
+  .tag { position: absolute; top: -12px; left: 20px; background: var(--btn); color: var(--btn-text); font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 99px; }
+  .plan h2 { font-size: 20px; font-weight: 600; }
+  .plan .for { color: var(--muted); font-size: 14px; min-height: 42px; margin-top: 4px; }
+  .price { margin: 18px 0 4px; display: flex; align-items: baseline; gap: 4px; }
+  .price b { font-size: 38px; font-weight: 700; letter-spacing: -0.03em; }
+  .price span { color: var(--muted); font-size: 14px; }
+  .per { font-size: 13px; color: var(--faint); min-height: 20px; }
+  .plan .btn { margin: 20px 0 22px; width: 100%; padding: 11px; }
+  .plan ul { list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 14.5px; }
+  .plan li { display: grid; grid-template-columns: 18px 1fr; gap: 10px; }
+  .plan li::before { content: ""; width: 14px; height: 8px; border-left: 2px solid var(--text); border-bottom: 2px solid var(--text); transform: rotate(-45deg); margin-top: 5px; }
+  .current { font-size: 13px; color: var(--good); font-weight: 600; text-align: center; margin: -12px 0 14px; min-height: 18px; }
+
+  .usage { max-width: 640px; margin: 10px auto 0; text-align: center; font-size: 14px; color: var(--faint); }
+  .pay-note { text-align: center; color: var(--faint); font-size: 13.5px; margin: 26px 0 0; }
+
+  .faq { max-width: 760px; margin: 0 auto; padding: 64px 0 80px; }
+  .faq h2 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 18px; }
+  details { border-top: 1px solid var(--border); }
+  details:last-of-type { border-bottom: 1px solid var(--border); }
+  summary { list-style: none; cursor: pointer; padding: 18px 0; font-weight: 600; display: flex; justify-content: space-between; gap: 16px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; font-weight: 400; font-size: 20px; line-height: 1; color: var(--muted); transition: transform .2s; }
+  details[open] summary::after { transform: rotate(45deg); }
+  details p { color: var(--muted); padding: 0 0 18px; max-width: 64ch; }
+
+  footer { border-top: 1px solid var(--border); padding: 26px 0 36px; font-size: 14px; color: var(--faint); }
+  footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  footer a { text-decoration: none; } footer a:hover { color: var(--text); }
+
+  @media (max-width: 1000px) { .plans { grid-template-columns: 1fr 1fr; row-gap: 26px; } }
+  @media (max-width: 600px) {
+    .plans { grid-template-columns: 1fr; }
+    .plan .for { min-height: 0; }
+    .top-links .btn.login { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="Datta AI home"><span class="logo-badge">D</span><span class="logo-word">Datta AI<span class="logo-dot">.</span></span></a>
+    <div class="top-links" id="topLinks">
+      <a class="btn login" href="/login?next=/pricing">Log in</a>
+      <a class="btn dark" href="/chat">Open chat</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="head">
+    <h1>Pick the plan that fits</h1>
+    <p>Start free. Upgrade when you need more.</p>
+    <div class="cycle" role="radiogroup" aria-label="Billing">
+      <button data-cycle="monthly" class="on" role="radio" aria-checked="true">Monthly</button>
+      <button data-cycle="yearly" role="radio" aria-checked="false">Yearly <small>2 months free</small></button>
+    </div>
+  </div>
+
+  <div class="notice" id="notice" role="status"></div>
+  <div class="plans" id="plans"></div>
+  <p class="usage" id="usage"></p>
+  <p class="pay-note">Prices in Indian rupees, including all taxes. Pay securely with UPI, cards or net banking through Razorpay.</p>
+
+  <section class="faq">
+    <h2>Questions</h2>
+    <details><summary>What counts as a message?</summary><p>Every time you send something to Datta — typed, spoken or a tapped option — that's one message. Limits reset every night at 12:00 AM (India time).</p></details>
+    <details><summary>What are uploads?</summary><p>Each photo, camera picture or file (PDF, Word, code and so on) you attach counts as one upload.</p></details>
+    <details><summary>Does my plan renew automatically?</summary><p>No. You pay once for a month or a year, and the plan simply ends after that. You'll never be charged without choosing to pay again.</p></details>
+    <details><summary>Can I change plans?</summary><p>Yes. Buying the same plan again adds time to it. Buying a different plan switches you to it straight away, starting from today.</p></details>
+    <details><summary>Can I get a refund?</summary><p>If something went wrong with a payment, write to us from the email on your account with your payment ID and we'll sort it out.</p></details>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© <span id="year">2026</span> Datta AI · A product of LR AgroSense</span>
+    <span><a href="/chat">Chat</a> · <a href="/settings">Settings</a></span>
+  </div>
+</footer>
+
+<script src="/account.js"></script>
+<script>
+const $ = id => document.getElementById(id)
+document.getElementById("year").textContent = new Date().getFullYear()
+
+const ORDER = ["free", "plus", "pro", "max"]
+const COPY = {
+  free: { for: "Try Datta and use it for small daily tasks.", extras: ["Voice typing and voice mode", "Live preview of apps", "Memory across chats"] },
+  plus: { for: "For students and everyday building.", extras: ["Everything in Free", "Longer, more complete answers"] },
+  pro: { for: "For people who build and study with Datta every day.", extras: ["Everything in Plus", "Room for big multi-file projects"], popular: true },
+  max: { for: "For heavy use, teams and businesses.", extras: ["Everything in Pro", "Priority email support"] },
+}
+let data = null
+let cycle = "monthly"
+const rupees = n => "₹" + Number(n).toLocaleString("en-IN")
+const esc = t => String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]))
+
+function notice(msg, kind = "") {
+  const n = $("notice"); n.textContent = msg; n.className = "notice show " + kind
+}
+
+function render() {
+  if (!data) return
+  const cur = data.current
+  const user = Account.user
+  $("plans").innerHTML = ORDER.map(key => {
+    const p = data.plans[key], c = COPY[key]
+    const price = cycle === "yearly" ? p.yearly : p.monthly
+    const isCurrent = user && cur.plan === key
+    let button
+    if (key === "free") button = user ? `<a class="btn" href="/chat">${cur.plan === "free" ? "Your current plan" : "Included"}</a>` : `<a class="btn" href="/login?mode=signup&next=/chat">Sign up free</a>`
+    else if (isCurrent) button = `<button class="btn${c.popular ? " dark" : ""}" data-buy="${key}">Add more time</button>`
+    else button = `<button class="btn${c.popular ? " dark" : ""}" data-buy="${key}">Get ${esc(p.name)}</button>`
+    const per = key === "free" ? "Free forever" : cycle === "yearly" ? `${rupees(Math.round(p.yearly / 12))} a month, billed yearly` : "Billed monthly"
+    return `<div class="plan${c.popular ? " popular" : ""}">
+      ${c.popular ? '<span class="tag">Most popular</span>' : ""}
+      <h2>${esc(p.name)}</h2><p class="for">${c.for}</p>
+      <div class="price"><b>${key === "free" ? "₹0" : rupees(price)}</b>${key === "free" ? "" : `<span>/${cycle === "yearly" ? "year" : "month"}</span>`}</div>
+      <div class="per">${per}</div>
+      ${button}
+      <div class="current">${isCurrent && key !== "free" ? "Active until " + new Date(cur.planUntil).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : ""}</div>
+      <ul>
+        <li>${p.messages.toLocaleString("en-IN")} messages a day</li>
+        <li>${p.uploads.toLocaleString("en-IN")} photo &amp; file uploads a day</li>
+        ${c.extras.map(e => `<li>${e}</li>`).join("")}
+      </ul></div>`
+  }).join("")
+  $("plans").querySelectorAll("[data-buy]").forEach(b => b.onclick = () => buy(b.dataset.buy, b))
+  $("usage").textContent = `Today you've used ${cur.usage.messages} of ${cur.limits.messages} messages and ${cur.usage.uploads} of ${cur.limits.uploads} uploads${user ? "" : " (guest limit — log in for more)"}.`
+}
+
+document.querySelectorAll("[data-cycle]").forEach(b => b.onclick = () => {
+  cycle = b.dataset.cycle
+  document.querySelectorAll("[data-cycle]").forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-checked", x === b) })
+  render()
+})
+
+async function load() {
+  try {
+    data = await Account.api("/api/plans")
+    if (!data.paymentsEnabled) notice("Payments are being set up. You can keep using Datta for free in the meantime.")
+    render()
+  } catch (err) {
+    notice(err.message, "bad")
+  }
+}
+
+function loadRazorpay() {
+  if (window.Razorpay) return Promise.resolve()
+  return new Promise((ok, fail) => {
+    const s = document.createElement("script")
+    s.src = "https://checkout.razorpay.com/v1/checkout.js"
+    s.onload = ok; s.onerror = () => fail(new Error("Couldn't load the payment window. Check your internet and try again."))
+    document.head.appendChild(s)
+  })
+}
+
+async function buy(plan, btn) {
+  if (!Account.isLoggedIn()) { location.href = "/login?mode=signup&next=/pricing"; return }
+  if (!data.paymentsEnabled) { notice("Payments are being set up. Please try again soon."); return }
+  const label = btn.textContent
+  btn.disabled = true; btn.textContent = "Opening…"
+  try {
+    await loadRazorpay()
+    const order = await Account.api("/api/pay/order", { method: "POST", body: { plan, cycle } })
+    const dark = getComputedStyle(document.body).backgroundColor !== "rgb(255, 255, 255)"
+    const rzp = new Razorpay({
+      key: order.keyId,
+      order_id: order.orderId,
+      amount: order.amount,
+      currency: order.currency,
+      name: order.name,
+      description: order.description,
+      prefill: order.prefill,
+      theme: { color: dark ? "#ececec" : "#0d0d0d" },
+      handler: async response => {
+        notice("Payment received. Activating your plan…")
+        try {
+          const { user } = await Account.api("/api/pay/verify", { method: "POST", body: response })
+          Account.saveLogin(Account.token, user)
+          notice(`You're on ${data.plans[user.plan].name} now. Enjoy! Taking you to your chats…`, "good")
+          setTimeout(() => (location.href = "/chat"), 1800)
+        } catch (err) {
+          notice(err.message + " Payment ID: " + response.razorpay_payment_id, "bad")
+        }
+        load()
+      },
+      modal: { ondismiss: () => { btn.disabled = false; btn.textContent = label } },
+    })
+    rzp.on("payment.failed", e => notice("Payment failed: " + (e.error?.description || "please try again") + ". No money was taken for a failed payment.", "bad"))
+    rzp.open()
+  } catch (err) {
+    notice(err.message, "bad")
+    btn.disabled = false; btn.textContent = label
+  }
+}
+
+if (Account.isLoggedIn()) {
+  $("topLinks").innerHTML = '<a class="btn dark" href="/chat">Open chat</a>'
+  Account.refreshUser().catch(() => {})
+}
+load()
+</script>
+</body>
+</html>

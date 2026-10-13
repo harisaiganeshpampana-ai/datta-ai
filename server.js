@@ -34,6 +34,18 @@ const MONGO_URI = process.env.MONGO_URI
 const JWT_SECRET = process.env.JWT_SECRET || ""
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ""
 
+// ── Plans: prices in rupees, daily limits (reset at midnight India time) ──
+const PLANS = {
+  guest: { name: "Guest", monthly: 0, yearly: 0, messages: 10, uploads: 2 },
+  free: { name: "Free", monthly: 0, yearly: 0, messages: 25, uploads: 5 },
+  plus: { name: "Plus", monthly: 399, yearly: 3990, messages: 300, uploads: 50 },
+  pro: { name: "Pro", monthly: 699, yearly: 6990, messages: 1000, uploads: 200 },
+  max: { name: "Max", monthly: 1899, yearly: 18990, messages: 3000, uploads: 1000 },
+}
+const PAID = ["plus", "pro", "max"]
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || ""
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || ""
+
 // Small fast model used only to pick out memories
 const MEMORY_PROVIDER = GROQ_API_KEY
   ? { url: GROQ_URL, key: GROQ_API_KEY, model: process.env.MEMORY_MODEL || "llama-3.1-8b-instant" }
@@ -267,6 +279,7 @@ app.get("/health", (req, res) =>
     groq: Boolean(GROQ_API_KEY),
     database: MONGO_URI ? (dbReady ? "connected" : "connecting") : "not set",
     login: Boolean(MONGO_URI && JWT_SECRET),
+    payments: Boolean(RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET),
     google: Boolean(GOOGLE_CLIENT_ID),
   })
 )
@@ -280,6 +293,19 @@ app.post("/api/chat", rateLimit, async (req, res) => {
   const messages = trimConversation(req.body.messages)
   if (messages.length === 0 || messages[messages.length - 1].role !== "user") {
     return res.status(400).json({ error: "Please send a message." })
+  }
+
+  // Daily limits for the person's plan
+  const who = await whoIsAsking(req)
+  const last = messages[messages.length - 1]
+  const uploads = (last.images?.length || 0) + (last.content.match(/^--- File: /gm) || []).length
+  const usage = await getUsage(who.key)
+  const limits = PLANS[who.plan]
+  if (usage.messages >= limits.messages) {
+    return res.status(429).json({ code: "LIMIT", plan: who.plan, error: limitMessage(who.plan, "messages") })
+  }
+  if (uploads && usage.uploads + uploads > limits.uploads) {
+    return res.status(429).json({ code: "LIMIT", plan: who.plan, error: limitMessage(who.plan, "uploads") })
   }
 
   const memories = cleanMemories(req.body.memories)
@@ -309,7 +335,7 @@ app.post("/api/chat", rateLimit, async (req, res) => {
           model: p.model,
           stream: true,
           temperature: 0.7,
-          max_tokens: voice ? Math.min(p.maxTokens, 1200) : p.maxTokens,
+          max_tokens: voice ? Math.min(p.maxTokens, 1200) : PAID.includes(who.plan) ? p.maxTokens : Math.min(p.maxTokens, 12000),
           messages: [{ role: "system", content: system }, ...toProviderMessages(history, p.vision)],
         }),
       })
@@ -322,6 +348,7 @@ app.post("/api/chat", rateLimit, async (req, res) => {
       res.setHeader("Content-Type", "text/plain; charset=utf-8")
       res.setHeader("Cache-Control", "no-cache")
       res.setHeader("X-Model", p.model)
+      addUsage(who.key, uploads).catch(() => {})
 
       // Read Groq's stream and pass just the text to the browser
       const decoder = new TextDecoder()
@@ -423,8 +450,26 @@ const User = mongoose.model("DattaUser", new mongoose.Schema({
   picture: String,
   passwordHash: String,
   googleId: { type: String, unique: true, sparse: true },
+  plan: { type: String, default: "free" },
+  planUntil: Date,
+  billing: String,
   createdAt: { type: Date, default: Date.now },
 }))
+const Payment = mongoose.model("DattaPayment", new mongoose.Schema({
+  paymentId: { type: String, unique: true },
+  orderId: String,
+  userId: { type: String, index: true },
+  plan: String,
+  cycle: String,
+  amount: Number,
+  createdAt: { type: Date, default: Date.now },
+}))
+const Usage = mongoose.model("DattaUsage", new mongoose.Schema({
+  key: String,
+  day: String,
+  messages: { type: Number, default: 0 },
+  uploads: { type: Number, default: 0 },
+}).index({ key: 1, day: 1 }, { unique: true }))
 const UserData = mongoose.model("DattaUserData", new mongoose.Schema({
   userId: { type: String, unique: true, index: true },
   memory: { type: [String], default: [] },
@@ -481,7 +526,54 @@ async function needUser(req, res, next) {
   if (!req.user) return res.status(401).json({ error: "Please log in again." })
   next()
 }
-const publicUser = (u) => ({ id: String(u._id), name: u.name || "", email: u.email || "", picture: u.picture || "" })
+// The plan someone actually has right now (paid plans end on planUntil)
+const activePlan = (u) => (u && PAID.includes(u.plan) && u.planUntil && new Date(u.planUntil) > new Date() ? u.plan : "free")
+const publicUser = (u) => ({
+  id: String(u._id), name: u.name || "", email: u.email || "", picture: u.picture || "",
+  plan: activePlan(u), planUntil: activePlan(u) === "free" ? null : u.planUntil, billing: activePlan(u) === "free" ? null : u.billing || "monthly",
+})
+
+// ── Daily usage: counted per account, or per internet address for guests ──
+const today = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }) // e.g. 2026-10-13
+const memoryUsage = new Map() // used when the database isn't connected
+async function whoIsAsking(req) {
+  const uid = readToken((req.headers.authorization || "").replace(/^Bearer\s+/i, ""))
+  if (uid && dbReady) {
+    try {
+      const u = await User.findById(uid)
+      if (u) return { key: "u:" + uid, plan: activePlan(u), user: u }
+    } catch {}
+  }
+  if (uid) return { key: "u:" + uid, plan: "free" }
+  const ip = (req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress || "?"
+  return { key: "ip:" + ip, plan: "guest" }
+}
+async function getUsage(key) {
+  const day = today()
+  if (dbReady) {
+    try {
+      const u = await Usage.findOne({ key, day }).lean()
+      return { messages: u?.messages || 0, uploads: u?.uploads || 0 }
+    } catch {}
+  }
+  return memoryUsage.get(day + key) || { messages: 0, uploads: 0 }
+}
+async function addUsage(key, uploads) {
+  const day = today()
+  if (dbReady) {
+    try { return await Usage.updateOne({ key, day }, { $inc: { messages: 1, uploads } }, { upsert: true }) } catch {}
+  }
+  if (memoryUsage.size > 50_000) memoryUsage.clear()
+  const u = memoryUsage.get(day + key) || { messages: 0, uploads: 0 }
+  memoryUsage.set(day + key, { messages: u.messages + 1, uploads: u.uploads + uploads })
+}
+function limitMessage(plan, what) {
+  const l = PLANS[plan]
+  const thing = what === "messages" ? `${l.messages} messages` : `${l.uploads} file and photo uploads`
+  if (plan === "guest") return `You've used today's ${thing} as a guest. Log in for more free messages every day, or upgrade.`
+  if (plan === "max") return `You've reached today's limit of ${thing}. It resets at midnight.`
+  return `You've used all ${thing} on the ${l.name} plan today. Upgrade for more, or come back after midnight.`
+}
 const validEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e)
 
 app.get("/api/config", (req, res) => res.json({ googleClientId: GOOGLE_CLIENT_ID, loginEnabled: Boolean(MONGO_URI && JWT_SECRET) }))
@@ -594,7 +686,101 @@ app.put("/api/data", needDb, needUser, async (req, res) => {
   }
 })
 
+// ── Plans & payments (Razorpay) ──
+app.get("/api/plans", async (req, res) => {
+  const who = await whoIsAsking(req)
+  const usage = await getUsage(who.key)
+  res.json({
+    plans: Object.fromEntries(["free", ...PAID].map((k) => [k, PLANS[k]])),
+    guest: PLANS.guest,
+    paymentsEnabled: Boolean(RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET && dbReady),
+    current: {
+      plan: who.plan,
+      planUntil: who.user && who.plan !== "free" ? who.user.planUntil : null,
+      billing: who.user && who.plan !== "free" ? who.user.billing || "monthly" : null,
+      usage,
+      limits: { messages: PLANS[who.plan].messages, uploads: PLANS[who.plan].uploads },
+    },
+  })
+})
+
+function razorpay(pathname, options = {}) {
+  return fetch("https://api.razorpay.com/v1" + pathname, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Basic " + Buffer.from(RAZORPAY_KEY_ID + ":" + RAZORPAY_KEY_SECRET).toString("base64"),
+    },
+  })
+}
+
+// Step 1: create an order for the chosen plan (the price always comes from the server)
+app.post("/api/pay/order", rateLimit, needDb, needUser, async (req, res) => {
+  if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) return res.status(503).json({ error: "Payments aren't set up yet." })
+  const plan = String(req.body.plan || "")
+  const cycle = req.body.cycle === "yearly" ? "yearly" : "monthly"
+  if (!PAID.includes(plan)) return res.status(400).json({ error: "Please choose a plan." })
+  const amount = PLANS[plan][cycle] * 100 // in paise
+  const uid = String(req.user._id)
+  try {
+    const r = await razorpay("/orders", {
+      method: "POST",
+      body: JSON.stringify({ amount, currency: "INR", receipt: `datta_${uid.slice(-8)}_${Date.now()}`, notes: { userId: uid, plan, cycle } }),
+    })
+    const order = await r.json()
+    if (!r.ok) {
+      console.error("[razorpay order]", JSON.stringify(order).slice(0, 300))
+      return res.status(502).json({ error: "Couldn't start the payment. Please try again." })
+    }
+    res.json({
+      keyId: RAZORPAY_KEY_ID, orderId: order.id, amount, currency: "INR",
+      name: "Datta AI", description: `${PLANS[plan].name} plan — ${cycle}`,
+      prefill: { name: req.user.name || "", email: req.user.email || "" },
+    })
+  } catch (err) {
+    console.error("[razorpay order]", err.message)
+    res.status(502).json({ error: "Couldn't start the payment. Please try again." })
+  }
+})
+
+// Step 2: after paying, check Razorpay's signature and switch the plan on
+app.post("/api/pay/verify", rateLimit, needDb, needUser, async (req, res) => {
+  const orderId = String(req.body.razorpay_order_id || "")
+  const paymentId = String(req.body.razorpay_payment_id || "")
+  const signature = String(req.body.razorpay_signature || "")
+  const expected = crypto.createHmac("sha256", RAZORPAY_KEY_SECRET).update(orderId + "|" + paymentId).digest("hex")
+  if (!orderId || !paymentId || signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+    return res.status(400).json({ error: "We couldn't confirm this payment. If money was taken, contact support with your payment ID." })
+  }
+  const uid = String(req.user._id)
+  try {
+    // Already processed (e.g. the page was refreshed)? Just return the current plan.
+    if (await Payment.findOne({ paymentId })) return res.json({ user: publicUser(req.user) })
+
+    const r = await razorpay("/orders/" + encodeURIComponent(orderId))
+    const order = await r.json()
+    const { plan, cycle, userId } = order.notes || {}
+    if (!r.ok || userId !== uid || !PAID.includes(plan)) {
+      return res.status(400).json({ error: "This payment doesn't match your account. Contact support with your payment ID." })
+    }
+    await Payment.create({ paymentId, orderId, userId: uid, plan, cycle, amount: order.amount })
+
+    const days = cycle === "yearly" ? 365 : 30
+    const current = activePlan(req.user)
+    const start = current === plan && req.user.planUntil ? new Date(req.user.planUntil) : new Date() // same plan → add time
+    req.user.plan = plan
+    req.user.planUntil = new Date(start.getTime() + days * 24 * 3600 * 1000)
+    req.user.billing = cycle
+    await req.user.save()
+    res.json({ user: publicUser(req.user) })
+  } catch (err) {
+    console.error("[razorpay verify]", err.message)
+    res.status(500).json({ error: "Payment received, but we couldn't update your plan. Contact support with your payment ID." })
+  }
+})
+
 // Pages
+app.get("/pricing", (req, res) => res.sendFile(path.join(__dirname, "public", "pricing.html")))
 app.get("/chat", (req, res) => res.sendFile(path.join(__dirname, "public", "chat.html")))
 app.get("/login", (req, res) => res.sendFile(path.join(__dirname, "public", "login.html")))
 app.get("/settings", (req, res) => res.sendFile(path.join(__dirname, "public", "settings.html")))

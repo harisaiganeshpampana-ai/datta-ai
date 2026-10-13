@@ -161,6 +161,10 @@
   .msg-tools button { font-size: 12.5px; color: var(--faint); padding: 4px 8px; border-radius: 7px; }
   .msg-tools button:hover { background: var(--hover); color: var(--text); }
   .error { color: var(--danger); border: 1px solid var(--border); padding: 10px 14px; border-radius: 12px; }
+  .limit-btns { display: flex; gap: 8px; margin-top: 10px; }
+  .limit-btns a { text-decoration: none; padding: 7px 14px; font-size: 14px; border-radius: 99px; color: var(--text); }
+  .limit-btns a.dark { color: var(--btn-text); }
+  .plan-chip { margin-left: auto; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--border); color: var(--muted); }
   .thinking { width: 10px; height: 10px; margin-top: 8px; border-radius: 50%; background: var(--text); animation: pulse 1s ease-in-out infinite; }
   @keyframes pulse { 50% { transform: scale(.6); opacity: .5 } }
 
@@ -320,6 +324,10 @@
       New chat
     </button>
     <div class="chat-list" id="chatList"></div>
+    <a class="side-btn" id="plansLink" href="/pricing" style="color:inherit;text-decoration:none">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+      <span id="plansLabel">Upgrade plan</span>
+    </a>
     <button class="side-btn" id="memoryBtn">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2zM9 21h6"/></svg>
       Memory
@@ -474,7 +482,7 @@ async function updateMemory(userText, aiText, msgEl) {
   try {
     const res = await fetch(API_BASE + "/api/memory", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(window.Account?.authHeaders() || {}) },
       body: JSON.stringify({ memories: memory.items, user: userText, assistant: aiText.slice(0, 1500) }),
     })
     const { add = [], remove = [] } = await res.json()
@@ -1051,12 +1059,17 @@ function messageHtml(m, i, isLast) {
     const attach = pics || files ? `<div class="msg-files">${pics}${files}</div>` : ""
     return `<div class="msg user">${attach}${m.content ? `<div class="bubble">${escapeHtml(m.content)}</div>` : ""}</div>`
   }
-  let body = m.error ? `<div class="error">${escapeHtml(m.error)}</div>` : renderMarkdown(m.content)
+  let body = m.error ? `<div class="error">${escapeHtml(m.error)}${m.limit ? limitButtons(m.limit) : ""}</div>` : renderMarkdown(m.content)
   if (!isLast) body = body.replace(/class="ask-card"/g, 'class="ask-card answered"')
   const tools = `<div class="msg-tools">
       ${m.error ? "" : `<button data-act="copyMsg" data-index="${i}">Copy</button><button data-act="listen" data-index="${i}">Listen</button>`}
       ${isLast ? '<button data-act="retry">Retry</button>' : ""}</div>`
   return `<div class="msg ai">${MARK}<div class="content">${body}${tools}</div></div>`
+}
+
+function limitButtons(plan) {
+  const login = plan === "guest" ? '<a class="btn" href="/login?mode=signup&next=/chat">Log in free</a>' : ""
+  return `<div class="limit-btns">${plan === "max" ? "" : '<a class="btn dark" href="/pricing">See plans</a>'}${login}</div>`
 }
 
 function renderWelcome() {
@@ -1171,7 +1184,7 @@ async function getAnswer(chat, opts = {}) {
   try {
     const res = await fetch(API_BASE + "/api/chat", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(window.Account?.authHeaders() || {}) },
       body: JSON.stringify({
         messages: apiMessages(chat),
         memories: memory.on ? memory.items : [],
@@ -1182,6 +1195,7 @@ async function getAnswer(chat, opts = {}) {
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
+      if (data.code === "LIMIT") reply.limit = data.plan
       throw new Error(data.error || "Datta couldn't answer that. Press Retry.")
     }
     const reader = res.body.getReader()
@@ -1288,6 +1302,8 @@ document.addEventListener("keydown", e => {
 function renderAccount() {
   const box = $("account")
   const user = window.Account?.user
+  const plan = user?.plan && user.plan !== "free" ? user.plan : null
+  $("plansLabel").innerHTML = plan ? `Your plan <span class="plan-chip">${plan[0].toUpperCase() + plan.slice(1)}</span>` : "Upgrade plan"
   if (!user) {
     box.innerHTML = `<div class="guest-box"><p>Log in to save your chats on every device.</p>
       <div class="row"><a href="/login?mode=signup" class="dark">Sign up</a><a href="/login">Log in</a></div></div>`
@@ -1296,6 +1312,7 @@ function renderAccount() {
   box.innerHTML = `<button class="acct-btn" id="acctBtn" aria-haspopup="true">${Account.avatarHtml(user)}
       <span class="who">${escapeHtml(user.name || "Account")}<small>${escapeHtml(user.email || "")}</small></span></button>
     <div class="acct-menu" id="acctMenu" role="menu">
+      <a href="/pricing" role="menuitem">${plan ? "Manage plan" : "Upgrade plan"}</a>
       <a href="/settings" role="menuitem">Settings</a>
       <button id="memMenu" role="menuitem">Memory</button>
       <button id="logout" role="menuitem">Log out</button>
@@ -1329,6 +1346,7 @@ renderChatList()
 renderWelcome()
 renderAccount()
 pullAccount()
+window.Account?.refreshUser().then(renderAccount).catch(() => {})
 input.focus()
 if (new URLSearchParams(location.search).get("memory") === "1") { openMemory(); history.replaceState(null, "", "/chat") }
 </script>

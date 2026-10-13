@@ -44,6 +44,17 @@
 
     saveLogin(token, user) { write(AUTH_KEY, { token, user }) },
 
+    // Get the latest account details (e.g. after buying a plan)
+    async refreshUser() {
+      if (!this.isLoggedIn()) return null
+      const { user } = await this.api("/api/auth/me")
+      write(AUTH_KEY, { token: this.token, user })
+      return user
+    },
+
+    // Header to send with requests that should count against your plan
+    authHeaders() { return this.token ? { Authorization: "Bearer " + this.token } : {} },
+
     // Log out on this device (also clears this browser's chats and memory for privacy)
     logout() {
       this.forget()
